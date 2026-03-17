@@ -84,16 +84,9 @@ export class MaterialRequestComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // Listen to route changes to update page context
     this.router.events.pipe(
       filter(event => event instanceof NavigationEnd)
-    ).subscribe(() => {
-      // Optional: Update badge counts when route changes
-      // this.loadPendingCounts();
-    });
-
-    // Optional: Load badge counts from API
-    // this.loadPendingCounts();
+    ).subscribe(() => {});
   }
 
   title: string = 'Material Requests';
@@ -141,16 +134,4 @@ export class MaterialRequestComponent implements OnInit {
     }, 1000);
   }
 
-  /**
-   * Optional method to load pending counts for badges
-   */
-  // private loadPendingCounts(): void {
-  //   // Implement API calls to get pending validation and picking counts
-  //   // this.materialRequestService.getPendingValidationCount().subscribe(count => {
-  //   //   this.pendingValidationCount = count;
-  //   // });
-  //   // this.materialRequestService.getPendingPickingCount().subscribe(count => {
-  //   //   this.pendingPickingCount = count;
-  //   // });
-  // }
 }

@@ -1,0 +1,243 @@
+<div class="pm-board">
+
+  <!-- ── Top bar ─────────────────────────────── -->
+  <div class="pm-topbar">
+    <div class="pm-topbar-left">
+      <div>
+        <h4 class="pm-title mb-0">Project Tasks</h4>
+        <span class="pm-context-badge">{{ gateContextLabel }}</span>
+      </div>
+    </div>
+    <div class="pm-topbar-right">
+      <a class="btn btn-sm btn-light border" routerLink="/operations/project-manager/new-project">← New Project</a>
+      <a class="btn btn-sm btn-light border" routerLink="/operations/project-manager/dashboard">Dashboard</a>
+    </div>
+  </div>
+
+  <!-- ── Action toolbar ──────────────────────── -->
+  <div class="pm-toolbar">
+    <div class="pm-toolbar-left">
+      <button class="btn pm-new-btn" (click)="openAddTaskPanel()">
+        <span class="pm-new-btn-icon">+</span> New Task
+      </button>
+
+      <div class="pm-divider"></div>
+
+      <!-- Person filter avatars -->
+      <div class="pm-avatar-filters">
+        <button
+          *ngFor="let person of engineeringPeople"
+          class="pm-avatar-btn"
+          [class.active]="filterPerson === person"
+          [title]="person"
+          (click)="setPersonFilter(person)">
+          {{ getInitials(person) }}
+        </button>
+      </div>
+
+      <div class="pm-divider"></div>
+
+      <!-- Status filter pills -->
+      <div class="d-flex gap-1 flex-wrap">
+        <button *ngFor="let s of ['Open','In Process','Review','Completed','Locked']"
+          class="pm-status-pill"
+          [class.active]="filterStatus === s"
+          (click)="setStatusFilter(s)">{{ s }}</button>
+      </div>
+
+      <div class="pm-divider"></div>
+
+      <button class="btn btn-sm" [class.btn-warning]="hideDone" [class.btn-light]="!hideDone"
+        style="border:1px solid #dde3ea;border-radius:6px;font-size:12px;font-weight:500"
+        (click)="toggleHideDone()">
+        {{ hideDone ? '👁 Show Done' : '✓ Hide Done' }}
+      </button>
+
+      <button *ngIf="filterPerson || filterStatus || hideDone"
+        class="btn btn-sm btn-light border"
+        style="font-size:11px;color:#e44"
+        (click)="clearFilters()">✕ Clear</button>
+    </div>
+
+    <div class="pm-toolbar-right">
+      <input type="text" class="pm-search" placeholder="🔍  Search..." (input)="onQuickFilter($event)" />
+      <button class="btn btn-sm btn-light border" style="font-size:12px" (click)="toggleManagePanel()">⚙ Groups</button>
+      <button class="btn btn-sm btn-light border" style="font-size:12px" (click)="toggleBulkPanel()">👥 Bulk Add</button>
+    </div>
+  </div>
+
+  <!-- ── Add Task Modal template ─────────────── -->
+  <ng-template #addTaskModal let-modal>
+    <div class="modal-header" style="background:#0073ea;color:#fff;border-bottom:none;border-radius:8px 8px 0 0">
+      <h5 class="modal-title fw-bold" style="font-size:1rem">New Task</h5>
+      <button type="button" class="btn-close btn-close-white" (click)="modal.dismiss()"></button>
+    </div>
+    <form [formGroup]="taskForm" (ngSubmit)="createTask()" novalidate>
+      <div class="modal-body">
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label fw-semibold" style="font-size:12px">Task Name <span class="text-danger">*</span></label>
+            <input class="form-control add-task-taskname" formControlName="taskName" placeholder="e.g. Pixel mapping package" />
+          </div>
+          <div class="col-6">
+            <label class="form-label fw-semibold" style="font-size:12px">Group <span class="text-muted fw-normal">(optional)</span></label>
+            <input class="form-control" formControlName="groupName" placeholder="Leave blank for General" />
+          </div>
+          <div class="col-6">
+            <label class="form-label fw-semibold" style="font-size:12px">Subgroup <span class="text-muted fw-normal">(optional, use / for nesting)</span></label>
+            <input class="form-control" formControlName="subGroupName" placeholder="e.g. Backlog or CAD/Mechanical" />
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold" style="font-size:12px">Project ID</label>
+            <input class="form-control" formControlName="project" placeholder="e.g. PRJ-001" />
+          </div>
+          <div class="col-6">
+            <label class="form-label fw-semibold" style="font-size:12px">Depends On</label>
+            <input class="form-control" formControlName="dependsOn"
+              list="dependsOnOptions" placeholder="e.g. 3FS" autocomplete="off" />
+            <datalist id="dependsOnOptions">
+              <option value="3FS"></option>
+              <option value="6FS"></option>
+              <option value="8FS"></option>
+              <option value="1FS"></option>
+              <option value="2FS"></option>
+              <option value="4FS"></option>
+              <option value="5FS"></option>
+              <option value="7FS"></option>
+              <option value="9FS"></option>
+              <option value="10FS"></option>
+            </datalist>
+          </div>
+          <div class="col-6">
+            <label class="form-label fw-semibold" style="font-size:12px">Gate</label>
+            <select class="form-select" formControlName="gate">
+              <option *ngFor="let g of gateOptions" [value]="g">{{ g }}</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label fw-semibold" style="font-size:12px">Status</label>
+            <select class="form-select" formControlName="status">
+              <option>Open</option>
+              <option>In Process</option>
+              <option>Review</option>
+              <option>Completed</option>
+              <option>Locked</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label fw-semibold" style="font-size:12px">Start Date</label>
+            <input type="date" class="form-control" formControlName="startDate" />
+          </div>
+          <div class="col-6">
+            <label class="form-label fw-semibold" style="font-size:12px">Finish Date</label>
+            <input type="date" class="form-control" formControlName="finishDate" />
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold" style="font-size:12px">Assigned To</label>
+            <div class="border rounded p-2 d-flex flex-wrap gap-2" style="max-height:90px;overflow-y:auto;background:#fafbfc">
+              <div class="form-check me-2" *ngFor="let person of engineeringPeople">
+                <input class="form-check-input" type="checkbox" [id]="'modal-qa-' + person"
+                  [checked]="selectedAssignees.has(person)"
+                  (change)="toggleAssignee(person, $any($event.target).checked)" />
+                <label class="form-check-label" style="font-size:12px" [for]="'modal-qa-' + person">{{ person }}</label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-top">
+        <button type="button" class="btn btn-light border" (click)="modal.dismiss()">Cancel</button>
+        <button type="submit" class="btn pm-new-btn px-4">Create Task</button>
+      </div>
+    </form>
+  </ng-template>
+
+  <!-- ── Manage Groups modal template ──────── -->
+  <ng-template #manageGroupsModal let-modal>
+    <div class="modal-header" style="background:#1f3044;color:#fff;border-bottom:none;border-radius:8px 8px 0 0">
+      <h5 class="modal-title fw-bold" style="font-size:1rem">Manage Groups</h5>
+      <button type="button" class="btn-close btn-close-white" (click)="modal.dismiss()"></button>
+    </div>
+    <div class="modal-body">
+      <p class="fw-semibold mb-2" style="font-size:13px">Create a new group / subgroup</p>
+      <p class="text-muted mb-2" style="font-size:11px">Use <code>/</code> to create nested subgroups, e.g. <code>CAD/Mechanical</code></p>
+      <div class="row g-2 mb-3">
+        <div class="col-5">
+          <label class="form-label" style="font-size:12px">Group name</label>
+          <input class="form-control" [(ngModel)]="newSubGroupGroup" [ngModelOptions]="{standalone:true}" placeholder="e.g. Engineering" />
+        </div>
+        <div class="col-5">
+          <label class="form-label" style="font-size:12px">Subgroup path</label>
+          <input class="form-control" [(ngModel)]="newSubGroupName" [ngModelOptions]="{standalone:true}" placeholder="e.g. CAD or CAD/Mechanical" />
+        </div>
+        <div class="col-2 d-flex align-items-end">
+          <button class="btn pm-new-btn w-100" (click)="createSubgroup()">+</button>
+        </div>
+      </div>
+      <hr />
+      <p class="fw-semibold mb-2" style="font-size:13px">Move selected tasks to</p>
+      <div class="row g-2">
+        <div class="col-5">
+          <label class="form-label" style="font-size:12px">Group</label>
+          <select class="form-select" [(ngModel)]="moveTargetGroup" [ngModelOptions]="{standalone:true}">
+            <option *ngFor="let group of availableGroups" [value]="group">{{ group }}</option>
+          </select>
+        </div>
+        <div class="col-5">
+          <label class="form-label" style="font-size:12px">Subgroup</label>
+          <select class="form-select" [(ngModel)]="moveTargetSubGroup" [ngModelOptions]="{standalone:true}">
+            <option *ngFor="let sg of getAvailableSubgroups(moveTargetGroup)" [value]="sg">{{ getSubgroupDisplayLabel(sg) }}</option>
+          </select>
+        </div>
+        <div class="col-2 d-flex align-items-end">
+          <button class="btn btn-outline-primary w-100" (click)="moveSelectedToSubgroup(); modal.dismiss()">→</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-light border" (click)="modal.dismiss()">Close</button>
+    </div>
+  </ng-template>
+
+  <!-- ── Bulk Add modal template ────────────── -->
+  <ng-template #bulkAddModal let-modal>
+    <div class="modal-header" style="background:#1f3044;color:#fff;border-bottom:none;border-radius:8px 8px 0 0">
+      <h5 class="modal-title fw-bold" style="font-size:1rem">Bulk Add for People</h5>
+      <button type="button" class="btn-close btn-close-white" (click)="modal.dismiss()"></button>
+    </div>
+    <div class="modal-body">
+      <p class="fw-semibold mb-2" style="font-size:13px">Select team members</p>
+      <div class="row g-2 mb-3">
+        <div class="col-6" *ngFor="let person of engineeringPeople">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" [id]="'bulk-' + person"
+              [checked]="selectedPeople.has(person)"
+              (change)="togglePerson(person, $any($event.target).checked)" />
+            <label class="form-check-label" [for]="'bulk-' + person">{{ person }}</label>
+          </div>
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold" style="font-size:12px">Task base name</label>
+        <input class="form-control" [formControl]="$any(taskForm.get('taskName'))" placeholder="e.g. Engineering Review" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-light border" (click)="modal.dismiss()">Cancel</button>
+      <button type="button" class="btn pm-new-btn px-4" (click)="createEngineeringTasksForPeople(); modal.close()">Create Tasks</button>
+    </div>
+  </ng-template>
+
+  <!-- ── Grid ──────────────────────────────────── -->
+  <div class="pm-grid-wrap">
+    <ag-grid-angular
+      class="ag-theme-quartz pm-grid"
+      [rowData]="rowData"
+      [columnDefs]="columnDefs"
+      [defaultColDef]="defaultColDef"
+      [gridOptions]="gridOptions"
+      [pagination]="false"
+    ></ag-grid-angular>
+  </div>
+
+</div>

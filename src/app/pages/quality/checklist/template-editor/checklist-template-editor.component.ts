@@ -58,6 +58,14 @@ interface ItemLink {
   template: `
     <div class="container-fluid">
       <div class="print-hide">
+        <div class="editor-loading-overlay" *ngIf="loading" aria-live="polite" aria-busy="true">
+          <div class="editor-loading-card">
+            <div class="spinner-border text-primary" role="status" aria-hidden="true"></div>
+            <div class="fw-semibold mt-3">Loading template...</div>
+            <div class="text-muted small">Preparing editor data and checklist items</div>
+          </div>
+        </div>
+
         <div class="row">
           <div class="col-12">
           
@@ -1364,10 +1372,10 @@ interface ItemLink {
         </h5>
         <button type="button" class="btn-close" (click)="modal.dismiss()"></button>
       </div>
-      <div class="modal-body p-0" style="max-height: 70vh; overflow: hidden;">
+      <div class="modal-body p-0" style="max-height: calc(100vh - 140px); overflow: hidden;">
         <div class="row g-0 h-100">
           <!-- Main Content Area -->
-          <div class="col-md-9 pe-3" style="max-height: 70vh; overflow-y: auto; padding: 1rem;" #previewContent>
+          <div class="col-md-9 pe-3" style="max-height: calc(100vh - 140px); overflow-y: auto; padding: 1rem;" #previewContent>
             <!-- Template Info Banner -->
             <div class="alert alert-info mb-4">
               <div class="row">
@@ -1553,7 +1561,7 @@ interface ItemLink {
           </div>
 
           <!-- Navigation Sidebar -->
-          <div class="col-md-3 border-start bg-light" style="max-height: 70vh; overflow-y: auto;">
+          <div class="col-md-3 border-start bg-light" style="max-height: calc(100vh - 140px); overflow-y: auto;">
             <div class="p-2">
               <app-checklist-navigation
                 [items]="buildEditorNavItems()"
@@ -1704,6 +1712,28 @@ interface ItemLink {
     .print-muted {
       color: #6b7280;
       font-size: 11px;
+    }
+
+    .editor-loading-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 2000;
+      background: rgba(255, 255, 255, 0.82);
+      backdrop-filter: blur(1px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .editor-loading-card {
+      min-width: 280px;
+      max-width: 420px;
+      text-align: center;
+      background: #fff;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
     }
 
     @media print {
@@ -1969,7 +1999,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
   // Navigation panel heights (customizable per view)
   editorNavHeight = 'calc(100vh - 190px)';
-  previewNavHeight = 'calc(70vh - 90px)';
+  previewNavHeight = 'calc(100vh - 230px)';
   private scrollCheckTimeout: any = null;
   private boundScrollHandler: (() => void) | null = null;
   private activeItemObserver: IntersectionObserver | null = null;
@@ -6308,7 +6338,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
    * Open preview modal to show condensed read-only view of entire checklist
    */
   openPreviewModal(): void {
-    this.modalService.open(this.previewModalRef, { size: 'xl', scrollable: true });
+    this.modalService.open(this.previewModalRef, { fullscreen: true, scrollable: true, backdrop: 'static' });
   }
 
   async onImportFileSelected(event: any): Promise<void> {

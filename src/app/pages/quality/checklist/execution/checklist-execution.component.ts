@@ -99,11 +99,8 @@ export class ChecklistExecutionComponent implements OnInit {
     this.loading = true;
     this.photoChecklistConfigService.getInstances().pipe(first()).subscribe(data => {
       this.loading = false;
-      // Load ALL checklists and let UI filters handle the filtering
-      // Exclude only 'submitted' status since those are truly finalized
-      this.openChecklists = data.filter(instance => 
-        instance.status !== 'submitted'
-      );
+      // Load ALL checklists including completed and submitted
+      this.openChecklists = data || [];
       this.applyFilters(); // Apply filters after loading data
     }, () => this.loading = false);
   }

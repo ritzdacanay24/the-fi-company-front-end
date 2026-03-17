@@ -887,7 +887,13 @@ class SerialAssignmentsAPI {
                     ];
 
                 } catch (\Exception $e) {
-                    $errors[] = "Row " . ($index + 1) . ": " . $e->getMessage();
+                    $msg = $e->getMessage();
+                    // Provide a clear message for the stale unique-constraint error
+                    if (stripos($msg, 'unique_eyefi_serial_active') !== false || stripos($msg, 'Duplicate entry') !== false) {
+                        $msg = "EyeFi Serial #{$assignment['eyefi_serial_number']} already has a consumed record in the database. "
+                             . "If this serial was previously voided, please run database migration 007 to remove the duplicate-entry constraint, then retry.";
+                    }
+                    $errors[] = "Row " . ($index + 1) . ": " . $msg;
                     error_log("Error creating Other assignment (row " . ($index + 1) . "): " . $e->getMessage());
                 }
             }

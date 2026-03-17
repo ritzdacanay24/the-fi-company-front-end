@@ -3230,6 +3230,60 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     return sampleImages.slice(1);
   }
 
+  getItemBreadcrumbTrail(progress: ChecklistItemProgress): Array<{ orderLabel: string; title: string }> {
+    const trail: Array<{ orderLabel: string; title: string }> = [];
+    const chain: ChecklistItemProgress[] = [];
+    const seen = new Set<string>();
+
+    let currentParent = this.resolveParentProgress(progress);
+
+    while (currentParent && currentParent.item.id !== progress.item.id) {
+      const key = String(currentParent.item.id);
+      if (seen.has(key)) {
+        break;
+      }
+
+      seen.add(key);
+      chain.unshift(currentParent);
+
+      const nextParent = this.resolveParentProgress(currentParent);
+      if (!nextParent || nextParent.item.id === currentParent.item.id) {
+        break;
+      }
+
+      currentParent = nextParent;
+    }
+
+    for (const itemProgress of chain) {
+      trail.push({
+        orderLabel: this.getItemOrderLabel(itemProgress),
+        title: String(itemProgress.item?.title || 'Untitled')
+      });
+    }
+
+    if ((progress.item.level ?? 0) > 0) {
+      trail.push({
+        orderLabel: this.getItemOrderLabel(progress),
+        title: String(progress.item?.title || 'Untitled')
+      });
+    }
+
+    return trail;
+  }
+
+  private getItemOrderLabel(progress: ChecklistItemProgress): string {
+    const explicitOrder = String(progress.item?.order_index ?? '').trim();
+    if (explicitOrder) {
+      return explicitOrder;
+    }
+
+    if ((progress.item.level ?? 0) > 0) {
+      return this.getChildItemNumber(progress) || 'Sub-item';
+    }
+
+    return String(this.getItemNumber(progress) || 'Item');
+  }
+
   /**
    * Handle file selection from photo section component
    */

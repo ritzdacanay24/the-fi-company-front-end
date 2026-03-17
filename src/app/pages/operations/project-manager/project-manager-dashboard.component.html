@@ -1,0 +1,217 @@
+<div class="pm-dashboard">
+  <div class="pm-header card-shell">
+    <div class="brand">
+      <div class="logo">NPI</div>
+      <div>
+        <div class="title">Project Manager Dashboard</div>
+        <div class="subtitle">MICROSERVICES . NPI PIPELINE</div>
+      </div>
+    </div>
+
+    <div class="tab-group" role="tablist" aria-label="Project manager dashboard tabs">
+      <button type="button" [ngClass]="activeTab === 'overview' ? 'tab active' : 'tab'" (click)="setTab('overview')">Overview</button>
+      <button type="button" [ngClass]="activeTab === 'gates' ? 'tab active' : 'tab'" (click)="setTab('gates')">Gates</button>
+      <button type="button" [ngClass]="activeTab === 'pipeline' ? 'tab active' : 'tab'" (click)="setTab('pipeline')">Pipeline</button>
+    </div>
+  </div>
+
+  <div class="kpi-grid" *ngIf="activeTab === 'overview' || activeTab === 'gates' || activeTab === 'pipeline'">
+    <div class="kpi-card card-shell kpi-total">
+      <div class="kpi-label">Total Projects</div>
+      <div class="kpi-value">{{ totalProjects }}</div>
+      <div class="kpi-meta">Active NPI</div>
+    </div>
+    <div class="kpi-card card-shell kpi-track">
+      <div class="kpi-label">On Track</div>
+      <div class="kpi-value">{{ onTrackCount }}</div>
+      <div class="kpi-meta">Green status</div>
+    </div>
+    <div class="kpi-card card-shell kpi-risk">
+      <div class="kpi-label">At Risk / Overdue</div>
+      <div class="kpi-value">{{ atRiskOrOverdueCount }}</div>
+      <div class="kpi-meta">Need attention</div>
+    </div>
+    <div class="kpi-card card-shell kpi-readiness">
+      <div class="kpi-label">Avg Readiness</div>
+      <div class="kpi-value">{{ avgReadiness }}%</div>
+      <div class="kpi-meta">Across portfolio</div>
+    </div>
+  </div>
+
+  <div class="main-grid" *ngIf="activeTab === 'overview'">
+    <div class="card-shell">
+      <div class="section-header">
+        <span>Active Projects</span>
+        <span class="muted">{{ totalProjects }} projects</span>
+      </div>
+
+      <div class="table-wrap">
+        <table class="project-table">
+          <thead>
+            <tr>
+              <th>Project</th>
+              <th>Customer</th>
+              <th>Gate</th>
+              <th>Readiness</th>
+              <th>Status</th>
+              <th>Owner</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              *ngFor="let project of projects"
+              (click)="selectProject(project.id)"
+              [ngClass]="selectedProjectId === project.id ? 'is-selected' : ''"
+            >
+              <td>
+                <div class="project-name">{{ project.name }}</div>
+                <div class="project-code">{{ project.code }}</div>
+              </td>
+              <td>{{ project.customer }}</td>
+              <td>
+                <span [ngClass]="'gate-tag ' + getGateTagClass(project.gateTag)">{{ project.gateLabel }}</span>
+              </td>
+              <td>
+                <div class="readiness">
+                  <span class="dot"></span>
+                  <span>{{ project.readiness }}%</span>
+                </div>
+              </td>
+              <td>
+                <span [ngClass]="'status-pill ' + getStatusClass(project.status)">{{ project.status }}</span>
+              </td>
+              <td>{{ project.owner }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="right-column">
+      <div class="card-shell project-detail" *ngIf="selectedProject">
+        <div class="section-header">
+          <span>{{ selectedProject.name }}</span>
+          <span [ngClass]="'status-pill ' + getStatusClass(selectedProject.status)">{{ selectedProject.status }}</span>
+        </div>
+
+        <div class="detail-grid">
+          <div>
+            <div class="detail-label">Revenue</div>
+            <div class="detail-value">{{ selectedProject.revenue }}</div>
+          </div>
+          <div>
+            <div class="detail-label">Strategy</div>
+            <div class="detail-value">{{ selectedProject.strategy }}</div>
+          </div>
+          <div>
+            <div class="detail-label">Awarded</div>
+            <div class="detail-value">{{ selectedProject.awarded ? 'Yes' : 'No' }}</div>
+          </div>
+          <div>
+            <div class="detail-label">Owner</div>
+            <div class="detail-value">{{ selectedProject.owner }}</div>
+          </div>
+          <div>
+            <div class="detail-label">RFP Date</div>
+            <div class="detail-value">{{ selectedProject.rfpDate }}</div>
+          </div>
+          <div>
+            <div class="detail-label">Target Prod</div>
+            <div class="detail-value">{{ selectedProject.targetProd }}</div>
+          </div>
+        </div>
+
+        <div class="progress-title">Gate Progress</div>
+        <div class="progress-list">
+          <div class="progress-item" *ngFor="let step of selectedProject.gateProgress">
+            <div class="progress-left">
+              <span [ngClass]="step.complete ? 'progress-dot complete' : 'progress-dot pending'"></span>
+              <span>{{ step.label }}</span>
+            </div>
+            <span class="muted">{{ step.days }}d</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-shell alerts">
+        <div class="section-header">
+          <span>Bottleneck Alerts</span>
+        </div>
+        <div class="alert-item" *ngFor="let project of bottleneckAlerts">
+          <div>
+            <div class="project-name">{{ project.name }}</div>
+            <div class="project-code">{{ project.gateLabel }}</div>
+          </div>
+          <span [ngClass]="'status-pill ' + getStatusClass(project.status)">{{ project.status }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="gates-layout" *ngIf="activeTab === 'gates'">
+    <div class="gate-cards-grid">
+      <div class="card-shell stage-card" *ngFor="let stage of gateCards" [ngClass]="'stage-' + stage.key">
+        <div class="stage-kicker">Gate {{ stage.gateNumber }}</div>
+        <div class="stage-title">{{ stage.title }}</div>
+        <div class="stage-time">{{ stage.timeline }}</div>
+        <p class="stage-description">{{ stage.description }}</p>
+        <div class="stage-projects-title">Projects in this gate:</div>
+        <div *ngIf="stage.projects.length === 0" class="stage-empty">No active projects</div>
+        <div class="stage-project-item" *ngFor="let project of stage.projects | slice:0:2">
+          <span class="stage-project-dot"></span>
+          <span>{{ project.name }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-shell pipeline-flow-card">
+      <div class="section-header">
+        <span>Gate Pipeline Flow</span>
+      </div>
+      <div class="pipeline-flow-wrap">
+        <ng-container *ngFor="let stage of gateCards; let i = index">
+          <div class="pipeline-node" [ngClass]="'stage-' + stage.key">
+            <div class="stage-kicker">Gate {{ stage.gateNumber }}</div>
+            <div class="pipeline-title">{{ stage.title }}</div>
+            <div class="pipeline-count">{{ stage.projects.length }} {{ stage.projects.length === 1 ? 'project' : 'projects' }}</div>
+          </div>
+          <div class="pipeline-arrow" *ngIf="i < gateCards.length - 1">&#8594;</div>
+        </ng-container>
+      </div>
+    </div>
+  </div>
+
+  <div class="pipeline-layout" *ngIf="activeTab === 'pipeline'">
+    <div class="pipeline-card card-shell" *ngFor="let project of pipelineProjects" [ngClass]="getPipelineCardClass(project)">
+      <div class="pipeline-card-head">
+        <div>
+          <div class="project-title">{{ project.name }}</div>
+          <div class="project-subtitle">{{ project.customer }} . {{ project.category }} . {{ project.strategy }}</div>
+        </div>
+        <div class="readiness-block">
+          <div class="readiness-value">{{ project.readiness }}%</div>
+          <div class="readiness-label">Readiness</div>
+        </div>
+      </div>
+
+      <div class="pipeline-segments" aria-label="Pipeline stage progress">
+        <span *ngFor="let i of [0, 1, 2, 3, 4, 5]" class="pipeline-segment" [ngClass]="getPipelineSegmentClass(i, project)"></span>
+      </div>
+
+      <div class="pipeline-meta-grid">
+        <div class="meta-box">
+          <div class="meta-label">Revenue</div>
+          <div class="meta-value">{{ project.revenue }}</div>
+        </div>
+        <div class="meta-box">
+          <div class="meta-label">Owner</div>
+          <div class="meta-value">{{ project.owner }}</div>
+        </div>
+        <div class="meta-box">
+          <div class="meta-label">Target</div>
+          <div class="meta-value">{{ project.targetProd }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

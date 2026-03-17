@@ -76,6 +76,42 @@ const routes: Routes = [
     runGuardsAndResolvers: "always",
   },
   {
+    title: "Project Manager Dashboard",
+    path: "project-manager/dashboard",
+    loadComponent: () =>
+      import("./project-manager/project-manager-dashboard.component").then(
+        (m) => m.ProjectManagerDashboardComponent
+      ),
+    runGuardsAndResolvers: "always",
+  },
+  {
+    title: "Project Manager",
+    path: "project-manager/new-project",
+    loadComponent: () =>
+      import("./project-manager/new-project.component").then(
+        (m) => m.NewProjectComponent
+      ),
+    runGuardsAndResolvers: "always",
+  },
+  {
+    title: "Project Manager Tasks",
+    path: "project-manager/tasks",
+    loadComponent: () =>
+      import("./project-manager/project-manager-tasks.component").then(
+        (m) => m.ProjectManagerTasksComponent
+      ),
+    runGuardsAndResolvers: "always",
+  },
+  {
+    title: "Project Manager Execution",
+    path: "project-manager/execution",
+    loadComponent: () =>
+      import("./project-manager/project-manager-execution.component").then(
+        (m) => m.ProjectManagerExecutionComponent
+      ),
+    runGuardsAndResolvers: "always",
+  },
+  {
     path: "forms",
     loadChildren: () =>
       import("./forms/forms-routing.module").then((m) => m.FormsRoutingModule),

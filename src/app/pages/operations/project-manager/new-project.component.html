@@ -1,0 +1,750 @@
+<div class="container-fluid">
+  <div class="row justify-content-center">
+    <div class="col-12 col-xxl-11">
+      <div class="mb-3">
+        <h2 class="mb-1 text-primary">Framework by Gates</h2>
+        <p class="text-muted mb-0">Gate-based project intake with calculated readiness summary</p>
+      </div>
+
+      <div class="btn-group mb-3" role="group" aria-label="Project manager views">
+        <button type="button" class="btn" [ngClass]="activeView === 'workflow' ? 'btn-primary' : 'btn-outline-primary'" (click)="setView('workflow')">
+          Workflow Map
+        </button>
+        <button type="button" class="btn" [ngClass]="activeView === 'checklist' ? 'btn-primary' : 'btn-outline-primary'" (click)="setView('checklist')">
+          Execution Checklist
+        </button>
+      </div>
+
+      <ng-component>
+        <h4>Testing the component</h4>
+      </ng-component>
+
+      <div>
+        <p class="mb-2 text-muted">This module is intended to serve as a structured project intake form that maps the "Framework by Gates" approach. It captures key project information and calculates readiness metrics based on the inputs provided.</p>
+      </div>
+
+
+      <ng-container *ngIf="activeView === 'workflow'">
+      <div class="framework-wrap mb-4">
+        <div class="table-responsive">
+          <table class="table framework-table mb-0">
+            <thead>
+              <tr>
+                <th>
+                  <div class="fw-semibold">Gate #1</div>
+                  <small>(Expected time: 1 Month)</small>
+                </th>
+                <th>
+                  <div class="fw-semibold">Gate #2</div>
+                  <small>(Expected time: 1 Month)</small>
+                </th>
+                <th>
+                  <div class="fw-semibold">Gate #3</div>
+                  <small>(Expected time: 1 week)</small>
+                </th>
+                <th>
+                  <div class="fw-semibold">Gate #4</div>
+                  <small>(Expected time: 4-8 Weeks)</small>
+                </th>
+                <th>
+                  <div class="fw-semibold">Gate #5</div>
+                  <small>(Expected time: 1 week)</small>
+                </th>
+                <th>
+                  <div class="fw-semibold">Gate #6</div>
+                  <small>(Expected time: EOL)</small>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>New business opportunity from business development manager</td>
+                <td>Design team with rough concept proposal (Renders)</td>
+                <td>Business officially awarded</td>
+                <td>Detailed engineering design</td>
+                <td>Customer review/validation</td>
+                <td>Production PO's</td>
+              </tr>
+              <tr>
+                <td>
+                  <div>RFP from customer</div>
+                  <div>Product expectation Doc</div>
+                  <div>Volume estimate</div>
+                  <div>Pixel pitch and dims</div>
+                  <div>Quote/Price proposal</div>
+                </td>
+                <td>Concept architecture defined</td>
+                <td>
+                  <div>Preliminary BOM concept for sourcing</div>
+                  <div>Long-lead risks identified</div>
+                  <div>First PO's confirmed</div>
+                </td>
+                <td>
+                  <div>DFM with customer</div>
+                  <div>Sourcing / Production / Logistics of product</div>
+                </td>
+                <td>
+                  <div>Functional validation complete</div>
+                  <div>Pilot run completed</div>
+                </td>
+                <td></td>
+              </tr>
+              <tr>
+                <td>
+                  <div>Target date for proto and production release/ramp up</div>
+                  <div>Rough revenue potential</div>
+                </td>
+                <td>Rough cost +/-50% accuracy</td>
+                <td></td>
+                <td>
+                  <div>Final BOM review</div>
+                  <div>Packaging instructions</div>
+                </td>
+                <td>
+                  <div>Instruction validation</div>
+                  <div>Software files validation</div>
+                </td>
+                <td>
+                  <div>Inventory strategy aligned</div>
+                  <div>QC procedures defined</div>
+                </td>
+              </tr>
+              <tr>
+                <td></td>
+                <td>Timeline estimation based on LLT components</td>
+                <td></td>
+                <td>
+                  <div>Pixel Mapping</div>
+                  <div>Work Instruction</div>
+                  <div>PDC</div>
+                  <div>Quality documents</div>
+                </td>
+                <td>Feedback to supplier for changes/improvements</td>
+                <td></td>
+              </tr>
+              <tr class="framework-footnote">
+                <td>If you cannot articulate why this should exist, it dies here.</td>
+                <td>This gate confirms: "We know how we would build this."</td>
+                <td>At this point, product commitment begins.</td>
+                <td>This gate converts concept into a buildable product.</td>
+                <td>This gate ensures production readiness is real, not assumed.</td>
+                <td>At this stage, the project becomes a product.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="sipoc-wrap mb-4">
+        <div class="px-3 pt-3 pb-2">
+          <h2 class="mb-0 sipoc-title">PM Dashboard Project</h2>
+          <div class="sipoc-subtitle">SIPOC of PMP Dashboard</div>
+        </div>
+        <div class="table-responsive px-3 pb-3">
+          <table class="table sipoc-table mb-0">
+            <thead>
+              <tr>
+                <th>Supplier</th>
+                <th>Input</th>
+                <th>Processes</th>
+                <th>Processes</th>
+                <th>Output</th>
+                <th>Customer</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Project Manager</td>
+                <td>
+                  <ul>
+                    <li>Task matrix</li>
+                    <li>FG part numbers</li>
+                    <li>New projects per name</li>
+                    <li>Task owner</li>
+                    <li>Due dates</li>
+                    <li>Attachments (Emails, Pictures)</li>
+                  </ul>
+                </td>
+                <td>
+                  <div>1.- Import/Sync Current PMP:</div>
+                  <ul>
+                    <li>Matrix -- DB Schema</li>
+                  </ul>
+                  <div>2.- Map:</div>
+                  <ul>
+                    <li>Task's per FG</li>
+                    <li>FG Info + PO's for protos</li>
+                    <li>Possible Timeline</li>
+                  </ul>
+                </td>
+                <td>
+                  <div>7.- ECO workflow:</div>
+                  <ul>
+                    <li>Draft -> Review -> Approval -> Released</li>
+                  </ul>
+                  <div>8.- PO linkage engine</div>
+                  <ul>
+                    <li>Show PO status inside task view</li>
+                    <li>Flag missing POs for FG items</li>
+                  </ul>
+                  <div>9.- Dashboard aggregation:</div>
+                  <ul>
+                    <li>% completion by project / FG / PO</li>
+                  </ul>
+                </td>
+                <td>
+                  <ul>
+                    <li>PMP live dashboard</li>
+                    <li>Task completion matrix</li>
+                    <li>FG -> PO traceability</li>
+                    <li>ECO request records</li>
+                    <li>Change history log</li>
+                    <li>Bottleneck alerts</li>
+                    <li>Owner accountability report</li>
+                    <li>Project readiness score</li>
+                    <li>Document revision map</li>
+                    <li>Downloadable PMP report snapshot</li>
+                  </ul>
+                </td>
+                <td>
+                  <ul>
+                    <li>Upper Management</li>
+                    <li>Finance</li>
+                    <li>NPI</li>
+                    <li>Production</li>
+                    <li>Project Management</li>
+                    <li>Quality</li>
+                    <li>Supply Chain</li>
+                  </ul>
+                </td>
+              </tr>
+              <tr>
+                <td>Engineering</td>
+                <td>
+                  <ul>
+                    <li>ECO Request per FG</li>
+                    <li>Document revision</li>
+                    <li>Document links</li>
+                    <li>Part numbers change affiliated to this FG</li>
+                    <li>Attachments (Installation Instructions, PKG Instruction, Software files)</li>
+                  </ul>
+                </td>
+                <td>
+                  <div>3.- Role based- Access:</div>
+                  <ul>
+                    <li>Only assigned users can click/complete tasks</li>
+                  </ul>
+                  <div>4.- Task workflow engine:</div>
+                  <ul>
+                    <li>Open -> In Progress -> Review -> Completed -> Locked</li>
+                  </ul>
+                </td>
+                <td></td>
+                <td></td>
+                <td></td>
+              </tr>
+              <tr>
+                <td>Supply Chain</td>
+                <td>
+                  <ul>
+                    <li>ETA's</li>
+                    <li>Risk and comments</li>
+                    <li>PO's</li>
+                  </ul>
+                </td>
+                <td>
+                  <div>5.- Completion click action triggers</div>
+                </td>
+                <td></td>
+                <td></td>
+                <td></td>
+              </tr>
+              <tr>
+                <td>Quality (Doc Control)</td>
+                <td>
+                  <ul>
+                    <li>Document revisions</li>
+                    <li>Role-based user permissions/Approvals</li>
+                  </ul>
+                </td>
+                <td>
+                  <div>6.- Document change detected -> auto ECO form trigger</div>
+                </td>
+                <td></td>
+                <td></td>
+                <td></td>
+              </tr>
+              <tr>
+                <td>CSM</td>
+                <td>
+                  <ul>
+                    <li>PO's</li>
+                  </ul>
+                </td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="desired-path-wrap mb-4">
+        <div class="px-3 pt-3 pb-2">
+          <h2 class="mb-0 desired-path-title">Desired path per project</h2>
+        </div>
+        <div class="desired-board">
+          <h3 class="desired-board-title">PM Dashboard</h3>
+
+          <div class="lane">
+            <div class="lane-label">Project Manager</div>
+            <div class="flow-row">
+              <div class="flow-node node-start">New Project input</div>
+              <div class="flow-arrow">-></div>
+              <div class="flow-node">Add new project name, customer, priority, notes</div>
+              <div class="flow-arrow">-></div>
+              <div class="flow-node">Triggers ECO</div>
+              <div class="flow-arrow">-></div>
+              <div class="flow-node node-approve">Approved</div>
+              <div class="flow-arrow">-></div>
+              <div class="flow-node node-success">Project tracking completed</div>
+            </div>
+          </div>
+
+          <div class="lane">
+            <div class="lane-label">Engineering</div>
+            <div class="flow-row">
+              <div class="flow-node">Creates tasks for involved people</div>
+              <div class="flow-node">Due dates per task, % completion per project, risk, workload per individual</div>
+            </div>
+          </div>
+
+          <div class="lane">
+            <div class="lane-label">Current Dashboard</div>
+            <div class="flow-row">
+              <div class="flow-node">Affiliate PO number to proto</div>
+              <div class="flow-arrow">-></div>
+              <div class="flow-node">Track PO comments, ETA/ETD, tracking #, destination, qty, amount, owner, due date</div>
+              <div class="flow-arrow">-></div>
+              <div class="flow-node">FG information becomes available in another module</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      </ng-container>
+
+      <ng-container *ngIf="activeView === 'checklist'">
+
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-light d-flex align-items-center justify-content-between">
+          <h5 class="mb-0">
+            <i class="mdi mdi-cogs me-2 text-primary"></i>
+            Execution Workflow Engine
+          </h5>
+          <span class="badge" [class]="workflowStatusClass">{{ workflowProgress }}% Complete</span>
+        </div>
+        <div class="card-body">
+          <p class="mb-2 text-muted">Workflow execution has been moved to a dedicated module for clearer ownership and audit history.</p>
+          <div class="d-flex flex-wrap gap-2">
+            <a class="btn btn-primary btn-sm" routerLink="/operations/project-manager/execution">
+              Open Execution Module
+            </a>
+            <a class="btn btn-outline-primary btn-sm" routerLink="/operations/project-manager/tasks" [queryParams]="taskBoardQueryParams">
+              Open Tasks Board ({{ taskBoardContextLabel }})
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body py-2">
+          <div class="d-flex flex-wrap align-items-center gap-2">
+            <span class="fw-semibold me-2">Inputs of the System:</span>
+            <button type="button" class="btn btn-sm" [ngClass]="activeInputSystem === 'gate1' ? 'btn-primary' : 'btn-outline-primary'" (click)="setActiveInputSystem('gate1')">Gate 1</button>
+            <button type="button" class="btn btn-sm" [ngClass]="activeInputSystem === 'gate2' ? 'btn-primary' : 'btn-outline-primary'" (click)="setActiveInputSystem('gate2')">Gate 2</button>
+            <button type="button" class="btn btn-sm" [ngClass]="activeInputSystem === 'gate3' ? 'btn-primary' : 'btn-outline-primary'" (click)="setActiveInputSystem('gate3')">Gate 3</button>
+            <button type="button" class="btn btn-sm" [ngClass]="activeInputSystem === 'gate4' ? 'btn-primary' : 'btn-outline-primary'" (click)="setActiveInputSystem('gate4')">Gate 4</button>
+            <button type="button" class="btn btn-sm" [ngClass]="activeInputSystem === 'gate5' ? 'btn-primary' : 'btn-outline-primary'" (click)="setActiveInputSystem('gate5')">Gate 5</button>
+            <button type="button" class="btn btn-sm" [ngClass]="activeInputSystem === 'gate6' ? 'btn-primary' : 'btn-outline-primary'" (click)="setActiveInputSystem('gate6')">Gate 6</button>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="saveSuccessful" class="alert alert-success" role="alert">
+        <i class="mdi mdi-check-circle-outline me-2"></i>
+        Project intake is valid and ready for backend submission.
+      </div>
+
+      <form [formGroup]="projectForm" (ngSubmit)="submit()" novalidate>
+        <div class="row g-3 align-items-stretch">
+          <div class="col-12 col-lg-8" *ngIf="activeInputSystem === 'gate1'">
+            <div class="gate-card h-100">
+              <div class="gate-header d-flex align-items-center justify-content-between">
+                <span>Gate #1</span>
+                <select class="form-select form-select-sm gate-status-select" formControlName="gate1Status">
+                  <option>Not Started</option>
+                  <option>In Progress</option>
+                  <option>Review</option>
+                  <option>Completed</option>
+                  <option>On Hold</option>
+                </select>
+              </div>
+              <div class="gate-body">
+                <div class="small text-muted mb-2">Never changes</div>
+                <div class="small mb-3">
+                  <div><strong>Project ID:</strong> {{ generatedProjectId }}</div>
+                </div>
+
+                <div class="mb-2">
+                  <label class="form-label">Customer *</label>
+                  <select class="form-select form-select-sm" formControlName="customer">
+                    <option value="">Select customer</option>
+                    <option *ngFor="let customer of customers" [value]="customer">{{ customer }}</option>
+                  </select>
+                </div>
+
+                <div class="mb-2">
+                  <label class="form-label">Product Name *</label>
+                  <input type="text" class="form-control form-control-sm" formControlName="productName" />
+                </div>
+
+                <div class="mb-2">
+                  <label class="form-label">Project Category *</label>
+                  <select class="form-select form-select-sm" formControlName="projectCategory">
+                    <option value="">Select category</option>
+                    <option *ngFor="let category of projectCategories" [value]="category">{{ category }}</option>
+                  </select>
+                </div>
+
+                <div class="mb-2">
+                  <label class="form-label">Strategy Type *</label>
+                  <select class="form-select form-select-sm" formControlName="strategyType">
+                    <option value="">Select strategy</option>
+                    <option *ngFor="let strategy of strategyTypes" [value]="strategy">{{ strategy }}</option>
+                  </select>
+                </div>
+
+                <div class="mb-2">
+                  <label class="form-label">Initial RFP Date *</label>
+                  <input type="date" class="form-control form-control-sm" formControlName="initialRfpDate" />
+                </div>
+
+                <div class="mb-2">
+                  <label class="form-label">Target Production Date *</label>
+                  <input type="date" class="form-control form-control-sm" formControlName="targetProductionDate" />
+                </div>
+
+                <div class="small text-muted mt-3 mb-2">Editable but structured</div>
+
+                <div class="mb-2">
+                  <label class="form-label">Volume Estimate</label>
+                  <select class="form-select form-select-sm" formControlName="volumeEstimate">
+                    <option *ngFor="let option of rangeOptions" [value]="option">{{ option }}</option>
+                  </select>
+                </div>
+
+                <div class="mb-2">
+                  <label class="form-label">Rough Revenue Potential</label>
+                  <select class="form-select form-select-sm" formControlName="roughRevenuePotential">
+                    <option *ngFor="let option of rangeOptions" [value]="option">{{ option }}</option>
+                  </select>
+                </div>
+
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" formControlName="priceProposalSubmitted" id="priceProposalSubmitted" />
+                  <label class="form-check-label" for="priceProposalSubmitted">Price proposal submitted (Y/N)</label>
+                </div>
+
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" formControlName="businessAwarded" id="businessAwarded" />
+                  <label class="form-check-label" for="businessAwarded">Business awarded</label>
+                </div>
+
+                <div class="mb-2" *ngIf="projectForm.get('businessAwarded')?.value">
+                  <label class="form-label">Business Awarded Date</label>
+                  <input type="date" class="form-control form-control-sm" formControlName="businessAwardedDate" />
+                </div>
+
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" formControlName="forecastConfirmed" id="forecastConfirmed" />
+                  <label class="form-check-label" for="forecastConfirmed">Forecast confirmed (Y/N)</label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-lg-8" *ngIf="activeInputSystem === 'gate2'">
+            <div class="gate-card h-100">
+              <div class="gate-header d-flex align-items-center justify-content-between">
+                <span>Gate #2 — Concept</span>
+                <select class="form-select form-select-sm gate-status-select" formControlName="gate2Status">
+                  <option>Not Started</option>
+                  <option>In Progress</option>
+                  <option>Review</option>
+                  <option>Completed</option>
+                  <option>On Hold</option>
+                </select>
+              </div>
+              <div class="gate-body">
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" formControlName="designTeamConceptProposal" id="designTeamConceptProposal" />
+                  <label class="form-check-label" for="designTeamConceptProposal">Design team concept proposal (renders)</label>
+                </div>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" formControlName="conceptArchitectureDefined" id="conceptArchitectureDefined" />
+                  <label class="form-check-label" for="conceptArchitectureDefined">Concept architecture defined</label>
+                </div>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" formControlName="roughCostEntered" id="roughCostEntered" />
+                  <label class="form-check-label" for="roughCostEntered">Rough cost ±50% entered</label>
+                </div>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" formControlName="timelineEstimatedLlt" id="timelineEstimatedLlt" />
+                  <label class="form-check-label" for="timelineEstimatedLlt">Timeline estimated based on LLT components</label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-lg-8" *ngIf="activeInputSystem === 'gate3'">
+            <div class="gate-card h-100">
+              <div class="gate-header d-flex align-items-center justify-content-between">
+                <span>Gate #3 — Awarded</span>
+                <select class="form-select form-select-sm gate-status-select" formControlName="gate3Status">
+                  <option>Not Started</option>
+                  <option>In Progress</option>
+                  <option>Review</option>
+                  <option>Completed</option>
+                  <option>On Hold</option>
+                </select>
+              </div>
+              <div class="gate-body">
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" formControlName="preliminaryBomForSourcing" id="preliminaryBomForSourcing" />
+                  <label class="form-check-label" for="preliminaryBomForSourcing">Preliminary BOM for sourcing</label>
+                </div>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" formControlName="preliminaryBomUploaded" id="preliminaryBomUploaded" />
+                  <label class="form-check-label" for="preliminaryBomUploaded">Preliminary BOM uploaded</label>
+                </div>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" formControlName="longLeadItemsIdentified" id="longLeadItemsIdentified" />
+                  <label class="form-check-label" for="longLeadItemsIdentified">Long lead items identified and sourced</label>
+                </div>
+                <div class="mb-2" *ngIf="projectForm.get('longLeadItemsIdentified')?.value">
+                  <label class="form-label">Long Lead Date</label>
+                  <input type="date" class="form-control form-control-sm" formControlName="longLeadItemsDate" />
+                </div>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" formControlName="firstPosConfirmed" id="firstPosConfirmed" />
+                  <label class="form-check-label" for="firstPosConfirmed">First POs confirmed</label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-lg-8" *ngIf="activeInputSystem === 'gate4'">
+            <div class="gate-card h-100">
+              <div class="gate-header d-flex align-items-center justify-content-between">
+                <span>Gate #4 — Engineering</span>
+                <select class="form-select form-select-sm gate-status-select" formControlName="gate4Status">
+                  <option>Not Started</option>
+                  <option>In Progress</option>
+                  <option>Review</option>
+                  <option>Completed</option>
+                  <option>On Hold</option>
+                </select>
+              </div>
+              <div class="gate-body">
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" formControlName="detailedEngineeringDesign" id="detailedEngineeringDesign" />
+                  <label class="form-check-label" for="detailedEngineeringDesign">Detailed engineering design</label>
+                </div>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" formControlName="dfmCompleted" id="dfmCompleted" />
+                  <label class="form-check-label" for="dfmCompleted">DFM completed</label>
+                </div>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" formControlName="sourcingProductionLogisticsAligned" id="sourcingProductionLogisticsAligned" />
+                  <label class="form-check-label" for="sourcingProductionLogisticsAligned">Sourcing / Production / Logistics aligned</label>
+                </div>
+                <div class="mb-2">
+                  <label class="form-label">Change Request Log</label>
+                  <textarea class="form-control form-control-sm" rows="2" formControlName="changeRequestLog" placeholder="One per line or comma separated"></textarea>
+                  <small class="text-muted">Auto count: {{ autoChangeRequestCount }}</small>
+                </div>
+                <div class="mb-2">
+                  <label class="form-label">Engineering release / ETD-ETA Proto</label>
+                  <input type="date" class="form-control form-control-sm" formControlName="engineeringReleaseEta" />
+                </div>
+                <div class="mb-2">
+                  <label class="form-label">Proto Qty</label>
+                  <input type="number" class="form-control form-control-sm" formControlName="protoQty" min="0" />
+                </div>
+                <div class="form-check mb-3">
+                  <input class="form-check-input" type="checkbox" formControlName="partNumberMapped" id="partNumberMapped" />
+                  <label class="form-check-label" for="partNumberMapped">Part number mapped to project</label>
+                </div>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" formControlName="finalBomReview" id="finalBomReview" />
+                  <label class="form-check-label" for="finalBomReview">Final BOM review</label>
+                </div>
+                <div class="small fw-semibold mb-1">Engineering Checklist</div>
+                <div class="form-check mb-1">
+                  <input class="form-check-input" type="checkbox" formControlName="engChecklistPixelMapping" id="engChecklistPixelMapping" />
+                  <label class="form-check-label" for="engChecklistPixelMapping">Pixel Mapping / Software Files</label>
+                </div>
+                <div class="form-check mb-1">
+                  <input class="form-check-input" type="checkbox" formControlName="engChecklistInstallationInstructions" id="engChecklistInstallationInstructions" />
+                  <label class="form-check-label" for="engChecklistInstallationInstructions">Installation Instructions</label>
+                </div>
+                <div class="form-check mb-1">
+                  <input class="form-check-input" type="checkbox" formControlName="engChecklistWorkInstruction" id="engChecklistWorkInstruction" />
+                  <label class="form-check-label" for="engChecklistWorkInstruction">Work Instruction</label>
+                </div>
+                <div class="form-check mb-1">
+                  <input class="form-check-input" type="checkbox" formControlName="engChecklistPdc" id="engChecklistPdc" />
+                  <label class="form-check-label" for="engChecklistPdc">PDC</label>
+                </div>
+                <div class="form-check mb-1">
+                  <input class="form-check-input" type="checkbox" formControlName="engChecklistQualityDocs" id="engChecklistQualityDocs" />
+                  <label class="form-check-label" for="engChecklistQualityDocs">Quality Documents</label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-lg-8" *ngIf="activeInputSystem === 'gate5'">
+            <div class="gate-card h-100">
+              <div class="gate-header d-flex align-items-center justify-content-between">
+                <span>Gate #5 — Validation</span>
+                <select class="form-select form-select-sm gate-status-select" formControlName="gate5Status">
+                  <option>Not Started</option>
+                  <option>In Progress</option>
+                  <option>Review</option>
+                  <option>Completed</option>
+                  <option>On Hold</option>
+                </select>
+              </div>
+              <div class="gate-body">
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" formControlName="customerReviewValidation" id="customerReviewValidation" />
+                  <label class="form-check-label" for="customerReviewValidation">Customer review / validation</label>
+                </div>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" formControlName="functionalValidationComplete" id="functionalValidationComplete" />
+                  <label class="form-check-label" for="functionalValidationComplete">Functional validation complete</label>
+                </div>
+                <div class="mb-2">
+                  <label class="form-label">Pilot run completed (date)</label>
+                  <input type="date" class="form-control form-control-sm" formControlName="pilotRunCompletedDate" />
+                </div>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" formControlName="instructionValidation" id="instructionValidation" />
+                  <label class="form-check-label" for="instructionValidation">Instruction validation</label>
+                </div>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" formControlName="softwareFilesValidation" id="softwareFilesValidation" />
+                  <label class="form-check-label" for="softwareFilesValidation">Software files validation</label>
+                </div>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" formControlName="supplierFeedbackCaptured" id="supplierFeedbackCaptured" />
+                  <label class="form-check-label" for="supplierFeedbackCaptured">Feedback to supplier captured</label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-lg-8" *ngIf="activeInputSystem === 'gate6'">
+            <div class="gate-card h-100">
+              <div class="gate-header d-flex align-items-center justify-content-between">
+                <span>Gate #6 — Production</span>
+                <select class="form-select form-select-sm gate-status-select" formControlName="gate6Status">
+                  <option>Not Started</option>
+                  <option>In Progress</option>
+                  <option>Review</option>
+                  <option>Completed</option>
+                  <option>On Hold</option>
+                </select>
+              </div>
+              <div class="gate-body">
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" formControlName="finalBomApproved" id="finalBomApproved" />
+                  <label class="form-check-label" for="finalBomApproved">Final BOM approved</label>
+                </div>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" formControlName="qcProcedureDefined" id="qcProcedureDefined" />
+                  <label class="form-check-label" for="qcProcedureDefined">QC procedure defined</label>
+                </div>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" formControlName="packagingInstructionsComplete" id="packagingInstructionsComplete" />
+                  <label class="form-check-label" for="packagingInstructionsComplete">Packaging instructions complete</label>
+                </div>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" formControlName="productionPoReceived" id="productionPoReceived" />
+                  <label class="form-check-label" for="productionPoReceived">Production PO received</label>
+                </div>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" formControlName="inventoryStrategyAligned" id="inventoryStrategyAligned" />
+                  <label class="form-check-label" for="inventoryStrategyAligned">Inventory strategy aligned</label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-lg-4">
+            <div class="calc-card h-100">
+              <h5 class="mb-3">System calculates</h5>
+              <ul class="ps-3 mb-0">
+                <li><strong>Gate Age:</strong> {{ gateAgeDays }} days</li>
+                <li><strong>Overdue:</strong> {{ isOverdue ? 'Yes' : 'No' }}</li>
+                <li><strong>Readiness score:</strong> {{ readinessScore }}%</li>
+                <li>
+                  <strong>Status:</strong>
+                  <span class="badge ms-1" [class]="readinessStatusClass">{{ readinessStatus }}</span>
+                </li>
+              </ul>
+
+              <hr />
+              <div class="small fw-semibold mb-2">Gate Completion</div>
+              <div class="mb-2">
+                <div class="d-flex justify-content-between"><span>Gate #1</span><span>{{ gate1Completion }}%</span></div>
+                <div class="progress" style="height: 6px;"><div class="progress-bar" [style.width.%]="gate1Completion"></div></div>
+              </div>
+              <div class="mb-2">
+                <div class="d-flex justify-content-between"><span>Gate #2</span><span>{{ gate2Completion }}%</span></div>
+                <div class="progress" style="height: 6px;"><div class="progress-bar bg-info" [style.width.%]="gate2Completion"></div></div>
+              </div>
+              <div class="mb-2">
+                <div class="d-flex justify-content-between"><span>Gate #3</span><span>{{ gate3Completion }}%</span></div>
+                <div class="progress" style="height: 6px;"><div class="progress-bar bg-warning" [style.width.%]="gate3Completion"></div></div>
+              </div>
+              <div class="mb-2">
+                <div class="d-flex justify-content-between"><span>Gate #4</span><span>{{ gate4Completion }}%</span></div>
+                <div class="progress" style="height: 6px;"><div class="progress-bar" style="background:#fd7e14" [style.width.%]="gate4Completion"></div></div>
+              </div>
+              <div class="mb-2">
+                <div class="d-flex justify-content-between"><span>Gate #5</span><span>{{ gate5Completion }}%</span></div>
+                <div class="progress" style="height: 6px;"><div class="progress-bar bg-success" [style.width.%]="gate5Completion"></div></div>
+              </div>
+              <div class="mb-2">
+                <div class="d-flex justify-content-between"><span>Gate #6</span><span>{{ gate6Completion }}%</span></div>
+                <div class="progress" style="height: 6px;"><div class="progress-bar bg-secondary" [style.width.%]="gate6Completion"></div></div>
+              </div>
+
+              <hr />
+              <div class="d-grid gap-2">
+                <button type="button" class="btn btn-outline-secondary" (click)="resetForm()">Reset</button>
+                <button type="submit" class="btn btn-primary">Save Project Intake</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+      </ng-container>
+    </div>
+  </div>
+</div>

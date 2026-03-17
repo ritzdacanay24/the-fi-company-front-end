@@ -235,7 +235,7 @@
                             <td>
                               <div class="d-flex gap-1">
                                 <button class="btn btn-sm btn-outline-primary"
-                                        (click)="openPreviewModal(template)"
+                                  (click)="openPreviewModal(template, previewTemplateModal)"
                                         title="Preview Template">
                                   <i class="mdi mdi-eye"></i>
                                 </button>
@@ -555,10 +555,7 @@
 </div>
 
 <!-- Template Preview Modal -->
-<div *ngIf="showPreviewModal" class="modal-backdrop fade show" style="display: block;"></div>
-<div *ngIf="showPreviewModal" class="modal fade show d-block" tabindex="-1" role="dialog">
-  <div class="modal-dialog modal-xl" role="document">
-    <div class="modal-content">
+<ng-template #previewTemplateModal let-modal>
       <div class="modal-header bg-primary bg-gradient text-white position-relative overflow-hidden p-4" style="border-radius: 16px 16px 0 0;">
         <!-- Background Pattern -->
         <div class="position-absolute" style="top: -20px; right: -20px; opacity: 0.1;">
@@ -573,7 +570,7 @@
             </span>
             <div>
               <h4 class="mb-1 fw-bold text-white">
-                Template Preview ----- 
+                Template Preview
               </h4>
               <p class="text-white-50 mb-0" *ngIf="selectedTemplate">
                 {{selectedTemplate.name}} - Version {{selectedTemplate.version}} | {{selectedTemplate.category | titlecase}}
@@ -584,76 +581,75 @@
           <div class="d-flex align-items-center gap-2">
             <span class="badge bg-white text-primary" *ngIf="selectedTemplate">{{selectedTemplate.item_count || 0}} Items</span>
             <span class="badge bg-white text-primary" *ngIf="selectedTemplate && selectedTemplate.is_active">Active</span>
+            <button type="button" class="btn-close btn-close-white ms-2" aria-label="Close" (click)="modal.dismiss('close')"></button>
           </div>
         </div>
       </div>
       
       <div class="modal-body py-3" *ngIf="selectedTemplate">
         <!-- Template Summary Info -->
-        <div class="card border-0 shadow-none mb-3 bg-light">
-          <div class="card-body py-2 px-3 text-center">
-            <div class="row">
-              <div class="col-md-3">
-                <small class="text-muted">Template Name:</small>
-                <div class="fw-semibold">{{selectedTemplate.name}}</div>
-              </div>
-              <div class="col-md-3">
-                <small class="text-muted">Category:</small>
-                <div class="fw-semibold">{{selectedTemplate.category | titlecase}}</div>
-              </div>
-              <div class="col-md-3">
-                <small class="text-muted">Version:</small>
-                <div class="fw-semibold">v{{selectedTemplate.version}}</div>
-              </div>
-              <div class="col-md-3">
-                <small class="text-muted">Active Instances:</small>
-                <div class="fw-semibold">{{selectedTemplate.active_instances || 0}}</div>
-              </div>
+        <div class="bg-light border rounded-3 p-3 mb-3 text-center">
+          <div class="row">
+            <div class="col-md-3">
+              <small class="text-muted">Template Name:</small>
+              <div class="fw-semibold">{{selectedTemplate.name}}</div>
             </div>
-            <div class="row mt-2">
-              <div class="col-md-6" *ngIf="selectedTemplate.part_number">
-                <small class="text-muted">Part Number:</small>
-                <div class="fw-semibold">{{selectedTemplate.part_number}}</div>
-              </div>
-              <div class="col-md-6" *ngIf="selectedTemplate.product_type">
-                <small class="text-muted">Product Type:</small>
-                <div class="fw-semibold">{{selectedTemplate.product_type}}</div>
-              </div>
+            <div class="col-md-3">
+              <small class="text-muted">Category:</small>
+              <div class="fw-semibold">{{selectedTemplate.category | titlecase}}</div>
             </div>
-            <div class="row mt-2" *ngIf="selectedTemplate.description">
-              <div class="col-12">
-                <small class="text-muted">Description:</small>
-                <div class="fw-semibold">{{selectedTemplate.description}}</div>
-              </div>
+            <div class="col-md-3">
+              <small class="text-muted">Version:</small>
+              <div class="fw-semibold">v{{selectedTemplate.version}}</div>
+            </div>
+            <div class="col-md-3">
+              <small class="text-muted">Active Instances:</small>
+              <div class="fw-semibold">{{selectedTemplate.active_instances || 0}}</div>
+            </div>
+          </div>
+          <div class="row mt-2">
+            <div class="col-md-6" *ngIf="selectedTemplate.part_number">
+              <small class="text-muted">Part Number:</small>
+              <div class="fw-semibold">{{selectedTemplate.part_number}}</div>
+            </div>
+            <div class="col-md-6" *ngIf="selectedTemplate.product_type">
+              <small class="text-muted">Product Type:</small>
+              <div class="fw-semibold">{{selectedTemplate.product_type}}</div>
+            </div>
+          </div>
+          <div class="row mt-2" *ngIf="selectedTemplate.description">
+            <div class="col-12">
+              <small class="text-muted">Description:</small>
+              <div class="fw-semibold">{{selectedTemplate.description}}</div>
             </div>
           </div>
         </div>
 
         <!-- Checklist Items with Shared Navigation -->
-        <div class="card border-0">
-          <div class="card-header bg-success text-white">
+        <div class="border rounded-3 overflow-hidden">
+          <div class="bg-success text-white px-3 py-2">
             <h6 class="mb-0">
               <i class="mdi mdi-format-list-checks me-2"></i>
               Checklist Items ({{selectedTemplate.items?.length || 0}})
             </h6>
           </div>
-          <div class="card-body p-0">
-            <div class="row g-0">
-              <div class="col-12 col-md-4 col-lg-3 border-end">
+          <div class="row g-0">
+            <div class="col-12 col-md-4 col-lg-3 border-end" style="max-height: calc(100vh - 260px); overflow: auto;">
                 <app-checklist-navigation
                   [templateId]="selectedTemplate.id"
                   [items]="previewNavItems"
                   [activeItemId]="previewActiveItemId"
                   [activeItemIndex]="previewActiveItemIndex"
                   [mode]="'readonly'"
+                  [cardStyle]="false"
                   [showMediaContext]="true"
                   [showSearch]="true"
                   [showExpandCollapse]="true"
                   (itemSelected)="onPreviewNavItemSelected($event)">
                 </app-checklist-navigation>
-              </div>
+            </div>
 
-              <div class="col-12 col-md-8 col-lg-9" style="max-height: 70vh; overflow: auto;">
+            <div class="col-12 col-md-8 col-lg-9" style="max-height: calc(100vh - 260px); overflow: auto;">
                 <div class="list-group list-group-flush" *ngIf="selectedTemplate.items && selectedTemplate.items.length > 0">
               <!-- Parent items -->
               <ng-container *ngFor="let item of selectedTemplate.items; let i = index">
@@ -977,8 +973,7 @@
                 </ng-container>
               </ng-container>
             </div>
-              </div>
-            </div>
+          </div>
             
             <!-- Empty State -->
             <div class="text-center p-4" *ngIf="!selectedTemplate.items || selectedTemplate.items.length === 0">
@@ -997,7 +992,7 @@
           </small>
         </div>
         <div class="d-flex align-items-center gap-2">
-          <button type="button" class="btn btn-outline-secondary d-flex align-items-center" (click)="closePreviewModal()">
+          <button type="button" class="btn btn-outline-secondary d-flex align-items-center" (click)="modal.close('close')">
             <i class="mdi mdi-close me-1"></i>Close Preview
           </button>
           <button type="button" class="btn btn-primary d-flex align-items-center" 
@@ -1006,6 +1001,4 @@
           </button>
         </div>
       </div>
-    </div>
-  </div>
-</div>
+</ng-template>

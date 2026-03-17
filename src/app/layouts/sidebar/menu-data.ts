@@ -365,6 +365,41 @@ export const MENU_DATA: MenuItem[] = [
         activatedRoutes: "/operations/reports/*"
     },
     {
+        id: 311,
+        label: "Project Manager",
+        icon: "las la-briefcase",
+        isCollapsed: true,
+        hideCheckBox: true,
+        accessRequired: false,
+        activatedRoutes: "/operations/project-manager/*",
+        subItems: [
+            {
+                label: "Dashboard",
+                link: "/operations/project-manager/dashboard",
+                description: "Portfolio health and gate progress overview",
+                accessRequired: false,
+            },
+            {
+                label: "New Project",
+                link: "/operations/project-manager/new-project",
+                description: "Create and manage project intake forms",
+                accessRequired: false,
+            },
+            {
+                label: "Tasks",
+                link: "/operations/project-manager/tasks",
+                description: "AG Grid task board for PM and Engineering",
+                accessRequired: false,
+            },
+            {
+                label: "Execution",
+                link: "/operations/project-manager/execution",
+                description: "Run role-based workflow engine steps",
+                accessRequired: false,
+            }
+        ]
+    },
+    {
         id: 32,
         label: "Quality & Compliance",
         isTitle: true,

@@ -121,6 +121,11 @@ const routes: Routes = [
     title: "QIR Dashboard Display"
   },
   {
+    path: "standalone/mr-alarm",
+    loadComponent: () => import("./components/mr-alarm/mr-alarm-page.component").then(m => m.MrAlarmPageComponent),
+    title: "MR Alarm Monitor"
+  },
+  {
     path: "auth",
     loadChildren: () =>
       import("./account/account.module").then((m) => m.AccountModule),

@@ -1,8 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ActivatedRoute, Router } from '@angular/router';
+import { NgbModal, NgbModalRef, NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { ContinuityModalService } from '@app/pages/operations/labels/continuity-test-modal/continuity-test-modal.component';
 import { PlacardModalService } from '@app/shared/components/placard-modal/placard-modal.component';
 import { PhotoChecklistConfigService, ChecklistTemplate, ChecklistInstance, ChecklistItem } from '@app/core/api/photo-checklist-config/photo-checklist-config.service';
@@ -14,7 +15,7 @@ import { ChecklistNavItem } from '@app/shared/models/checklist-navigation.model'
 @Component({
     selector: 'app-checklist',
     standalone: true,
-    imports: [CommonModule, FormsModule, RouterModule, ChecklistNavigationComponent],
+    imports: [CommonModule, FormsModule, RouterModule, NgbModule, ChecklistNavigationComponent],
     templateUrl: './checklist.component.html',
     styleUrls: []
 })
@@ -36,7 +37,7 @@ export class ChecklistComponent implements OnInit {
 
     // Modal management
     showCreateInstanceModal = false;
-    showPreviewModal = false;
+    private previewModalRef: NgbModalRef | null = null;
 
     // Preview navigation (shared component)
     previewNavItems: ChecklistNavItem[] = [];
@@ -217,7 +218,8 @@ export class ChecklistComponent implements OnInit {
         private continuityModalService: ContinuityModalService,
         private placardModalService: PlacardModalService,
         private photoChecklistService: PhotoChecklistConfigService,
-        private authService: AuthenticationService
+        private authService: AuthenticationService,
+        private modalService: NgbModal
     ) {
     }
 
@@ -293,7 +295,7 @@ export class ChecklistComponent implements OnInit {
         this.resetNewInstanceForm();
     }
 
-    openPreviewModal(template: ChecklistTemplate): void {
+    openPreviewModal(template: ChecklistTemplate, modalContent: TemplateRef<any>): void {
         // Load full template details if not already loaded
         if (!template.items || template.items.length === 0) {
             this.photoChecklistService.getTemplate(template.id).subscribe({
@@ -304,7 +306,7 @@ export class ChecklistComponent implements OnInit {
                     console.log('First item children:', fullTemplate.items?.[0]?.children);
                     this.selectedTemplate = fullTemplate;
                     this.initializePreviewNavigation(fullTemplate);
-                    this.showPreviewModal = true;
+                    this.openPreviewDialog(modalContent);
                 },
                 error: (error) => {
                     console.error('Error loading template details:', error);
@@ -316,12 +318,38 @@ export class ChecklistComponent implements OnInit {
             console.log('Cached template items:', template.items);
             this.selectedTemplate = template;
             this.initializePreviewNavigation(template);
-            this.showPreviewModal = true;
+            this.openPreviewDialog(modalContent);
         }
     }
 
     closePreviewModal(): void {
-        this.showPreviewModal = false;
+        if (this.previewModalRef) {
+            this.previewModalRef.close();
+            return;
+        }
+
+        this.clearPreviewModalState();
+    }
+
+    private openPreviewDialog(modalContent: TemplateRef<any>): void {
+        if (this.previewModalRef) {
+            this.previewModalRef.close();
+        }
+
+        this.previewModalRef = this.modalService.open(modalContent, {
+            fullscreen: true,
+            scrollable: true,
+            backdrop: 'static'
+        });
+
+        this.previewModalRef.result.then(
+            () => this.clearPreviewModalState(),
+            () => this.clearPreviewModalState()
+        );
+    }
+
+    private clearPreviewModalState(): void {
+        this.previewModalRef = null;
         this.selectedTemplate = null;
         this.previewNavItems = [];
         this.previewActiveItemId = null;
@@ -330,10 +358,7 @@ export class ChecklistComponent implements OnInit {
 
     startChecklistFromPreview(): void {
         const template = this.selectedTemplate;
-        this.showPreviewModal = false;
-        this.previewNavItems = [];
-        this.previewActiveItemId = null;
-        this.previewActiveItemIndex = null;
+        this.closePreviewModal();
 
         if (!template) {
             return;

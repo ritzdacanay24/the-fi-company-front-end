@@ -25,7 +25,7 @@ export class DailyReportComponent implements OnInit {
 
     today = moment().format('YYYY-MM-DD')
     todayAsOf = moment().format('YYYY-MM-DD HH:mm:ss')
-    selectedDate: string = moment().subtract(1, 'day').format('YYYY-MM-DD');
+    selectedDate: string = moment().format('YYYY-MM-DD');
     viewMode: 'history' | 'live' = 'history';
     modeMessage = 'Showing historical snapshot from the History API.';
     displayedDate = '';
@@ -81,7 +81,7 @@ export class DailyReportComponent implements OnInit {
     ) { }
 
     ngOnInit(): void {
-        this.setHistoryMode();
+        this.setLiveMode();
     }
 
 
@@ -112,12 +112,19 @@ export class DailyReportComponent implements OnInit {
 
     async setLiveMode(): Promise<void> {
         this.viewMode = 'live';
+        this.selectedDate = this.today;
         this.modeMessage = 'Live mode is active. Pulling latest data for today.';
         await this.loadLiveData();
     }
 
     async onHistoryDateChange(date: string): Promise<void> {
         this.selectedDate = date;
+
+        if (date === this.today) {
+            await this.setLiveMode();
+            return;
+        }
+
         if (this.viewMode !== 'history') {
             this.viewMode = 'history';
             this.modeMessage = 'Showing historical snapshot from the History API.';
