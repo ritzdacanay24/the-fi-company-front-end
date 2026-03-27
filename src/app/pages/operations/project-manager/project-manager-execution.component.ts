@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { SharedModule } from '@app/shared/shared.module';
 import { ExecutionRole, ProjectWorkflowEngineService } from './services/project-workflow-engine.service';
 import { ProjectManagerProjectsService } from './services/project-manager-projects.service';
@@ -11,9 +12,8 @@ import { ProjectManagerProjectsService } from './services/project-manager-projec
   templateUrl: './project-manager-execution.component.html',
   styleUrls: ['./project-manager-execution.component.scss']
 })
-export class ProjectManagerExecutionComponent {
+export class ProjectManagerExecutionComponent implements OnInit {
   executionRole: ExecutionRole = 'Project Manager';
-  activeProjectLabel = 'No project selected';
 
   // Placeholder input readiness toggles until backend-linked project context is wired.
   stepReadiness: Record<number, boolean> = {
@@ -30,9 +30,22 @@ export class ProjectManagerExecutionComponent {
 
   constructor(
     public workflow: ProjectWorkflowEngineService,
-    private projectsService: ProjectManagerProjectsService
-  ) {
-    this.syncActiveProject();
+    private projectsService: ProjectManagerProjectsService,
+    private route: ActivatedRoute
+  ) {}
+
+  ngOnInit(): void {
+    this.route.queryParamMap.subscribe(params => {
+      const projectId = (params.get('projectId') || '').trim();
+      if (!projectId) {
+        return;
+      }
+
+      const projects = this.projectsService.getProjects();
+      if (projects.some(project => project.id === projectId)) {
+        this.projectsService.setSelectedProjectId(projectId);
+      }
+    });
   }
 
   canExecuteStep(step: number): boolean {
@@ -51,15 +64,19 @@ export class ProjectManagerExecutionComponent {
     return this.workflow.isStepOwnedByRole(step, this.executionRole);
   }
 
-  private syncActiveProject(): void {
+  get activeProjectLabel(): string {
     const projects = this.projectsService.getProjects();
     const selectedId = this.projectsService.getSelectedProjectId(projects);
     const selected = projects.find(project => project.id === selectedId);
     if (!selected) {
-      this.activeProjectLabel = 'No project selected';
-      return;
+      return 'No project selected';
     }
 
-    this.activeProjectLabel = `${selected.code} - ${selected.name}`;
+    return `${selected.code} - ${selected.name}`;
+  }
+
+  get activeProjectId(): string {
+    const projects = this.projectsService.getProjects();
+    return this.projectsService.getSelectedProjectId(projects) || 'No project selected';
   }
 }

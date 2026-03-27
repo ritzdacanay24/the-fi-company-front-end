@@ -709,6 +709,8 @@
                     <img [src]="getPhotoUrl(progress.photos[0])" 
                          class="img-fluid rounded shadow-sm cursor-pointer" 
                          style="max-height: 250px; max-width: 100%; object-fit: contain;"
+                      (error)="onUploadedPhotoError($event, progress.photos[0])"
+                      (load)="onUploadedPhotoLoad($event)"
                          (click)="openLightboxForProgress(progress, 0, 'photo')"
                          title="Click to preview">
                         <span *ngIf="getPhotoSourceLabel(progress, progress.photos[0]) as src"
@@ -1120,6 +1122,8 @@
                     <img [src]="getPhotoUrl(progress.photos[0])" 
                          class="rounded shadow-sm cursor-pointer" 
                          style="width: 120px; height: 120px; object-fit: cover;"
+                      (error)="onUploadedPhotoError($event, progress.photos[0])"
+                      (load)="onUploadedPhotoLoad($event)"
                          (click)="openLightboxForProgress(progress, 0, 'photo')"
                          title="Click to preview">
                     <span *ngIf="getPhotoSourceLabel(progress, progress.photos[0]) as src"
@@ -1244,7 +1248,7 @@
         {{ getCameraCaptureDescription() }}
       </small>
     </div>
-    <button type="button" class="btn-close flex-shrink-0" aria-label="Close" (click)="modal.dismiss('close')"></button>
+    <button type="button" class="btn-close flex-shrink-0" aria-label="Close" (click)="forceCloseVideoCapture(modal)"></button>
   </div>
   <div class="modal-body p-0 d-flex align-items-center justify-content-center" style="background: #000;">
     <video #cameraVideo playsinline autoplay muted
@@ -1252,7 +1256,7 @@
            style="max-height: 100%; max-width: 100%; object-fit: contain; image-rendering: crisp-edges; -webkit-backface-visibility: hidden; backface-visibility: hidden;"></video>
   </div>
   <div class="modal-footer justify-content-between">
-    <button type="button" class="btn btn-outline-secondary" (click)="modal.dismiss('cancel')">
+    <button type="button" class="btn btn-outline-secondary" (click)="forceCloseVideoCapture(modal)">
       <i class="mdi mdi-close me-1"></i>Cancel
     </button>
 
@@ -1299,10 +1303,10 @@
         {{ getVideoCaptureDescription() }}
       </small>
     </div>
-    <span class="badge bg-warning text-dark flex-shrink-0 me-2" style="font-size: 0.7rem;" title="Audio is automatically muted during in-app recording">
-      <i class="mdi mdi-microphone-off me-1"></i>No audio
+    <span class="badge bg-success text-white flex-shrink-0 me-2" style="font-size: 0.7rem;" title="Audio is recorded with in-app video capture">
+      <i class="mdi mdi-microphone me-1"></i>Audio enabled
     </span>
-    <button type="button" class="btn-close flex-shrink-0" aria-label="Close" (click)="modal.dismiss('close')"></button>
+    <button type="button" class="btn-close flex-shrink-0" aria-label="Close" (click)="forceCloseVideoCapture(modal)"></button>
   </div>
   <div class="modal-body p-0 d-flex align-items-center justify-content-center" style="background: #000;">
     <video #videoPreview playsinline autoplay muted
@@ -1310,11 +1314,33 @@
            style="max-height: 100%; max-width: 100%; object-fit: contain; image-rendering: crisp-edges; -webkit-backface-visibility: hidden; backface-visibility: hidden;"></video>
   </div>
   <div class="modal-footer justify-content-between">
-    <button type="button" class="btn btn-outline-secondary" (click)="modal.dismiss('cancel')">
+    <button type="button" class="btn btn-outline-secondary" (click)="forceCloseVideoCapture(modal)">
       <i class="mdi mdi-close me-1"></i>Cancel
     </button>
 
-    <div class="d-flex align-items-center gap-3">
+    <div class="d-flex align-items-center gap-3 flex-wrap justify-content-end">
+
+      <div class="d-flex align-items-center gap-2" *ngIf="!isVideoRecording">
+        <span class="small text-muted">Quality</span>
+        <div class="btn-group btn-group-sm" role="group" aria-label="Video quality mode">
+          <button
+            type="button"
+            class="btn"
+            [ngClass]="videoCaptureQualityMode === 'stable' ? 'btn-primary' : 'btn-outline-primary'"
+            (click)="videoCaptureQualityMode = 'stable'"
+            title="Stable mode: best reliability">
+            Stable
+          </button>
+          <button
+            type="button"
+            class="btn"
+            [ngClass]="videoCaptureQualityMode === 'high' ? 'btn-primary' : 'btn-outline-primary'"
+            (click)="videoCaptureQualityMode = 'high'"
+            title="High mode: better detail, may be less stable on some tablets">
+            High
+          </button>
+        </div>
+      </div>
 
       <!-- Timer display while recording -->
       <ng-container *ngIf="isVideoRecording">
@@ -1327,13 +1353,16 @@
                   style="font-size: 0.9rem; font-variant-numeric: tabular-nums;">
               <i class="mdi mdi-record-rec me-1"></i>
               <ng-container *ngIf="videoMaxDurationSeconds > 0">
-                {{ formatVideoTime(videoMaxDurationSeconds - videoRecordingSeconds) }} left
+                {{ formatVideoTime((videoMaxDurationSeconds - videoRecordingSeconds) < 0 ? 0 : (videoMaxDurationSeconds - videoRecordingSeconds)) }} left
               </ng-container>
               <ng-container *ngIf="videoMaxDurationSeconds === 0">
                 {{ formatVideoTime(videoRecordingSeconds) }}
               </ng-container>
             </span>
           </div>
+          <small class="text-muted" *ngIf="videoCaptureStatus === 'stopping' || videoCaptureStatus === 'uploading'">
+            Finalizing and uploading video...
+          </small>
           <!-- Progress bar shown only when there is a max duration -->
           <div *ngIf="videoMaxDurationSeconds > 0" class="progress" style="height: 5px; width: 140px;">
             <div class="progress-bar"
@@ -1350,7 +1379,7 @@
         <i class="mdi mdi-record-circle-outline me-1"></i>Start Recording
       </button>
       <button type="button" class="btn btn-success" *ngIf="isVideoRecording" (click)="stopVideoRecording()">
-        <i class="mdi mdi-stop-circle-outline me-1"></i>Stop &amp; Use Video
+        <i class="mdi mdi-stop-circle-outline me-1"></i>Stop &amp; Upload Video
       </button>
     </div>
   </div>
@@ -1584,6 +1613,8 @@
                         class="img-thumbnail cursor-pointer"
                         style="width: 60px; height: 60px; object-fit: cover;"
                         alt="Photo"
+                        (error)="onUploadedPhotoError($event, photo)"
+                        (load)="onUploadedPhotoLoad($event)"
                         (click)="openLightboxForProgress(progress, photoIdx, 'photo')"
                         [title]="'Photo ' + (photoIdx + 1)">
                       <span class="position-absolute top-0 start-0 badge bg-primary m-1" style="font-size: 0.6rem;">P</span>

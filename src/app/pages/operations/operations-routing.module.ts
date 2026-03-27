@@ -103,15 +103,6 @@ const routes: Routes = [
     runGuardsAndResolvers: "always",
   },
   {
-    title: "Project Manager Execution",
-    path: "project-manager/execution",
-    loadComponent: () =>
-      import("./project-manager/project-manager-execution.component").then(
-        (m) => m.ProjectManagerExecutionComponent
-      ),
-    runGuardsAndResolvers: "always",
-  },
-  {
     path: "forms",
     loadChildren: () =>
       import("./forms/forms-routing.module").then((m) => m.FormsRoutingModule),

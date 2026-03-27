@@ -1,13 +1,14 @@
 import { Component, OnInit, OnDestroy, AfterViewInit, ViewChild, ViewChildren, TemplateRef, ChangeDetectorRef, ElementRef, QueryList, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators, AbstractControl } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { NgbModal, NgbModule } from '@ng-bootstrap/ng-bootstrap';
-import { CdkDragDrop, moveItemInArray, DragDropModule } from '@angular/cdk/drag-drop';
+import { CdkDragDrop, CdkDragSortEvent, DragDropModule } from '@angular/cdk/drag-drop';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { QuillModule, QuillModules } from 'ngx-quill';
 import Quill from 'quill';
 import { Subscription } from 'rxjs';
+import { debounceTime } from 'rxjs/operators';
 
 import { PhotoChecklistConfigService, ChecklistTemplate, ChecklistItem } from '@app/core/api/photo-checklist-config/photo-checklist-config.service';
 import { AttachmentsService } from '@app/core/api/attachments/attachments.service';
@@ -49,6 +50,14 @@ interface ItemLink {
   title: string;
   url: string;
   description?: string;
+}
+
+interface ReorderUndoState {
+  controls: AbstractControl[];
+  sampleImages: { [itemIndex: number]: SampleImage | SampleImage[] | null };
+  sampleVideos: { [itemIndex: number]: SampleVideo | SampleVideo[] | null };
+  expandedItems: Set<number>;
+  activeNavItemIndex: number;
 }
 
 @Component({
@@ -393,11 +402,8 @@ interface ItemLink {
                         <span *ngIf="selectedFormItemIndex !== null && focusedEditMode" class="badge bg-info ms-2">
                           Viewing Item {{getOutlineNumber(selectedFormItemIndex)}}
                         </span>
-                        <span *ngIf="navViewMode === 'groups'" class="badge bg-warning text-dark ms-2">
-                          Groups Only
-                        </span>
-                        <span *ngIf="navViewMode === 'items'" class="badge bg-primary ms-2">
-                          Items Only
+                        <span *ngIf="navViewMode !== 'all'" class="badge bg-light text-dark border ms-2">
+                          View: {{ navViewMode === 'groups' ? 'Groups' : 'Items' }}
                         </span>
                       </h3>
                       <p class="text-muted mb-0">
@@ -437,16 +443,34 @@ interface ItemLink {
                     </button>
                   </div>
                 </div>
-                <div formArrayName="items" cdkDropList (cdkDropListDropped)="dropItem($event)">
+                <div
+                  class="reorder-live-hint alert alert-primary border-primary border-opacity-25 bg-primary bg-opacity-10 py-2 px-3"
+                  role="status"
+                  aria-live="polite"
+                  *ngIf="isReorderDragging">
+                  <div class="d-flex flex-wrap align-items-center gap-2">
+                    <span class="badge bg-primary">{{ dragSummaryLabel }}</span>
+                    <span class="small text-primary-emphasis">{{ dropHintText }}</span>
+                  </div>
+                </div>
+
+                <div formArrayName="items" cdkDropList [cdkDropListDisabled]="true" (cdkDropListSorted)="onItemDragSorted($event)" (cdkDropListDropped)="dropItem($event)">
                   <div *ngFor="let item of items.controls; let i = index" 
                        [id]="'edit-item-' + i"
-                       class="card mb-3" 
+                       class="card mb-3 item-card" 
                        [formGroupName]="i" 
+                       tabindex="0"
+                       (keydown)="onItemKeydown($event, i)"
                        [ngStyle]="{'margin-left.rem': (item.get('level')?.value || 0) * 2}"
+                       [class.item-card-child]="(item.get('level')?.value || 0) > 0"
                        [class.border-start]="(item.get('level')?.value || 0) > 0"
                        [class.border-4]="(item.get('level')?.value || 0) > 0"
                        [class.border-primary]="(item.get('level')?.value || 0) > 0"
                        [style.display]="isFormItemVisible(i) ? 'block' : 'none'"
+                       [cdkDragData]="i"
+                       [cdkDragDisabled]="true"
+                       (cdkDragStarted)="onItemDragStarted(i)"
+                       (cdkDragEnded)="onItemDragEnded()"
                        cdkDrag>
                     
                     <!-- Drag Preview (what you see while dragging) -->
@@ -454,13 +478,16 @@ interface ItemLink {
                       <div class="card-header bg-light">
                         <i class="mdi mdi-drag-vertical me-2"></i>
                         <strong>{{getOutlineNumber(i)}}</strong> {{item.get('title')?.value || 'Untitled'}}
+                        <span class="badge bg-primary ms-2" *ngIf="draggedSubtreeLength > 1">
+                          +{{ draggedSubtreeLength - 1 }} child{{ draggedSubtreeLength - 1 === 1 ? '' : 'ren' }}
+                        </span>
                       </div>
                     </div>
                     
                     <!-- Drag Handle and Header -->
-                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center item-card-header">
                       <div class="d-flex align-items-center flex-grow-1" style="min-width: 0;">
-                        <div class="drag-handle me-3" cdkDragHandle title="Drag to reorder">
+                        <div class="drag-handle me-3" cdkDragHandle title="Reorder from Navigation panel">
                           <i class="mdi mdi-drag-vertical text-muted fs-4"></i>
                         </div>
                         <h6 class="mb-0 d-flex align-items-center flex-grow-1" style="min-width: 0;">
@@ -479,29 +506,40 @@ interface ItemLink {
                           title="Add nested item below this item">
                           <i class="mdi mdi-plus me-1"></i>Add Sub-item
                         </button>
-                        <button 
-                          type="button" 
-                          class="btn btn-sm btn-outline-info" 
-                          (click)="demoteItem(i)"
-                          *ngIf="i > 0 && canDemote(i)"
-                          title="Nest under previous item">
-                          <i class="mdi mdi-arrow-right-bold me-1"></i>Indent
-                        </button>
-                        <button 
-                          type="button" 
-                          class="btn btn-sm btn-outline-secondary" 
-                          (click)="promoteItem(i)"
-                          *ngIf="(item.get('level')?.value || 0) > 0"
-                          title="Move up one level">
-                          <i class="mdi mdi-arrow-left-bold me-1"></i>Outdent
-                        </button>
-                        <button 
-                          type="button" 
-                          class="btn btn-sm btn-outline-danger" 
-                          (click)="removeItem(i)"
-                          title="Remove item and all children">
-                          <i class="mdi mdi-delete"></i>
-                        </button>
+                        <div ngbDropdown class="d-inline-block">
+                          <button
+                            type="button"
+                            class="btn btn-sm btn-outline-secondary"
+                            ngbDropdownToggle
+                            title="More item actions"
+                            aria-label="More item actions">
+                            <i class="mdi mdi-dots-horizontal"></i>
+                          </button>
+                          <div ngbDropdownMenu>
+                            <button
+                              ngbDropdownItem
+                              type="button"
+                              (click)="demoteItem(i)"
+                              *ngIf="i > 0 && canDemote(i)">
+                              <i class="mdi mdi-arrow-right-bold me-2"></i>Indent
+                            </button>
+                            <button
+                              ngbDropdownItem
+                              type="button"
+                              (click)="promoteItem(i)"
+                              *ngIf="(item.get('level')?.value || 0) > 0">
+                              <i class="mdi mdi-arrow-left-bold me-2"></i>Outdent
+                            </button>
+                            <div class="dropdown-divider"></div>
+                            <button
+                              ngbDropdownItem
+                              type="button"
+                              class="text-danger"
+                              (click)="removeItem(i)">
+                              <i class="mdi mdi-delete me-2"></i>Delete Item
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
@@ -639,6 +677,7 @@ interface ItemLink {
                               <img [src]="getPrimarySampleImageUrl(i)"
                                    class="img-thumbnail"
                                 [class.locked-media-clickable]="isPublishedLocked()"
+                                   loading="lazy"
                                    style="width: 60px; height: 60px; object-fit: cover; cursor: pointer;"
                                    (click)="previewSampleImage(i)">
                               <span class="badge bg-primary position-absolute top-0 start-0" style="font-size: 0.6rem;">Primary</span>
@@ -648,6 +687,7 @@ interface ItemLink {
                               <img [src]="getReferenceImageUrl(refImage)"
                                    class="img-thumbnail"
                                 [class.locked-media-clickable]="isPublishedLocked()"
+                                   loading="lazy"
                                    style="width: 60px; height: 60px; object-fit: cover; cursor: pointer;"
                                    (click)="previewReferenceImage(i, refIdx)">
                               <span class="badge bg-secondary position-absolute top-0 start-0" style="font-size: 0.6rem;">Ref</span>
@@ -684,6 +724,7 @@ interface ItemLink {
                         <div *ngIf="hasSampleVideo(i)" class="border rounded p-2 bg-light text-center">
                           <video [src]="getPrimarySampleVideoUrl(i)" 
                                  [class.locked-media-clickable]="isPublishedLocked()"
+                                 preload="none"
                                  style="max-height: 80px; max-width: 140px; object-fit: cover; cursor: pointer;"
                                  (click)="previewSampleVideo(i)"></video>
                           <div class="mt-1">
@@ -757,6 +798,19 @@ interface ItemLink {
                         <i class="mdi mdi-content-save me-1"></i>{{editingTemplate ? 'Publish Draft' : 'Create Template'}}
                       }
                     </button>
+                    <button
+                      type="button"
+                      class="btn btn-success ms-auto"
+                      *ngIf="editingTemplate && !editingTemplate.is_draft && canReorderPublishedTemplateInPlace()"
+                      [disabled]="saving"
+                      (click)="saveTemplate()">
+                      @if (saving) {
+                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                        Saving Reorder...
+                      } @else {
+                        <i class="mdi mdi-content-save me-1"></i>Save Reorder
+                      }
+                    </button>
                   </div>
             </div>
             
@@ -789,12 +843,14 @@ interface ItemLink {
                 </div>
 
                 <app-checklist-navigation
-                  [items]="buildEditorNavItems()"
+                  [items]="editorNavItems"
                   [activeItemIndex]="activeNavItemIndex"
                   [mode]="isPublishedLocked() ? 'readonly' : 'editor'"
+                  [allowReadonlyReorder]="canReorderPublishedTemplateInPlace()"
+                  [autoScrollActive]="true"
                   [showMediaContext]="showNavMediaContext"
                   [height]="editorNavHeight"
-                  (itemSelected)="scrollToItem($event.index)"
+                  (itemSelected)="onNavItemSelected($event.index)"
                   (navDrop)="dropNavItem($event)"
                   (navAction)="handleNavAction($event)"
                   (primaryImageRequested)="previewNavPrimaryImage($event.index)"
@@ -804,6 +860,23 @@ interface ItemLink {
             </div>
             </div>
           </div>
+    </div>
+
+    <div class="reorder-feedback-toast"
+         role="status"
+         aria-live="polite"
+         *ngIf="reorderFeedbackMessage">
+      <div class="alert alert-success border-success border-opacity-25 bg-success bg-opacity-95 py-2 px-3 d-flex align-items-center justify-content-between gap-3 mb-0 shadow">
+        <span class="small mb-0">{{ reorderFeedbackMessage }}</span>
+        <div class="d-flex align-items-center gap-2">
+          <button type="button" class="btn btn-sm btn-outline-success" (click)="undoLastReorder()">
+            <i class="mdi mdi-undo me-1"></i>Undo
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" (click)="clearReorderFeedback()">
+            Dismiss
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Import Modal -->
@@ -1482,6 +1555,7 @@ interface ItemLink {
                         <div class="text-center">
                           <img [src]="img.url" 
                                class="rounded border border-primary shadow-sm" 
+                               loading="lazy"
                                style="width: 200px; height: 200px; object-fit: cover; cursor: pointer;"
                                [title]="img.label || 'Primary Sample Image'"
                                (click)="openImagePreview(img.url)">
@@ -1502,6 +1576,7 @@ interface ItemLink {
                           <img *ngIf="!img.is_primary"
                                [src]="img.url" 
                                class="rounded border" 
+                               loading="lazy"
                                style="width: 60px; height: 60px; object-fit: cover; cursor: pointer;"
                                [title]="img.label || 'Reference Image'"
                                (click)="openImagePreview(img.url)">
@@ -1537,6 +1612,7 @@ interface ItemLink {
                       <video *ngFor="let vid of getSampleVideosArray(i)" 
                              [src]="vid.url" 
                              class="rounded border" 
+                             preload="none"
                              style="width: 80px; height: 50px; object-fit: cover;">
                       </video>
                     </div>
@@ -1564,7 +1640,7 @@ interface ItemLink {
           <div class="col-md-3 border-start bg-light" style="max-height: calc(100vh - 140px); overflow-y: auto;">
             <div class="p-2">
               <app-checklist-navigation
-                [items]="buildEditorNavItems()"
+                [items]="editorNavItems"
                 [mode]="'readonly'"
                 [showMediaContext]="showNavMediaContext"
                 [showSearch]="false"
@@ -1770,11 +1846,31 @@ interface ItemLink {
       box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
       flex-shrink: 0;
     }
+
+    .item-card {
+      border: 1px solid #dfe3ea;
+      box-shadow: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .item-card:focus-within {
+      border-color: #86b7fe;
+      box-shadow: 0 0 0 0.15rem rgba(13, 110, 253, 0.12);
+    }
+
+    .item-card-header {
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    }
+
+    .item-card.item-card-child {
+      background: linear-gradient(90deg, rgba(13, 110, 253, 0.06) 0, rgba(13, 110, 253, 0.06) 6px, #fff 6px);
+    }
     
     .drag-handle {
       cursor: move;
       cursor: grab;
-      transition: all 0.2s;
+      opacity: 0.65;
+      transition: transform 0.2s, opacity 0.2s;
     }
     
     .drag-handle:active {
@@ -1782,6 +1878,7 @@ interface ItemLink {
     }
     
     .drag-handle:hover {
+      opacity: 1;
       transform: scale(1.1);
     }
     
@@ -1803,35 +1900,74 @@ interface ItemLink {
     }
     
     .cdk-drag-placeholder {
-      opacity: 0.4;
-      border: 2px dashed #0d6efd;
-      background: #f8f9fa;
-      min-height: 100px;
+      opacity: 1;
+      min-height: 0 !important;
+      height: 0 !important;
+      margin: 0 0 0.8rem 0;
+      border-top: 3px solid #0d6efd;
+      background: transparent;
+      position: relative;
+    }
+
+    .cdk-drag-placeholder::after {
+      content: 'Drop block here';
+      position: absolute;
+      top: -1.1rem;
+      right: 0;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #0d6efd;
+      background: #fff;
+      padding: 0 0.25rem;
+      border-radius: 0.25rem;
+    }
+
+    .reorder-live-hint {
+      position: sticky;
+      top: 0.35rem;
+      z-index: 10;
+    }
+
+    .reorder-feedback-toast {
+      position: fixed;
+      right: 1rem;
+      bottom: 1rem;
+      z-index: 1085;
+      max-width: min(620px, calc(100vw - 2rem));
+    }
+
+    @media (max-width: 576px) {
+      .reorder-feedback-toast {
+        right: 0.5rem;
+        left: 0.5rem;
+        bottom: 0.5rem;
+        max-width: none;
+      }
     }
     
     /* Visual feedback for hierarchy */
-    .card[class*="border-primary"] {
+    .item-card[class*="border-primary"] {
       border-left-color: #0d6efd !important;
-      background: rgba(13, 110, 253, 0.02);
+      background: rgba(13, 110, 253, 0.015);
     }
     
-    .card[class*="ms-4"] {
+    .item-card[class*="ms-4"] {
       transition: margin-left 0.3s ease, background-color 0.3s ease;
     }
     
     /* Drag and drop visual hints */
-    .cdk-drop-list-dragging .card[class*="ms-4"] {
+    .cdk-drop-list-dragging .item-card[class*="ms-4"] {
       /* Highlight child items during drag to show they can be re-parented */
       background: rgba(13, 110, 253, 0.05);
     }
     
-    .cdk-drop-list-dragging .card:not([class*="ms-4"]) {
+    .cdk-drop-list-dragging .item-card:not([class*="ms-4"]) {
       /* Highlight parent items as valid drop zones */
       background: rgba(25, 135, 84, 0.05);
     }
     
     /* Visual indicator for drag over parent */
-    .cdk-drag-placeholder + .card:not([class*="ms-4"]) {
+    .cdk-drag-placeholder + .item-card:not([class*="ms-4"]) {
       border-top: 3px solid #198754;
     }
     
@@ -1997,6 +2133,17 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   activeNavItemIndex: number = -1;
   stickyParentIndex: number | null = null;
 
+  // Drag/reorder live guidance
+  isReorderDragging = false;
+  draggedItemIndex = -1;
+  draggedSubtreeLength = 1;
+  dragSummaryLabel = '';
+  dropHintText = '';
+  reorderFeedbackMessage = '';
+
+  private lastReorderUndoState: ReorderUndoState | null = null;
+  private reorderFeedbackTimeout: ReturnType<typeof setTimeout> | null = null;
+
   // Navigation panel heights (customizable per view)
   editorNavHeight = 'calc(100vh - 190px)';
   previewNavHeight = 'calc(100vh - 230px)';
@@ -2005,6 +2152,9 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   private activeItemObserver: IntersectionObserver | null = null;
   private visibleItemEntries: Map<number, IntersectionObserverEntry> = new Map();
   private scheduledFallbackCheck = false;
+  private activeTrackingRefreshTimeout: ReturnType<typeof setTimeout> | null = null;
+  private suppressObserverUpdatesUntil = 0;
+  private readonly programmaticScrollLockMs = 650;
 
   // Modal template references
   @ViewChild('sampleImagesModalTemplate') sampleImagesModalTemplate: any;
@@ -2030,7 +2180,12 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   private changeTrackingReady = false;
 
   private routeParamSub?: Subscription;
+  private routeQueryParamSub?: Subscription;
   private templateFormChangesSub?: Subscription;
+  private navItemsSub?: Subscription;
+  private requestedNavItemIndex: number | null = null;
+  private restoreNavSelectionTimeout: ReturnType<typeof setTimeout> | null = null;
+  editorNavItems: ChecklistNavItem[] = [];
 
   // Quill editor configuration
   quillConfig: QuillModules = {
@@ -2277,6 +2432,11 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   }
 
   ngOnInit(): void {
+    // Rebuild navigation sidebar whenever form items change (debounced to avoid rebuilding on every keystroke).
+    this.navItemsSub = this.items.valueChanges.pipe(debounceTime(150)).subscribe(() => {
+      this.rebuildEditorNavItems();
+    });
+
     // Track user edits. Some widgets (notably rich text editors) can emit valueChanges
     // during initialization; gate tracking until the form is fully ready.
     this.templateFormChangesSub = this.templateForm.valueChanges.subscribe(() => {
@@ -2302,6 +2462,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       // New template state
       this.editingTemplate = null;
       this.lastSavedAt = null;
+      this.updateSelectedItemQueryParam(null);
 
       this.changeTrackingReady = false;
       this.suppressChangeTracking = true;
@@ -2335,9 +2496,28 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
         this.markSaved();
       }, 0);
     });
+
+    // Keep selected item in URL (?item=INDEX) and restore on refresh/load.
+    this.routeQueryParamSub = this.route.queryParamMap.subscribe((params) => {
+      const raw = params.get('item');
+      const parsed = raw !== null ? Number(raw) : NaN;
+      const nextRequested = Number.isInteger(parsed) && parsed >= 0 ? parsed : null;
+
+      this.requestedNavItemIndex = nextRequested;
+
+      if (nextRequested === null) {
+        return;
+      }
+
+      this.scheduleRestoreRequestedNavItemSelection(0);
+    });
   }
   isPublishedLocked(): boolean {
     return !!this.editingTemplate && !this.editingTemplate.is_draft;
+  }
+
+  canReorderPublishedTemplateInPlace(): boolean {
+    return this.isPublishedLocked();
   }
 
   startMajorVersionDraft(): void {
@@ -2519,6 +2699,9 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     this.refreshActiveItemTracking();
     // Ensure initial highlight is correct
     this.checkActiveItem();
+    // In large templates, initial DOM paint can lag behind data load.
+    // Retry URL-based restore after the first view is initialized.
+    this.scheduleRestoreRequestedNavItemSelection(0);
   }
 
   createTemplateForm(): FormGroup {
@@ -2622,6 +2805,8 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
         // Expand all parent items by default in navigation
         this.initializeNavExpansion();
+        this.rebuildEditorNavItems();
+        this.scheduleRestoreRequestedNavItemSelection(0);
 
         this.loadDraftParentVersion(this.editingTemplate);
 
@@ -2784,8 +2969,10 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     this.expandedItems.clear();
     this.initializeNavExpansion();
     this.updateNavSearchSets();
+
+    this.rebuildEditorNavItems();
     this.cdr.detectChanges();
-    setTimeout(() => this.refreshActiveItemTracking());
+    this.scheduleActiveItemTrackingRefresh();
   }
 
   /**
@@ -2959,8 +3146,10 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     this.items.push(this.createItemFormGroup());
     this.recalculateOrderIndices(); // Auto-calculate order after adding
     this.updateNavSearchSets();
+
+    this.rebuildEditorNavItems();
     this.cdr.detectChanges();
-    setTimeout(() => this.refreshActiveItemTracking());
+    this.scheduleActiveItemTrackingRefresh();
   }
 
   /**
@@ -3066,12 +3255,14 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
     this.recalculateOrderIndices(); // Auto-calculate order after adding sub-item
 
+    this.rebuildEditorNavItems();
+
     // Trigger change detection to ensure UI updates
     this.cdr.detectChanges();
 
     this.updateNavSearchSets();
     setTimeout(() => {
-      this.refreshActiveItemTracking();
+      this.scheduleActiveItemTrackingRefresh(0);
       const input = this.itemTitleInputs?.toArray?.()[insertIndex];
       if (input?.nativeElement) {
         input.nativeElement.focus();
@@ -3113,6 +3304,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
     this.recalculateOrderIndices(); // Auto-calculate order
 
+    this.rebuildEditorNavItems();
     this.cdr.detectChanges();
   }
 
@@ -3158,6 +3350,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
     this.recalculateOrderIndices(); // Auto-calculate order
 
+    this.rebuildEditorNavItems();
     this.cdr.detectChanges();
   }
 
@@ -3295,8 +3488,10 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
     this.recalculateOrderIndices();
     this.updateNavSearchSets();
+
+    this.rebuildEditorNavItems();
     this.cdr.detectChanges();
-    setTimeout(() => this.refreshActiveItemTracking());
+    this.scheduleActiveItemTrackingRefresh();
   }
 
   dropItem(event: CdkDragDrop<string[]>): void {
@@ -3310,28 +3505,226 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     this.performDrop(previousIndex, currentIndex);
   }
 
-  /**
-   * Handle drop in navigation (needs to map visible indices to actual indices)
-   */
-  dropNavItem(event: CdkDragDrop<string[]>): void {
-    if (this.isPublishedLocked()) {
+  onItemDragStarted(index: number): void {
+    if (this.isPublishedLocked() || index < 0 || index >= this.items.length) {
       return;
     }
 
-    const visibleIndices = this.getVisibleItemIndices();
+    this.isReorderDragging = true;
+    this.draggedItemIndex = index;
+    this.draggedSubtreeLength = this.getSubtreeEndExclusive(index) - index;
+    this.dragSummaryLabel = this.draggedSubtreeLength > 1
+      ? `Moving 1 parent + ${this.draggedSubtreeLength - 1} child${this.draggedSubtreeLength - 1 === 1 ? '' : 'ren'}`
+      : 'Moving 1 item';
 
-    if (event.previousIndex >= visibleIndices.length || event.currentIndex >= visibleIndices.length) {
-      return; // Invalid indices
+    this.updateDragDropHint(index, index);
+  }
+
+  onItemDragSorted(event: CdkDragSortEvent<string[]>): void {
+    if (!this.isReorderDragging) {
+      return;
     }
 
-    const actualPrevIndex = visibleIndices[event.previousIndex];
-    const actualCurrentIndex = visibleIndices[event.currentIndex];
+    this.updateDragDropHint(this.draggedItemIndex, event.currentIndex);
+  }
 
-    if (actualPrevIndex === actualCurrentIndex) {
-      return; // No change
+  onItemDragEnded(): void {
+    this.isReorderDragging = false;
+    this.draggedItemIndex = -1;
+    this.draggedSubtreeLength = 1;
+    this.dragSummaryLabel = '';
+    this.dropHintText = '';
+  }
+
+  /**
+   * Handle drop in navigation (needs to map visible indices to actual indices)
+   */
+  dropNavItem(event: CdkDragDrop<any[]> | { orderedIndices: number[] } | { sourceIndex: number; targetIndex: number; dropPosition: 'before' | 'inside' | 'after' }): void {
+    console.log('🎯 dropNavItem called', event);
+
+    if (this.isPublishedLocked() && !this.canReorderPublishedTemplateInPlace()) {
+      console.log('❌ Blocked: published locked');
+      return;
     }
 
-    this.performDrop(actualPrevIndex, actualCurrentIndex);
+    const orderedIndices = (event as any)?.orderedIndices;
+    if (Array.isArray(orderedIndices) && orderedIndices.length === this.items.length) {
+      console.log('✅ Using absolute order path');
+      this.applyAbsoluteOrder(orderedIndices);
+      return;
+    }
+
+    const intentDrop = event as any;
+    if (
+      Number.isInteger(intentDrop?.sourceIndex)
+      && Number.isInteger(intentDrop?.targetIndex)
+      && (intentDrop?.dropPosition === 'before' || intentDrop?.dropPosition === 'inside' || intentDrop?.dropPosition === 'after')
+    ) {
+      const sourceIndex = Number(intentDrop.sourceIndex);
+      const targetIndex = Number(intentDrop.targetIndex);
+      const dropPosition = intentDrop.dropPosition as 'before' | 'inside' | 'after';
+
+      if (sourceIndex < 0 || sourceIndex >= this.items.length || targetIndex < 0 || targetIndex >= this.items.length) {
+        console.log('❌ Blocked: invalid source/target in intent drop', { sourceIndex, targetIndex, dropPosition });
+        return;
+      }
+
+      const currentIndexForPerformDrop = dropPosition === 'before'
+        ? targetIndex
+        : dropPosition === 'after'
+          ? this.getSubtreeEndExclusive(targetIndex)
+          : targetIndex;
+
+      console.log('🧭 Intent drop mapping:', { sourceIndex, targetIndex, dropPosition, currentIndexForPerformDrop });
+      this.performDrop(sourceIndex, currentIndexForPerformDrop, { useAnchorIndex: true, dropPosition, targetIndex });
+      return;
+    }
+
+    const cdkEvent = event as CdkDragDrop<any[]>;
+
+    // Get the form index of the dragged item.
+    const actualPrevIndex = Number(cdkEvent.item?.data);
+    if (!Number.isInteger(actualPrevIndex) || actualPrevIndex < 0 || actualPrevIndex >= this.items.length) {
+      console.log('❌ Blocked: invalid dragged item index');
+      return;
+    }
+
+    // Get visible navigation indices from the nav component.
+    const navVisibleEntries = Array.isArray(cdkEvent.container?.data) ? cdkEvent.container.data : [];
+    const navVisibleIndices = navVisibleEntries
+      .map((entry: any) => Number(entry?.originalIndex))
+      .filter((idx: number) => Number.isInteger(idx) && idx >= 0 && idx < this.items.length);
+
+    console.log('📋 navVisibleIndices:', navVisibleIndices);
+    console.log(`📍 CDK positions: previousIndex=${cdkEvent.previousIndex}, currentIndex=${cdkEvent.currentIndex}`);
+
+    const previousNavIndex = navVisibleIndices.indexOf(actualPrevIndex);
+    if (previousNavIndex < 0) {
+      console.log('❌ Blocked: dragged item not found in visible nav list');
+      return;
+    }
+
+    // In virtual scroll mode CDK indices can include viewport offsets.
+    // Normalize them back to indices within navVisibleIndices.
+    const cdkOffset = cdkEvent.previousIndex - previousNavIndex;
+    const normalizedCurrentIndex = cdkEvent.currentIndex - cdkOffset;
+    console.log('📍 Normalized nav indices:', {
+      previousNavIndex,
+      rawPreviousIndex: cdkEvent.previousIndex,
+      rawCurrentIndex: cdkEvent.currentIndex,
+      cdkOffset,
+      normalizedCurrentIndex
+    });
+
+    const subtreeEnd = this.getSubtreeEndExclusive(actualPrevIndex);
+    const subtreeLength = subtreeEnd - actualPrevIndex;
+
+    // Build the visible list after removing the dragged subtree.
+    const navVisibleAfterRemoval = navVisibleIndices.filter((idx) => idx < actualPrevIndex || idx >= subtreeEnd);
+
+    // Determine desired insertion start in the post-removal array.
+    let desiredTargetStart: number;
+    if (normalizedCurrentIndex <= 0) {
+      desiredTargetStart = 0;
+    } else if (normalizedCurrentIndex >= navVisibleAfterRemoval.length) {
+      desiredTargetStart = this.items.length - subtreeLength;
+    } else {
+      const anchorOriginalIndex = navVisibleAfterRemoval[normalizedCurrentIndex];
+      desiredTargetStart = anchorOriginalIndex < actualPrevIndex
+        ? anchorOriginalIndex
+        : anchorOriginalIndex - subtreeLength;
+    }
+
+    // Convert desired targetStart back to performDrop's anchor currentIndex semantics.
+    const currentIndexForPerformDrop = desiredTargetStart <= actualPrevIndex
+      ? desiredTargetStart
+      : desiredTargetStart + subtreeLength;
+
+    console.log('🔄 Reorder mapping:', {
+      actualPrevIndex,
+      subtreeEnd,
+      subtreeLength,
+      desiredTargetStart,
+      currentIndexForPerformDrop
+    });
+
+    this.performDrop(actualPrevIndex, currentIndexForPerformDrop, { useAnchorIndex: true });
+  }
+
+  private applyAbsoluteOrder(orderedIndices: number[]): void {
+    const oldLength = this.items.length;
+    const oldControls = [...this.items.controls];
+
+    const seen = new Set<number>();
+    for (const idx of orderedIndices) {
+      if (!Number.isInteger(idx) || idx < 0 || idx >= oldLength || seen.has(idx)) {
+        return;
+      }
+      seen.add(idx);
+    }
+
+    const undoSnapshot: ReorderUndoState = {
+      controls: [...this.items.controls],
+      sampleImages: { ...this.sampleImages },
+      sampleVideos: { ...this.sampleVideos },
+      expandedItems: new Set(this.expandedItems),
+      activeNavItemIndex: this.activeNavItemIndex
+    };
+
+    const reorderedControls = orderedIndices.map((idx) => oldControls[idx]).filter(Boolean);
+    if (reorderedControls.length !== oldLength) {
+      return;
+    }
+
+    const oldToNew = new Map<number, number>();
+    orderedIndices.forEach((oldIdx, newIdx) => oldToNew.set(oldIdx, newIdx));
+
+    const remapIndexedDict = <T>(dict: { [itemIndex: number]: T }): { [itemIndex: number]: T } => {
+      const updated: { [itemIndex: number]: T } = {};
+      Object.keys(dict).forEach((key) => {
+        const oldIndex = parseInt(key, 10);
+        if (Number.isNaN(oldIndex) || oldIndex < 0 || oldIndex >= oldLength) {
+          return;
+        }
+        const newIndex = oldToNew.get(oldIndex);
+        if (newIndex === undefined) {
+          return;
+        }
+        updated[newIndex] = dict[oldIndex];
+      });
+      return updated;
+    };
+
+    this.items.controls.splice(0, this.items.controls.length, ...reorderedControls);
+    this.sampleImages = remapIndexedDict(this.sampleImages);
+    this.sampleVideos = remapIndexedDict(this.sampleVideos);
+
+    const updatedExpanded = new Set<number>();
+    this.expandedItems.forEach((oldIndex) => {
+      const newIndex = oldToNew.get(oldIndex);
+      if (newIndex !== undefined) {
+        updatedExpanded.add(newIndex);
+      }
+    });
+    this.expandedItems = updatedExpanded;
+
+    if (this.activeNavItemIndex >= 0 && this.activeNavItemIndex < oldLength) {
+      const mappedActive = oldToNew.get(this.activeNavItemIndex);
+      this.activeNavItemIndex = mappedActive ?? this.activeNavItemIndex;
+    }
+
+    this.rebuildParentReferencesFromLevels();
+    this.recalculateOrderIndices();
+    this.updateNavSearchSets();
+
+    this.lastReorderUndoState = undoSnapshot;
+    this.showReorderFeedback('items', 0);
+
+    // Rebuild navigation items to reflect new order
+    this.rebuildEditorNavItems();
+
+    this.cdr.detectChanges();
+    this.scheduleActiveItemTrackingRefresh();
   }
 
   /**
@@ -3350,140 +3743,447 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   /**
    * Perform the actual drop operation (shared by main form and navigation)
    */
-  private performDrop(previousIndex: number, currentIndex: number): void {
+  private performDrop(previousIndex: number, currentIndex: number, options?: { useAnchorIndex?: boolean; dropPosition?: 'before' | 'inside' | 'after'; targetIndex?: number }): void {
+    console.log('🔧 performDrop called:', { previousIndex, currentIndex, options });
 
-    const movedItem = this.items.at(previousIndex);
-    const movedLevel = movedItem.get('level')?.value || 0;
-    const movedOrderIndex = movedItem.get('order_index')?.value;
+    const placement = this.calculateDropPlacement(previousIndex, currentIndex, options);
+    console.log('📐 Placement result:', placement);
 
-    // Move the item in the array
-    moveItemInArray(this.items.controls, previousIndex, currentIndex);
+    if (!placement) {
+      console.log('❌ performDrop blocked: placement is null');
+      return;
+    }
 
-    const reindexOnMove = <T>(dict: { [itemIndex: number]: T }): { [itemIndex: number]: T } => {
+    if (placement.isNoOp) {
+      console.log('❌ performDrop blocked: isNoOp');
+      return;
+    }
+
+    const subtreeEnd = placement.subtreeEnd;
+    const subtreeLength = placement.subtreeLength;
+    let targetStart = placement.targetStart;
+    const targetInsideMovedSubtree = targetStart >= previousIndex && targetStart < subtreeEnd;
+    let levelAdjustment = 0;
+
+    const movedItemControl = this.items.at(previousIndex) as FormGroup;
+    const movedItemTitle = movedItemControl?.get('title')?.value || 'Untitled';
+    const movedLevel = Number(movedItemControl?.get('level')?.value || 0);
+    const originalParentAnchor = movedLevel > 0
+      ? this.findNearestAncestorIndexByLevel(previousIndex, movedLevel - 1)
+      : -1;
+
+    console.log('🎯 Moving:', { movedItemTitle, movedLevel, previousIndex, targetStart });
+
+    const explicitDropPosition = options?.dropPosition;
+    const explicitInsideDrop = explicitDropPosition === 'inside';
+    const hasExplicitIntent = !!explicitDropPosition && Number.isInteger(options?.targetIndex);
+    const explicitTargetIndex = hasExplicitIntent ? Number(options?.targetIndex) : -1;
+    const isNavDrivenDrop = options?.useAnchorIndex === true;
+
+    if (hasExplicitIntent && explicitTargetIndex >= 0 && explicitTargetIndex < this.items.length) {
+      const anchorLevel = Number(this.items.at(explicitTargetIndex)?.get('level')?.value || 0);
+      const anchorInsideMovedSubtree = explicitTargetIndex >= previousIndex && explicitTargetIndex < subtreeEnd;
+
+      if (explicitInsideDrop && !anchorInsideMovedSubtree) {
+        const anchorSubtreeEnd = this.getSubtreeEndExclusive(explicitTargetIndex);
+        let nestedTargetStart = anchorSubtreeEnd;
+        if (previousIndex < anchorSubtreeEnd) {
+          nestedTargetStart = anchorSubtreeEnd - subtreeLength;
+        }
+
+        const maxStart = this.items.length - subtreeLength;
+        targetStart = Math.max(0, Math.min(nestedTargetStart, maxStart));
+        levelAdjustment = (anchorLevel + 1) - movedLevel;
+      } else if (!explicitInsideDrop) {
+        // before/after: align moved block to the target row's level
+        levelAdjustment = anchorLevel - movedLevel;
+      }
+
+      console.log('🧭 Explicit intent hierarchy:', {
+        explicitDropPosition,
+        explicitTargetIndex,
+        anchorLevel,
+        targetStart,
+        levelAdjustment
+      });
+    }
+
+    // If dropping inside a top-level folder row, treat it as
+    // "move into folder" (append at end of that folder's subtree).
+    // For pointer-intent drops, this only happens for explicit "inside".
+    // For legacy drop path, keep previous behavior for non-folder drags.
+    if (currentIndex >= 0 && currentIndex < this.items.length) {
+      const anchorLevel = Number(this.items.at(currentIndex)?.get('level')?.value || 0);
+      const anchorInsideMovedSubtree = currentIndex >= previousIndex && currentIndex < subtreeEnd;
+
+      const shouldNestIntoFolder = explicitInsideDrop;
+      if (shouldNestIntoFolder && anchorLevel === 0 && !anchorInsideMovedSubtree && currentIndex !== previousIndex) {
+        const anchorSubtreeEnd = this.getSubtreeEndExclusive(currentIndex);
+        let nestedTargetStart = anchorSubtreeEnd;
+        if (previousIndex < anchorSubtreeEnd) {
+          nestedTargetStart = anchorSubtreeEnd - subtreeLength;
+        }
+
+        const maxStart = this.items.length - subtreeLength;
+        targetStart = Math.max(0, Math.min(nestedTargetStart, maxStart));
+
+        const targetLevel = anchorLevel + 1;
+        levelAdjustment = targetLevel - movedLevel;
+        console.log('📁 Drop-into-group mode:', {
+          anchorIndex: currentIndex,
+          anchorSubtreeEnd,
+          targetStart,
+          levelAdjustment
+        });
+      }
+    }
+
+    // Drag reorder should not implicitly create invalid hierarchy. When we are
+    // in explicit drop-into-group mode (levelAdjustment !== 0), re-parenting is
+    // intentional and validated by level normalization later.
+    if (movedLevel === 0 && !hasExplicitIntent) {
+      const targetLevel = targetStart < this.items.length
+        ? Number(this.items.at(targetStart)?.get('level')?.value || 0)
+        : 0;
+
+      console.log('🔍 Level-0 move:', { targetLevel, targetInsideMovedSubtree });
+
+      // If the provisional target lies inside the moved subtree's original range,
+      // do not re-anchor using current tree rows. Re-anchoring there can snap the
+      // item back to its source when dragging down then back up.
+      if (targetLevel > 0 && !targetInsideMovedSubtree && levelAdjustment === 0) {
+        // If hovering over a child row, treat this as dropping relative to that
+        // top-level section (folder), but keep the move at top-level only.
+        const topLevelAnchor = this.findNearestAncestorOrSelfByLevel(targetStart, 0);
+        console.log('🔍 Found topLevelAnchor:', topLevelAnchor);
+        if (topLevelAnchor >= 0) {
+          // Detect drag direction from calculated target position (before/after folder)
+          const movingToBeforeFolder = targetStart <= topLevelAnchor;
+          console.log('🔍 movingToBeforeFolder:', movingToBeforeFolder);
+          const desiredOriginalInsertIndex = movingToBeforeFolder
+            ? topLevelAnchor
+            : this.getSubtreeEndExclusive(topLevelAnchor);
+          console.log('🔍 desiredOriginalInsertIndex:', desiredOriginalInsertIndex);
+          targetStart = desiredOriginalInsertIndex;
+          if (previousIndex < desiredOriginalInsertIndex) {
+            targetStart = desiredOriginalInsertIndex - subtreeLength;
+          }
+
+          const maxStart = this.items.length - subtreeLength;
+          targetStart = Math.max(0, Math.min(targetStart, maxStart));
+          console.log('🔍 Adjusted targetStart:', targetStart);
+        } else {
+          console.log('❌ Blocked: Top-level items can only be reordered with other top-level items');
+          this.showReorderNotice('Top-level items can only be reordered with other top-level items.');
+          return;
+        }
+      }
+    }
+
+    if (movedLevel > 0 && levelAdjustment === 0 && !hasExplicitIntent && !isNavDrivenDrop) {
+      const targetParentAnchor = this.findNearestAncestorIndexByLevel(targetStart, movedLevel - 1);
+      const targetLevel = targetStart < this.items.length
+        ? Number(this.items.at(targetStart)?.get('level')?.value || 0)
+        : movedLevel;
+
+      console.log('🔍 Level>0 move:', { targetParentAnchor, targetLevel, originalParentAnchor });
+
+      if (targetLevel > movedLevel || targetParentAnchor !== originalParentAnchor) {
+        console.log('❌ Blocked: Hierarchy constraint');
+        this.showReorderNotice('Reorder stays within the same group. Use Promote/Demote to change hierarchy.');
+        return;
+      }
+    }
+
+    console.log('✅ Executing reorder to targetStart:', targetStart);
+
+    const undoSnapshot: ReorderUndoState = {
+      controls: [...this.items.controls],
+      sampleImages: { ...this.sampleImages },
+      sampleVideos: { ...this.sampleVideos },
+      expandedItems: new Set(this.expandedItems),
+      activeNavItemIndex: this.activeNavItemIndex
+    };
+
+    const oldLength = this.items.length;
+    const oldStart = previousIndex;
+    const oldEnd = subtreeEnd;
+
+    const movedBlock = this.items.controls.splice(oldStart, subtreeLength);
+
+    if (levelAdjustment !== 0) {
+      movedBlock.forEach((control) => {
+        const currentLevel = Number(control.get('level')?.value || 0);
+        const nextLevel = Math.max(0, currentLevel + levelAdjustment);
+        control.get('level')?.setValue(nextLevel);
+      });
+    }
+
+    this.items.controls.splice(targetStart, 0, ...movedBlock);
+
+    const mapOldIndexToNewIndex = (oldIndex: number): number => {
+      if (oldIndex >= oldStart && oldIndex < oldEnd) {
+        return targetStart + (oldIndex - oldStart);
+      }
+
+      if (targetStart < oldStart) {
+        if (oldIndex >= targetStart && oldIndex < oldStart) {
+          return oldIndex + subtreeLength;
+        }
+      } else {
+        if (oldIndex >= oldEnd && oldIndex < targetStart + subtreeLength) {
+          return oldIndex - subtreeLength;
+        }
+      }
+
+      return oldIndex;
+    };
+
+    const remapIndexedDict = <T>(dict: { [itemIndex: number]: T }): { [itemIndex: number]: T } => {
       const updated: { [itemIndex: number]: T } = {};
       Object.keys(dict).forEach((key) => {
         const oldIndex = parseInt(key, 10);
-        let newIndex = oldIndex;
-
-        if (oldIndex === previousIndex) {
-          newIndex = currentIndex;
-        } else if (previousIndex < currentIndex) {
-          if (oldIndex > previousIndex && oldIndex <= currentIndex) {
-            newIndex = oldIndex - 1;
-          }
-        } else {
-          if (oldIndex >= currentIndex && oldIndex < previousIndex) {
-            newIndex = oldIndex + 1;
-          }
+        if (Number.isNaN(oldIndex) || oldIndex < 0 || oldIndex >= oldLength) {
+          return;
         }
-
+        const newIndex = mapOldIndexToNewIndex(oldIndex);
         updated[newIndex] = dict[oldIndex];
       });
       return updated;
     };
 
-    this.sampleImages = reindexOnMove(this.sampleImages);
-    this.sampleVideos = reindexOnMove(this.sampleVideos);
+    this.sampleImages = remapIndexedDict(this.sampleImages);
+    this.sampleVideos = remapIndexedDict(this.sampleVideos);
 
-    // Shift expanded items and active index (index-based state)
     const updatedExpanded = new Set<number>();
     this.expandedItems.forEach((oldIndex) => {
-      let newIndex = oldIndex;
-      if (oldIndex === previousIndex) {
-        newIndex = currentIndex;
-      } else if (previousIndex < currentIndex) {
-        if (oldIndex > previousIndex && oldIndex <= currentIndex) {
-          newIndex = oldIndex - 1;
-        }
-      } else {
-        if (oldIndex >= currentIndex && oldIndex < previousIndex) {
-          newIndex = oldIndex + 1;
-        }
+      if (oldIndex < 0 || oldIndex >= oldLength) {
+        return;
       }
-      updatedExpanded.add(newIndex);
+      updatedExpanded.add(mapOldIndexToNewIndex(oldIndex));
     });
     this.expandedItems = updatedExpanded;
 
-    if (this.activeNavItemIndex >= 0) {
-      let newActive = this.activeNavItemIndex;
-      if (newActive === previousIndex) {
-        newActive = currentIndex;
-      } else if (previousIndex < currentIndex) {
-        if (newActive > previousIndex && newActive <= currentIndex) {
-          newActive = newActive - 1;
-        }
-      } else {
-        if (newActive >= currentIndex && newActive < previousIndex) {
-          newActive = newActive + 1;
-        }
-      }
-      this.activeNavItemIndex = newActive;
+    if (this.activeNavItemIndex >= 0 && this.activeNavItemIndex < oldLength) {
+      this.activeNavItemIndex = mapOldIndexToNewIndex(this.activeNavItemIndex);
     }
 
-    // Check what's around the dropped position to determine new parent
-    const itemAbove = currentIndex > 0 ? this.items.at(currentIndex - 1) : null;
-    const itemBelow = currentIndex < this.items.length - 1 ? this.items.at(currentIndex + 1) : null;
-
-    const aboveLevel = itemAbove?.get('level')?.value || 0;
-    const belowLevel = itemBelow?.get('level')?.value || 0;
-    const aboveOrderIndex = itemAbove?.get('order_index')?.value;
-    const aboveParentId = itemAbove?.get('parent_id')?.value;
-    const aboveDbId = itemAbove?.get('id')?.value; // Database ID
-
-    // Smart re-parenting based on drop position
-    if (itemAbove === null) {
-      movedItem.get('level')?.setValue(0);
-      movedItem.get('parent_id')?.setValue(null);
-    } else if (aboveLevel === 0 && (belowLevel === 1 || itemBelow === null)) {
-      // Dropped below a parent item - become its child
-      movedItem.get('level')?.setValue(1);
-      movedItem.get('parent_id')?.setValue(aboveDbId); // Use database ID
-    } else if (aboveLevel === 1) {
-      // Dropped below a child - become sibling
-      movedItem.get('level')?.setValue(1);
-      movedItem.get('parent_id')?.setValue(aboveParentId); // Same parent
-    } else if (aboveLevel === 0 && belowLevel === 0) {
-      // Dropped between two parents
-      movedItem.get('level')?.setValue(0);
-      movedItem.get('parent_id')?.setValue(null);
-    }
-
-    // If moving a parent item, also move all its children
-    if (movedLevel === 0) {
-      const movedItemDbId = movedItem.get('id')?.value; // Use database ID
-      const children: { index: number, control: any }[] = [];
-
-      // Find all children of the moved parent (before the move)
-      this.items.controls.forEach((item, index) => {
-        if (item.get('parent_id')?.value === movedItemDbId && index !== currentIndex) {
-          children.push({ index, control: item });
-        }
-      });
-
-      // Move children to be right after their parent
-      if (children.length > 0) {
-        // Sort by current position (descending) to avoid index conflicts
-        children.sort((a, b) => b.index - a.index);
-
-        // Move each child to right after parent
-        children.forEach((child, i) => {
-          const targetIndex = currentIndex + 1 + i;
-          const currentChildIndex = this.items.controls.indexOf(child.control);
-
-          if (currentChildIndex !== targetIndex) {
-            moveItemInArray(this.items.controls, currentChildIndex, targetIndex);
-          }
-        });
-      }
-    }
+    // Rebuild parent references from the current sequence so stale parent_id
+    // values do not override reorder intent on save/reload.
+    this.rebuildParentReferencesFromLevels();
 
     // Recalculate order_index for all items to maintain proper sequence
     this.recalculateOrderIndices();
     this.updateNavSearchSets();
 
+    this.lastReorderUndoState = undoSnapshot;
+    this.showReorderFeedback(movedItemTitle, targetStart);
+
+    // Rebuild navigation items to reflect new order
+    this.rebuildEditorNavItems();
+
     // Trigger change detection
     this.cdr.detectChanges();
-    setTimeout(() => this.refreshActiveItemTracking());
+    this.scheduleActiveItemTrackingRefresh();
+  }
+
+  private findNearestAncestorIndexByLevel(startIndex: number, targetLevel: number): number {
+    for (let i = startIndex - 1; i >= 0; i--) {
+      const level = Number(this.items.at(i)?.get('level')?.value || 0);
+      if (level === targetLevel) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  private findNearestAncestorOrSelfByLevel(startIndex: number, targetLevel: number): number {
+    if (startIndex >= 0 && startIndex < this.items.length) {
+      const selfLevel = Number(this.items.at(startIndex)?.get('level')?.value || 0);
+      if (selfLevel === targetLevel) {
+        return startIndex;
+      }
+    }
+
+    for (let i = Math.min(startIndex, this.items.length - 1); i >= 0; i--) {
+      const level = Number(this.items.at(i)?.get('level')?.value || 0);
+      if (level === targetLevel) {
+        return i;
+      }
+    }
+
+    return -1;
+  }
+
+  undoLastReorder(): void {
+    if (!this.lastReorderUndoState) {
+      return;
+    }
+
+    const snapshot = this.lastReorderUndoState;
+    this.items.controls.splice(0, this.items.controls.length, ...snapshot.controls);
+    this.sampleImages = { ...snapshot.sampleImages };
+    this.sampleVideos = { ...snapshot.sampleVideos };
+    this.expandedItems = new Set(snapshot.expandedItems);
+    this.activeNavItemIndex = snapshot.activeNavItemIndex;
+
+    this.recalculateOrderIndices();
+    this.updateNavSearchSets();
+    this.clearReorderFeedback();
+    this.lastReorderUndoState = null;
+
+    // Rebuild navigation items to reflect restored order
+    this.rebuildEditorNavItems();
+
+    this.cdr.detectChanges();
+    this.scheduleActiveItemTrackingRefresh();
+  }
+
+  clearReorderFeedback(): void {
+    this.reorderFeedbackMessage = '';
+    if (this.reorderFeedbackTimeout) {
+      clearTimeout(this.reorderFeedbackTimeout);
+      this.reorderFeedbackTimeout = null;
+    }
+  }
+
+  private showReorderFeedback(movedTitle: string, targetStart: number): void {
+    const destinationOutline = this.getOutlineNumber(targetStart);
+    this.reorderFeedbackMessage = `Moved "${movedTitle}" to ${destinationOutline}.`;
+
+    if (this.reorderFeedbackTimeout) {
+      clearTimeout(this.reorderFeedbackTimeout);
+    }
+
+    this.reorderFeedbackTimeout = setTimeout(() => {
+      this.reorderFeedbackMessage = '';
+      this.reorderFeedbackTimeout = null;
+    }, 8000);
+  }
+
+  private showReorderNotice(message: string): void {
+    this.reorderFeedbackMessage = message;
+
+    if (this.reorderFeedbackTimeout) {
+      clearTimeout(this.reorderFeedbackTimeout);
+    }
+
+    this.reorderFeedbackTimeout = setTimeout(() => {
+      this.reorderFeedbackMessage = '';
+      this.reorderFeedbackTimeout = null;
+    }, 6000);
+  }
+
+  onItemKeydown(event: KeyboardEvent, index: number): void {
+    if (this.isPublishedLocked() || index < 0 || index >= this.items.length) {
+      return;
+    }
+
+    const target = event.target as HTMLElement | null;
+    if (target && this.shouldIgnoreReorderShortcutTarget(target)) {
+      return;
+    }
+
+    if (event.altKey && event.key === 'ArrowUp') {
+      event.preventDefault();
+      this.moveItemUp(index);
+      return;
+    }
+
+    if (event.altKey && event.key === 'ArrowDown') {
+      event.preventDefault();
+      this.moveItemDown(index);
+      return;
+    }
+
+    if (event.key === 'Tab') {
+      event.preventDefault();
+      if (event.shiftKey) {
+        this.promoteItem(index);
+      } else if (this.canDemote(index)) {
+        this.demoteItem(index);
+      }
+    }
+  }
+
+  private shouldIgnoreReorderShortcutTarget(target: HTMLElement): boolean {
+    return !!target.closest('input, textarea, select, button, a, [contenteditable="true"], .ql-editor, .ql-toolbar');
+  }
+
+  private updateDragDropHint(previousIndex: number, currentIndex: number): void {
+    const placement = this.calculateDropPlacement(previousIndex, currentIndex);
+    if (!placement) {
+      this.dropHintText = '';
+      return;
+    }
+
+    if (placement.isNoOp) {
+      this.dropHintText = 'Drop to keep in the current position';
+      return;
+    }
+
+    const targetTitle = this.getItemTitle(placement.targetStart);
+    const targetOutline = this.getOutlineNumber(placement.targetStart);
+    this.dropHintText = `Drop to move before ${targetOutline} ${targetTitle}`;
+  }
+
+  private calculateDropPlacement(previousIndex: number, currentIndex: number, options?: { useAnchorIndex?: boolean }): {
+    subtreeEnd: number;
+    subtreeLength: number;
+    targetStart: number;
+    isNoOp: boolean;
+  } | null {
+    // Allow currentIndex === items.length for "append to end" case
+    if (previousIndex < 0 || previousIndex >= this.items.length || currentIndex < 0 || currentIndex > this.items.length) {
+      return null;
+    }
+
+    const subtreeEnd = this.getSubtreeEndExclusive(previousIndex);
+    const subtreeLength = subtreeEnd - previousIndex;
+
+    // Convert target index into subtree insertion index.
+    // - Default path expects CDK placeholder index semantics.
+    // - Nav path passes an anchor row index in the full array.
+    let targetStart = currentIndex;
+    if (options?.useAnchorIndex) {
+      if (currentIndex > previousIndex) {
+        targetStart = currentIndex - subtreeLength;
+      }
+    } else {
+      if (currentIndex > previousIndex) {
+        targetStart = currentIndex - subtreeLength + 1;
+      }
+    }
+
+    const maxStart = this.items.length - subtreeLength;
+    targetStart = Math.max(0, Math.min(targetStart, maxStart));
+
+    // A move is a no-op only when the block's insertion start is unchanged.
+    // For subtree moves, targetStart can fall within the original subtree range
+    // and still represent a real reorder after removal.
+    const isNoOp = targetStart === previousIndex;
+
+    return {
+      subtreeEnd,
+      subtreeLength,
+      targetStart,
+      isNoOp
+    };
+  }
+
+  private getSubtreeEndExclusive(startIndex: number): number {
+    const startLevel = this.items.at(startIndex).get('level')?.value || 0;
+    let end = startIndex + 1;
+
+    while (end < this.items.length) {
+      const level = this.items.at(end).get('level')?.value || 0;
+      if (level <= startLevel) {
+        break;
+      }
+      end++;
+    }
+
+    return end;
   }
 
   /**
@@ -3491,28 +4191,20 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
    * Industry standard for quality checklists - clear hierarchy, easy to reference
    */
   private recalculateOrderIndices(): void {
-    // Track counters at each level for each parent path
-    const counterStack: number[] = [0]; // Start with 0 at root level
-    const parentIdStack: (number | null)[] = [null]; // Track parent IDs for each level
+    // Track counters by level using current visual sequence.
+    // This intentionally does not depend on parent_id to avoid stale references
+    // affecting numbering after drag/drop.
+    const counterStack: number[] = [0];
 
     this.items.controls.forEach((control, index) => {
       const level = control.get('level')?.value || 0;
-      const parentId = control.get('parent_id')?.value;
 
       // Adjust stack size to current level + 1
       while (counterStack.length > level + 1) {
         counterStack.pop();
-        parentIdStack.pop();
       }
       while (counterStack.length < level + 1) {
         counterStack.push(0);
-        parentIdStack.push(null);
-      }
-
-      // Check if we've moved to a different parent - reset counter if so
-      if (level > 0 && parentIdStack[level] !== parentId) {
-        counterStack[level] = 0;
-        parentIdStack[level] = parentId;
       }
 
       // Increment counter at current level
@@ -3537,6 +4229,57 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
       control.get('order_index')?.setValue(outlineNumber);
     });
+  }
+
+  /**
+   * Recompute parent_id from current item order + level nesting.
+   * This keeps hierarchy metadata aligned with drag/drop sequence.
+   */
+  private rebuildParentReferencesFromLevels(): void {
+    const findNearestAncestorIndex = (startIndex: number, targetLevel: number): number => {
+      for (let i = startIndex - 1; i >= 0; i--) {
+        const level = this.items.at(i)?.get('level')?.value || 0;
+        if (level === targetLevel) {
+          return i;
+        }
+      }
+      return -1;
+    };
+
+    for (let i = 0; i < this.items.length; i++) {
+      const item = this.items.at(i);
+      let level = Number(item.get('level')?.value || 0);
+      if (!Number.isInteger(level) || level < 0) {
+        level = 0;
+      }
+
+      // Prevent impossible hierarchy at the top of the list.
+      if (i === 0 && level > 0) {
+        level = 0;
+      }
+
+      // Remove gaps such as level 2 without a level 1 ancestor.
+      while (level > 0) {
+        const ancestorIndex = findNearestAncestorIndex(i, level - 1);
+        if (ancestorIndex >= 0) {
+          break;
+        }
+        level--;
+      }
+
+      if (item.get('level')?.value !== level) {
+        item.get('level')?.setValue(level);
+      }
+
+      if (level === 0) {
+        item.get('parent_id')?.setValue(null);
+        continue;
+      }
+
+      const parentIndex = findNearestAncestorIndex(i, level - 1);
+      const parentId = parentIndex >= 0 ? (this.items.at(parentIndex).get('id')?.value ?? null) : null;
+      item.get('parent_id')?.setValue(parentId);
+    }
   }
 
   /**
@@ -4157,21 +4900,200 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   /**
    * Scroll to an item in the edit view (main form)
    */
-  scrollToItem(itemIndex: number): void {
+  scrollToItem(itemIndex: number, options?: { fromNavigation?: boolean }): void {
+    const fromNavigation = options?.fromNavigation === true;
+
     // Set selected item if focused edit mode is ON
     if (this.focusedEditMode) {
       this.selectedFormItemIndex = itemIndex;
     }
 
+    this.beginProgrammaticScrollLock();
+
+    if (itemIndex !== this.activeNavItemIndex) {
+      this.activeNavItemIndex = itemIndex;
+      this.updateStickyParentFromActive(itemIndex);
+      this.expandParentsOfItem(itemIndex);
+      this.cdr.detectChanges();
+    }
+
     const element = document.getElementById(`edit-item-${itemIndex}`);
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (fromNavigation) {
+        this.scrollElementToCenterImmediately(element);
+      } else {
+        element.scrollIntoView({
+          behavior: 'smooth',
+          block: this.focusedEditMode ? 'center' : 'nearest'
+        });
+      }
       // Add brief highlight effect
       element.classList.add('border-success', 'border-3');
       const originalBorderClass = element.className;
       setTimeout(() => {
         element.classList.remove('border-success', 'border-3');
       }, 1500);
+    }
+  }
+
+  onNavItemSelected(itemIndex: number): void {
+    this.updateSelectedItemQueryParam(itemIndex);
+    this.scrollToItem(itemIndex, { fromNavigation: true });
+  }
+
+  private updateSelectedItemQueryParam(itemIndex: number | null): void {
+    const currentRaw = this.route.snapshot.queryParamMap.get('item');
+    const currentValue = currentRaw !== null ? Number(currentRaw) : NaN;
+    const nextValue = itemIndex;
+
+    if ((nextValue === null && currentRaw === null) || (nextValue !== null && Number.isInteger(currentValue) && currentValue === nextValue)) {
+      return;
+    }
+
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { item: nextValue },
+      queryParamsHandling: 'merge',
+      replaceUrl: true
+    });
+  }
+
+  private restoreRequestedNavItemSelection(): void {
+    if (this.requestedNavItemIndex === null) {
+      return;
+    }
+
+    const index = this.requestedNavItemIndex;
+    if (index < 0 || index >= this.items.length) {
+      return;
+    }
+
+    this.scrollToItem(index, { fromNavigation: true });
+  }
+
+  private scheduleRestoreRequestedNavItemSelection(attempt: number): void {
+    if (this.restoreNavSelectionTimeout) {
+      clearTimeout(this.restoreNavSelectionTimeout);
+      this.restoreNavSelectionTimeout = null;
+    }
+
+    if (this.requestedNavItemIndex === null || this.loading) {
+      return;
+    }
+
+    const index = this.requestedNavItemIndex;
+    if (index < 0 || index >= this.items.length) {
+      return;
+    }
+
+    const element = document.getElementById(`edit-item-${index}`);
+    const isVisible = !!element && element.getClientRects().length > 0;
+
+    if (isVisible) {
+      this.restoreRequestedNavItemSelection();
+      return;
+    }
+
+    if (attempt >= 80) {
+      return;
+    }
+
+    this.restoreNavSelectionTimeout = setTimeout(() => {
+      this.restoreNavSelectionTimeout = null;
+      this.scheduleRestoreRequestedNavItemSelection(attempt + 1);
+    }, 75);
+  }
+
+  private scrollElementToCenterImmediately(element: HTMLElement): void {
+    const scrollContainer = this.findNearestScrollContainer(element);
+    const topOffset = this.getNavigationJumpTopOffset();
+
+    if (scrollContainer) {
+      const containerRect = scrollContainer.getBoundingClientRect();
+      const elementRect = element.getBoundingClientRect();
+      const nextTop = scrollContainer.scrollTop + (elementRect.top - containerRect.top) - topOffset;
+      this.withForcedInstantScroll(scrollContainer, () => {
+        scrollContainer.scrollTop = Math.max(0, nextTop);
+      });
+      return;
+    }
+
+    const docScroller = document.scrollingElement || document.documentElement;
+    const elementRect = element.getBoundingClientRect();
+    const nextTop = (window.scrollY || docScroller.scrollTop || 0) + elementRect.top - topOffset;
+    this.withForcedInstantWindowScroll(() => {
+      window.scrollTo(0, Math.max(0, nextTop));
+    });
+  }
+
+  private getNavigationJumpTopOffset(): number {
+    // Keep the destination card header visible below fixed/sticky top chrome.
+    const basePadding = 12;
+    const fixedTopCandidates = document.querySelectorAll<HTMLElement>('header, .navbar, .topbar, .app-header');
+
+    let maxFixedTopHeight = 0;
+    fixedTopCandidates.forEach((el) => {
+      const style = window.getComputedStyle(el);
+      const isFixedOrSticky = style.position === 'fixed' || style.position === 'sticky';
+      const anchoredToTop = (style.top || '0px') === '0px';
+      if (!isFixedOrSticky || !anchoredToTop) {
+        return;
+      }
+
+      const rect = el.getBoundingClientRect();
+      if (rect.height > maxFixedTopHeight) {
+        maxFixedTopHeight = rect.height;
+      }
+    });
+
+    return maxFixedTopHeight + basePadding;
+  }
+
+  private findNearestScrollContainer(start: HTMLElement): HTMLElement | null {
+    let node: HTMLElement | null = start.parentElement;
+
+    while (node) {
+      const style = window.getComputedStyle(node);
+      const overflowY = style.overflowY;
+      const canScroll = (overflowY === 'auto' || overflowY === 'scroll') && node.scrollHeight > node.clientHeight;
+      if (canScroll) {
+        return node;
+      }
+      node = node.parentElement;
+    }
+
+    return null;
+  }
+
+  private withForcedInstantScroll(container: HTMLElement, action: () => void): void {
+    const previousBehavior = container.style.scrollBehavior;
+    container.style.scrollBehavior = 'auto';
+
+    try {
+      action();
+    } finally {
+      requestAnimationFrame(() => {
+        container.style.scrollBehavior = previousBehavior;
+      });
+    }
+  }
+
+  private withForcedInstantWindowScroll(action: () => void): void {
+    const html = document.documentElement;
+    const body = document.body;
+    const prevHtmlBehavior = html.style.scrollBehavior;
+    const prevBodyBehavior = body.style.scrollBehavior;
+
+    html.style.scrollBehavior = 'auto';
+    body.style.scrollBehavior = 'auto';
+
+    try {
+      action();
+    } finally {
+      requestAnimationFrame(() => {
+        html.style.scrollBehavior = prevHtmlBehavior;
+        body.style.scrollBehavior = prevBodyBehavior;
+      });
     }
   }
 
@@ -4385,8 +5307,9 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     }
   }
 
-  buildEditorNavItems(): ChecklistNavItem[] {
-    return this.items.controls.map((control, index) => {
+  rebuildEditorNavItems(): void {
+    console.log('🔨 rebuildEditorNavItems called, items.length:', this.items.length);
+    this.editorNavItems = this.items.controls.map((control, index) => {
       const item = control as FormGroup;
       const rawId = item.get('id')?.value;
       const parsedId = Number(rawId);
@@ -4761,12 +5684,15 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
           }
         }
 
+        if (this.isProgrammaticScrollLocked()) {
+          return;
+        }
+
         const nextActive = this.pickBestActiveIndexFromVisibleEntries();
         if (nextActive !== -1 && nextActive !== this.activeNavItemIndex) {
           this.activeNavItemIndex = nextActive;
           this.updateStickyParentFromActive(nextActive);
           this.expandParentsOfItem(nextActive);
-          this.scrollNavToActiveItem(nextActive);
           this.cdr.detectChanges();
         }
       },
@@ -4863,10 +5789,33 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     this.setupIntersectionObserver();
   }
 
+  private scheduleActiveItemTrackingRefresh(delayMs: number = 80): void {
+    if (this.activeTrackingRefreshTimeout) {
+      clearTimeout(this.activeTrackingRefreshTimeout);
+    }
+
+    this.activeTrackingRefreshTimeout = setTimeout(() => {
+      this.activeTrackingRefreshTimeout = null;
+      this.refreshActiveItemTracking();
+    }, delayMs);
+  }
+
+  private beginProgrammaticScrollLock(durationMs: number = this.programmaticScrollLockMs): void {
+    this.suppressObserverUpdatesUntil = Date.now() + durationMs;
+  }
+
+  private isProgrammaticScrollLocked(): boolean {
+    return Date.now() < this.suppressObserverUpdatesUntil;
+  }
+
   /**
    * Check which item is currently in the viewport
    */
   checkActiveItem(): void {
+    if (this.isProgrammaticScrollLocked()) {
+      return;
+    }
+
     const viewportMiddle = window.innerHeight / 2;
     let closestItem = -1;
     let closestDistance = Infinity;
@@ -4893,8 +5842,6 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       // Auto-expand parent folders to show active item
       if (closestItem >= 0) {
         this.expandParentsOfItem(closestItem);
-        // Scroll navigation to show the active item
-        this.scrollNavToActiveItem(closestItem);
       }
 
       this.cdr.detectChanges();
@@ -4957,7 +5904,9 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     this.teardownScrollListener();
 
     this.routeParamSub?.unsubscribe();
+    this.routeQueryParamSub?.unsubscribe();
     this.templateFormChangesSub?.unsubscribe();
+    this.navItemsSub?.unsubscribe();
 
     if (this.scrollCheckTimeout) {
       clearTimeout(this.scrollCheckTimeout);
@@ -4965,6 +5914,16 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
     if (this.autoSaveTimeout) {
       clearTimeout(this.autoSaveTimeout);
+    }
+
+    if (this.activeTrackingRefreshTimeout) {
+      clearTimeout(this.activeTrackingRefreshTimeout);
+      this.activeTrackingRefreshTimeout = null;
+    }
+
+    if (this.restoreNavSelectionTimeout) {
+      clearTimeout(this.restoreNavSelectionTimeout);
+      this.restoreNavSelectionTimeout = null;
     }
   }
 
@@ -5267,9 +6226,23 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   }
 
   saveTemplate(): void {
+    const templateData = this.buildTemplatePayload();
+
     if (this.editingTemplate && !this.editingTemplate.is_draft) {
-      this.saving = false;
-      alert('This is a published template and cannot be edited directly. Start a draft first.');
+      const changes = this.detectTemplateChanges(this.editingTemplate, templateData);
+
+      if (!changes?.has_changes) {
+        alert('No changes to save.');
+        return;
+      }
+
+      if (!this.isReorderOnlyChangeSet(changes)) {
+        this.saving = false;
+        alert('Published templates can only be saved in place for item sorting changes. Start a draft for content edits.');
+        return;
+      }
+
+      this.proceedWithSave(templateData, false, changes, 'Reordered checklist items');
       return;
     }
 
@@ -5298,8 +6271,6 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     }
 
     this.saving = true;
-
-    const templateData = this.buildTemplatePayload();
 
     // If editing an existing draft, publish in-place (same template ID) instead of creating a new version.
     if (this.editingTemplate?.is_draft) {
@@ -5340,6 +6311,36 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       // New template - no revision needed
       this.proceedWithSave(templateData, false);
     }
+  }
+
+  private isReorderOnlyChangeSet(changes: any): boolean {
+    if (!changes?.has_changes) {
+      return false;
+    }
+
+    if ((changes.field_changes?.length ?? 0) > 0) {
+      return false;
+    }
+
+    if ((changes.items_added?.length ?? 0) > 0 || (changes.items_removed?.length ?? 0) > 0) {
+      return false;
+    }
+
+    const itemChanges = Array.isArray(changes.items_modified) ? changes.items_modified : [];
+    if (itemChanges.length === 0) {
+      return false;
+    }
+
+    const allowedFields = new Set(['Position', 'Hierarchy Level', 'Parent Item']);
+
+    return itemChanges.every((item: any) => {
+      const changesForItem = Array.isArray(item?.changes) ? item.changes : [];
+      if (changesForItem.length === 0) {
+        return false;
+      }
+
+      return changesForItem.every((entry: any) => allowedFields.has(String(entry?.field || '')));
+    });
   }
 
   saveDraft(): void {
@@ -5538,6 +6539,14 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   private buildTemplatePayload(): any {
     const templateData = this.templateForm.value;
 
+    // Always snapshot items from the live FormArray control order (not from
+    // templateForm.value cache) so drag reorder persists correctly.
+    this.rebuildParentReferencesFromLevels();
+    this.recalculateOrderIndices();
+    const orderedItems = this.items.controls.map((control) => ({
+      ...((control as FormGroup).getRawValue())
+    }));
+
     // DEBUG: Log sample_images from form before save
     //
     console.log('� Checking form data before save:');
@@ -5565,7 +6574,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     delete templateData.quality_document_id;
 
     // Clean up sample_images array for backend
-    templateData.items = templateData.items.map((item: any, index: number) => {
+    templateData.items = orderedItems.map((item: any, index: number) => {
       // Ensure photo_requirements is properly formatted (includes submission_type, etc.)
       if (item.photo_requirements) {
         // Ensure submission_type is present
@@ -5619,8 +6628,10 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
       // Return item with level for ONE-PASS parent_id calculation
       // Backend uses sequential processing + level to determine parent_id automatically
+      // Do not send local parent_id values; stale IDs can override intended order.
+      const { parent_id, ...sanitizedItem } = item;
       return {
-        ...item
+        ...sanitizedItem
         // parent_order_index removed - no longer needed with ONE-PASS algorithm
       };
     });
@@ -6677,9 +7688,11 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     this.items.insert(index, newItem);
 
     this.recalculateOrderIndices();
+
+    this.rebuildEditorNavItems();
     this.cdr.detectChanges();
     this.updateNavSearchSets();
-    setTimeout(() => this.refreshActiveItemTracking());
+    this.scheduleActiveItemTrackingRefresh();
   }
 
   addItemBelow(index: number, event?: Event): void {
@@ -6706,9 +7719,11 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     this.items.insert(insertIndex, newItem);
 
     this.recalculateOrderIndices();
+
+    this.rebuildEditorNavItems();
     this.cdr.detectChanges();
     this.updateNavSearchSets();
-    setTimeout(() => this.refreshActiveItemTracking());
+    this.scheduleActiveItemTrackingRefresh();
   }
 
   async duplicateItem(index: number, event?: Event): Promise<void> {
@@ -6733,9 +7748,11 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     await this.duplicateSampleMedia(index, insertIndex, duplicateItem);
 
     this.recalculateOrderIndices();
+
+    this.rebuildEditorNavItems();
     this.cdr.detectChanges();
     this.updateNavSearchSets();
-    setTimeout(() => this.refreshActiveItemTracking());
+    this.scheduleActiveItemTrackingRefresh();
   }
 
   private async duplicateSampleMedia(sourceIndex: number, targetIndex: number, targetItem: FormGroup): Promise<void> {
@@ -6908,6 +7925,9 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     } else {
       console.warn('⚠️ No items array found in parsedTemplate!');
     }
+
+    // Rebuild navigation items after import
+    this.rebuildEditorNavItems();
 
     // Trigger change detection to update UI
     this.cdr.detectChanges();

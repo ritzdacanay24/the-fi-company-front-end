@@ -1,5 +1,6 @@
 <div class="checklist-nav d-flex flex-column" 
   [class.h-100]="!height"
+  [style.height]="height"
   [style.max-height]="height"
      [class.card]="cardStyle"
      [class.shadow-sm]="cardStyle"
@@ -11,18 +12,30 @@
       <h6 class="mb-0" *ngIf="cardStyle">
         <i class="mdi mdi-view-list me-2"></i>Navigation
       </h6>
-      <div *ngIf="showExpandCollapse" class="btn-group btn-group-sm" [class.ms-auto]="!cardStyle || !showSearch" role="group">
-        <button type="button"
-                class="btn btn-outline-secondary py-0 px-2"
-                (click)="expandAllNav()"
-                title="Expand All">
-          <i class="mdi mdi-chevron-down"></i>
-        </button>
-        <button type="button"
-                class="btn btn-outline-secondary py-0 px-2"
-                (click)="collapseAllNav()"
-                title="Collapse All">
-          <i class="mdi mdi-chevron-right"></i>
+      <div class="d-flex align-items-center gap-2" [class.ms-auto]="!cardStyle || !showSearch">
+        <div *ngIf="showExpandCollapse" class="btn-group btn-group-sm" role="group">
+          <button type="button"
+                  class="btn btn-outline-secondary py-0 px-2"
+                  (click)="expandAllNav()"
+                  title="Expand All">
+            <i class="mdi mdi-chevron-down"></i>
+          </button>
+          <button type="button"
+                  class="btn btn-outline-secondary py-0 px-2"
+                  (click)="collapseAllNav()"
+                  title="Collapse All">
+            <i class="mdi mdi-chevron-right"></i>
+          </button>
+        </div>
+
+        <button *ngIf="canUseReorderControls()"
+                type="button"
+                class="btn btn-sm py-0 px-2"
+                [class.btn-primary]="reorderModeEnabled"
+                [class.btn-outline-secondary]="!reorderModeEnabled"
+                (click)="toggleReorderMode()"
+                title="Toggle reorder mode">
+          <i class="mdi mdi-drag me-1"></i>{{ reorderModeEnabled ? 'Reordering' : 'Reorder' }}
         </button>
       </div>
     </div>
@@ -63,6 +76,31 @@
         </small>
       </div>
     </div>
+
+    <div *ngIf="canUseReorderControls()" class="mt-2">
+      <div class="d-flex align-items-center justify-content-between gap-2">
+        <small class="text-muted d-flex align-items-center gap-1 mb-0">
+          <i class="mdi" [class.mdi-swap-vertical]="reorderModeEnabled" [class.mdi-information-outline]="!reorderModeEnabled"></i>
+          <span *ngIf="reorderModeEnabled">Reorder mode is on</span>
+          <span *ngIf="!reorderModeEnabled">Reorder mode is off</span>
+        </small>
+
+        <button
+          type="button"
+          class="btn btn-sm"
+          [class.btn-primary]="reorderModeEnabled"
+          [class.btn-outline-secondary]="!reorderModeEnabled"
+          [disabled]="isNavSearchActive()"
+          (click)="toggleReorderMode()"
+          title="Toggle reorder mode">
+          {{ reorderModeEnabled ? 'Turn Off Reorder' : 'Turn On Reorder' }}
+        </button>
+      </div>
+
+      <small class="text-muted d-block mt-1" *ngIf="isNavSearchActive()">
+        Clear search to enable reordering.
+      </small>
+    </div>
   </div>
 
   <div [class.card-body]="cardStyle" class="p-0 d-flex flex-column flex-grow-1 overflow-hidden">
@@ -79,199 +117,262 @@
       No checklist items available.
     </div>
 
-        <div *ngIf="!isLoading && !loadError && navItems.length > 0"
-          class="list-group list-group-flush nav-scroll-container flex-grow-1 overflow-auto"
-          #navContainer
-          cdkDropList
-          [cdkDropListDisabled]="!isEditorMode() || isNavSearchActive()"
-          (cdkDropListDropped)="onDrop($event)">
-      <a *ngFor="let item of navItems; let i = index; trackBy: trackByItemId"
-         [id]="'nav-item-' + i"
-         class="list-group-item list-group-item-action py-2 border-0"
-         [class.active]="activeNavItemIndex === i"
-         [class.nav-item-match]="isNavItemMatch(i)"
-         [class.nav-item-invalid]="!!item.isInvalid"
-         style="cursor: pointer; min-height: 40px;"
-         [style.display]="isNavItemVisible(i) ? 'block' : 'none'"
-         cdkDrag
-         [cdkDragDisabled]="!isEditorMode() || isNavSearchActive()"
-         (click)="selectItem(i)">
+    <!-- Shared item body template (used by both editor and readonly containers) -->
+    <!-- Content fragment: chevron, indent, icon, badge, title, status, media, actions -->
+    <ng-template #navItemTpl let-item="item" let-i="i" let-hasChildren="hasChildren">
+        <div class="flex-shrink-0" style="width: 6px;"></div>
 
-        <ng-container *ngIf="isEditorMode()">
-          <div class="d-flex align-items-center gap-1 px-2 py-1 bg-body-secondary border rounded" *cdkDragPreview>
-            <i class="mdi"
-               [class.mdi-folder]="item.level === 0"
-               [class.mdi-file-document-outline]="item.level > 0"
-               [class.text-warning]="item.level === 0"
-               [class.text-muted]="item.level > 0"></i>
-            <span class="badge bg-secondary" style="font-size: 0.65rem;">{{ i + 1 }}</span>
-            <small class="fw-semibold">{{ item.title }}</small>
-          </div>
-        </ng-container>
+        <div class="flex-shrink-0" [style.width.px]="item.level * 10"></div>
 
-        <div class="d-flex align-items-center gap-1">
-          <div *ngIf="isEditorMode()" class="flex-shrink-0" style="width: 16px;" cdkDragHandle title="Drag to reorder">
-            <i class="mdi mdi-drag-vertical"
-               [class.text-muted]="activeNavItemIndex !== i"
-               [class.text-white-50]="activeNavItemIndex === i"
-               style="font-size: 18px; cursor: grab;"></i>
-          </div>
+        <div class="flex-shrink-0" style="width: 20px;">
+          <i class="mdi"
+             *ngIf="hasChildren"
+             [class.mdi-chevron-down]="expandedItems.has(i)"
+             [class.mdi-chevron-right]="!expandedItems.has(i)"
+             [class.text-muted]="activeNavItemIndex !== i"
+             [class.text-white]="activeNavItemIndex === i"
+             style="cursor: pointer;"
+             (click)="toggleNavExpansion(i, $event)"
+             style="font-size: 18px;"></i>
 
-          <div class="flex-shrink-0" style="width: 18px;">
-            <i *ngIf="hasChildren(i)"
-               class="mdi"
-               [class.mdi-chevron-down]="expandedItems.has(i)"
-               [class.mdi-chevron-right]="!expandedItems.has(i)"
-               [class.text-muted]="activeNavItemIndex !== i"
-               [class.text-white-50]="activeNavItemIndex === i"
-               (click)="toggleNavExpansion(i, $event)"
-               style="cursor: pointer; font-size: 18px;"></i>
-          </div>
-
-          <div class="flex-shrink-0" [style.width.px]="item.level * 20"></div>
-
-          <div class="flex-shrink-0" style="width: 20px;">
-            <i class="mdi"
-               [class.mdi-folder-open]="item.level === 0 && expandedItems.has(i)"
-               [class.mdi-folder]="item.level === 0 && !expandedItems.has(i)"
-               [class.mdi-file-document-outline]="item.level > 0"
-               [class.text-warning]="item.level === 0 && activeNavItemIndex !== i"
-               [class.text-muted]="item.level > 0 && activeNavItemIndex !== i"
-               [class.text-white]="activeNavItemIndex === i"
-               style="font-size: 18px;"></i>
-          </div>
-
-          <span class="badge flex-shrink-0 me-1"
-                [class.bg-secondary]="activeNavItemIndex !== i"
-                [class.bg-white]="activeNavItemIndex === i"
-                [class.bg-opacity-25]="activeNavItemIndex === i"
-                [class.text-white]="activeNavItemIndex === i"
-                style="min-width: 42px; font-size: 0.65rem;">
-            {{ i + 1 }}
-          </span>
-
-          <div class="flex-grow-1" style="overflow: hidden; min-width: 96px;">
-            <small class="d-block" 
-                   [class.fw-semibold]="item.level === 0"
-                   style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
-                   [title]="item.title">
-              {{ item.title }}
-            </small>
-            <small *ngIf="isReadonlyMode() && item.isParent && item.progressTotal"
-                   class="d-block"
-                   [class.text-muted]="activeNavItemIndex !== i"
-                   [class.text-white-50]="activeNavItemIndex === i"
-                   style="font-size: 0.7rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-              ({{ item.progressCompleted || 0 }}/{{ item.progressTotal }} · {{ item.progressPercent || 0 }}%)
-            </small>
-          </div>
-
-          <div class="flex-shrink-0 d-flex align-items-center gap-1">
-            <!-- Read-only mode: keep navigation clean (status only) -->
-            <i *ngIf="isReadonlyMode() && item.isComplete !== undefined && item.isRequired"
-            class="mdi"
-            [class.mdi-check-circle]="item.isComplete"
-            [class.mdi-circle-outline]="!item.isComplete"
-            [class.text-success]="item.isComplete && activeNavItemIndex !== i"
-            [class.text-muted]="!item.isComplete && activeNavItemIndex !== i"
-            [class.text-white]="activeNavItemIndex === i"
-            style="font-size: 16px;"
-            title="{{ item.isComplete ? 'Complete' : 'Pending' }}"></i>
-
-            <!-- Optional media context (hidden by default) -->
-            <ng-container *ngIf="showMediaContext">
-              <div *ngIf="item.hasPrimarySampleImage" class="position-relative">
-                <img *ngIf="item.primaryImageUrl"
-                     [src]="item.primaryImageUrl"
-                     class="rounded border border-success"
-                     style="width: 28px; height: 28px; object-fit: cover;"
-                     [alt]="'Thumbnail'"
-                     title="Preview image"
-                     (click)="requestPrimaryImage(i, $event)">
-                <div *ngIf="!item.primaryImageUrl"
-                     class="d-flex align-items-center justify-content-center rounded border border-success bg-success bg-opacity-10"
-                     style="width: 28px; height: 28px;"
-                     title="Sample image available">
-                  <i class="mdi mdi-image text-success" style="font-size: 14px;"></i>
-                </div>
-              </div>
-              <div *ngIf="isEditorMode() && !item.hasPrimarySampleImage && item.requiresPhoto && (item.submissionType === 'photo' || item.submissionType === 'either')">
-                <div class="d-flex align-items-center justify-content-center rounded border border-warning bg-warning bg-opacity-10"
-                     style="width: 28px; height: 28px;"
-                     title="Photo required">
-                  <i class="mdi mdi-camera-outline text-warning" style="font-size: 14px;"></i>
-                </div>
-              </div>
-              <div *ngIf="item.hasSampleVideo"
-                   class="d-flex align-items-center justify-content-center rounded border border-info bg-info bg-opacity-10"
-                   style="width: 28px; height: 28px;"
-                   title="Sample video available"
-                   (click)="requestSampleVideo(i, $event)">
-                <i class="mdi mdi-video text-info" style="font-size: 14px;"></i>
-              </div>
-              <div *ngIf="item.submissionType === 'audio'"
-                   class="d-flex align-items-center justify-content-center rounded border border-warning bg-warning bg-opacity-10"
-                   style="width: 28px; height: 28px;"
-                   title="Audio submission type">
-                <i class="mdi mdi-microphone text-warning" style="font-size: 14px;"></i>
-              </div>
-            </ng-container>
-          </div>
-
-          <div class="flex-shrink-0" *ngIf="isEditorMode() && item.isInvalid" title="Item has missing/invalid fields">
-            <i class="mdi mdi-alert-circle"
-               [class.text-danger]="activeNavItemIndex !== i"
-               [class.text-white]="activeNavItemIndex === i"
-               style="font-size: 16px;"></i>
-          </div>
-
-          <div class="flex-shrink-0 nav-item-actions" *ngIf="isEditorMode()" ngbDropdown container="body" placement="bottom-end">
-            <button class="btn btn-sm btn-link p-0 border-0"
-                    [class.text-muted]="activeNavItemIndex !== i"
-                    [class.text-white-50]="activeNavItemIndex === i"
-                    ngbDropdownToggle
-                    (click)="$event.stopPropagation()"
-                    style="width: 24px; height: 24px; line-height: 1;"
-                    title="Actions">
-              <i class="mdi mdi-dots-vertical" style="font-size: 18px;"></i>
-            </button>
-            <div ngbDropdownMenu>
-              <button ngbDropdownItem (click)="emitAction('edit', i, $event)">
-                <i class="mdi mdi-pencil me-2"></i>Edit Item
-              </button>
-              <div class="dropdown-divider"></div>
-              <button ngbDropdownItem (click)="emitAction('addAbove', i, $event)">
-                <i class="mdi mdi-arrow-up-bold me-2"></i>Add Item Above
-              </button>
-              <button ngbDropdownItem (click)="emitAction('addBelow', i, $event)">
-                <i class="mdi mdi-arrow-down-bold me-2"></i>Add Item Below
-              </button>
-              <button ngbDropdownItem (click)="emitAction('duplicate', i, $event)">
-                <i class="mdi mdi-content-copy me-2"></i>Duplicate
-              </button>
-              <div class="dropdown-divider"></div>
-              <button ngbDropdownItem (click)="emitAction('moveUp', i, $event)" [disabled]="i === 0">
-                <i class="mdi mdi-chevron-up me-2"></i>Move Up
-              </button>
-              <button ngbDropdownItem (click)="emitAction('moveDown', i, $event)" [disabled]="i === navItems.length - 1">
-                <i class="mdi mdi-chevron-down me-2"></i>Move Down
-              </button>
-              <div class="dropdown-divider"></div>
-              <button ngbDropdownItem (click)="emitAction('promote', i, $event)" [disabled]="item.level === 0">
-                <i class="mdi mdi-arrow-left-bold me-2"></i>Promote (Outdent)
-              </button>
-              <button ngbDropdownItem (click)="emitAction('demote', i, $event)" [disabled]="i === 0">
-                <i class="mdi mdi-arrow-right-bold me-2"></i>Demote (Indent)
-              </button>
-              <div class="dropdown-divider"></div>
-              <button ngbDropdownItem (click)="emitAction('delete', i, $event)" class="text-danger">
-                <i class="mdi mdi-delete me-2"></i>Delete
-              </button>
-            </div>
-          </div>
+           <i class="mdi mdi-file-document-outline"
+             *ngIf="!hasChildren"
+             [class.text-muted]="activeNavItemIndex !== i"
+             [class.text-white]="activeNavItemIndex === i"
+             style="font-size: 18px;"></i>
         </div>
 
+        <div class="flex-grow-1" style="overflow: hidden; min-width: 96px;">
+          <small class="d-block nav-item-title"
+                 [class.fw-semibold]="item.level === 0"
+                 style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                 [title]="item.title">
+            {{ item.title }}
+          </small>
+          <small *ngIf="isReadonlyMode() && item.isParent && item.progressTotal"
+                 class="d-block"
+                 [class.text-muted]="activeNavItemIndex !== i"
+                 [class.text-white-50]="activeNavItemIndex === i"
+                 style="font-size: 0.7rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+            ({{ item.progressCompleted || 0 }}/{{ item.progressTotal }} · {{ item.progressPercent || 0 }}%)
+          </small>
+        </div>
+
+        <div class="flex-shrink-0 d-flex align-items-center gap-1">
+          <!-- Read-only mode: keep navigation clean (status only) -->
+          <i *ngIf="isReadonlyMode() && item.isComplete !== undefined && item.isRequired"
+             class="mdi"
+             [class.mdi-check-circle]="item.isComplete"
+             [class.mdi-circle-outline]="!item.isComplete"
+             [class.text-success]="item.isComplete && activeNavItemIndex !== i"
+             [class.text-muted]="!item.isComplete && activeNavItemIndex !== i"
+             [class.text-white]="activeNavItemIndex === i"
+             style="font-size: 16px;"
+             title="{{ item.isComplete ? 'Complete' : 'Pending' }}"></i>
+
+          <!-- Optional media context (hidden by default) -->
+          <ng-container *ngIf="showMediaContext">
+            <div *ngIf="item.hasPrimarySampleImage" class="position-relative">
+              <img *ngIf="item.primaryImageUrl"
+                   [src]="item.primaryImageUrl"
+                   class="rounded border border-success"
+                   loading="lazy"
+                   style="width: 20px; height: 20px; object-fit: cover;"
+                   [alt]="'Thumbnail'"
+                   title="Preview image"
+                   (click)="requestPrimaryImage(i, $event)">
+              <div *ngIf="!item.primaryImageUrl"
+                   class="d-flex align-items-center justify-content-center rounded border border-success bg-success bg-opacity-10"
+                   style="width: 20px; height: 20px;"
+                   title="Sample image available">
+                 <i class="mdi mdi-image text-success" style="font-size: 11px;"></i>
+              </div>
+            </div>
+            <div *ngIf="isEditorMode() && !item.hasPrimarySampleImage && item.requiresPhoto && (item.submissionType === 'photo' || item.submissionType === 'either')">
+              <div class="d-flex align-items-center justify-content-center rounded border border-warning bg-warning bg-opacity-10"
+                   style="width: 20px; height: 20px;"
+                   title="Photo required">
+                 <i class="mdi mdi-camera-outline text-warning" style="font-size: 11px;"></i>
+              </div>
+            </div>
+            <div *ngIf="item.hasSampleVideo"
+                 class="d-flex align-items-center justify-content-center rounded border border-info bg-info bg-opacity-10"
+                  style="width: 20px; height: 20px;"
+                 title="Sample video available"
+                 (click)="requestSampleVideo(i, $event)">
+                <i class="mdi mdi-video text-info" style="font-size: 11px;"></i>
+            </div>
+            <div *ngIf="item.submissionType === 'audio'"
+                 class="d-flex align-items-center justify-content-center rounded border border-warning bg-warning bg-opacity-10"
+                  style="width: 20px; height: 20px;"
+                 title="Audio submission type">
+                <i class="mdi mdi-microphone text-warning" style="font-size: 11px;"></i>
+            </div>
+          </ng-container>
+        </div>
+
+        <div *ngIf="!(canUseReorderControls() && isReorderDragging)"
+             class="flex-shrink-0 nav-item-index"
+             [class.text-muted]="activeNavItemIndex !== i"
+             [class.text-white-50]="activeNavItemIndex === i"
+             title="Item outline number">
+          {{ getNavIndexLabel(i) }}
+        </div>
+
+        <div class="flex-shrink-0 d-flex align-items-center gap-1 nav-inline-reorder" *ngIf="isEditorMode() && reorderModeEnabled">
+          <button
+            type="button"
+            class="btn btn-sm btn-link text-muted p-0"
+            style="width: 20px; height: 20px;"
+            title="Move up"
+            [disabled]="i === 0"
+            (click)="emitAction('moveUp', i, $event)">
+            <i class="mdi mdi-chevron-up" style="font-size: 16px;"></i>
+          </button>
+          <button
+            type="button"
+            class="btn btn-sm btn-link text-muted p-0"
+            style="width: 20px; height: 20px;"
+            title="Move down"
+            [disabled]="i === navItems.length - 1"
+            (click)="emitAction('moveDown', i, $event)">
+            <i class="mdi mdi-chevron-down" style="font-size: 16px;"></i>
+          </button>
+        </div>
+
+        <div class="flex-shrink-0" *ngIf="isEditorMode() && item.isInvalid" title="Item has missing/invalid fields">
+          <i class="mdi mdi-alert-circle"
+             [class.text-danger]="activeNavItemIndex !== i"
+             [class.text-white]="activeNavItemIndex === i"
+             style="font-size: 16px;"></i>
+        </div>
+
+        <div class="flex-shrink-0 nav-item-actions" *ngIf="isEditorMode()" ngbDropdown container="body" placement="bottom-end">
+          <button class="btn btn-sm btn-link p-0 border-0"
+                  [class.text-muted]="activeNavItemIndex !== i"
+                  [class.text-white-50]="activeNavItemIndex === i"
+                  ngbDropdownToggle
+                  (click)="$event.stopPropagation()"
+                  style="width: 24px; height: 24px; line-height: 1;"
+                  title="Actions">
+            <i class="mdi mdi-dots-vertical" style="font-size: 18px;"></i>
+          </button>
+          <div ngbDropdownMenu>
+            <button ngbDropdownItem (click)="emitAction('edit', i, $event)">
+              <i class="mdi mdi-pencil me-2"></i>Edit Item
+            </button>
+            <div class="dropdown-divider"></div>
+            <button ngbDropdownItem (click)="emitAction('addAbove', i, $event)">
+              <i class="mdi mdi-arrow-up-bold me-2"></i>Add Item Above
+            </button>
+            <button ngbDropdownItem (click)="emitAction('addBelow', i, $event)">
+              <i class="mdi mdi-arrow-down-bold me-2"></i>Add Item Below
+            </button>
+            <button ngbDropdownItem (click)="emitAction('duplicate', i, $event)">
+              <i class="mdi mdi-content-copy me-2"></i>Duplicate
+            </button>
+            <div class="dropdown-divider"></div>
+            <button ngbDropdownItem (click)="emitAction('moveUp', i, $event)" [disabled]="i === 0">
+              <i class="mdi mdi-chevron-up me-2"></i>Move Up
+            </button>
+            <button ngbDropdownItem (click)="emitAction('moveDown', i, $event)" [disabled]="i === navItems.length - 1">
+              <i class="mdi mdi-chevron-down me-2"></i>Move Down
+            </button>
+            <div class="dropdown-divider"></div>
+            <button ngbDropdownItem (click)="emitAction('promote', i, $event)" [disabled]="item.level === 0">
+              <i class="mdi mdi-arrow-left-bold me-2"></i>Promote (Outdent)
+            </button>
+            <button ngbDropdownItem (click)="emitAction('demote', i, $event)" [disabled]="i === 0">
+              <i class="mdi mdi-arrow-right-bold me-2"></i>Demote (Indent)
+            </button>
+            <div class="dropdown-divider"></div>
+            <button ngbDropdownItem (click)="emitAction('delete', i, $event)" class="text-danger">
+              <i class="mdi mdi-delete me-2"></i>Delete
+            </button>
+          </div>
+        </div>
+    </ng-template>
+
+    <!-- EDITOR MODE: true virtual scrolling -->
+    <cdk-virtual-scroll-viewport *ngIf="isReorderViewportMode() && !isLoading && !loadError && navItems.length > 0"
+      class="nav-editor-viewport list-group list-group-flush"
+      [itemSize]="36"
+      [minBufferPx]="280"
+      [maxBufferPx]="560"
+      [style.height]="height || '100%'"
+      cdkDropList
+      [cdkDropListData]="visibleNavItems"
+      [cdkDropListDisabled]="!canReorderInNav()"
+      [cdkDropListSortingDisabled]="true"
+      (cdkDropListSorted)="onReorderDragSorted($event)"
+      (cdkDropListDropped)="onDrop($event)"
+      #editorViewport>
+      <a *cdkVirtualFor="let entry of visibleNavItems; trackBy: trackByVisibleItem"
+        [id]="'nav-item-' + entry.originalIndex"
+        class="list-group-item list-group-item-action py-0 border-0"
+        [class.active]="activeNavItemIndex === entry.originalIndex"
+        [class.nav-item-match]="entry.isMatch"
+        [class.nav-item-invalid]="!!entry.item.isInvalid"
+        [class.nav-drop-group-highlight]="isInHoveredDropGroup(entry.originalIndex)"
+        [class.nav-drop-before]="isReorderDragging && dragHoverTargetIndex === entry.originalIndex && dragHoverPosition === 'before'"
+        [class.nav-drop-inside]="isReorderDragging && dragHoverTargetIndex === entry.originalIndex && dragHoverPosition === 'inside'"
+        [class.nav-drop-after]="isReorderDragging && dragHoverTargetIndex === entry.originalIndex && dragHoverPosition === 'after'"
+        [class.nav-drop-target-invalid]="false"
+        style="cursor: pointer; min-height: 36px;"
+        cdkDrag
+        [cdkDragDisabled]="!canReorderInNav()"
+        [cdkDragData]="entry.originalIndex"
+        (cdkDragStarted)="onReorderDragStarted()"
+        (cdkDragMoved)="onReorderDragMoved($event)"
+        (cdkDragEnded)="onReorderDragEnded()"
+        (click)="selectItem(entry.originalIndex)">
+        <ng-template cdkDragPreview>
+          <div class="nav-drag-preview" [title]="entry.item.title">
+            {{ getNavIndexLabel(entry.originalIndex) }} {{ entry.item.title }}
+          </div>
+        </ng-template>
+        <ng-template cdkDragPlaceholder>
+          <div class="nav-drag-placeholder nav-drag-placeholder-hidden"></div>
+        </ng-template>
+        <div class="d-flex align-items-center gap-0 nav-row-content">
+          <span *ngIf="canReorderInNav(); else dragSpacer"
+                class="text-muted d-inline-flex align-items-center justify-content-center nav-drag-handle"
+                [class.invalid-target]="false"
+                cdkDragHandle
+                title="Drag to reorder"
+                style="width: 16px;">
+            <i class="mdi mdi-drag-vertical" style="font-size: 16px;"></i>
+          </span>
+          <ng-template #dragSpacer>
+            <span style="width: 8px;"></span>
+          </ng-template>
+
+          <ng-container *ngTemplateOutlet="navItemTpl; context: { item: entry.item, i: entry.originalIndex, hasChildren: entry.hasChildren }"></ng-container>
+        </div>
       </a>
-    </div>
+    </cdk-virtual-scroll-viewport>
+
+    <!-- READONLY MODE: true virtual scrolling, renders only visible rows + buffer -->
+    <cdk-virtual-scroll-viewport *ngIf="isReadonlyMode() && !allowReadonlyReorder && !isLoading && !loadError && navItems.length > 0"
+      class="nav-readonly-viewport list-group list-group-flush"
+      [itemSize]="36"
+      [minBufferPx]="280"
+      [maxBufferPx]="560"
+      [style.height]="height || '100%'"
+      #readonlyViewport>
+      <a *cdkVirtualFor="let entry of visibleNavItems; trackBy: trackByVisibleItem"
+        [id]="'nav-item-' + entry.originalIndex"
+        class="list-group-item list-group-item-action py-0 border-0 nav-readonly-item"
+        [class.active]="activeNavItemIndex === entry.originalIndex"
+        [class.nav-item-match]="entry.isMatch"
+        [class.nav-item-invalid]="!!entry.item.isInvalid"
+        style="cursor: pointer; min-height: 36px;"
+        (click)="selectItem(entry.originalIndex)">
+        <div class="d-flex align-items-center gap-0 nav-row-content">
+          <ng-container *ngTemplateOutlet="navItemTpl; context: { item: entry.item, i: entry.originalIndex, hasChildren: entry.hasChildren }"></ng-container>
+        </div>
+      </a>
+    </cdk-virtual-scroll-viewport>
+
   </div>
 </div>

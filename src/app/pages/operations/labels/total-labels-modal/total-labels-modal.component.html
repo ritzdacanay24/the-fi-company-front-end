@@ -22,7 +22,13 @@
 
         <div class="mb-3">
             <label class="form-label">Total Labels</label>
-            <input formControlName="total_labels" type="text" class="form-control" placeholder="Enter Total Labels">
+            <input formControlName="total_labels" type="text" class="form-control" placeholder="Enter count (7) or range (1-7)">
+            <div class="form-text">Range mode prints exact numbers and each batch restarts from the same range.</div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Total Batches</label>
+            <input formControlName="total_batches" type="number" class="form-control" min="1" placeholder="Enter number of batches">
         </div>
 
         <div class="mb-3">

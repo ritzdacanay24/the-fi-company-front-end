@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { SharedModule } from '@app/shared/shared.module';
 import { GateProgressItem, ProjectDashboardItem, ProjectManagerProjectsService, ProjectStatus } from './services/project-manager-projects.service';
 
@@ -23,7 +24,7 @@ interface GateStageCard extends GateStageDefinition {
   templateUrl: './project-manager-dashboard.component.html',
   styleUrls: ['./project-manager-dashboard.component.scss']
 })
-export class ProjectManagerDashboardComponent {
+export class ProjectManagerDashboardComponent implements OnInit {
   activeTab: DashboardTab = 'overview';
 
   private gateStages: GateStageDefinition[] = [
@@ -73,9 +74,19 @@ export class ProjectManagerDashboardComponent {
 
   projects: ProjectDashboardItem[] = [];
   selectedProjectId = '';
+  private routeProjectId = '';
 
-  constructor(private projectsService: ProjectManagerProjectsService) {
-    this.reloadProjects();
+  constructor(
+    private projectsService: ProjectManagerProjectsService,
+    private route: ActivatedRoute,
+    private router: Router
+  ) {}
+
+  ngOnInit(): void {
+    this.route.queryParamMap.subscribe(params => {
+      this.routeProjectId = (params.get('projectId') || '').trim();
+      this.reloadProjects();
+    });
   }
 
   setTab(tab: DashboardTab): void {
@@ -85,6 +96,113 @@ export class ProjectManagerDashboardComponent {
   selectProject(projectId: string): void {
     this.selectedProjectId = projectId;
     this.projectsService.setSelectedProjectId(projectId);
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { projectId },
+      queryParamsHandling: 'merge'
+    });
+  }
+
+  openExecution(): void {
+    if (!this.selectedProjectId) {
+      return;
+    }
+
+    this.openExecutionFor(this.selectedProjectId);
+  }
+
+  openTasks(): void {
+    if (!this.selectedProjectId) {
+      return;
+    }
+
+    this.openTasksFor(this.selectedProjectId);
+  }
+
+  openIntake(): void {
+    if (!this.selectedProjectId) {
+      return;
+    }
+
+    this.openIntakeFor(this.selectedProjectId);
+  }
+
+  onProjectActionChange(project: ProjectDashboardItem, action: string): void {
+    if (!action) {
+      return;
+    }
+
+    this.selectProject(project.id);
+
+    switch (action) {
+      case 'checklist':
+        this.openExecutionFor(project.id);
+        break;
+      case 'tasks':
+        this.openTasksFor(project.id);
+        break;
+      case 'intake':
+        this.openIntakeFor(project.id);
+        break;
+      case 'delete':
+        this.deleteProject(project);
+        break;
+      default:
+        break;
+    }
+  }
+
+  deleteSelectedProject(): void {
+    if (!this.selectedProject) {
+      return;
+    }
+
+    this.deleteProject(this.selectedProject);
+  }
+
+  private openExecutionFor(projectId: string): void {
+    this.router.navigate(['/operations/project-manager/new-project'], {
+      queryParams: { projectId, view: 'checklist' }
+    });
+  }
+
+  private openTasksFor(projectId: string): void {
+    this.router.navigate(['/operations/project-manager/tasks'], {
+      queryParams: { projectId }
+    });
+  }
+
+  private openIntakeFor(projectId: string): void {
+    this.router.navigate(['/operations/project-manager/new-project'], {
+      queryParams: { projectId }
+    });
+  }
+
+  private deleteProject(project: ProjectDashboardItem): void {
+    const confirmDelete = window.confirm(
+      `Delete project "${project.name}" (${project.id})? This cannot be undone.`
+    );
+
+    if (!confirmDelete) {
+      return;
+    }
+
+    this.projectsService.deleteProject(project.id);
+    this.reloadProjects();
+
+    if (this.selectedProjectId) {
+      this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { projectId: this.selectedProjectId },
+        queryParamsHandling: 'merge'
+      });
+    } else {
+      this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { projectId: null },
+        queryParamsHandling: 'merge'
+      });
+    }
   }
 
   get totalProjects(): number {
@@ -107,12 +225,23 @@ export class ProjectManagerDashboardComponent {
     return Math.round(total / this.projects.length);
   }
 
-  get selectedProject(): ProjectDashboardItem {
+  get selectedProject(): ProjectDashboardItem | undefined {
     return this.projects.find(project => project.id === this.selectedProjectId) || this.projects[0];
   }
 
   private reloadProjects(): void {
     this.projects = this.projectsService.getProjects();
+
+    const routeMatch = this.routeProjectId
+      ? this.projects.find(project => project.id === this.routeProjectId)
+      : undefined;
+
+    if (routeMatch) {
+      this.selectedProjectId = routeMatch.id;
+      this.projectsService.setSelectedProjectId(routeMatch.id);
+      return;
+    }
+
     this.selectedProjectId = this.projectsService.getSelectedProjectId(this.projects);
   }
 
@@ -149,6 +278,9 @@ export class ProjectManagerDashboardComponent {
   }
 
   getPipelineCardClass(project: ProjectDashboardItem): string {
+    if (project.status === 'Draft') {
+      return 'pipeline-draft';
+    }
     if (project.status === 'Overdue') {
       return 'pipeline-overdue';
     }
@@ -172,6 +304,9 @@ export class ProjectManagerDashboardComponent {
   }
 
   getStatusClass(status: ProjectStatus): string {
+    if (status === 'Draft') {
+      return 'status-draft';
+    }
     if (status === 'On Track') {
       return 'status-on-track';
     }
@@ -189,5 +324,11 @@ export class ProjectManagerDashboardComponent {
       validation: 'tag-validation'
     };
     return classMap[tag] || 'tag-awarded';
+  }
+
+  getChecklistCompletion(project: ProjectDashboardItem): number {
+    const activeGateIndex = this.getGateIndex(project.gateTag);
+    const gateProgress = project.gateProgress?.[activeGateIndex];
+    return Number(gateProgress?.checklistCompletion ?? 0);
   }
 }

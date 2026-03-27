@@ -1,12 +1,17 @@
 import { Injectable } from '@angular/core';
 import { environment } from 'src/environments/environment';
+import { AuthenticationService } from 'src/app/core/services/auth.service';
 
-export type ProjectStatus = 'On Track' | 'At Risk' | 'Overdue';
+export type ProjectStatus = 'Draft' | 'On Track' | 'At Risk' | 'Overdue';
 
 export interface GateProgressItem {
   label: string;
   days: number;
   complete: boolean;
+  checklistCompletion: number;
+  taskCompletion: number;
+  executionHealth: number;
+  mismatch: boolean;
 }
 
 export interface ProjectDashboardItem {
@@ -25,6 +30,9 @@ export interface ProjectDashboardItem {
   awarded: boolean;
   rfpDate: string;
   targetProd: string;
+  taskCompletion: number;
+  executionHealth: number;
+  hasGateTaskMismatch: boolean;
   gateProgress: GateProgressItem[];
 }
 
@@ -34,6 +42,8 @@ export interface ProjectCreationInput {
   customer: string;
   projectCategory: string;
   strategyType: string;
+  roughRevenuePotential?: string;
+  estimatedRevenue?: string;
   initialRfpDate: string;
   targetProductionDate: string;
   readinessScore: number;
@@ -41,12 +51,82 @@ export interface ProjectCreationInput {
   activeGate: 1 | 2 | 3 | 4 | 5 | 6;
   gateCompletion: Record<'gate1' | 'gate2' | 'gate3' | 'gate4' | 'gate5' | 'gate6', number>;
   gateCompletedAt: Record<'gate1' | 'gate2' | 'gate3' | 'gate4' | 'gate5' | 'gate6', string | null>;
+  isDraft?: boolean;
 }
+
+type GateKey = 'gate1' | 'gate2' | 'gate3' | 'gate4' | 'gate5' | 'gate6';
+
+type IntakeStoragePayload = {
+  formValue?: Record<string, any>;
+  activeInputSystem?: GateKey;
+  activeGate?: 1 | 2 | 3 | 4 | 5 | 6;
+  gateCompletedAt?: Partial<Record<GateKey, string | null>>;
+};
 
 @Injectable({ providedIn: 'root' })
 export class ProjectManagerProjectsService {
   private readonly projectsStorageKey = 'pm_projects_v1';
   private readonly selectedProjectStorageKey = 'pm_selected_project_v1';
+  private readonly intakeStoragePrefix = 'pm_project_intake_v1_';
+  private readonly tasksStoragePrefix = 'pm_tasks_state_v1_';
+  private readonly workflowStoragePrefix = 'pm_workflow_engine_v1_';
+
+  private readonly gateFieldMap: Record<GateKey, string[]> = {
+    gate1: [
+      'customer',
+      'productName',
+      'projectCategory',
+      'strategyType',
+      'initialRfpDate',
+      'targetProductionDate',
+      'priceProposalSubmitted',
+      'businessAwarded',
+      'forecastConfirmed'
+    ],
+    gate2: [
+      'designTeamConceptProposal',
+      'conceptArchitectureDefined',
+      'roughCostEntered',
+      'timelineEstimatedLlt'
+    ],
+    gate3: [
+      'preliminaryBomForSourcing',
+      'preliminaryBomUploaded',
+      'longLeadItemsIdentified',
+      'firstPosConfirmed'
+    ],
+    gate4: [
+      'detailedEngineeringDesign',
+      'dfmCompleted',
+      'sourcingProductionLogisticsAligned',
+      'engineeringReleaseEta',
+      'protoQty',
+      'partNumberMapped',
+      'finalBomReview',
+      'engChecklistPixelMapping',
+      'engChecklistInstallationInstructions',
+      'engChecklistWorkInstruction',
+      'engChecklistPdc',
+      'engChecklistQualityDocs'
+    ],
+    gate5: [
+      'customerReviewValidation',
+      'functionalValidationComplete',
+      'pilotRunCompletedDate',
+      'instructionValidation',
+      'softwareFilesValidation',
+      'supplierFeedbackCaptured'
+    ],
+    gate6: [
+      'finalBomApproved',
+      'qcProcedureDefined',
+      'packagingInstructionsComplete',
+      'productionPoReceived',
+      'inventoryStrategyAligned'
+    ]
+  };
+
+  constructor(private authService: AuthenticationService) {}
 
   getProjects(): ProjectDashboardItem[] {
     if (this.isApiMode) {
@@ -55,16 +135,14 @@ export class ProjectManagerProjectsService {
 
     const raw = localStorage.getItem(this.projectsStorageKey);
     if (!raw) {
-      const defaults = this.defaultProjects();
-      this.saveProjects(defaults);
-      return defaults;
+      return [];
     }
 
     try {
       const parsed = JSON.parse(raw) as ProjectDashboardItem[];
-      return Array.isArray(parsed) ? parsed : this.defaultProjects();
+      return Array.isArray(parsed) ? parsed.map(project => this.syncProjectFromIntake(project)) : [];
     } catch {
-      return this.defaultProjects();
+      return [];
     }
   }
 
@@ -103,6 +181,10 @@ export class ProjectManagerProjectsService {
   }
 
   createProject(input: ProjectCreationInput): ProjectDashboardItem {
+    const taskCompletionByGate = this.loadTaskCompletionByGate(input.id);
+    const activeGateKey = this.mapGateNumberToKey(input.activeGate);
+    const gateProgress = this.buildGateProgress(input.gateCompletion, taskCompletionByGate, input.gateCompletedAt, input.initialRfpDate);
+
     const newProject: ProjectDashboardItem = {
       id: input.id,
       code: input.id,
@@ -112,20 +194,44 @@ export class ProjectManagerProjectsService {
       gateLabel: this.toGateLabel(input.activeGate),
       gateTag: this.toGateTag(input.activeGate),
       readiness: input.readinessScore,
-      status: this.toStatus(input.readinessStatus),
-      owner: this.toOwnerByStrategy(input.strategyType),
-      revenue: this.toRevenueByCategory(input.projectCategory),
+      status: input.isDraft ? 'Draft' : this.toStatus(input.readinessStatus),
+      owner: this.getCurrentOwnerName(),
+      revenue:
+        this.normalizeRevenueInput(input.estimatedRevenue) ||
+        this.toRevenueByPotential(input.roughRevenuePotential) ||
+        this.toRevenueByCategory(input.projectCategory),
       strategy: input.strategyType,
       awarded: input.activeGate >= 3,
       rfpDate: input.initialRfpDate,
       targetProd: input.targetProductionDate,
-      gateProgress: this.buildGateProgress(input.gateCompletion, input.gateCompletedAt, input.initialRfpDate)
+      taskCompletion: taskCompletionByGate[activeGateKey],
+      executionHealth: Math.min(input.gateCompletion[activeGateKey], taskCompletionByGate[activeGateKey]),
+      hasGateTaskMismatch: gateProgress.some(gate => gate.mismatch),
+      gateProgress
     };
 
     const projects = [newProject, ...this.getProjects().filter(project => project.id !== input.id)];
     this.saveProjects(projects);
     this.setSelectedProjectId(newProject.id);
     return newProject;
+  }
+
+  deleteProject(projectId: string): void {
+    if (!projectId) {
+      return;
+    }
+
+    const remainingProjects = this.getProjects().filter(project => project.id !== projectId);
+    this.saveProjects(remainingProjects);
+
+    const nextSelectedProjectId = remainingProjects[0]?.id || '';
+    if (nextSelectedProjectId) {
+      this.setSelectedProjectId(nextSelectedProjectId);
+    } else {
+      localStorage.removeItem(this.selectedProjectStorageKey);
+    }
+
+    this.removeScopedProjectState(projectId);
   }
 
   generateProjectId(): string {
@@ -159,16 +265,14 @@ export class ProjectManagerProjectsService {
   private getProjectsFromLocalStorage(): ProjectDashboardItem[] {
     const raw = localStorage.getItem(this.projectsStorageKey);
     if (!raw) {
-      const defaults = this.defaultProjects();
-      this.saveProjectsToLocalStorage(defaults);
-      return defaults;
+      return [];
     }
 
     try {
       const parsed = JSON.parse(raw) as ProjectDashboardItem[];
-      return Array.isArray(parsed) ? parsed : this.defaultProjects();
+      return Array.isArray(parsed) ? parsed.map(project => this.syncProjectFromIntake(project)) : [];
     } catch {
-      return this.defaultProjects();
+      return [];
     }
   }
 
@@ -236,6 +340,51 @@ export class ProjectManagerProjectsService {
     return ownerByStrategy[strategy] || 'Project Manager';
   }
 
+  private getCurrentOwnerName(): string {
+    const currentUser = this.authService.currentUserValue;
+    if (!currentUser) {
+      return 'Project Manager';
+    }
+
+    const nameCandidates = [
+      currentUser.full_name,
+      currentUser.fullName,
+      `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim(),
+      `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim(),
+      currentUser.name,
+      currentUser.username,
+      currentUser.email
+    ];
+
+    const displayName = nameCandidates.find((candidate: any) => String(candidate || '').trim().length > 0);
+    return String(displayName || 'Project Manager').trim();
+  }
+
+  private toRevenueByPotential(potential?: string): string {
+    const revenueByPotential: Record<string, string> = {
+      Low: '$120K-$200K',
+      Medium: '$220K-$320K',
+      High: '$300K-$400K'
+    };
+
+    const key = String(potential || '').trim();
+    return revenueByPotential[key] || '';
+  }
+
+  private normalizeRevenueInput(value?: string): string {
+    const raw = String(value || '').trim();
+    if (!raw) {
+      return '';
+    }
+
+    const numeric = Number(raw.replace(/[$,\s]/g, ''));
+    if (Number.isFinite(numeric) && numeric > 0) {
+      return `$${Math.round(numeric).toLocaleString()}`;
+    }
+
+    return raw;
+  }
+
   private toRevenueByCategory(category: string): string {
     const revenueByCategory: Record<string, string> = {
       New: '$300K-$400K',
@@ -248,6 +397,7 @@ export class ProjectManagerProjectsService {
 
   private buildGateProgress(
     gateCompletion: Record<'gate1' | 'gate2' | 'gate3' | 'gate4' | 'gate5' | 'gate6', number>,
+    taskCompletion: Record<'gate1' | 'gate2' | 'gate3' | 'gate4' | 'gate5' | 'gate6', number>,
     gateCompletedAt: Record<'gate1' | 'gate2' | 'gate3' | 'gate4' | 'gate5' | 'gate6', string | null>,
     initialRfpDate: string
   ): GateProgressItem[] {
@@ -273,12 +423,60 @@ export class ProjectManagerProjectsService {
     const g6Days = g6End ? this.daysBetween(gateCompletedAt.gate5 ?? gateCompletedAt.gate4 ?? rfp, g6End) : 0;
 
     return [
-      { label: 'Gate #1', days: g1Days, complete: gateCompletion.gate1 >= 100 },
-      { label: 'Gate #2', days: g2Days, complete: gateCompletion.gate2 >= 100 },
-      { label: 'Gate #3', days: g3Days, complete: gateCompletion.gate3 >= 100 },
-      { label: 'Gate #4', days: g4Days, complete: gateCompletion.gate4 >= 100 },
-      { label: 'Gate #5', days: g5Days, complete: gateCompletion.gate5 >= 100 },
-      { label: 'Gate #6', days: g6Days, complete: gateCompletion.gate6 >= 100 }
+      {
+        label: 'Gate #1',
+        days: g1Days,
+        complete: gateCompletion.gate1 >= 100,
+        checklistCompletion: gateCompletion.gate1,
+        taskCompletion: taskCompletion.gate1,
+        executionHealth: Math.min(gateCompletion.gate1, taskCompletion.gate1),
+        mismatch: this.isGateTaskMismatched(gateCompletion.gate1, taskCompletion.gate1)
+      },
+      {
+        label: 'Gate #2',
+        days: g2Days,
+        complete: gateCompletion.gate2 >= 100,
+        checklistCompletion: gateCompletion.gate2,
+        taskCompletion: taskCompletion.gate2,
+        executionHealth: Math.min(gateCompletion.gate2, taskCompletion.gate2),
+        mismatch: this.isGateTaskMismatched(gateCompletion.gate2, taskCompletion.gate2)
+      },
+      {
+        label: 'Gate #3',
+        days: g3Days,
+        complete: gateCompletion.gate3 >= 100,
+        checklistCompletion: gateCompletion.gate3,
+        taskCompletion: taskCompletion.gate3,
+        executionHealth: Math.min(gateCompletion.gate3, taskCompletion.gate3),
+        mismatch: this.isGateTaskMismatched(gateCompletion.gate3, taskCompletion.gate3)
+      },
+      {
+        label: 'Gate #4',
+        days: g4Days,
+        complete: gateCompletion.gate4 >= 100,
+        checklistCompletion: gateCompletion.gate4,
+        taskCompletion: taskCompletion.gate4,
+        executionHealth: Math.min(gateCompletion.gate4, taskCompletion.gate4),
+        mismatch: this.isGateTaskMismatched(gateCompletion.gate4, taskCompletion.gate4)
+      },
+      {
+        label: 'Gate #5',
+        days: g5Days,
+        complete: gateCompletion.gate5 >= 100,
+        checklistCompletion: gateCompletion.gate5,
+        taskCompletion: taskCompletion.gate5,
+        executionHealth: Math.min(gateCompletion.gate5, taskCompletion.gate5),
+        mismatch: this.isGateTaskMismatched(gateCompletion.gate5, taskCompletion.gate5)
+      },
+      {
+        label: 'Gate #6',
+        days: g6Days,
+        complete: gateCompletion.gate6 >= 100,
+        checklistCompletion: gateCompletion.gate6,
+        taskCompletion: taskCompletion.gate6,
+        executionHealth: Math.min(gateCompletion.gate6, taskCompletion.gate6),
+        mismatch: this.isGateTaskMismatched(gateCompletion.gate6, taskCompletion.gate6)
+      }
     ];
   }
 
@@ -291,108 +489,323 @@ export class ProjectManagerProjectsService {
     return Math.max(0, Math.floor((b.getTime() - a.getTime()) / 86400000));
   }
 
-  private defaultProjects(): ProjectDashboardItem[] {
-    return [
-      {
-        id: 'PRJ-001',
-        code: 'PRJ-001',
-        name: 'LED Matrix Panel X200',
-        customer: 'LightTech Corp',
-        category: 'New',
-        gateLabel: 'G3 - Awarded',
-        gateTag: 'awarded',
-        readiness: 72,
-        status: 'At Risk',
-        owner: 'Maria R.',
-        revenue: '$300K-$400K',
-        strategy: 'Retention',
-        awarded: true,
-        rfpDate: '2025-12-01',
-        targetProd: '2026-05-30',
-        gateProgress: [
-          { label: 'Gate #1', days: 29, complete: true },
-          { label: 'Gate #2', days: 15, complete: true },
-          { label: 'Gate #3', days: 14, complete: false },
-          { label: 'Gate #4', days: 0, complete: false },
-          { label: 'Gate #5', days: 0, complete: false },
-          { label: 'Gate #6', days: 0, complete: false }
-        ]
-      },
-      {
-        id: 'PRJ-002',
-        code: 'PRJ-002',
-        name: 'Pixel Pitch Revision P3.9',
-        customer: 'EventVision LLC',
-        category: 'Revision',
-        gateLabel: 'G4 - Engineering',
-        gateTag: 'engineering',
-        readiness: 88,
-        status: 'On Track',
-        owner: 'James K.',
-        revenue: '$180K-$250K',
-        strategy: 'Growth',
-        awarded: true,
-        rfpDate: '2025-11-20',
-        targetProd: '2026-04-15',
-        gateProgress: [
-          { label: 'Gate #1', days: 25, complete: true },
-          { label: 'Gate #2', days: 10, complete: true },
-          { label: 'Gate #3', days: 8, complete: false },
-          { label: 'Gate #4', days: 0, complete: false },
-          { label: 'Gate #5', days: 0, complete: false },
-          { label: 'Gate #6', days: 0, complete: false }
-        ]
-      },
-      {
-        id: 'PRJ-003',
-        code: 'PRJ-003',
-        name: 'Custom Indoor Cabinet CI-500',
-        customer: 'StadiumTech Inc',
-        category: 'Custom',
-        gateLabel: 'G2 - Concept',
-        gateTag: 'concept',
-        readiness: 41,
-        status: 'Overdue',
-        owner: 'Dana L.',
-        revenue: '$120K-$200K',
-        strategy: 'Platform',
-        awarded: false,
-        rfpDate: '2025-10-15',
-        targetProd: '2026-02-10',
-        gateProgress: [
-          { label: 'Gate #1', days: 72, complete: true },
-          { label: 'Gate #2', days: 30, complete: true },
-          { label: 'Gate #3', days: 19, complete: false },
-          { label: 'Gate #4', days: 0, complete: false },
-          { label: 'Gate #5', days: 0, complete: false },
-          { label: 'Gate #6', days: 0, complete: false }
-        ]
-      },
-      {
-        id: 'PRJ-004',
-        code: 'PRJ-004',
-        name: 'Cost Down CD-Outdoor 2.0',
-        customer: 'BrightSign Global',
-        category: 'Cost Down',
-        gateLabel: 'G5 - Validation',
-        gateTag: 'validation',
-        readiness: 95,
-        status: 'On Track',
-        owner: 'Carlos M.',
-        revenue: '$300K-$400K',
-        strategy: 'Retention',
-        awarded: true,
-        rfpDate: '2025-12-01',
-        targetProd: '2026-05-30',
-        gateProgress: [
-          { label: 'Gate #1', days: 28, complete: true },
-          { label: 'Gate #2', days: 20, complete: true },
-          { label: 'Gate #3', days: 15, complete: true },
-          { label: 'Gate #4', days: 20, complete: true },
-          { label: 'Gate #5', days: 3, complete: false },
-          { label: 'Gate #6', days: 0, complete: false }
-        ]
-      }
-    ];
+  private syncProjectFromIntake(project: ProjectDashboardItem): ProjectDashboardItem {
+    const intake = this.loadIntakeState(project.id);
+    if (!intake?.formValue) {
+      const fallbackTaskCompletion = this.loadTaskCompletionByGate(project.id);
+      const fallbackGateProgress = (project.gateProgress || []).map((gate, index) => {
+        const gateKey = this.mapGateNumberToKey((index + 1) as 1 | 2 | 3 | 4 | 5 | 6);
+        const taskValue = fallbackTaskCompletion[gateKey];
+        const checklistValue = Number(gate.checklistCompletion ?? 0);
+        return {
+          ...gate,
+          checklistCompletion: checklistValue,
+          taskCompletion: taskValue,
+          executionHealth: Math.min(checklistValue, taskValue),
+          mismatch: this.isGateTaskMismatched(checklistValue, taskValue)
+        };
+      });
+
+      const activeIndex = this.getGateIndexFromTag(project.gateTag);
+      const activeGate = fallbackGateProgress[activeIndex];
+      const activeTaskCompletion = activeGate ? activeGate.taskCompletion : 0;
+      const activeExecutionHealth = activeGate ? activeGate.executionHealth : 0;
+
+      return {
+        ...project,
+        taskCompletion: activeTaskCompletion,
+        executionHealth: activeExecutionHealth,
+        hasGateTaskMismatch: fallbackGateProgress.some(gate => gate.mismatch),
+        gateProgress: fallbackGateProgress
+      };
+    }
+
+    const form = intake.formValue;
+    const gateCompletion = this.computeGateCompletion(form);
+    const activeGate = this.resolveActiveGate(intake, gateCompletion);
+    const activeGateKey = this.mapGateNumberToKey(activeGate);
+    const taskCompletionByGate = this.loadTaskCompletionByGate(project.id);
+    const readiness = this.computeReadinessFromForm(form);
+    const readinessStatus = this.computeReadinessStatus(readiness, String(form['targetProductionDate'] || project.targetProd || ''));
+    const gateCompletedAt = this.normalizeGateCompletedAt(intake.gateCompletedAt);
+    const initialRfpDate = String(form['initialRfpDate'] || project.rfpDate || '');
+    const gateProgress = this.buildGateProgress(gateCompletion, taskCompletionByGate, gateCompletedAt, initialRfpDate);
+
+    return {
+      ...project,
+      name: String(form['productName'] || '').trim() || project.name,
+      customer: String(form['customer'] || '').trim() || project.customer,
+      category: String(form['projectCategory'] || '').trim() || project.category,
+      strategy: String(form['strategyType'] || '').trim() || project.strategy,
+      gateLabel: this.toGateLabel(activeGate),
+      gateTag: this.toGateTag(activeGate),
+      readiness,
+      status: project.status === 'Draft' ? 'Draft' : this.toStatus(readinessStatus),
+      revenue:
+        this.normalizeRevenueInput(String(form['estimatedRevenue'] || '')) ||
+        this.toRevenueByPotential(String(form['roughRevenuePotential'] || '')) ||
+        project.revenue,
+      awarded: activeGate >= 3,
+      rfpDate: initialRfpDate || project.rfpDate,
+      targetProd: String(form['targetProductionDate'] || project.targetProd || ''),
+      taskCompletion: taskCompletionByGate[activeGateKey],
+      executionHealth: Math.min(gateCompletion[activeGateKey], taskCompletionByGate[activeGateKey]),
+      hasGateTaskMismatch: gateProgress.some(gate => gate.mismatch),
+      gateProgress
+    };
   }
+
+  private mapGateNumberToKey(gate: 1 | 2 | 3 | 4 | 5 | 6): GateKey {
+    const map: Record<1 | 2 | 3 | 4 | 5 | 6, GateKey> = {
+      1: 'gate1',
+      2: 'gate2',
+      3: 'gate3',
+      4: 'gate4',
+      5: 'gate5',
+      6: 'gate6'
+    };
+    return map[gate];
+  }
+
+  private getGateIndexFromTag(tag: string): number {
+    const indexByTag: Record<string, number> = {
+      opportunity: 0,
+      concept: 1,
+      awarded: 2,
+      engineering: 3,
+      validation: 4,
+      production: 5
+    };
+
+    return indexByTag[String(tag || '').toLowerCase()] ?? 0;
+  }
+
+  private loadTaskCompletionByGate(projectId: string): Record<GateKey, number> {
+    const base: Record<GateKey, number> = {
+      gate1: 0,
+      gate2: 0,
+      gate3: 0,
+      gate4: 0,
+      gate5: 0,
+      gate6: 0
+    };
+
+    if (!projectId) {
+      return base;
+    }
+
+    try {
+      const raw = localStorage.getItem(`${this.tasksStoragePrefix}${projectId}`);
+      if (!raw) {
+        return base;
+      }
+
+      const parsed = JSON.parse(raw) as { taskRecords?: Array<{ gate?: string; completion?: number; status?: string }> };
+      const taskRecords = Array.isArray(parsed.taskRecords) ? parsed.taskRecords : [];
+      const byGate: Record<GateKey, number[]> = {
+        gate1: [],
+        gate2: [],
+        gate3: [],
+        gate4: [],
+        gate5: [],
+        gate6: []
+      };
+
+      taskRecords.forEach((task) => {
+        const gateMap: Record<string, GateKey> = {
+          G1: 'gate1',
+          G2: 'gate2',
+          G3: 'gate3',
+          G4: 'gate4',
+          G5: 'gate5',
+          G6: 'gate6'
+        };
+        const gate = gateMap[String(task.gate || '').toUpperCase()];
+        if (!gate) {
+          return;
+        }
+
+        const rawCompletion = Number(task.completion ?? 0);
+        const normalized = task.status === 'Completed'
+          ? 100
+          : Math.max(0, Math.min(100, Number.isFinite(rawCompletion) ? rawCompletion : 0));
+        byGate[gate].push(Math.round(normalized));
+      });
+
+      (Object.keys(base) as GateKey[]).forEach((gate) => {
+        const values = byGate[gate];
+        if (!values.length) {
+          base[gate] = 0;
+          return;
+        }
+
+        const total = values.reduce((sum, value) => sum + value, 0);
+        base[gate] = Math.round(total / values.length);
+      });
+
+      return base;
+    } catch {
+      return base;
+    }
+  }
+
+  private isGateTaskMismatched(checklistCompletion: number, taskCompletion: number): boolean {
+    if ((checklistCompletion >= 100 && taskCompletion < 100) || (taskCompletion >= 100 && checklistCompletion < 100)) {
+      return true;
+    }
+
+    return Math.abs(checklistCompletion - taskCompletion) >= 25;
+  }
+
+  private loadIntakeState(projectId: string): IntakeStoragePayload | null {
+    if (!projectId) {
+      return null;
+    }
+
+    try {
+      const raw = localStorage.getItem(`${this.intakeStoragePrefix}${projectId}`);
+      if (!raw) {
+        return null;
+      }
+      return JSON.parse(raw) as IntakeStoragePayload;
+    } catch {
+      return null;
+    }
+  }
+
+  private computeGateCompletion(form: Record<string, any>): Record<GateKey, number> {
+    const result = {} as Record<GateKey, number>;
+
+    (Object.keys(this.gateFieldMap) as GateKey[]).forEach((gate) => {
+      const fields = this.gateFieldMap[gate];
+      const completed = fields.filter((field) => this.isFieldComplete(form[field])).length;
+      result[gate] = fields.length ? Math.round((completed / fields.length) * 100) : 0;
+    });
+
+    return result;
+  }
+
+  private isFieldComplete(value: any): boolean {
+    if (typeof value === 'boolean') {
+      return true;
+    }
+
+    if (value === null || value === undefined) {
+      return false;
+    }
+
+    return String(value).trim().length > 0;
+  }
+
+  private isFieldReady(value: any): boolean {
+    if (typeof value === 'boolean') {
+      return value === true;
+    }
+
+    if (value === null || value === undefined) {
+      return false;
+    }
+
+    return String(value).trim().length > 0;
+  }
+
+  private resolveActiveGate(
+    intake: IntakeStoragePayload,
+    gateCompletion: Record<GateKey, number>
+  ): 1 | 2 | 3 | 4 | 5 | 6 {
+    if (intake.activeGate && intake.activeGate >= 1 && intake.activeGate <= 6) {
+      return intake.activeGate;
+    }
+
+    const byInputSystem: Record<GateKey, 1 | 2 | 3 | 4 | 5 | 6> = {
+      gate1: 1,
+      gate2: 2,
+      gate3: 3,
+      gate4: 4,
+      gate5: 5,
+      gate6: 6
+    };
+
+    if (intake.activeInputSystem && byInputSystem[intake.activeInputSystem]) {
+      return byInputSystem[intake.activeInputSystem];
+    }
+
+    const ordered: GateKey[] = ['gate1', 'gate2', 'gate3', 'gate4', 'gate5', 'gate6'];
+    for (let i = ordered.length - 1; i >= 0; i--) {
+      if (gateCompletion[ordered[i]] > 0) {
+        return (i + 1) as 1 | 2 | 3 | 4 | 5 | 6;
+      }
+    }
+
+    return 1;
+  }
+
+  private computeReadiness(gateCompletion: Record<GateKey, number>): number {
+    const values = (Object.keys(gateCompletion) as GateKey[]).map((gate) => gateCompletion[gate]);
+    if (!values.length) {
+      return 0;
+    }
+
+    const total = values.reduce((sum, value) => sum + value, 0);
+    return Math.round(total / values.length);
+  }
+
+  private computeReadinessFromForm(form: Record<string, any>): number {
+    const allFields = (Object.keys(this.gateFieldMap) as GateKey[])
+      .flatMap((gate) => this.gateFieldMap[gate]);
+
+    if (!allFields.length) {
+      return 0;
+    }
+
+    const completed = allFields.filter((field) => this.isFieldReady(form[field])).length;
+    return Math.round((completed / allFields.length) * 100);
+  }
+
+  private computeReadinessStatus(readiness: number, targetProductionDate: string): 'Green' | 'Yellow' | 'Red' {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const target = new Date(targetProductionDate);
+    const isOverdue = !Number.isNaN(target.getTime()) && (() => {
+      target.setHours(0, 0, 0, 0);
+      return target.getTime() < today.getTime();
+    })();
+
+    if (isOverdue && readiness < 80) {
+      return 'Red';
+    }
+
+    if (readiness >= 80) {
+      return 'Green';
+    }
+
+    if (readiness >= 50) {
+      return 'Yellow';
+    }
+
+    return 'Red';
+  }
+
+  private normalizeGateCompletedAt(input?: Partial<Record<GateKey, string | null>>): Record<GateKey, string | null> {
+    return {
+      gate1: input?.gate1 ?? null,
+      gate2: input?.gate2 ?? null,
+      gate3: input?.gate3 ?? null,
+      gate4: input?.gate4 ?? null,
+      gate5: input?.gate5 ?? null,
+      gate6: input?.gate6 ?? null
+    };
+  }
+
+  private removeScopedProjectState(projectId: string): void {
+    try {
+      localStorage.removeItem(`${this.intakeStoragePrefix}${projectId}`);
+      localStorage.removeItem(`${this.tasksStoragePrefix}${projectId}`);
+      localStorage.removeItem(`${this.workflowStoragePrefix}${projectId}`);
+    } catch {
+      // Ignore localStorage cleanup issues in test mode.
+    }
+  }
+
 }

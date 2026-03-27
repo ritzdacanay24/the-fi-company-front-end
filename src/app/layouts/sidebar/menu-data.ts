@@ -384,18 +384,6 @@ export const MENU_DATA: MenuItem[] = [
                 link: "/operations/project-manager/new-project",
                 description: "Create and manage project intake forms",
                 accessRequired: false,
-            },
-            {
-                label: "Tasks",
-                link: "/operations/project-manager/tasks",
-                description: "AG Grid task board for PM and Engineering",
-                accessRequired: false,
-            },
-            {
-                label: "Execution",
-                link: "/operations/project-manager/execution",
-                description: "Run role-based workflow engine steps",
-                accessRequired: false,
             }
         ]
     },

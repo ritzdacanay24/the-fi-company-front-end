@@ -203,7 +203,7 @@ textarea.form-control {
 }
 
 .gate-body {
-  padding: 0.7rem;
+  padding: 0.7rem 0.7rem 1.5rem;
   font-size: 0.92rem;
 }
 
@@ -214,4 +214,102 @@ textarea.form-control {
 
 .form-check-label {
   font-size: 0.9rem;
+}
+
+.yes-no-field {
+  .form-label {
+    display: block;
+    margin-bottom: 0.35rem;
+    font-size: 0.88rem;
+  }
+
+  .btn-group {
+    border: 1px solid #d9dee6;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+  }
+
+  .btn {
+    min-width: 72px;
+    font-weight: 600;
+    border: 0;
+    border-radius: 0;
+    transition: background-color 0.15s ease, color 0.15s ease;
+  }
+
+  .btn + .btn {
+    border-left: 1px solid #d9dee6;
+  }
+}
+
+.horizontal-gate-form {
+  div.mb-2:has(> .form-label),
+  .yes-no-field {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    column-gap: 12px;
+    align-items: center;
+  }
+
+  div.mb-2:has(> .form-label) {
+    .form-label {
+      margin-bottom: 0;
+    }
+
+    .form-select,
+    .form-control,
+    .text-muted {
+      grid-column: 2;
+    }
+  }
+
+  .yes-no-field {
+    .form-label {
+      margin-bottom: 0;
+      font-size: 0.84rem;
+    }
+
+    .btn-group {
+      justify-self: start;
+    }
+  }
+
+  .small.text-muted.mt-3 {
+    margin-left: 0;
+  }
+
+  .small.fw-semibold {
+    margin-top: 0.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .horizontal-gate-form {
+    div.mb-2:has(> .form-label),
+    .yes-no-field {
+      grid-template-columns: 1fr;
+      row-gap: 0.35rem;
+      align-items: start;
+    }
+
+    div.mb-2:has(> .form-label) {
+      .form-label,
+      .form-select,
+      .form-control,
+      .text-muted {
+        grid-column: auto;
+      }
+
+      .form-label {
+        margin-bottom: 0.2rem;
+      }
+    }
+
+    .yes-no-field {
+      .form-label {
+        margin-bottom: 0.2rem;
+      }
+    }
+  }
 }

@@ -9,6 +9,21 @@ import { Injectable } from '@angular/core';
 })
 export class InstanceItemMatcherService {
 
+  private normalizeMediaUrl(url: string): string {
+    const raw = String(url || '').trim();
+    if (!raw) return '';
+
+    try {
+      const parsed = new URL(raw, 'https://dashboard.eye-fi.com');
+      return decodeURIComponent(parsed.pathname).replace(/^\/+/, '').toLowerCase();
+    } catch {
+      return raw
+        .replace(/^https?:\/\/[^/]+\//i, '')
+        .replace(/^\/+/, '')
+        .toLowerCase();
+    }
+  }
+
   /**
    * Find instance item using multiple matching strategies
    * Strategy 1: Direct ID match (instItem.id === templateItemId)
@@ -87,16 +102,24 @@ export class InstanceItemMatcherService {
       return null;
     }
 
+    const target = this.normalizeMediaUrl(photoUrl);
+
     for (const instItem of instanceItems) {
       if (instItem.photos && Array.isArray(instItem.photos)) {
-        const foundPhoto = instItem.photos.find((p: any) => p.file_url === photoUrl);
+        const foundPhoto = instItem.photos.find((p: any) => {
+          const candidate = this.normalizeMediaUrl(String(p?.file_url || p?.url || p || ''));
+          return candidate === target;
+        });
         if (foundPhoto) {
           return foundPhoto;
         }
       }
 
       if (instItem.videos && Array.isArray(instItem.videos)) {
-        const foundVideo = instItem.videos.find((v: any) => v.file_url === photoUrl);
+        const foundVideo = instItem.videos.find((v: any) => {
+          const candidate = this.normalizeMediaUrl(String(v?.file_url || v?.url || v || ''));
+          return candidate === target;
+        });
         if (foundVideo) {
           return foundVideo;
         }

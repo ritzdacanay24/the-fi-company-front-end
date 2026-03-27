@@ -3,13 +3,32 @@
   <!-- ── Top bar ─────────────────────────────── -->
   <div class="pm-topbar">
     <div class="pm-topbar-left">
-      <div>
+      <div class="pm-topbar-context">
         <h4 class="pm-title mb-0">Project Tasks</h4>
         <span class="pm-context-badge">{{ gateContextLabel }}</span>
+        <div class="pm-project-context">
+          <span class="chip primary">ID: {{ currentProjectIdLabel }}</span>
+          <span class="chip" *ngIf="currentProjectSummary?.name">{{ currentProjectSummary?.name }}</span>
+          <span class="chip" *ngIf="currentProjectSummary?.customer">Customer: {{ currentProjectSummary?.customer }}</span>
+          <span class="chip" *ngIf="currentProjectSummary?.status">Status: {{ currentProjectSummary?.status }}</span>
+        </div>
       </div>
     </div>
     <div class="pm-topbar-right">
-      <a class="btn btn-sm btn-light border" routerLink="/operations/project-manager/new-project">← New Project</a>
+      <div class="pm-gate-filter-wrap">
+        <label class="pm-gate-filter-label" for="pm-gate-filter">View</label>
+        <select
+          id="pm-gate-filter"
+          class="form-select form-select-sm pm-gate-filter"
+          [(ngModel)]="activeGateFilter"
+          [ngModelOptions]="{ standalone: true }"
+          (ngModelChange)="onGateFilterChange($event)"
+        >
+          <option value="All">All Gates</option>
+          <option *ngFor="let g of gateOptions" [value]="g">{{ g }}</option>
+        </select>
+      </div>
+      <a class="btn btn-sm btn-light border" routerLink="/operations/project-manager/new-project" [queryParams]="executionChecklistQueryParams">← Back to Execution Checklist</a>
       <a class="btn btn-sm btn-light border" routerLink="/operations/project-manager/dashboard">Dashboard</a>
     </div>
   </div>
@@ -17,7 +36,7 @@
   <!-- ── Action toolbar ──────────────────────── -->
   <div class="pm-toolbar">
     <div class="pm-toolbar-left">
-      <button class="btn pm-new-btn" (click)="openAddTaskPanel()">
+      <button class="pm-new-btn" (click)="openAddTaskPanel()">
         <span class="pm-new-btn-icon">+</span> New Task
       </button>
 
@@ -61,9 +80,15 @@
 
     <div class="pm-toolbar-right">
       <input type="text" class="pm-search" placeholder="🔍  Search..." (input)="onQuickFilter($event)" />
+      <button class="btn btn-sm btn-light border" style="font-size:12px" (click)="archiveSelectedTasks()">Archive Selected</button>
+      <button class="btn btn-sm btn-light border" style="font-size:12px;color:#c62828" (click)="deleteSelectedTasks()">Delete Selected</button>
       <button class="btn btn-sm btn-light border" style="font-size:12px" (click)="toggleManagePanel()">⚙ Groups</button>
       <button class="btn btn-sm btn-light border" style="font-size:12px" (click)="toggleBulkPanel()">👥 Bulk Add</button>
     </div>
+  </div>
+
+  <div *ngIf="actionMessage" class="alert py-2 px-3 mt-2 mb-2" [ngClass]="actionMessageType === 'success' ? 'alert-success' : 'alert-warning'" role="alert">
+    {{ actionMessage }}
   </div>
 
   <!-- ── Add Task Modal template ─────────────── -->

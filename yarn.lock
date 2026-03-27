@@ -8983,13 +8983,6 @@ preact@~10.12.1:
   resolved "https://registry.npmjs.org/preact/-/preact-10.12.1.tgz"
   integrity sha512-l8386ixSsBdbreOAkqtrwqHwdvR35ID8c3rKPa8lCWuO86dBi32QWHV4vfsZK1utLLFMvw+Z5Ad4XLkZzchscg==
 
-primeng@^17.18.6:
-  version "17.18.6"
-  resolved "https://registry.npmjs.org/primeng/-/primeng-17.18.6.tgz"
-  integrity sha512-WnsUWUxNkeqiJf5yrdT/TTzVyCP6R7Z60sr87chh3D7BNuNqh2R5Yd6GI86QVRhE172yt3AjjSIWfqRhzyul5w==
-  dependencies:
-    tslib "^2.3.0"
-
 print-js@^1.6.0:
   version "1.6.0"
   resolved "https://registry.npmjs.org/print-js/-/print-js-1.6.0.tgz"

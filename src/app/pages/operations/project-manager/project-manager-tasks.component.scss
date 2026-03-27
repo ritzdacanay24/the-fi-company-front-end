@@ -10,24 +10,32 @@
 // ── Topbar ───────────────────────────────────────────────────────────────────
 .pm-topbar {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   background: #fff;
   border-bottom: 1px solid #dde3ea;
-  padding: 0 20px;
-  height: 52px;
+  padding: 10px 20px;
+  min-height: 52px;
   flex-shrink: 0;
 }
 
 .pm-topbar-left {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 6px;
+  min-width: 0;
 }
 
 .pm-topbar-right {
   display: flex;
   align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.pm-topbar-context {
+  display: flex;
+  flex-direction: column;
   gap: 6px;
 }
 
@@ -35,10 +43,12 @@
   font-size: 1.05rem;
   font-weight: 700;
   color: #1f3044;
-  margin: 0 8px;
+  margin: 0;
 }
 
 .pm-context-badge {
+  display: inline-flex;
+  align-self: flex-start;
   background: #e8f0fe;
   color: #1a73e8;
   font-size: 0.72rem;
@@ -46,6 +56,32 @@
   padding: 2px 8px;
   border-radius: 20px;
   white-space: nowrap;
+}
+
+.pm-project-context {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #1f3044;
+    background: #f5f7fb;
+    border: 1px solid #dde3ea;
+    white-space: nowrap;
+  }
+
+  .chip.primary {
+    background: #e8f0fe;
+    border-color: #c9ddff;
+    color: #1a73e8;
+  }
 }
 
 // ── Toolbar ──────────────────────────────────────────────────────────────────
@@ -72,6 +108,29 @@
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.pm-gate-filter-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 6px;
+}
+
+.pm-gate-filter-label {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #495669;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pm-gate-filter {
+  min-width: 112px;
+  border-color: #dde3ea;
+  font-size: 0.76rem;
+  color: #1f3044;
 }
 
 .pm-new-btn {
@@ -231,6 +290,19 @@
   width: 100%;
   height: calc(100vh - 165px);
   min-height: 400px;
+}
+
+@media (max-width: 992px) {
+  .pm-topbar {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .pm-topbar-right {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
 }
 
 // ── AG Grid theme overrides ────────────────────────────────────────────────────

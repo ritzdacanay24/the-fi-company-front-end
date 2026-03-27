@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800" role="img" aria-label="Route All Cables Before Installing EGM landscape label">
+  <rect width="1200" height="800" fill="#efe739" />
+  <g fill="#111" font-family="Arial, Helvetica, sans-serif">
+    <text x="50" y="152" font-size="76" font-weight="700">Route All Cables Before</text>
+    <text x="50" y="240" font-size="76" font-weight="700">Installing EGM</text>
+
+    <text x="50" y="372" font-size="62" font-weight="700">Left Side:</text>
+    <text x="76" y="450" font-size="58">- CAT 5 In</text>
+    <text x="76" y="524" font-size="58">- RGB Control Cable</text>
+    <text x="76" y="598" font-size="58">- Main A/C Power</text>
+
+    <text x="50" y="674" font-size="62" font-weight="700">Right Side:</text>
+    <text x="76" y="748" font-size="58">- CAT 5 Out</text>
+    <text x="76" y="798" font-size="58">- Main A/C Power</text>
+  </g>
+</svg>

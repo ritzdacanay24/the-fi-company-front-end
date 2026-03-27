@@ -1,8 +1,9 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { SharedModule } from '@app/shared/shared.module';
-import { ReactiveFormsModule, FormControl, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormControl } from '@angular/forms';
 import { PmAttachmentType, PmTaskAttachment, PmTaskRecord } from './services/project-manager-tasks-data.service';
+import { AuthenticationService } from 'src/app/core/services/auth.service';
 
 @Component({
   standalone: true,
@@ -69,7 +70,7 @@ import { PmAttachmentType, PmTaskAttachment, PmTaskRecord } from './services/pro
           </div>
           <div class="col-6">
             <label class="form-label form-label-sm mb-1">Uploaded by</label>
-            <input type="text" class="form-control form-control-sm" [formControl]="uploaderControl" placeholder="Your name" />
+            <div class="form-control form-control-sm bg-light d-flex align-items-center">{{ currentUploader }}</div>
           </div>
         </div>
       </div>
@@ -98,24 +99,26 @@ import { PmAttachmentType, PmTaskAttachment, PmTaskRecord } from './services/pro
 export class PmTaskAttachmentModalComponent implements OnInit {
   @Input() task!: PmTaskRecord;
   @Input() initialAttachments: PmTaskAttachment[] = [];
-  @Input() defaultUploader = '';
 
   attachments: PmTaskAttachment[] = [];
   private nextId = 1;
+  currentUploader = 'Project Manager';
 
   readonly attachmentTypes: PmAttachmentType[] = ['Email', 'Picture', 'Document', 'Other'];
 
   typeControl = new FormControl<PmAttachmentType>('Document');
-  uploaderControl = new FormControl('', [Validators.required, Validators.maxLength(80)]);
 
-  constructor(private activeModal: NgbActiveModal) {}
+  constructor(
+    private activeModal: NgbActiveModal,
+    private authService: AuthenticationService
+  ) {}
 
   ngOnInit(): void {
     this.attachments = [...this.initialAttachments];
     this.nextId = this.attachments.length
       ? Math.max(...this.attachments.map(a => a.id)) + 1
       : 1;
-    this.uploaderControl.setValue(this.defaultUploader);
+    this.currentUploader = this.resolveCurrentUserName();
   }
 
   onFileSelect(event: Event): void {
@@ -135,7 +138,6 @@ export class PmTaskAttachmentModalComponent implements OnInit {
   }
 
   private processFiles(files: File[]): void {
-    const uploader = (this.uploaderControl.value || '').trim();
     const type = (this.typeControl.value || 'Document') as PmAttachmentType;
 
     files.forEach(file => {
@@ -148,7 +150,7 @@ export class PmTaskAttachmentModalComponent implements OnInit {
         name: file.name,
         type,
         sizeLabel,
-        uploadedBy: uploader || 'Unknown',
+        uploadedBy: this.currentUploader,
         uploadedAt: new Date().toISOString()
       };
 
@@ -199,5 +201,25 @@ export class PmTaskAttachmentModalComponent implements OnInit {
     } catch {
       return iso;
     }
+  }
+
+  private resolveCurrentUserName(): string {
+    const currentUser = this.authService.currentUserValue;
+    if (!currentUser) {
+      return 'Project Manager';
+    }
+
+    const nameCandidates = [
+      currentUser.full_name,
+      currentUser.fullName,
+      `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim(),
+      `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim(),
+      currentUser.name,
+      currentUser.username,
+      currentUser.email
+    ];
+
+    const displayName = nameCandidates.find((candidate: any) => String(candidate || '').trim().length > 0);
+    return String(displayName || 'Project Manager').trim();
   }
 }

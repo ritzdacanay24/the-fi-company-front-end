@@ -45,6 +45,10 @@
         <span class="muted">{{ totalProjects }} projects</span>
       </div>
 
+      <div class="alert alert-info mb-2" *ngIf="!projects.length">
+        No projects found. Create one in New Project to start the workflow.
+      </div>
+
       <div class="table-wrap">
         <table class="project-table">
           <thead>
@@ -52,9 +56,12 @@
               <th>Project</th>
               <th>Customer</th>
               <th>Gate</th>
-              <th>Readiness</th>
+              <th>Checklist %</th>
+              <th>Readiness %</th>
+              <th>Task %</th>
               <th>Status</th>
               <th>Owner</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -74,13 +81,27 @@
               <td>
                 <div class="readiness">
                   <span class="dot"></span>
-                  <span>{{ project.readiness }}%</span>
+                  <span>{{ getChecklistCompletion(project) }}%</span>
                 </div>
               </td>
+              <td>{{ project.readiness }}%</td>
+              <td>{{ project.taskCompletion || 0 }}%</td>
               <td>
                 <span [ngClass]="'status-pill ' + getStatusClass(project.status)">{{ project.status }}</span>
               </td>
               <td>{{ project.owner }}</td>
+              <td (click)="$event.stopPropagation()">
+                <select
+                  class="form-select form-select-sm action-select"
+                  (change)="onProjectActionChange(project, $any($event.target).value); $any($event.target).value = ''"
+                >
+                  <option value="" selected>Actions</option>
+                  <option value="checklist">Continue Checklist</option>
+                  <option value="tasks">Open Tasks</option>
+                  <option value="intake">Open Intake</option>
+                  <option value="delete">Delete Project</option>
+                </select>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -125,10 +146,16 @@
         <div class="progress-list">
           <div class="progress-item" *ngFor="let step of selectedProject.gateProgress">
             <div class="progress-left">
-              <span [ngClass]="step.complete ? 'progress-dot complete' : 'progress-dot pending'"></span>
+              <input
+                class="form-check-input progress-checkbox"
+                type="checkbox"
+                [checked]="step.complete"
+                disabled
+                [attr.aria-label]="step.label + ' completion'"
+              />
               <span>{{ step.label }}</span>
             </div>
-            <span class="muted">{{ step.days }}d</span>
+            <span class="muted">Tasks {{ step.taskCompletion }}% . {{ step.days }}d</span>
           </div>
         </div>
       </div>

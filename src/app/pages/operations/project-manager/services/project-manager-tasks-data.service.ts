@@ -55,12 +55,12 @@ export interface ProjectManagerTasksState {
 export class ProjectManagerTasksDataService {
   private readonly storageKey = 'pm_tasks_state_v1';
 
-  loadState(): ProjectManagerTasksState {
+  loadState(projectId = ''): ProjectManagerTasksState {
     if (this.isApiMode) {
-      return this.loadStateFromApi();
+      return this.loadStateFromApi(projectId);
     }
 
-    const raw = localStorage.getItem(this.storageKey);
+    const raw = localStorage.getItem(this.getStorageKey(projectId));
     if (!raw) {
       return this.createDefaultState();
     }
@@ -85,14 +85,14 @@ export class ProjectManagerTasksDataService {
     }
   }
 
-  saveState(state: ProjectManagerTasksState): void {
+  saveState(state: ProjectManagerTasksState, projectId = ''): void {
     if (this.isApiMode) {
-      this.saveStateToApi(state);
+      this.saveStateToApi(state, projectId);
       return;
     }
 
     try {
-      localStorage.setItem(this.storageKey, JSON.stringify(state));
+      localStorage.setItem(this.getStorageKey(projectId), JSON.stringify(state));
     } catch {
       // Ignore storage quota/storage access errors in test mode.
     }
@@ -102,18 +102,18 @@ export class ProjectManagerTasksDataService {
     return environment.projectManagerDataSource === 'api';
   }
 
-  private loadStateFromApi(): ProjectManagerTasksState {
+  private loadStateFromApi(projectId: string): ProjectManagerTasksState {
     // TODO: Replace with HttpClient integration when PM Tasks API is ready.
-    return this.loadStateFromLocalStorage();
+    return this.loadStateFromLocalStorage(projectId);
   }
 
-  private saveStateToApi(state: ProjectManagerTasksState): void {
+  private saveStateToApi(state: ProjectManagerTasksState, projectId: string): void {
     // TODO: Replace with HttpClient integration when PM Tasks API is ready.
-    this.saveStateToLocalStorage(state);
+    this.saveStateToLocalStorage(state, projectId);
   }
 
-  private loadStateFromLocalStorage(): ProjectManagerTasksState {
-    const raw = localStorage.getItem(this.storageKey);
+  private loadStateFromLocalStorage(projectId: string): ProjectManagerTasksState {
+    const raw = localStorage.getItem(this.getStorageKey(projectId));
     if (!raw) {
       return this.createDefaultState();
     }
@@ -138,21 +138,24 @@ export class ProjectManagerTasksDataService {
     }
   }
 
-  private saveStateToLocalStorage(state: ProjectManagerTasksState): void {
+  private saveStateToLocalStorage(state: ProjectManagerTasksState, projectId: string): void {
     try {
-      localStorage.setItem(this.storageKey, JSON.stringify(state));
+      localStorage.setItem(this.getStorageKey(projectId), JSON.stringify(state));
     } catch {
       // Ignore storage quota/storage access errors in test mode.
     }
   }
 
   private createDefaultState(): ProjectManagerTasksState {
-    const taskRecords = this.defaultMockTasks();
     return {
-      nextId: this.computeNextId(taskRecords),
-      taskRecords,
-      subgroupCatalog: this.catalogFromTasks(taskRecords)
+      nextId: 1,
+      taskRecords: [],
+      subgroupCatalog: {}
     };
+  }
+
+  private getStorageKey(projectId: string): string {
+    return `${this.storageKey}_${projectId || '__default__'}`;
   }
 
   private computeNextId(records: PmTaskRecord[]): number {
@@ -194,20 +197,4 @@ export class ProjectManagerTasksDataService {
     return normalized;
   }
 
-  private defaultMockTasks(): PmTaskRecord[] {
-    return [
-      { id: 1,  gate: 'G4', groupName: 'Engineering', subGroupName: 'CAD',              taskName: '3D CAD Model for VWL-035XX-XXX',                              project: 'VWL-035XX-XXX',          assignedTo: ['Ankit Batra'],                   durationDays: 28, startDate: '2026-02-09', finishDate: '2026-03-08', dependsOn: '',    bucket: 'Overall',     status: 'In Process',  completion: 52,  source: 'manual' },
-      { id: 2,  gate: 'G3', groupName: 'Engineering', subGroupName: 'Sourcing',          taskName: 'New LED Sourcing 2.5p (320mm x 80 mm)',                       project: 'VWL-035XX-XXX',          assignedTo: ['Aldo Verber'],                   durationDays: 28, startDate: '2026-03-02', finishDate: '2026-03-29', dependsOn: '',    bucket: 'Overall',     status: 'In Process',  completion: 38,  source: 'manual' },
-      { id: 3,  gate: 'G2', groupName: 'PM',          subGroupName: 'Customer Inputs',   taskName: 'Quote for Proto/ PO from Customer',                          project: 'VWL-035XX-XXX',          assignedTo: ['Brice Cutspec'],                 durationDays: 21, startDate: '2026-02-09', finishDate: '2026-03-01', dependsOn: '',    bucket: 'Overall',     status: 'Completed',   completion: 100, source: 'manual' },
-      { id: 4,  gate: 'G4', groupName: 'Engineering', subGroupName: 'CAD',              taskName: 'VWL-035XX-XXX CAD Approve',                                   project: 'VWL-035XX-XXX',          assignedTo: ['Aldo Verber'],                   durationDays: 2,  startDate: '2026-03-09', finishDate: '2026-03-10', dependsOn: '3FS', bucket: 'Overall',     status: 'In Process',  completion: 30,  source: 'manual' },
-      { id: 5,  gate: 'G4', groupName: 'Engineering', subGroupName: 'Software',          taskName: 'Pixel Mapping and FI Content',                                project: 'VWL-035XX-XXX',          assignedTo: ['Ankit Batra'],                   durationDays: 21, startDate: '2026-03-09', finishDate: '2026-03-29', dependsOn: '3FS', bucket: 'Overall',     status: 'Open',        completion: 0,   source: 'manual' },
-      { id: 6,  gate: 'G5', groupName: 'PM',          subGroupName: 'Approvals',         taskName: 'VWL-035XX-XXX Release to Proto (Approved by Customer)',       project: 'VWL-035XX-XXX',          assignedTo: ['Mike Bristol'],                  durationDays: 1,  startDate: '2026-03-11', finishDate: '2026-03-11', dependsOn: '6FS', bucket: 'Overall',     status: 'Open',        completion: 0,   source: 'manual' },
-      { id: 7,  gate: 'G4', groupName: 'Engineering', subGroupName: 'Electrical',        taskName: 'Electrical Schematics from JX (Internal)',                    project: 'VWL-035XX-XXX',          assignedTo: ['Aldo Verber'],                   durationDays: 7,  startDate: '2026-03-12', finishDate: '2026-03-18', dependsOn: '8FS', bucket: 'Overall',     status: 'Open',        completion: 0,   source: 'manual' },
-      { id: 8,  gate: 'G4', groupName: 'Engineering', subGroupName: 'BOM',               taskName: "VWL-035XX-XXX BOM's Release (Internal)",                      project: 'VWL-035XX-XXX',          assignedTo: ['Aldo Verber'],                   durationDays: 14, startDate: '2026-03-09', finishDate: '2026-03-22', dependsOn: '3FS', bucket: 'Overall',     status: 'Open',        completion: 0,   source: 'manual' },
-      { id: 9,  gate: 'G5', groupName: 'Engineering', subGroupName: 'Documentation',     taskName: 'Installation Instruction + PKG (F.S.) Internal',              project: 'VWL-035XX-XXX',          assignedTo: ['Temenuga Terziev'],              durationDays: 42, startDate: '2026-03-12', finishDate: '2026-04-22', dependsOn: '8FS', bucket: 'Overall',     status: 'Open',        completion: 0,   source: 'manual' },
-      { id: 10, gate: 'G6', groupName: 'Quality',     subGroupName: 'QA',                taskName: 'QA Requirements Internal',                                   project: 'VWL-035XX-XXX',          assignedTo: ['Dana L.'],                       durationDays: 28, startDate: '2026-03-12', finishDate: '2026-04-08', dependsOn: '8FS', bucket: 'Overall',     status: 'Open',        completion: 0,   source: 'manual' },
-      { id: 11, gate: 'G5', groupName: 'Engineering', subGroupName: 'Supplier Actions',  taskName: 'Supplier feedback loop and resolution',                       project: 'Cost Down CD-Outdoor 2.0', assignedTo: ['Carlos M.'],                   durationDays: 10, startDate: '2026-03-16', finishDate: '2026-03-26', dependsOn: 'G5',  bucket: 'Engineering', status: 'Review',      completion: 20,  source: 'manual' },
-      { id: 12, gate: 'G4', groupName: 'Engineering', subGroupName: 'DFM',               taskName: 'DFM review with customer',                                   project: 'Pixel Pitch Revision P3.9', assignedTo: ['James K.'],                  durationDays: 5,  startDate: '2026-03-10', finishDate: '2026-03-14', dependsOn: 'G4',  bucket: 'Engineering', status: 'In Process',  completion: 64,  source: 'manual' }
-    ];
-  }
 }

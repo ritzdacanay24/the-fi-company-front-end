@@ -346,9 +346,12 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   private videoRecorder: MediaRecorder | null = null;
   private videoChunks: Blob[] = [];
   isVideoRecording = false;
+  videoCaptureQualityMode: 'stable' | 'high' = 'stable';
+  videoCaptureStatus: 'idle' | 'starting' | 'preview' | 'recording' | 'stopping' | 'uploading' = 'idle';
   videoRecordingSeconds = 0;
   videoMaxDurationSeconds = 0;
   private videoRecordingInterval: any = null;
+  private videoStopFallbackTimer: any = null;
 
   // Auto-advance after photo capture
   autoAdvanceAfterPhoto = false;
@@ -855,6 +858,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     if (!this.ensureCanModify(true)) return;
 
     try {
+      this.videoCaptureStatus = 'starting';
       this.videoCaptureItemId = itemId;
 
       if (!window.isSecureContext) {
@@ -871,19 +875,30 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
 
       this.stopVideoRecording();
       this.stopCameraStream();
+      this.clearVideoStopFallbackTimer();
 
-      // Optimize video constraints for tablets - request realistic resolution
-      // Tablets often have lower resolution cameras; request 1080p ideal, fallback to 720p
-      const stream = await navigator.mediaDevices.getUserMedia({
+      const preferredConstraints: MediaStreamConstraints = {
         video: {
           facingMode: { ideal: 'environment' },
-          width: { ideal: 1920, min: 1280 },     // 1080p ideal, 720p minimum
-          height: { ideal: 1080, min: 720 },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
           aspectRatio: { ideal: 16 / 9 },
           frameRate: { ideal: 30, max: 30 }
         },
-        audio: false
-      });
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
+      };
+
+      const fallbackConstraints: MediaStreamConstraints = {
+        video: true,
+        audio: true
+      };
+
+      // First pass: preferred constraints.
+      let stream = await navigator.mediaDevices.getUserMedia(preferredConstraints);
 
       this.cameraStream = stream;
       this.cameraVideoTrack = (stream.getVideoTracks && stream.getVideoTracks()[0]) ? stream.getVideoTracks()[0] : null;
@@ -898,32 +913,45 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         });
 
         this.videoModal.result.finally(() => {
-          this.stopVideoRecording();
+          this.forceCloseVideoCapture();
           this.videoCaptureItemId = null;
-          this.stopCameraStream();
           this.videoModal = undefined;
         });
       }
 
-      setTimeout(() => {
-        const video = this.videoPreviewRef?.nativeElement;
-        if (!video || !this.cameraStream) return;
-        try {
-          (video as any).srcObject = this.cameraStream;
-          video.play().catch(() => {});
-        } catch (e) {
-          console.error('Failed to attach video stream', e);
+      // Ensure the modal view is rendered, then attach stream once.
+      this.cdr.detectChanges();
+      await Promise.resolve();
+
+      const preferredAttached = await this.attachVideoPreviewStream();
+      if (!preferredAttached) {
+        console.warn('Preferred in-app video constraints produced no preview. Falling back to browser-safe constraints.');
+        this.stopCameraStream();
+
+        stream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+        this.cameraStream = stream;
+        this.cameraVideoTrack = (stream.getVideoTracks && stream.getVideoTracks()[0]) ? stream.getVideoTracks()[0] : null;
+
+        const fallbackAttached = await this.attachVideoPreviewStream();
+        if (!fallbackAttached) {
+          throw new Error('Unable to start in-app live preview with both preferred and fallback constraints.');
         }
-      }, 0);
+      }
     } catch (error) {
       console.error('Error starting in-app video capture:', error);
       alert('Unable to start in-app video capture. Please check camera permissions and try again.');
-      this.closeVideoCapture();
+      this.videoCaptureStatus = 'idle';
+      this.forceCloseVideoCapture();
     }
   }
 
   startVideoRecording(): void {
     if (!this.cameraStream || this.isVideoRecording || !this.videoCaptureItemId) return;
+
+    if ((this.cameraStream.getAudioTracks?.() || []).length === 0) {
+      alert('Microphone not available for recording. Please allow microphone access and try again.');
+      return;
+    }
 
     try {
       const mimeType = this.getPreferredVideoMimeType();
@@ -959,8 +987,10 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       };
 
       // Start recording without timeslice to maintain continuous stream
-      this.videoRecorder.start();
+      // Timeslice ensures periodic chunks are emitted even before stop.
+      this.videoRecorder.start(1000);
       this.isVideoRecording = true;
+      this.videoCaptureStatus = 'recording';
 
       // Start elapsed timer and read max duration from item config
       this.videoRecordingSeconds = 0;
@@ -992,16 +1022,39 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
 
   stopVideoRecording(): void {
     this.clearVideoRecordingTimer();
+    this.videoCaptureStatus = 'stopping';
     if (!this.videoRecorder) {
       this.isVideoRecording = false;
+      this.videoCaptureStatus = 'preview';
       return;
     }
 
     if (this.videoRecorder.state === 'recording') {
-      this.videoRecorder.stop();
+      try {
+        if (typeof this.videoRecorder.requestData === 'function') {
+          this.videoRecorder.requestData();
+        }
+      } catch {
+        // ignore
+      }
+
+      try {
+        if (this.videoRecorder && this.videoRecorder.state === 'recording') {
+          this.videoRecorder.stop();
+        }
+      } catch {
+        // ignore
+      }
+
+      // Fallback finalize in case onstop is not fired by the browser.
+      this.clearVideoStopFallbackTimer();
+      this.videoStopFallbackTimer = setTimeout(() => {
+        this.finalizeVideoRecording();
+      }, 3200);
     } else {
       this.videoRecorder = null;
       this.isVideoRecording = false;
+      this.videoCaptureStatus = 'preview';
     }
   }
 
@@ -1012,6 +1065,13 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     }
   }
 
+  private clearVideoStopFallbackTimer(): void {
+    if (this.videoStopFallbackTimer) {
+      clearTimeout(this.videoStopFallbackTimer);
+      this.videoStopFallbackTimer = null;
+    }
+  }
+
   formatVideoTime(totalSeconds: number): string {
     const m = Math.floor(totalSeconds / 60);
     const s = totalSeconds % 60;
@@ -1019,12 +1079,18 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   }
 
   private finalizeVideoRecording(): void {
+    let uploadStarted = false;
     try {
+      this.clearVideoStopFallbackTimer();
       const itemId = this.videoCaptureItemId;
       if (!itemId || this.videoChunks.length === 0) {
         this.videoRecorder = null;
         this.videoChunks = [];
         this.isVideoRecording = false;
+        this.videoCaptureStatus = 'preview';
+        if (itemId) {
+          alert('Recording ended but no video data was captured. Please try again.');
+        }
         return;
       }
 
@@ -1033,7 +1099,9 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       const blob = new Blob(this.videoChunks, { type: mimeType });
       const file = new File([blob], `camera_video_${this.instanceId}_${Date.now()}.${ext}`, { type: mimeType });
 
-      this.uploadSingleFile(itemId, file, 'in-app');
+      uploadStarted = true;
+      this.uploadSingleFile(itemId, file, 'in-app', { closeVideoModalOnSuccess: true });
+      this.videoCaptureStatus = 'uploading';
       Swal.fire({
         title: 'Saving video...',
         text: 'Please wait while your video is uploaded.',
@@ -1041,17 +1109,20 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         showConfirmButton: false,
         didOpen: () => Swal.showLoading()
       });
-      this.closeVideoCapture();
     } catch (error) {
       console.error('Error finalizing video recording:', error);
       alert('Failed to save recorded video. Please try again.');
     } finally {
       this.clearVideoRecordingTimer();
+      this.clearVideoStopFallbackTimer();
       this.videoRecordingSeconds = 0;
       this.videoMaxDurationSeconds = 0;
       this.videoRecorder = null;
       this.videoChunks = [];
       this.isVideoRecording = false;
+      if (!uploadStarted) {
+        this.videoCaptureStatus = 'idle';
+      }
       this.cdr.detectChanges();
     }
   }
@@ -1062,6 +1133,90 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     } catch {
       // ignore
     }
+  }
+
+  private attachVideoPreviewStream(timeoutMs: number = 1400): Promise<boolean> {
+    const video = this.videoPreviewRef?.nativeElement;
+    if (!video || !this.cameraStream) {
+      return Promise.resolve(false);
+    }
+
+    try {
+      video.pause();
+      (video as any).srcObject = null;
+    } catch {
+      // ignore
+    }
+
+    return new Promise<boolean>((resolve) => {
+      let settled = false;
+
+      const cleanup = () => {
+        video.onloadedmetadata = null;
+        video.onplaying = null;
+        video.onerror = null;
+        clearTimeout(timeoutId);
+      };
+
+      const succeed = () => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        this.videoCaptureStatus = 'preview';
+        this.cdr.detectChanges();
+        resolve(true);
+      };
+
+      const fail = (reason?: any) => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        if (reason) {
+          console.warn('In-app video preview attach failed:', reason);
+        }
+        resolve(false);
+      };
+
+      video.onloadedmetadata = () => {
+        video.play().then(() => succeed()).catch((err) => fail(err));
+      };
+      video.onplaying = () => succeed();
+      video.onerror = (err) => fail(err);
+
+      const timeoutId = setTimeout(() => fail('preview-timeout'), timeoutMs);
+      (video as any).srcObject = this.cameraStream;
+    });
+  }
+
+  forceCloseVideoCapture(modalRef?: any): void {
+    this.clearVideoRecordingTimer();
+    this.clearVideoStopFallbackTimer();
+
+    this.videoRecorder = null;
+    this.videoChunks = [];
+    this.isVideoRecording = false;
+    this.videoRecordingSeconds = 0;
+    this.videoMaxDurationSeconds = 0;
+    this.videoCaptureStatus = 'idle';
+
+    this.stopCameraStream();
+    Swal.close();
+
+    try {
+      modalRef?.dismiss?.('force-close');
+    } catch {
+      // ignore
+    }
+
+    try {
+      this.videoModal?.dismiss?.('force-close');
+    } catch {
+      // ignore
+    }
+
+    this.videoModal = undefined;
+    this.videoCaptureItemId = null;
+    this.cdr.detectChanges();
   }
 
   private getPreferredVideoMimeType(): string | null {
@@ -1888,6 +2043,13 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     
     // Load completion status from localStorage
     const completionMap = this.stateService.loadFromLocalStorage();
+    const currentLocalProgress = this.stateService.getItemProgress();
+    const currentLocalByItemId = new Map<string, ChecklistItemProgress>();
+    currentLocalProgress.forEach(p => {
+      if (p?.item?.id !== undefined && p?.item?.id !== null) {
+        currentLocalByItemId.set(String(p.item.id), p);
+      }
+    });
 
     // Load completion status from DB (authoritative for collaboration)
     const dbCompletionMap = new Map<string, any>();
@@ -1933,6 +2095,10 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       
       // Extract videos from instance item (NEW)
       const existingVideos = instanceItem?.videos?.map((v: any) => v.file_url || v.url || v) || [];
+
+      const localExisting = currentLocalByItemId.get(String(itemId));
+      const mergedPhotos = this.mergeMediaUrlsForUi(existingPhotos, localExisting?.photos || []);
+      const mergedVideos = this.mergeMediaUrlsForUi(existingVideos, localExisting?.videos || []);
       
       // Get completion status from instance item
       const { isCompleted, completedAt } = this.instanceMatcher.getCompletionStatus(instanceItem);
@@ -1998,11 +2164,11 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       }
       
       const submissionType = item.submission_type || 'photo';
-      const hasMedia = existingPhotos.length > 0 || existingVideos.length > 0;
+      const hasMedia = mergedPhotos.length > 0 || mergedVideos.length > 0;
 
       // Check if item should be completed based on media meeting requirements
       if (!completed && hasMedia && submissionType !== 'none') {
-        if (this.photoValidation.areSubmissionRequirementsMet(existingPhotos.length, existingVideos.length, item)) {
+        if (this.photoValidation.areSubmissionRequirementsMet(mergedPhotos.length, mergedVideos.length, item)) {
           completed = true;
           completionDate = completionDate || new Date();
         }
@@ -2016,9 +2182,9 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
           original_position: index
         } as ChecklistItem & { id: string; original_position: number; baseItemId: number },
         completed,
-        photos: existingPhotos,
+        photos: mergedPhotos,
         photoMeta,
-        videos: existingVideos, // Use extracted videos
+        videos: mergedVideos,
         videoMeta,
         notes,
         completedAt: completionDate,
@@ -2039,6 +2205,41 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       // Navigate to first incomplete item if no step param was provided
       this.navigateToFirstIncompleteItem();
     }
+  }
+
+  private normalizeMediaPathForMerge(url: string | null | undefined): string {
+    const raw = String(url || '').trim();
+    if (!raw) return '';
+
+    try {
+      const parsed = new URL(raw, 'https://dashboard.eye-fi.com');
+      return decodeURIComponent(parsed.pathname).replace(/^\/+/, '').toLowerCase();
+    } catch {
+      return raw
+        .replace(/^https?:\/\/[^/]+\//i, '')
+        .replace(/^\/+/, '')
+        .toLowerCase();
+    }
+  }
+
+  private mergeMediaUrlsForUi(serverUrls: string[], localUrls: string[]): string[] {
+    const merged: string[] = [];
+    const seen = new Set<string>();
+
+    const addUrl = (value: any) => {
+      const str = String(value || '').trim();
+      if (!str) return;
+      const key = this.normalizeMediaPathForMerge(str);
+      if (!key || seen.has(key)) return;
+      seen.add(key);
+      merged.push(str);
+    };
+
+    // Prefer server ordering first, then keep local optimistic entries if backend is lagging.
+    (serverUrls || []).forEach(addUrl);
+    (localUrls || []).forEach(addUrl);
+
+    return merged;
   }
 
   /**
@@ -2421,6 +2622,25 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
 
   onImageError(event: any): void {
     event.target.style.display = 'none';
+  }
+
+  onUploadedPhotoError(event: Event, photo: string | any): void {
+    const img = event?.target as HTMLImageElement | null;
+    if (!img) {
+      return;
+    }
+
+    console.warn('Failed to load uploaded photo:', this.getPhotoUrl(photo));
+    img.style.opacity = '0.35';
+  }
+
+  onUploadedPhotoLoad(event: Event): void {
+    const img = event?.target as HTMLImageElement | null;
+    if (!img) {
+      return;
+    }
+
+    img.style.opacity = '1';
   }
 
   getCurrentItemsToShow(): ChecklistItemProgress[] {
@@ -3297,7 +3517,12 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     return mimeType.startsWith('video/') || mimeType.startsWith('audio/');
   }
 
-  private uploadSingleFile(itemId: number | string, file: File, captureSource: 'in-app' | 'system' | 'library'): void {
+  private uploadSingleFile(
+    itemId: number | string,
+    file: File,
+    captureSource: 'in-app' | 'system' | 'library',
+    options?: { closeVideoModalOnSuccess?: boolean }
+  ): void {
     if (!this.ensureCanModify(true)) return;
     // Validate instance ID
     if (!this.idExtractor.isValidInstanceId(this.instanceId)) {
@@ -3335,12 +3560,24 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       userId: this.currentUserId || undefined
     }).subscribe({
       next: (response) => {
+        const uploadedUrl = String(response?.file_url || '').trim();
+        if (!uploadedUrl) {
+          const mediaLabel = isMedia ? (isAudio ? 'audio' : 'video') : 'photo';
+          Swal.close();
+          delete this.uploadProgress[itemIdKey];
+          if (options?.closeVideoModalOnSuccess) {
+            this.videoCaptureStatus = 'preview';
+          }
+          alert(`Error uploading ${mediaLabel}: server did not return a saved file URL.`);
+          return;
+        }
+
         if (isMedia) {
-          this.stateService.addVideo(itemId, response.file_url, this.currentUserId || undefined, this.currentUserName, captureSource);
+          this.stateService.addVideo(itemId, uploadedUrl, this.currentUserId || undefined, this.currentUserName, captureSource);
         } else {
           this.stateService.addPhoto(
             itemId,
-            response.file_url,
+            uploadedUrl,
             this.currentUserId || undefined,
             this.currentUserName,
             captureSource
@@ -3350,21 +3587,85 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         Swal.close();
         this.cdr.detectChanges();
         setTimeout(() => this.initializeCarousels(), 100);
-        this.handlePhotoUploadComplete(itemId);
+        if (!isMedia) {
+          this.handlePhotoUploadComplete(itemId);
+        }
 
         // Persist progress + notify other viewers
         this.saveProgress();
         this.broadcastChecklistUpdate(this.getMediaAddedAction(file), { itemId });
+
+        if (options?.closeVideoModalOnSuccess) {
+          this.photoChecklistService.getInstance(this.instanceId).subscribe({
+            next: (fresh) => {
+              const persisted = this.instanceHasMediaUrl(fresh, uploadedUrl);
+              if (persisted) {
+                this.instance = fresh as any;
+                this.videoCaptureStatus = 'idle';
+                this.closeVideoCapture();
+              } else {
+                this.videoCaptureStatus = 'preview';
+                alert('Video capture closed but was not found on the server yet. Please record again.');
+              }
+              this.cdr.detectChanges();
+            },
+            error: () => {
+              this.videoCaptureStatus = 'preview';
+              alert('Unable to verify saved video on server. Please try recording again.');
+              this.cdr.detectChanges();
+            }
+          });
+        }
       },
       error: (error) => {
         const mediaLabel = isMedia ? (isAudio ? 'audio' : 'video') : 'photo';
         console.error(`Error uploading ${mediaLabel}:`, error);
         Swal.close();
         delete this.uploadProgress[itemIdKey];
+        if (options?.closeVideoModalOnSuccess) {
+          // Keep modal open so operator can retry immediately.
+          this.videoCaptureStatus = 'preview';
+        }
         const errorMessage = error.error?.error || error.message || 'Upload failed';
         alert(`Error uploading ${mediaLabel}: ${errorMessage}`);
       }
     });
+  }
+
+  private normalizeMediaPath(url: string | undefined | null): string {
+    const raw = String(url || '').trim();
+    if (!raw) return '';
+
+    try {
+      const parsed = new URL(raw, 'https://dashboard.eye-fi.com');
+      return decodeURIComponent(parsed.pathname).replace(/^\/+/, '').toLowerCase();
+    } catch {
+      return raw
+        .replace(/^https?:\/\/[^/]+\//i, '')
+        .replace(/^\/+/, '')
+        .toLowerCase();
+    }
+  }
+
+  private instanceHasMediaUrl(instance: ChecklistInstance | null, mediaUrl: string): boolean {
+    const target = this.normalizeMediaPath(mediaUrl);
+    if (!target) return false;
+
+    const items = (instance as any)?.items;
+    if (!Array.isArray(items)) return false;
+
+    for (const item of items) {
+      const photos = Array.isArray(item?.photos) ? item.photos : [];
+      const videos = Array.isArray(item?.videos) ? item.videos : [];
+
+      const hasPhoto = photos.some((p: any) => this.normalizeMediaPath(String(p?.file_url || p?.url || p || '')) === target);
+      if (hasPhoto) return true;
+
+      const hasVideo = videos.some((v: any) => this.normalizeMediaPath(String(v?.file_url || v?.url || v || '')) === target);
+      if (hasVideo) return true;
+    }
+
+    return false;
   }
 
   /**

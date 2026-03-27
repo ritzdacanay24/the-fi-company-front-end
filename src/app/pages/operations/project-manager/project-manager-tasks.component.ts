@@ -6,7 +6,7 @@ import { SharedModule } from '@app/shared/shared.module';
 import { AgGridModule } from 'ag-grid-angular';
 import { CellValueChangedEvent, ColDef, GridApi, GridOptions, GridReadyEvent, IRowNode, RowDragEndEvent } from 'ag-grid-community';
 import { PmTaskComment, PmTaskAttachment, PmTaskRecord, ProjectManagerTasksDataService, TaskGate, TaskStatus } from './services/project-manager-tasks-data.service';
-import { ProjectManagerProjectsService } from './services/project-manager-projects.service';
+import { ProjectDashboardItem, ProjectManagerProjectsService } from './services/project-manager-projects.service';
 import { PmTaskCommentModalComponent } from './pm-task-comment-modal.component';
 import { PmTaskAttachmentModalComponent } from './pm-task-attachment-modal.component';
 
@@ -54,6 +54,7 @@ interface PmTreeRow {
 export class ProjectManagerTasksComponent implements OnInit {
   private gridApi?: GridApi<PmTreeRow>;
   private nextId = 1;
+  private activeProjectId = '';
   gateContextLabel = 'All Gates';
   activeGateFilter: TaskGateFilter = 'All';
   readonly gateOptions: TaskGate[] = ['G1', 'G2', 'G3', 'G4', 'G5', 'G6'];
@@ -78,6 +79,11 @@ export class ProjectManagerTasksComponent implements OnInit {
   private groupColorMap = new Map<string, string>();
   private groupColorIndex = 0;
   private subgroupCatalog: Record<string, Set<string>> = {};
+  private readonly singleClickDropdownCols = new Set(['gate', 'status', 'dependsOn']);
+  private lastInteractedTaskId: number | null = null;
+  actionMessage = '';
+  actionMessageType: 'success' | 'warning' = 'success';
+  currentProjectSummary: ProjectDashboardItem | null = null;
 
   engineeringPeople = [
     'Ankit Batra',
@@ -372,6 +378,22 @@ export class ProjectManagerTasksComponent implements OnInit {
     suppressRowClickSelection: false,
     onCellClicked: (event: any) => {
       // add-item rows are handled by the addAction column's onCellClicked to avoid double-opening
+      const row = event?.data as PmTreeRow | undefined;
+      if (!row || row.rowType !== 'task') {
+        return;
+      }
+
+      this.lastInteractedTaskId = row.taskId;
+
+      const colId = String(event.column?.getColId?.() || '');
+      if (!this.singleClickDropdownCols.has(colId)) {
+        return;
+      }
+
+      event.api.startEditingCell({
+        rowIndex: event.rowIndex,
+        colKey: colId
+      });
     },
     onCellValueChanged: (event: CellValueChangedEvent<PmTreeRow>) => this.handleCellValueChanged(event),
     onRowDragEnd: (event: RowDragEndEvent<PmTreeRow>) => this.handleRowDragEnd(event),
@@ -389,17 +411,28 @@ export class ProjectManagerTasksComponent implements OnInit {
     private projectsService: ProjectManagerProjectsService,
     private modalService: NgbModal
   ) {
-    this.initializeTaskState();
-    this.patchDefaultProjectFromSelection();
-    this.rebuildTreeRows();
+    // Initialized from query params to keep URL and local state in sync.
   }
 
   ngOnInit(): void {
     this.route.queryParamMap.subscribe(params => {
       const gateContext = (params.get('gateContext') || '').trim();
       const gate = Number(params.get('gate') || 0);
+      const projectId = (params.get('projectId') || '').trim();
       this.applyGateContext(gateContext, gate);
+      this.applyProjectContext(projectId);
     });
+  }
+
+  get executionChecklistQueryParams(): { projectId: string; view: 'checklist' } {
+    return {
+      projectId: this.getActiveProjectId(),
+      view: 'checklist'
+    };
+  }
+
+  get currentProjectIdLabel(): string {
+    return this.currentProjectSummary?.id || this.activeProjectId || 'N/A';
   }
 
   get availableGroups(): string[] {
@@ -544,7 +577,6 @@ export class ProjectManagerTasksComponent implements OnInit {
     const ref = this.modalService.open(PmTaskAttachmentModalComponent, { size: 'md' });
     ref.componentInstance.task = task;
     ref.componentInstance.initialAttachments = task.attachments ? [...task.attachments] : [];
-    ref.componentInstance.defaultUploader = Array.from(this.selectedAssignees)[0] || '';
 
     ref.result.then((updatedAttachments: PmTaskAttachment[]) => {
       task.attachments = updatedAttachments;
@@ -560,7 +592,6 @@ export class ProjectManagerTasksComponent implements OnInit {
     const ref = this.modalService.open(PmTaskCommentModalComponent, { size: 'md' });
     ref.componentInstance.task = task;
     ref.componentInstance.initialComments = task.comments ? [...task.comments] : [];
-    ref.componentInstance.defaultAuthor = Array.from(this.selectedAssignees)[0] || '';
 
     ref.result.then((updatedComments: PmTaskComment[]) => {
       task.comments = updatedComments;
@@ -571,9 +602,9 @@ export class ProjectManagerTasksComponent implements OnInit {
 
   private applyGateContext(gateContext: string, gate: number): void {
     const selectedGate = this.resolveGateByContext(gateContext, gate);
+    const hasExplicitGateSelection = /^gate[1-6]$/.test(gateContext) || (gate >= 1 && gate <= 6);
 
     if (gateContext === 'gate1') {
-      this.gateContextLabel = 'Gate 1';
       this.taskForm.patchValue({
         gate: selectedGate,
         groupName: 'PM',
@@ -586,7 +617,6 @@ export class ProjectManagerTasksComponent implements OnInit {
     }
 
     if (gateContext === 'gate2' || gateContext === 'gate3' || gateContext === 'gate4') {
-      this.gateContextLabel = `Gate ${gateContext.replace('gate', '')}`;
       this.taskForm.patchValue({
         gate: selectedGate,
         groupName: 'Engineering',
@@ -601,7 +631,6 @@ export class ProjectManagerTasksComponent implements OnInit {
     }
 
     if (gateContext === 'gate5' || gateContext === 'gate6') {
-      this.gateContextLabel = `Gate ${gateContext.replace('gate', '')}`;
       this.taskForm.patchValue({
         gate: selectedGate,
         groupName: 'Quality',
@@ -615,13 +644,18 @@ export class ProjectManagerTasksComponent implements OnInit {
       return;
     }
 
-    this.gateContextLabel = 'All Gates';
-    this.setGateFilter('All');
+    this.setGateFilter(hasExplicitGateSelection ? selectedGate : 'All');
   }
 
   setGateFilter(gate: TaskGateFilter): void {
     this.activeGateFilter = gate;
+    this.gateContextLabel = gate === 'All' ? 'All Gates' : `Gate ${gate.replace('G', '')}`;
     this.rebuildTreeRows();
+  }
+
+  onGateFilterChange(value: string): void {
+    const normalized = value === 'All' ? 'All' : (value as TaskGate);
+    this.setGateFilter(normalized);
   }
 
   private resolveGateByContext(gateContext: string, gate: number): TaskGate {
@@ -725,6 +759,96 @@ export class ProjectManagerTasksComponent implements OnInit {
     this.rebuildTreeRows();
   }
 
+  archiveSelectedTasks(): void {
+    const targetTaskIds = this.getTargetTaskIds();
+    if (!targetTaskIds.size) {
+      this.actionMessageType = 'warning';
+      this.actionMessage = 'Select or click a task first before archiving.';
+      return;
+    }
+
+    this.taskRecords = this.taskRecords.map(task => {
+      if (!targetTaskIds.has(task.id)) {
+        return task;
+      }
+
+      return {
+        ...task,
+        status: 'Locked',
+        completion: 100
+      };
+    });
+
+    this.persistTaskState();
+    this.rebuildTreeRows();
+    this.actionMessageType = 'success';
+    this.actionMessage = `Archived ${targetTaskIds.size} task(s) as Locked.`;
+  }
+
+  deleteSelectedTasks(): void {
+    const targetTaskIds = this.getTargetTaskIds();
+    if (!targetTaskIds.size) {
+      this.actionMessageType = 'warning';
+      this.actionMessage = 'Select or click a task first before deleting.';
+      return;
+    }
+
+    const confirmed = window.confirm(`Delete ${targetTaskIds.size} task(s)? This cannot be undone.`);
+    if (!confirmed) {
+      return;
+    }
+
+    this.taskRecords = this.taskRecords.filter(task => !targetTaskIds.has(task.id));
+    this.persistTaskState();
+    this.rebuildTreeRows();
+    this.actionMessageType = 'success';
+    this.actionMessage = `Deleted ${targetTaskIds.size} task(s).`;
+  }
+
+  get selectedTaskCount(): number {
+    return this.getSelectedTaskIds().size;
+  }
+
+  private getSelectedTaskIds(): Set<number> {
+    if (!this.gridApi) {
+      return new Set<number>();
+    }
+
+    const selectedTaskRows = this.gridApi.getSelectedNodes()
+      .map(node => node.data)
+      .filter((row): row is PmTreeRow => !!row && row.rowType === 'task' && row.taskId !== null);
+
+    return new Set(selectedTaskRows.map(row => row.taskId as number));
+  }
+
+  private getTargetTaskIds(): Set<number> {
+    const selected = this.getSelectedTaskIds();
+    if (selected.size) {
+      return selected;
+    }
+
+    if (!this.gridApi) {
+      return selected;
+    }
+
+    const focused = this.gridApi.getFocusedCell();
+    if (focused?.rowIndex === undefined || focused.rowIndex === null) {
+      return selected;
+    }
+
+    const node = this.gridApi.getDisplayedRowAtIndex(focused.rowIndex);
+    const row = node?.data;
+    if (row && row.rowType === 'task' && row.taskId !== null) {
+      return new Set<number>([row.taskId]);
+    }
+
+    if (this.lastInteractedTaskId !== null && this.taskRecords.some(task => task.id === this.lastInteractedTaskId)) {
+      return new Set<number>([this.lastInteractedTaskId]);
+    }
+
+    return selected;
+  }
+
   private handleCellValueChanged(event: CellValueChangedEvent<PmTreeRow>): void {
     const row = event.data;
     if (!row || row.rowType !== 'task' || row.taskId === null || !event.colDef.field) {
@@ -757,12 +881,33 @@ export class ProjectManagerTasksComponent implements OnInit {
       }
     }
 
-    if (field === 'status' && task.status === 'Completed' && task.completion < 100) {
-      task.completion = 100;
+    if (field === 'status') {
+      const oldStatus = String(event.oldValue || '');
+      const newStatus = task.status;
+
+      if ((newStatus === 'Completed' || newStatus === 'Locked') && task.completion < 100) {
+        task.completion = 100;
+      }
+
+      if ((oldStatus === 'Completed' || oldStatus === 'Locked') && newStatus !== 'Completed' && newStatus !== 'Locked') {
+        task.completion = this.defaultCompletionByStatus(newStatus);
+      }
     }
 
     this.persistTaskState();
     this.rebuildTreeRows();
+  }
+
+  private defaultCompletionByStatus(status: TaskStatus): number {
+    const defaults: Record<TaskStatus, number> = {
+      Open: 0,
+      'In Process': 50,
+      Review: 75,
+      Completed: 100,
+      Locked: 100
+    };
+
+    return defaults[status] ?? 0;
   }
 
   private handleRowDragEnd(event: RowDragEndEvent<PmTreeRow>): void {
@@ -819,8 +964,8 @@ export class ProjectManagerTasksComponent implements OnInit {
     this.rebuildTreeRows();
   }
 
-  private initializeTaskState(): void {
-    const state = this.tasksDataService.loadState();
+  private initializeTaskState(projectId: string): void {
+    const state = this.tasksDataService.loadState(projectId);
     this.nextId = state.nextId;
     this.taskRecords = state.taskRecords;
 
@@ -842,7 +987,7 @@ export class ProjectManagerTasksComponent implements OnInit {
       nextId: this.nextId,
       taskRecords: this.taskRecords,
       subgroupCatalog
-    });
+    }, this.activeProjectId);
   }
 
   private patchDefaultProjectFromSelection(): void {
@@ -856,6 +1001,48 @@ export class ProjectManagerTasksComponent implements OnInit {
     this.taskForm.patchValue({
       project: selected.code || selected.name
     });
+  }
+
+  private applyProjectContext(requestedProjectId: string): void {
+    const projects = this.projectsService.getProjects();
+    const hasRequested = !!requestedProjectId && projects.some(project => project.id === requestedProjectId);
+
+    if (hasRequested) {
+      this.projectsService.setSelectedProjectId(requestedProjectId);
+    }
+
+    let resolvedProjectId = hasRequested
+      ? requestedProjectId
+      : this.projectsService.getSelectedProjectId(projects);
+
+    if (!resolvedProjectId && requestedProjectId) {
+      resolvedProjectId = requestedProjectId;
+    }
+
+    this.currentProjectSummary = projects.find(project => project.id === resolvedProjectId) || null;
+
+    if (resolvedProjectId === this.activeProjectId) {
+      return;
+    }
+
+    this.activeProjectId = resolvedProjectId;
+    this.initializeTaskState(this.activeProjectId);
+    this.patchDefaultProjectFromSelection();
+
+    if (!hasRequested && requestedProjectId) {
+      this.taskForm.patchValue({ project: requestedProjectId });
+    }
+
+    this.rebuildTreeRows();
+  }
+
+  private getActiveProjectId(): string {
+    if (this.activeProjectId) {
+      return this.activeProjectId;
+    }
+
+    const projects = this.projectsService.getProjects();
+    return this.projectsService.getSelectedProjectId(projects);
   }
 
   private resolveTreeDropTarget(overNode?: IRowNode<PmTreeRow>): { groupName: string; subGroupName: string } | null {

@@ -1899,14 +1899,20 @@ class PhotoChecklistConfigAPI {
             }
             
             $itemsUpdateSkipped = false;
+            $itemsReorderedInPlace = false;
 
             if (!empty($data['items']) && $submissionCount > 0) {
-                $itemsUpdateSkipped = true;
-                error_log("⚠️ updateTemplate: template ID=$id has $submissionCount photo submissions; skipping checklist_items delete/reinsert to avoid FK violations");
+                $itemsReorderedInPlace = $this->applyInPlaceReorderOnlyUpdate((int)$id, $data['items']);
+                if ($itemsReorderedInPlace) {
+                    error_log("✅ updateTemplate: template ID=$id has submissions; applied in-place reorder-only item update");
+                } else {
+                    $itemsUpdateSkipped = true;
+                    error_log("⚠️ updateTemplate: template ID=$id has $submissionCount photo submissions; skipping checklist_items delete/reinsert to avoid FK violations");
+                }
             }
 
             // Delete/reinsert items only when safe (no dependent submissions)
-            if (!empty($data['items']) && !$itemsUpdateSkipped) {
+            if (!empty($data['items']) && !$itemsUpdateSkipped && !$itemsReorderedInPlace) {
                 $sql = "DELETE FROM checklist_items WHERE template_id = ?";
                 $stmt = $this->conn->prepare($sql);
                 $stmt->execute([$id]);
@@ -2154,6 +2160,190 @@ class PhotoChecklistConfigAPI {
             $this->conn->rollback();
             throw $e;
         }
+    }
+
+    private function applyInPlaceReorderOnlyUpdate(int $templateId, array $incomingItems): bool {
+        if (empty($incomingItems)) {
+            return false;
+        }
+
+        $checkLinksSql = "SHOW COLUMNS FROM checklist_items LIKE 'links'";
+        $checkLinksStmt = $this->conn->prepare($checkLinksSql);
+        $checkLinksStmt->execute();
+        $hasLinksColumn = $checkLinksStmt->rowCount() > 0;
+
+        $selectFields = "id, title, description, is_required, sample_image_url, sample_images, sample_videos, photo_requirements, submission_type";
+        if ($hasLinksColumn) {
+            $selectFields .= ", links";
+        }
+
+        $currentSql = "SELECT {$selectFields} FROM checklist_items WHERE template_id = ?";
+        $currentStmt = $this->conn->prepare($currentSql);
+        $currentStmt->execute([$templateId]);
+        $currentRows = $currentStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+        if (count($currentRows) !== count($incomingItems)) {
+            return false;
+        }
+
+        $currentById = [];
+        foreach ($currentRows as $row) {
+            $rowId = (int)($row['id'] ?? 0);
+            if ($rowId <= 0) {
+                return false;
+            }
+            $currentById[$rowId] = $row;
+        }
+
+        $seenIds = [];
+        foreach ($incomingItems as $item) {
+            $itemId = (int)($item['id'] ?? 0);
+            if ($itemId <= 0 || isset($seenIds[$itemId]) || !isset($currentById[$itemId])) {
+                return false;
+            }
+            $seenIds[$itemId] = true;
+
+            $current = $currentById[$itemId];
+
+            // Only allow in-place updates when non-order content is unchanged.
+            if (!$this->valuesEquivalent($current['title'] ?? null, $item['title'] ?? null)) {
+                return false;
+            }
+            if (!$this->valuesEquivalent($current['description'] ?? null, $item['description'] ?? null)) {
+                return false;
+            }
+            if (!$this->valuesEquivalent((int)($current['is_required'] ?? 1), (int)($item['is_required'] ?? 1))) {
+                return false;
+            }
+            if (!$this->valuesEquivalent($current['sample_image_url'] ?? null, $item['sample_image_url'] ?? null)) {
+                return false;
+            }
+            if (!$this->valuesEquivalent($current['submission_type'] ?? 'photo', $item['submission_type'] ?? 'photo')) {
+                return false;
+            }
+            if (!$this->valuesEquivalent($current['sample_images'] ?? null, $item['sample_images'] ?? null)) {
+                return false;
+            }
+            if (!$this->valuesEquivalent($current['sample_videos'] ?? null, $item['sample_videos'] ?? null)) {
+                return false;
+            }
+            if (!$this->valuesEquivalent($current['photo_requirements'] ?? null, $item['photo_requirements'] ?? null)) {
+                return false;
+            }
+
+            if ($hasLinksColumn) {
+                if (!$this->valuesEquivalent($current['links'] ?? null, $item['links'] ?? null)) {
+                    return false;
+                }
+            }
+        }
+
+        $lastItemAtLevel = [];
+        $maxSeenLevel = 0;
+
+        $updateSql = "UPDATE checklist_items SET order_index = ?, level = ?, parent_id = ? WHERE id = ? AND template_id = ?";
+        $updateStmt = $this->conn->prepare($updateSql);
+
+        foreach ($incomingItems as $index => $item) {
+            $itemId = (int)($item['id'] ?? 0);
+            $level = isset($item['level']) ? (int)$item['level'] : 0;
+            if ($level < 0) {
+                $level = 0;
+            }
+
+            $orderIndex = isset($item['order_index']) ? (int)$item['order_index'] : ($index + 1);
+            if ($orderIndex <= 0) {
+                $orderIndex = $index + 1;
+            }
+
+            $parentId = null;
+            if ($level > 0) {
+                if (!isset($lastItemAtLevel[$level - 1])) {
+                    return false;
+                }
+                $parentId = (int)$lastItemAtLevel[$level - 1];
+            }
+
+            for ($lvl = $level + 1; $lvl <= $maxSeenLevel; $lvl++) {
+                unset($lastItemAtLevel[$lvl]);
+            }
+
+            $lastItemAtLevel[$level] = $itemId;
+            if ($level > $maxSeenLevel) {
+                $maxSeenLevel = $level;
+            }
+
+            $updateStmt->execute([$orderIndex, $level, $parentId, $itemId, $templateId]);
+        }
+
+        return true;
+    }
+
+    private function valuesEquivalent($a, $b): bool {
+        $na = $this->normalizeComparableValue($a);
+        $nb = $this->normalizeComparableValue($b);
+
+        if (is_array($na) || is_array($nb)) {
+            return json_encode($na) === json_encode($nb);
+        }
+
+        return $na === $nb;
+    }
+
+    private function normalizeComparableValue($value) {
+        if ($value === null) {
+            return null;
+        }
+
+        if (is_string($value)) {
+            $trimmed = trim($value);
+            if ($trimmed === '') {
+                return null;
+            }
+
+            if (($trimmed[0] === '{' || $trimmed[0] === '[')) {
+                $decoded = json_decode($trimmed, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $value = $decoded;
+                } else {
+                    return $trimmed;
+                }
+            } else {
+                return $trimmed;
+            }
+        }
+
+        if (is_array($value)) {
+            return $this->sortRecursiveForComparison($value);
+        }
+
+        if (is_bool($value)) {
+            return $value ? 1 : 0;
+        }
+
+        if (is_numeric($value)) {
+            return (float)$value;
+        }
+
+        return $value;
+    }
+
+    private function sortRecursiveForComparison(array $value): array {
+        $isAssoc = array_keys($value) !== range(0, count($value) - 1);
+
+        if ($isAssoc) {
+            ksort($value);
+        }
+
+        foreach ($value as $key => $item) {
+            if (is_array($item)) {
+                $value[$key] = $this->sortRecursiveForComparison($item);
+            } elseif (is_string($item)) {
+                $value[$key] = trim($item);
+            }
+        }
+
+        return $value;
     }
 
     /**

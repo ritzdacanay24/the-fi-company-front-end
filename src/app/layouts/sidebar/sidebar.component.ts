@@ -594,6 +594,14 @@ export class SidebarComponent implements OnInit {
         return menuItem;
       }
 
+      // Prefer a deeper exact child match before wildcard parent matching.
+      if (menuItem.subItems) {
+        const foundItem = this.findMenuItem(pathname, menuItem.subItems);
+        if (foundItem) {
+          return foundItem;
+        }
+      }
+
       // Handle wildcard routes from activatedRoutes field like '/quality/igt/*'
       if (menuItem.activatedRoutes) {
         const routes = Array.isArray(menuItem.activatedRoutes) ? menuItem.activatedRoutes : [menuItem.activatedRoutes];
@@ -635,13 +643,6 @@ export class SidebarComponent implements OnInit {
       if (menuItem.link === "/quality/template-editor" && 
           pathname.startsWith("/quality/template-editor")) {
         return menuItem;
-      }
-
-      if (menuItem.subItems) {
-        const foundItem = this.findMenuItem(pathname, menuItem.subItems);
-        if (foundItem) {
-          return foundItem;
-        }
       }
     }
 

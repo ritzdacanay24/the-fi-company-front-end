@@ -316,5 +316,59 @@ export let labelData = [
         "labelImage": "",
         "service": "blackRedLabelModalService",
     },
+    {
+        "id": 29,
+        "labelName": "Route All Cables Before Installing EGM",
+        "labelSize": "6 x 4",
+        "orientation": "Landscape",
+        "labelImage": "assets/images/labels/route-all-cables-landscape.svg",
+        "service": "justLabelModalService",
+        "zebraCode": `
+            ^XA
+            ^PW1218
+            ^LL812
+            ^LH0,0
+            ^FWR
+            ^FO710,70^A0,76,66^FDROUTE ALL CABLES BEFORE^FS
+            ^FO620,70^A0,76,66^FDINSTALLING EGM^FS
+
+            ^FO480,70^A0,62,54^FDLEFT SIDE:^FS
+            ^FO402,70^A0,58,50^FD- CAT 5 IN^FS
+            ^FO334,70^A0,58,50^FD- RGB CONTROL CABLE^FS
+            ^FO266,70^A0,58,50^FD- MAIN A/C POWER^FS
+
+            ^FO170,70^A0,62,54^FDRIGHT SIDE:^FS
+            ^FO92,70^A0,58,50^FD- CAT 5 OUT^FS
+            ^FO16,70^A0,58,50^FD- MAIN A/C POWER^FS
+            ^XZ
+        `
+    },
+    {
+        "id": 30,
+        "labelName": "Route All Cables Before Installing EGM",
+        "labelSize": "4 x 6",
+        "orientation": "Portrait",
+        "labelImage": "assets/images/labels/route-all-cables-portrait.svg",
+        "service": "justLabelModalService",
+        "zebraCode": `
+            ^XA
+            ^PW812
+            ^LL1218
+            ^LH0,0
+
+            ^FO26,90^A0N,68,58^FDROUTE ALL CABLES BEFORE^FS
+            ^FO26,176^A0N,68,58^FDINSTALLING EGM^FS
+
+            ^FO26,344^A0N,62,54^FDLEFT SIDE:^FS
+            ^FO26,432^A0N,58,50^FD- CAT 5 IN^FS
+            ^FO26,514^A0N,58,50^FD- RGB CONTROL CABLE^FS
+            ^FO26,596^A0N,58,50^FD- MAIN A/C POWER^FS
+
+            ^FO26,786^A0N,62,54^FDRIGHT SIDE:^FS
+            ^FO26,874^A0N,58,50^FD- CAT 5 OUT^FS
+            ^FO26,956^A0N,58,50^FD- MAIN A/C POWER^FS
+            ^XZ
+        `
+    },
     
 ]

@@ -6,13 +6,9 @@
         <p class="text-muted mb-0">Gate-based project intake with calculated readiness summary</p>
       </div>
 
-      <div class="btn-group mb-3" role="group" aria-label="Project manager views">
-        <button type="button" class="btn" [ngClass]="activeView === 'workflow' ? 'btn-primary' : 'btn-outline-primary'" (click)="setView('workflow')">
-          Workflow Map
-        </button>
-        <button type="button" class="btn" [ngClass]="activeView === 'checklist' ? 'btn-primary' : 'btn-outline-primary'" (click)="setView('checklist')">
-          Execution Checklist
-        </button>
+      <div class="mb-3 d-flex align-items-center gap-2">
+        <span class="badge bg-primary">Execution Checklist</span>
+        <span class="text-muted small">Single project workspace for cross-department gate completion</span>
       </div>
 
       <ng-component>
@@ -347,14 +343,15 @@
           <span class="badge" [class]="workflowStatusClass">{{ workflowProgress }}% Complete</span>
         </div>
         <div class="card-body">
-          <p class="mb-2 text-muted">Workflow execution has been moved to a dedicated module for clearer ownership and audit history.</p>
+          <p class="mb-2 text-muted">
+            Working Project ID:
+            <strong *ngIf="hasProjectContext; else pendingProjectId">{{ generatedProjectId }}</strong>
+            <ng-template #pendingProjectId>Pending (created on draft save or submit)</ng-template>
+          </p>
           <div class="d-flex flex-wrap gap-2">
-            <a class="btn btn-primary btn-sm" routerLink="/operations/project-manager/execution">
-              Open Execution Module
-            </a>
-            <a class="btn btn-outline-primary btn-sm" routerLink="/operations/project-manager/tasks" [queryParams]="taskBoardQueryParams">
+            <button type="button" class="btn btn-outline-primary btn-sm" [disabled]="!canOpenTasksBoard" (click)="openTasksBoard()">
               Open Tasks Board ({{ taskBoardContextLabel }})
-            </a>
+            </button>
           </div>
         </div>
       </div>
@@ -363,19 +360,20 @@
         <div class="card-body py-2">
           <div class="d-flex flex-wrap align-items-center gap-2">
             <span class="fw-semibold me-2">Inputs of the System:</span>
-            <button type="button" class="btn btn-sm" [ngClass]="activeInputSystem === 'gate1' ? 'btn-primary' : 'btn-outline-primary'" (click)="setActiveInputSystem('gate1')">Gate 1</button>
-            <button type="button" class="btn btn-sm" [ngClass]="activeInputSystem === 'gate2' ? 'btn-primary' : 'btn-outline-primary'" (click)="setActiveInputSystem('gate2')">Gate 2</button>
-            <button type="button" class="btn btn-sm" [ngClass]="activeInputSystem === 'gate3' ? 'btn-primary' : 'btn-outline-primary'" (click)="setActiveInputSystem('gate3')">Gate 3</button>
-            <button type="button" class="btn btn-sm" [ngClass]="activeInputSystem === 'gate4' ? 'btn-primary' : 'btn-outline-primary'" (click)="setActiveInputSystem('gate4')">Gate 4</button>
-            <button type="button" class="btn btn-sm" [ngClass]="activeInputSystem === 'gate5' ? 'btn-primary' : 'btn-outline-primary'" (click)="setActiveInputSystem('gate5')">Gate 5</button>
-            <button type="button" class="btn btn-sm" [ngClass]="activeInputSystem === 'gate6' ? 'btn-primary' : 'btn-outline-primary'" (click)="setActiveInputSystem('gate6')">Gate 6</button>
+            <button type="button" class="btn btn-sm" [ngClass]="activeInputSystem === 'gate1' ? 'btn-primary' : 'btn-outline-primary'" (click)="setActiveInputSystem('gate1')" [disabled]="!canAccessGate('gate1')">Gate 1</button>
+            <button type="button" class="btn btn-sm" [ngClass]="activeInputSystem === 'gate2' ? 'btn-primary' : 'btn-outline-primary'" (click)="setActiveInputSystem('gate2')" [disabled]="!canAccessGate('gate2')">Gate 2</button>
+            <button type="button" class="btn btn-sm" [ngClass]="activeInputSystem === 'gate3' ? 'btn-primary' : 'btn-outline-primary'" (click)="setActiveInputSystem('gate3')" [disabled]="!canAccessGate('gate3')">Gate 3</button>
+            <button type="button" class="btn btn-sm" [ngClass]="activeInputSystem === 'gate4' ? 'btn-primary' : 'btn-outline-primary'" (click)="setActiveInputSystem('gate4')" [disabled]="!canAccessGate('gate4')">Gate 4</button>
+            <button type="button" class="btn btn-sm" [ngClass]="activeInputSystem === 'gate5' ? 'btn-primary' : 'btn-outline-primary'" (click)="setActiveInputSystem('gate5')" [disabled]="!canAccessGate('gate5')">Gate 5</button>
+            <button type="button" class="btn btn-sm" [ngClass]="activeInputSystem === 'gate6' ? 'btn-primary' : 'btn-outline-primary'" (click)="setActiveInputSystem('gate6')" [disabled]="!canAccessGate('gate6')">Gate 6</button>
           </div>
+          <div *ngIf="gateNavigationMessage" class="small text-danger mt-2">{{ gateNavigationMessage }}</div>
         </div>
       </div>
 
-      <div *ngIf="saveSuccessful" class="alert alert-success" role="alert">
+      <div *ngIf="saveSuccessful" class="alert" [ngClass]="saveMessageType === 'success' ? 'alert-success' : 'alert-info'" role="alert">
         <i class="mdi mdi-check-circle-outline me-2"></i>
-        Project intake is valid and ready for backend submission.
+        {{ saveMessage }}
       </div>
 
       <form [formGroup]="projectForm" (ngSubmit)="submit()" novalidate>
@@ -392,10 +390,10 @@
                   <option>On Hold</option>
                 </select>
               </div>
-              <div class="gate-body">
+              <div class="gate-body horizontal-gate-form">
                 <div class="small text-muted mb-2">Never changes</div>
                 <div class="small mb-3">
-                  <div><strong>Project ID:</strong> {{ generatedProjectId }}</div>
+                  <div><strong>Project ID:</strong> {{ hasProjectContext ? generatedProjectId : 'Pending (created on draft save or submit)' }}</div>
                 </div>
 
                 <div class="mb-2">
@@ -453,14 +451,25 @@
                   </select>
                 </div>
 
-                <div class="form-check mb-2">
-                  <input class="form-check-input" type="checkbox" formControlName="priceProposalSubmitted" id="priceProposalSubmitted" />
-                  <label class="form-check-label" for="priceProposalSubmitted">Price proposal submitted (Y/N)</label>
+                <div class="mb-2">
+                  <label class="form-label">Estimated Revenue</label>
+                  <input type="text" class="form-control form-control-sm" formControlName="estimatedRevenue" placeholder="e.g. $275,000" />
                 </div>
 
-                <div class="form-check mb-2">
-                  <input class="form-check-input" type="checkbox" formControlName="businessAwarded" id="businessAwarded" />
-                  <label class="form-check-label" for="businessAwarded">Business awarded</label>
+                <div class="yes-no-field mb-2">
+                  <label class="form-label mb-1">Price proposal submitted</label>
+                  <div class="btn-group btn-group-sm" role="group" aria-label="Price proposal submitted">
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('priceProposalSubmitted', true) ? 'btn-success' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('priceProposalSubmitted', true)">Yes</button>
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('priceProposalSubmitted', false) ? 'btn-danger' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('priceProposalSubmitted', false)">No</button>
+                  </div>
+                </div>
+
+                <div class="yes-no-field mb-2">
+                  <label class="form-label mb-1">Business awarded</label>
+                  <div class="btn-group btn-group-sm" role="group" aria-label="Business awarded">
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('businessAwarded', true) ? 'btn-success' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('businessAwarded', true)">Yes</button>
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('businessAwarded', false) ? 'btn-danger' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('businessAwarded', false)">No</button>
+                  </div>
                 </div>
 
                 <div class="mb-2" *ngIf="projectForm.get('businessAwarded')?.value">
@@ -468,9 +477,12 @@
                   <input type="date" class="form-control form-control-sm" formControlName="businessAwardedDate" />
                 </div>
 
-                <div class="form-check mb-2">
-                  <input class="form-check-input" type="checkbox" formControlName="forecastConfirmed" id="forecastConfirmed" />
-                  <label class="form-check-label" for="forecastConfirmed">Forecast confirmed (Y/N)</label>
+                <div class="yes-no-field mb-2">
+                  <label class="form-label mb-1">Forecast confirmed</label>
+                  <div class="btn-group btn-group-sm" role="group" aria-label="Forecast confirmed">
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('forecastConfirmed', true) ? 'btn-success' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('forecastConfirmed', true)">Yes</button>
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('forecastConfirmed', false) ? 'btn-danger' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('forecastConfirmed', false)">No</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -488,22 +500,34 @@
                   <option>On Hold</option>
                 </select>
               </div>
-              <div class="gate-body">
-                <div class="form-check mb-2">
-                  <input class="form-check-input" type="checkbox" formControlName="designTeamConceptProposal" id="designTeamConceptProposal" />
-                  <label class="form-check-label" for="designTeamConceptProposal">Design team concept proposal (renders)</label>
+              <div class="gate-body horizontal-gate-form">
+                <div class="yes-no-field mb-2">
+                  <label class="form-label mb-1">Design team concept proposal (renders)</label>
+                  <div class="btn-group btn-group-sm" role="group" aria-label="Design team concept proposal">
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('designTeamConceptProposal', true) ? 'btn-success' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('designTeamConceptProposal', true)">Yes</button>
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('designTeamConceptProposal', false) ? 'btn-danger' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('designTeamConceptProposal', false)">No</button>
+                  </div>
                 </div>
-                <div class="form-check mb-2">
-                  <input class="form-check-input" type="checkbox" formControlName="conceptArchitectureDefined" id="conceptArchitectureDefined" />
-                  <label class="form-check-label" for="conceptArchitectureDefined">Concept architecture defined</label>
+                <div class="yes-no-field mb-2">
+                  <label class="form-label mb-1">Concept architecture defined</label>
+                  <div class="btn-group btn-group-sm" role="group" aria-label="Concept architecture defined">
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('conceptArchitectureDefined', true) ? 'btn-success' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('conceptArchitectureDefined', true)">Yes</button>
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('conceptArchitectureDefined', false) ? 'btn-danger' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('conceptArchitectureDefined', false)">No</button>
+                  </div>
                 </div>
-                <div class="form-check mb-2">
-                  <input class="form-check-input" type="checkbox" formControlName="roughCostEntered" id="roughCostEntered" />
-                  <label class="form-check-label" for="roughCostEntered">Rough cost ±50% entered</label>
+                <div class="yes-no-field mb-2">
+                  <label class="form-label mb-1">Rough cost ±50% entered</label>
+                  <div class="btn-group btn-group-sm" role="group" aria-label="Rough cost entered">
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('roughCostEntered', true) ? 'btn-success' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('roughCostEntered', true)">Yes</button>
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('roughCostEntered', false) ? 'btn-danger' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('roughCostEntered', false)">No</button>
+                  </div>
                 </div>
-                <div class="form-check mb-2">
-                  <input class="form-check-input" type="checkbox" formControlName="timelineEstimatedLlt" id="timelineEstimatedLlt" />
-                  <label class="form-check-label" for="timelineEstimatedLlt">Timeline estimated based on LLT components</label>
+                <div class="yes-no-field mb-2">
+                  <label class="form-label mb-1">Timeline estimated based on LLT components</label>
+                  <div class="btn-group btn-group-sm" role="group" aria-label="Timeline estimated">
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('timelineEstimatedLlt', true) ? 'btn-success' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('timelineEstimatedLlt', true)">Yes</button>
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('timelineEstimatedLlt', false) ? 'btn-danger' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('timelineEstimatedLlt', false)">No</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -521,26 +545,38 @@
                   <option>On Hold</option>
                 </select>
               </div>
-              <div class="gate-body">
-                <div class="form-check mb-2">
-                  <input class="form-check-input" type="checkbox" formControlName="preliminaryBomForSourcing" id="preliminaryBomForSourcing" />
-                  <label class="form-check-label" for="preliminaryBomForSourcing">Preliminary BOM for sourcing</label>
+              <div class="gate-body horizontal-gate-form">
+                <div class="yes-no-field mb-2">
+                  <label class="form-label mb-1">Preliminary BOM for sourcing</label>
+                  <div class="btn-group btn-group-sm" role="group" aria-label="Preliminary BOM for sourcing">
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('preliminaryBomForSourcing', true) ? 'btn-success' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('preliminaryBomForSourcing', true)">Yes</button>
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('preliminaryBomForSourcing', false) ? 'btn-danger' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('preliminaryBomForSourcing', false)">No</button>
+                  </div>
                 </div>
-                <div class="form-check mb-2">
-                  <input class="form-check-input" type="checkbox" formControlName="preliminaryBomUploaded" id="preliminaryBomUploaded" />
-                  <label class="form-check-label" for="preliminaryBomUploaded">Preliminary BOM uploaded</label>
+                <div class="yes-no-field mb-2">
+                  <label class="form-label mb-1">Preliminary BOM uploaded</label>
+                  <div class="btn-group btn-group-sm" role="group" aria-label="Preliminary BOM uploaded">
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('preliminaryBomUploaded', true) ? 'btn-success' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('preliminaryBomUploaded', true)">Yes</button>
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('preliminaryBomUploaded', false) ? 'btn-danger' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('preliminaryBomUploaded', false)">No</button>
+                  </div>
                 </div>
-                <div class="form-check mb-2">
-                  <input class="form-check-input" type="checkbox" formControlName="longLeadItemsIdentified" id="longLeadItemsIdentified" />
-                  <label class="form-check-label" for="longLeadItemsIdentified">Long lead items identified and sourced</label>
+                <div class="yes-no-field mb-2">
+                  <label class="form-label mb-1">Long lead items identified and sourced</label>
+                  <div class="btn-group btn-group-sm" role="group" aria-label="Long lead items identified">
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('longLeadItemsIdentified', true) ? 'btn-success' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('longLeadItemsIdentified', true)">Yes</button>
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('longLeadItemsIdentified', false) ? 'btn-danger' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('longLeadItemsIdentified', false)">No</button>
+                  </div>
                 </div>
                 <div class="mb-2" *ngIf="projectForm.get('longLeadItemsIdentified')?.value">
                   <label class="form-label">Long Lead Date</label>
                   <input type="date" class="form-control form-control-sm" formControlName="longLeadItemsDate" />
                 </div>
-                <div class="form-check mb-2">
-                  <input class="form-check-input" type="checkbox" formControlName="firstPosConfirmed" id="firstPosConfirmed" />
-                  <label class="form-check-label" for="firstPosConfirmed">First POs confirmed</label>
+                <div class="yes-no-field mb-2">
+                  <label class="form-label mb-1">First POs confirmed</label>
+                  <div class="btn-group btn-group-sm" role="group" aria-label="First POs confirmed">
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('firstPosConfirmed', true) ? 'btn-success' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('firstPosConfirmed', true)">Yes</button>
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('firstPosConfirmed', false) ? 'btn-danger' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('firstPosConfirmed', false)">No</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -558,18 +594,27 @@
                   <option>On Hold</option>
                 </select>
               </div>
-              <div class="gate-body">
-                <div class="form-check mb-2">
-                  <input class="form-check-input" type="checkbox" formControlName="detailedEngineeringDesign" id="detailedEngineeringDesign" />
-                  <label class="form-check-label" for="detailedEngineeringDesign">Detailed engineering design</label>
+              <div class="gate-body horizontal-gate-form">
+                <div class="yes-no-field mb-2">
+                  <label class="form-label mb-1">Detailed engineering design</label>
+                  <div class="btn-group btn-group-sm" role="group" aria-label="Detailed engineering design">
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('detailedEngineeringDesign', true) ? 'btn-success' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('detailedEngineeringDesign', true)">Yes</button>
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('detailedEngineeringDesign', false) ? 'btn-danger' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('detailedEngineeringDesign', false)">No</button>
+                  </div>
                 </div>
-                <div class="form-check mb-2">
-                  <input class="form-check-input" type="checkbox" formControlName="dfmCompleted" id="dfmCompleted" />
-                  <label class="form-check-label" for="dfmCompleted">DFM completed</label>
+                <div class="yes-no-field mb-2">
+                  <label class="form-label mb-1">DFM completed</label>
+                  <div class="btn-group btn-group-sm" role="group" aria-label="DFM completed">
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('dfmCompleted', true) ? 'btn-success' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('dfmCompleted', true)">Yes</button>
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('dfmCompleted', false) ? 'btn-danger' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('dfmCompleted', false)">No</button>
+                  </div>
                 </div>
-                <div class="form-check mb-2">
-                  <input class="form-check-input" type="checkbox" formControlName="sourcingProductionLogisticsAligned" id="sourcingProductionLogisticsAligned" />
-                  <label class="form-check-label" for="sourcingProductionLogisticsAligned">Sourcing / Production / Logistics aligned</label>
+                <div class="yes-no-field mb-2">
+                  <label class="form-label mb-1">Sourcing / Production / Logistics aligned</label>
+                  <div class="btn-group btn-group-sm" role="group" aria-label="Sourcing production logistics aligned">
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('sourcingProductionLogisticsAligned', true) ? 'btn-success' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('sourcingProductionLogisticsAligned', true)">Yes</button>
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('sourcingProductionLogisticsAligned', false) ? 'btn-danger' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('sourcingProductionLogisticsAligned', false)">No</button>
+                  </div>
                 </div>
                 <div class="mb-2">
                   <label class="form-label">Change Request Log</label>
@@ -584,34 +629,55 @@
                   <label class="form-label">Proto Qty</label>
                   <input type="number" class="form-control form-control-sm" formControlName="protoQty" min="0" />
                 </div>
-                <div class="form-check mb-3">
-                  <input class="form-check-input" type="checkbox" formControlName="partNumberMapped" id="partNumberMapped" />
-                  <label class="form-check-label" for="partNumberMapped">Part number mapped to project</label>
+                <div class="yes-no-field mb-3">
+                  <label class="form-label mb-1">Part number mapped to project</label>
+                  <div class="btn-group btn-group-sm" role="group" aria-label="Part number mapped to project">
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('partNumberMapped', true) ? 'btn-success' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('partNumberMapped', true)">Yes</button>
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('partNumberMapped', false) ? 'btn-danger' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('partNumberMapped', false)">No</button>
+                  </div>
                 </div>
-                <div class="form-check mb-2">
-                  <input class="form-check-input" type="checkbox" formControlName="finalBomReview" id="finalBomReview" />
-                  <label class="form-check-label" for="finalBomReview">Final BOM review</label>
+                <div class="yes-no-field mb-2">
+                  <label class="form-label mb-1">Final BOM review</label>
+                  <div class="btn-group btn-group-sm" role="group" aria-label="Final BOM review">
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('finalBomReview', true) ? 'btn-success' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('finalBomReview', true)">Yes</button>
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('finalBomReview', false) ? 'btn-danger' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('finalBomReview', false)">No</button>
+                  </div>
                 </div>
                 <div class="small fw-semibold mb-1">Engineering Checklist</div>
-                <div class="form-check mb-1">
-                  <input class="form-check-input" type="checkbox" formControlName="engChecklistPixelMapping" id="engChecklistPixelMapping" />
-                  <label class="form-check-label" for="engChecklistPixelMapping">Pixel Mapping / Software Files</label>
+                <div class="yes-no-field mb-1">
+                  <label class="form-label mb-1">Pixel Mapping / Software Files</label>
+                  <div class="btn-group btn-group-sm" role="group" aria-label="Pixel Mapping and Software Files">
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('engChecklistPixelMapping', true) ? 'btn-success' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('engChecklistPixelMapping', true)">Yes</button>
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('engChecklistPixelMapping', false) ? 'btn-danger' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('engChecklistPixelMapping', false)">No</button>
+                  </div>
                 </div>
-                <div class="form-check mb-1">
-                  <input class="form-check-input" type="checkbox" formControlName="engChecklistInstallationInstructions" id="engChecklistInstallationInstructions" />
-                  <label class="form-check-label" for="engChecklistInstallationInstructions">Installation Instructions</label>
+                <div class="yes-no-field mb-1">
+                  <label class="form-label mb-1">Installation Instructions</label>
+                  <div class="btn-group btn-group-sm" role="group" aria-label="Installation Instructions">
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('engChecklistInstallationInstructions', true) ? 'btn-success' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('engChecklistInstallationInstructions', true)">Yes</button>
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('engChecklistInstallationInstructions', false) ? 'btn-danger' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('engChecklistInstallationInstructions', false)">No</button>
+                  </div>
                 </div>
-                <div class="form-check mb-1">
-                  <input class="form-check-input" type="checkbox" formControlName="engChecklistWorkInstruction" id="engChecklistWorkInstruction" />
-                  <label class="form-check-label" for="engChecklistWorkInstruction">Work Instruction</label>
+                <div class="yes-no-field mb-1">
+                  <label class="form-label mb-1">Work Instruction</label>
+                  <div class="btn-group btn-group-sm" role="group" aria-label="Work Instruction">
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('engChecklistWorkInstruction', true) ? 'btn-success' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('engChecklistWorkInstruction', true)">Yes</button>
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('engChecklistWorkInstruction', false) ? 'btn-danger' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('engChecklistWorkInstruction', false)">No</button>
+                  </div>
                 </div>
-                <div class="form-check mb-1">
-                  <input class="form-check-input" type="checkbox" formControlName="engChecklistPdc" id="engChecklistPdc" />
-                  <label class="form-check-label" for="engChecklistPdc">PDC</label>
+                <div class="yes-no-field mb-1">
+                  <label class="form-label mb-1">PDC</label>
+                  <div class="btn-group btn-group-sm" role="group" aria-label="PDC">
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('engChecklistPdc', true) ? 'btn-success' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('engChecklistPdc', true)">Yes</button>
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('engChecklistPdc', false) ? 'btn-danger' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('engChecklistPdc', false)">No</button>
+                  </div>
                 </div>
-                <div class="form-check mb-1">
-                  <input class="form-check-input" type="checkbox" formControlName="engChecklistQualityDocs" id="engChecklistQualityDocs" />
-                  <label class="form-check-label" for="engChecklistQualityDocs">Quality Documents</label>
+                <div class="yes-no-field mb-1">
+                  <label class="form-label mb-1">Quality Documents</label>
+                  <div class="btn-group btn-group-sm" role="group" aria-label="Quality Documents">
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('engChecklistQualityDocs', true) ? 'btn-success' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('engChecklistQualityDocs', true)">Yes</button>
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('engChecklistQualityDocs', false) ? 'btn-danger' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('engChecklistQualityDocs', false)">No</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -629,30 +695,45 @@
                   <option>On Hold</option>
                 </select>
               </div>
-              <div class="gate-body">
-                <div class="form-check mb-2">
-                  <input class="form-check-input" type="checkbox" formControlName="customerReviewValidation" id="customerReviewValidation" />
-                  <label class="form-check-label" for="customerReviewValidation">Customer review / validation</label>
+              <div class="gate-body horizontal-gate-form">
+                <div class="yes-no-field mb-2">
+                  <label class="form-label mb-1">Customer review / validation</label>
+                  <div class="btn-group btn-group-sm" role="group" aria-label="Customer review validation">
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('customerReviewValidation', true) ? 'btn-success' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('customerReviewValidation', true)">Yes</button>
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('customerReviewValidation', false) ? 'btn-danger' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('customerReviewValidation', false)">No</button>
+                  </div>
                 </div>
-                <div class="form-check mb-2">
-                  <input class="form-check-input" type="checkbox" formControlName="functionalValidationComplete" id="functionalValidationComplete" />
-                  <label class="form-check-label" for="functionalValidationComplete">Functional validation complete</label>
+                <div class="yes-no-field mb-2">
+                  <label class="form-label mb-1">Functional validation complete</label>
+                  <div class="btn-group btn-group-sm" role="group" aria-label="Functional validation complete">
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('functionalValidationComplete', true) ? 'btn-success' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('functionalValidationComplete', true)">Yes</button>
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('functionalValidationComplete', false) ? 'btn-danger' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('functionalValidationComplete', false)">No</button>
+                  </div>
                 </div>
                 <div class="mb-2">
                   <label class="form-label">Pilot run completed (date)</label>
                   <input type="date" class="form-control form-control-sm" formControlName="pilotRunCompletedDate" />
                 </div>
-                <div class="form-check mb-2">
-                  <input class="form-check-input" type="checkbox" formControlName="instructionValidation" id="instructionValidation" />
-                  <label class="form-check-label" for="instructionValidation">Instruction validation</label>
+                <div class="yes-no-field mb-2">
+                  <label class="form-label mb-1">Instruction validation</label>
+                  <div class="btn-group btn-group-sm" role="group" aria-label="Instruction validation">
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('instructionValidation', true) ? 'btn-success' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('instructionValidation', true)">Yes</button>
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('instructionValidation', false) ? 'btn-danger' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('instructionValidation', false)">No</button>
+                  </div>
                 </div>
-                <div class="form-check mb-2">
-                  <input class="form-check-input" type="checkbox" formControlName="softwareFilesValidation" id="softwareFilesValidation" />
-                  <label class="form-check-label" for="softwareFilesValidation">Software files validation</label>
+                <div class="yes-no-field mb-2">
+                  <label class="form-label mb-1">Software files validation</label>
+                  <div class="btn-group btn-group-sm" role="group" aria-label="Software files validation">
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('softwareFilesValidation', true) ? 'btn-success' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('softwareFilesValidation', true)">Yes</button>
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('softwareFilesValidation', false) ? 'btn-danger' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('softwareFilesValidation', false)">No</button>
+                  </div>
                 </div>
-                <div class="form-check mb-2">
-                  <input class="form-check-input" type="checkbox" formControlName="supplierFeedbackCaptured" id="supplierFeedbackCaptured" />
-                  <label class="form-check-label" for="supplierFeedbackCaptured">Feedback to supplier captured</label>
+                <div class="yes-no-field mb-2">
+                  <label class="form-label mb-1">Feedback to supplier captured</label>
+                  <div class="btn-group btn-group-sm" role="group" aria-label="Supplier feedback captured">
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('supplierFeedbackCaptured', true) ? 'btn-success' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('supplierFeedbackCaptured', true)">Yes</button>
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('supplierFeedbackCaptured', false) ? 'btn-danger' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('supplierFeedbackCaptured', false)">No</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -670,26 +751,41 @@
                   <option>On Hold</option>
                 </select>
               </div>
-              <div class="gate-body">
-                <div class="form-check mb-2">
-                  <input class="form-check-input" type="checkbox" formControlName="finalBomApproved" id="finalBomApproved" />
-                  <label class="form-check-label" for="finalBomApproved">Final BOM approved</label>
+              <div class="gate-body horizontal-gate-form">
+                <div class="yes-no-field mb-2">
+                  <label class="form-label mb-1">Final BOM approved</label>
+                  <div class="btn-group btn-group-sm" role="group" aria-label="Final BOM approved">
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('finalBomApproved', true) ? 'btn-success' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('finalBomApproved', true)">Yes</button>
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('finalBomApproved', false) ? 'btn-danger' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('finalBomApproved', false)">No</button>
+                  </div>
                 </div>
-                <div class="form-check mb-2">
-                  <input class="form-check-input" type="checkbox" formControlName="qcProcedureDefined" id="qcProcedureDefined" />
-                  <label class="form-check-label" for="qcProcedureDefined">QC procedure defined</label>
+                <div class="yes-no-field mb-2">
+                  <label class="form-label mb-1">QC procedure defined</label>
+                  <div class="btn-group btn-group-sm" role="group" aria-label="QC procedure defined">
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('qcProcedureDefined', true) ? 'btn-success' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('qcProcedureDefined', true)">Yes</button>
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('qcProcedureDefined', false) ? 'btn-danger' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('qcProcedureDefined', false)">No</button>
+                  </div>
                 </div>
-                <div class="form-check mb-2">
-                  <input class="form-check-input" type="checkbox" formControlName="packagingInstructionsComplete" id="packagingInstructionsComplete" />
-                  <label class="form-check-label" for="packagingInstructionsComplete">Packaging instructions complete</label>
+                <div class="yes-no-field mb-2">
+                  <label class="form-label mb-1">Packaging instructions complete</label>
+                  <div class="btn-group btn-group-sm" role="group" aria-label="Packaging instructions complete">
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('packagingInstructionsComplete', true) ? 'btn-success' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('packagingInstructionsComplete', true)">Yes</button>
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('packagingInstructionsComplete', false) ? 'btn-danger' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('packagingInstructionsComplete', false)">No</button>
+                  </div>
                 </div>
-                <div class="form-check mb-2">
-                  <input class="form-check-input" type="checkbox" formControlName="productionPoReceived" id="productionPoReceived" />
-                  <label class="form-check-label" for="productionPoReceived">Production PO received</label>
+                <div class="yes-no-field mb-2">
+                  <label class="form-label mb-1">Production PO received</label>
+                  <div class="btn-group btn-group-sm" role="group" aria-label="Production PO received">
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('productionPoReceived', true) ? 'btn-success' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('productionPoReceived', true)">Yes</button>
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('productionPoReceived', false) ? 'btn-danger' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('productionPoReceived', false)">No</button>
+                  </div>
                 </div>
-                <div class="form-check mb-2">
-                  <input class="form-check-input" type="checkbox" formControlName="inventoryStrategyAligned" id="inventoryStrategyAligned" />
-                  <label class="form-check-label" for="inventoryStrategyAligned">Inventory strategy aligned</label>
+                <div class="yes-no-field mb-2">
+                  <label class="form-label mb-1">Inventory strategy aligned</label>
+                  <div class="btn-group btn-group-sm" role="group" aria-label="Inventory strategy aligned">
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('inventoryStrategyAligned', true) ? 'btn-success' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('inventoryStrategyAligned', true)">Yes</button>
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('inventoryStrategyAligned', false) ? 'btn-danger' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('inventoryStrategyAligned', false)">No</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -738,7 +834,8 @@
               <hr />
               <div class="d-grid gap-2">
                 <button type="button" class="btn btn-outline-secondary" (click)="resetForm()">Reset</button>
-                <button type="submit" class="btn btn-primary">Save Project Intake</button>
+                <button type="button" class="btn btn-outline-primary" (click)="saveDraft()">Save Draft</button>
+                <button type="submit" class="btn btn-primary">Complete Project Intake</button>
               </div>
             </div>
           </div>

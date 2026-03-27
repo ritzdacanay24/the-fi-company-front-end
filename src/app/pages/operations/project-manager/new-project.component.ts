@@ -1,9 +1,25 @@
 import { Component, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { SharedModule } from '@app/shared/shared.module';
 import { ExecutionRole, ProjectWorkflowEngineService } from './services/project-workflow-engine.service';
-import { ProjectManagerProjectsService } from './services/project-manager-projects.service';
+import { ProjectDashboardItem, ProjectManagerProjectsService } from './services/project-manager-projects.service';
+import { Router } from '@angular/router';
+
+type IntakeStoragePayload = {
+  formValue: any;
+  activeInputSystem: 'gate1' | 'gate2' | 'gate3' | 'gate4' | 'gate5' | 'gate6';
+  activeGate: 1 | 2 | 3 | 4 | 5 | 6;
+  gateCompletedAt: {
+    gate1: string | null;
+    gate2: string | null;
+    gate3: string | null;
+    gate4: string | null;
+    gate5: string | null;
+    gate6: string | null;
+  };
+};
 
 @Component({
   standalone: true,
@@ -14,10 +30,14 @@ import { ProjectManagerProjectsService } from './services/project-manager-projec
 })
 export class NewProjectComponent implements OnDestroy {
   saveSuccessful = false;
-  activeView: 'workflow' | 'checklist' = 'workflow';
+  saveMessage = '';
+  saveMessageType: 'success' | 'info' = 'success';
+  activeView: 'workflow' | 'checklist' = 'checklist';
   activeInputSystem: 'gate1' | 'gate2' | 'gate3' | 'gate4' | 'gate5' | 'gate6' = 'gate1';
   activeGate: 1 | 2 | 3 | 4 | 5 | 6 = 1;
   generatedProjectId = '';
+  activeProjectId = '';
+  lastSavedProjectId = '';
   executionRole: ExecutionRole = 'Project Manager';
 
   gate1CompletedAt: string | null = null;
@@ -27,6 +47,14 @@ export class NewProjectComponent implements OnDestroy {
   gate5CompletedAt: string | null = null;
   gate6CompletedAt: string | null = null;
   private formSub: Subscription | undefined;
+  gateNavigationMessage = '';
+  isDraftProject = false;
+
+  private readonly gateOrder: Array<'gate1' | 'gate2' | 'gate3' | 'gate4' | 'gate5' | 'gate6'> = [
+    'gate1', 'gate2', 'gate3', 'gate4', 'gate5', 'gate6'
+  ];
+  private isApplyingProjectState = false;
+  private readonly intakeStoragePrefix = 'pm_project_intake_v1_';
 
   customers = ['Aristocrat', 'Light & Wonder', 'IGT', 'Konami', 'Ainsworth', 'Custom'];
   projectCategories = ['New', 'Revision', 'Cost Down', 'Custom'];
@@ -35,10 +63,10 @@ export class NewProjectComponent implements OnDestroy {
 
   projectForm: FormGroup = this.fb.group({
     // Gate #1
-    newBusinessOpportunity: [false],
-    rfpReceived: [false],
-    productExpectationDoc: [false],
-    pixelPitchDimsCaptured: [false],
+    newBusinessOpportunity: [null],
+    rfpReceived: [null],
+    productExpectationDoc: [null],
+    pixelPitchDimsCaptured: [null],
     customer: ['', Validators.required],
     productName: ['', [Validators.required, Validators.maxLength(120)]],
     projectCategory: ['', Validators.required],
@@ -47,48 +75,49 @@ export class NewProjectComponent implements OnDestroy {
     targetProductionDate: ['', Validators.required],
     volumeEstimate: ['Medium'],
     roughRevenuePotential: ['Medium'],
-    priceProposalSubmitted: [false],
-    businessAwarded: [false],
+    estimatedRevenue: [''],
+    priceProposalSubmitted: [null],
+    businessAwarded: [null],
     businessAwardedDate: [''],
-    forecastConfirmed: [false],
+    forecastConfirmed: [null],
 
     // Gate #2-4
-  designTeamConceptProposal: [false],
-    conceptArchitectureDefined: [false],
-    roughCostEntered: [false],
-  timelineEstimatedLlt: [false],
-  preliminaryBomForSourcing: [false],
-    preliminaryBomUploaded: [false],
-  firstPosConfirmed: [false],
-  detailedEngineeringDesign: [false],
-    longLeadItemsIdentified: [false],
+  designTeamConceptProposal: [null],
+    conceptArchitectureDefined: [null],
+    roughCostEntered: [null],
+  timelineEstimatedLlt: [null],
+  preliminaryBomForSourcing: [null],
+    preliminaryBomUploaded: [null],
+  firstPosConfirmed: [null],
+  detailedEngineeringDesign: [null],
+    longLeadItemsIdentified: [null],
     longLeadItemsDate: [''],
-    dfmCompleted: [false],
-  sourcingProductionLogisticsAligned: [false],
+    dfmCompleted: [null],
+  sourcingProductionLogisticsAligned: [null],
     changeRequestLog: [''],
     engineeringReleaseEta: [''],
     protoQty: [null],
-    partNumberMapped: [false],
-  finalBomReview: [false],
-    engChecklistPixelMapping: [false],
-    engChecklistInstallationInstructions: [false],
-    engChecklistWorkInstruction: [false],
-    engChecklistPdc: [false],
-    engChecklistQualityDocs: [false],
+    partNumberMapped: [null],
+  finalBomReview: [null],
+    engChecklistPixelMapping: [null],
+    engChecklistInstallationInstructions: [null],
+    engChecklistWorkInstruction: [null],
+    engChecklistPdc: [null],
+    engChecklistQualityDocs: [null],
 
     // Gate #5-6
-  customerReviewValidation: [false],
-    functionalValidationComplete: [false],
-  pilotRunCompleted: [false],
+  customerReviewValidation: [null],
+    functionalValidationComplete: [null],
+  pilotRunCompleted: [null],
     pilotRunCompletedDate: [''],
-  instructionValidation: [false],
-  softwareFilesValidation: [false],
-  supplierFeedbackCaptured: [false],
-    finalBomApproved: [false],
-    qcProcedureDefined: [false],
-    packagingInstructionsComplete: [false],
-  productionPoReceived: [false],
-    inventoryStrategyAligned: [false],
+  instructionValidation: [null],
+  softwareFilesValidation: [null],
+  supplierFeedbackCaptured: [null],
+    finalBomApproved: [null],
+    qcProcedureDefined: [null],
+    packagingInstructionsComplete: [null],
+  productionPoReceived: [null],
+    inventoryStrategyAligned: [null],
 
     notes: [''],
 
@@ -103,16 +132,55 @@ export class NewProjectComponent implements OnDestroy {
 
   constructor(
     private fb: FormBuilder,
+    private route: ActivatedRoute,
+    private router: Router,
     private workflow: ProjectWorkflowEngineService,
     private projectsService: ProjectManagerProjectsService
   ) {
     const today = this.formatDate(new Date());
-    this.generatedProjectId = this.projectsService.generateProjectId();
+    this.generatedProjectId = '';
     this.projectForm.patchValue({
       initialRfpDate: today
     });
     this.formSub = this.projectForm.valueChanges.subscribe(() => {
       this.updateGateCompletionTimestamps();
+
+      if (!this.isApplyingProjectState && this.hasPersistableProjectContext) {
+        this.persistProjectIntakeState(this.persistableProjectId);
+      }
+    });
+
+    this.route.queryParamMap.subscribe(params => {
+      const projectId = (params.get('projectId') || '').trim();
+      const view = (params.get('view') || '').trim();
+      if (view === 'workflow' || view === 'checklist') {
+        this.activeView = view;
+      }
+
+      const projects = this.projectsService.getProjects();
+      const selected = projects.find(project => project.id === projectId);
+      if (selected) {
+        this.projectsService.setSelectedProjectId(selected.id);
+        this.activeProjectId = selected.id;
+        this.generatedProjectId = selected.id;
+        this.isDraftProject = selected.status === 'Draft';
+        this.loadProjectIntakeState(selected.id, selected);
+        return;
+      }
+
+      if (projectId) {
+        this.activeProjectId = projectId;
+        this.generatedProjectId = projectId;
+        this.isDraftProject = false;
+        this.loadProjectIntakeState(projectId);
+        return;
+      }
+
+      // No project in URL: stay in new-intake mode until submit creates one.
+      this.activeProjectId = '';
+      this.lastSavedProjectId = '';
+      this.generatedProjectId = '';
+      this.isDraftProject = false;
     });
   }
 
@@ -127,12 +195,17 @@ export class NewProjectComponent implements OnDestroy {
       return;
     }
 
+    const createdProjectId = this.generatedProjectId || this.projectsService.generateProjectId();
+    this.generatedProjectId = createdProjectId;
+
     this.projectsService.createProject({
-      id: this.generatedProjectId,
+      id: createdProjectId,
       productName: String(this.projectForm.get('productName')?.value || '').trim(),
       customer: String(this.projectForm.get('customer')?.value || '').trim(),
       projectCategory: String(this.projectForm.get('projectCategory')?.value || '').trim(),
       strategyType: String(this.projectForm.get('strategyType')?.value || '').trim(),
+      roughRevenuePotential: String(this.projectForm.get('roughRevenuePotential')?.value || '').trim(),
+      estimatedRevenue: String(this.projectForm.get('estimatedRevenue')?.value || '').trim(),
       initialRfpDate: String(this.projectForm.get('initialRfpDate')?.value || ''),
       targetProductionDate: String(this.projectForm.get('targetProductionDate')?.value || ''),
       readinessScore: this.readinessScore,
@@ -153,20 +226,83 @@ export class NewProjectComponent implements OnDestroy {
         gate4: this.gate4CompletedAt,
         gate5: this.gate5CompletedAt,
         gate6: this.gate6CompletedAt
-      }
+      },
+      isDraft: false
     });
 
-    this.generatedProjectId = this.projectsService.generateProjectId();
+    this.lastSavedProjectId = createdProjectId;
+    this.activeProjectId = createdProjectId;
+    this.isDraftProject = false;
+    this.persistProjectIntakeState(createdProjectId);
     this.saveSuccessful = true;
+    this.saveMessageType = 'success';
+    this.saveMessage = 'Project intake is complete and ready for backend submission.';
+
+    // Continue in the checklist execution view for the newly created project.
+    this.router.navigate(['/operations/project-manager/new-project'], {
+      queryParams: { projectId: createdProjectId, view: 'checklist' }
+    });
+  }
+
+  saveDraft(): void {
+    this.saveSuccessful = false;
+
+    const draftProjectId = this.generatedProjectId || this.projectsService.generateProjectId();
+    this.generatedProjectId = draftProjectId;
+
+    this.projectsService.createProject({
+      id: draftProjectId,
+      productName: String(this.projectForm.get('productName')?.value || '').trim() || 'Draft Project',
+      customer: String(this.projectForm.get('customer')?.value || '').trim() || 'TBD',
+      projectCategory: String(this.projectForm.get('projectCategory')?.value || '').trim() || 'New',
+      strategyType: String(this.projectForm.get('strategyType')?.value || '').trim() || 'Growth',
+      roughRevenuePotential: String(this.projectForm.get('roughRevenuePotential')?.value || '').trim() || 'Medium',
+      estimatedRevenue: String(this.projectForm.get('estimatedRevenue')?.value || '').trim(),
+      initialRfpDate: String(this.projectForm.get('initialRfpDate')?.value || this.formatDate(new Date())),
+      targetProductionDate: String(this.projectForm.get('targetProductionDate')?.value || ''),
+      readinessScore: this.readinessScore,
+      readinessStatus: this.readinessStatus,
+      activeGate: this.activeGate,
+      gateCompletion: {
+        gate1: this.gate1Completion,
+        gate2: this.gate2Completion,
+        gate3: this.gate3Completion,
+        gate4: this.gate4Completion,
+        gate5: this.gate5Completion,
+        gate6: this.gate6Completion
+      },
+      gateCompletedAt: {
+        gate1: this.gate1CompletedAt,
+        gate2: this.gate2CompletedAt,
+        gate3: this.gate3CompletedAt,
+        gate4: this.gate4CompletedAt,
+        gate5: this.gate5CompletedAt,
+        gate6: this.gate6CompletedAt
+      },
+      isDraft: true
+    });
+
+    this.lastSavedProjectId = draftProjectId;
+    this.activeProjectId = draftProjectId;
+    this.isDraftProject = true;
+    this.persistProjectIntakeState(draftProjectId);
+    this.saveSuccessful = true;
+    this.saveMessageType = 'info';
+    this.saveMessage = 'Draft saved. You can continue this project later from any gate.';
+
+    this.router.navigate(['/operations/project-manager/new-project'], {
+      queryParams: { projectId: draftProjectId, view: 'checklist' },
+      replaceUrl: true
+    });
   }
 
   resetForm(): void {
     const today = this.formatDate(new Date());
     this.projectForm.reset({
-      newBusinessOpportunity: false,
-      rfpReceived: false,
-      productExpectationDoc: false,
-      pixelPitchDimsCaptured: false,
+      newBusinessOpportunity: null,
+      rfpReceived: null,
+      productExpectationDoc: null,
+      pixelPitchDimsCaptured: null,
       customer: '',
       productName: '',
       projectCategory: '',
@@ -175,55 +311,67 @@ export class NewProjectComponent implements OnDestroy {
       targetProductionDate: '',
       volumeEstimate: 'Medium',
       roughRevenuePotential: 'Medium',
-      priceProposalSubmitted: false,
-      businessAwarded: false,
+      estimatedRevenue: '',
+      priceProposalSubmitted: null,
+      businessAwarded: null,
       businessAwardedDate: '',
-      forecastConfirmed: false,
-      designTeamConceptProposal: false,
-      conceptArchitectureDefined: false,
-      roughCostEntered: false,
-      timelineEstimatedLlt: false,
-      preliminaryBomForSourcing: false,
-      preliminaryBomUploaded: false,
-      firstPosConfirmed: false,
-      detailedEngineeringDesign: false,
-      longLeadItemsIdentified: false,
+      forecastConfirmed: null,
+      designTeamConceptProposal: null,
+      conceptArchitectureDefined: null,
+      roughCostEntered: null,
+      timelineEstimatedLlt: null,
+      preliminaryBomForSourcing: null,
+      preliminaryBomUploaded: null,
+      firstPosConfirmed: null,
+      detailedEngineeringDesign: null,
+      longLeadItemsIdentified: null,
       longLeadItemsDate: '',
-      dfmCompleted: false,
-      sourcingProductionLogisticsAligned: false,
+      dfmCompleted: null,
+      sourcingProductionLogisticsAligned: null,
       changeRequestLog: '',
       engineeringReleaseEta: '',
       protoQty: null,
-      partNumberMapped: false,
-      finalBomReview: false,
-      engChecklistPixelMapping: false,
-      engChecklistInstallationInstructions: false,
-      engChecklistWorkInstruction: false,
-      engChecklistPdc: false,
-      engChecklistQualityDocs: false,
-      customerReviewValidation: false,
-      functionalValidationComplete: false,
-      pilotRunCompleted: false,
+      partNumberMapped: null,
+      finalBomReview: null,
+      engChecklistPixelMapping: null,
+      engChecklistInstallationInstructions: null,
+      engChecklistWorkInstruction: null,
+      engChecklistPdc: null,
+      engChecklistQualityDocs: null,
+      customerReviewValidation: null,
+      functionalValidationComplete: null,
+      pilotRunCompleted: null,
       pilotRunCompletedDate: '',
-      instructionValidation: false,
-      softwareFilesValidation: false,
-      supplierFeedbackCaptured: false,
-      finalBomApproved: false,
-      qcProcedureDefined: false,
-      packagingInstructionsComplete: false,
-      productionPoReceived: false,
-      inventoryStrategyAligned: false,
+      instructionValidation: null,
+      softwareFilesValidation: null,
+      supplierFeedbackCaptured: null,
+      finalBomApproved: null,
+      qcProcedureDefined: null,
+      packagingInstructionsComplete: null,
+      productionPoReceived: null,
+      inventoryStrategyAligned: null,
       notes: ''
     });
     this.saveSuccessful = false;
+    this.saveMessage = '';
     this.workflow.reset();
-    this.generatedProjectId = this.projectsService.generateProjectId();
+    this.generatedProjectId = '';
+    this.activeProjectId = '';
+    this.lastSavedProjectId = '';
+    this.isDraftProject = false;
     this.gate1CompletedAt = null;
     this.gate2CompletedAt = null;
     this.gate3CompletedAt = null;
     this.gate4CompletedAt = null;
     this.gate5CompletedAt = null;
     this.gate6CompletedAt = null;
+
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { projectId: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true
+    });
   }
 
   executeStep(step: number): void {
@@ -407,8 +555,8 @@ export class NewProjectComponent implements OnDestroy {
       ...this.gateFieldMap.gate6
     ];
 
-    const completed = checks.filter(field => this.isFieldComplete(field)).length;
-    return checks.length ? Math.round((completed / checks.length) * 100) : 0;
+    const readyCount = checks.filter(field => this.isFieldReady(field)).length;
+    return checks.length ? Math.round((readyCount / checks.length) * 100) : 0;
   }
 
   get gate1Completion(): number { return this.getGateCompletion('gate1'); }
@@ -474,18 +622,18 @@ export class NewProjectComponent implements OnDestroy {
   };
 
   private updateGateCompletionTimestamps(): void {
-    const today = this.formatDate(new Date());
-    if (this.gate1Completion >= 100 && !this.gate1CompletedAt) { this.gate1CompletedAt = today; }
+    const completedAt = this.formatDateTime(new Date());
+    if (this.gate1Completion >= 100 && !this.gate1CompletedAt) { this.gate1CompletedAt = completedAt; }
     else if (this.gate1Completion < 100) { this.gate1CompletedAt = null; }
-    if (this.gate2Completion >= 100 && !this.gate2CompletedAt) { this.gate2CompletedAt = today; }
+    if (this.gate2Completion >= 100 && !this.gate2CompletedAt) { this.gate2CompletedAt = completedAt; }
     else if (this.gate2Completion < 100) { this.gate2CompletedAt = null; }
-    if (this.gate3Completion >= 100 && !this.gate3CompletedAt) { this.gate3CompletedAt = today; }
+    if (this.gate3Completion >= 100 && !this.gate3CompletedAt) { this.gate3CompletedAt = completedAt; }
     else if (this.gate3Completion < 100) { this.gate3CompletedAt = null; }
-    if (this.gate4Completion >= 100 && !this.gate4CompletedAt) { this.gate4CompletedAt = today; }
+    if (this.gate4Completion >= 100 && !this.gate4CompletedAt) { this.gate4CompletedAt = completedAt; }
     else if (this.gate4Completion < 100) { this.gate4CompletedAt = null; }
-    if (this.gate5Completion >= 100 && !this.gate5CompletedAt) { this.gate5CompletedAt = today; }
+    if (this.gate5Completion >= 100 && !this.gate5CompletedAt) { this.gate5CompletedAt = completedAt; }
     else if (this.gate5Completion < 100) { this.gate5CompletedAt = null; }
-    if (this.gate6Completion >= 100 && !this.gate6CompletedAt) { this.gate6CompletedAt = today; }
+    if (this.gate6Completion >= 100 && !this.gate6CompletedAt) { this.gate6CompletedAt = completedAt; }
     else if (this.gate6Completion < 100) { this.gate6CompletedAt = null; }
   }
 
@@ -506,11 +654,29 @@ export class NewProjectComponent implements OnDestroy {
     const value = control.value;
 
     if (typeof value === 'boolean') {
-      return value;
+      return true;
     }
     if (value === null || value === undefined) {
       return false;
     }
+    return String(value).trim().length > 0;
+  }
+
+  private isFieldReady(fieldName: string): boolean {
+    const control = this.projectForm.get(fieldName);
+    if (!control) {
+      return false;
+    }
+
+    const value = control.value;
+    if (typeof value === 'boolean') {
+      return value === true;
+    }
+
+    if (value === null || value === undefined) {
+      return false;
+    }
+
     return String(value).trim().length > 0;
   }
 
@@ -544,12 +710,64 @@ export class NewProjectComponent implements OnDestroy {
     return `${year}-${month}-${day}`;
   }
 
+  private formatDateTime(date: Date): string {
+    return date.toISOString();
+  }
+
   setView(view: 'workflow' | 'checklist'): void {
     this.activeView = view;
   }
 
   setActiveInputSystem(inputSystem: 'gate1' | 'gate2' | 'gate3' | 'gate4' | 'gate5' | 'gate6'): void {
+    if (!this.canAccessGate(inputSystem)) {
+      this.gateNavigationMessage = this.getGateLockMessage(inputSystem);
+      return;
+    }
+
+    this.gateNavigationMessage = '';
     this.activeInputSystem = inputSystem;
+    const gateNumber = Number(inputSystem.replace('gate', ''));
+    if (Number.isFinite(gateNumber) && gateNumber >= 1 && gateNumber <= 6) {
+      this.activeGate = gateNumber as 1 | 2 | 3 | 4 | 5 | 6;
+    }
+    if (this.hasPersistableProjectContext) {
+      this.persistProjectIntakeState(this.persistableProjectId);
+    }
+  }
+
+  canAccessGate(inputSystem: 'gate1' | 'gate2' | 'gate3' | 'gate4' | 'gate5' | 'gate6'): boolean {
+    if (this.isDraftProject) {
+      return true;
+    }
+
+    if (inputSystem === this.activeInputSystem) {
+      return true;
+    }
+
+    const targetIndex = this.gateOrder.indexOf(inputSystem);
+    if (targetIndex <= 0) {
+      return true;
+    }
+
+    const priorGate = this.gateOrder[targetIndex - 1];
+    return this.getGateCompletionByInputSystem(priorGate) >= 100;
+  }
+
+  setBooleanFieldValue(fieldName: string, value: boolean): void {
+    const control = this.projectForm.get(fieldName);
+    if (!control) {
+      return;
+    }
+
+    // Clicking the already selected option clears the choice back to blank.
+    const nextValue = control.value === value ? null : value;
+    control.setValue(nextValue);
+    control.markAsDirty();
+    control.markAsTouched();
+  }
+
+  isBooleanFieldSelected(fieldName: string, value: boolean): boolean {
+    return this.projectForm.get(fieldName)?.value === value;
   }
 
   get taskBoardContextLabel(): string {
@@ -557,26 +775,240 @@ export class NewProjectComponent implements OnDestroy {
     return labels[this.activeInputSystem] || 'Gate 1';
   }
 
-  get taskBoardQueryParams(): { gateContext: 'gate1' | 'gate2' | 'gate3' | 'gate4' | 'gate5' | 'gate6'; gate: number } {
+  get taskBoardQueryParams(): { gateContext: 'gate1' | 'gate2' | 'gate3' | 'gate4' | 'gate5' | 'gate6'; gate: number; projectId: string } {
+    const gateNumber = Number(this.activeInputSystem.replace('gate', ''));
     return {
       gateContext: this.activeInputSystem,
-      gate: this.activeGate
+      gate: Number.isFinite(gateNumber) ? gateNumber : this.activeGate,
+      projectId: this.linkProjectId
     };
   }
 
+  get canOpenTasksBoard(): boolean {
+    return !!this.linkProjectId;
+  }
+
+  get hasProjectContext(): boolean {
+    return !!this.linkProjectId;
+  }
+
+  openTasksBoard(): void {
+    if (!this.canOpenTasksBoard) {
+      return;
+    }
+
+    this.router.navigate(['/operations/project-manager/tasks'], {
+      queryParams: this.taskBoardQueryParams
+    });
+  }
+
+  private get linkProjectId(): string {
+    if (this.lastSavedProjectId || this.activeProjectId) {
+      return this.lastSavedProjectId || this.activeProjectId;
+    }
+
+    return '';
+  }
+
+  private get hasPersistableProjectContext(): boolean {
+    return !!this.persistableProjectId;
+  }
+
+  private get persistableProjectId(): string {
+    return this.lastSavedProjectId || this.activeProjectId || '';
+  }
+
   setActiveGate(gate: 1 | 2 | 3 | 4 | 5 | 6): void {
+    const inputSystem = `gate${gate}` as 'gate1' | 'gate2' | 'gate3' | 'gate4' | 'gate5' | 'gate6';
+    if (!this.canAccessGate(inputSystem)) {
+      this.gateNavigationMessage = this.getGateLockMessage(inputSystem);
+      return;
+    }
+
+    this.gateNavigationMessage = '';
     this.activeGate = gate;
+    this.activeInputSystem = inputSystem;
+    if (this.hasPersistableProjectContext) {
+      this.persistProjectIntakeState(this.persistableProjectId);
+    }
   }
 
   nextGate(): void {
     if (this.activeGate < 6) {
-      this.activeGate = (this.activeGate + 1) as 1 | 2 | 3 | 4 | 5 | 6;
+      this.setActiveGate((this.activeGate + 1) as 1 | 2 | 3 | 4 | 5 | 6);
     }
   }
 
   previousGate(): void {
     if (this.activeGate > 1) {
-      this.activeGate = (this.activeGate - 1) as 1 | 2 | 3 | 4 | 5 | 6;
+      this.setActiveGate((this.activeGate - 1) as 1 | 2 | 3 | 4 | 5 | 6);
     }
+  }
+
+  private getGateCompletionByInputSystem(inputSystem: 'gate1' | 'gate2' | 'gate3' | 'gate4' | 'gate5' | 'gate6'): number {
+    if (inputSystem === 'gate1') return this.gate1Completion;
+    if (inputSystem === 'gate2') return this.gate2Completion;
+    if (inputSystem === 'gate3') return this.gate3Completion;
+    if (inputSystem === 'gate4') return this.gate4Completion;
+    if (inputSystem === 'gate5') return this.gate5Completion;
+    return this.gate6Completion;
+  }
+
+  private getGateLockMessage(targetGate: 'gate1' | 'gate2' | 'gate3' | 'gate4' | 'gate5' | 'gate6'): string {
+    const targetIndex = this.gateOrder.indexOf(targetGate);
+    if (targetIndex <= 0) {
+      return '';
+    }
+
+    const priorGate = this.gateOrder[targetIndex - 1];
+    const priorCompletion = this.getGateCompletionByInputSystem(priorGate);
+    const priorLabel = priorGate.replace('gate', 'Gate ');
+    const targetLabel = targetGate.replace('gate', 'Gate ');
+
+    return `Complete ${priorLabel} to 100% before moving to ${targetLabel}. Current ${priorLabel}: ${priorCompletion}%.`;
+  }
+
+  private getIntakeStorageKey(projectId: string): string {
+    return `${this.intakeStoragePrefix}${projectId}`;
+  }
+
+  private persistProjectIntakeState(projectId: string): void {
+    if (!projectId) {
+      return;
+    }
+
+    const payload: IntakeStoragePayload = {
+      formValue: this.projectForm.getRawValue(),
+      activeInputSystem: this.activeInputSystem,
+      activeGate: this.activeGate,
+      gateCompletedAt: {
+        gate1: this.gate1CompletedAt,
+        gate2: this.gate2CompletedAt,
+        gate3: this.gate3CompletedAt,
+        gate4: this.gate4CompletedAt,
+        gate5: this.gate5CompletedAt,
+        gate6: this.gate6CompletedAt
+      }
+    };
+
+    try {
+      localStorage.setItem(this.getIntakeStorageKey(projectId), JSON.stringify(payload));
+    } catch {
+      // Ignore localStorage write issues in test mode.
+    }
+  }
+
+  private loadProjectIntakeState(projectId: string, projectSummary?: ProjectDashboardItem): void {
+    if (!projectId) {
+      return;
+    }
+
+    this.isApplyingProjectState = true;
+    try {
+      const baseState = this.createBaseProjectFormState(projectSummary);
+      this.projectForm.reset(baseState, { emitEvent: false });
+
+      this.gate1CompletedAt = null;
+      this.gate2CompletedAt = null;
+      this.gate3CompletedAt = null;
+      this.gate4CompletedAt = null;
+      this.gate5CompletedAt = null;
+      this.gate6CompletedAt = null;
+
+      const raw = localStorage.getItem(this.getIntakeStorageKey(projectId));
+      if (raw) {
+        const parsed = JSON.parse(raw) as Partial<IntakeStoragePayload>;
+        if (parsed.formValue) {
+          this.projectForm.patchValue(parsed.formValue, { emitEvent: false });
+        }
+
+        if (parsed.activeInputSystem && ['gate1', 'gate2', 'gate3', 'gate4', 'gate5', 'gate6'].includes(parsed.activeInputSystem)) {
+          this.activeInputSystem = parsed.activeInputSystem;
+        }
+
+        if (parsed.activeGate && parsed.activeGate >= 1 && parsed.activeGate <= 6) {
+          this.activeGate = parsed.activeGate;
+        }
+
+        this.gate1CompletedAt = parsed.gateCompletedAt?.gate1 ?? null;
+        this.gate2CompletedAt = parsed.gateCompletedAt?.gate2 ?? null;
+        this.gate3CompletedAt = parsed.gateCompletedAt?.gate3 ?? null;
+        this.gate4CompletedAt = parsed.gateCompletedAt?.gate4 ?? null;
+        this.gate5CompletedAt = parsed.gateCompletedAt?.gate5 ?? null;
+        this.gate6CompletedAt = parsed.gateCompletedAt?.gate6 ?? null;
+      }
+
+      this.saveSuccessful = false;
+      this.updateGateCompletionTimestamps();
+    } catch {
+      this.projectForm.reset(this.createBaseProjectFormState(projectSummary), { emitEvent: false });
+    } finally {
+      this.isApplyingProjectState = false;
+    }
+  }
+
+  private createBaseProjectFormState(projectSummary?: ProjectDashboardItem): any {
+    const today = this.formatDate(new Date());
+
+    return {
+      newBusinessOpportunity: null,
+      rfpReceived: null,
+      productExpectationDoc: null,
+      pixelPitchDimsCaptured: null,
+      customer: projectSummary?.customer || '',
+      productName: projectSummary?.name || '',
+      projectCategory: projectSummary?.category || '',
+      strategyType: projectSummary?.strategy || '',
+      initialRfpDate: projectSummary?.rfpDate || today,
+      targetProductionDate: projectSummary?.targetProd || '',
+      volumeEstimate: 'Medium',
+      roughRevenuePotential: 'Medium',
+      estimatedRevenue: '',
+      priceProposalSubmitted: null,
+      businessAwarded: null,
+      businessAwardedDate: '',
+      forecastConfirmed: null,
+      designTeamConceptProposal: null,
+      conceptArchitectureDefined: null,
+      roughCostEntered: null,
+      timelineEstimatedLlt: null,
+      preliminaryBomForSourcing: null,
+      preliminaryBomUploaded: null,
+      firstPosConfirmed: null,
+      detailedEngineeringDesign: null,
+      longLeadItemsIdentified: null,
+      longLeadItemsDate: '',
+      dfmCompleted: null,
+      sourcingProductionLogisticsAligned: null,
+      changeRequestLog: '',
+      engineeringReleaseEta: '',
+      protoQty: null,
+      partNumberMapped: null,
+      finalBomReview: null,
+      engChecklistPixelMapping: null,
+      engChecklistInstallationInstructions: null,
+      engChecklistWorkInstruction: null,
+      engChecklistPdc: null,
+      engChecklistQualityDocs: null,
+      customerReviewValidation: null,
+      functionalValidationComplete: null,
+      pilotRunCompleted: null,
+      pilotRunCompletedDate: '',
+      instructionValidation: null,
+      softwareFilesValidation: null,
+      supplierFeedbackCaptured: null,
+      finalBomApproved: null,
+      qcProcedureDefined: null,
+      packagingInstructionsComplete: null,
+      productionPoReceived: null,
+      inventoryStrategyAligned: null,
+      notes: '',
+      gate1Status: 'In Progress',
+      gate2Status: 'Not Started',
+      gate3Status: 'Not Started',
+      gate4Status: 'Not Started',
+      gate5Status: 'Not Started',
+      gate6Status: 'Not Started'
+    };
   }
 }

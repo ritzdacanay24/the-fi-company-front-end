@@ -3,6 +3,7 @@ import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { SharedModule } from '@app/shared/shared.module';
 import { ReactiveFormsModule, FormControl, Validators } from '@angular/forms';
 import { PmTaskComment, PmTaskRecord } from './services/project-manager-tasks-data.service';
+import { AuthenticationService } from 'src/app/core/services/auth.service';
 
 @Component({
   standalone: true,
@@ -36,7 +37,7 @@ import { PmTaskComment, PmTaskRecord } from './services/project-manager-tasks-da
       <!-- Add comment -->
       <div class="border-top px-3 py-3">
         <div class="d-flex gap-2 align-items-start">
-          <span class="avatar-circle">{{ initials(author) }}</span>
+          <span class="avatar-circle">{{ initials(currentAuthor) }}</span>
           <div class="flex-grow-1">
             <textarea
               class="form-control form-control-sm"
@@ -45,16 +46,10 @@ import { PmTaskComment, PmTaskRecord } from './services/project-manager-tasks-da
               [formControl]="commentText"
             ></textarea>
             <div class="d-flex gap-2 mt-2 align-items-center">
-              <input
-                type="text"
-                class="form-control form-control-sm"
-                style="max-width: 160px;"
-                [formControl]="authorControl"
-                placeholder="Your name"
-              />
+              <small class="text-muted">Posting as {{ currentAuthor }}</small>
               <button
                 class="btn btn-primary btn-sm ms-auto"
-                [disabled]="commentText.invalid || authorControl.invalid"
+                [disabled]="commentText.invalid || !currentAuthor"
                 (click)="addComment()"
               >
                 Post
@@ -67,7 +62,7 @@ import { PmTaskComment, PmTaskRecord } from './services/project-manager-tasks-da
 
     <div class="modal-footer py-2">
       <span class="text-muted small me-auto">{{ comments.length }} comment{{ comments.length !== 1 ? 's' : '' }}</span>
-      <button type="button" class="btn btn-outline-secondary btn-sm" (click)="dismiss()">Close</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm" (click)="close()">Close</button>
     </div>
   `,
   styles: [`
@@ -97,31 +92,29 @@ import { PmTaskComment, PmTaskRecord } from './services/project-manager-tasks-da
 export class PmTaskCommentModalComponent implements OnInit {
   @Input() task!: PmTaskRecord;
   @Input() initialComments: PmTaskComment[] = [];
-  @Input() defaultAuthor = '';
 
   comments: PmTaskComment[] = [];
   private nextCommentId = 1;
+  currentAuthor = '';
 
   commentText = new FormControl('', [Validators.required, Validators.maxLength(1000)]);
-  authorControl = new FormControl('', [Validators.required, Validators.maxLength(80)]);
 
-  get author(): string {
-    return this.authorControl.value || '?';
-  }
-
-  constructor(private activeModal: NgbActiveModal) {}
+  constructor(
+    private activeModal: NgbActiveModal,
+    private authService: AuthenticationService
+  ) {}
 
   ngOnInit(): void {
     this.comments = [...this.initialComments];
     this.nextCommentId = this.comments.length
       ? Math.max(...this.comments.map(c => c.id)) + 1
       : 1;
-    this.authorControl.setValue(this.defaultAuthor);
+    this.currentAuthor = this.resolveCurrentUserName();
   }
 
   addComment(): void {
     const text = (this.commentText.value || '').trim();
-    const author = (this.authorControl.value || '').trim();
+    const author = this.currentAuthor.trim();
     if (!text || !author) return;
 
     const comment: PmTaskComment = {
@@ -137,7 +130,8 @@ export class PmTaskCommentModalComponent implements OnInit {
   }
 
   dismiss(): void {
-    this.activeModal.dismiss();
+    // Persist comment edits consistently regardless of which close path is used.
+    this.activeModal.close(this.comments);
   }
 
   close(): void {
@@ -159,5 +153,25 @@ export class PmTaskCommentModalComponent implements OnInit {
     } catch {
       return iso;
     }
+  }
+
+  private resolveCurrentUserName(): string {
+    const currentUser = this.authService.currentUserValue;
+    if (!currentUser) {
+      return 'Project Manager';
+    }
+
+    const nameCandidates = [
+      currentUser.full_name,
+      currentUser.fullName,
+      `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim(),
+      `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim(),
+      currentUser.name,
+      currentUser.username,
+      currentUser.email
+    ];
+
+    const displayName = nameCandidates.find((candidate: any) => String(candidate || '').trim().length > 0);
+    return String(displayName || 'Project Manager').trim();
   }
 }
