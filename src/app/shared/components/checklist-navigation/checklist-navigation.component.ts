@@ -29,6 +29,7 @@ export class ChecklistNavigationComponent implements OnChanges, OnDestroy {
   @Input() mode: 'editor' | 'readonly' = 'readonly';
   @Input() allowReadonlyReorder = false;
   @Input() autoScrollActive = true;
+  @Input() showItemNumbers = true;
   @Input() summary: { completed: number; total: number; percent: number } | null = null;
   @Input() cardStyle = true;
   @Input() height: string | null = null;  // e.g., '500px', 'calc(100vh - 300px)'
@@ -963,6 +964,11 @@ export class ChecklistNavigationComponent implements OnChanges, OnDestroy {
   }
 
   canPromoteInGroup(index: number): boolean {
+    const level = Number(this.navItems[index]?.level ?? 0);
+    return level > 0;
+  }
+
+  canPromoteToTopLevel(index: number): boolean {
     const level = Number(this.navItems[index]?.level ?? 0);
     return level > 0;
   }

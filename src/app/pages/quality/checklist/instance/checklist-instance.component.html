@@ -206,6 +206,7 @@
           #checklistNav
           [items]="executionNavItems"
           [activeItemIndex]="getActiveNavIndex()"
+          [showItemNumbers]="false"
           [showMediaContext]="showInspectionNavMediaContext"
           [showOnlyOpenItems]="navShowOnlyOpenItems"
           (showOnlyOpenItemsChange)="navShowOnlyOpenItems = $event"
@@ -732,7 +733,8 @@
                           <i class="mdi mdi-folder-image me-1" *ngIf="src === 'Library'"></i>
                           {{src}}
                         </span>
-                        <button class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2" 
+                        <button *ngIf="canModifyChecklist"
+                          class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2" 
                                 (click)="deletePhoto(progress.photos[0], progress.item.id)"
                                 [disabled]="!canModifyChecklist"
                                 title="Delete Photo">
@@ -740,7 +742,8 @@
                         </button>
                       </div>
                       <div class="mt-2 text-center">
-                        <button class="btn btn-outline-primary btn-sm me-2"
+                        <button *ngIf="canModifyChecklist"
+                          class="btn btn-outline-primary btn-sm me-2"
                                 (click)="replaceCapturePhotoFileInput.click()"
                                 [disabled]="!canModifyChecklist">
                           Retake (System)
@@ -921,7 +924,8 @@
                           <i class="mdi mdi-folder-video me-1" *ngIf="vSrc === 'Library'"></i>
                           {{vSrc}}
                         </span>
-                        <button class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2" 
+                        <button *ngIf="canModifyChecklist"
+                          class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2" 
                                 (click)="deletePhoto(progress.videos[0], progress.item.id)"
                                 [disabled]="!canModifyChecklist"
                                 title="Delete Video">
@@ -929,12 +933,14 @@
                         </button>
                       </div>
                       <div class="mt-2 text-center">
-                        <button class="btn btn-outline-primary btn-sm me-2"
+                        <button *ngIf="canModifyChecklist"
+                          class="btn btn-outline-primary btn-sm me-2"
                                 (click)="startVideoCapture(progress.item.id)"
                                 [disabled]="!canModifyChecklist">
                           Re-record In-App
                         </button>
-                        <button class="btn btn-outline-primary btn-sm me-2"
+                        <button *ngIf="canModifyChecklist"
+                          class="btn btn-outline-primary btn-sm me-2"
                                 (click)="replaceCaptureVideoFileInput.click()"
                                 [disabled]="!canModifyChecklist">
                           Re-record (System)
@@ -1053,7 +1059,8 @@
                           <i class="mdi mdi-microphone me-1"></i>
                           {{aSrc}}
                         </span>
-                        <button class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2"
+                        <button *ngIf="canModifyChecklist"
+                          class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2"
                                 (click)="deletePhoto(progress.videos[0], progress.item.id)"
                                 [disabled]="!canModifyChecklist"
                                 title="Delete Audio">
@@ -1061,7 +1068,8 @@
                         </button>
                       </div>
                       <div class="mt-2 text-center">
-                        <button class="btn btn-outline-primary btn-sm me-2"
+                        <button *ngIf="canModifyChecklist"
+                          class="btn btn-outline-primary btn-sm me-2"
                                 (click)="replaceCaptureAudioFileInput.click()"
                                 [disabled]="!canModifyChecklist">
                           Re-record Audio
@@ -1160,7 +1168,8 @@
                           style="font-size: 0.65rem;">
                       {{src}}
                     </span>
-                    <button class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1" 
+                        <button *ngIf="canModifyChecklist"
+                          class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1" 
                             (click)="deletePhoto(progress.photos[0], progress.item.id)"
                             [disabled]="!canModifyChecklist"
                             title="Delete Photo"
@@ -2064,6 +2073,7 @@
     <app-checklist-navigation
       [items]="executionNavItems"
       [activeItemIndex]="getActiveNavIndex()"
+      [showItemNumbers]="false"
       [showMediaContext]="showInspectionNavMediaContext"
       [showOnlyOpenItems]="navShowOnlyOpenItems"
       (showOnlyOpenItemsChange)="navShowOnlyOpenItems = $event"
@@ -2110,6 +2120,7 @@
       </div>
       <small class="text-muted d-block mt-1">Hides completed items in the navigation list.</small>
     </div>
+
   </div>
 </ng-template>
 
@@ -2139,6 +2150,15 @@
       <button type="button" class="list-group-item list-group-item-action"
               (click)="openActionFromOffcanvas(offcanvas, 'settings', settingsContent)">
         <i class="mdi mdi-cog-outline me-2"></i>Settings
+      </button>
+      <button type="button" class="list-group-item list-group-item-action"
+          [disabled]="refreshingInstance"
+          (click)="openActionFromOffcanvas(offcanvas, 'refreshData')">
+        <i class="mdi me-2" [ngClass]="refreshingInstance ? 'mdi-loading mdi-spin' : 'mdi-refresh'"></i>{{ refreshingInstance ? 'Refreshing...' : 'Refresh Checklist Data' }}
+      </button>
+      <button type="button" class="list-group-item list-group-item-action"
+          (click)="openActionFromOffcanvas(offcanvas, 'hardRefresh')">
+        <i class="mdi mdi-refresh-circle me-2"></i>Hard Refresh Page
       </button>
       <button type="button" class="list-group-item list-group-item-action"
               (click)="openActionFromOffcanvas(offcanvas, 'fullView')">

@@ -45,6 +45,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   template: ChecklistTemplate | null = null;
   loading = true;
   saving = false;
+  refreshingInstance = false;
   instanceId: number = 0;
 
   // Start-from-template (fullscreen modal) state
@@ -576,6 +577,60 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         console.error('Error refreshing instance silently:', error);
       }
     });
+  }
+
+  refreshChecklistData(): void {
+    if (!this.instanceId || this.refreshingInstance) {
+      return;
+    }
+
+    this.refreshingInstance = true;
+
+    this.photoChecklistService.getInstance(this.instanceId).subscribe({
+      next: (instance) => {
+        if (!instance) {
+          this.refreshingInstance = false;
+          alert(`Checklist instance #${this.instanceId} was not found.`);
+          return;
+        }
+
+        this.instance = instance;
+
+        if (!instance.template_id) {
+          this.refreshingInstance = false;
+          alert('Checklist template reference is missing for this instance.');
+          return;
+        }
+
+        this.photoChecklistService.getTemplateIncludingInactive(instance.template_id).subscribe({
+          next: (template) => {
+            this.refreshingInstance = false;
+            if (!template) {
+              alert('Unable to refresh checklist template.');
+              return;
+            }
+
+            this.template = template;
+            this.initializeProgress();
+            this.cdr.detectChanges();
+          },
+          error: (error) => {
+            console.error('Error refreshing checklist template:', error);
+            this.refreshingInstance = false;
+            alert('Error refreshing checklist template. Please try again.');
+          }
+        });
+      },
+      error: (error) => {
+        console.error('Error refreshing checklist instance:', error);
+        this.refreshingInstance = false;
+        alert('Error refreshing checklist data. Please try again.');
+      }
+    });
+  }
+
+  hardRefreshPage(): void {
+    window.location.reload();
   }
 
   private getUserDisplayName(user: any): string | undefined {
@@ -2123,6 +2178,8 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     
     // Flatten items to include sub-items from children arrays
     const flattenedItems = this.flattenItems(this.template.items);
+    const instanceItems = Array.isArray(this.instance?.items) ? this.instance!.items : [];
+    const usedInstanceItemIndexes = new Set<number>();
     
     const itemProgress: ChecklistItemProgress[] = flattenedItems.map((item, index) => {
       // Validate item ID
@@ -2132,9 +2189,10 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       }
       
       // Find instance item using matcher service
-      const instanceItem = this.instanceMatcher.findInstanceItem(
-        this.instance?.items, 
-        item.id
+      const instanceItem = this.resolveInstanceItemForTemplate(
+        instanceItems,
+        item,
+        usedInstanceItemIndexes
       );
       
       // Create compound unique ID
@@ -2259,6 +2317,66 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       // Navigate to first incomplete item if no step param was provided
       this.navigateToFirstIncompleteItem();
     }
+  }
+
+  private resolveInstanceItemForTemplate(
+    instanceItems: any[],
+    templateItem: ChecklistItem,
+    usedIndexes: Set<number>
+  ): any {
+    // Primary strategy: existing ID-based matching.
+    const direct = this.instanceMatcher.findInstanceItem(instanceItems, templateItem.id as any);
+    if (direct) {
+      const directIdx = instanceItems.findIndex((candidate) => candidate === direct);
+      if (directIdx >= 0 && !usedIndexes.has(directIdx)) {
+        usedIndexes.add(directIdx);
+        return direct;
+      }
+    }
+
+    // Fallback strategy: strict signature matching for legacy data where IDs drifted.
+    // Safety-first: only accept a single unambiguous exact match.
+    const normalizedTemplateTitle = this.normalizeItemMatchText((templateItem as any)?.title);
+    const normalizedTemplateDescription = this.normalizeItemMatchText((templateItem as any)?.description);
+    const templateLevel = Number((templateItem as any)?.level ?? 0);
+
+    if (!normalizedTemplateTitle) {
+      return null;
+    }
+
+    const exactMatches: number[] = [];
+
+    for (let i = 0; i < instanceItems.length; i++) {
+      if (usedIndexes.has(i)) continue;
+
+      const inst = instanceItems[i] || {};
+      const normalizedInstanceTitle = this.normalizeItemMatchText(inst.title);
+      const normalizedInstanceDescription = this.normalizeItemMatchText(inst.description);
+      const instanceLevel = Number(inst.level ?? 0);
+
+      const titleMatches = normalizedTemplateTitle === normalizedInstanceTitle;
+      const descriptionMatches = normalizedTemplateDescription === normalizedInstanceDescription;
+      const levelMatches = instanceLevel === templateLevel;
+
+      if (titleMatches && descriptionMatches && levelMatches) {
+        exactMatches.push(i);
+      }
+    }
+
+    if (exactMatches.length === 1) {
+      const matchIdx = exactMatches[0];
+      usedIndexes.add(matchIdx);
+      return instanceItems[matchIdx];
+    }
+
+    return null;
+  }
+
+  private normalizeItemMatchText(value: any): string {
+    return String(value || '')
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, ' ');
   }
 
   private normalizeMediaPathForMerge(url: string | null | undefined): string {
@@ -4273,7 +4391,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     });
   }
 
-  openActionFromOffcanvas(offcanvas: any, action: 'navigation' | 'myChecklists' | 'workOrderInfo' | 'fullView' | 'settings', content?: any): void {
+  openActionFromOffcanvas(offcanvas: any, action: 'navigation' | 'myChecklists' | 'workOrderInfo' | 'fullView' | 'settings' | 'refreshData' | 'hardRefresh', content?: any): void {
     try {
       offcanvas?.dismiss();
     } catch {
@@ -4296,6 +4414,12 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
           break;
         case 'settings':
           this.openSettings(content);
+          break;
+        case 'refreshData':
+          this.refreshChecklistData();
+          break;
+        case 'hardRefresh':
+          this.hardRefreshPage();
           break;
       }
     }, 0);
@@ -4548,11 +4672,27 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       return null;
     }
 
-    return this.itemProgress.find(p =>
-      p.item.order_index === parentId ||
-      (p.item as any).baseItemId === parentId ||
-      p.item.id === parentId
-    ) || null;
+    return this.itemProgress.find(p => this.isSameItemIdentity(p, parentId)) || null;
+  }
+
+  private isSameItemIdentity(progress: ChecklistItemProgress, candidateId: number | string | null | undefined): boolean {
+    if (candidateId === undefined || candidateId === null) {
+      return false;
+    }
+
+    const candidate = String(candidateId);
+    const progressId = String(progress.item.id);
+    const baseId = (progress.item as any).baseItemId;
+
+    if (progressId === candidate) {
+      return true;
+    }
+
+    if (baseId !== undefined && baseId !== null && String(baseId) === candidate) {
+      return true;
+    }
+
+    return false;
   }
 
   /**
@@ -4598,10 +4738,10 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
    */
   getChildItemNumber(progress: ChecklistItemProgress): string {
     if (!progress.item.parent_id) return '';
-    
-    // Find parent item
-    const parentProgress = this.itemProgress.find(p => 
-      p.item.order_index === progress.item.parent_id
+
+    // Find parent item by stable item identity (ID), not display order.
+    const parentProgress = this.itemProgress.find(p =>
+      this.isSameItemIdentity(p, progress.item.parent_id)
     );
     
     if (!parentProgress) return '';
@@ -4649,9 +4789,8 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
    * Get child items for a parent in navigation
    */
   getNavChildItems(parentProgress: ChecklistItemProgress): ChecklistItemProgress[] {
-    const parentOrderIndex = parentProgress.item.order_index;
     return this.itemProgress.filter(p => 
-      p.item.level === 1 && p.item.parent_id === parentOrderIndex
+      p.item.level === 1 && this.isSameItemIdentity(parentProgress, p.item.parent_id)
     );
   }
 

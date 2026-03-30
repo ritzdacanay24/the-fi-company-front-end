@@ -2141,6 +2141,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   dragSummaryLabel = '';
   dropHintText = '';
   reorderFeedbackMessage = '';
+  private hasReorderMutations = false;
 
   private lastReorderUndoState: ReorderUndoState | null = null;
   private reorderFeedbackTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -2663,6 +2664,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   private markSaved(startedSeq?: number): void {
     // Treat all changes up to this point as saved.
     this.savedSeq = Math.max(this.savedSeq, this.changeSeq, startedSeq ?? 0);
+    this.hasReorderMutations = false;
 
     // Reset form dirty/pristine state without incrementing change tracking.
     this.suppressChangeTracking = true;
@@ -2791,6 +2793,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
         this.editingTemplate = normalizedTemplate as ChecklistTemplate;
         this.draftParentVersion = null;
         this.lastSavedAt = null;
+        this.hasReorderMutations = false;
         this.changeTrackingReady = false;
         this.suppressChangeTracking = true;
         this.populateForm(this.editingTemplate);
@@ -3295,6 +3298,10 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       targetStart -= subtreeLength;
     }
 
+    const oldLength = this.items.length;
+    const oldStart = index;
+    const oldEnd = subtreeEnd;
+
     const movedBlock = this.items.controls.splice(index, subtreeLength);
 
     movedBlock.forEach((control) => {
@@ -3303,8 +3310,10 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     });
 
     this.items.controls.splice(targetStart, 0, ...movedBlock);
+  this.remapIndexedEditorStateAfterMove(oldStart, oldEnd, targetStart, oldLength);
 
     this.rebuildParentReferencesFromLevels();
+    this.hasReorderMutations = true;
 
     this.recalculateOrderIndices(); // Auto-calculate order
 
@@ -3334,6 +3343,10 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       targetStart -= subtreeLength;
     }
 
+    const oldLength = this.items.length;
+    const oldStart = index;
+    const oldEnd = subtreeEnd;
+
     const movedBlock = this.items.controls.splice(index, subtreeLength);
 
     movedBlock.forEach((control) => {
@@ -3342,13 +3355,68 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     });
 
     this.items.controls.splice(targetStart, 0, ...movedBlock);
+  this.remapIndexedEditorStateAfterMove(oldStart, oldEnd, targetStart, oldLength);
 
     this.rebuildParentReferencesFromLevels();
+    this.hasReorderMutations = true;
 
     this.recalculateOrderIndices(); // Auto-calculate order
 
     this.rebuildEditorNavItems();
     this.cdr.detectChanges();
+  }
+
+  private remapIndexedEditorStateAfterMove(oldStart: number, oldEnd: number, targetStart: number, oldLength: number): void {
+    const movedLength = oldEnd - oldStart;
+
+    const mapOldIndexToNewIndex = (oldIndex: number): number => {
+      if (oldIndex >= oldStart && oldIndex < oldEnd) {
+        return targetStart + (oldIndex - oldStart);
+      }
+
+      if (targetStart < oldStart) {
+        if (oldIndex >= targetStart && oldIndex < oldStart) {
+          return oldIndex + movedLength;
+        }
+        return oldIndex;
+      }
+
+      if (oldIndex >= oldEnd && oldIndex < targetStart + movedLength) {
+        return oldIndex - movedLength;
+      }
+
+      return oldIndex;
+    };
+
+    const remapIndexedDict = <T>(dict: { [itemIndex: number]: T }): { [itemIndex: number]: T } => {
+      const updated: { [itemIndex: number]: T } = {};
+      Object.keys(dict).forEach((key) => {
+        const oldIndex = parseInt(key, 10);
+        if (!Number.isInteger(oldIndex) || oldIndex < 0 || oldIndex >= oldLength) {
+          return;
+        }
+
+        const newIndex = mapOldIndexToNewIndex(oldIndex);
+        updated[newIndex] = dict[oldIndex];
+      });
+      return updated;
+    };
+
+    this.sampleImages = remapIndexedDict(this.sampleImages);
+    this.sampleVideos = remapIndexedDict(this.sampleVideos);
+
+    const updatedExpanded = new Set<number>();
+    this.expandedItems.forEach((oldIndex) => {
+      if (!Number.isInteger(oldIndex) || oldIndex < 0 || oldIndex >= oldLength) {
+        return;
+      }
+      updatedExpanded.add(mapOldIndexToNewIndex(oldIndex));
+    });
+    this.expandedItems = updatedExpanded;
+
+    if (this.activeNavItemIndex >= 0 && this.activeNavItemIndex < oldLength) {
+      this.activeNavItemIndex = mapOldIndexToNewIndex(this.activeNavItemIndex);
+    }
   }
 
   /**
@@ -3962,6 +4030,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     // Rebuild parent references from the current sequence so stale parent_id
     // values do not override reorder intent on save/reload.
     this.rebuildParentReferencesFromLevels();
+    this.hasReorderMutations = true;
 
     // Recalculate order_index for all items to maintain proper sequence
     this.recalculateOrderIndices();
@@ -5261,7 +5330,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   }
 
   handleNavAction(event: { action: string; index: number }): void {
-    if (this.isPublishedLocked()) {
+    if (this.isPublishedLocked() && !this.canExecuteLockedNavAction(event.action)) {
       return;
     }
 
@@ -5287,6 +5356,9 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       case 'promote':
         this.promoteItem(event.index);
         break;
+      case 'promoteToTop':
+        this.promoteItemToTopLevel(event.index);
+        break;
       case 'demote':
         this.demoteItem(event.index);
         break;
@@ -5298,6 +5370,38 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
         break;
       default:
         break;
+    }
+  }
+
+  private canExecuteLockedNavAction(action: string): boolean {
+    return action === 'moveUp'
+      || action === 'moveDown'
+      || action === 'promote'
+      || action === 'promoteToTop'
+      || action === 'demote'
+      || action === 'moveUnder';
+  }
+
+  private promoteItemToTopLevel(index: number): void {
+    const control = this.items.at(index) as FormGroup;
+    if (!control) {
+      return;
+    }
+
+    let safety = 0;
+    while (safety < 20) {
+      const currentLevel = Number(control.get('level')?.value || 0);
+      if (currentLevel <= 0) {
+        break;
+      }
+
+      const currentIndex = this.items.controls.indexOf(control);
+      if (currentIndex < 0) {
+        break;
+      }
+
+      this.promoteItem(currentIndex);
+      safety++;
     }
   }
 
@@ -6324,7 +6428,9 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
         return;
       }
 
-      if (!this.isReorderOnlyChangeSet(changes)) {
+      const allowPublishedReorderSave = this.hasReorderMutations || this.isReorderOnlyChangeSet(changes);
+
+      if (!allowPublishedReorderSave) {
         this.saving = false;
         alert('Published templates can only be saved in place for item sorting changes. Start a draft for content edits.');
         return;
@@ -6406,9 +6512,9 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       return false;
     }
 
-    if ((changes.field_changes?.length ?? 0) > 0) {
-      return false;
-    }
+    // Reorder-in-place should be driven by item-level changes only.
+    // Template-level metadata can appear as noisy diffs after normalization
+    // and should not block a reorder save.
 
     if ((changes.items_added?.length ?? 0) > 0 || (changes.items_removed?.length ?? 0) > 0) {
       return false;
@@ -6419,7 +6525,14 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       return false;
     }
 
-    const allowedFields = new Set(['Position', 'Hierarchy Level', 'Parent Item']);
+    const allowedFields = new Set([
+      'Position',
+      'Hierarchy Level',
+      'Parent Item',
+      // Backward compatibility: tolerate older/alternate labels from compare pipelines.
+      'Parent ID',
+      'Parent'
+    ]);
 
     return itemChanges.every((item: any) => {
       const changesForItem = Array.isArray(item?.changes) ? item.changes : [];
@@ -6434,16 +6547,6 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   saveDraft(): void {
     if (this.saving) {
       return;
-    }
-
-    // If a published template already has a draft, just open it.
-    if (this.editingTemplate && !this.editingTemplate.is_draft) {
-      const existingDraftId = Number((this.editingTemplate as any)?.edit_target_template_id || 0);
-      if (existingDraftId > 0) {
-        this.loadTemplate(existingDraftId);
-        this.router.navigate(['/quality/checklist/template-editor', existingDraftId], { replaceUrl: true });
-        return;
-      }
     }
 
     this.saving = true;
@@ -6465,7 +6568,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
           (templateData as any).version = nextVersion;
 
           const saveRequest = this.configService.updateTemplate(this.editingTemplate!.id, templateData);
-          this.subscribeToDraftSave(saveRequest, startedSeq);
+          this.subscribeToDraftSave(saveRequest, startedSeq, templateData);
         },
         error: (error) => {
           console.error('Error loading templates for version calculation:', error);
@@ -6473,7 +6576,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
           (templateData as any).version = this.getNextVersion(this.editingTemplate!.version || '1.0');
 
           const saveRequest = this.configService.updateTemplate(this.editingTemplate!.id, templateData);
-          this.subscribeToDraftSave(saveRequest, startedSeq);
+          this.subscribeToDraftSave(saveRequest, startedSeq, templateData);
         }
       });
       return;
@@ -6483,13 +6586,22 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       ? this.configService.updateTemplate(this.editingTemplate.id, templateData)
       : this.configService.createTemplate(templateData);
 
-    this.subscribeToDraftSave(saveRequest, startedSeq);
+    this.subscribeToDraftSave(saveRequest, startedSeq, templateData);
   }
 
-  private subscribeToDraftSave(saveRequest: any, startedSeq: number): void {
+  private subscribeToDraftSave(saveRequest: any, startedSeq: number, templateData?: any): void {
     saveRequest.subscribe({
       next: (response: any) => {
         if (response?.success === false) {
+          // Root fix: if backend reports existing draft, persist current edits there immediately.
+          const existingDraftId = Number(response?.existing_draft_id || 0);
+          if (response?.code === 'DRAFT_ALREADY_EXISTS' && existingDraftId > 0 && templateData) {
+            const retryPayload = { ...templateData, is_draft: 1 };
+            const retryRequest = this.configService.updateTemplate(existingDraftId, retryPayload);
+            this.subscribeToDraftSave(retryRequest, startedSeq, retryPayload);
+            return;
+          }
+
           this.saving = false;
           this.handleTemplateSaveFailureResponse(response, 'draft');
           return;
@@ -6502,17 +6614,35 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
         // Note: this treats any edits made during the request as “saved” from the UX perspective.
         this.markSaved(startedSeq);
 
-        // Backend may create or switch to a draft template (returns template_id). If so, switch editor to it.
-        if (response?.template_id && this.editingTemplate && response.template_id !== this.editingTemplate.id) {
-          this.loadTemplate(response.template_id);
-          this.router.navigate(['/quality/checklist/template-editor', response.template_id], { replaceUrl: true });
-        } else if (response?.template_id && !this.editingTemplate) {
-          this.loadTemplate(response.template_id);
-          this.router.navigate(['/quality/checklist/template-editor', response.template_id], { replaceUrl: true });
-        }
+        // Backend may create/switch to a draft template. Apply returned template data first
+        // and align URL to the returned template_id so refresh loads the same saved draft.
+        const responseTemplateId = Number(response?.template_id || 0);
+        const currentTemplateId = Number(this.editingTemplate?.id || 0);
 
         if (response?.template) {
-          this.updateComponentWithSavedTemplate(response.template);
+          const rawTemplate: any = { ...response.template };
+          if (responseTemplateId > 0) {
+            rawTemplate.id = responseTemplateId;
+          }
+
+          const rawIsActive: any = rawTemplate?.is_active;
+          const rawIsDraft: any = rawTemplate?.is_draft;
+          const normalizedTemplate: any = {
+            ...rawTemplate,
+            is_active: rawIsActive === true || rawIsActive === 1 || rawIsActive === '1',
+            is_draft: rawIsDraft === true || rawIsDraft === 1 || rawIsDraft === '1'
+          };
+
+          this.editingTemplate = normalizedTemplate as ChecklistTemplate;
+          this.populateForm(this.editingTemplate);
+          this.updateComponentWithSavedTemplate(normalizedTemplate);
+        } else if (responseTemplateId > 0) {
+          // Fallback when backend does not include template payload.
+          this.loadTemplate(responseTemplateId);
+        }
+
+        if (responseTemplateId > 0 && responseTemplateId !== currentTemplateId) {
+          this.router.navigate(['/quality/checklist/template-editor', responseTemplateId], { replaceUrl: true });
         }
 
         // updateComponentWithSavedTemplate may patch values; re-baseline again.
@@ -7289,6 +7419,20 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
         console.error('Full error object:', JSON.stringify(error, null, 2));
         this.saving = false;
 
+        if (error?.error?.code === 'UNSAFE_ITEM_ID_MUTATION_BLOCKED') {
+          const count = Number(error?.error?.instance_count || 0);
+          const suffix = count > 0 ? ` (${count} instance${count === 1 ? '' : 's'} detected).` : '.';
+          const createSubVersion = confirm(
+            'Save blocked to protect existing checklist progress. This reorder cannot be applied safely in-place' +
+            suffix +
+            ' Create a new sub-version draft now?'
+          );
+          if (createSubVersion) {
+            this.saveDraft();
+          }
+          return;
+        }
+
         // Show more detailed error information
         let errorMessage = 'Unknown error occurred';
         if (error?.error?.error) {
@@ -7314,6 +7458,20 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       alert('A working draft already exists. Opening the existing draft now.');
       this.router.navigate(['/quality/checklist/template-editor', existingDraftId], { replaceUrl: true });
       this.loadTemplate(existingDraftId);
+      return;
+    }
+
+    if (responseCode === 'UNSAFE_ITEM_ID_MUTATION_BLOCKED') {
+      const count = Number(response?.instance_count || 0);
+      const suffix = count > 0 ? ` (${count} instance${count === 1 ? '' : 's'} detected).` : '.';
+      const createSubVersion = confirm(
+        'Save blocked to protect existing checklist progress. This reorder cannot be applied safely in-place' +
+        suffix +
+        ' Create a new sub-version draft now?'
+      );
+      if (createSubVersion) {
+        this.saveDraft();
+      }
       return;
     }
 

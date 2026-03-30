@@ -1767,8 +1767,15 @@ class PhotoChecklistConfigAPI {
         }
 
         $submissionCount = 0;
+        $instanceCount = 0;
 
         if (!empty($data['items']) && is_array($data['items'])) {
+            $instanceStmt = $this->conn->prepare(
+                "SELECT COUNT(*) FROM checklist_instances WHERE template_id = ?"
+            );
+            $instanceStmt->execute([$id]);
+            $instanceCount = (int)$instanceStmt->fetchColumn();
+
             $subStmt = $this->conn->prepare(
                 "SELECT COUNT(*) FROM photo_submissions ps INNER JOIN checklist_items citm ON ps.item_id = citm.id WHERE citm.template_id = ?"
             );
@@ -1898,21 +1905,21 @@ class PhotoChecklistConfigAPI {
                 $stmt->execute($params);
             }
             
-            $itemsUpdateSkipped = false;
             $itemsReorderedInPlace = false;
+            $requiresIdPreservingItemUpdate = (!empty($data['items']) && is_array($data['items']) && ($submissionCount > 0 || $instanceCount > 0));
 
-            if (!empty($data['items']) && $submissionCount > 0) {
+            if ($requiresIdPreservingItemUpdate) {
                 $itemsReorderedInPlace = $this->applyInPlaceReorderOnlyUpdate((int)$id, $data['items']);
                 if ($itemsReorderedInPlace) {
-                    error_log("✅ updateTemplate: template ID=$id has submissions; applied in-place reorder-only item update");
+                    error_log("✅ updateTemplate: template ID=$id has dependent instances/submissions; applied in-place reorder-only item update");
                 } else {
-                    $itemsUpdateSkipped = true;
-                    error_log("⚠️ updateTemplate: template ID=$id has $submissionCount photo submissions; skipping checklist_items delete/reinsert to avoid FK violations");
+                    error_log("❌ updateTemplate: unsafe item mutation blocked for template ID=$id (instance_count=$instanceCount, submission_count=$submissionCount)");
+                    throw new Exception('UNSAFE_ITEM_ID_MUTATION_BLOCKED');
                 }
             }
 
             // Delete/reinsert items only when safe (no dependent submissions)
-            if (!empty($data['items']) && !$itemsUpdateSkipped && !$itemsReorderedInPlace) {
+            if (!empty($data['items']) && !$itemsReorderedInPlace) {
                 $sql = "DELETE FROM checklist_items WHERE template_id = ?";
                 $stmt = $this->conn->prepare($sql);
                 $stmt->execute([$id]);
@@ -2152,12 +2159,21 @@ class PhotoChecklistConfigAPI {
                 'template_id' => $id, 
                 'template' => $updatedTemplate,
                 'algorithm' => 'ONE-PASS',
-                'items_update_skipped' => $itemsUpdateSkipped,
-                'submission_count' => $submissionCount
+                'submission_count' => $submissionCount,
+                'instance_count' => $instanceCount
             ];
             
         } catch (Exception $e) {
             $this->conn->rollback();
+            if ($e->getMessage() === 'UNSAFE_ITEM_ID_MUTATION_BLOCKED') {
+                return [
+                    'success' => false,
+                    'code' => 'UNSAFE_ITEM_ID_MUTATION_BLOCKED',
+                    'error' => 'Cannot apply this change in-place because this template has existing checklist instances or submissions. Reorder-only updates are allowed.',
+                    'instance_count' => $instanceCount,
+                    'submission_count' => $submissionCount
+                ];
+            }
             throw $e;
         }
     }
@@ -2202,40 +2218,6 @@ class PhotoChecklistConfigAPI {
                 return false;
             }
             $seenIds[$itemId] = true;
-
-            $current = $currentById[$itemId];
-
-            // Only allow in-place updates when non-order content is unchanged.
-            if (!$this->valuesEquivalent($current['title'] ?? null, $item['title'] ?? null)) {
-                return false;
-            }
-            if (!$this->valuesEquivalent($current['description'] ?? null, $item['description'] ?? null)) {
-                return false;
-            }
-            if (!$this->valuesEquivalent((int)($current['is_required'] ?? 1), (int)($item['is_required'] ?? 1))) {
-                return false;
-            }
-            if (!$this->valuesEquivalent($current['sample_image_url'] ?? null, $item['sample_image_url'] ?? null)) {
-                return false;
-            }
-            if (!$this->valuesEquivalent($current['submission_type'] ?? 'photo', $item['submission_type'] ?? 'photo')) {
-                return false;
-            }
-            if (!$this->valuesEquivalent($current['sample_images'] ?? null, $item['sample_images'] ?? null)) {
-                return false;
-            }
-            if (!$this->valuesEquivalent($current['sample_videos'] ?? null, $item['sample_videos'] ?? null)) {
-                return false;
-            }
-            if (!$this->valuesEquivalent($current['photo_requirements'] ?? null, $item['photo_requirements'] ?? null)) {
-                return false;
-            }
-
-            if ($hasLinksColumn) {
-                if (!$this->valuesEquivalent($current['links'] ?? null, $item['links'] ?? null)) {
-                    return false;
-                }
-            }
         }
 
         $lastItemAtLevel = [];

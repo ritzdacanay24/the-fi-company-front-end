@@ -211,7 +211,7 @@
           </ng-container>
         </div>
 
-        <div *ngIf="!(canUseReorderControls() && isReorderDragging)"
+        <div *ngIf="showItemNumbers && !(canUseReorderControls() && isReorderDragging)"
              class="flex-shrink-0 nav-item-index"
              [class.text-muted]="activeNavItemIndex !== i"
              [class.text-white-50]="activeNavItemIndex === i"
@@ -219,7 +219,7 @@
           {{ getNavIndexLabel(i) }}
         </div>
 
-        <div class="flex-shrink-0 d-flex align-items-center gap-1 nav-inline-reorder" *ngIf="isEditorMode() && reorderModeEnabled">
+        <div class="flex-shrink-0 d-flex align-items-center gap-1 nav-inline-reorder" *ngIf="canUseReorderControls() && reorderModeEnabled">
           <button
             type="button"
             class="btn btn-sm btn-link text-muted p-0"
@@ -247,7 +247,7 @@
              style="font-size: 16px;"></i>
         </div>
 
-        <div class="flex-shrink-0 nav-item-actions" *ngIf="isEditorMode()" ngbDropdown container="body" placement="bottom-end top-end">
+        <div class="flex-shrink-0 nav-item-actions" *ngIf="canUseReorderControls()" ngbDropdown container="body" placement="bottom-end top-end">
           <button class="btn btn-sm btn-link p-0 border-0"
                   [class.text-muted]="activeNavItemIndex !== i"
                   [class.text-white-50]="activeNavItemIndex === i"
@@ -258,17 +258,17 @@
             <i class="mdi mdi-dots-vertical" style="font-size: 18px;"></i>
           </button>
           <div ngbDropdownMenu class="nav-actions-menu">
-            <button ngbDropdownItem (click)="emitAction('edit', i, $event)">
+            <button ngbDropdownItem *ngIf="isEditorMode()" (click)="emitAction('edit', i, $event)">
               <i class="mdi mdi-pencil me-2"></i>Edit Item
             </button>
-            <div class="dropdown-divider"></div>
-            <button ngbDropdownItem (click)="emitAction('addAbove', i, $event)">
+            <div class="dropdown-divider" *ngIf="isEditorMode()"></div>
+            <button ngbDropdownItem *ngIf="isEditorMode()" (click)="emitAction('addAbove', i, $event)">
               <i class="mdi mdi-arrow-up-bold me-2"></i>Add Item Above
             </button>
-            <button ngbDropdownItem (click)="emitAction('addBelow', i, $event)">
+            <button ngbDropdownItem *ngIf="isEditorMode()" (click)="emitAction('addBelow', i, $event)">
               <i class="mdi mdi-arrow-down-bold me-2"></i>Add Item Below
             </button>
-            <button ngbDropdownItem (click)="emitAction('duplicate', i, $event)">
+            <button ngbDropdownItem *ngIf="isEditorMode()" (click)="emitAction('duplicate', i, $event)">
               <i class="mdi mdi-content-copy me-2"></i>Duplicate
             </button>
             <div class="dropdown-divider"></div>
@@ -282,14 +282,17 @@
             <button ngbDropdownItem (click)="emitAction('promote', i, $event)" [disabled]="!canPromoteInGroup(i)">
               <i class="mdi mdi-arrow-left-bold me-2"></i>Promote to {{ getPromoteDestinationLabel(i) }}
             </button>
+            <button ngbDropdownItem (click)="emitAction('promoteToTop', i, $event)" [disabled]="!canPromoteToTopLevel(i)">
+              <i class="mdi mdi-arrow-up-bold-box-outline me-2"></i>Promote to Top Level
+            </button>
             <button ngbDropdownItem (click)="emitAction('demote', i, $event)" [disabled]="!canDemoteInGroup(i)">
               <i class="mdi mdi-arrow-right-bold me-2"></i>Demote under {{ getDemoteDestinationLabel(i) }}
             </button>
             <button ngbDropdownItem (click)="emitAction('moveUnder', i, $event)">
               <i class="mdi mdi-arrow-down-bold-circle-outline me-2"></i>Move Under...
             </button>
-            <div class="dropdown-divider"></div>
-            <button ngbDropdownItem (click)="emitAction('delete', i, $event)" class="text-danger">
+            <div class="dropdown-divider" *ngIf="isEditorMode()"></div>
+            <button ngbDropdownItem *ngIf="isEditorMode()" (click)="emitAction('delete', i, $event)" class="text-danger">
               <i class="mdi mdi-delete me-2"></i>Delete
             </button>
           </div>
