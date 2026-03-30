@@ -17,6 +17,8 @@ import { ChecklistNavItem } from '@app/shared/models/checklist-navigation.model'
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ChecklistNavigationComponent implements OnChanges, OnDestroy {
+  private static reorderModeByScope = new Map<string, boolean>();
+
   @Input() templateId: number | string | null = null;
   @Input() items: ChecklistNavItem[] | null = null;
   @Input() activeItemId: number | null = null;
@@ -62,6 +64,7 @@ export class ChecklistNavigationComponent implements OnChanges, OnDestroy {
   private navSearchVisibleIndices = new Set<number>();
   private savedExpandedItemsBeforeSearch: Set<number> | null = null;
   private lastNormalizedSearchTerm = '';
+  private hasInitializedExpansionState = false;
 
   activeNavItemIndex = -1;
   isReorderDragging = false;
@@ -73,6 +76,7 @@ export class ChecklistNavigationComponent implements OnChanges, OnDestroy {
   private hoverExpandTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private hoverExpandTargetIndex: number | null = null;
   private insideLockTargetIndex: number | null = null;
+  private hasRestoredReorderMode = false;
 
   // Read-only navigation filter: show only open (incomplete) items
 
@@ -85,6 +89,10 @@ export class ChecklistNavigationComponent implements OnChanges, OnDestroy {
 
   ngOnChanges(changes: SimpleChanges): void {
     console.log('🔄 Nav ngOnChanges:', changes);
+
+    if (changes['templateId'] || changes['mode'] || changes['allowReadonlyReorder']) {
+      this.hasRestoredReorderMode = false;
+    }
 
     if (changes['items']) {
       console.log('📝 Items changed, count:', this.items?.length);
@@ -114,6 +122,8 @@ export class ChecklistNavigationComponent implements OnChanges, OnDestroy {
       console.log('✅ Auto-enabling reorder mode for readonly with allowReadonlyReorder');
       this.reorderModeEnabled = true;
     }
+
+    this.restoreReorderModeState();
   }
 
   ngOnDestroy(): void {
@@ -602,16 +612,18 @@ export class ChecklistNavigationComponent implements OnChanges, OnDestroy {
 
   initializeNavExpansion(): void {
     // Don't wipe user expansion state on every items refresh.
-    // This component receives frequent `items` updates (e.g., realtime refresh),
-    // so only auto-expand on the initial load.
-    if (this.expandedItems.size === 0) {
+    // Auto-expand only once on first data load.
+    if (!this.hasInitializedExpansionState && this.expandedItems.size === 0) {
       this.navItems.forEach((_, i) => {
         if (this.hasChildren(i)) {
           this.expandedItems.add(i);
         }
       });
+      this.hasInitializedExpansionState = true;
       return;
     }
+
+    this.hasInitializedExpansionState = true;
 
     // Prune indices that no longer exist or no longer have children
     const maxIndex = this.navItems.length - 1;
@@ -687,7 +699,42 @@ export class ChecklistNavigationComponent implements OnChanges, OnDestroy {
     if (!this.reorderModeEnabled) {
       this.isReorderDragging = false;
     }
+    this.persistReorderModeState();
     this.cdr.markForCheck();
+  }
+
+  private getReorderModeScopeKey(): string {
+    const template = this.parseTemplateId(this.templateId);
+    const templatePart = template === null ? 'none' : String(template);
+    return `${this.mode}|${templatePart}|${this.allowReadonlyReorder ? 'ro' : 'rw'}`;
+  }
+
+  private persistReorderModeState(): void {
+    const key = this.getReorderModeScopeKey();
+    ChecklistNavigationComponent.reorderModeByScope.set(key, !!this.reorderModeEnabled);
+  }
+
+  private restoreReorderModeState(): void {
+    if (this.hasRestoredReorderMode) {
+      return;
+    }
+
+    if (!this.canUseReorderControls()) {
+      this.hasRestoredReorderMode = true;
+      return;
+    }
+
+    if (this.isNavSearchActive()) {
+      return;
+    }
+
+    const key = this.getReorderModeScopeKey();
+    const persisted = ChecklistNavigationComponent.reorderModeByScope.get(key);
+    if (typeof persisted === 'boolean') {
+      this.reorderModeEnabled = persisted;
+    }
+
+    this.hasRestoredReorderMode = true;
   }
 
   onDrop(event: CdkDragDrop<any[]>): void {
@@ -905,6 +952,138 @@ export class ChecklistNavigationComponent implements OnChanges, OnDestroy {
       }
     }
     return -1;
+  }
+
+  canMoveUpInGroup(index: number): boolean {
+    return this.findPreviousSortableSiblingIndex(index) !== null;
+  }
+
+  canMoveDownInGroup(index: number): boolean {
+    return this.findNextSortableSiblingIndex(index) !== null;
+  }
+
+  canPromoteInGroup(index: number): boolean {
+    const level = Number(this.navItems[index]?.level ?? 0);
+    return level > 0;
+  }
+
+  canDemoteInGroup(index: number): boolean {
+    return this.findDemoteTargetIndex(index) !== null;
+  }
+
+  getPromoteDestinationLabel(index: number): string {
+    const level = Number(this.navItems[index]?.level ?? 0);
+    if (level <= 0) {
+      return 'Already top level';
+    }
+
+    if (level === 1) {
+      return 'Top level';
+    }
+
+    const newParentIndex = this.findNearestAncestorIndexByLevel(index, level - 2);
+    if (newParentIndex < 0) {
+      return 'Top level';
+    }
+
+    return this.getNavTargetLabel(newParentIndex);
+  }
+
+  getDemoteDestinationLabel(index: number): string {
+    const targetIndex = this.findDemoteTargetIndex(index);
+    if (targetIndex === null) {
+      return 'No valid demote target';
+    }
+
+    return this.getNavTargetLabel(targetIndex);
+  }
+
+  private findDemoteTargetIndex(index: number): number | null {
+    return this.findPreviousSortableSiblingIndex(index);
+  }
+
+  private getNavTargetLabel(index: number): string {
+    const item = this.navItems[index];
+    if (!item) {
+      return 'Unknown item';
+    }
+
+    const outline = this.getNavIndexLabel(index);
+    const title = String(item.title || 'Untitled').trim() || 'Untitled';
+    return `${outline} ${title}`;
+  }
+
+  private findPreviousSortableSiblingIndex(index: number): number | null {
+    const currentLevel = Number(this.navItems[index]?.level ?? 0);
+    const currentParentAnchor = currentLevel > 0
+      ? this.findNearestAncestorIndexByLevel(index, currentLevel - 1)
+      : -1;
+
+    for (let i = index - 1; i >= 0; i--) {
+      const level = Number(this.navItems[i]?.level ?? 0);
+
+      if (level < currentLevel) {
+        break;
+      }
+
+      if (level !== currentLevel) {
+        continue;
+      }
+
+      const parentAnchor = currentLevel > 0
+        ? this.findNearestAncestorIndexByLevel(i, currentLevel - 1)
+        : -1;
+
+      if (parentAnchor === currentParentAnchor) {
+        return i;
+      }
+    }
+
+    return null;
+  }
+
+  private findNextSortableSiblingIndex(index: number): number | null {
+    const currentLevel = Number(this.navItems[index]?.level ?? 0);
+    const currentParentAnchor = currentLevel > 0
+      ? this.findNearestAncestorIndexByLevel(index, currentLevel - 1)
+      : -1;
+
+    for (let i = this.getSubtreeEndExclusive(index); i < this.navItems.length; i++) {
+      const level = Number(this.navItems[i]?.level ?? 0);
+
+      if (level < currentLevel) {
+        break;
+      }
+
+      if (level !== currentLevel) {
+        continue;
+      }
+
+      const parentAnchor = currentLevel > 0
+        ? this.findNearestAncestorIndexByLevel(i, currentLevel - 1)
+        : -1;
+
+      if (parentAnchor === currentParentAnchor) {
+        return i;
+      }
+    }
+
+    return null;
+  }
+
+  private getSubtreeEndExclusive(startIndex: number): number {
+    const startLevel = Number(this.navItems[startIndex]?.level ?? 0);
+    let end = startIndex + 1;
+
+    while (end < this.navItems.length) {
+      const level = Number(this.navItems[end]?.level ?? 0);
+      if (level <= startLevel) {
+        break;
+      }
+      end++;
+    }
+
+    return end;
   }
 
   isInHoveredDropGroup(itemIndex: number): boolean {

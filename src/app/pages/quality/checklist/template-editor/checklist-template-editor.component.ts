@@ -9,6 +9,7 @@ import { QuillModule, QuillModules } from 'ngx-quill';
 import Quill from 'quill';
 import { Subscription } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
+import Swal from 'sweetalert2';
 
 import { PhotoChecklistConfigService, ChecklistTemplate, ChecklistItem } from '@app/core/api/photo-checklist-config/photo-checklist-config.service';
 import { AttachmentsService } from '@app/core/api/attachments/attachments.service';
@@ -2155,6 +2156,8 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   private activeTrackingRefreshTimeout: ReturnType<typeof setTimeout> | null = null;
   private suppressObserverUpdatesUntil = 0;
   private readonly programmaticScrollLockMs = 650;
+  private nextTempNavId = 1000000000;
+  private tempNavIds = new WeakMap<FormGroup, number>();
 
   // Modal template references
   @ViewChild('sampleImagesModalTemplate') sampleImagesModalTemplate: any;
@@ -3280,27 +3283,28 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
     if (currentLevel === 0) return; // Already at top level
 
-    // Move up one level
-    const newLevel = currentLevel - 1;
-    item.patchValue({ level: newLevel });
+    const parentIndex = this.findNearestAncestorIndexByLevel(index, currentLevel - 1);
+    const subtreeEnd = this.getSubtreeEndExclusive(index);
+    const subtreeLength = subtreeEnd - index;
+    const parentSubtreeEnd = parentIndex >= 0 ? this.getSubtreeEndExclusive(parentIndex) : subtreeEnd;
 
-    // Update parent_id to grandparent's database ID
-    if (newLevel === 0) {
-      item.patchValue({ parent_id: null });
-    } else {
-      // Find new parent (previous item at new level - 1)
-      for (let i = index - 1; i >= 0; i--) {
-        const prevItem = this.items.at(i);
-        const prevLevel = prevItem.get('level')?.value || 0;
-        if (prevLevel === newLevel - 1) {
-          item.patchValue({ parent_id: prevItem.get('id')?.value }); // Use database ID
-          break;
-        }
-      }
+    // Outdent by moving the entire block after the old parent subtree so
+    // former siblings stay with the old parent.
+    let targetStart = parentSubtreeEnd;
+    if (index < targetStart) {
+      targetStart -= subtreeLength;
     }
 
-    // Recursively promote all descendants
-    this.promoteDescendants(index, currentLevel);
+    const movedBlock = this.items.controls.splice(index, subtreeLength);
+
+    movedBlock.forEach((control) => {
+      const level = Number(control.get('level')?.value || 0);
+      control.patchValue({ level: Math.max(0, level - 1) });
+    });
+
+    this.items.controls.splice(targetStart, 0, ...movedBlock);
+
+    this.rebuildParentReferencesFromLevels();
 
     this.recalculateOrderIndices(); // Auto-calculate order
 
@@ -3314,39 +3318,32 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   demoteItem(index: number): void {
     if (index === 0) return; // Can't demote first item
 
-    const item = this.items.at(index);
-    const currentLevel = item.get('level')?.value || 0;
+    const newParentIndex = this.findPreviousSortableSiblingIndex(index);
+    if (newParentIndex === null) return;
 
-    // Find previous sibling or parent at same/lower level
-    let newParentIndex = -1;
-    for (let i = index - 1; i >= 0; i--) {
-      const prevItem = this.items.at(i);
-      const prevLevel = prevItem.get('level')?.value || 0;
+    const currentLevel = Number(this.items.at(index).get('level')?.value || 0);
+    const newParentLevel = Number(this.items.at(newParentIndex).get('level')?.value || 0);
+    const newLevel = newParentLevel + 1;
+    const levelDelta = newLevel - currentLevel;
+    if (levelDelta <= 0) return;
 
-      if (prevLevel < currentLevel) {
-        // Found parent level - this becomes new parent
-        newParentIndex = i;
-        break;
-      } else if (prevLevel === currentLevel) {
-        // Found sibling - nest under this
-        newParentIndex = i;
-        break;
-      }
+    const subtreeEnd = this.getSubtreeEndExclusive(index);
+    const subtreeLength = subtreeEnd - index;
+    let targetStart = this.getSubtreeEndExclusive(newParentIndex);
+    if (index < targetStart) {
+      targetStart -= subtreeLength;
     }
 
-    if (newParentIndex === -1) return;
+    const movedBlock = this.items.controls.splice(index, subtreeLength);
 
-    const newParent = this.items.at(newParentIndex);
-    const newParentLevel = newParent.get('level')?.value || 0;
-    const newLevel = newParentLevel + 1;
-
-    item.patchValue({
-      level: newLevel,
-      parent_id: newParent.get('id')?.value // Use database ID
+    movedBlock.forEach((control) => {
+      const level = Number(control.get('level')?.value || 0);
+      control.patchValue({ level: level + levelDelta });
     });
 
-    // Recursively demote all descendants
-    this.demoteDescendants(index, currentLevel, newLevel - currentLevel);
+    this.items.controls.splice(targetStart, 0, ...movedBlock);
+
+    this.rebuildParentReferencesFromLevels();
 
     this.recalculateOrderIndices(); // Auto-calculate order
 
@@ -3358,13 +3355,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
    * Check if item can be demoted (has a previous sibling or parent to nest under)
    */
   canDemote(index: number): boolean {
-    if (index === 0) return false;
-
-    const currentLevel = this.items.at(index).get('level')?.value || 0;
-    const prevLevel = this.items.at(index - 1).get('level')?.value || 0;
-
-    // Can demote if previous item is at same level or higher (less nested)
-    return prevLevel <= currentLevel;
+    return this.findPreviousSortableSiblingIndex(index) !== null;
   }
 
   /**
@@ -5299,6 +5290,9 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       case 'demote':
         this.demoteItem(event.index);
         break;
+      case 'moveUnder':
+        void this.openMoveUnderPicker(event.index);
+        break;
       case 'delete':
         this.deleteItemFromNav(event.index);
         break;
@@ -5311,9 +5305,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     console.log('🔨 rebuildEditorNavItems called, items.length:', this.items.length);
     this.editorNavItems = this.items.controls.map((control, index) => {
       const item = control as FormGroup;
-      const rawId = item.get('id')?.value;
-      const parsedId = Number(rawId);
-      const id = Number.isFinite(parsedId) ? parsedId : index;
+      const id = this.getStableNavItemId(item);
       const primaryImageUrl = this.hasPrimarySampleImage(index) ? this.getPrimarySampleImageUrl(index) : null;
       const sampleVideoUrl = this.hasSampleVideo(index) ? this.getPrimarySampleVideoUrl(index) : null;
       const rawTitle = String(item.get('title')?.value ?? '');
@@ -5336,6 +5328,102 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
         isInvalid: this.isNavItemInvalid(index),
         searchText
       };
+    });
+  }
+
+  private getStableNavItemId(item: FormGroup): number {
+    const rawId = item.get('id')?.value;
+    const parsedId = Number(rawId);
+    if (Number.isFinite(parsedId) && parsedId > 0) {
+      return parsedId;
+    }
+
+    const existing = this.tempNavIds.get(item);
+    if (existing) {
+      return existing;
+    }
+
+    const generated = this.nextTempNavId++;
+    this.tempNavIds.set(item, generated);
+    return generated;
+  }
+
+  private async openMoveUnderPicker(sourceIndex: number): Promise<void> {
+    const candidates = this.getMoveUnderCandidates(sourceIndex);
+    if (!candidates.length) {
+      await Swal.fire({
+        icon: 'info',
+        title: 'No valid parent targets',
+        text: 'This item cannot be moved under another parent from its current position.'
+      });
+      return;
+    }
+
+    const inputOptions: Record<string, string> = {};
+    candidates.forEach((candidate) => {
+      inputOptions[String(candidate.index)] = candidate.label;
+    });
+
+    const result = await Swal.fire({
+      title: 'Move Under...',
+      input: 'select',
+      inputOptions,
+      inputPlaceholder: 'Select target parent',
+      showCancelButton: true,
+      confirmButtonText: 'Move',
+      inputValidator: (value) => {
+        if (value === undefined || value === null || value === '') {
+          return 'Select a target parent';
+        }
+        return undefined;
+      }
+    });
+
+    if (!result.isConfirmed) {
+      return;
+    }
+
+    const targetIndex = Number(result.value);
+    if (!Number.isInteger(targetIndex)) {
+      return;
+    }
+
+    this.moveItemUnderTarget(sourceIndex, targetIndex);
+  }
+
+  private getMoveUnderCandidates(sourceIndex: number): Array<{ index: number; label: string }> {
+    if (sourceIndex < 0 || sourceIndex >= this.items.length) {
+      return [];
+    }
+
+    const subtreeEnd = this.getSubtreeEndExclusive(sourceIndex);
+    const candidates: Array<{ index: number; label: string }> = [];
+
+    for (let i = 0; i < this.items.length; i++) {
+      if (i >= sourceIndex && i < subtreeEnd) {
+        continue;
+      }
+
+      const label = `${this.getOutlineNumber(i)} ${this.getItemTitle(i)}`;
+      candidates.push({ index: i, label });
+    }
+
+    return candidates;
+  }
+
+  private moveItemUnderTarget(sourceIndex: number, targetIndex: number): void {
+    if (sourceIndex < 0 || sourceIndex >= this.items.length) return;
+    if (targetIndex < 0 || targetIndex >= this.items.length) return;
+
+    const subtreeEnd = this.getSubtreeEndExclusive(sourceIndex);
+    if (targetIndex >= sourceIndex && targetIndex < subtreeEnd) {
+      return;
+    }
+
+    this.performDrop(sourceIndex, targetIndex, {
+      useAnchorIndex: true,
+      dropPosition: 'inside',
+      targetIndex
     });
   }
 
@@ -7847,7 +7935,13 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     }
     if (index === 0) return; // Can't move first item up
 
-    this.performDrop(index, index - 1);
+    const previousSiblingIndex = this.findPreviousSortableSiblingIndex(index);
+    if (previousSiblingIndex === null) {
+      return;
+    }
+
+    // Sort within the same sibling group only; hierarchy changes use promote/demote.
+    this.performDrop(index, previousSiblingIndex, { useAnchorIndex: true });
   }
 
   moveItemDown(index: number, event?: Event): void {
@@ -7856,7 +7950,72 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     }
     if (index >= this.items.length - 1) return; // Can't move last item down
 
-    this.performDrop(index, index + 1);
+    const nextSiblingIndex = this.findNextSortableSiblingIndex(index);
+    if (nextSiblingIndex === null) {
+      return;
+    }
+
+    const nextSiblingSubtreeEnd = this.getSubtreeEndExclusive(nextSiblingIndex);
+    // Insert after the next sibling block to perform a true "move down" sort.
+    this.performDrop(index, nextSiblingSubtreeEnd, { useAnchorIndex: true });
+  }
+
+  private findPreviousSortableSiblingIndex(index: number): number | null {
+    const currentLevel = Number(this.items.at(index)?.get('level')?.value || 0);
+    const currentParentAnchor = currentLevel > 0
+      ? this.findNearestAncestorIndexByLevel(index, currentLevel - 1)
+      : -1;
+
+    for (let i = index - 1; i >= 0; i--) {
+      const level = Number(this.items.at(i)?.get('level')?.value || 0);
+
+      if (level < currentLevel) {
+        break;
+      }
+
+      if (level !== currentLevel) {
+        continue;
+      }
+
+      const parentAnchor = currentLevel > 0
+        ? this.findNearestAncestorIndexByLevel(i, currentLevel - 1)
+        : -1;
+
+      if (parentAnchor === currentParentAnchor) {
+        return i;
+      }
+    }
+
+    return null;
+  }
+
+  private findNextSortableSiblingIndex(index: number): number | null {
+    const currentLevel = Number(this.items.at(index)?.get('level')?.value || 0);
+    const currentParentAnchor = currentLevel > 0
+      ? this.findNearestAncestorIndexByLevel(index, currentLevel - 1)
+      : -1;
+
+    for (let i = this.getSubtreeEndExclusive(index); i < this.items.length; i++) {
+      const level = Number(this.items.at(i)?.get('level')?.value || 0);
+
+      if (level < currentLevel) {
+        break;
+      }
+
+      if (level !== currentLevel) {
+        continue;
+      }
+
+      const parentAnchor = currentLevel > 0
+        ? this.findNearestAncestorIndexByLevel(i, currentLevel - 1)
+        : -1;
+
+      if (parentAnchor === currentParentAnchor) {
+        return i;
+      }
+    }
+
+    return null;
   }
 
   deleteItemFromNav(index: number, event?: Event): void {

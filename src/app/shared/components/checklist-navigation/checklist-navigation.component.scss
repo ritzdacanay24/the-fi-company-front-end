@@ -169,3 +169,9 @@
     pointer-events: none;
   }
 }
+
+:host ::ng-deep .nav-actions-menu {
+  max-height: min(70vh, 420px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}

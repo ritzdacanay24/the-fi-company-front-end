@@ -34,8 +34,8 @@
                 [class.btn-primary]="reorderModeEnabled"
                 [class.btn-outline-secondary]="!reorderModeEnabled"
                 (click)="toggleReorderMode()"
-                title="Toggle reorder mode">
-          <i class="mdi mdi-drag me-1"></i>{{ reorderModeEnabled ? 'Reordering' : 'Reorder' }}
+                title="Toggle arrow reorder mode">
+          <i class="mdi mdi-swap-vertical-bold me-1"></i>{{ reorderModeEnabled ? 'Reordering' : 'Reorder' }}
         </button>
       </div>
     </div>
@@ -225,7 +225,7 @@
             class="btn btn-sm btn-link text-muted p-0"
             style="width: 20px; height: 20px;"
             title="Move up"
-            [disabled]="i === 0"
+            [disabled]="!canMoveUpInGroup(i)"
             (click)="emitAction('moveUp', i, $event)">
             <i class="mdi mdi-chevron-up" style="font-size: 16px;"></i>
           </button>
@@ -234,7 +234,7 @@
             class="btn btn-sm btn-link text-muted p-0"
             style="width: 20px; height: 20px;"
             title="Move down"
-            [disabled]="i === navItems.length - 1"
+            [disabled]="!canMoveDownInGroup(i)"
             (click)="emitAction('moveDown', i, $event)">
             <i class="mdi mdi-chevron-down" style="font-size: 16px;"></i>
           </button>
@@ -247,7 +247,7 @@
              style="font-size: 16px;"></i>
         </div>
 
-        <div class="flex-shrink-0 nav-item-actions" *ngIf="isEditorMode()" ngbDropdown container="body" placement="bottom-end">
+        <div class="flex-shrink-0 nav-item-actions" *ngIf="isEditorMode()" ngbDropdown container="body" placement="bottom-end top-end">
           <button class="btn btn-sm btn-link p-0 border-0"
                   [class.text-muted]="activeNavItemIndex !== i"
                   [class.text-white-50]="activeNavItemIndex === i"
@@ -257,7 +257,7 @@
                   title="Actions">
             <i class="mdi mdi-dots-vertical" style="font-size: 18px;"></i>
           </button>
-          <div ngbDropdownMenu>
+          <div ngbDropdownMenu class="nav-actions-menu">
             <button ngbDropdownItem (click)="emitAction('edit', i, $event)">
               <i class="mdi mdi-pencil me-2"></i>Edit Item
             </button>
@@ -272,18 +272,21 @@
               <i class="mdi mdi-content-copy me-2"></i>Duplicate
             </button>
             <div class="dropdown-divider"></div>
-            <button ngbDropdownItem (click)="emitAction('moveUp', i, $event)" [disabled]="i === 0">
+            <button ngbDropdownItem (click)="emitAction('moveUp', i, $event)" [disabled]="!canMoveUpInGroup(i)">
               <i class="mdi mdi-chevron-up me-2"></i>Move Up
             </button>
-            <button ngbDropdownItem (click)="emitAction('moveDown', i, $event)" [disabled]="i === navItems.length - 1">
+            <button ngbDropdownItem (click)="emitAction('moveDown', i, $event)" [disabled]="!canMoveDownInGroup(i)">
               <i class="mdi mdi-chevron-down me-2"></i>Move Down
             </button>
             <div class="dropdown-divider"></div>
-            <button ngbDropdownItem (click)="emitAction('promote', i, $event)" [disabled]="item.level === 0">
-              <i class="mdi mdi-arrow-left-bold me-2"></i>Promote (Outdent)
+            <button ngbDropdownItem (click)="emitAction('promote', i, $event)" [disabled]="!canPromoteInGroup(i)">
+              <i class="mdi mdi-arrow-left-bold me-2"></i>Promote to {{ getPromoteDestinationLabel(i) }}
             </button>
-            <button ngbDropdownItem (click)="emitAction('demote', i, $event)" [disabled]="i === 0">
-              <i class="mdi mdi-arrow-right-bold me-2"></i>Demote (Indent)
+            <button ngbDropdownItem (click)="emitAction('demote', i, $event)" [disabled]="!canDemoteInGroup(i)">
+              <i class="mdi mdi-arrow-right-bold me-2"></i>Demote under {{ getDemoteDestinationLabel(i) }}
+            </button>
+            <button ngbDropdownItem (click)="emitAction('moveUnder', i, $event)">
+              <i class="mdi mdi-arrow-down-bold-circle-outline me-2"></i>Move Under...
             </button>
             <div class="dropdown-divider"></div>
             <button ngbDropdownItem (click)="emitAction('delete', i, $event)" class="text-danger">
@@ -300,12 +303,6 @@
       [minBufferPx]="280"
       [maxBufferPx]="560"
       [style.height]="height || '100%'"
-      cdkDropList
-      [cdkDropListData]="visibleNavItems"
-      [cdkDropListDisabled]="!canReorderInNav()"
-      [cdkDropListSortingDisabled]="true"
-      (cdkDropListSorted)="onReorderDragSorted($event)"
-      (cdkDropListDropped)="onDrop($event)"
       #editorViewport>
       <a *cdkVirtualFor="let entry of visibleNavItems; trackBy: trackByVisibleItem"
         [id]="'nav-item-' + entry.originalIndex"
@@ -319,33 +316,9 @@
         [class.nav-drop-after]="isReorderDragging && dragHoverTargetIndex === entry.originalIndex && dragHoverPosition === 'after'"
         [class.nav-drop-target-invalid]="false"
         style="cursor: pointer; min-height: 36px;"
-        cdkDrag
-        [cdkDragDisabled]="!canReorderInNav()"
-        [cdkDragData]="entry.originalIndex"
-        (cdkDragStarted)="onReorderDragStarted()"
-        (cdkDragMoved)="onReorderDragMoved($event)"
-        (cdkDragEnded)="onReorderDragEnded()"
         (click)="selectItem(entry.originalIndex)">
-        <ng-template cdkDragPreview>
-          <div class="nav-drag-preview" [title]="entry.item.title">
-            {{ getNavIndexLabel(entry.originalIndex) }} {{ entry.item.title }}
-          </div>
-        </ng-template>
-        <ng-template cdkDragPlaceholder>
-          <div class="nav-drag-placeholder nav-drag-placeholder-hidden"></div>
-        </ng-template>
         <div class="d-flex align-items-center gap-0 nav-row-content">
-          <span *ngIf="canReorderInNav(); else dragSpacer"
-                class="text-muted d-inline-flex align-items-center justify-content-center nav-drag-handle"
-                [class.invalid-target]="false"
-                cdkDragHandle
-                title="Drag to reorder"
-                style="width: 16px;">
-            <i class="mdi mdi-drag-vertical" style="font-size: 16px;"></i>
-          </span>
-          <ng-template #dragSpacer>
-            <span style="width: 8px;"></span>
-          </ng-template>
+          <span style="width: 8px;"></span>
 
           <ng-container *ngTemplateOutlet="navItemTpl; context: { item: entry.item, i: entry.originalIndex, hasChildren: entry.hasChildren }"></ng-container>
         </div>
