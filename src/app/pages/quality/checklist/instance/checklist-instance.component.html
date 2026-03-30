@@ -680,12 +680,24 @@
                                (change)="onFileSelected($event, progress.item.id)" 
                                accept="image/*" 
                                class="d-none">
+                        <input type="file"
+                               #photoLibraryInput
+                               (change)="onFileSelected($event, progress.item.id)"
+                               accept=".jpg,.jpeg,.png,.webp,.heic,.heif,.bmp,.gif,.tif,.tiff"
+                               class="d-none">
                         <div class="d-flex gap-2 justify-content-center mb-3">
                           <button class="btn btn-primary btn-sm px-2 py-1"
                             style="min-width: 96px;"
                                   (click)="openCamera(fileInput, progress.item.id)"
                                   [disabled]="!canModifyChecklist">
                             Take Photo
+                          </button>
+                          <button class="btn btn-outline-primary btn-sm px-2 py-1"
+                            style="min-width: 96px;"
+                                  (click)="openFilePicker(photoLibraryInput, progress.item.id)"
+                                  [disabled]="!canModifyChecklist"
+                                  title="Select a photo from device storage">
+                            Add from Library
                           </button>
                         </div>
                       </div>
@@ -731,7 +743,12 @@
                         <button class="btn btn-outline-primary btn-sm me-2"
                                 (click)="replaceCapturePhotoFileInput.click()"
                                 [disabled]="!canModifyChecklist">
-                          Retake Photo
+                          Retake (System)
+                        </button>
+                        <button class="btn btn-primary btn-sm me-2"
+                                (click)="replaceFileInput.click()"
+                                [disabled]="!canModifyChecklist">
+                          Replace from Library
                         </button>
                       </div>
                     </div>
@@ -866,6 +883,13 @@
                                   title="Record video using system camera chooser">
                             Record (System)
                           </button>
+                          <button class="btn btn-primary btn-sm px-2 py-1"
+                            style="min-width: 96px;"
+                                  (click)="openLibraryOnlyPicker(videoFileInput)"
+                                  [disabled]="!canModifyChecklist"
+                                  title="Select a video from device storage">
+                            Add from Library
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -913,7 +937,12 @@
                         <button class="btn btn-outline-primary btn-sm me-2"
                                 (click)="replaceCaptureVideoFileInput.click()"
                                 [disabled]="!canModifyChecklist">
-                          Re-record Video
+                          Re-record (System)
+                        </button>
+                        <button class="btn btn-primary btn-sm me-2"
+                          (click)="openLibraryOnlyPicker(replaceVideoFileInput)"
+                                [disabled]="!canModifyChecklist">
+                          Replace from Library
                         </button>
                       </div>
                     </div>
@@ -1303,8 +1332,12 @@
         {{ getVideoCaptureDescription() }}
       </small>
     </div>
-    <span class="badge bg-success text-white flex-shrink-0 me-2" style="font-size: 0.7rem;" title="Audio is recorded with in-app video capture">
-      <i class="mdi mdi-microphone me-1"></i>Audio enabled
+    <span class="badge flex-shrink-0 me-2"
+          [ngClass]="videoCaptureAudioEnabled ? 'bg-success text-white' : 'bg-secondary text-white'"
+          style="font-size: 0.7rem;"
+          [title]="videoCaptureAudioEnabled ? 'Audio will be recorded' : 'Audio is off by default'">
+      <i class="mdi me-1" [ngClass]="videoCaptureAudioEnabled ? 'mdi-microphone' : 'mdi-microphone-off'"></i>
+      {{ videoCaptureAudioEnabled ? 'Audio on' : 'Audio off' }}
     </span>
     <button type="button" class="btn-close flex-shrink-0" aria-label="Close" (click)="forceCloseVideoCapture(modal)"></button>
   </div>
@@ -1321,6 +1354,17 @@
     <div class="d-flex align-items-center gap-3 flex-wrap justify-content-end">
 
       <div class="d-flex align-items-center gap-2" *ngIf="!isVideoRecording">
+        <button
+          type="button"
+          class="btn btn-sm"
+          [ngClass]="videoCaptureAudioEnabled ? 'btn-success' : 'btn-outline-secondary'"
+          [disabled]="videoCaptureAudioSwitching"
+          (click)="toggleVideoCaptureAudio()"
+          [title]="videoCaptureAudioEnabled ? 'Disable microphone for this recording' : 'Enable microphone for this recording'">
+          <i class="mdi me-1" [ngClass]="videoCaptureAudioEnabled ? 'mdi-microphone' : 'mdi-microphone-off'"></i>
+          {{ videoCaptureAudioEnabled ? 'Sound on' : 'Sound off' }}
+        </button>
+
         <span class="small text-muted">Quality</span>
         <div class="btn-group btn-group-sm" role="group" aria-label="Video quality mode">
           <button
@@ -1435,12 +1479,39 @@
     }
 
     <!-- Full-screen media -->
-    <div class="ci-lightbox-media" (click)="$event.stopPropagation()">
+    <div class="ci-lightbox-media"
+         (click)="$event.stopPropagation()"
+         (wheel)="onLightboxImageWheel($event)"
+         (touchstart)="onLightboxImageTouchStart($event)"
+         (touchmove)="onLightboxImageTouchMove($event)"
+         (touchend)="onLightboxImageTouchEnd()"
+         [style.touch-action]="lightboxType === 'image' ? 'none' : 'auto'">
       @if (lightboxType === 'image') {
-        <img class="ci-lightbox-image" [src]="lightboxUrl" alt="Preview">
+         <img #lightboxImageEl
+           class="ci-lightbox-image"
+             [src]="lightboxDisplayUrl || lightboxUrl"
+             (loadstart)="onLightboxMediaLoadStart()"
+             (load)="onLightboxMediaLoaded()"
+             (error)="onLightboxMediaError()"
+             [style.transform]="'scale(' + lightboxImageScale + ') rotate(' + lightboxImageRotation + 'deg)'"
+           [style.transform-origin]="lightboxImageTransformOrigin"
+             alt="Preview">
       } @else {
-        <video class="ci-lightbox-video" [src]="lightboxUrl" controls autoplay></video>
+        <video class="ci-lightbox-video"
+               [src]="lightboxDisplayUrl || lightboxUrl"
+               (loadstart)="onLightboxMediaLoadStart()"
+               (loadeddata)="onLightboxMediaLoaded()"
+               (canplay)="onLightboxMediaLoaded()"
+               (error)="onLightboxMediaError()"
+               preload="metadata"
+               controls
+               autoplay></video>
       }
+
+      <div class="position-absolute top-50 start-50 translate-middle text-center" *ngIf="lightboxMediaLoading">
+        <div class="spinner-border text-light" role="status" aria-label="Loading media"></div>
+        <div class="small text-light mt-2">Loading media...</div>
+      </div>
     </div>
 
     <!-- Floating sidebar -->
@@ -1467,6 +1538,23 @@
         <div class="ci-lightbox-counter">
           <i class="mdi mdi-image-outline me-1"></i>{{ lightboxIndex + 1 }} / {{ lightboxTotal }}
         </div>
+        @if (lightboxType === 'image') {
+          <div class="d-flex flex-wrap gap-2 mt-2">
+            <button class="btn btn-sm btn-outline-light" (click)="rotateLightboxImage(-90)">
+              <i class="mdi mdi-rotate-left me-1"></i>Rotate
+            </button>
+            <button class="btn btn-sm btn-outline-light" (click)="zoomLightboxImage(-0.1)">
+              <i class="mdi mdi-magnify-minus me-1"></i>Zoom Out
+            </button>
+            <button class="btn btn-sm btn-outline-light" (click)="zoomLightboxImage(0.1)">
+              <i class="mdi mdi-magnify-plus me-1"></i>Zoom In
+            </button>
+            <button class="btn btn-sm btn-outline-light" (click)="resetLightboxImageView()">
+              <i class="mdi mdi-backup-restore me-1"></i>Reset
+            </button>
+          </div>
+          <small class="text-light-50 d-block mt-2">Pinch or mouse wheel to zoom</small>
+        }
         <button class="btn btn-sm btn-outline-light mt-2 w-100" (click)="openImageInNewTab()">
           <i class="mdi mdi-open-in-new me-1"></i>Open in new tab
         </button>
@@ -1477,6 +1565,23 @@
         <div class="ci-lightbox-counter">
           <i class="mdi mdi-image-outline me-1"></i>{{ lightboxIndex + 1 }} / {{ lightboxTotal }}
         </div>
+        @if (lightboxType === 'image') {
+          <div class="d-flex flex-wrap gap-2 mt-2">
+            <button class="btn btn-sm btn-outline-light" (click)="rotateLightboxImage(-90)">
+              <i class="mdi mdi-rotate-left me-1"></i>Rotate
+            </button>
+            <button class="btn btn-sm btn-outline-light" (click)="zoomLightboxImage(-0.1)">
+              <i class="mdi mdi-magnify-minus me-1"></i>Zoom Out
+            </button>
+            <button class="btn btn-sm btn-outline-light" (click)="zoomLightboxImage(0.1)">
+              <i class="mdi mdi-magnify-plus me-1"></i>Zoom In
+            </button>
+            <button class="btn btn-sm btn-outline-light" (click)="resetLightboxImageView()">
+              <i class="mdi mdi-backup-restore me-1"></i>Reset
+            </button>
+          </div>
+          <small class="text-light-50 d-block mt-2">Pinch or mouse wheel to zoom</small>
+        }
         <button class="btn btn-sm btn-outline-light mt-2 w-100" (click)="openImageInNewTab()">
           <i class="mdi mdi-open-in-new me-1"></i>Open in new tab
         </button>

@@ -294,7 +294,16 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   lightboxPhotoSource: string | null = null;
   lightboxIndex = 0;
   lightboxTotal = 0;
+  lightboxDisplayUrl: string | null = null;
+  lightboxMediaLoading = false;
+  lightboxImageRotation = 0;
+  lightboxImageScale = 1;
+  lightboxImageTransformOrigin = '50% 50%';
+  private lightboxPinchStartDistance: number | null = null;
+  private lightboxPinchStartScale = 1;
   private lightboxMedia: { url: string; type: 'image' | 'video'; progress: ChecklistItemProgress | null; source: string | null }[] = [];
+  private lightboxImagePreloadCache = new Set<string>();
+  @ViewChild('lightboxImageEl') lightboxImageRef?: ElementRef<HTMLImageElement>;
 
   // Per-item notes (space-saving modal)
   @ViewChild('itemNotesModal') itemNotesModalRef?: TemplateRef<any>;
@@ -346,6 +355,8 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   private videoRecorder: MediaRecorder | null = null;
   private videoChunks: Blob[] = [];
   isVideoRecording = false;
+  videoCaptureAudioEnabled = false;
+  videoCaptureAudioSwitching = false;
   videoCaptureQualityMode: 'stable' | 'high' = 'stable';
   videoCaptureStatus: 'idle' | 'starting' | 'preview' | 'recording' | 'stopping' | 'uploading' = 'idle';
   videoRecordingSeconds = 0;
@@ -877,33 +888,6 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       this.stopCameraStream();
       this.clearVideoStopFallbackTimer();
 
-      const preferredConstraints: MediaStreamConstraints = {
-        video: {
-          facingMode: { ideal: 'environment' },
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-          aspectRatio: { ideal: 16 / 9 },
-          frameRate: { ideal: 30, max: 30 }
-        },
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true
-        }
-      };
-
-      const fallbackConstraints: MediaStreamConstraints = {
-        video: true,
-        audio: true
-      };
-
-      // First pass: preferred constraints.
-      let stream = await navigator.mediaDevices.getUserMedia(preferredConstraints);
-
-      this.cameraStream = stream;
-      this.cameraVideoTrack = (stream.getVideoTracks && stream.getVideoTracks()[0]) ? stream.getVideoTracks()[0] : null;
-      void this.optimizeCameraTrackForFocusAndQuality('video');
-
       if (this.videoCaptureModalRef) {
         this.videoModal = this.modalService.open(this.videoCaptureModalRef, {
           fullscreen: true,
@@ -922,21 +906,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       // Ensure the modal view is rendered, then attach stream once.
       this.cdr.detectChanges();
       await Promise.resolve();
-
-      const preferredAttached = await this.attachVideoPreviewStream();
-      if (!preferredAttached) {
-        console.warn('Preferred in-app video constraints produced no preview. Falling back to browser-safe constraints.');
-        this.stopCameraStream();
-
-        stream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
-        this.cameraStream = stream;
-        this.cameraVideoTrack = (stream.getVideoTracks && stream.getVideoTracks()[0]) ? stream.getVideoTracks()[0] : null;
-
-        const fallbackAttached = await this.attachVideoPreviewStream();
-        if (!fallbackAttached) {
-          throw new Error('Unable to start in-app live preview with both preferred and fallback constraints.');
-        }
-      }
+      await this.startVideoPreviewWithCurrentAudioSetting();
     } catch (error) {
       console.error('Error starting in-app video capture:', error);
       alert('Unable to start in-app video capture. Please check camera permissions and try again.');
@@ -945,10 +915,94 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     }
   }
 
+  private getPreferredVideoCaptureConstraints(): MediaStreamConstraints {
+    return {
+      video: {
+        facingMode: { ideal: 'environment' },
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+        aspectRatio: { ideal: 16 / 9 },
+        frameRate: { ideal: 30, max: 30 }
+      },
+      audio: this.videoCaptureAudioEnabled
+        ? {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          }
+        : false
+    };
+  }
+
+  //Fallback constraints with minimal settings for maximum compatibility (e.g. Safari on )
+  private getFallbackVideoCaptureConstraints(): MediaStreamConstraints {
+    return {
+      video: true,
+      audio: this.videoCaptureAudioEnabled
+    };
+  }
+
+  private async startVideoPreviewWithCurrentAudioSetting(): Promise<void> {
+    const preferredConstraints = this.getPreferredVideoCaptureConstraints();
+    const fallbackConstraints = this.getFallbackVideoCaptureConstraints();
+
+    let stream = await navigator.mediaDevices.getUserMedia(preferredConstraints);
+    this.cameraStream = stream;
+    this.cameraVideoTrack = (stream.getVideoTracks && stream.getVideoTracks()[0]) ? stream.getVideoTracks()[0] : null;
+    void this.optimizeCameraTrackForFocusAndQuality('video');
+
+    const preferredAttached = await this.attachVideoPreviewStream();
+    if (!preferredAttached) {
+      console.warn('Preferred in-app video constraints produced no preview. Falling back to browser-safe constraints.');
+      this.stopCameraStream();
+
+      stream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+      this.cameraStream = stream;
+      this.cameraVideoTrack = (stream.getVideoTracks && stream.getVideoTracks()[0]) ? stream.getVideoTracks()[0] : null;
+
+      const fallbackAttached = await this.attachVideoPreviewStream();
+      if (!fallbackAttached) {
+        throw new Error('Unable to start in-app live preview with both preferred and fallback constraints.');
+      }
+    }
+  }
+
+  async toggleVideoCaptureAudio(): Promise<void> {
+    if (this.isVideoRecording) return;
+    if (this.videoCaptureStatus === 'starting' || this.videoCaptureStatus === 'stopping' || this.videoCaptureStatus === 'uploading') return;
+    if (!this.videoCaptureItemId) return;
+
+    const previous = this.videoCaptureAudioEnabled;
+    this.videoCaptureAudioEnabled = !previous;
+    this.videoCaptureAudioSwitching = true;
+    this.videoCaptureStatus = 'starting';
+
+    try {
+      this.stopCameraStream();
+      await this.startVideoPreviewWithCurrentAudioSetting();
+    } catch (error) {
+      console.error('Error toggling video audio mode:', error);
+      this.videoCaptureAudioEnabled = previous;
+      alert('Unable to switch audio mode right now.');
+      try {
+        this.stopCameraStream();
+        await this.startVideoPreviewWithCurrentAudioSetting();
+      } catch {
+        this.forceCloseVideoCapture();
+      }
+    } finally {
+      this.videoCaptureAudioSwitching = false;
+      if (this.videoCaptureStatus === 'starting') {
+        this.videoCaptureStatus = 'preview';
+      }
+      this.cdr.detectChanges();
+    }
+  }
+
   startVideoRecording(): void {
     if (!this.cameraStream || this.isVideoRecording || !this.videoCaptureItemId) return;
 
-    if ((this.cameraStream.getAudioTracks?.() || []).length === 0) {
+    if (this.videoCaptureAudioEnabled && (this.cameraStream.getAudioTracks?.() || []).length === 0) {
       alert('Microphone not available for recording. Please allow microphone access and try again.');
       return;
     }
@@ -2965,9 +3019,140 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     const frame = this.lightboxMedia[this.lightboxIndex];
     if (!frame) return;
     this.lightboxUrl         = frame.url;
+    this.lightboxDisplayUrl  = this.buildLightboxDisplayUrl(frame.url, this.lightboxIndex);
     this.lightboxType        = frame.type;
     this.lightboxItem        = frame.progress;
     this.lightboxPhotoSource = frame.source;
+    this.lightboxMediaLoading = true;
+    this.resetLightboxImageView();
+    this.preloadAdjacentLightboxImages();
+  }
+
+  private buildLightboxDisplayUrl(url: string, frameIndex: number): string {
+    const raw = String(url || '');
+    const base = raw.split('#')[0];
+    // Use a stable fragment per frame to force element refresh while preserving HTTP caching.
+    return `${base}#lb-frame-${frameIndex}`;
+  }
+
+  private preloadAdjacentLightboxImages(): void {
+    if (this.lightboxTotal <= 1 || this.lightboxIndex < 0) return;
+
+    const prevIndex = (this.lightboxIndex - 1 + this.lightboxTotal) % this.lightboxTotal;
+    const nextIndex = (this.lightboxIndex + 1) % this.lightboxTotal;
+    this.preloadLightboxImageAtIndex(prevIndex);
+    this.preloadLightboxImageAtIndex(nextIndex);
+  }
+
+  private preloadLightboxImageAtIndex(index: number): void {
+    if (index < 0 || index >= this.lightboxMedia.length) return;
+    const frame = this.lightboxMedia[index];
+    if (!frame || frame.type !== 'image' || !frame.url) return;
+
+    const cacheKey = String(frame.url);
+    if (this.lightboxImagePreloadCache.has(cacheKey)) return;
+    this.lightboxImagePreloadCache.add(cacheKey);
+
+    const img = new Image();
+    img.src = frame.url;
+  }
+
+  onLightboxMediaLoadStart(): void {
+    this.lightboxMediaLoading = true;
+  }
+
+  onLightboxMediaLoaded(): void {
+    this.lightboxMediaLoading = false;
+  }
+
+  onLightboxMediaError(): void {
+    this.lightboxMediaLoading = false;
+  }
+
+  private clampLightboxScale(value: number): number {
+    const n = Number(value);
+    if (isNaN(n)) return 1;
+    return Math.max(0.5, Math.min(4, n));
+  }
+
+  resetLightboxImageView(): void {
+    this.lightboxImageRotation = 0;
+    this.lightboxImageScale = 1;
+    this.lightboxImageTransformOrigin = '50% 50%';
+    this.lightboxPinchStartDistance = null;
+    this.lightboxPinchStartScale = 1;
+  }
+
+  private setLightboxTransformOriginFromClient(clientX: number, clientY: number): void {
+    const imageEl = this.lightboxImageRef?.nativeElement;
+    if (!imageEl) {
+      this.lightboxImageTransformOrigin = '50% 50%';
+      return;
+    }
+
+    const rect = imageEl.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) {
+      this.lightboxImageTransformOrigin = '50% 50%';
+      return;
+    }
+
+    const xPct = Math.min(100, Math.max(0, ((clientX - rect.left) / rect.width) * 100));
+    const yPct = Math.min(100, Math.max(0, ((clientY - rect.top) / rect.height) * 100));
+    this.lightboxImageTransformOrigin = `${xPct}% ${yPct}%`;
+  }
+
+  rotateLightboxImage(stepDeg: number): void {
+    if (this.lightboxType !== 'image') return;
+    this.lightboxImageRotation = (this.lightboxImageRotation + stepDeg) % 360;
+  }
+
+  zoomLightboxImage(delta: number): void {
+    if (this.lightboxType !== 'image') return;
+    this.lightboxImageScale = this.clampLightboxScale(this.lightboxImageScale + delta);
+  }
+
+  onLightboxImageWheel(event: WheelEvent): void {
+    if (this.lightboxType !== 'image') return;
+    event.preventDefault();
+    event.stopPropagation();
+    this.setLightboxTransformOriginFromClient(event.clientX, event.clientY);
+    const direction = event.deltaY < 0 ? 1 : -1;
+    this.zoomLightboxImage(0.1 * direction);
+  }
+
+  onLightboxImageTouchStart(event: TouchEvent): void {
+    if (this.lightboxType !== 'image') return;
+    if (event.touches.length !== 2) return;
+    event.preventDefault();
+    const [a, b] = [event.touches[0], event.touches[1]];
+    const centerX = (a.clientX + b.clientX) / 2;
+    const centerY = (a.clientY + b.clientY) / 2;
+    this.setLightboxTransformOriginFromClient(centerX, centerY);
+    const dx = b.clientX - a.clientX;
+    const dy = b.clientY - a.clientY;
+    this.lightboxPinchStartDistance = Math.hypot(dx, dy);
+    this.lightboxPinchStartScale = this.lightboxImageScale;
+  }
+
+  onLightboxImageTouchMove(event: TouchEvent): void {
+    if (this.lightboxType !== 'image') return;
+    if (event.touches.length !== 2 || !this.lightboxPinchStartDistance) return;
+    event.preventDefault();
+    const [a, b] = [event.touches[0], event.touches[1]];
+    const centerX = (a.clientX + b.clientX) / 2;
+    const centerY = (a.clientY + b.clientY) / 2;
+    this.setLightboxTransformOriginFromClient(centerX, centerY);
+    const dx = b.clientX - a.clientX;
+    const dy = b.clientY - a.clientY;
+    const currentDistance = Math.hypot(dx, dy);
+    if (!currentDistance) return;
+    const factor = currentDistance / this.lightboxPinchStartDistance;
+    this.lightboxImageScale = this.clampLightboxScale(this.lightboxPinchStartScale * factor);
+  }
+
+  onLightboxImageTouchEnd(): void {
+    this.lightboxPinchStartDistance = null;
+    this.lightboxPinchStartScale = this.lightboxImageScale;
   }
 
   lightboxPrev(): void {
@@ -2992,10 +3177,13 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
 
   closeLightbox(): void {
     this.lightboxUrl  = null;
+    this.lightboxDisplayUrl = null;
+    this.lightboxMediaLoading = false;
     this.lightboxItem = null;
     this.lightboxMedia = [];
     this.lightboxIndex = 0;
     this.lightboxTotal = 0;
+    this.resetLightboxImageView();
   }
 
   closeImagePreview(): void {
@@ -3539,9 +3727,20 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     const isMedia = this.isVideoOrAudioFile(file);
     const isAudio = !!file && typeof file.type === 'string' && file.type.toLowerCase().startsWith('audio/');
 
+    if (!isMedia) {
+      Swal.fire({
+        title: 'Saving photo...',
+        text: 'Please wait while your photo is uploaded.',
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        didOpen: () => Swal.showLoading()
+      });
+    }
+
     // Validate photo count limits (for photo submissions)
     if (!isMedia) {
       if (!this.photoValidation.canAddMorePhotos(progress.photos.length, progress.item)) {
+        Swal.close();
         alert('Maximum photos reached.');
         return;
       }
@@ -3702,6 +3901,13 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     // Preserve input-level attributes (including capture) and just open picker.
     const source = fileInput.hasAttribute('capture') ? 'system' : 'library';
     fileInput.setAttribute('data-capture-source', source);
+    fileInput.click();
+  }
+
+  openLibraryOnlyPicker(fileInput: HTMLInputElement): void {
+    // Force library-only behavior by removing capture before opening picker.
+    fileInput.removeAttribute('capture');
+    fileInput.setAttribute('data-capture-source', 'library');
     fileInput.click();
   }
 

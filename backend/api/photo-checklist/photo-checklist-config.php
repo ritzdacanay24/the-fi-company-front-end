@@ -3570,12 +3570,25 @@ class PhotoChecklistConfigAPI {
         // Use appropriate size limit based on file type
         $maxSizeConfig = $isVideo ? 'max_video_size_mb' : 'max_photo_size_mb';
         $maxSize = ($config[$maxSizeConfig] ?? ($isVideo ? 50 : 10)) * 1024 * 1024;
+
+        // Config switch: disable media size validation by default.
+        // When true, uploads are allowed regardless of configured max size.
+        // Set disable_media_size_validation = false in checklist_config to enforce limits.
+        $disableMediaSizeValidation = true;
+        if (array_key_exists('disable_media_size_validation', $config)) {
+            $rawDisable = $config['disable_media_size_validation'];
+            if (is_bool($rawDisable)) {
+                $disableMediaSizeValidation = $rawDisable;
+            } else {
+                $disableMediaSizeValidation = in_array(strtolower((string)$rawDisable), ['1', 'true', 'yes', 'on'], true);
+            }
+        }
         
         error_log("Max size config key: " . $maxSizeConfig);
         error_log("Max size from config: " . ($config[$maxSizeConfig] ?? 'NOT FOUND'));
         error_log("Max size used: " . ($maxSize / 1024 / 1024) . "MB");
         
-        if ($uploadedFile['size'] > $maxSize) {
+        if (!$disableMediaSizeValidation && $uploadedFile['size'] > $maxSize) {
             $actualSizeMB = round($uploadedFile['size'] / 1024 / 1024, 2);
             $maxSizeMB = $config[$maxSizeConfig] ?? ($isVideo ? 50 : 10);
             $fileType = $isVideo ? 'Video' : 'Photo';
