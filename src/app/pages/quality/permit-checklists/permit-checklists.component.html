@@ -191,7 +191,7 @@
       <div class="card-body">
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
           <h6 class="section-title mb-0">Header Information</h6>
-          <button class="btn btn-sm btn-outline-secondary" type="button" (click)="openCustomerDirectoryModal()">
+          <button class="btn btn-sm btn-outline-secondary" type="button" (click)="openCustomerDirectoryModal(customerDirectoryModal)">
             Manage Customers & Architects
           </button>
         </div>
@@ -203,12 +203,11 @@
                 <ng-container *ngIf="isCustomerField(field.key); else assignedArchitectFieldInput">
                   <div class="d-flex flex-wrap align-items-center gap-2">
                     <select
+                      [id]="getFieldEditorId(field.key)"
                       class="form-select"
-                      [ngModel]="activeValues[field.key]"
-                      (focus)="onFieldFocus(field.key)"
-                      (ngModelChange)="onCustomerFieldChange($event)"
-                      (blur)="onFieldBlur(field.key)"
-                      [disabled]="!canEditActiveTicket"
+                      [ngModel]="getFieldEditValue(field.key)"
+                      (ngModelChange)="updateFieldDraft(field.key, $event)"
+                      [disabled]="!canEditActiveTicket || !isFieldEditing(field.key)"
                     >
                       <option value="">Select customer</option>
                       <option *ngFor="let customerName of customerOptions" [ngValue]="customerName">
@@ -221,12 +220,11 @@
                   <ng-container *ngIf="isAssignedArchitectField(field.key); else dateOrTextHeaderInput">
                     <div class="d-flex flex-wrap align-items-center gap-2">
                       <select
+                        [id]="getFieldEditorId(field.key)"
                         class="form-select"
-                        [ngModel]="activeValues[field.key]"
-                        (focus)="onFieldFocus(field.key)"
-                        (ngModelChange)="onFieldInputChange(field.key, $event)"
-                        (blur)="onFieldBlur(field.key)"
-                        [disabled]="!canEditActiveTicket"
+                        [ngModel]="getFieldEditValue(field.key)"
+                        (ngModelChange)="updateFieldDraft(field.key, $event)"
+                        [disabled]="!canEditActiveTicket || !isFieldEditing(field.key)"
                       >
                         <option value="">Select architect</option>
                         <option *ngFor="let architectName of architectOptionsForSelection" [ngValue]="architectName">
@@ -240,19 +238,18 @@
                 <ng-container *ngIf="resolveFieldType(field) === 'date'; else headerTextInput">
                   <div class="input-group">
                     <input
+                      [id]="getFieldEditorId(field.key)"
                       class="form-control"
                       type="date"
-                      [ngModel]="activeValues[field.key]"
-                      (focus)="onFieldFocus(field.key)"
-                      (ngModelChange)="onFieldInputChange(field.key, $event)"
-                      (blur)="onFieldBlur(field.key)"
-                      [disabled]="!canEditActiveTicket"
+                      [ngModel]="getFieldEditValue(field.key)"
+                      (ngModelChange)="updateFieldDraft(field.key, $event)"
+                      [disabled]="!canEditActiveTicket || !isFieldEditing(field.key)"
                     />
                     <button
+                      *ngIf="isFieldEditing(field.key)"
                       class="btn btn-outline-secondary"
                       type="button"
-                      [disabled]="!canEditActiveTicket"
-                      (click)="setFieldNow(field.key)">
+                      (click)="setDraftFieldNow(field.key)">
                       Now
                     </button>
                   </div>
@@ -260,18 +257,29 @@
                 </ng-template>
                 <ng-template #headerTextInput>
                   <input
+                    [id]="getFieldEditorId(field.key)"
                     class="form-control"
                     [type]="resolveFieldType(field)"
-                    [ngModel]="activeValues[field.key]"
-                    (focus)="onFieldFocus(field.key)"
-                    (ngModelChange)="onFieldInputChange(field.key, $event)"
-                    (blur)="onFieldBlur(field.key)"
-                    [disabled]="!canEditActiveTicket"
+                    [ngModel]="getFieldEditValue(field.key)"
+                    (ngModelChange)="updateFieldDraft(field.key, $event)"
+                    [disabled]="!canEditActiveTicket || !isFieldEditing(field.key)"
                     [placeholder]="field.placeholder || 'Enter value'"
                   />
                 </ng-template>
-                <div class="field-timestamp" *ngIf="getFieldLoggedAt(field.key)">
-                  Logged at {{ getFieldLoggedAt(field.key) }}
+                <div class="field-meta-row" *ngIf="canEditActiveTicket || getFieldLoggedAt(field.key)">
+                  <div class="field-edit-actions" *ngIf="canEditActiveTicket">
+                    <ng-container *ngIf="isFieldEditing(field.key); else headerEditButton">
+                      <button class="btn btn-link btn-sm p-0 action-link" type="button" (click)="saveFieldEdit(field.key)">Save</button>
+                      <span class="action-divider">|</span>
+                      <button class="btn btn-link btn-sm p-0 action-link text-muted" type="button" (click)="cancelFieldEdit(field.key)">Cancel</button>
+                    </ng-container>
+                    <ng-template #headerEditButton>
+                      <button class="btn btn-link btn-sm p-0 action-link" type="button" (click)="beginFieldEdit(field.key)">Edit</button>
+                    </ng-template>
+                  </div>
+                  <div class="field-timestamp" *ngIf="getFieldLoggedAt(field.key)">
+                    Logged at {{ getFieldLoggedAt(field.key) }}
+                  </div>
                 </div>
                 <ng-container *ngIf="getAttachmentsForField(field.key) as rowAttachments">
                   <div class="field-attachments-inline" *ngIf="rowAttachments.length">
@@ -301,49 +309,57 @@
                 <ng-container *ngIf="resolveFieldType(field) === 'date'; else processTextInput">
                   <div class="input-group">
                     <input
+                      [id]="getFieldEditorId(field.key)"
                       class="form-control timeline-input"
                       type="date"
-                      [ngModel]="activeValues[field.key]"
-                      (focus)="onFieldFocus(field.key)"
-                      (ngModelChange)="onFieldInputChange(field.key, $event)"
-                      (blur)="onFieldBlur(field.key)"
-                      [disabled]="!canEditActiveTicket"
+                      [ngModel]="getFieldEditValue(field.key)"
+                      (ngModelChange)="updateFieldDraft(field.key, $event)"
+                      [disabled]="!canEditActiveTicket || !isFieldEditing(field.key)"
                     />
                     <button
+                      *ngIf="isFieldEditing(field.key)"
                       class="btn btn-outline-secondary"
                       type="button"
-                      [disabled]="!canEditActiveTicket"
-                      (click)="setFieldNow(field.key)">
+                      (click)="setDraftFieldNow(field.key)">
                       Now
                     </button>
                   </div>
                 </ng-container>
                 <ng-template #processTextInput>
                   <input
+                    [id]="getFieldEditorId(field.key)"
                     class="form-control timeline-input"
                     [type]="resolveFieldType(field)"
-                    [ngModel]="activeValues[field.key]"
-                    (focus)="onFieldFocus(field.key)"
-                    (ngModelChange)="onFieldInputChange(field.key, $event)"
-                    (blur)="onFieldBlur(field.key)"
-                    [disabled]="!canEditActiveTicket"
+                    [ngModel]="getFieldEditValue(field.key)"
+                    (ngModelChange)="updateFieldDraft(field.key, $event)"
+                    [disabled]="!canEditActiveTicket || !isFieldEditing(field.key)"
                     placeholder="Date or status update"
                   />
                 </ng-template>
-                <div class="field-timestamp" *ngIf="getFieldLoggedAt(field.key)">
-                  Logged at {{ getFieldLoggedAt(field.key) }}
-                </div>
-                <div class="process-note-row-actions mt-2">
-                  <button
-                    class="btn btn-sm"
-                    type="button"
-                    [ngClass]="hasProcessNote(field.key) ? 'btn-outline-primary' : 'btn-outline-secondary'"
-                    (click)="openProcessNoteModal(field)">
-                    {{ hasProcessNote(field.key) ? 'View Notes' : 'Add Note' }}
-                  </button>
-                  <span class="badge text-bg-light border" *ngIf="hasProcessNote(field.key)">
-                    {{ getProcessNotesForField(field.key).length }} note(s)
-                  </span>
+                <div class="field-meta-row field-meta-row-process" *ngIf="canEditActiveTicket || getFieldLoggedAt(field.key) || hasProcessNote(field.key)">
+                  <div class="field-edit-actions" *ngIf="canEditActiveTicket">
+                    <ng-container *ngIf="isFieldEditing(field.key); else processEditButton">
+                      <button class="btn btn-link btn-sm p-0 action-link" type="button" (click)="saveFieldEdit(field.key)">Save</button>
+                      <span class="action-divider">|</span>
+                      <button class="btn btn-link btn-sm p-0 action-link text-muted" type="button" (click)="cancelFieldEdit(field.key)">Cancel</button>
+                    </ng-container>
+                    <ng-template #processEditButton>
+                      <button class="btn btn-link btn-sm p-0 action-link" type="button" (click)="beginFieldEdit(field.key)">Edit</button>
+                    </ng-template>
+                  </div>
+                  <div class="field-timestamp" *ngIf="getFieldLoggedAt(field.key)">
+                    Logged at {{ getFieldLoggedAt(field.key) }}
+                  </div>
+                  <div class="process-note-row-actions">
+                    <span class="action-divider" *ngIf="canEditActiveTicket || getFieldLoggedAt(field.key)">|</span>
+                    <button
+                      class="btn btn-link btn-sm p-0 process-note-link"
+                      type="button"
+                      [ngClass]="hasProcessNote(field.key) ? 'text-primary' : 'text-secondary'"
+                      (click)="openProcessNoteModal(field)">
+                      {{ hasProcessNote(field.key) ? 'Notes (' + getProcessNotesForField(field.key).length + ')' : 'Add Note' }}
+                    </button>
+                  </div>
                 </div>
                 <ng-container *ngIf="getAttachmentsForField(field.key) as rowAttachments">
                   <div class="field-attachments-inline" *ngIf="rowAttachments.length">
@@ -395,6 +411,8 @@
                 [ngModel]="fee.label"
                 [disabled]="!canEditActiveTicket"
                 (ngModelChange)="updateFeeLabel(fee.key, $event)"
+                (focus)="selectAmountInput($event)"
+                (click)="selectAmountInput($event)"
                 placeholder="Fee label (e.g., Architect Fees, MEP Fees)"
               />
               <div class="input-group">
@@ -407,6 +425,8 @@
                   [ngModel]="fee.amount"
                   [disabled]="!canEditActiveTicket"
                   (ngModelChange)="updateFeeAmount(fee.key, $event)"
+                  (focus)="selectAmountInput($event)"
+                  (click)="selectAmountInput($event)"
                   (blur)="onFeeAmountBlur(fee.key)"
                 />
               </div>
@@ -435,6 +455,8 @@
                 type="text"
                 [(ngModel)]="newFeeLabelDraft"
                 [disabled]="!canEditActiveTicket"
+                (focus)="selectAmountInput($event)"
+                (click)="selectAmountInput($event)"
                 placeholder="New fee label (e.g., Architect Fees, MEP Fees, Structural Fees, Permit Fees)"
               />
               <div class="input-group">
@@ -446,6 +468,8 @@
                   step="0.01"
                   [(ngModel)]="newFeeAmountDraft"
                   [disabled]="!canEditActiveTicket"
+                  (focus)="selectAmountInput($event)"
+                  (click)="selectAmountInput($event)"
                   (blur)="onFeeDraftBlur()"
                   placeholder="Amount"
                 />
@@ -475,6 +499,8 @@
                 type="text"
                 [(ngModel)]="newFeeLabelDraft"
                 [disabled]="!canEditActiveTicket"
+                (focus)="selectAmountInput($event)"
+                (click)="selectAmountInput($event)"
                 placeholder="New fee label (e.g., Architect Fees, MEP Fees, Structural Fees, Permit Fees)"
               />
               <div class="input-group">
@@ -486,6 +512,8 @@
                   step="0.01"
                   [(ngModel)]="newFeeAmountDraft"
                   [disabled]="!canEditActiveTicket"
+                  (focus)="selectAmountInput($event)"
+                  (click)="selectAmountInput($event)"
                   (blur)="onFeeDraftBlur()"
                   placeholder="Amount"
                 />
@@ -592,6 +620,27 @@
                     [disabled]="completionPercent < 100"
                     (click)="submitAndPrint()">
                     Print PDF
+                  </button>
+                </li>
+                <li><hr class="dropdown-divider" /></li>
+                <li>
+                  <button
+                    class="dropdown-item"
+                    type="button"
+                    ngbDropdownItem
+                    [disabled]="!activeTicket || activeTicket.status === 'archived'"
+                    (click)="archiveCurrentTicket()">
+                    Archive Checklist
+                  </button>
+                </li>
+                <li>
+                  <button
+                    class="dropdown-item text-danger"
+                    type="button"
+                    ngbDropdownItem
+                    [disabled]="!activeTicket"
+                    (click)="deleteCurrentTicket()">
+                    Delete Checklist
                   </button>
                 </li>
               </ul>
@@ -777,51 +826,78 @@
     </div>
   </div>
 
-  <div class="attachment-preview-backdrop" *ngIf="isCustomerDirectoryModalOpen" (click)="closeCustomerDirectoryModal()"></div>
-  <div class="customer-directory-modal card" *ngIf="isCustomerDirectoryModalOpen" (click)="$event.stopPropagation()">
-    <div class="card-header d-flex align-items-center justify-content-between">
+  <ng-template #customerDirectoryModal>
+    <div class="modal-header customer-directory-header">
       <div>
-        <h6 class="mb-0">Customers & Architects</h6>
-        <small class="text-muted">Maintain independent dropdown options for customers and architects.</small>
+        <h5 class="mb-1">Customers & Architects</h5>
+        <small class="text-muted">Maintain dropdown options used by Permit Checklist fields.</small>
       </div>
-      <button class="btn btn-sm btn-outline-secondary" type="button" (click)="closeCustomerDirectoryModal()">Close</button>
+      <button class="btn-close" type="button" aria-label="Close" (click)="closeCustomerDirectoryModal()"></button>
     </div>
-    <div class="card-body">
-      <div class="directory-grid">
-        <div class="directory-section">
-          <h6 class="mb-2">Architects</h6>
-          <div class="d-flex gap-2 mb-3">
+    <div class="modal-body customer-directory-content">
+      <div class="row g-3">
+        <div class="col-12 col-lg-6">
+          <div class="directory-section h-100">
+          <div class="directory-section-head">
+            <h6 class="mb-0">Architects</h6>
+            <span class="badge rounded-pill text-bg-light border">{{ architects.length }}</span>
+          </div>
+          <div class="d-flex gap-2 mb-3 mt-2">
             <input class="form-control" type="text" [(ngModel)]="newArchitectNameDraft" placeholder="Add architect name" />
             <button class="btn btn-primary" type="button" (click)="addArchitect()">Add</button>
           </div>
-          <div class="directory-list" *ngIf="architects.length; else noArchitects">
-            <div class="directory-item" *ngFor="let architect of architects">
-              <span class="directory-item-name">{{ architect.name }}</span>
-              <button class="btn btn-sm btn-outline-danger" type="button" (click)="removeArchitect(architect.id)">Remove</button>
-            </div>
-          </div>
+          <ul class="list-group directory-list" *ngIf="architects.length; else noArchitects">
+            <li class="list-group-item directory-item" *ngFor="let architect of architects">
+              <span class="directory-item-name text-truncate">{{ architect.name }}</span>
+              <button
+                class="directory-remove-btn"
+                type="button"
+                aria-label="Remove architect"
+                title="Remove architect"
+                (click)="removeArchitect(architect.id)">
+                &times;
+              </button>
+            </li>
+          </ul>
           <ng-template #noArchitects>
-            <div class="text-muted small">No architects yet.</div>
+            <div class="directory-empty-state">No architects yet.</div>
           </ng-template>
         </div>
+        </div>
 
-        <div class="directory-section">
-          <h6 class="mb-2">Customers</h6>
-          <div class="d-flex gap-2 mb-3">
+        <div class="col-12 col-lg-6">
+          <div class="directory-section h-100">
+          <div class="directory-section-head">
+            <h6 class="mb-0">Customers</h6>
+            <span class="badge rounded-pill text-bg-light border">{{ customers.length }}</span>
+          </div>
+          <div class="d-flex gap-2 mb-3 mt-2">
             <input class="form-control" type="text" [(ngModel)]="newCustomerNameDraft" placeholder="Add customer name" />
             <button class="btn btn-primary" type="button" (click)="addCustomer()">Add</button>
           </div>
-          <div class="directory-list" *ngIf="customers.length; else noCustomers">
-            <div class="directory-item directory-item-customer" *ngFor="let customer of customers">
-              <span class="directory-item-name">{{ customer.name }}</span>
-              <button class="btn btn-sm btn-outline-danger" type="button" (click)="removeCustomer(customer.id)">Remove</button>
-            </div>
-          </div>
+          <ul class="list-group directory-list" *ngIf="customers.length; else noCustomers">
+            <li class="list-group-item directory-item" *ngFor="let customer of customers">
+              <span class="directory-item-name text-truncate">{{ customer.name }}</span>
+              <button
+                class="directory-remove-btn"
+                type="button"
+                aria-label="Remove customer"
+                title="Remove customer"
+                (click)="removeCustomer(customer.id)">
+                &times;
+              </button>
+            </li>
+          </ul>
           <ng-template #noCustomers>
-            <div class="text-muted small">No customers yet.</div>
+            <div class="directory-empty-state">No customers yet.</div>
           </ng-template>
+        </div>
         </div>
       </div>
     </div>
-  </div>
+    <div class="modal-footer customer-directory-footer">
+      <small class="text-muted">{{ customers.length }} customers and {{ architects.length }} architects available.</small>
+      <button class="btn btn-primary" type="button" (click)="closeCustomerDirectoryModal()">Done</button>
+    </div>
+  </ng-template>
 </div>

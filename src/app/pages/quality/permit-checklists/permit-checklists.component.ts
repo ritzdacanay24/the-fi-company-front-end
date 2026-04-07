@@ -1,5 +1,5 @@
 import { CommonModule } from "@angular/common";
-import { Component, OnDestroy, OnInit } from "@angular/core";
+import { Component, OnDestroy, OnInit, TemplateRef } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { ActivatedRoute, Router } from "@angular/router";
 import { DomSanitizer, SafeResourceUrl } from "@angular/platform-browser";
@@ -10,7 +10,7 @@ import { PermitTicketActionsRendererComponent } from "./permit-ticket-actions-re
 import { PermitChecklistSummaryComponent } from "./permit-checklist-summary.component";
 import { AuthenticationService } from "@app/core/services/auth.service";
 import { THE_FI_COMPANY_CURRENT_USER } from "@app/core/guards/admin.guard";
-import { NgbDropdownModule } from "@ng-bootstrap/ng-bootstrap";
+import { NgbDropdownModule, NgbModal, NgbModalModule, NgbModalRef } from "@ng-bootstrap/ng-bootstrap";
 import * as mammoth from "mammoth";
 
 type PermitChecklistType = "seismic" | "dca";
@@ -35,7 +35,7 @@ interface ChecklistTemplate {
 interface PermitChecklistFeeLine {
   key: string;
   label: string;
-  amount: number;
+  amount: number | null;
   isApprovedAmount?: boolean;
 }
 
@@ -55,7 +55,7 @@ interface PermitChecklistTicket {
   createdAt: string;
   updatedAt: string;
   finalizedAt?: string;
-  status: "draft" | "saved" | "submitted" | "finalized";
+  status: "draft" | "saved" | "submitted" | "finalized" | "archived";
   values: Record<string, string>;
   fieldUpdatedAt: Record<string, string>;
   processNoteRecords: PermitChecklistProcessNote[];
@@ -95,6 +95,7 @@ interface PermitChecklistTransaction {
     | "save"
     | "submit"
     | "finalize"
+    | "archive"
     | "clear"
     | "delete"
     | "attachment_upload"
@@ -167,13 +168,33 @@ interface StoredChecklistData {
 @Component({
   standalone: true,
   selector: "app-permit-checklists",
-  imports: [CommonModule, FormsModule, AgGridModule, NgbDropdownModule, PermitChecklistSummaryComponent],
+  imports: [CommonModule, FormsModule, AgGridModule, NgbDropdownModule, NgbModalModule, PermitChecklistSummaryComponent],
   templateUrl: "./permit-checklists.component.html",
   styleUrls: ["./permit-checklists.component.scss"],
 })
 export class PermitChecklistsComponent implements OnInit {
   private readonly storageKey = "quality_permit_checklists_v2";
   private readonly maxTransactions = 2000;
+  private readonly defaultCustomerNames: string[] = [
+    "AGS",
+    "Ainsworth",
+    "ATI",
+    "Bally",
+    "EpicTech",
+    "Everi",
+    "IGT",
+    "Konami",
+    "SG",
+    "Synergy Blue",
+    "L&W",
+    "Bluberi",
+    "ITS Gaming",
+    "MGM Corps",
+    "Sonny",
+    "Yaamava",
+    "Zitro",
+  ];
+  private readonly defaultArchitectNames: string[] = ["R2 Architects"];
   private routeSub?: Subscription;
 
   viewMode: "home" | "form" | "summary" = "home";
@@ -283,13 +304,16 @@ export class PermitChecklistsComponent implements OnInit {
   processNoteDraft = "";
   processNoteEditingId: string | null = null;
   fieldEditStartValues: Record<string, string> = {};
+  fieldDraftValues: Record<string, string> = {};
+  fieldEditingState: Record<string, boolean> = {};
+  fieldDraftSource: Record<string, "manual" | "now"> = {};
   newFeeLabelDraft = "";
-  newFeeAmountDraft: number | null = null;
+  newFeeAmountDraft: number = 0;
   customers: PermitChecklistCustomer[] = [];
   architects: PermitChecklistArchitect[] = [];
-  isCustomerDirectoryModalOpen = false;
   newCustomerNameDraft = "";
   newArchitectNameDraft = "";
+  private customerDirectoryModalRef?: NgbModalRef;
 
   private readonly maxPersistedPreviewSizeBytes = 750 * 1024;
   private readonly objectUrlByAttachmentId = new Map<string, string>();
@@ -325,6 +349,9 @@ export class PermitChecklistsComponent implements OnInit {
       field: "status",
       minWidth: 120,
       cellRenderer: (params: any) => {
+        if (params.value === "archived") {
+          return `<span class="badge bg-secondary-subtle text-secondary">Archived</span>`;
+        }
         if (params.value === "finalized") {
           return `<span class="badge bg-dark-subtle text-dark">Finalized</span>`;
         }
@@ -509,7 +536,8 @@ export class PermitChecklistsComponent implements OnInit {
     private readonly route: ActivatedRoute,
     private readonly router: Router,
     private readonly authenticationService: AuthenticationService,
-    private readonly sanitizer: DomSanitizer
+    private readonly sanitizer: DomSanitizer,
+    private readonly modalService: NgbModal
   ) {}
 
   ngOnInit(): void {
@@ -546,6 +574,7 @@ export class PermitChecklistsComponent implements OnInit {
 
   ngOnDestroy(): void {
     this.routeSub?.unsubscribe();
+    this.customerDirectoryModalRef?.close();
     this.objectUrlByAttachmentId.forEach((url) => URL.revokeObjectURL(url));
     this.objectUrlByAttachmentId.clear();
   }
@@ -601,11 +630,11 @@ export class PermitChecklistsComponent implements OnInit {
   }
 
   get canFinalizeActiveTicket(): boolean {
-    return !!this.activeTicket && this.activeTicket.status !== "finalized";
+    return !!this.activeTicket && this.activeTicket.status !== "finalized" && this.activeTicket.status !== "archived";
   }
 
   get canEditActiveTicket(): boolean {
-    return !!this.activeTicket && this.activeTicket.status !== "finalized";
+    return !!this.activeTicket && this.activeTicket.status !== "finalized" && this.activeTicket.status !== "archived";
   }
 
   get activeTicketStatusLabel(): string {
@@ -620,6 +649,9 @@ export class PermitChecklistsComponent implements OnInit {
     const status = this.activeTicket?.status;
     if (status === "finalized") {
       return "status-pill status-finalized";
+    }
+    if (status === "archived") {
+      return "status-pill status-archived";
     }
     if (status === "submitted") {
       return "status-pill status-submitted";
@@ -813,12 +845,26 @@ export class PermitChecklistsComponent implements OnInit {
     return fieldKey === "assignedArchitect";
   }
 
-  openCustomerDirectoryModal(): void {
-    this.isCustomerDirectoryModalOpen = true;
+  openCustomerDirectoryModal(content: TemplateRef<unknown>): void {
+    this.customerDirectoryModalRef = this.modalService.open(content, {
+      size: "xl",
+      centered: true,
+      scrollable: true,
+      backdrop: "static",
+      windowClass: "customer-directory-modal-window",
+    });
+
+    this.customerDirectoryModalRef.result.finally(() => {
+      this.customerDirectoryModalRef = undefined;
+      this.resetCustomerDirectoryDrafts();
+    });
   }
 
   closeCustomerDirectoryModal(): void {
-    this.isCustomerDirectoryModalOpen = false;
+    this.customerDirectoryModalRef?.close();
+  }
+
+  private resetCustomerDirectoryDrafts(): void {
     this.newCustomerNameDraft = "";
     this.newArchitectNameDraft = "";
   }
@@ -900,6 +946,94 @@ export class PermitChecklistsComponent implements OnInit {
 
   onCustomerFieldChange(nextValue: string): void {
     this.onFieldInputChange("customer", nextValue);
+  }
+
+  isFieldEditing(fieldKey: string): boolean {
+    return !!this.fieldEditingState[fieldKey];
+  }
+
+  getFieldEditValue(fieldKey: string): string {
+    if (this.isFieldEditing(fieldKey)) {
+      return String(this.fieldDraftValues[fieldKey] ?? "");
+    }
+    return String(this.activeValues[fieldKey] || "");
+  }
+
+  beginFieldEdit(fieldKey: string): void {
+    const ticket = this.activeTicket;
+    if (!ticket || !this.canEditActiveTicket) {
+      return;
+    }
+
+    this.fieldEditingState[fieldKey] = true;
+    this.fieldDraftValues[fieldKey] = String(ticket.values[fieldKey] || "");
+    this.fieldDraftSource[fieldKey] = "manual";
+
+    setTimeout(() => this.focusFieldEditor(fieldKey), 0);
+  }
+
+  updateFieldDraft(fieldKey: string, nextValue: string): void {
+    if (!this.isFieldEditing(fieldKey)) {
+      return;
+    }
+
+    this.fieldDraftValues[fieldKey] = String(nextValue || "");
+  }
+
+  cancelFieldEdit(fieldKey: string): void {
+    delete this.fieldEditingState[fieldKey];
+    delete this.fieldDraftValues[fieldKey];
+    delete this.fieldDraftSource[fieldKey];
+  }
+
+  saveFieldEdit(fieldKey: string): void {
+    const ticket = this.activeTicket;
+    if (!ticket || !this.canEditActiveTicket) {
+      return;
+    }
+
+    const oldValue = String(ticket.values[fieldKey] || "");
+    const normalizedNext = String(this.fieldDraftValues[fieldKey] || "");
+    const source = this.fieldDraftSource[fieldKey] || "manual";
+
+    this.cancelFieldEdit(fieldKey);
+
+    if (oldValue === normalizedNext) {
+      return;
+    }
+
+    ticket.values[fieldKey] = normalizedNext;
+    this.commitFieldValueChange(ticket, fieldKey, oldValue, normalizedNext, source);
+  }
+
+  setDraftFieldNow(fieldKey: string): void {
+    if (!this.isFieldEditing(fieldKey)) {
+      return;
+    }
+
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    this.fieldDraftValues[fieldKey] = `${year}-${month}-${day}`;
+    this.fieldDraftSource[fieldKey] = "now";
+  }
+
+  getFieldEditorId(fieldKey: string): string {
+    return `pc-field-editor-${fieldKey}`;
+  }
+
+  private focusFieldEditor(fieldKey: string): void {
+    const elementId = this.getFieldEditorId(fieldKey);
+    const input = document.getElementById(elementId) as HTMLInputElement | HTMLSelectElement | null;
+    if (!input) {
+      return;
+    }
+
+    input.focus();
+    if (input instanceof HTMLInputElement && input.type !== "date") {
+      input.select();
+    }
   }
 
   getAttachmentsForField(fieldKey: string): PermitChecklistAttachment[] {
@@ -1116,7 +1250,8 @@ export class PermitChecklistsComponent implements OnInit {
       return;
     }
 
-    const oldAmount = Number(ticket.financials.feeBreakdown[idx].amount || 0);
+    const oldRawAmount = ticket.financials.feeBreakdown[idx].amount;
+    const oldAmount = oldRawAmount === null || oldRawAmount === undefined ? null : this.normalizeCurrencyAmount(oldRawAmount);
     if (oldAmount === nextAmount) {
       return;
     }
@@ -1131,7 +1266,7 @@ export class PermitChecklistsComponent implements OnInit {
 
     this.appendTransaction(ticket.ticketId, "field_update", {
       fieldKey: `financial.fee.${feeKey}`,
-      oldValue: String(oldAmount),
+      oldValue: oldAmount === null ? "" : String(oldAmount),
       newValue: String(nextAmount),
       source: "financial",
     });
@@ -1151,17 +1286,25 @@ export class PermitChecklistsComponent implements OnInit {
       return;
     }
 
+    if (fee.amount === null || fee.amount === undefined) {
+      return;
+    }
+
     const normalized = this.normalizeCurrencyAmount(fee.amount);
     this.updateFeeAmount(feeKey, normalized);
   }
 
   onFeeDraftBlur(): void {
-    if (this.newFeeAmountDraft === null || this.newFeeAmountDraft === undefined) {
-      this.newFeeAmountDraft = null;
+    this.newFeeAmountDraft = this.normalizeCurrencyAmount(this.newFeeAmountDraft);
+  }
+
+  selectAmountInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input || typeof input.select !== "function") {
       return;
     }
 
-    this.newFeeAmountDraft = this.normalizeCurrencyAmount(this.newFeeAmountDraft);
+    setTimeout(() => input.select(), 0);
   }
 
   setFeeApproved(feeKey: string, isApproved: boolean): void {
@@ -1255,7 +1398,7 @@ export class PermitChecklistsComponent implements OnInit {
     const newFee: PermitChecklistFeeLine = {
       key: this.generateFeeKey(),
       label: "",
-      amount: 0,
+      amount: null,
       isApprovedAmount: false,
     };
 
@@ -1312,7 +1455,7 @@ export class PermitChecklistsComponent implements OnInit {
     });
 
     this.newFeeLabelDraft = "";
-    this.newFeeAmountDraft = null;
+    this.newFeeAmountDraft = 0;
     this.refreshRecentTickets();
     this.persistLocalData();
   }
@@ -1427,6 +1570,16 @@ export class PermitChecklistsComponent implements OnInit {
       return;
     }
 
+    this.commitFieldValueChange(ticket, fieldKey, oldValue, normalizedNext, source);
+  }
+
+  private commitFieldValueChange(
+    ticket: PermitChecklistTicket,
+    fieldKey: string,
+    oldValue: string,
+    newValue: string,
+    source: "manual" | "now"
+  ): void {
     const changeTimestamp = new Date().toISOString();
     ticket.updatedAt = changeTimestamp;
     ticket.fieldUpdatedAt = ticket.fieldUpdatedAt || {};
@@ -1438,7 +1591,7 @@ export class PermitChecklistsComponent implements OnInit {
     this.appendTransaction(ticket.ticketId, "field_update", {
       fieldKey,
       oldValue,
-      newValue: normalizedNext,
+      newValue,
       source,
       loggedAt: changeTimestamp,
     });
@@ -1615,6 +1768,48 @@ export class PermitChecklistsComponent implements OnInit {
     this.viewMode = ticket?.status === "finalized" ? "summary" : "form";
     this.syncUrlState();
     this.statusMessage = "Ticket opened.";
+  }
+
+  archiveCurrentTicket(): void {
+    const ticket = this.activeTicket;
+    if (!ticket) {
+      return;
+    }
+
+    if (ticket.status === "archived") {
+      this.statusMessage = "This ticket is already archived.";
+      return;
+    }
+
+    const confirmed = window.confirm(`Archive checklist ${ticket.ticketId}? You can still open it in read-only mode.`);
+    if (!confirmed) {
+      return;
+    }
+
+    ticket.status = "archived";
+    ticket.updatedAt = new Date().toISOString();
+
+    this.appendTransaction(ticket.ticketId, "archive", {
+      source: "ticket",
+    });
+
+    this.refreshRecentTickets();
+    this.persistLocalData();
+    this.statusMessage = `Ticket ${ticket.ticketId} archived.`;
+  }
+
+  deleteCurrentTicket(): void {
+    const ticket = this.activeTicket;
+    if (!ticket) {
+      return;
+    }
+
+    const confirmed = window.confirm(`Delete checklist ${ticket.ticketId}? This cannot be undone.`);
+    if (!confirmed) {
+      return;
+    }
+
+    this.deleteTicket(ticket.ticketId);
   }
 
   goToFormView(): void {
@@ -1821,6 +2016,9 @@ export class PermitChecklistsComponent implements OnInit {
     [...template.headerFields, ...template.processFields].forEach((field) => {
       values[field.key] = "";
     });
+    if (Object.prototype.hasOwnProperty.call(values, "assignedArchitect")) {
+      values["assignedArchitect"] = "R2 Architects";
+    }
     values["additionalNotes"] = "";
     return values;
   }
@@ -1833,7 +2031,11 @@ export class PermitChecklistsComponent implements OnInit {
       approvedAmount: 0,
       approvalDate: "",
       invoiceReference: "",
-      feeBreakdown: (template?.defaultFeeBreakdown || []).map((fee) => ({ ...fee, isApprovedAmount: false })),
+      feeBreakdown: (template?.defaultFeeBreakdown || []).map((fee) => ({
+        ...fee,
+        amount: null,
+        isApprovedAmount: false,
+      })),
     };
   }
 
@@ -1847,7 +2049,8 @@ export class PermitChecklistsComponent implements OnInit {
           .map((fee: any) => ({
             key: String(fee.key),
             label: String(fee.label || ""),
-            amount: Number(fee.amount || 0),
+            amount:
+              fee.amount === null || fee.amount === undefined || fee.amount === "" ? null : Number(fee.amount),
             isApprovedAmount: !!fee.isApprovedAmount,
           }))
       : [];
@@ -1862,7 +2065,7 @@ export class PermitChecklistsComponent implements OnInit {
       return {
         ...fee,
         label: incomingFee.label || fee.label,
-        amount: Number(incomingFee.amount || 0),
+        amount: incomingFee.amount === null || incomingFee.amount === undefined ? null : Number(incomingFee.amount),
         isApprovedAmount: !!incomingFee.isApprovedAmount,
       };
     });
@@ -1941,6 +2144,7 @@ export class PermitChecklistsComponent implements OnInit {
   private loadSavedData(): void {
     const raw = localStorage.getItem(this.storageKey);
     if (!raw) {
+      this.ensureDefaultDirectoryValues();
       return;
     }
 
@@ -1971,11 +2175,46 @@ export class PermitChecklistsComponent implements OnInit {
       this.customers = this.normalizeCustomers(saved.customers);
       this.architects = this.normalizeArchitects(saved.architects);
       this.bootstrapDirectoryFromTicketValues();
+      this.ensureDefaultDirectoryValues();
       this.refreshRecentTickets();
       this.refreshAuditLogRows();
     } catch {
       this.statusMessage = "Saved checklist data could not be loaded.";
+      this.ensureDefaultDirectoryValues();
     }
+  }
+
+  private ensureDefaultDirectoryValues(): void {
+    const existingCustomerNames = new Set(this.customers.map((item) => item.name.trim().toLowerCase()));
+    for (const name of this.defaultCustomerNames) {
+      const normalized = name.trim().toLowerCase();
+      if (!normalized || existingCustomerNames.has(normalized)) {
+        continue;
+      }
+
+      this.customers.push({
+        id: this.generateDirectoryId("cust"),
+        name,
+      });
+      existingCustomerNames.add(normalized);
+    }
+
+    const existingArchitectNames = new Set(this.architects.map((item) => item.name.trim().toLowerCase()));
+    for (const name of this.defaultArchitectNames) {
+      const normalized = name.trim().toLowerCase();
+      if (!normalized || existingArchitectNames.has(normalized)) {
+        continue;
+      }
+
+      this.architects.push({
+        id: this.generateDirectoryId("arch"),
+        name,
+      });
+      existingArchitectNames.add(normalized);
+    }
+
+    this.customers.sort((a, b) => a.name.localeCompare(b.name));
+    this.architects.sort((a, b) => a.name.localeCompare(b.name));
   }
 
   private refreshRecentTickets(): void {
@@ -2035,6 +2274,9 @@ export class PermitChecklistsComponent implements OnInit {
     if (tx.type === "finalize") {
       return "Finalized ticket";
     }
+    if (tx.type === "archive") {
+      return "Archived ticket";
+    }
     if (tx.type === "delete") {
       return "Deleted ticket";
     }
@@ -2077,7 +2319,7 @@ export class PermitChecklistsComponent implements OnInit {
 
   private getReferenceNotesFromFees(feeBreakdown: PermitChecklistFeeLine[]): string[] {
     return (feeBreakdown || [])
-      .filter((fee) => String(fee.label || "").trim().length > 0)
+      .filter((fee) => String(fee.label || "").trim().length > 0 && Number(fee.amount || 0) > 0)
       .map((fee) => `${fee.label} @ ${this.formatCurrency(fee.amount)}`);
   }
 
