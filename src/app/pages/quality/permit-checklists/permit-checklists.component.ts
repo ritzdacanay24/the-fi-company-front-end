@@ -57,6 +57,7 @@ interface PermitChecklistTicket {
   finalizedAt?: string;
   status: "draft" | "saved" | "submitted" | "finalized";
   values: Record<string, string>;
+  fieldUpdatedAt: Record<string, string>;
   processNoteRecords: PermitChecklistProcessNote[];
   financials: PermitChecklistFinancials;
   attachments: PermitChecklistAttachment[];
@@ -145,10 +146,22 @@ interface PermitChecklistAuditRow {
   source: string;
 }
 
+interface PermitChecklistCustomer {
+  id: string;
+  name: string;
+}
+
+interface PermitChecklistArchitect {
+  id: string;
+  name: string;
+}
+
 interface StoredChecklistData {
   tickets: PermitChecklistTicket[];
   draftFormType: PermitChecklistType;
   transactions: PermitChecklistTransaction[];
+  customers?: PermitChecklistCustomer[];
+  architects?: PermitChecklistArchitect[];
 }
 
 @Component({
@@ -272,6 +285,11 @@ export class PermitChecklistsComponent implements OnInit {
   fieldEditStartValues: Record<string, string> = {};
   newFeeLabelDraft = "";
   newFeeAmountDraft: number | null = null;
+  customers: PermitChecklistCustomer[] = [];
+  architects: PermitChecklistArchitect[] = [];
+  isCustomerDirectoryModalOpen = false;
+  newCustomerNameDraft = "";
+  newArchitectNameDraft = "";
 
   private readonly maxPersistedPreviewSizeBytes = 750 * 1024;
   private readonly objectUrlByAttachmentId = new Map<string, string>();
@@ -762,6 +780,128 @@ export class PermitChecklistsComponent implements OnInit {
     return this.getReferenceNotesFromFees(this.activeFinancials.feeBreakdown);
   }
 
+  get customerOptions(): string[] {
+    const options = this.customers
+      .map((customer) => String(customer.name || "").trim())
+      .filter((name) => name.length > 0);
+
+    const activeValue = String(this.activeValues["customer"] || "").trim();
+    if (activeValue) {
+      options.push(activeValue);
+    }
+
+    return [...new Set(options)].sort((a, b) => a.localeCompare(b));
+  }
+
+  get architectOptionsForSelection(): string[] {
+    const options = this.architects
+      .map((architect) => String(architect.name || "").trim())
+      .filter((name) => name.length > 0);
+    const activeValue = String(this.activeValues["assignedArchitect"] || "").trim();
+    if (activeValue) {
+      options.push(activeValue);
+    }
+
+    return [...new Set(options)].sort((a, b) => a.localeCompare(b));
+  }
+
+  isCustomerField(fieldKey: string): boolean {
+    return fieldKey === "customer";
+  }
+
+  isAssignedArchitectField(fieldKey: string): boolean {
+    return fieldKey === "assignedArchitect";
+  }
+
+  openCustomerDirectoryModal(): void {
+    this.isCustomerDirectoryModalOpen = true;
+  }
+
+  closeCustomerDirectoryModal(): void {
+    this.isCustomerDirectoryModalOpen = false;
+    this.newCustomerNameDraft = "";
+    this.newArchitectNameDraft = "";
+  }
+
+  addArchitect(): void {
+    const name = String(this.newArchitectNameDraft || "").trim();
+    if (!name) {
+      this.statusMessage = "Enter an architect name before adding.";
+      return;
+    }
+
+    const exists = this.architects.some((architect) => architect.name.toLowerCase() === name.toLowerCase());
+    if (exists) {
+      this.statusMessage = "Architect already exists.";
+      return;
+    }
+
+    this.architects = [
+      ...this.architects,
+      {
+        id: this.generateDirectoryId("arch"),
+        name,
+      },
+    ].sort((a, b) => a.name.localeCompare(b.name));
+
+    this.newArchitectNameDraft = "";
+    this.persistLocalData();
+    this.statusMessage = "Architect added.";
+  }
+
+  removeArchitect(architectId: string): void {
+    const target = this.architects.find((architect) => architect.id === architectId);
+    if (!target) {
+      return;
+    }
+
+    this.architects = this.architects.filter((architect) => architect.id !== architectId);
+
+    this.persistLocalData();
+    this.statusMessage = `Architect ${target.name} removed.`;
+  }
+
+  addCustomer(): void {
+    const name = String(this.newCustomerNameDraft || "").trim();
+    if (!name) {
+      this.statusMessage = "Enter a customer name before adding.";
+      return;
+    }
+
+    const exists = this.customers.some((customer) => customer.name.toLowerCase() === name.toLowerCase());
+    if (exists) {
+      this.statusMessage = "Customer already exists.";
+      return;
+    }
+
+    this.customers = [
+      ...this.customers,
+      {
+        id: this.generateDirectoryId("cust"),
+        name,
+      },
+    ].sort((a, b) => a.name.localeCompare(b.name));
+
+    this.newCustomerNameDraft = "";
+    this.persistLocalData();
+    this.statusMessage = "Customer added.";
+  }
+
+  removeCustomer(customerId: string): void {
+    const target = this.customers.find((customer) => customer.id === customerId);
+    if (!target) {
+      return;
+    }
+
+    this.customers = this.customers.filter((customer) => customer.id !== customerId);
+    this.persistLocalData();
+    this.statusMessage = `Customer ${target.name} removed.`;
+  }
+
+  onCustomerFieldChange(nextValue: string): void {
+    this.onFieldInputChange("customer", nextValue);
+  }
+
   getAttachmentsForField(fieldKey: string): PermitChecklistAttachment[] {
     const ticket = this.activeTicket;
     if (!ticket?.attachments?.length) {
@@ -771,6 +911,11 @@ export class PermitChecklistsComponent implements OnInit {
     return ticket.attachments
       .filter((attachment) => attachment.fieldKey === fieldKey)
       .sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt));
+  }
+
+  getFieldLoggedAt(fieldKey: string): string {
+    const timestamp = this.activeTicket?.fieldUpdatedAt?.[fieldKey];
+    return timestamp ? this.formatDateTime(timestamp) : "";
   }
 
   hasProcessNote(fieldKey: string): boolean {
@@ -955,7 +1100,7 @@ export class PermitChecklistsComponent implements OnInit {
     this.persistLocalData();
   }
 
-  updateFeeAmount(feeKey: string, value: string): void {
+  updateFeeAmount(feeKey: string, value: string | number): void {
     const ticket = this.activeTicket;
     if (!ticket || !this.canEditActiveTicket) {
       return;
@@ -965,7 +1110,7 @@ export class PermitChecklistsComponent implements OnInit {
       ticket.financials = this.createEmptyFinancials(ticket.formType);
     }
 
-    const nextAmount = Number(value || 0);
+    const nextAmount = this.normalizeCurrencyAmount(value);
     const idx = ticket.financials.feeBreakdown.findIndex((fee) => fee.key === feeKey);
     if (idx === -1) {
       return;
@@ -993,6 +1138,30 @@ export class PermitChecklistsComponent implements OnInit {
 
     this.refreshRecentTickets();
     this.persistLocalData();
+  }
+
+  onFeeAmountBlur(feeKey: string): void {
+    const ticket = this.activeTicket;
+    if (!ticket || !this.canEditActiveTicket || !ticket.financials) {
+      return;
+    }
+
+    const fee = ticket.financials.feeBreakdown.find((item) => item.key === feeKey);
+    if (!fee) {
+      return;
+    }
+
+    const normalized = this.normalizeCurrencyAmount(fee.amount);
+    this.updateFeeAmount(feeKey, normalized);
+  }
+
+  onFeeDraftBlur(): void {
+    if (this.newFeeAmountDraft === null || this.newFeeAmountDraft === undefined) {
+      this.newFeeAmountDraft = null;
+      return;
+    }
+
+    this.newFeeAmountDraft = this.normalizeCurrencyAmount(this.newFeeAmountDraft);
   }
 
   setFeeApproved(feeKey: string, isApproved: boolean): void {
@@ -1122,7 +1291,7 @@ export class PermitChecklistsComponent implements OnInit {
       ticket.financials = this.createEmptyFinancials(ticket.formType);
     }
 
-    const amount = Number(this.newFeeAmountDraft || 0);
+    const amount = this.normalizeCurrencyAmount(this.newFeeAmountDraft || 0);
     const newFee: PermitChecklistFeeLine = {
       key: this.generateFeeKey(),
       label,
@@ -1188,6 +1357,14 @@ export class PermitChecklistsComponent implements OnInit {
     ticket.financials.approvedAmount = Number(nextApproved.toFixed(2));
   }
 
+  private normalizeCurrencyAmount(value: string | number): number {
+    const raw = Number(value || 0);
+    if (!Number.isFinite(raw) || raw < 0) {
+      return 0;
+    }
+    return Number(raw.toFixed(2));
+  }
+
   trackByFeeKey(_index: number, fee: PermitChecklistFeeLine): string {
     return fee.key;
   }
@@ -1250,7 +1427,10 @@ export class PermitChecklistsComponent implements OnInit {
       return;
     }
 
-    ticket.updatedAt = new Date().toISOString();
+    const changeTimestamp = new Date().toISOString();
+    ticket.updatedAt = changeTimestamp;
+    ticket.fieldUpdatedAt = ticket.fieldUpdatedAt || {};
+    ticket.fieldUpdatedAt[fieldKey] = changeTimestamp;
     if (ticket.status === "submitted") {
       ticket.status = "draft";
     }
@@ -1260,16 +1440,11 @@ export class PermitChecklistsComponent implements OnInit {
       oldValue,
       newValue: normalizedNext,
       source,
+      loggedAt: changeTimestamp,
     });
 
     this.refreshRecentTickets();
     this.persistLocalData();
-
-    if (this.completionPercent === 100 && this.viewMode === "form") {
-      this.viewMode = "summary";
-      this.syncUrlState();
-      this.statusMessage = "Checklist complete. Review summary and print.";
-    }
   }
 
   createTicket(): void {
@@ -1282,6 +1457,7 @@ export class PermitChecklistsComponent implements OnInit {
       updatedAt: now,
       status: "draft",
       values: this.createEmptyValues(this.draftFormType),
+      fieldUpdatedAt: {},
       processNoteRecords: [],
       financials: this.createEmptyFinancials(this.draftFormType),
       attachments: [],
@@ -1595,6 +1771,7 @@ export class PermitChecklistsComponent implements OnInit {
       this.activeValues[field.key] = "";
     });
     this.activeValues["additionalNotes"] = "";
+    ticket.fieldUpdatedAt = {};
     ticket.updatedAt = new Date().toISOString();
     ticket.status = "draft";
     this.appendTransaction(ticket.ticketId, "clear");
@@ -1727,6 +1904,8 @@ export class PermitChecklistsComponent implements OnInit {
       tickets: this.tickets,
       draftFormType: this.draftFormType,
       transactions: this.transactions,
+      customers: this.customers,
+      architects: this.architects,
     };
     localStorage.setItem(this.storageKey, JSON.stringify(payload));
   }
@@ -1771,6 +1950,7 @@ export class PermitChecklistsComponent implements OnInit {
       this.tickets = (saved.tickets || []).map((ticket) => ({
         ...ticket,
         createdBy: ticket.createdBy || this.getCurrentUserDisplay(),
+        fieldUpdatedAt: ticket.fieldUpdatedAt && typeof ticket.fieldUpdatedAt === "object" ? ticket.fieldUpdatedAt : {},
         processNoteRecords: this.normalizeProcessNoteRecords(ticket as any),
         financials: this.normalizeFinancials(ticket as any),
         attachments: Array.isArray(ticket.attachments)
@@ -1788,6 +1968,9 @@ export class PermitChecklistsComponent implements OnInit {
         ...tx,
         actor: tx.actor || this.resolveTransactionActor(tx),
       }));
+      this.customers = this.normalizeCustomers(saved.customers);
+      this.architects = this.normalizeArchitects(saved.architects);
+      this.bootstrapDirectoryFromTicketValues();
       this.refreshRecentTickets();
       this.refreshAuditLogRows();
     } catch {
@@ -1898,6 +2081,62 @@ export class PermitChecklistsComponent implements OnInit {
       .map((fee) => `${fee.label} @ ${this.formatCurrency(fee.amount)}`);
   }
 
+  private normalizeCustomers(input: any): PermitChecklistCustomer[] {
+    if (!Array.isArray(input)) {
+      return [];
+    }
+
+    return input
+      .map((row) => ({
+        id: String(row?.id || this.generateDirectoryId("cust")),
+        name: String(row?.name || "").trim(),
+      }))
+      .filter((row) => row.name.length > 0)
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  private normalizeArchitects(input: any): PermitChecklistArchitect[] {
+    if (!Array.isArray(input)) {
+      return [];
+    }
+
+    return input
+      .map((row) => ({
+        id: String(row?.id || this.generateDirectoryId("arch")),
+        name: String(row?.name || "").trim(),
+      }))
+      .filter((row) => row.name.length > 0)
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  private bootstrapDirectoryFromTicketValues(): void {
+    const customerNames = new Set(this.customers.map((customer) => customer.name.trim().toLowerCase()));
+    const architectNames = new Set(this.architects.map((architect) => architect.name.trim().toLowerCase()));
+
+    for (const ticket of this.tickets) {
+      const customer = String(ticket.values?.["customer"] || "").trim();
+      if (customer && !customerNames.has(customer.toLowerCase())) {
+        this.customers.push({
+          id: this.generateDirectoryId("cust"),
+          name: customer,
+        });
+        customerNames.add(customer.toLowerCase());
+      }
+
+      const architect = String(ticket.values?.["assignedArchitect"] || "").trim();
+      if (architect && !architectNames.has(architect.toLowerCase())) {
+        this.architects.push({
+          id: this.generateDirectoryId("arch"),
+          name: architect,
+        });
+        architectNames.add(architect.toLowerCase());
+      }
+    }
+
+    this.customers.sort((a, b) => a.name.localeCompare(b.name));
+    this.architects.sort((a, b) => a.name.localeCompare(b.name));
+  }
+
   private generateAttachmentId(): string {
     return `att_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   }
@@ -1908,6 +2147,10 @@ export class PermitChecklistsComponent implements OnInit {
 
   private generateProcessNoteId(): string {
     return `note_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  private generateDirectoryId(prefix: "cust" | "arch"): string {
+    return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   }
 
   private normalizeProcessNoteRecords(ticket: any): PermitChecklistProcessNote[] {

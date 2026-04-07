@@ -461,6 +461,12 @@
     }
   }
 
+  .field-timestamp {
+    margin-top: 0.3rem;
+    font-size: 0.76rem;
+    color: #64748b;
+  }
+
   .process-note-row-actions {
     display: flex;
     align-items: center;
@@ -627,6 +633,62 @@
       color: var(--pc-muted);
     }
   }
+
+  .customer-directory-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(980px, calc(100vw - 2rem));
+    max-height: calc(100vh - 2rem);
+    overflow: auto;
+    z-index: 1070;
+    border: 1px solid var(--pc-border);
+
+    .form-control,
+    .form-select {
+      border-color: #ccd8ea;
+    }
+
+    .directory-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
+    }
+
+    .directory-section {
+      border: 1px solid var(--pc-border);
+      border-radius: 8px;
+      padding: 0.75rem;
+      background: #fbfcff;
+    }
+
+    .directory-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+    }
+
+    .directory-item {
+      border: 1px solid #dbe3ef;
+      border-radius: 8px;
+      padding: 0.55rem 0.65rem;
+      background: #ffffff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.65rem;
+    }
+
+    .directory-item-customer {
+      align-items: flex-start;
+    }
+
+    .directory-item-name {
+      color: #1f2a38;
+      font-weight: 600;
+    }
+  }
 }
 
 @media (max-width: 768px) {
@@ -659,6 +721,12 @@
 
       th {
         min-width: auto;
+      }
+    }
+
+    .customer-directory-modal {
+      .directory-grid {
+        grid-template-columns: 1fr;
       }
     }
   }
