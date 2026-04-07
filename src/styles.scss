@@ -246,11 +246,74 @@ $color-muted: #596066; // neutral text
     }
   }
 
+  .customer-billing-defaults-content {
+    .defaults-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: end;
+      justify-content: space-between;
+      gap: 0.9rem;
+    }
+
+    .defaults-formtype-wrap {
+      min-width: 200px;
+    }
+
+    .defaults-list {
+      border: 1px solid #e2eaf3;
+      border-radius: 10px;
+      background: #ffffff;
+      overflow: hidden;
+      margin-bottom: 0.75rem;
+    }
+
+    .defaults-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 150px 28px;
+      gap: 0.55rem;
+      padding: 0.5rem 0.6rem;
+      border-bottom: 1px solid #eef2f7;
+      align-items: center;
+    }
+
+    .defaults-row:last-child {
+      border-bottom: 0;
+    }
+
+    .defaults-amount-input {
+      min-width: 0;
+    }
+
+    .defaults-add-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 150px auto;
+      gap: 0.55rem;
+      align-items: center;
+      border: 1px dashed #d6e1f0;
+      border-radius: 10px;
+      padding: 0.6rem;
+      background: #fbfdff;
+    }
+  }
+
   .customer-directory-footer {
     border-top: 1px solid #e4ebf5;
     background: #fbfdff;
     display: flex;
     align-items: center;
     justify-content: space-between;
+  }
+
+  @media (max-width: 768px) {
+    .customer-billing-defaults-content {
+      .defaults-row,
+      .defaults-add-row {
+        grid-template-columns: 1fr;
+      }
+
+      .directory-remove-btn {
+        margin-left: 0 !important;
+      }
+    }
   }
 }

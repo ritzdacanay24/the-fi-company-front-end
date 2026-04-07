@@ -14,6 +14,7 @@ import { NgbDropdownModule, NgbModal, NgbModalModule, NgbModalRef } from "@ng-bo
 import * as mammoth from "mammoth";
 
 type PermitChecklistType = "seismic" | "dca";
+type BillingSection = "customer" | "eyefi";
 
 interface ChecklistField {
   key: string;
@@ -29,7 +30,8 @@ interface ChecklistTemplate {
   headerFields: ChecklistField[];
   processFields: ChecklistField[];
   footerNotes: string[];
-  defaultFeeBreakdown?: PermitChecklistFeeLine[];
+  defaultCustomerBillingBreakdown?: PermitChecklistFeeLine[];
+  defaultEyefiBillingBreakdown?: PermitChecklistFeeLine[];
 }
 
 interface PermitChecklistFeeLine {
@@ -45,7 +47,8 @@ interface PermitChecklistFinancials {
   approvedAmount: number;
   approvalDate: string;
   invoiceReference: string;
-  feeBreakdown: PermitChecklistFeeLine[];
+  customerBillingBreakdown: PermitChecklistFeeLine[];
+  eyefiBillingBreakdown: PermitChecklistFeeLine[];
 }
 
 interface PermitChecklistTicket {
@@ -163,6 +166,7 @@ interface StoredChecklistData {
   transactions: PermitChecklistTransaction[];
   customers?: PermitChecklistCustomer[];
   architects?: PermitChecklistArchitect[];
+  customerBillingDefaultsByType?: Partial<Record<PermitChecklistType, PermitChecklistFeeLine[]>>;
 }
 
 @Component({
@@ -231,7 +235,7 @@ export class PermitChecklistsComponent implements OnInit {
         { key: "completedDocumentPackageSent", label: "Completed document package sent to customer", type: "date" },
       ],
       footerNotes: ["Seismic Approval @ $3,000"],
-      defaultFeeBreakdown: [{ key: "seismicApproval", label: "Seismic Approval", amount: 3000 }],
+      defaultCustomerBillingBreakdown: [{ key: "seismicApproval", label: "Seismic Approval", amount: 3000 }],
     },
     {
       id: "dca",
@@ -277,7 +281,7 @@ export class PermitChecklistsComponent implements OnInit {
         "MEP Fees @ $2,750",
         "Structural Fees @ $2,500",
       ],
-      defaultFeeBreakdown: [
+      defaultCustomerBillingBreakdown: [
         { key: "architectFees", label: "Architect Fees", amount: 3980 },
         { key: "mepFees", label: "MEP Fees", amount: 2750 },
         { key: "structuralFees", label: "Structural Fees", amount: 2500 },
@@ -307,13 +311,21 @@ export class PermitChecklistsComponent implements OnInit {
   fieldDraftValues: Record<string, string> = {};
   fieldEditingState: Record<string, boolean> = {};
   fieldDraftSource: Record<string, "manual" | "now"> = {};
-  newFeeLabelDraft = "";
-  newFeeAmountDraft: number = 0;
+  newCustomerBillingLabelDraft = "";
+  newCustomerBillingAmountDraft: number = 0;
+  newEyefiBillingLabelDraft = "";
+  newEyefiBillingAmountDraft: number = 0;
+  customerBillingDefaultsFormType: PermitChecklistType = "seismic";
+  newCustomerBillingDefaultLabelDraft = "";
+  newCustomerBillingDefaultAmountDraft: number = 0;
   customers: PermitChecklistCustomer[] = [];
   architects: PermitChecklistArchitect[] = [];
   newCustomerNameDraft = "";
   newArchitectNameDraft = "";
   private customerDirectoryModalRef?: NgbModalRef;
+  private customerBillingDefaultsModalRef?: NgbModalRef;
+  private customerBillingDefaultsByType: Record<PermitChecklistType, PermitChecklistFeeLine[]> =
+    this.buildInitialCustomerBillingDefaults();
 
   private readonly maxPersistedPreviewSizeBytes = 750 * 1024;
   private readonly objectUrlByAttachmentId = new Map<string, string>();
@@ -323,6 +335,8 @@ export class PermitChecklistsComponent implements OnInit {
   ticketGridComponents = {
     permitTicketActionsRenderer: PermitTicketActionsRendererComponent,
   };
+
+  headerInfoColumnDefs: ColDef[] = this.buildHeaderInfoColumnDefs();
 
   ticketColumnDefs: ColDef[] = [
     {
@@ -344,6 +358,7 @@ export class PermitChecklistsComponent implements OnInit {
       minWidth: 180,
       valueGetter: (params) => params.data?.values?.customer || "-",
     },
+    ...this.headerInfoColumnDefs,
     {
       headerName: "Status",
       field: "status",
@@ -575,6 +590,7 @@ export class PermitChecklistsComponent implements OnInit {
   ngOnDestroy(): void {
     this.routeSub?.unsubscribe();
     this.customerDirectoryModalRef?.close();
+    this.customerBillingDefaultsModalRef?.close();
     this.objectUrlByAttachmentId.forEach((url) => URL.revokeObjectURL(url));
     this.objectUrlByAttachmentId.clear();
   }
@@ -800,6 +816,14 @@ export class PermitChecklistsComponent implements OnInit {
     return [...this.activeTemplate.headerFields, ...this.activeTemplate.processFields];
   }
 
+  get headerAttachmentFieldOptions(): ChecklistField[] {
+    return [...this.activeTemplate.headerFields];
+  }
+
+  get processAttachmentFieldOptions(): ChecklistField[] {
+    return [...this.activeTemplate.processFields];
+  }
+
   get activeTicketAttachments(): PermitChecklistAttachment[] {
     if (!this.activeTicket?.attachments?.length) {
       return [];
@@ -809,7 +833,22 @@ export class PermitChecklistsComponent implements OnInit {
   }
 
   get referenceNotesDisplay(): string[] {
-    return this.getReferenceNotesFromFees(this.activeFinancials.feeBreakdown);
+    return [
+      ...this.getReferenceNotesFromFees(this.activeFinancials.customerBillingBreakdown, "Customer Billing"),
+      ...this.getReferenceNotesFromFees(this.activeFinancials.eyefiBillingBreakdown, "Eyefi Billing"),
+    ];
+  }
+
+  get customerBillingBreakdown(): PermitChecklistFeeLine[] {
+    return this.activeFinancials.customerBillingBreakdown || [];
+  }
+
+  get eyefiBillingBreakdown(): PermitChecklistFeeLine[] {
+    return this.activeFinancials.eyefiBillingBreakdown || [];
+  }
+
+  get customerBillingDefaultRows(): PermitChecklistFeeLine[] {
+    return this.customerBillingDefaultsByType[this.customerBillingDefaultsFormType] || [];
   }
 
   get customerOptions(): string[] {
@@ -858,6 +897,97 @@ export class PermitChecklistsComponent implements OnInit {
       this.customerDirectoryModalRef = undefined;
       this.resetCustomerDirectoryDrafts();
     });
+  }
+
+  openCustomerBillingDefaultsModal(content: TemplateRef<unknown>): void {
+    this.customerBillingDefaultsFormType = this.activeTicket?.formType ?? this.draftFormType;
+    this.customerBillingDefaultsModalRef = this.modalService.open(content, {
+      size: "lg",
+      centered: true,
+      scrollable: true,
+      backdrop: "static",
+      windowClass: "customer-directory-modal-window",
+    });
+
+    this.customerBillingDefaultsModalRef.result.finally(() => {
+      this.customerBillingDefaultsModalRef = undefined;
+      this.newCustomerBillingDefaultLabelDraft = "";
+      this.newCustomerBillingDefaultAmountDraft = 0;
+    });
+  }
+
+  closeCustomerBillingDefaultsModal(): void {
+    this.customerBillingDefaultsModalRef?.close();
+  }
+
+  addCustomerBillingDefaultLineFromDraft(): void {
+    const label = String(this.newCustomerBillingDefaultLabelDraft || "").trim();
+    if (!label) {
+      this.statusMessage = "Enter a billing label before adding default.";
+      return;
+    }
+
+    const amount = this.normalizeCurrencyAmount(this.newCustomerBillingDefaultAmountDraft || 0);
+    const next: PermitChecklistFeeLine = {
+      key: this.generateFeeKey(),
+      label,
+      amount,
+      isApprovedAmount: false,
+    };
+
+    this.customerBillingDefaultsByType[this.customerBillingDefaultsFormType] = [
+      ...this.customerBillingDefaultRows,
+      next,
+    ];
+    this.newCustomerBillingDefaultLabelDraft = "";
+    this.newCustomerBillingDefaultAmountDraft = 0;
+    this.persistLocalData();
+  }
+
+  updateCustomerBillingDefaultLabel(feeKey: string, label: string): void {
+    const rows = this.customerBillingDefaultRows;
+    const idx = rows.findIndex((item) => item.key === feeKey);
+    if (idx === -1) {
+      return;
+    }
+
+    rows[idx].label = String(label || "").trim();
+    this.customerBillingDefaultsByType[this.customerBillingDefaultsFormType] = [...rows];
+    this.persistLocalData();
+  }
+
+  updateCustomerBillingDefaultAmount(feeKey: string, value: string | number): void {
+    const rows = this.customerBillingDefaultRows;
+    const idx = rows.findIndex((item) => item.key === feeKey);
+    if (idx === -1) {
+      return;
+    }
+
+    rows[idx].amount = this.normalizeCurrencyAmount(value);
+    this.customerBillingDefaultsByType[this.customerBillingDefaultsFormType] = [...rows];
+    this.persistLocalData();
+  }
+
+  onCustomerBillingDefaultAmountBlur(feeKey: string): void {
+    const target = this.customerBillingDefaultRows.find((item) => item.key === feeKey);
+    if (!target) {
+      return;
+    }
+
+    target.amount = this.normalizeCurrencyAmount(target.amount || 0);
+    this.customerBillingDefaultsByType[this.customerBillingDefaultsFormType] = [...this.customerBillingDefaultRows];
+    this.persistLocalData();
+  }
+
+  onCustomerBillingDefaultDraftBlur(): void {
+    this.newCustomerBillingDefaultAmountDraft = this.normalizeCurrencyAmount(this.newCustomerBillingDefaultAmountDraft || 0);
+  }
+
+  removeCustomerBillingDefaultLine(feeKey: string): void {
+    this.customerBillingDefaultsByType[this.customerBillingDefaultsFormType] = this.customerBillingDefaultRows.filter(
+      (item) => item.key !== feeKey
+    );
+    this.persistLocalData();
   }
 
   closeCustomerDirectoryModal(): void {
@@ -1240,7 +1370,10 @@ export class PermitChecklistsComponent implements OnInit {
     return "text";
   }
 
-  updateFinancialValue(field: keyof Omit<PermitChecklistFinancials, "feeBreakdown">, value: string): void {
+  updateFinancialValue(
+    field: keyof Omit<PermitChecklistFinancials, "customerBillingBreakdown" | "eyefiBillingBreakdown">,
+    value: string
+  ): void {
     const ticket = this.activeTicket;
     if (!ticket || !this.canEditActiveTicket) {
       return;
@@ -1275,7 +1408,7 @@ export class PermitChecklistsComponent implements OnInit {
     this.persistLocalData();
   }
 
-  updateFeeAmount(feeKey: string, value: string | number): void {
+  updateBillingAmount(section: BillingSection, feeKey: string, value: string | number): void {
     const ticket = this.activeTicket;
     if (!ticket || !this.canEditActiveTicket) {
       return;
@@ -1286,18 +1419,19 @@ export class PermitChecklistsComponent implements OnInit {
     }
 
     const nextAmount = this.normalizeCurrencyAmount(value);
-    const idx = ticket.financials.feeBreakdown.findIndex((fee) => fee.key === feeKey);
+    const breakdown = this.getBreakdownForSection(ticket.financials, section);
+    const idx = breakdown.findIndex((fee) => fee.key === feeKey);
     if (idx === -1) {
       return;
     }
 
-    const oldRawAmount = ticket.financials.feeBreakdown[idx].amount;
+    const oldRawAmount = breakdown[idx].amount;
     const oldAmount = oldRawAmount === null || oldRawAmount === undefined ? null : this.normalizeCurrencyAmount(oldRawAmount);
     if (oldAmount === nextAmount) {
       return;
     }
 
-    ticket.financials.feeBreakdown[idx].amount = nextAmount;
+    breakdown[idx].amount = nextAmount;
     this.syncApprovedAmountFromFeeLines(ticket);
 
     ticket.updatedAt = new Date().toISOString();
@@ -1306,7 +1440,7 @@ export class PermitChecklistsComponent implements OnInit {
     }
 
     this.appendTransaction(ticket.ticketId, "field_update", {
-      fieldKey: `financial.fee.${feeKey}`,
+      fieldKey: `financial.${section}.amount.${feeKey}`,
       oldValue: oldAmount === null ? "" : String(oldAmount),
       newValue: String(nextAmount),
       source: "financial",
@@ -1316,13 +1450,14 @@ export class PermitChecklistsComponent implements OnInit {
     this.persistLocalData();
   }
 
-  onFeeAmountBlur(feeKey: string): void {
+  onBillingAmountBlur(section: BillingSection, feeKey: string): void {
     const ticket = this.activeTicket;
     if (!ticket || !this.canEditActiveTicket || !ticket.financials) {
       return;
     }
 
-    const fee = ticket.financials.feeBreakdown.find((item) => item.key === feeKey);
+    const breakdown = this.getBreakdownForSection(ticket.financials, section);
+    const fee = breakdown.find((item) => item.key === feeKey);
     if (!fee) {
       return;
     }
@@ -1332,11 +1467,15 @@ export class PermitChecklistsComponent implements OnInit {
     }
 
     const normalized = this.normalizeCurrencyAmount(fee.amount);
-    this.updateFeeAmount(feeKey, normalized);
+    this.updateBillingAmount(section, feeKey, normalized);
   }
 
-  onFeeDraftBlur(): void {
-    this.newFeeAmountDraft = this.normalizeCurrencyAmount(this.newFeeAmountDraft);
+  onBillingDraftBlur(section: BillingSection): void {
+    if (section === "customer") {
+      this.newCustomerBillingAmountDraft = this.normalizeCurrencyAmount(this.newCustomerBillingAmountDraft);
+      return;
+    }
+    this.newEyefiBillingAmountDraft = this.normalizeCurrencyAmount(this.newEyefiBillingAmountDraft);
   }
 
   selectAmountInput(event: Event): void {
@@ -1348,7 +1487,7 @@ export class PermitChecklistsComponent implements OnInit {
     setTimeout(() => input.select(), 0);
   }
 
-  setFeeApproved(feeKey: string, isApproved: boolean): void {
+  setBillingApproved(section: BillingSection, feeKey: string, isApproved: boolean): void {
     const ticket = this.activeTicket;
     if (!ticket || !this.canEditActiveTicket) {
       return;
@@ -1358,17 +1497,18 @@ export class PermitChecklistsComponent implements OnInit {
       ticket.financials = this.createEmptyFinancials(ticket.formType);
     }
 
-    const idx = ticket.financials.feeBreakdown.findIndex((fee) => fee.key === feeKey);
+    const breakdown = this.getBreakdownForSection(ticket.financials, section);
+    const idx = breakdown.findIndex((fee) => fee.key === feeKey);
     if (idx === -1) {
       return;
     }
 
-    const oldValue = !!ticket.financials.feeBreakdown[idx].isApprovedAmount;
+    const oldValue = !!breakdown[idx].isApprovedAmount;
     if (oldValue === !!isApproved) {
       return;
     }
 
-    ticket.financials.feeBreakdown[idx].isApprovedAmount = !!isApproved;
+    breakdown[idx].isApprovedAmount = !!isApproved;
     this.syncApprovedAmountFromFeeLines(ticket);
 
     ticket.updatedAt = new Date().toISOString();
@@ -1377,7 +1517,7 @@ export class PermitChecklistsComponent implements OnInit {
     }
 
     this.appendTransaction(ticket.ticketId, "field_update", {
-      fieldKey: `financial.feeApproved.${feeKey}`,
+      fieldKey: `financial.${section}.approved.${feeKey}`,
       oldValue: String(oldValue),
       newValue: String(!!isApproved),
       source: "financial",
@@ -1387,7 +1527,7 @@ export class PermitChecklistsComponent implements OnInit {
     this.persistLocalData();
   }
 
-  updateFeeLabel(feeKey: string, label: string): void {
+  updateBillingLabel(section: BillingSection, feeKey: string, label: string): void {
     const ticket = this.activeTicket;
     if (!ticket || !this.canEditActiveTicket) {
       return;
@@ -1397,18 +1537,19 @@ export class PermitChecklistsComponent implements OnInit {
       ticket.financials = this.createEmptyFinancials(ticket.formType);
     }
 
-    const idx = ticket.financials.feeBreakdown.findIndex((fee) => fee.key === feeKey);
+    const breakdown = this.getBreakdownForSection(ticket.financials, section);
+    const idx = breakdown.findIndex((fee) => fee.key === feeKey);
     if (idx === -1) {
       return;
     }
 
-    const oldLabel = String(ticket.financials.feeBreakdown[idx].label || "");
+    const oldLabel = String(breakdown[idx].label || "");
     const nextLabel = String(label || "").trim();
     if (oldLabel === nextLabel) {
       return;
     }
 
-    ticket.financials.feeBreakdown[idx].label = nextLabel;
+    breakdown[idx].label = nextLabel;
 
     ticket.updatedAt = new Date().toISOString();
     if (ticket.status === "submitted") {
@@ -1416,7 +1557,7 @@ export class PermitChecklistsComponent implements OnInit {
     }
 
     this.appendTransaction(ticket.ticketId, "field_update", {
-      fieldKey: `financial.feeLabel.${feeKey}`,
+      fieldKey: `financial.${section}.label.${feeKey}`,
       oldValue: oldLabel,
       newValue: nextLabel,
       source: "financial",
@@ -1426,7 +1567,7 @@ export class PermitChecklistsComponent implements OnInit {
     this.persistLocalData();
   }
 
-  addFeeLine(): void {
+  addBillingLine(section: BillingSection): void {
     const ticket = this.activeTicket;
     if (!ticket || !this.canEditActiveTicket) {
       return;
@@ -1443,14 +1584,15 @@ export class PermitChecklistsComponent implements OnInit {
       isApprovedAmount: false,
     };
 
-    ticket.financials.feeBreakdown = [...ticket.financials.feeBreakdown, newFee];
+    const breakdown = this.getBreakdownForSection(ticket.financials, section);
+    this.setBreakdownForSection(ticket.financials, section, [...breakdown, newFee]);
     ticket.updatedAt = new Date().toISOString();
     if (ticket.status === "submitted") {
       ticket.status = "draft";
     }
 
     this.appendTransaction(ticket.ticketId, "field_update", {
-      fieldKey: `financial.fee.add`,
+      fieldKey: `financial.${section}.add`,
       newValue: newFee.key,
       source: "financial",
     });
@@ -1459,13 +1601,13 @@ export class PermitChecklistsComponent implements OnInit {
     this.persistLocalData();
   }
 
-  addFeeLineFromDraft(): void {
+  addBillingLineFromDraft(section: BillingSection): void {
     const ticket = this.activeTicket;
     if (!ticket || !this.canEditActiveTicket) {
       return;
     }
 
-    const label = String(this.newFeeLabelDraft || "").trim();
+    const label = String(section === "customer" ? this.newCustomerBillingLabelDraft : this.newEyefiBillingLabelDraft).trim();
     if (!label) {
       this.statusMessage = "Enter a fee label before adding.";
       return;
@@ -1475,7 +1617,9 @@ export class PermitChecklistsComponent implements OnInit {
       ticket.financials = this.createEmptyFinancials(ticket.formType);
     }
 
-    const amount = this.normalizeCurrencyAmount(this.newFeeAmountDraft || 0);
+    const amount = this.normalizeCurrencyAmount(
+      section === "customer" ? this.newCustomerBillingAmountDraft || 0 : this.newEyefiBillingAmountDraft || 0
+    );
     const newFee: PermitChecklistFeeLine = {
       key: this.generateFeeKey(),
       label,
@@ -1483,25 +1627,31 @@ export class PermitChecklistsComponent implements OnInit {
       isApprovedAmount: false,
     };
 
-    ticket.financials.feeBreakdown = [...ticket.financials.feeBreakdown, newFee];
+    const breakdown = this.getBreakdownForSection(ticket.financials, section);
+    this.setBreakdownForSection(ticket.financials, section, [...breakdown, newFee]);
     ticket.updatedAt = new Date().toISOString();
     if (ticket.status === "submitted") {
       ticket.status = "draft";
     }
 
     this.appendTransaction(ticket.ticketId, "field_update", {
-      fieldKey: "financial.fee.add",
+      fieldKey: `financial.${section}.add`,
       newValue: `${label}:${amount}`,
       source: "financial",
     });
 
-    this.newFeeLabelDraft = "";
-    this.newFeeAmountDraft = 0;
+    if (section === "customer") {
+      this.newCustomerBillingLabelDraft = "";
+      this.newCustomerBillingAmountDraft = 0;
+    } else {
+      this.newEyefiBillingLabelDraft = "";
+      this.newEyefiBillingAmountDraft = 0;
+    }
     this.refreshRecentTickets();
     this.persistLocalData();
   }
 
-  removeFeeLine(feeKey: string): void {
+  removeBillingLine(section: BillingSection, feeKey: string): void {
     const ticket = this.activeTicket;
     if (!ticket || !this.canEditActiveTicket) {
       return;
@@ -1511,12 +1661,17 @@ export class PermitChecklistsComponent implements OnInit {
       ticket.financials = this.createEmptyFinancials(ticket.formType);
     }
 
-    const target = ticket.financials.feeBreakdown.find((fee) => fee.key === feeKey);
+    const breakdown = this.getBreakdownForSection(ticket.financials, section);
+    const target = breakdown.find((fee) => fee.key === feeKey);
     if (!target) {
       return;
     }
 
-    ticket.financials.feeBreakdown = ticket.financials.feeBreakdown.filter((fee) => fee.key !== feeKey);
+    this.setBreakdownForSection(
+      ticket.financials,
+      section,
+      breakdown.filter((fee) => fee.key !== feeKey)
+    );
     this.syncApprovedAmountFromFeeLines(ticket);
     ticket.updatedAt = new Date().toISOString();
     if (ticket.status === "submitted") {
@@ -1524,7 +1679,7 @@ export class PermitChecklistsComponent implements OnInit {
     }
 
     this.appendTransaction(ticket.ticketId, "field_update", {
-      fieldKey: `financial.fee.remove.${feeKey}`,
+      fieldKey: `financial.${section}.remove.${feeKey}`,
       oldValue: `${target.label}:${target.amount}`,
       source: "financial",
     });
@@ -1534,11 +1689,29 @@ export class PermitChecklistsComponent implements OnInit {
   }
 
   private syncApprovedAmountFromFeeLines(ticket: PermitChecklistTicket): void {
-    const nextApproved = (ticket.financials?.feeBreakdown || [])
-      .filter((fee) => !!fee.isApprovedAmount)
-      .reduce((sum, fee) => sum + Number(fee.amount || 0), 0);
+    const allFees = [
+      ...(ticket.financials?.customerBillingBreakdown || []),
+      ...(ticket.financials?.eyefiBillingBreakdown || []),
+    ];
+    const nextApproved = allFees.filter((fee) => !!fee.isApprovedAmount).reduce((sum, fee) => sum + Number(fee.amount || 0), 0);
 
     ticket.financials.approvedAmount = Number(nextApproved.toFixed(2));
+  }
+
+  private getBreakdownForSection(financials: PermitChecklistFinancials, section: BillingSection): PermitChecklistFeeLine[] {
+    return section === "customer" ? financials.customerBillingBreakdown : financials.eyefiBillingBreakdown;
+  }
+
+  private setBreakdownForSection(
+    financials: PermitChecklistFinancials,
+    section: BillingSection,
+    value: PermitChecklistFeeLine[]
+  ): void {
+    if (section === "customer") {
+      financials.customerBillingBreakdown = value;
+    } else {
+      financials.eyefiBillingBreakdown = value;
+    }
   }
 
   private normalizeCurrencyAmount(value: string | number): number {
@@ -2023,6 +2196,26 @@ export class PermitChecklistsComponent implements OnInit {
     }).length;
   }
 
+  private buildHeaderInfoColumnDefs(): ColDef[] {
+    const headerFieldLookup = new Map<string, string>();
+    this.templates.forEach((template) => {
+      template.headerFields.forEach((field) => {
+        if (!headerFieldLookup.has(field.key)) {
+          headerFieldLookup.set(field.key, field.label);
+        }
+      });
+    });
+
+    return Array.from(headerFieldLookup.entries())
+      .filter(([fieldKey]) => fieldKey !== "customer")
+      .map(([fieldKey, fieldLabel]) => ({
+        headerName: fieldLabel,
+        field: `values.${fieldKey}`,
+        minWidth: 170,
+        valueGetter: (params: any) => params.data?.values?.[fieldKey] || "-",
+      }));
+  }
+
   private getTicketCompletionMetrics(ticket: PermitChecklistTicket | undefined): {
     completed: number;
     total: number;
@@ -2065,6 +2258,7 @@ export class PermitChecklistsComponent implements OnInit {
   }
 
   private createEmptyFinancials(formType: PermitChecklistType): PermitChecklistFinancials {
+    const customerDefaults = this.customerBillingDefaultsByType[formType] || [];
     const template = this.templates.find((item) => item.id === formType);
     return {
       quoteAmount: 0,
@@ -2072,7 +2266,12 @@ export class PermitChecklistsComponent implements OnInit {
       approvedAmount: 0,
       approvalDate: "",
       invoiceReference: "",
-      feeBreakdown: (template?.defaultFeeBreakdown || []).map((fee) => ({
+      customerBillingBreakdown: customerDefaults.map((fee) => ({
+        ...fee,
+        amount: Number(fee.amount || 0),
+        isApprovedAmount: false,
+      })),
+      eyefiBillingBreakdown: (template?.defaultEyefiBillingBreakdown || []).map((fee) => ({
         ...fee,
         amount: null,
         isApprovedAmount: false,
@@ -2084,41 +2283,50 @@ export class PermitChecklistsComponent implements OnInit {
     const base = this.createEmptyFinancials(ticket.formType as PermitChecklistType);
     const incoming = ticket?.financials || {};
 
-    const incomingFees: PermitChecklistFeeLine[] = Array.isArray(incoming.feeBreakdown)
-      ? incoming.feeBreakdown
-          .filter((fee: any) => fee && fee.key)
-          .map((fee: any) => ({
-            key: String(fee.key),
-            label: String(fee.label || ""),
-            amount:
-              fee.amount === null || fee.amount === undefined || fee.amount === "" ? null : Number(fee.amount),
-            isApprovedAmount: !!fee.isApprovedAmount,
-          }))
-      : [];
+    const normalizeList = (list: any[]): PermitChecklistFeeLine[] =>
+      (Array.isArray(list) ? list : [])
+        .filter((fee: any) => fee && fee.key)
+        .map((fee: any) => ({
+          key: String(fee.key),
+          label: String(fee.label || ""),
+          amount: fee.amount === null || fee.amount === undefined || fee.amount === "" ? null : Number(fee.amount),
+          isApprovedAmount: !!fee.isApprovedAmount,
+        }));
 
-    const incomingByKey = new Map(incomingFees.map((fee) => [fee.key, fee]));
-    const mergedDefaults = base.feeBreakdown.map((fee) => {
-      const incomingFee = incomingByKey.get(fee.key);
-      if (!incomingFee) {
-        return { ...fee };
-      }
+    const mergeWithDefaults = (defaults: PermitChecklistFeeLine[], incomingList: PermitChecklistFeeLine[]): PermitChecklistFeeLine[] => {
+      const incomingByKey = new Map(incomingList.map((fee) => [fee.key, fee]));
+      const mergedDefaults = defaults.map((fee) => {
+        const incomingFee = incomingByKey.get(fee.key);
+        if (!incomingFee) {
+          return { ...fee };
+        }
 
-      return {
-        ...fee,
-        label: incomingFee.label || fee.label,
-        amount: incomingFee.amount === null || incomingFee.amount === undefined ? null : Number(incomingFee.amount),
-        isApprovedAmount: !!incomingFee.isApprovedAmount,
-      };
-    });
+        return {
+          ...fee,
+          label: incomingFee.label || fee.label,
+          amount: incomingFee.amount === null || incomingFee.amount === undefined ? null : Number(incomingFee.amount),
+          isApprovedAmount: !!incomingFee.isApprovedAmount,
+        };
+      });
 
-    const defaultKeys = new Set(mergedDefaults.map((fee) => fee.key));
-    const customIncoming = incomingFees.filter((fee) => !defaultKeys.has(fee.key));
+      const defaultKeys = new Set(mergedDefaults.map((fee) => fee.key));
+      const customIncoming = incomingList.filter((fee) => !defaultKeys.has(fee.key));
+      return [...mergedDefaults, ...customIncoming];
+    };
 
-    const normalizedFeeBreakdown = [...mergedDefaults, ...customIncoming];
-    const hasCheckedApproved = normalizedFeeBreakdown.some((fee) => !!fee.isApprovedAmount);
-    const computedApproved = normalizedFeeBreakdown
-      .filter((fee) => !!fee.isApprovedAmount)
-      .reduce((sum, fee) => sum + Number(fee.amount || 0), 0);
+    const legacyFeeBreakdown = normalizeList(incoming.feeBreakdown);
+    const incomingCustomer = normalizeList(incoming.customerBillingBreakdown);
+    const incomingEyefi = normalizeList(incoming.eyefiBillingBreakdown);
+
+    const normalizedCustomer = mergeWithDefaults(
+      base.customerBillingBreakdown,
+      incomingCustomer.length ? incomingCustomer : legacyFeeBreakdown
+    );
+    const normalizedEyefi = mergeWithDefaults(base.eyefiBillingBreakdown, incomingEyefi);
+
+    const allFees = [...normalizedCustomer, ...normalizedEyefi];
+    const hasCheckedApproved = allFees.some((fee) => !!fee.isApprovedAmount);
+    const computedApproved = allFees.filter((fee) => !!fee.isApprovedAmount).reduce((sum, fee) => sum + Number(fee.amount || 0), 0);
 
     return {
       quoteAmount: Number(incoming.quoteAmount || 0),
@@ -2126,7 +2334,8 @@ export class PermitChecklistsComponent implements OnInit {
       approvedAmount: hasCheckedApproved ? Number(computedApproved.toFixed(2)) : Number(incoming.approvedAmount || 0),
       approvalDate: String(incoming.approvalDate || ""),
       invoiceReference: String(incoming.invoiceReference || ""),
-      feeBreakdown: normalizedFeeBreakdown,
+      customerBillingBreakdown: normalizedCustomer,
+      eyefiBillingBreakdown: normalizedEyefi,
     };
   }
 
@@ -2150,6 +2359,7 @@ export class PermitChecklistsComponent implements OnInit {
       transactions: this.transactions,
       customers: this.customers,
       architects: this.architects,
+      customerBillingDefaultsByType: this.customerBillingDefaultsByType,
     };
     localStorage.setItem(this.storageKey, JSON.stringify(payload));
   }
@@ -2215,6 +2425,7 @@ export class PermitChecklistsComponent implements OnInit {
       }));
       this.customers = this.normalizeCustomers(saved.customers);
       this.architects = this.normalizeArchitects(saved.architects);
+      this.customerBillingDefaultsByType = this.normalizeCustomerBillingDefaultsByType(saved.customerBillingDefaultsByType);
       this.bootstrapDirectoryFromTicketValues();
       this.ensureDefaultDirectoryValues();
       this.refreshRecentTickets();
@@ -2256,6 +2467,43 @@ export class PermitChecklistsComponent implements OnInit {
 
     this.customers.sort((a, b) => a.name.localeCompare(b.name));
     this.architects.sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  private buildInitialCustomerBillingDefaults(): Record<PermitChecklistType, PermitChecklistFeeLine[]> {
+    const buildForType = (formType: PermitChecklistType): PermitChecklistFeeLine[] => {
+      const template = this.templates.find((item) => item.id === formType);
+      return (template?.defaultCustomerBillingBreakdown || []).map((fee) => ({
+        key: String(fee.key),
+        label: String(fee.label || ""),
+        amount: this.normalizeCurrencyAmount(Number(fee.amount || 0)),
+        isApprovedAmount: false,
+      }));
+    };
+
+    return {
+      seismic: buildForType("seismic"),
+      dca: buildForType("dca"),
+    };
+  }
+
+  private normalizeCustomerBillingDefaultsByType(
+    input?: Partial<Record<PermitChecklistType, PermitChecklistFeeLine[]>>
+  ): Record<PermitChecklistType, PermitChecklistFeeLine[]> {
+    const base = this.buildInitialCustomerBillingDefaults();
+    const normalizeList = (list: any[]): PermitChecklistFeeLine[] =>
+      (Array.isArray(list) ? list : [])
+        .filter((fee: any) => fee && fee.key)
+        .map((fee: any) => ({
+          key: String(fee.key),
+          label: String(fee.label || "").trim(),
+          amount: this.normalizeCurrencyAmount(Number(fee.amount || 0)),
+          isApprovedAmount: false,
+        }));
+
+    return {
+      seismic: normalizeList((input as any)?.seismic).length ? normalizeList((input as any)?.seismic) : base.seismic,
+      dca: normalizeList((input as any)?.dca).length ? normalizeList((input as any)?.dca) : base.dca,
+    };
   }
 
   private refreshRecentTickets(): void {
@@ -2358,10 +2606,10 @@ export class PermitChecklistsComponent implements OnInit {
     return match?.label || normalized;
   }
 
-  private getReferenceNotesFromFees(feeBreakdown: PermitChecklistFeeLine[]): string[] {
+  private getReferenceNotesFromFees(feeBreakdown: PermitChecklistFeeLine[], sectionLabel: string): string[] {
     return (feeBreakdown || [])
       .filter((fee) => String(fee.label || "").trim().length > 0 && Number(fee.amount || 0) > 0)
-      .map((fee) => `${fee.label} @ ${this.formatCurrency(fee.amount)}`);
+      .map((fee) => `${sectionLabel}: ${fee.label} @ ${this.formatCurrency(fee.amount || 0)}`);
   }
 
   private normalizeCustomers(input: any): PermitChecklistCustomer[] {
@@ -2615,7 +2863,10 @@ export class PermitChecklistsComponent implements OnInit {
     const headerRows = template.headerFields.map((field) => fieldRow(field.label, field.key)).join("");
     const processRows = template.processFields.map((field) => fieldRow(field.label, field.key)).join("");
     const notes = this.escapeHtml(ticket.values["additionalNotes"] || "");
-    const footerNotes = this.getReferenceNotesFromFees(ticket.financials?.feeBreakdown || []);
+    const footerNotes = [
+      ...this.getReferenceNotesFromFees(ticket.financials?.customerBillingBreakdown || [], "Customer Billing"),
+      ...this.getReferenceNotesFromFees(ticket.financials?.eyefiBillingBreakdown || [], "Eyefi Billing"),
+    ];
     const footer = footerNotes.map((note) => `<li>${this.escapeHtml(note)}</li>`).join("");
 
     return `

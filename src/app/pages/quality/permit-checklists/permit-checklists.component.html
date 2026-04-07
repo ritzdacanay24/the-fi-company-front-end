@@ -417,22 +417,31 @@
         </div>
 
         <div class="financials-block mb-3">
-          <h6 class="section-title">Fees & Amounts</h6>
+          <div class="d-flex align-items-center justify-content-between gap-2">
+            <h6 class="section-title mb-0">Customer Billing</h6>
+            <button
+              class="btn btn-sm btn-outline-secondary"
+              type="button"
+              [disabled]="!canEditActiveTicket"
+              (click)="openCustomerBillingDefaultsModal(customerBillingDefaultsModal)">
+              Configure Defaults
+            </button>
+          </div>
 
-          <div class="fee-breakdown mt-3" *ngIf="activeFinancials.feeBreakdown.length">
+          <div class="fee-breakdown mt-3" *ngIf="customerBillingBreakdown.length; else noCustomerBillingRows">
             <div class="d-flex align-items-center justify-content-between mb-2">
-              <p class="fw-semibold mb-0">Fee Breakdown</p>
-              <button class="btn btn-sm btn-outline-primary" type="button" [disabled]="!canEditActiveTicket" (click)="addFeeLine()">
+              <p class="fw-semibold mb-0">Customer Billing Breakdown</p>
+              <button class="btn btn-sm btn-outline-primary" type="button" [disabled]="!canEditActiveTicket" (click)="addBillingLine('customer')">
                 Add Fee Line
               </button>
             </div>
-            <div class="fee-row" *ngFor="let fee of activeFinancials.feeBreakdown; trackBy: trackByFeeKey">
+            <div class="fee-row" *ngFor="let fee of customerBillingBreakdown; trackBy: trackByFeeKey">
               <input
                 class="form-control fee-label-input"
                 type="text"
                 [ngModel]="fee.label"
                 [disabled]="!canEditActiveTicket"
-                (ngModelChange)="updateFeeLabel(fee.key, $event)"
+                (ngModelChange)="updateBillingLabel('customer', fee.key, $event)"
                 (focus)="selectAmountInput($event)"
                 (click)="selectAmountInput($event)"
                 placeholder="Fee label (e.g., Architect Fees, MEP Fees)"
@@ -446,10 +455,10 @@
                   step="0.01"
                   [ngModel]="fee.amount"
                   [disabled]="!canEditActiveTicket"
-                  (ngModelChange)="updateFeeAmount(fee.key, $event)"
+                  (ngModelChange)="updateBillingAmount('customer', fee.key, $event)"
                   (focus)="selectAmountInput($event)"
                   (click)="selectAmountInput($event)"
-                  (blur)="onFeeAmountBlur(fee.key)"
+                  (blur)="onBillingAmountBlur('customer', fee.key)"
                 />
               </div>
               <label class="form-check fee-approved-toggle mb-0">
@@ -458,7 +467,7 @@
                   type="checkbox"
                   [checked]="!!fee.isApprovedAmount"
                   [disabled]="!canEditActiveTicket"
-                  (change)="setFeeApproved(fee.key, $any($event.target).checked)"
+                  (change)="setBillingApproved('customer', fee.key, $any($event.target).checked)"
                 />
                 <span class="form-check-label">Final/Approved</span>
               </label>
@@ -466,7 +475,7 @@
                 class="btn btn-sm btn-outline-danger"
                 type="button"
                 [disabled]="!canEditActiveTicket"
-                (click)="removeFeeLine(fee.key)">
+                (click)="removeBillingLine('customer', fee.key)">
                 Remove
               </button>
             </div>
@@ -475,7 +484,7 @@
               <input
                 class="form-control"
                 type="text"
-                [(ngModel)]="newFeeLabelDraft"
+                [(ngModel)]="newCustomerBillingLabelDraft"
                 [disabled]="!canEditActiveTicket"
                 (focus)="selectAmountInput($event)"
                 (click)="selectAmountInput($event)"
@@ -488,16 +497,16 @@
                   type="number"
                   min="0"
                   step="0.01"
-                  [(ngModel)]="newFeeAmountDraft"
+                  [(ngModel)]="newCustomerBillingAmountDraft"
                   [disabled]="!canEditActiveTicket"
                   (focus)="selectAmountInput($event)"
                   (click)="selectAmountInput($event)"
-                  (blur)="onFeeDraftBlur()"
+                  (blur)="onBillingDraftBlur('customer')"
                   placeholder="Amount"
                 />
               </div>
               <div class="fee-approved-placeholder small text-muted">Mark as final after adding</div>
-              <button class="btn btn-sm btn-primary" type="button" [disabled]="!canEditActiveTicket" (click)="addFeeLineFromDraft()">
+              <button class="btn btn-sm btn-primary" type="button" [disabled]="!canEditActiveTicket" (click)="addBillingLineFromDraft('customer')">
                 Add
               </button>
             </div>
@@ -507,11 +516,100 @@
             </div>
           </div>
 
-          <div class="fee-breakdown mt-3" *ngIf="!activeFinancials.feeBreakdown.length">
+          <ng-template #noCustomerBillingRows>
+            <div class="fee-breakdown mt-3">
+              <div class="d-flex align-items-center justify-content-between">
+                <span class="text-muted small">No customer billing lines yet.</span>
+                <button class="btn btn-sm btn-outline-primary" type="button" [disabled]="!canEditActiveTicket" (click)="addBillingLine('customer')">
+                  Add Fee Line
+                </button>
+              </div>
+
+              <div class="fee-quick-add mt-2">
+                <input
+                  class="form-control"
+                  type="text"
+                  [(ngModel)]="newCustomerBillingLabelDraft"
+                  [disabled]="!canEditActiveTicket"
+                  (focus)="selectAmountInput($event)"
+                  (click)="selectAmountInput($event)"
+                  placeholder="New fee label (e.g., Architect Fees, MEP Fees, Structural Fees, Permit Fees)"
+                />
+                <div class="input-group">
+                  <span class="input-group-text">$</span>
+                  <input
+                    class="form-control"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    [(ngModel)]="newCustomerBillingAmountDraft"
+                    [disabled]="!canEditActiveTicket"
+                    (focus)="selectAmountInput($event)"
+                    (click)="selectAmountInput($event)"
+                    (blur)="onBillingDraftBlur('customer')"
+                    placeholder="Amount"
+                  />
+                </div>
+                <div class="fee-approved-placeholder small text-muted">Mark as final after adding</div>
+                <button class="btn btn-sm btn-primary" type="button" [disabled]="!canEditActiveTicket" (click)="addBillingLineFromDraft('customer')">
+                  Add
+                </button>
+              </div>
+            </div>
+          </ng-template>
+
+          <h6 class="section-title mt-4">Eyefi Billing</h6>
+
+          <div class="fee-breakdown mt-3" *ngIf="eyefiBillingBreakdown.length; else noEyefiBillingRows">
             <div class="d-flex align-items-center justify-content-between">
-              <span class="text-muted small">No fee lines yet.</span>
-              <button class="btn btn-sm btn-outline-primary" type="button" [disabled]="!canEditActiveTicket" (click)="addFeeLine()">
+              <p class="fw-semibold mb-0">Eyefi Billing Breakdown</p>
+              <button class="btn btn-sm btn-outline-primary" type="button" [disabled]="!canEditActiveTicket" (click)="addBillingLine('eyefi')">
                 Add Fee Line
+              </button>
+            </div>
+
+            <div class="fee-row" *ngFor="let fee of eyefiBillingBreakdown; trackBy: trackByFeeKey">
+              <input
+                class="form-control fee-label-input"
+                type="text"
+                [ngModel]="fee.label"
+                [disabled]="!canEditActiveTicket"
+                (ngModelChange)="updateBillingLabel('eyefi', fee.key, $event)"
+                (focus)="selectAmountInput($event)"
+                (click)="selectAmountInput($event)"
+                placeholder="Fee label (e.g., Internal Fee, Service Fee)"
+              />
+              <div class="input-group">
+                <span class="input-group-text">$</span>
+                <input
+                  class="form-control fee-input"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  [ngModel]="fee.amount"
+                  [disabled]="!canEditActiveTicket"
+                  (ngModelChange)="updateBillingAmount('eyefi', fee.key, $event)"
+                  (focus)="selectAmountInput($event)"
+                  (click)="selectAmountInput($event)"
+                  (blur)="onBillingAmountBlur('eyefi', fee.key)"
+                />
+              </div>
+              <label class="form-check fee-approved-toggle mb-0">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  [checked]="!!fee.isApprovedAmount"
+                  [disabled]="!canEditActiveTicket"
+                  (change)="setBillingApproved('eyefi', fee.key, $any($event.target).checked)"
+                />
+                <span class="form-check-label">Final/Approved</span>
+              </label>
+              <button
+                class="btn btn-sm btn-outline-danger"
+                type="button"
+                [disabled]="!canEditActiveTicket"
+                (click)="removeBillingLine('eyefi', fee.key)">
+                Remove
               </button>
             </div>
 
@@ -519,11 +617,11 @@
               <input
                 class="form-control"
                 type="text"
-                [(ngModel)]="newFeeLabelDraft"
+                [(ngModel)]="newEyefiBillingLabelDraft"
                 [disabled]="!canEditActiveTicket"
                 (focus)="selectAmountInput($event)"
                 (click)="selectAmountInput($event)"
-                placeholder="New fee label (e.g., Architect Fees, MEP Fees, Structural Fees, Permit Fees)"
+                placeholder="New fee label (e.g., Internal Fee, Service Fee)"
               />
               <div class="input-group">
                 <span class="input-group-text">$</span>
@@ -532,20 +630,62 @@
                   type="number"
                   min="0"
                   step="0.01"
-                  [(ngModel)]="newFeeAmountDraft"
+                  [(ngModel)]="newEyefiBillingAmountDraft"
                   [disabled]="!canEditActiveTicket"
                   (focus)="selectAmountInput($event)"
                   (click)="selectAmountInput($event)"
-                  (blur)="onFeeDraftBlur()"
+                  (blur)="onBillingDraftBlur('eyefi')"
                   placeholder="Amount"
                 />
               </div>
               <div class="fee-approved-placeholder small text-muted">Mark as final after adding</div>
-              <button class="btn btn-sm btn-primary" type="button" [disabled]="!canEditActiveTicket" (click)="addFeeLineFromDraft()">
+              <button class="btn btn-sm btn-primary" type="button" [disabled]="!canEditActiveTicket" (click)="addBillingLineFromDraft('eyefi')">
                 Add
               </button>
             </div>
           </div>
+
+          <ng-template #noEyefiBillingRows>
+            <div class="fee-breakdown mt-3">
+              <div class="d-flex align-items-center justify-content-between">
+                <span class="text-muted small">No Eyefi billing lines yet.</span>
+                <button class="btn btn-sm btn-outline-primary" type="button" [disabled]="!canEditActiveTicket" (click)="addBillingLine('eyefi')">
+                  Add Fee Line
+                </button>
+              </div>
+
+              <div class="fee-quick-add mt-2">
+                <input
+                  class="form-control"
+                  type="text"
+                  [(ngModel)]="newEyefiBillingLabelDraft"
+                  [disabled]="!canEditActiveTicket"
+                  (focus)="selectAmountInput($event)"
+                  (click)="selectAmountInput($event)"
+                  placeholder="New fee label (e.g., Internal Fee, Service Fee)"
+                />
+                <div class="input-group">
+                  <span class="input-group-text">$</span>
+                  <input
+                    class="form-control"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    [(ngModel)]="newEyefiBillingAmountDraft"
+                    [disabled]="!canEditActiveTicket"
+                    (focus)="selectAmountInput($event)"
+                    (click)="selectAmountInput($event)"
+                    (blur)="onBillingDraftBlur('eyefi')"
+                    placeholder="Amount"
+                  />
+                </div>
+                <div class="fee-approved-placeholder small text-muted">Mark as final after adding</div>
+                <button class="btn btn-sm btn-primary" type="button" [disabled]="!canEditActiveTicket" (click)="addBillingLineFromDraft('eyefi')">
+                  Add
+                </button>
+              </div>
+            </div>
+          </ng-template>
 
         </div>
 
@@ -567,9 +707,16 @@
               <label class="form-label fw-semibold small mb-1">Attachment For</label>
               <select class="form-select" [(ngModel)]="selectedAttachmentFieldKey" [disabled]="!canEditActiveTicket">
                 <option value="">Select checklist item</option>
-                <option *ngFor="let field of attachmentFieldOptions" [value]="field.key">
-                  {{ field.label }}
-                </option>
+                <optgroup label="Header Information" *ngIf="headerAttachmentFieldOptions.length">
+                  <option *ngFor="let field of headerAttachmentFieldOptions" [value]="field.key">
+                    {{ field.label }}
+                  </option>
+                </optgroup>
+                <optgroup label="Process Timeline" *ngIf="processAttachmentFieldOptions.length">
+                  <option *ngFor="let field of processAttachmentFieldOptions" [value]="field.key">
+                    {{ field.label }}
+                  </option>
+                </optgroup>
               </select>
             </div>
             <div class="col-12 col-md-5">
@@ -920,6 +1067,102 @@
     <div class="modal-footer customer-directory-footer">
       <small class="text-muted">{{ customers.length }} customers and {{ architects.length }} architects available.</small>
       <button class="btn btn-primary" type="button" (click)="closeCustomerDirectoryModal()">Done</button>
+    </div>
+  </ng-template>
+
+  <ng-template #customerBillingDefaultsModal>
+    <div class="modal-header customer-directory-header">
+      <div>
+        <h5 class="mb-1">Customer Billing Defaults</h5>
+        <small class="text-muted">Set default labels and values used when a new ticket is created.</small>
+      </div>
+      <button class="btn-close" type="button" aria-label="Close" (click)="closeCustomerBillingDefaultsModal()"></button>
+    </div>
+    <div class="modal-body customer-directory-content customer-billing-defaults-content">
+      <div class="defaults-toolbar mb-3">
+        <div>
+          <p class="mb-1 fw-semibold">Default Billing Breakdown</p>
+          <small class="text-muted">These rows are auto-added when creating new tickets.</small>
+        </div>
+        <div class="defaults-formtype-wrap">
+          <label class="form-label fw-semibold small mb-1">Form Type</label>
+          <select class="form-select" [(ngModel)]="customerBillingDefaultsFormType">
+            <option [ngValue]="'seismic'">Seismic</option>
+            <option [ngValue]="'dca'">DCA</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="defaults-list" *ngIf="customerBillingDefaultRows.length; else noBillingDefaults">
+        <div class="defaults-row" *ngFor="let fee of customerBillingDefaultRows; trackBy: trackByFeeKey">
+          <input
+            class="form-control"
+            type="text"
+            [ngModel]="fee.label"
+            (ngModelChange)="updateCustomerBillingDefaultLabel(fee.key, $event)"
+            (focus)="selectAmountInput($event)"
+            (click)="selectAmountInput($event)"
+            placeholder="Billing label"
+          />
+          <div class="input-group defaults-amount-input">
+            <span class="input-group-text">$</span>
+            <input
+              class="form-control"
+              type="number"
+              min="0"
+              step="0.01"
+              [ngModel]="fee.amount"
+              (ngModelChange)="updateCustomerBillingDefaultAmount(fee.key, $event)"
+              (focus)="selectAmountInput($event)"
+              (click)="selectAmountInput($event)"
+              (blur)="onCustomerBillingDefaultAmountBlur(fee.key)"
+            />
+          </div>
+          <button
+            class="directory-remove-btn"
+            type="button"
+            aria-label="Remove default row"
+            title="Remove default row"
+            (click)="removeCustomerBillingDefaultLine(fee.key)">
+            &times;
+          </button>
+        </div>
+      </div>
+      <ng-template #noBillingDefaults>
+        <div class="directory-empty-state mb-3">No default billing rows yet for this form type.</div>
+      </ng-template>
+
+      <div class="defaults-add-row">
+        <input
+          class="form-control"
+          type="text"
+          [(ngModel)]="newCustomerBillingDefaultLabelDraft"
+          (focus)="selectAmountInput($event)"
+          (click)="selectAmountInput($event)"
+          placeholder="New default billing label"
+        />
+        <div class="input-group defaults-amount-input">
+          <span class="input-group-text">$</span>
+          <input
+            class="form-control"
+            type="number"
+            min="0"
+            step="0.01"
+            [(ngModel)]="newCustomerBillingDefaultAmountDraft"
+            (focus)="selectAmountInput($event)"
+            (click)="selectAmountInput($event)"
+            (blur)="onCustomerBillingDefaultDraftBlur()"
+            placeholder="Amount"
+          />
+        </div>
+        <button class="btn btn-primary" type="button" (click)="addCustomerBillingDefaultLineFromDraft()">
+          Add Row
+        </button>
+      </div>
+    </div>
+    <div class="modal-footer customer-directory-footer">
+      <small class="text-muted">Defaults are saved automatically.</small>
+      <button class="btn btn-primary" type="button" (click)="closeCustomerBillingDefaultsModal()">Done</button>
     </div>
   </ng-template>
 </div>
