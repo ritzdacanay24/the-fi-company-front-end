@@ -959,7 +959,46 @@ export class PermitChecklistsComponent implements OnInit {
     return String(this.activeValues[fieldKey] || "");
   }
 
-  beginFieldEdit(fieldKey: string): void {
+  isHeaderSectionEditing(): boolean {
+    return this.activeTemplate.headerFields.some((field) => this.isFieldEditing(field.key));
+  }
+
+  isProcessSectionEditing(): boolean {
+    return this.activeTemplate.processFields.some((field) => this.isFieldEditing(field.key));
+  }
+
+  beginSectionEdit(section: "header" | "process"): void {
+    if (!this.canEditActiveTicket) {
+      return;
+    }
+
+    const fields = section === "header" ? this.activeTemplate.headerFields : this.activeTemplate.processFields;
+    fields.forEach((field) => this.beginFieldEdit(field.key, false));
+
+    if (fields.length > 0) {
+      setTimeout(() => this.focusFieldEditor(fields[0].key), 0);
+    }
+  }
+
+  saveSectionEdits(section: "header" | "process"): void {
+    const fields = section === "header" ? this.activeTemplate.headerFields : this.activeTemplate.processFields;
+    fields.forEach((field) => {
+      if (this.isFieldEditing(field.key)) {
+        this.saveFieldEdit(field.key);
+      }
+    });
+  }
+
+  cancelSectionEdits(section: "header" | "process"): void {
+    const fields = section === "header" ? this.activeTemplate.headerFields : this.activeTemplate.processFields;
+    fields.forEach((field) => {
+      if (this.isFieldEditing(field.key)) {
+        this.cancelFieldEdit(field.key);
+      }
+    });
+  }
+
+  beginFieldEdit(fieldKey: string, shouldFocus = true): void {
     const ticket = this.activeTicket;
     if (!ticket || !this.canEditActiveTicket) {
       return;
@@ -969,7 +1008,9 @@ export class PermitChecklistsComponent implements OnInit {
     this.fieldDraftValues[fieldKey] = String(ticket.values[fieldKey] || "");
     this.fieldDraftSource[fieldKey] = "manual";
 
-    setTimeout(() => this.focusFieldEditor(fieldKey), 0);
+    if (shouldFocus) {
+      setTimeout(() => this.focusFieldEditor(fieldKey), 0);
+    }
   }
 
   updateFieldDraft(fieldKey: string, nextValue: string): void {

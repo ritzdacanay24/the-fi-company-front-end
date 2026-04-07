@@ -191,9 +191,20 @@
       <div class="card-body">
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
           <h6 class="section-title mb-0">Header Information</h6>
-          <button class="btn btn-sm btn-outline-secondary" type="button" (click)="openCustomerDirectoryModal(customerDirectoryModal)">
-            Manage Customers & Architects
-          </button>
+          <div class="d-flex align-items-center gap-2">
+            <ng-container *ngIf="canEditActiveTicket">
+              <ng-container *ngIf="isHeaderSectionEditing(); else enableHeaderEditAll">
+                <button class="btn btn-sm btn-primary" type="button" (click)="saveSectionEdits('header')">Save All</button>
+                <button class="btn btn-sm btn-outline-secondary" type="button" (click)="cancelSectionEdits('header')">Cancel All</button>
+              </ng-container>
+              <ng-template #enableHeaderEditAll>
+                <button class="btn btn-sm btn-outline-primary" type="button" (click)="beginSectionEdit('header')">Edit All Header</button>
+              </ng-template>
+            </ng-container>
+            <button class="btn btn-sm btn-outline-secondary" type="button" (click)="openCustomerDirectoryModal(customerDirectoryModal)">
+              Manage Customers & Architects
+            </button>
+          </div>
         </div>
         <table class="table table-bordered form-grid mb-4">
           <tbody>
@@ -300,7 +311,18 @@
           </tbody>
         </table>
 
-        <h6 class="section-title">Process Timeline</h6>
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+          <h6 class="section-title mb-0">Process Timeline</h6>
+          <div class="d-flex align-items-center gap-2" *ngIf="canEditActiveTicket">
+            <ng-container *ngIf="isProcessSectionEditing(); else enableProcessEditAll">
+              <button class="btn btn-sm btn-primary" type="button" (click)="saveSectionEdits('process')">Save All</button>
+              <button class="btn btn-sm btn-outline-secondary" type="button" (click)="cancelSectionEdits('process')">Cancel All</button>
+            </ng-container>
+            <ng-template #enableProcessEditAll>
+              <button class="btn btn-sm btn-outline-primary" type="button" (click)="beginSectionEdit('process')">Edit All Timeline</button>
+            </ng-template>
+          </div>
+        </div>
         <table class="table table-bordered form-grid mb-3">
           <tbody>
             <tr *ngFor="let field of activeTemplate.processFields">
