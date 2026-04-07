@@ -6,6 +6,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { NgbModal, NgbModalRef, NgbModule } from '@ng-bootstrap/ng-bootstrap';
+import { Lightbox } from 'ngx-lightbox';
 
 export interface ShareReportToken {
   id: number;
@@ -38,6 +39,10 @@ export class ShareReportModalComponent implements OnInit, AfterViewInit {
 
   // Item selection
   selectedItemIds: Set<number> = new Set();
+  itemSearch = '';
+  activePreviewItemId: number | null = null;
+  activePreviewMediaUrl: string | null = null;
+  activePreviewMediaType: 'image' | 'video' | null = null;
 
   // Options
   label = '';
@@ -62,15 +67,20 @@ export class ShareReportModalComponent implements OnInit, AfterViewInit {
   constructor(
     private http: HttpClient,
     private cdr: ChangeDetectorRef,
-    private modalService: NgbModal
+    private modalService: NgbModal,
+    private lightbox: Lightbox
   ) {}
 
   ngOnInit(): void {
     // Default: all items selected
     this.items.forEach(p => {
-      const baseId = (p.item as any)?.baseItemId ?? p.item?.id;
+      const baseId = this.getBaseId(p);
       if (baseId) this.selectedItemIds.add(Number(baseId));
     });
+    const firstItem = this.selectableItemsWithMediaFirst[0];
+    if (firstItem) {
+      this.setActivePreviewItem(firstItem);
+    }
     this.loadExistingTokens();
   }
 
@@ -81,10 +91,13 @@ export class ShareReportModalComponent implements OnInit, AfterViewInit {
 
   openModal(): void {
     this.modalRef = this.modalService.open(this.modalTemplate, {
-      size: 'lg',
+      size: 'xl',
       backdrop: 'static',
       keyboard: false,
-      centered: true
+      centered: true,
+      fullscreen: true,
+      scrollable: true,
+      windowClass: 'share-report-modal-window'
     });
     this.modalRef.result.finally(() => this.close());
   }
@@ -92,6 +105,163 @@ export class ShareReportModalComponent implements OnInit, AfterViewInit {
   get selectableItems(): any[] {
     // Include all flattened checklist items (top-level + nested)
     return this.items || [];
+  }
+
+  get selectableItemsWithMediaFirst(): any[] {
+    return [...this.selectableItems].sort((a, b) => this.getMediaCount(b) - this.getMediaCount(a));
+  }
+
+  get filteredSelectableItems(): any[] {
+    const query = this.itemSearch.trim().toLowerCase();
+    if (!query) {
+      return this.selectableItemsWithMediaFirst;
+    }
+
+    return this.selectableItemsWithMediaFirst.filter((progress) => {
+      const title = String(progress?.item?.title || '').toLowerCase();
+      const description = this.getItemDescription(progress).toLowerCase();
+      return title.includes(query) || description.includes(query);
+    });
+  }
+
+  get selectedItems(): any[] {
+    return this.selectableItemsWithMediaFirst.filter((progress) => this.selectedItemIds.has(this.getBaseId(progress)));
+  }
+
+  get activePreviewItem(): any | null {
+    if (!this.activePreviewItemId) {
+      return this.selectableItemsWithMediaFirst[0] || null;
+    }
+    return this.selectableItems.find((progress) => this.getBaseId(progress) === this.activePreviewItemId) || null;
+  }
+
+  get previewMediaForActive(): Array<{ url: string; type: 'image' | 'video' }> {
+    const active = this.activePreviewItem;
+    if (!active) {
+      return [];
+    }
+
+    const photos = this.getPhotoUrls(active).map((url) => ({ url, type: 'image' as const }));
+    const videos = this.getVideoUrls(active).map((url) => ({ url, type: 'video' as const }));
+    return [...photos, ...videos];
+  }
+
+  setActivePreviewItem(progress: any): void {
+    const baseId = this.getBaseId(progress);
+    if (!baseId) {
+      return;
+    }
+
+    this.activePreviewItemId = baseId;
+    const media = this.previewMediaFor(progress);
+    if (media.length > 0) {
+      this.activePreviewMediaUrl = media[0].url;
+      this.activePreviewMediaType = media[0].type;
+    } else {
+      this.activePreviewMediaUrl = null;
+      this.activePreviewMediaType = null;
+    }
+  }
+
+  isActivePreview(progress: any): boolean {
+    return this.getBaseId(progress) === this.activePreviewItemId;
+  }
+
+  selectPreviewMedia(url: string, type: 'image' | 'video', event?: Event): void {
+    event?.stopPropagation();
+    this.activePreviewMediaUrl = url;
+    this.activePreviewMediaType = type;
+  }
+
+  openShareMediaViewer(url: string | null, type: 'image' | 'video' | null, event?: Event): void {
+    event?.stopPropagation();
+    if (!url || !type) {
+      return;
+    }
+
+    if (type === 'image') {
+      const album = [{ src: url, thumb: url, caption: this.activePreviewItem?.item?.title || 'Preview' }];
+      this.lightbox.open(album, 0, {});
+      return;
+    }
+
+    // Fallback for video: open source in a new tab.
+    window.open(url, '_blank');
+  }
+
+  private previewMediaFor(progress: any): Array<{ url: string; type: 'image' | 'video' }> {
+    const photos = this.getPhotoUrls(progress).map((url) => ({ url, type: 'image' as const }));
+    const videos = this.getVideoUrls(progress).map((url) => ({ url, type: 'video' as const }));
+    return [...photos, ...videos];
+  }
+
+  getBaseId(progress: any): number {
+    return Number((progress?.item as any)?.baseItemId ?? progress?.item?.id ?? 0);
+  }
+
+  getMediaCount(progress: any): number {
+    const photos = this.getPhotoUrls(progress).length;
+    const videos = this.getVideoUrls(progress).length;
+    return photos + videos;
+  }
+
+  getPhotoUrls(progress: any): string[] {
+    const progressPhotos = Array.isArray(progress?.photos) ? progress.photos : [];
+    const itemPhotos = Array.isArray(progress?.item?.photos) ? progress.item.photos : [];
+    const merged = [...progressPhotos, ...itemPhotos];
+
+    return merged
+      .map((entry: any) => {
+        if (typeof entry === 'string') return entry;
+        return entry?.url || entry?.file_url || entry?.file_path || null;
+      })
+      .map((url: string | null) => this.resolveMediaUrl(url || ''))
+      .filter((url: string) => !!url)
+      .filter((url: string, index: number, arr: string[]) => arr.indexOf(url) === index);
+  }
+
+  getVideoUrls(progress: any): string[] {
+    const progressVideos = Array.isArray(progress?.videos) ? progress.videos : [];
+    const itemVideos = Array.isArray(progress?.item?.videos) ? progress.item.videos : [];
+    const merged = [...progressVideos, ...itemVideos];
+
+    return merged
+      .map((entry: any) => {
+        if (typeof entry === 'string') return entry;
+        return entry?.url || entry?.file_url || entry?.file_path || null;
+      })
+      .map((url: string | null) => this.resolveMediaUrl(url || ''))
+      .filter((url: string) => !!url)
+      .filter((url: string, index: number, arr: string[]) => arr.indexOf(url) === index);
+  }
+
+  private resolveMediaUrl(url: string): string {
+    const raw = (url || '').trim();
+    if (!raw) {
+      return '';
+    }
+    if (/^https?:\/\//i.test(raw)) {
+      return raw;
+    }
+
+    const cleanPath = raw.startsWith('/') ? raw.substring(1) : raw;
+    return `https://dashboard.eye-fi.com/${cleanPath}`;
+  }
+
+  getItemDescription(progress: any): string {
+    const raw = String(progress?.item?.description || progress?.item?.details || '').trim();
+    if (!raw) {
+      return '';
+    }
+
+    // API descriptions may contain HTML fragments; render as readable text in the selector/preview UI.
+    if (typeof document !== 'undefined') {
+      const el = document.createElement('div');
+      el.innerHTML = raw;
+      return (el.textContent || el.innerText || '').replace(/\s+/g, ' ').trim();
+    }
+
+    return raw.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
   }
 
   toggleItem(baseId: number): void {
@@ -104,7 +274,7 @@ export class ShareReportModalComponent implements OnInit, AfterViewInit {
 
   selectAll(): void {
     this.items.forEach(p => {
-      const baseId = (p.item as any)?.baseItemId ?? p.item?.id;
+      const baseId = this.getBaseId(p);
       if (baseId) this.selectedItemIds.add(Number(baseId));
     });
   }
@@ -115,13 +285,13 @@ export class ShareReportModalComponent implements OnInit, AfterViewInit {
 
   get allSelected(): boolean {
     return this.selectableItems.every(p => {
-      const baseId = (p.item as any)?.baseItemId ?? p.item?.id;
+      const baseId = this.getBaseId(p);
       return baseId && this.selectedItemIds.has(Number(baseId));
     });
   }
 
   isSelected(progress: any): boolean {
-    const baseId = (progress.item as any)?.baseItemId ?? progress.item?.id;
+    const baseId = this.getBaseId(progress);
     return !!baseId && this.selectedItemIds.has(Number(baseId));
   }
 
@@ -146,7 +316,7 @@ export class ShareReportModalComponent implements OnInit, AfterViewInit {
     this.step = 'generating';
 
     // Use null (show all) only if ALL items are selected; otherwise pass array
-    const allBaseIds = this.items.map(p => Number((p.item as any)?.baseItemId ?? p.item?.id)).filter(Boolean);
+    const allBaseIds = this.items.map(p => this.getBaseId(p)).filter(Boolean);
     const selectedArr = Array.from(this.selectedItemIds);
     const visibleItemIds = selectedArr.length === allBaseIds.length ? null : selectedArr;
 

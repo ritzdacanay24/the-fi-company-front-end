@@ -1463,7 +1463,10 @@ class PhotoChecklistConfigAPI {
                 
                 // SINGLE PASS: Insert items sequentially and set parent_id immediately
                 foreach ($data['items'] as $index => $item) {
-                    $orderIndex = $item['order_index'] ?? ($index + 1);
+                    // Persist strict list position instead of outline decimals.
+                    // This keeps sibling ordering stable even when order_index column
+                    // is INT/low-precision DECIMAL in older schemas.
+                    $orderIndex = $index + 1;
                     $level = $item['level'] ?? 0;
                     $title = $item['title'];
                     
@@ -1958,7 +1961,10 @@ class PhotoChecklistConfigAPI {
                 
                 // SINGLE PASS: Insert items sequentially and set parent_id immediately
                 foreach ($data['items'] as $index => $item) {
-                    $orderIndex = $item['order_index'] ?? ($index + 1);
+                    // Persist strict list position instead of outline decimals.
+                    // This keeps sibling ordering stable even when order_index column
+                    // is INT/low-precision DECIMAL in older schemas.
+                    $orderIndex = $index + 1;
                     $level = $item['level'] ?? 0;
                     $title = $item['title'];
                     
@@ -2233,10 +2239,9 @@ class PhotoChecklistConfigAPI {
                 $level = 0;
             }
 
-            $orderIndex = isset($item['order_index']) ? (int)$item['order_index'] : ($index + 1);
-            if ($orderIndex <= 0) {
-                $orderIndex = $index + 1;
-            }
+            // Persist strict list position to keep ordering deterministic across
+            // schemas that may store order_index as INT or DECIMAL.
+            $orderIndex = (float)($index + 1);
 
             $parentId = null;
             if ($level > 0) {
@@ -3276,7 +3281,8 @@ class PhotoChecklistConfigAPI {
         
         // Get checklist items with photos - order hierarchically
         $sql = "SELECT citm.*, 
-                       ps.id as photo_id, ps.file_name, ps.file_url, ps.file_type, ps.created_at as photo_created_at,
+                   ps.id as photo_id, ps.file_name, ps.file_url, ps.file_type, ps.created_at as photo_created_at,
+                   ps.photo_metadata,
                        ps.is_approved, ps.review_notes
                 FROM checklist_items citm
                 LEFT JOIN photo_submissions ps ON citm.id = ps.item_id AND ps.instance_id = ?
@@ -3330,12 +3336,22 @@ class PhotoChecklistConfigAPI {
             
             // Add photo or video if exists
             if ($row['photo_id']) {
+                $captureSource = null;
+                $metadataRaw = $row['photo_metadata'] ?? null;
+                if (is_string($metadataRaw) && trim($metadataRaw) !== '') {
+                    $decoded = json_decode($metadataRaw, true);
+                    if (is_array($decoded) && array_key_exists('capture_source', $decoded)) {
+                        $captureSource = $this->normalizeCaptureSource($decoded['capture_source']);
+                    }
+                }
+
                 $submission = [
                     'id' => $row['photo_id'],
                     'file_name' => $row['file_name'],
                     'file_url' => $row['file_url'],
                     'file_type' => $row['file_type'],
                     'created_at' => $row['photo_created_at'],
+                    'capture_source' => $captureSource,
                     'is_approved' => $row['is_approved'],
                     'review_notes' => $row['review_notes']
                 ];
@@ -3527,7 +3543,7 @@ class PhotoChecklistConfigAPI {
         $itemId = $_POST['item_id'] ?? null;
         $uploadedFile = $_FILES['photo'] ?? null;
         $userId = $_POST['user_id'] ?? null;
-        $captureSource = $_POST['capture_source'] ?? null;
+        $captureSource = $this->normalizeCaptureSource($_POST['capture_source'] ?? null);
         
         if (!$instanceId || !$itemId || !$uploadedFile) {
             throw new Exception('Missing required parameters');
@@ -3606,7 +3622,7 @@ class PhotoChecklistConfigAPI {
         if (move_uploaded_file($uploadedFile['tmp_name'], $uploadPath)) {
             // Build photo_metadata, including capture source
             $photoMetadata = json_encode([
-                'capture_source' => $captureSource  // 'camera', 'library', or null
+                'capture_source' => $captureSource
             ]);
 
             // Save to database
@@ -3648,6 +3664,31 @@ class PhotoChecklistConfigAPI {
         } else {
             throw new Exception('Failed to upload file');
         }
+    }
+
+    private function normalizeCaptureSource($rawSource): ?string {
+        if ($rawSource === null) {
+            return null;
+        }
+
+        $source = strtolower(trim((string)$rawSource));
+        if ($source === '') {
+            return null;
+        }
+
+        if ($source === 'in-app' || $source === 'in_app' || $source === 'inapp') {
+            return 'in-app';
+        }
+
+        if ($source === 'library' || $source === 'gallery' || $source === 'upload' || $source === 'file') {
+            return 'library';
+        }
+
+        if ($source === 'system' || $source === 'camera' || $source === 'native-camera' || $source === 'device-camera') {
+            return 'system';
+        }
+
+        return null;
     }
 
     public function deletePhoto($photoId) {

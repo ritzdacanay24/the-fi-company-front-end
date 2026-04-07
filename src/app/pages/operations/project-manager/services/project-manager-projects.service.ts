@@ -84,25 +84,18 @@ export class ProjectManagerProjectsService {
       'forecastConfirmed'
     ],
     gate2: [
-      'designTeamConceptProposal',
       'conceptArchitectureDefined',
       'roughCostEntered',
-      'timelineEstimatedLlt'
+      'longLeadItemsIdentified'
     ],
     gate3: [
-      'preliminaryBomForSourcing',
       'preliminaryBomUploaded',
-      'longLeadItemsIdentified',
-      'firstPosConfirmed'
-    ],
-    gate4: [
-      'detailedEngineeringDesign',
-      'dfmCompleted',
-      'sourcingProductionLogisticsAligned',
-      'engineeringReleaseEta',
       'protoQty',
       'partNumberMapped',
-      'finalBomReview',
+      'engineeringReleaseEta'
+    ],
+    gate4: [
+      'dfmCompleted',
       'engChecklistPixelMapping',
       'engChecklistInstallationInstructions',
       'engChecklistWorkInstruction',
@@ -110,19 +103,19 @@ export class ProjectManagerProjectsService {
       'engChecklistQualityDocs'
     ],
     gate5: [
-      'customerReviewValidation',
       'functionalValidationComplete',
       'pilotRunCompletedDate',
-      'instructionValidation',
-      'softwareFilesValidation',
-      'supplierFeedbackCaptured'
+      'finalBomApproved',
+      'packagingInstructionsComplete'
     ],
     gate6: [
-      'finalBomApproved',
       'qcProcedureDefined',
-      'packagingInstructionsComplete',
       'productionPoReceived',
-      'inventoryStrategyAligned'
+      'inventoryStrategyAligned',
+      'productionSignoffAt',
+      'qcSignoffAt',
+      'npiSignoffAt',
+      'gmSignoffAt'
     ]
   };
 

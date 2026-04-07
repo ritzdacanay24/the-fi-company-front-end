@@ -33,6 +33,7 @@ export class ChecklistNavigationComponent implements OnChanges, OnDestroy {
   @Input() summary: { completed: number; total: number; percent: number } | null = null;
   @Input() cardStyle = true;
   @Input() height: string | null = null;  // e.g., '500px', 'calc(100vh - 300px)'
+  @Input() disableVirtualScroll = false;
 
   @Input() showOnlyOpenItems = false;
   @Output() showOnlyOpenItemsChange = new EventEmitter<boolean>();
@@ -672,6 +673,10 @@ export class ChecklistNavigationComponent implements OnChanges, OnDestroy {
 
   isReorderViewportMode(): boolean {
     return this.canUseReorderControls();
+  }
+
+  shouldUseVirtualScroll(): boolean {
+    return !this.disableVirtualScroll;
   }
 
   isReadonlyMode(): boolean {

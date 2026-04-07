@@ -233,6 +233,7 @@
                     <td class="p-3">
                       <div>{{result.templateInfo.name}}</div>
                       <small class="text-muted">v{{result.templateInfo.version}} • {{result.templateInfo.category}}</small>
+                      <div class="small text-muted mt-1" *ngIf="result.templateInfo.description" [innerHTML]="result.templateInfo.description"></div>
                     </td>
                     <td class="p-3">
                       <div class="d-flex align-items-center">
@@ -261,13 +262,21 @@
                       </small>
                     </td>
                     <td class="p-3 d-print-none">
-                      <button class="btn btn-sm btn-outline-primary" 
-                              (click)="selectResult(result)"
-                              [disabled]="loadingDetails">
-                        <div class="spinner-border spinner-border-sm me-1" *ngIf="loadingDetails"></div>
-                        <i class="mdi mdi-eye me-1" *ngIf="!loadingDetails"></i>
-                        {{loadingDetails ? 'Loading...' : 'View Details'}}
-                      </button>
+                      <div class="d-flex flex-wrap gap-2">
+                        <button class="btn btn-sm btn-outline-primary" 
+                                (click)="selectResult(result)"
+                                [disabled]="loadingDetails">
+                          <div class="spinner-border spinner-border-sm me-1" *ngIf="loadingDetails"></div>
+                          <i class="mdi mdi-eye me-1" *ngIf="!loadingDetails"></i>
+                          {{loadingDetails ? 'Loading...' : 'View Details'}}
+                        </button>
+                        <button class="btn btn-sm btn-outline-success"
+                                (click)="openShareReport(result)"
+                                [disabled]="loadingDetails">
+                          <i class="mdi mdi-share-variant me-1"></i>
+                          Share
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 </tbody>
@@ -284,6 +293,7 @@
                     <i class="mdi mdi-clipboard-check me-2"></i>
                     {{result.instance.work_order_number}} - {{result.instance.part_number}}
                   </h6>
+                  <div class="small text-muted mb-1" *ngIf="result.templateInfo.description" [innerHTML]="result.templateInfo.description"></div>
                   <div class="d-flex align-items-center gap-3">
                     <small class="text-muted">
                       <i class="mdi mdi-barcode me-1"></i>
@@ -320,24 +330,37 @@
               <div *ngIf="result.photos.length > 0">
                 <div *ngFor="let photo of result.photos" class="border-bottom pb-3 mb-3" [hidden]="!hasPhotos(photo)">
                   <div class="row">
-                    <div class="col-md-8">
+                    <div class="col-md-3" *ngIf="getPrimarySampleImage(photo) as sampleImage">
+                      <label class="form-label small fw-bold">Sample Reference</label>
+                      <div class="text-center">
+                        <img [src]="getPhotoUrl(sampleImage.url)"
+                             class="img-fluid rounded border"
+                             style="max-height: 160px; cursor: pointer;"
+                             (click)="openLightbox(photo, 'sample', 0)"
+                             [alt]="'Sample for ' + photo.itemTitle">
+                        <div class="mt-2" *ngIf="sampleImage.label || sampleImage.description">
+                          <small class="text-muted d-block" *ngIf="sampleImage.label"><strong>{{sampleImage.label}}</strong></small>
+                          <small class="text-muted" *ngIf="sampleImage.description">{{sampleImage.description}}</small>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="col-md-9">
                       <h6 class="text-primary mb-2">
                         <i class="mdi mdi-clipboard-text me-1"></i>
                         {{photo.itemTitle}}
                         <span class="badge bg-danger ms-2" *ngIf="photo.isRequired">Required</span>
                       </h6>
-                      <p class="text-muted small mb-3" *ngIf="photo.itemDescription">
-                        {{photo.itemDescription}}
-                      </p>
+                      <div class="text-muted small mb-3" *ngIf="photo.itemDescription" [innerHTML]="photo.itemDescription"></div>
                       
                       <div class="mb-3">
                         <label class="form-label small fw-bold">Photos Taken ({{photo.photoUrls.length}})</label>
                         <div class="d-flex flex-wrap gap-2">
-                          <img *ngFor="let photoUrl of photo.photoUrls" 
-                               [src]="photoUrl"
+                          <img *ngFor="let photoUrl of photo.photoUrls; let photoIndex = index" 
+                               [src]="getPhotoUrl(photoUrl)"
                                class="img-thumbnail rounded border"
                                style="width: 120px; height: 120px; object-fit: cover; cursor: pointer;"
-                               (click)="openPreviewModal(photoUrl)"
+                             (click)="openLightbox(photo, 'photo', photoIndex, result.photos)"
                                [alt]="'Photo for ' + photo.itemTitle">
                         </div>
                       </div>
@@ -347,17 +370,6 @@
                         <div class="bg-light p-2 rounded small">
                           {{photo.notes}}
                         </div>
-                      </div>
-                    </div>
-                    
-                    <div class="col-md-4" *ngIf="photo.sampleImageUrl">
-                      <label class="form-label small fw-bold">Sample Reference</label>
-                      <div class="text-center">
-                        <img [src]="getPhotoUrl(photo.sampleImageUrl)"
-                             class="img-fluid rounded border"
-                             style="max-height: 200px; cursor: pointer;"
-                             (click)="openPreviewModal(getPhotoUrl(photo.sampleImageUrl))"
-                             [alt]="'Sample for ' + photo.itemTitle">
                       </div>
                     </div>
                   </div>
@@ -373,10 +385,16 @@
                 <i class="mdi mdi-file-chart me-2"></i>
                 Detailed Report: {{selectedResult.instance.work_order_number}}
               </h6>
-              <button class="btn btn-outline-secondary btn-sm" (click)="viewMode = 'summary'; selectedResult = null">
-                <i class="mdi mdi-arrow-left me-2"></i>
-                Back to Results
-              </button>
+              <div class="d-flex gap-2">
+                <button class="btn btn-outline-success btn-sm" (click)="openShareReport(selectedResult)">
+                  <i class="mdi mdi-share-variant me-2"></i>
+                  Share Report
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" (click)="viewMode = 'summary'; selectedResult = null">
+                  <i class="mdi mdi-arrow-left me-2"></i>
+                  Back to Results
+                </button>
+              </div>
             </div>
 
             <!-- Detailed content here - keeping existing detailed view structure but within the card -->
@@ -386,6 +404,7 @@
                   <h6 class="text-white mb-2">
                     {{selectedResult.templateInfo.name}}
                   </h6>
+                  <div class="small text-white-50 mb-2" *ngIf="selectedResult.templateInfo.description" [innerHTML]="selectedResult.templateInfo.description"></div>
                   <div class="row text-white-50">
                     <div class="col-md-6">
                       <small>Work Order: {{selectedResult.instance.work_order_number}}</small><br>
@@ -432,51 +451,25 @@
                   </div>
                   
                   <p class="text-muted mb-3" *ngIf="photo.itemDescription">
-                    {{photo.itemDescription}}
+                    <span [innerHTML]="photo.itemDescription"></span>
                   </p>
                 </div>
               </div>
               
               <div class="row">
-                <div class="col-md-8">
-                  <div class="mb-3">
-                    <label class="form-label fw-bold">Photos Taken</label>
-                    <div *ngIf="hasPhotos(photo); else noPhotos" class="d-flex flex-wrap gap-3">
-                      <div *ngFor="let photoUrl of photo.photoUrls; let photoIndex = index" 
-                           class="text-center">
-                        <img [src]="photoUrl"
-                             class="img-thumbnail rounded"
-                             style="width: 180px; height: 180px; object-fit: cover; cursor: pointer;"
-                             (click)="openPreviewModal(photoUrl)"
-                             [alt]="'Photo ' + (photoIndex + 1) + ' for ' + photo.itemTitle">
-                        <small class="text-muted d-block mt-1">Photo {{photoIndex + 1}}</small>
-                      </div>
-                    </div>
-                    <ng-template #noPhotos>
-                      <div class="text-center p-4 border border-dashed rounded bg-light">
-                        <i class="mdi mdi-camera-off text-muted mb-2" style="font-size: 2rem;"></i>
-                        <p class="text-muted mb-0">No photos taken for this item</p>
-                      </div>
-                    </ng-template>
-                  </div>
-                  
-                  <div *ngIf="photo.notes" class="mb-3">
-                    <label class="form-label fw-bold">Notes</label>
-                    <div class="bg-light p-3 rounded">
-                      {{photo.notes}}
-                    </div>
-                  </div>
-                </div>
-                
-                <div class="col-md-4">
-                  <div *ngIf="photo.sampleImageUrl; else noSample">
+                <div class="col-md-3">
+                  <div *ngIf="getPrimarySampleImage(photo) as sampleImage; else noSample">
                     <label class="form-label fw-bold">Sample Reference</label>
                     <div class="text-center">
-                      <img [src]="getPhotoUrl(photo.sampleImageUrl)"
+                      <img [src]="getPhotoUrl(sampleImage.url)"
                            class="img-fluid rounded border"
-                           style="max-height: 250px; cursor: pointer;"
-                           (click)="openPreviewModal(getPhotoUrl(photo.sampleImageUrl))"
+                           style="max-height: 180px; cursor: pointer;"
+                           (click)="openLightbox(photo, 'sample', 0)"
                            [alt]="'Sample reference for ' + photo.itemTitle">
+                    </div>
+                    <div class="mt-2" *ngIf="sampleImage.label || sampleImage.description">
+                      <small class="text-muted d-block" *ngIf="sampleImage.label"><strong>{{sampleImage.label}}</strong></small>
+                      <small class="text-muted" *ngIf="sampleImage.description">{{sampleImage.description}}</small>
                     </div>
                     
                     <div class="mt-3" *ngIf="photo.photoRequirements">
@@ -503,6 +496,36 @@
                       <p class="text-muted small mb-0">No sample reference provided</p>
                     </div>
                   </ng-template>
+                </div>
+
+                <div class="col-md-9">
+                  <div class="mb-3">
+                    <label class="form-label fw-bold">Photos Taken</label>
+                    <div *ngIf="hasPhotos(photo); else noPhotos" class="d-flex flex-wrap gap-3">
+                      <div *ngFor="let photoUrl of photo.photoUrls; let photoIndex = index" 
+                           class="text-center">
+                          <img [src]="getPhotoUrl(photoUrl)"
+                             class="img-thumbnail rounded"
+                             style="width: 180px; height: 180px; object-fit: cover; cursor: pointer;"
+                           (click)="openLightbox(photo, 'photo', photoIndex, selectedResult.photos)"
+                             [alt]="'Photo ' + (photoIndex + 1) + ' for ' + photo.itemTitle">
+                        <small class="text-muted d-block mt-1">Photo {{photoIndex + 1}}</small>
+                      </div>
+                    </div>
+                    <ng-template #noPhotos>
+                      <div class="text-center p-4 border border-dashed rounded bg-light">
+                        <i class="mdi mdi-camera-off text-muted mb-2" style="font-size: 2rem;"></i>
+                        <p class="text-muted mb-0">No photos taken for this item</p>
+                      </div>
+                    </ng-template>
+                  </div>
+                  
+                  <div *ngIf="photo.notes" class="mb-3">
+                    <label class="form-label fw-bold">Notes</label>
+                    <div class="bg-light p-3 rounded">
+                      {{photo.notes}}
+                    </div>
+                  </div>
                 </div>
               </div>
               
@@ -589,13 +612,69 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" (click)="closePreviewModal()">Close</button>
-        <a [href]="previewImage" download class="btn btn-primary" *ngIf="previewImage">
+        <button type="button" class="btn btn-primary" disabled title="Download temporarily disabled" *ngIf="previewImage">
           <i class="mdi mdi-download me-2"></i>
           Download
-        </a>
+        </button>
       </div>
     </div>
   </div>
+</div>
+
+<app-share-report-modal
+  *ngIf="showShareModal && shareInstanceId"
+  [instanceId]="shareInstanceId"
+  [instance]="shareInstance"
+  [items]="shareItemsForModal"
+  (closed)="closeShareReportModal()">
+</app-share-report-modal>
+
+<div *ngIf="lightboxUrl" class="lightbox-overlay" (click)="closeLightbox()">
+  <button class="lightbox-close" (click)="closeLightbox(); $event.stopPropagation()" aria-label="Close">
+    <i class="mdi mdi-close"></i>
+  </button>
+
+  <div *ngIf="showLightboxControls" class="lightbox-controls" (click)="$event.stopPropagation()">
+    <button type="button" class="btn btn-sm btn-light" (click)="zoomOut()" title="Zoom out">
+      <i class="mdi mdi-magnify-minus-outline"></i>
+    </button>
+    <button type="button" class="btn btn-sm btn-light" (click)="zoomIn()" title="Zoom in">
+      <i class="mdi mdi-magnify-plus-outline"></i>
+    </button>
+    <button type="button" class="btn btn-sm btn-light" (click)="rotateLeft()" title="Rotate left">
+      <i class="mdi mdi-rotate-left"></i>
+    </button>
+    <button type="button" class="btn btn-sm btn-light" (click)="rotateRight()" title="Rotate right">
+      <i class="mdi mdi-rotate-right"></i>
+    </button>
+    <button type="button" class="btn btn-sm btn-light" (click)="resetLightboxTransform()" title="Reset view">
+      <i class="mdi mdi-image-filter-center-focus-strong"></i>
+    </button>
+    <button type="button" class="btn btn-sm btn-light" disabled title="Download temporarily disabled">
+      <i class="mdi mdi-download"></i>
+    </button>
+  </div>
+
+  <button *ngIf="lightboxTotalCount > 1" class="lightbox-nav lightbox-prev" (click)="lightboxPrev(); $event.stopPropagation()" aria-label="Previous">
+    <i class="mdi mdi-chevron-left"></i>
+  </button>
+
+  <div class="lightbox-media" (click)="$event.stopPropagation()">
+    <img class="lightbox-image" [src]="lightboxUrl" [style.transform]="lightboxImageTransform" alt="Audit photo">
+  </div>
+
+  <div class="lightbox-sidebar" *ngIf="lightboxItemTitle" (click)="$event.stopPropagation()">
+    <div class="lightbox-item-title">{{ lightboxItemTitle }}</div>
+    <div class="lightbox-item-desc" *ngIf="lightboxItemDescription" [innerHTML]="lightboxItemDescription"></div>
+    <div class="lightbox-counter">
+      <i class="mdi mdi-image-outline me-1"></i>
+      {{ lightboxIndex + 1 }} / {{ lightboxTotalCount }}
+    </div>
+  </div>
+
+  <button *ngIf="lightboxTotalCount > 1" class="lightbox-nav lightbox-next" (click)="lightboxNext(); $event.stopPropagation()" aria-label="Next">
+    <i class="mdi mdi-chevron-right"></i>
+  </button>
 </div>
 
 <!-- Print Styles -->

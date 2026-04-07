@@ -178,6 +178,29 @@ export class ProjectManagerDashboardComponent implements OnInit {
     });
   }
 
+  openProjectGate(project: ProjectDashboardItem, event?: Event): void {
+    event?.stopPropagation();
+    const gateNumber = this.getGateIndex(project.gateTag) + 1;
+    this.router.navigate(['/operations/project-manager/new-project'], {
+      queryParams: { projectId: project.id, view: 'checklist', gate: `gate${gateNumber}` }
+    });
+  }
+
+  openSelectedProjectGate(gateLabel: string): void {
+    const selected = this.selectedProject;
+    if (!selected) {
+      return;
+    }
+
+    const match = String(gateLabel || '').match(/(\d+)/);
+    const gateNumber = match ? Number(match[1]) : this.getGateIndex(selected.gateTag) + 1;
+    const safeGate = Number.isFinite(gateNumber) && gateNumber >= 1 && gateNumber <= 6 ? gateNumber : 1;
+
+    this.router.navigate(['/operations/project-manager/new-project'], {
+      queryParams: { projectId: selected.id, view: 'checklist', gate: `gate${safeGate}` }
+    });
+  }
+
   private deleteProject(project: ProjectDashboardItem): void {
     const confirmDelete = window.confirm(
       `Delete project "${project.name}" (${project.id})? This cannot be undone.`
@@ -210,11 +233,11 @@ export class ProjectManagerDashboardComponent implements OnInit {
   }
 
   get onTrackCount(): number {
-    return this.projects.filter(project => project.status === 'On Track').length;
+    return this.projects.filter(project => project.readiness >= 80).length;
   }
 
   get atRiskOrOverdueCount(): number {
-    return this.projects.filter(project => project.status !== 'On Track').length;
+    return this.projects.filter(project => project.readiness < 80).length;
   }
 
   get avgReadiness(): number {
@@ -324,6 +347,16 @@ export class ProjectManagerDashboardComponent implements OnInit {
       validation: 'tag-validation'
     };
     return classMap[tag] || 'tag-awarded';
+  }
+
+  getReadinessBarClass(readiness: number): string {
+    if (readiness >= 80) {
+      return 'bar-track';
+    }
+    if (readiness >= 50) {
+      return 'bar-risk';
+    }
+    return 'bar-overdue';
   }
 
   getChecklistCompletion(project: ProjectDashboardItem): number {

@@ -847,6 +847,7 @@ interface ReorderUndoState {
                   [items]="editorNavItems"
                   [activeItemIndex]="activeNavItemIndex"
                   [mode]="isPublishedLocked() ? 'readonly' : 'editor'"
+                  [disableVirtualScroll]="true"
                   [allowReadonlyReorder]="canReorderPublishedTemplateInPlace()"
                   [autoScrollActive]="true"
                   [showMediaContext]="showNavMediaContext"
@@ -1643,6 +1644,7 @@ interface ReorderUndoState {
               <app-checklist-navigation
                 [items]="editorNavItems"
                 [mode]="'readonly'"
+                [disableVirtualScroll]="true"
                 [showMediaContext]="showNavMediaContext"
                 [showSearch]="false"
                 [showExpandCollapse]="false"

@@ -116,6 +116,14 @@ export class ReportsComponent implements OnInit {
       category: 'inventory',
       keywords: ['consolidation', 'optimization', 'efficiency', 'merge']
     },
+    {
+      title: 'Inventory Valuation Report',
+      description: 'Inventory valuation details by part, quantity, and total value',
+      path: 'inventory-valuation',
+      icon: 'mdi mdi-cash-multiple',
+      category: 'inventory',
+      keywords: ['inventory', 'valuation', 'value', 'cost']
+    },
 
     // Financial & Revenue Reports
     {

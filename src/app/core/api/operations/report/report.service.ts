@@ -49,6 +49,9 @@ export class ReportService {
   getInventoryReport = async () =>
     await firstValueFrom(this.http.get<any>(`https://dashboard.eye-fi.com/server/Api/inventory_by_prod_line/inventory_by_prod_line?pastDueOrders`))
 
+  getInventoryValuationReport = async () =>
+    await firstValueFrom(this.http.get<any>(`https://dashboard.eye-fi.com/server/Api/inventory_by_prod_line/inventory_by_prod_line?pastDueOrders`))
+
   getOneSkuLocationReport = async () =>
     await firstValueFrom(this.http.get<any>(`https://dashboard.eye-fi.com/server/Api/OneSkuLocationReport/oneSkuLocationReport`))
 

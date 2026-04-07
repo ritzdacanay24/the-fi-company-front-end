@@ -6,6 +6,7 @@ import { SharedModule } from '@app/shared/shared.module';
 import { ExecutionRole, ProjectWorkflowEngineService } from './services/project-workflow-engine.service';
 import { ProjectDashboardItem, ProjectManagerProjectsService } from './services/project-manager-projects.service';
 import { Router } from '@angular/router';
+import { AuthenticationService } from '@app/core/services/auth.service';
 
 type IntakeStoragePayload = {
   formValue: any;
@@ -29,6 +30,12 @@ type IntakeStoragePayload = {
   styleUrls: ['./new-project.component.scss']
 })
 export class NewProjectComponent implements OnDestroy {
+  readonly stakeholderSignoffConfig: Array<{ key: 'production' | 'qc' | 'npi' | 'gm'; label: string; owner: string; aliases: string[] }> = [
+    { key: 'production', label: 'Production', owner: 'Juvenal', aliases: ['juvenal', 'production'] },
+    { key: 'qc', label: 'QC', owner: 'Temenuga', aliases: ['temenuga', 'qc', 'quality'] },
+    { key: 'npi', label: 'NPI', owner: 'Mike', aliases: ['mike', 'npi'] },
+    { key: 'gm', label: 'GM', owner: 'Nick', aliases: ['nick', 'gm', 'general manager'] }
+  ];
   saveSuccessful = false;
   saveMessage = '';
   saveMessageType: 'success' | 'info' = 'success';
@@ -118,6 +125,14 @@ export class NewProjectComponent implements OnDestroy {
     packagingInstructionsComplete: [null],
   productionPoReceived: [null],
     inventoryStrategyAligned: [null],
+    productionSignoffBy: [''],
+    productionSignoffAt: [''],
+    qcSignoffBy: [''],
+    qcSignoffAt: [''],
+    npiSignoffBy: [''],
+    npiSignoffAt: [''],
+    gmSignoffBy: [''],
+    gmSignoffAt: [''],
 
     notes: [''],
 
@@ -135,8 +150,11 @@ export class NewProjectComponent implements OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private workflow: ProjectWorkflowEngineService,
-    private projectsService: ProjectManagerProjectsService
+    private projectsService: ProjectManagerProjectsService,
+    private authService: AuthenticationService
   ) {
+    this.syncExecutionRoleFromCurrentUser();
+
     const today = this.formatDate(new Date());
     this.generatedProjectId = '';
     this.projectForm.patchValue({
@@ -153,6 +171,7 @@ export class NewProjectComponent implements OnDestroy {
     this.route.queryParamMap.subscribe(params => {
       const projectId = (params.get('projectId') || '').trim();
       const view = (params.get('view') || '').trim();
+      const requestedGate = this.parseGateInputSystem(params.get('gate'));
       if (view === 'workflow' || view === 'checklist') {
         this.activeView = view;
       }
@@ -165,6 +184,7 @@ export class NewProjectComponent implements OnDestroy {
         this.generatedProjectId = selected.id;
         this.isDraftProject = selected.status === 'Draft';
         this.loadProjectIntakeState(selected.id, selected);
+        this.applyRequestedGateFromQuery(requestedGate);
         return;
       }
 
@@ -173,6 +193,7 @@ export class NewProjectComponent implements OnDestroy {
         this.generatedProjectId = projectId;
         this.isDraftProject = false;
         this.loadProjectIntakeState(projectId);
+        this.applyRequestedGateFromQuery(requestedGate);
         return;
       }
 
@@ -181,6 +202,7 @@ export class NewProjectComponent implements OnDestroy {
       this.lastSavedProjectId = '';
       this.generatedProjectId = '';
       this.isDraftProject = false;
+      this.applyRequestedGateFromQuery(requestedGate);
     });
   }
 
@@ -350,6 +372,14 @@ export class NewProjectComponent implements OnDestroy {
       packagingInstructionsComplete: null,
       productionPoReceived: null,
       inventoryStrategyAligned: null,
+      productionSignoffBy: '',
+      productionSignoffAt: '',
+      qcSignoffBy: '',
+      qcSignoffAt: '',
+      npiSignoffBy: '',
+      npiSignoffAt: '',
+      gmSignoffBy: '',
+      gmSignoffAt: '',
       notes: ''
     });
     this.saveSuccessful = false;
@@ -579,25 +609,18 @@ export class NewProjectComponent implements OnDestroy {
       'forecastConfirmed'
     ],
     gate2: [
-      'designTeamConceptProposal',
       'conceptArchitectureDefined',
       'roughCostEntered',
-      'timelineEstimatedLlt'
+      'longLeadItemsIdentified'
     ],
     gate3: [
-      'preliminaryBomForSourcing',
       'preliminaryBomUploaded',
-      'longLeadItemsIdentified',
-      'firstPosConfirmed'
-    ],
-    gate4: [
-      'detailedEngineeringDesign',
-      'dfmCompleted',
-      'sourcingProductionLogisticsAligned',
-      'engineeringReleaseEta',
       'protoQty',
       'partNumberMapped',
-      'finalBomReview',
+      'engineeringReleaseEta'
+    ],
+    gate4: [
+      'dfmCompleted',
       'engChecklistPixelMapping',
       'engChecklistInstallationInstructions',
       'engChecklistWorkInstruction',
@@ -605,21 +628,149 @@ export class NewProjectComponent implements OnDestroy {
       'engChecklistQualityDocs'
     ],
     gate5: [
-      'customerReviewValidation',
       'functionalValidationComplete',
       'pilotRunCompletedDate',
-      'instructionValidation',
-      'softwareFilesValidation',
-      'supplierFeedbackCaptured'
+      'finalBomApproved',
+      'packagingInstructionsComplete'
     ],
     gate6: [
-      'finalBomApproved',
       'qcProcedureDefined',
-      'packagingInstructionsComplete',
       'productionPoReceived',
-      'inventoryStrategyAligned'
+      'inventoryStrategyAligned',
+      'productionSignoffAt',
+      'qcSignoffAt',
+      'npiSignoffAt',
+      'gmSignoffAt'
     ]
   };
+
+  get currentUserDisplayName(): string {
+    const user = this.authService.currentUserValue || {};
+    return String(
+      user.full_name || user.fullName || user.username || user.name || user.email || 'Current User'
+    ).trim();
+  }
+
+  canSignOffStakeholder(stakeholder: 'production' | 'qc' | 'npi' | 'gm'): boolean {
+    if (this.isStakeholderSigned(stakeholder)) {
+      return false;
+    }
+
+    const matchedStakeholder = this.getMatchedStakeholderForCurrentUser();
+    return matchedStakeholder === stakeholder;
+  }
+
+  signOffStakeholder(stakeholder: 'production' | 'qc' | 'npi' | 'gm'): void {
+    if (!this.canSignOffStakeholder(stakeholder)) {
+      return;
+    }
+
+    const atField = this.getStakeholderAtField(stakeholder);
+    const byField = this.getStakeholderByField(stakeholder);
+    const signedAt = this.formatDateTime(new Date());
+    this.projectForm.patchValue({
+      [atField]: signedAt,
+      [byField]: this.currentUserDisplayName
+    });
+  }
+
+  isStakeholderSigned(stakeholder: 'production' | 'qc' | 'npi' | 'gm'): boolean {
+    return !!this.projectForm.get(this.getStakeholderAtField(stakeholder))?.value;
+  }
+
+  getStakeholderSignedBy(stakeholder: 'production' | 'qc' | 'npi' | 'gm'): string {
+    return String(this.projectForm.get(this.getStakeholderByField(stakeholder))?.value || '');
+  }
+
+  getStakeholderSignedAt(stakeholder: 'production' | 'qc' | 'npi' | 'gm'): string {
+    const raw = this.projectForm.get(this.getStakeholderAtField(stakeholder))?.value;
+    if (!raw) {
+      return '';
+    }
+
+    const date = new Date(raw);
+    if (Number.isNaN(date.getTime())) {
+      return String(raw);
+    }
+
+    return date.toLocaleString();
+  }
+
+  getStakeholderSignoffHint(stakeholder: 'production' | 'qc' | 'npi' | 'gm'): string {
+    if (this.isStakeholderSigned(stakeholder)) {
+      return 'Signed';
+    }
+
+    const matchedStakeholder = this.getMatchedStakeholderForCurrentUser();
+    if (matchedStakeholder === stakeholder) {
+      return 'You can sign off';
+    }
+
+    const stakeholderConfig = this.stakeholderSignoffConfig.find(config => config.key === stakeholder);
+    return stakeholderConfig ? `Only ${stakeholderConfig.owner} can sign` : 'Restricted';
+  }
+
+  private getMatchedStakeholderForCurrentUser(): 'production' | 'qc' | 'npi' | 'gm' | null {
+    const user = this.authService.currentUserValue || {};
+    const fullText = [
+      user.full_name,
+      user.fullName,
+      user.username,
+      user.name,
+      user.role,
+      user.user_role,
+      user.department,
+      user.title,
+      this.executionRole
+    ]
+      .map(value => String(value || '').toLowerCase())
+      .join(' ');
+
+    for (const stakeholder of this.stakeholderSignoffConfig) {
+      if (stakeholder.aliases.some(alias => fullText.includes(alias))) {
+        return stakeholder.key;
+      }
+    }
+
+    return null;
+  }
+
+  private getStakeholderByField(stakeholder: 'production' | 'qc' | 'npi' | 'gm'): string {
+    if (stakeholder === 'production') return 'productionSignoffBy';
+    if (stakeholder === 'qc') return 'qcSignoffBy';
+    if (stakeholder === 'npi') return 'npiSignoffBy';
+    return 'gmSignoffBy';
+  }
+
+  private getStakeholderAtField(stakeholder: 'production' | 'qc' | 'npi' | 'gm'): string {
+    if (stakeholder === 'production') return 'productionSignoffAt';
+    if (stakeholder === 'qc') return 'qcSignoffAt';
+    if (stakeholder === 'npi') return 'npiSignoffAt';
+    return 'gmSignoffAt';
+  }
+
+  private syncExecutionRoleFromCurrentUser(): void {
+    const user = this.authService.currentUserValue || {};
+    const roleText = String(
+      user.role || user.user_role || user.department || user.title || user.position || ''
+    ).toLowerCase();
+
+    if (!roleText) {
+      return;
+    }
+
+    if (roleText.includes('engineer')) {
+      this.executionRole = 'Engineering';
+    } else if (roleText.includes('supply')) {
+      this.executionRole = 'Supply Chain';
+    } else if (roleText.includes('quality') || roleText.includes('doc control') || roleText.includes('qc')) {
+      this.executionRole = 'Quality (Doc Control)';
+    } else if (roleText.includes('csm')) {
+      this.executionRole = 'CSM';
+    } else {
+      this.executionRole = 'Project Manager';
+    }
+  }
 
   private updateGateCompletionTimestamps(): void {
     const completedAt = this.formatDateTime(new Date());
@@ -868,6 +1019,48 @@ export class NewProjectComponent implements OnDestroy {
     return `Complete ${priorLabel} to 100% before moving to ${targetLabel}. Current ${priorLabel}: ${priorCompletion}%.`;
   }
 
+  private applyRequestedGateFromQuery(requestedGate: 'gate1' | 'gate2' | 'gate3' | 'gate4' | 'gate5' | 'gate6' | null): void {
+    if (!requestedGate) {
+      return;
+    }
+
+    if (this.canAccessGate(requestedGate)) {
+      this.gateNavigationMessage = '';
+      this.activeInputSystem = requestedGate;
+      const gateNumber = Number(requestedGate.replace('gate', ''));
+      if (Number.isFinite(gateNumber) && gateNumber >= 1 && gateNumber <= 6) {
+        this.activeGate = gateNumber as 1 | 2 | 3 | 4 | 5 | 6;
+      }
+      return;
+    }
+
+    this.gateNavigationMessage = this.getGateLockMessage(requestedGate);
+  }
+
+  private parseGateInputSystem(rawGate: string | null): 'gate1' | 'gate2' | 'gate3' | 'gate4' | 'gate5' | 'gate6' | null {
+    if (!rawGate) {
+      return null;
+    }
+
+    const normalized = String(rawGate).trim().toLowerCase();
+    const gateMap: Record<string, 'gate1' | 'gate2' | 'gate3' | 'gate4' | 'gate5' | 'gate6'> = {
+      '1': 'gate1',
+      gate1: 'gate1',
+      '2': 'gate2',
+      gate2: 'gate2',
+      '3': 'gate3',
+      gate3: 'gate3',
+      '4': 'gate4',
+      gate4: 'gate4',
+      '5': 'gate5',
+      gate5: 'gate5',
+      '6': 'gate6',
+      gate6: 'gate6'
+    };
+
+    return gateMap[normalized] || null;
+  }
+
   private getIntakeStorageKey(projectId: string): string {
     return `${this.intakeStoragePrefix}${projectId}`;
   }
@@ -1002,6 +1195,14 @@ export class NewProjectComponent implements OnDestroy {
       packagingInstructionsComplete: null,
       productionPoReceived: null,
       inventoryStrategyAligned: null,
+      productionSignoffBy: '',
+      productionSignoffAt: '',
+      qcSignoffBy: '',
+      qcSignoffAt: '',
+      npiSignoffBy: '',
+      npiSignoffAt: '',
+      gmSignoffBy: '',
+      gmSignoffAt: '',
       notes: '',
       gate1Status: 'In Progress',
       gate2Status: 'Not Started',

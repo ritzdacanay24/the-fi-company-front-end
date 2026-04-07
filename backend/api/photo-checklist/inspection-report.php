@@ -69,6 +69,109 @@ try {
         return $base . (strpos($url, '/') === 0 ? $url : '/' . $url);
     }
 
+    // ── GET: download media as attachment (proxy to avoid browser CORS download issues) ──
+    if ($method === 'GET' && $request === 'download_media') {
+        $url = trim($_GET['url'] ?? '');
+        $filename = trim($_GET['filename'] ?? '');
+
+        if (!$url) {
+            http_response_code(400);
+            echo json_encode(['error' => 'url is required']);
+            exit;
+        }
+
+        $parsed = parse_url($url);
+        if (!$parsed || empty($parsed['scheme'])) {
+            // Treat as relative path under current host
+            $url = toAbsoluteUrl($url, $baseUrl);
+            $parsed = parse_url($url);
+        }
+
+        $scheme = strtolower($parsed['scheme'] ?? '');
+        $host = strtolower($parsed['host'] ?? '');
+        if (!in_array($scheme, ['http', 'https'], true)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'invalid url scheme']);
+            exit;
+        }
+
+        // Restrict to trusted hosts only
+        $currentHost = strtolower($_SERVER['HTTP_HOST'] ?? '');
+        $allowedHosts = array_filter([
+            'dashboard.eye-fi.com',
+            $currentHost
+        ]);
+
+        if (!in_array($host, $allowedHosts, true)) {
+            http_response_code(403);
+            echo json_encode(['error' => 'host not allowed']);
+            exit;
+        }
+
+        $path = $parsed['path'] ?? '';
+        $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        $allowedExt = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', 'tif', 'tiff', 'heic', 'heif'];
+        if ($extension && !in_array($extension, $allowedExt, true)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'unsupported file type']);
+            exit;
+        }
+
+        if ($filename === '') {
+            $filename = basename($path ?: 'audit-photo.jpg');
+        }
+        // Sanitize filename for header safety
+        $filename = preg_replace('/[^A-Za-z0-9._-]/', '_', $filename);
+        if ($filename === '' || $filename === '.' || $filename === '..') {
+            $filename = 'audit-photo.jpg';
+        }
+
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+        curl_setopt($ch, CURLOPT_HEADER, true);
+
+        $response = curl_exec($ch);
+        if ($response === false) {
+            $err = curl_error($ch);
+            curl_close($ch);
+            http_response_code(502);
+            echo json_encode(['error' => 'download failed', 'detail' => $err]);
+            exit;
+        }
+
+        $statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+        $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+        curl_close($ch);
+
+        if ($statusCode < 200 || $statusCode >= 300) {
+            http_response_code(502);
+            echo json_encode(['error' => 'upstream media unavailable']);
+            exit;
+        }
+
+        $body = substr($response, $headerSize);
+        if ($body === false || $body === '') {
+            http_response_code(502);
+            echo json_encode(['error' => 'empty media response']);
+            exit;
+        }
+
+        // Switch to binary response headers
+        header_remove('Content-Type');
+        header('Content-Type: ' . ($contentType ?: 'application/octet-stream'));
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Content-Length: ' . strlen($body));
+        header('Cache-Control: private, max-age=0, no-cache, no-store, must-revalidate');
+        header('Pragma: no-cache');
+        echo $body;
+        exit;
+    }
+
     // ── GET: fetch public report by token ────────────────────────────────
     if ($method === 'GET' && $request === 'get_report') {
         $token = trim($_GET['token'] ?? '');

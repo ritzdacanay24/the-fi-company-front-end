@@ -1,9 +1,11 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NgbModal, NgbModalRef, NgbModule } from '@ng-bootstrap/ng-bootstrap';
+import { AgGridModule } from 'ag-grid-angular';
+import { ColDef, GridOptions } from 'ag-grid-community';
 import { ContinuityModalService } from '@app/pages/operations/labels/continuity-test-modal/continuity-test-modal.component';
 import { PlacardModalService } from '@app/shared/components/placard-modal/placard-modal.component';
 import { PhotoChecklistConfigService, ChecklistTemplate, ChecklistInstance, ChecklistItem } from '@app/core/api/photo-checklist-config/photo-checklist-config.service';
@@ -11,17 +13,20 @@ import { AuthenticationService } from '@app/core/services/auth.service';
 import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
 import { ChecklistNavigationComponent } from '@app/shared/components/checklist-navigation/checklist-navigation.component';
 import { ChecklistNavItem } from '@app/shared/models/checklist-navigation.model';
+import { ChecklistActionsCellRendererComponent } from './renderers/checklist-actions-cell-renderer.component';
 
 @Component({
     selector: 'app-checklist',
     standalone: true,
-    imports: [CommonModule, FormsModule, RouterModule, NgbModule, ChecklistNavigationComponent],
+    imports: [CommonModule, FormsModule, RouterModule, NgbModule, ChecklistNavigationComponent, AgGridModule],
     templateUrl: './checklist.component.html',
     styleUrls: []
 })
 export class ChecklistComponent implements OnInit {
     templates: ChecklistTemplate[] = [];
     instances: ChecklistInstance[] = [];
+    templateGridRows: Array<ChecklistTemplate & { familyLabel: string; major: number; customerLabel: string }> = [];
+    instanceGridRows: ChecklistInstance[] = [];
     loading = false;
     selectedTemplate: ChecklistTemplate | null = null;
 
@@ -38,6 +43,185 @@ export class ChecklistComponent implements OnInit {
     // Modal management
     showCreateInstanceModal = false;
     private previewModalRef: NgbModalRef | null = null;
+    @ViewChild('previewTemplateModal') previewTemplateModalRef?: TemplateRef<any>;
+
+    // AG Grid
+    defaultColDef: ColDef = {
+        sortable: true,
+        resizable: true,
+        filter: true,
+        floatingFilter: true
+    };
+
+    templateColumnDefs: ColDef[] = [
+        {
+            headerName: 'Version',
+            field: 'version',
+            width: 120,
+            cellRenderer: (params: any) => `<span class="badge bg-secondary" style="white-space: nowrap;">v${params.value || '-'}</span>`
+        },
+        {
+            headerName: 'Family',
+            field: 'familyLabel',
+            minWidth: 220,
+            flex: 1
+        },
+        {
+            headerName: 'Major',
+            field: 'major',
+            width: 130,
+            valueFormatter: (params: any) => `v${params.value || 0}`
+        },
+        {
+            headerName: 'Customer',
+            field: 'customerLabel',
+            minWidth: 180,
+            valueFormatter: (params: any) => params.value || '-'
+        },
+        {
+            headerName: 'Template Name',
+            field: 'name',
+            minWidth: 220,
+            flex: 1.2
+        },
+        {
+            headerName: 'Category',
+            field: 'category',
+            width: 140,
+            cellRenderer: (params: any) => `<span class="badge bg-primary">${String(params.value || '').replace(/^./, (c: string) => c.toUpperCase()) || '-'}</span>`
+        },
+        {
+            headerName: 'Part Number',
+            field: 'part_number',
+            minWidth: 170,
+            cellRenderer: (params: any) => params.value ? `<code>${params.value}</code>` : '<span class="text-muted">-</span>'
+        },
+        {
+            headerName: 'Product Type',
+            field: 'product_type',
+            minWidth: 150,
+            valueFormatter: (params: any) => params.value || '-'
+        },
+        {
+            headerName: 'Items',
+            field: 'item_count',
+            width: 110
+        },
+        {
+            headerName: 'Active Instances',
+            field: 'active_instances',
+            width: 150
+        },
+        {
+            headerName: 'Actions',
+            field: 'actions',
+            width: 130,
+            sortable: false,
+            filter: false,
+            floatingFilter: false,
+            pinned: 'right',
+            cellRenderer: ChecklistActionsCellRendererComponent,
+            cellRendererParams: {
+                mode: 'template',
+                onPreview: (data: ChecklistTemplate) => {
+                    if (this.previewTemplateModalRef) {
+                        this.openPreviewModal(data, this.previewTemplateModalRef);
+                    }
+                },
+                onStart: (data: ChecklistTemplate) => {
+                    void this.openCreateInstanceModal(data);
+                }
+            }
+        }
+    ];
+
+    instanceColumnDefs: ColDef[] = [
+        {
+            headerName: 'Work Order',
+            field: 'work_order_number',
+            minWidth: 150,
+            pinned: 'left',
+            cellRenderer: (params: any) => `<strong>${params.value || '-'}</strong>`
+        },
+        {
+            headerName: 'Template',
+            field: 'template_name',
+            minWidth: 220,
+            flex: 1
+        },
+        {
+            headerName: 'Part Number',
+            field: 'part_number',
+            minWidth: 150,
+            cellRenderer: (params: any) => params.value ? `<code>${params.value}</code>` : '-'
+        },
+        {
+            headerName: 'Serial Number',
+            field: 'serial_number',
+            minWidth: 170,
+            cellRenderer: (params: any) => params.value ? `<code>${params.value}</code>` : '-'
+        },
+        {
+            headerName: 'Operator',
+            field: 'operator_name',
+            minWidth: 160
+        },
+        {
+            headerName: 'Progress',
+            field: 'progress_percentage',
+            width: 120,
+            valueFormatter: (params: any) => `${Number(params.value || 0)}%`
+        },
+        {
+            headerName: 'Status',
+            field: 'status',
+            width: 130,
+            cellRenderer: (params: any) => {
+                const status = String(params.value || 'draft');
+                return `<span class="badge ${this.getStatusBadgeClass(status)}">${status.replace('_', ' ')}</span>`;
+            }
+        },
+        {
+            headerName: 'Created',
+            field: 'created_at',
+            width: 140,
+            valueFormatter: (params: any) => {
+                const value = params.value;
+                if (!value) return '-';
+                return new Date(value).toLocaleDateString();
+            }
+        },
+        {
+            headerName: 'Actions',
+            field: 'actions',
+            width: 120,
+            sortable: false,
+            filter: false,
+            floatingFilter: false,
+            pinned: 'right',
+            cellRenderer: ChecklistActionsCellRendererComponent,
+            cellRendererParams: {
+                mode: 'instance',
+                onOpen: (data: ChecklistInstance) => {
+                    this.openChecklistInstance(data);
+                }
+            }
+        }
+    ];
+
+    templateGridOptions: GridOptions = {
+        columnDefs: this.templateColumnDefs,
+        defaultColDef: this.defaultColDef,
+        animateRows: true,
+        suppressMenuHide: true
+    };
+
+    instanceGridOptions: GridOptions = {
+        columnDefs: this.instanceColumnDefs,
+        defaultColDef: this.defaultColDef,
+        animateRows: true,
+        suppressMenuHide: true
+    };
 
     // Preview navigation (shared component)
     previewNavItems: ChecklistNavItem[] = [];
@@ -76,22 +260,6 @@ export class ChecklistComponent implements OnInit {
 
         return ordered[0] || null;
     }
-
-    // Filter properties
-    filters = {
-        status: '',
-        template: '',
-        partNumber: '',
-        operator: ''
-    };
-
-    // Template search and filter properties
-    templateSearch = '';
-    templateFilters = {
-        category: '',
-        productType: '',
-        activeOnly: null as boolean | null
-    };
 
     // ==============================================
     // Grouped Template Table Models
@@ -212,6 +380,25 @@ export class ChecklistComponent implements OnInit {
         return families;
     }
 
+    private buildTemplateGridRows(): Array<ChecklistTemplate & { familyLabel: string; major: number; customerLabel: string }> {
+        const rows: Array<ChecklistTemplate & { familyLabel: string; major: number; customerLabel: string }> = [];
+
+        for (const family of this.getTemplateFamilyGroups()) {
+            for (const major of family.majors) {
+                for (const template of major.templates) {
+                    rows.push({
+                        ...template,
+                        familyLabel: family.label,
+                        major: major.major,
+                        customerLabel: this.getCustomerLabel(template)
+                    });
+                }
+            }
+        }
+
+        return rows;
+    }
+
     constructor(
         public route: ActivatedRoute,
         public router: Router,
@@ -238,6 +425,7 @@ export class ChecklistComponent implements OnInit {
             next: (templates) => {
                 // Operators should only see published templates
                 this.templates = (templates || []).filter(t => t.is_active && !t.is_draft && !!t.published_at);
+                this.templateGridRows = this.buildTemplateGridRows();
                 this.loading = false;
             },
             error: (error) => {
@@ -251,6 +439,7 @@ export class ChecklistComponent implements OnInit {
         this.photoChecklistService.getInstances().subscribe({
             next: (instances) => {
                 this.instances = instances;
+                this.instanceGridRows = instances || [];
             },
             error: (error) => {
                 console.error('Error loading instances:', error);
@@ -505,21 +694,7 @@ export class ChecklistComponent implements OnInit {
     }
 
     getFilteredInstances(): ChecklistInstance[] {
-        return this.instances.filter(instance => {
-            if (this.filters.status && instance.status !== this.filters.status) {
-                return false;
-            }
-            if (this.filters.template && instance.template_id !== parseInt(this.filters.template)) {
-                return false;
-            }
-            if (this.filters.partNumber && !instance.part_number.toLowerCase().includes(this.filters.partNumber.toLowerCase())) {
-                return false;
-            }
-            if (this.filters.operator && !instance.operator_name.toLowerCase().includes(this.filters.operator.toLowerCase())) {
-                return false;
-            }
-            return true;
-        });
+        return this.instanceGridRows;
     }
 
     // ==============================================
@@ -527,76 +702,7 @@ export class ChecklistComponent implements OnInit {
     // ==============================================
 
     getFilteredTemplates(): ChecklistTemplate[] {
-        return this.templates.filter(template => {
-            // Search filter
-            if (this.templateSearch) {
-                const searchTerm = this.templateSearch.toLowerCase();
-                const matchesSearch = 
-                    template.name.toLowerCase().includes(searchTerm) ||
-                    (template.description || '').toLowerCase().includes(searchTerm) ||
-                    (template.part_number || '').toLowerCase().includes(searchTerm) ||
-                    (template.product_type || '').toLowerCase().includes(searchTerm);
-                
-                if (!matchesSearch) return false;
-            }
-
-            // Category filter
-            if (this.templateFilters.category && template.category !== this.templateFilters.category) {
-                return false;
-            }
-
-            // Product type filter
-            if (this.templateFilters.productType) {
-                const productTypeSearch = this.templateFilters.productType.toLowerCase();
-                if (!(template.product_type || '').toLowerCase().includes(productTypeSearch)) {
-                    return false;
-                }
-            }
-
-            // Active/inactive filter
-            if (this.templateFilters.activeOnly !== null) {
-                if (template.is_active !== this.templateFilters.activeOnly) {
-                    return false;
-                }
-            }
-
-            return true;
-        });
-    }
-
-    onTemplateSearch(): void {
-        // This method is called on input changes to trigger re-filtering
-        // The actual filtering happens in getFilteredTemplates()
-    }
-
-    clearTemplateSearch(): void {
-        this.templateSearch = '';
-    }
-
-    clearAllTemplateFilters(): void {
-        this.templateSearch = '';
-        this.templateFilters = {
-            category: '',
-            productType: '',
-            activeOnly: null
-        };
-    }
-
-    hasActiveFilters(): boolean {
-        return !!(
-            this.templateFilters.category ||
-            this.templateFilters.productType ||
-            this.templateFilters.activeOnly !== null
-        );
-    }
-
-    highlightSearchTerm(text: string, searchTerm: string): string {
-        if (!searchTerm || !text) {
-            return text;
-        }
-
-        const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-        return text.replace(regex, '<mark class="bg-warning bg-opacity-50">$1</mark>');
+        return this.templates;
     }
 
     // ==============================================

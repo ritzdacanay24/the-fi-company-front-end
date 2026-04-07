@@ -16,6 +16,7 @@ import { EmptyLocationReportComponent } from './empty-location-report/empty-loca
 import { InventoryReportComponent } from './inventory-report/inventory-report.component';
 import { OneSkuLocationReportComponent } from './one-sku-location-report/one-sku-location-report.component';
 import { ItemConsolidationReportComponent } from './item-consolidation-report/item-consolidation-report.component';
+import { InventoryValuationComponent } from './inventory-valuation/inventory-valuation.component';
 import { RevenueComponent } from './revenue/revenue.component';
 import { WorkOrderVarianceReport } from './work-order-variance-report/work-order-variance-report.component';
 import { OtdReportComponent } from './otd-report/otd-report.component';
@@ -106,6 +107,11 @@ const routes: Routes = [
         title: "Item Consolidation Report",
         path: 'item-consolidation-report',
         component: ItemConsolidationReportComponent
+      },
+      {
+        title: "Inventory Valuation Report",
+        path: 'inventory-valuation',
+        component: InventoryValuationComponent
       },
       {
         title: "Revenue Report",

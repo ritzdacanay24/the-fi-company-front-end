@@ -1,0 +1,665 @@
+:host ::ng-deep .permit-checklists-page .ticket-grid {
+  .ag-row .ag-cell {
+    display: flex;
+    align-items: center;
+  }
+
+  .ag-header-cell-label {
+    align-items: center;
+  }
+}
+
+.permit-checklists-page {
+  max-width: 1480px;
+  margin: 0 auto;
+
+  --pc-accent: #1f6feb;
+  --pc-accent-soft: #e8f0ff;
+  --pc-border: #dbe3ef;
+  --pc-muted: #5f6b7a;
+
+  .workflow-toolbar {
+    border: 1px solid var(--pc-border);
+    background: linear-gradient(135deg, #f7fbff 0%, #f2f7ff 50%, #eef4ff 100%);
+  }
+
+  .ticket-grid {
+    width: 100%;
+    height: clamp(380px, 58vh, 620px);
+  }
+
+  .ticket-grid-actions {
+    display: flex;
+    gap: 0.35rem;
+    align-items: center;
+    height: 100%;
+
+    .btn {
+      padding: 0.1rem 0.5rem;
+      line-height: 1.2;
+    }
+  }
+
+  .checklist-chart-wrap {
+    background: #f9fbff;
+  }
+
+  .checklist-chart-header {
+    margin-bottom: 0.7rem;
+  }
+
+  .checklist-chart-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+
+  .checklist-chart-row {
+    display: grid;
+    grid-template-columns: 110px repeat(4, minmax(0, 1fr));
+    gap: 0.75rem;
+    align-items: center;
+    border: 1px solid #dbe3ef;
+    border-radius: 10px;
+    background: #ffffff;
+    padding: 0.65rem 0.75rem;
+  }
+
+  .checklist-chart-type {
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #34414f;
+  }
+
+  .metric-block {
+    min-width: 0;
+  }
+
+  .metric-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.5rem;
+    font-size: 0.74rem;
+    color: #5f6b7a;
+    margin-bottom: 0.28rem;
+
+    strong {
+      color: #1f2a38;
+      font-size: 0.78rem;
+    }
+  }
+
+  .metric-track {
+    width: 100%;
+    height: 8px;
+    border-radius: 999px;
+    background: #e8edf5;
+    overflow: hidden;
+  }
+
+  .metric-fill {
+    height: 100%;
+    border-radius: 999px;
+  }
+
+  .metric-fill-volume {
+    background: linear-gradient(90deg, #2563eb 0%, #3b82f6 100%);
+  }
+
+  .metric-fill-completion {
+    background: linear-gradient(90deg, #0d9488 0%, #14b8a6 100%);
+  }
+
+  .metric-fill-finalized {
+    background: linear-gradient(90deg, #4f46e5 0%, #6366f1 100%);
+  }
+
+  .metric-fill-approved {
+    background: linear-gradient(90deg, #c2410c 0%, #ea580c 100%);
+  }
+
+  .toolbar-kicker {
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--pc-accent);
+  }
+
+  .toolbar-actions {
+    .form-select {
+      border-color: #c8d6ec;
+    }
+  }
+
+  .form-shell {
+    border: 1px solid var(--pc-border);
+  }
+
+  .form-workspace {
+    .form-main-card {
+      height: 100%;
+    }
+
+    .ticket-side-card {
+      border: 1px solid var(--pc-border);
+      position: static;
+    }
+
+    .ticket-history-card {
+      border: 1px solid var(--pc-border);
+      position: static;
+    }
+
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+
+    .detail-label {
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--pc-muted);
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .detail-value {
+      color: #1f2a38;
+      font-weight: 600;
+      text-align: right;
+      word-break: break-word;
+    }
+
+    .status-pill {
+      display: inline-block;
+      padding: 0.18rem 0.65rem;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+    }
+
+    .status-draft {
+      color: #8a5f00;
+      background: #fff4d8;
+      border: 1px solid #f2d38f;
+    }
+
+    .status-saved {
+      color: #0a6b46;
+      background: #dff8ef;
+      border: 1px solid #9be5c9;
+    }
+
+    .status-submitted {
+      color: #0b4dbf;
+      background: #e5efff;
+      border: 1px solid #b2ccff;
+    }
+
+    .status-finalized {
+      color: #1e2430;
+      background: #e8ebf0;
+      border: 1px solid #c9d0dc;
+    }
+
+    .side-actions {
+      .btn,
+      .dropdown-item {
+        font-weight: 600;
+      }
+
+      .dropdown-menu {
+        min-width: 100%;
+      }
+    }
+
+    .recent-changes-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+    }
+
+    .recent-change-item {
+      border: 1px solid var(--pc-border);
+      border-radius: 8px;
+      background: #fbfcff;
+      padding: 0.55rem 0.65rem;
+    }
+
+    .recent-change-description {
+      color: #1f2a38;
+      font-weight: 600;
+      font-size: 0.86rem;
+      line-height: 1.35;
+    }
+
+    .recent-change-meta {
+      margin-top: 0.2rem;
+      color: var(--pc-muted);
+      font-size: 0.76rem;
+      line-height: 1.25;
+    }
+  }
+
+  .form-stats {
+    align-items: stretch;
+  }
+
+  .stat-chip {
+    min-width: 118px;
+    padding: 0.5rem 0.7rem;
+    border: 1px solid var(--pc-border);
+    border-radius: 10px;
+    background: #fbfcff;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+
+    .label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--pc-muted);
+      font-weight: 700;
+    }
+
+    .value {
+      font-size: 0.95rem;
+      color: #1f2a38;
+      font-weight: 700;
+    }
+  }
+
+  .stat-chip-primary {
+    border-color: #9dc0ff;
+    background: var(--pc-accent-soft);
+  }
+
+  .form-progress {
+    height: 0.48rem;
+    background: #e7edf6;
+
+    .progress-bar {
+      background: linear-gradient(90deg, #1f6feb 0%, #2d8cff 100%);
+    }
+  }
+
+  .section-title {
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.75rem;
+    color: #34414f;
+    font-weight: 700;
+  }
+
+  .form-grid {
+    margin-bottom: 0;
+    border-color: var(--pc-border);
+
+    tr:nth-child(even) {
+      th,
+      td {
+        background: #fcfdff;
+      }
+    }
+
+    th {
+      width: 45%;
+      min-width: 260px;
+      background: #f5f8fd;
+      vertical-align: middle;
+      font-weight: 600;
+      color: #34414f;
+    }
+
+    td {
+      vertical-align: middle;
+      background: #ffffff;
+
+      .form-control {
+        border-color: #ccd8ea;
+      }
+
+      .form-control:focus {
+        border-color: #99b8ee;
+        box-shadow: 0 0 0 0.18rem rgba(31, 111, 235, 0.12);
+      }
+    }
+  }
+
+  .notes-block {
+    .form-control {
+      border-color: #ccd8ea;
+    }
+  }
+
+  .financials-block {
+    border-top: 1px dashed #d9dce1;
+    padding-top: 0.9rem;
+
+    .form-control {
+      border-color: #ccd8ea;
+    }
+
+    .fee-breakdown {
+      border: 1px solid var(--pc-border);
+      border-radius: 8px;
+      padding: 0.65rem;
+      background: #fbfcff;
+      --fee-amount-width: 140px;
+      --fee-approved-width: 150px;
+      --fee-action-width: 90px;
+
+      .fee-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) var(--fee-amount-width) var(--fee-approved-width) var(--fee-action-width);
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.45rem;
+      }
+
+      .fee-row:last-child {
+        margin-bottom: 0;
+      }
+
+      .fee-label {
+        flex: 1;
+        font-weight: 600;
+        color: #1f2a38;
+      }
+
+      .fee-label-input {
+        width: 100%;
+      }
+
+      .fee-input {
+        width: 100%;
+      }
+
+      .fee-row .btn,
+      .fee-quick-add .btn {
+        width: 100%;
+        min-height: 38px;
+        padding-top: 0.375rem;
+        padding-bottom: 0.375rem;
+        line-height: 1.2;
+      }
+
+      .fee-quick-add {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) var(--fee-amount-width) var(--fee-approved-width) var(--fee-action-width);
+        gap: 0.5rem;
+      }
+
+      .fee-approved-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        min-height: 38px;
+        white-space: nowrap;
+      }
+
+      .fee-approved-placeholder {
+        display: inline-flex;
+        align-items: center;
+        min-height: 38px;
+      }
+
+      @media (max-width: 768px) {
+        .fee-row,
+        .fee-quick-add {
+          grid-template-columns: 1fr;
+        }
+      }
+    }
+
+    .financial-summary {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      font-size: 0.86rem;
+      color: #34414f;
+    }
+  }
+
+  .field-attachments-inline {
+    margin-top: 0.45rem;
+
+    .field-attachments-inline-list {
+      margin-top: 0.35rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+    }
+
+    .file-chip {
+      display: inline-block;
+      font-size: 0.74rem;
+      font-weight: 600;
+      color: #2d456c;
+      background: #eef4ff;
+      border: 1px solid #d2e1fb;
+      border-radius: 999px;
+      padding: 0.18rem 0.55rem;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .file-chip-button {
+      cursor: pointer;
+    }
+  }
+
+  .process-note-row-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+  }
+
+  .footer-notes {
+    border-top: 1px dashed #d9dce1;
+    padding-top: 0.85rem;
+    color: #495057;
+
+    .note-pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+    }
+
+    .note-pill {
+      display: inline-block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #28446e;
+      background: #eef4ff;
+      border: 1px solid #d2e1fb;
+      border-radius: 999px;
+      padding: 0.28rem 0.7rem;
+    }
+  }
+
+  .attachments-block {
+    border-top: 1px dashed #d9dce1;
+    padding-top: 0.95rem;
+
+    .form-control,
+    .form-select {
+      border-color: #ccd8ea;
+    }
+
+    .attachments-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+    }
+
+    .attachment-item {
+      border: 1px solid var(--pc-border);
+      border-radius: 8px;
+      background: #fbfcff;
+      padding: 0.55rem 0.7rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.8rem;
+    }
+
+    .attachment-name {
+      font-weight: 700;
+      color: #1f2a38;
+      word-break: break-word;
+      text-align: left;
+      text-decoration: none;
+    }
+
+    .attachment-meta {
+      margin-top: 0.15rem;
+      font-size: 0.79rem;
+      color: var(--pc-muted);
+      word-break: break-word;
+    }
+
+    .attachment-uploader {
+      margin-top: 0.1rem;
+      font-size: 0.78rem;
+      color: #334155;
+      font-weight: 600;
+      word-break: break-word;
+    }
+  }
+
+  .attachment-preview-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(12, 20, 33, 0.45);
+    z-index: 1060;
+  }
+
+  .attachment-preview-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(960px, calc(100vw - 2rem));
+    max-height: calc(100vh - 2rem);
+    overflow: auto;
+    z-index: 1070;
+    border: 1px solid var(--pc-border);
+
+    .preview-image-wrap {
+      max-height: calc(100vh - 14rem);
+      overflow: auto;
+      text-align: center;
+    }
+
+    .preview-pdf-wrap {
+      iframe {
+        width: 100%;
+        height: min(70vh, 760px);
+        border: 1px solid #d2dcea;
+        border-radius: 8px;
+      }
+    }
+
+    .preview-docx-wrap {
+      border: 1px solid #d2dcea;
+      border-radius: 8px;
+      padding: 0.9rem;
+      background: #ffffff;
+      max-height: min(70vh, 760px);
+      overflow: auto;
+
+      :global(p) {
+        margin-bottom: 0.8rem;
+      }
+    }
+  }
+
+  .process-note-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(720px, calc(100vw - 2rem));
+    max-height: calc(100vh - 2rem);
+    overflow: auto;
+    z-index: 1070;
+    border: 1px solid var(--pc-border);
+
+    .form-control {
+      border-color: #ccd8ea;
+    }
+
+    .existing-notes-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+    }
+
+    .existing-note-item {
+      border: 1px solid var(--pc-border);
+      border-radius: 8px;
+      background: #fbfcff;
+      padding: 0.6rem 0.7rem;
+    }
+
+    .existing-note-text {
+      font-weight: 600;
+      color: #1f2a38;
+      white-space: pre-wrap;
+    }
+
+    .existing-note-meta {
+      margin-top: 0.25rem;
+      font-size: 0.78rem;
+      color: var(--pc-muted);
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .permit-checklists-page {
+    .checklist-chart-row {
+      grid-template-columns: 1fr;
+      gap: 0.55rem;
+    }
+
+    .stat-chip {
+      min-width: 100px;
+    }
+
+    .form-workspace {
+      .ticket-side-card {
+        position: static;
+      }
+
+      .detail-value {
+        text-align: left;
+      }
+    }
+
+    .form-grid {
+      th,
+      td {
+        display: block;
+        width: 100%;
+      }
+
+      th {
+        min-width: auto;
+      }
+    }
+  }
+}

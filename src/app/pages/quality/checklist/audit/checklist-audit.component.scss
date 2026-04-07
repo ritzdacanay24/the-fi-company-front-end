@@ -339,6 +339,130 @@
   }
 }
 
+/* Shared report-style lightbox */
+.lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.92);
+  z-index: 9999;
+
+  .lightbox-media {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .lightbox-image {
+    max-width: 100vw;
+    max-height: 100vh;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    transform-origin: center center;
+    transition: transform 120ms ease-out;
+  }
+
+  .lightbox-controls {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    z-index: 4;
+    display: flex;
+    gap: 0.35rem;
+    padding: 0.35rem;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+
+    .btn {
+      min-width: 34px;
+      height: 34px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      line-height: 1;
+    }
+  }
+
+  .lightbox-sidebar {
+    position: absolute;
+    left: 1rem;
+    bottom: 1rem;
+    width: 260px;
+    max-height: calc(100vh - 6rem);
+    background: rgba(10, 10, 20, 0.78);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 1rem;
+    color: #fff;
+    overflow-y: auto;
+
+    .lightbox-item-title {
+      font-size: 0.92rem;
+      font-weight: 700;
+      line-height: 1.35;
+      color: #fff;
+      margin-bottom: 0.4rem;
+    }
+
+    .lightbox-item-desc {
+      font-size: 0.78rem;
+      color: rgba(255, 255, 255, 0.7);
+      line-height: 1.5;
+      margin-bottom: 0.6rem;
+    }
+
+    .lightbox-counter {
+      font-size: 0.72rem;
+      color: rgba(255, 255, 255, 0.5);
+    }
+  }
+
+  .lightbox-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: rgba(255, 255, 255, 0.15);
+    border: none;
+    color: #fff;
+    font-size: 1.5rem;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3;
+  }
+
+  .lightbox-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.12);
+    border: none;
+    color: #fff;
+    font-size: 2rem;
+    width: 48px;
+    height: 64px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3;
+
+    &.lightbox-prev { left: 0.6rem; }
+    &.lightbox-next { right: 0.6rem; }
+  }
+}
+
 /* Animation for photo hover effects */
 .photo-hover-effect {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);

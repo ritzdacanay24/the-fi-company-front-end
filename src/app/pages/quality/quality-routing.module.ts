@@ -72,6 +72,15 @@ const routes: Routes = [
     loadComponent: () => import('./quality-version-control/quality-version-control.component').then(c => c.QualityVersionControlComponent),
   },
   {
+    title: "Permit Checklists",
+    path: "permit-checklists",
+    loadComponent: () =>
+      import("./permit-checklists/permit-checklists.component").then(
+        (m) => m.PermitChecklistsComponent
+      ),
+    runGuardsAndResolvers: "always",
+  },
+  {
     path: "overview",
     loadChildren: () =>
       import("./overview/overview-routing.module").then(

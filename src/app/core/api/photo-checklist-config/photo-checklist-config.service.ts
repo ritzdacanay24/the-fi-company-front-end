@@ -512,7 +512,7 @@ export class PhotoChecklistConfigService {
     instanceId: number,
     itemId: number,
     file: File,
-    options?: { captureSource?: 'camera' | 'library'; userId?: number | string }
+    options?: { captureSource?: 'in-app' | 'system' | 'library'; userId?: number | string }
   ): Observable<{success: boolean, file_url: string}> {
     // Add debugging to see what values are actually received
     console.log('PhotoChecklistConfigService.uploadPhoto called with:', {

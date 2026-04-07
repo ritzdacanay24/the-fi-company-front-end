@@ -300,7 +300,7 @@
     </ng-template>
 
     <!-- EDITOR MODE: true virtual scrolling -->
-    <cdk-virtual-scroll-viewport *ngIf="isReorderViewportMode() && !isLoading && !loadError && navItems.length > 0"
+    <cdk-virtual-scroll-viewport *ngIf="shouldUseVirtualScroll() && isReorderViewportMode() && !isLoading && !loadError && navItems.length > 0"
       class="nav-editor-viewport list-group list-group-flush"
       [itemSize]="36"
       [minBufferPx]="280"
@@ -328,8 +328,33 @@
       </a>
     </cdk-virtual-scroll-viewport>
 
+    <!-- EDITOR MODE: non-virtual fallback -->
+    <div *ngIf="!shouldUseVirtualScroll() && isReorderViewportMode() && !isLoading && !loadError && navItems.length > 0"
+      class="list-group list-group-flush overflow-auto"
+      [style.height]="height || '100%'">
+      <a *ngFor="let entry of visibleNavItems; trackBy: trackByVisibleItem"
+        [id]="'nav-item-' + entry.originalIndex"
+        class="list-group-item list-group-item-action py-0 border-0"
+        [class.active]="activeNavItemIndex === entry.originalIndex"
+        [class.nav-item-match]="entry.isMatch"
+        [class.nav-item-invalid]="!!entry.item.isInvalid"
+        [class.nav-drop-group-highlight]="isInHoveredDropGroup(entry.originalIndex)"
+        [class.nav-drop-before]="isReorderDragging && dragHoverTargetIndex === entry.originalIndex && dragHoverPosition === 'before'"
+        [class.nav-drop-inside]="isReorderDragging && dragHoverTargetIndex === entry.originalIndex && dragHoverPosition === 'inside'"
+        [class.nav-drop-after]="isReorderDragging && dragHoverTargetIndex === entry.originalIndex && dragHoverPosition === 'after'"
+        [class.nav-drop-target-invalid]="false"
+        style="cursor: pointer; min-height: 36px;"
+        (click)="selectItem(entry.originalIndex)">
+        <div class="d-flex align-items-center gap-0 nav-row-content">
+          <span style="width: 8px;"></span>
+
+          <ng-container *ngTemplateOutlet="navItemTpl; context: { item: entry.item, i: entry.originalIndex, hasChildren: entry.hasChildren }"></ng-container>
+        </div>
+      </a>
+    </div>
+
     <!-- READONLY MODE: true virtual scrolling, renders only visible rows + buffer -->
-    <cdk-virtual-scroll-viewport *ngIf="isReadonlyMode() && !allowReadonlyReorder && !isLoading && !loadError && navItems.length > 0"
+    <cdk-virtual-scroll-viewport *ngIf="shouldUseVirtualScroll() && isReadonlyMode() && !allowReadonlyReorder && !isLoading && !loadError && navItems.length > 0"
       class="nav-readonly-viewport list-group list-group-flush"
       [itemSize]="36"
       [minBufferPx]="280"
@@ -349,6 +374,24 @@
         </div>
       </a>
     </cdk-virtual-scroll-viewport>
+
+    <!-- READONLY MODE: non-virtual fallback -->
+    <div *ngIf="!shouldUseVirtualScroll() && isReadonlyMode() && !allowReadonlyReorder && !isLoading && !loadError && navItems.length > 0"
+      class="list-group list-group-flush overflow-auto"
+      [style.height]="height || '100%'">
+      <a *ngFor="let entry of visibleNavItems; trackBy: trackByVisibleItem"
+        [id]="'nav-item-' + entry.originalIndex"
+        class="list-group-item list-group-item-action py-0 border-0 nav-readonly-item"
+        [class.active]="activeNavItemIndex === entry.originalIndex"
+        [class.nav-item-match]="entry.isMatch"
+        [class.nav-item-invalid]="!!entry.item.isInvalid"
+        style="cursor: pointer; min-height: 36px;"
+        (click)="selectItem(entry.originalIndex)">
+        <div class="d-flex align-items-center gap-0 nav-row-content">
+          <ng-container *ngTemplateOutlet="navItemTpl; context: { item: entry.item, i: entry.originalIndex, hasChildren: entry.hasChildren }"></ng-container>
+        </div>
+      </a>
+    </div>
 
   </div>
 </div>

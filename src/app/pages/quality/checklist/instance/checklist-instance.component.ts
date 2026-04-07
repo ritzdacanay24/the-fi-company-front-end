@@ -41,6 +41,7 @@ import { PdfExportService } from './services/pdf-export.service';
   ]
 })
 export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDestroy {
+  private readonly openChecklistNavHintKey = 'photo_checklist_open_nav_hint_instance_id';
   instance: ChecklistInstance | null = null;
   template: ChecklistTemplate | null = null;
   loading = true;
@@ -97,6 +98,9 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   private swipeSlideTimeouts: any[] = [];
 
   private instructionsResizeObserver: ResizeObserver | null = null;
+  private instructionsScrollChangesSub?: Subscription;
+  private routeQueryParamsSub?: Subscription;
+  private carouselListenerCleanupFns: Array<() => void> = [];
 
   showOptionalPhotoFor(itemId: number): void {
     this.showOptionalPhotoCapture[itemId] = true;
@@ -1581,7 +1585,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       this.cdr.detectChanges();
     });
     
-    this.route.queryParams.subscribe(params => {
+    this.routeQueryParamsSub = this.route.queryParams.subscribe(params => {
       const idParam = params['id'];
       const stepParam = params['step'];
       const itemParam = params['item'];
@@ -1663,7 +1667,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     setTimeout(() => this.attachSwipeListeners(), 0);
 
     try {
-      this.instructionsScrollEls?.changes?.subscribe(() => {
+      this.instructionsScrollChangesSub = this.instructionsScrollEls?.changes?.subscribe(() => {
         setTimeout(() => {
           this.attachInstructionsObservers();
           this.updateInstructionsOverflowHints();
@@ -1677,6 +1681,17 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   ngOnDestroy(): void {
     this.detachInstructionsObservers();
     this.detachSwipeListeners();
+    this.detachCarouselListeners();
+
+    if (this.instructionsScrollChangesSub) {
+      this.instructionsScrollChangesSub.unsubscribe();
+      this.instructionsScrollChangesSub = undefined;
+    }
+
+    if (this.routeQueryParamsSub) {
+      this.routeQueryParamsSub.unsubscribe();
+      this.routeQueryParamsSub = undefined;
+    }
 
     this.stopCameraStream();
 
@@ -1953,29 +1968,48 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   }
 
   private initializeCarousels(): void {
+    this.detachCarouselListeners();
+
     try {
-      const carousels = document.querySelectorAll('.carousel');
+      const carousels = document.querySelectorAll<HTMLElement>('.carousel');
       
       carousels.forEach((carousel) => {
-        // Set up slide change event listeners
-        carousel.addEventListener('slide.bs.carousel', (event: any) => {
+        const onSlide = (event: any) => {
           const slideIndex = event.to;
           const carouselId = carousel.id;
           const itemId = carouselId.replace('photoCarousel-', '');
           this.updateThumbnailHighlight(itemId, slideIndex);
-        });
+        };
         
-        carousel.addEventListener('slid.bs.carousel', (event: any) => {
+        const onSlid = (event: any) => {
           const slideIndex = event.to;
           const carouselId = carousel.id;
           const itemId = carouselId.replace('photoCarousel-', '');
           this.updateThumbnailHighlight(itemId, slideIndex);
+        };
+
+        carousel.addEventListener('slide.bs.carousel', onSlide as EventListener);
+        carousel.addEventListener('slid.bs.carousel', onSlid as EventListener);
+        this.carouselListenerCleanupFns.push(() => {
+          carousel.removeEventListener('slide.bs.carousel', onSlide as EventListener);
+          carousel.removeEventListener('slid.bs.carousel', onSlid as EventListener);
         });
       });
       
     } catch (error) {
       console.error('Error initializing carousels:', error);
     }
+  }
+
+  private detachCarouselListeners(): void {
+    for (const cleanup of this.carouselListenerCleanupFns) {
+      try {
+        cleanup();
+      } catch {
+        // ignore
+      }
+    }
+    this.carouselListenerCleanupFns = [];
   }
 
   /**
@@ -2207,6 +2241,8 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       
       // Extract videos from instance item (NEW)
       const existingVideos = instanceItem?.videos?.map((v: any) => v.file_url || v.url || v) || [];
+      const serverPhotoMeta = this.extractMediaSourceMeta(existingPhotos, instanceItem?.photos || []);
+      const serverVideoMeta = this.extractMediaSourceMeta(existingVideos, instanceItem?.videos || []);
 
       const localExisting = currentLocalByItemId.get(String(itemId));
       const mergedPhotos = this.mergeMediaUrlsForUi(existingPhotos, localExisting?.photos || []);
@@ -2274,6 +2310,9 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         (localData as any)._hydratedLastModifiedByUserId = lastModifiedByUserId;
         (localData as any)._hydratedLastModifiedByName = lastModifiedByName;
       }
+
+      photoMeta = this.mergeMediaSourceMeta(mergedPhotos, photoMeta, serverPhotoMeta);
+      videoMeta = this.mergeMediaSourceMeta(mergedVideos, videoMeta, serverVideoMeta);
       
       const submissionType = item.submission_type || 'photo';
       const hasMedia = mergedPhotos.length > 0 || mergedVideos.length > 0;
@@ -2414,6 +2453,71 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     return merged;
   }
 
+  private normalizeSourceValue(raw: any): 'in-app' | 'system' | 'library' | undefined {
+    const value = String(raw || '').trim().toLowerCase();
+    if (!value) return undefined;
+    if (value === 'in-app' || value === 'in_app' || value === 'inapp') return 'in-app';
+    if (value === 'library' || value === 'gallery' || value === 'upload' || value === 'file') return 'library';
+    if (value === 'system' || value === 'camera' || value === 'native-camera' || value === 'device-camera') return 'system';
+    return undefined;
+  }
+
+  private extractMediaSourceMeta(
+    urls: string[],
+    serverMediaRows: any[]
+  ): Record<string, { source?: 'in-app' | 'system' | 'library' }> {
+    const metaByUrl: Record<string, { source?: 'in-app' | 'system' | 'library' }> = {};
+    const byNormalizedUrl = new Map<string, 'in-app' | 'system' | 'library'>();
+
+    for (const row of (serverMediaRows || [])) {
+      const url = String(row?.file_url || row?.url || '').trim();
+      if (!url) continue;
+      const source = this.normalizeSourceValue(row?.capture_source);
+      if (!source) continue;
+      byNormalizedUrl.set(this.normalizeMediaPathForMerge(url), source);
+    }
+
+    for (const url of (urls || [])) {
+      const key = this.normalizeMediaPathForMerge(url);
+      const source = byNormalizedUrl.get(key);
+      if (source) {
+        metaByUrl[url] = { source };
+      }
+    }
+
+    return metaByUrl;
+  }
+
+  private mergeMediaSourceMeta(
+    urls: string[],
+    existingMeta?: Record<string, { source?: 'in-app' | 'system' | 'library' }>,
+    fallbackMeta?: Record<string, { source?: 'in-app' | 'system' | 'library' }>
+  ): Record<string, { source?: 'in-app' | 'system' | 'library' }> | undefined {
+    const merged: Record<string, { source?: 'in-app' | 'system' | 'library' }> = {};
+    const fallbackByNormalized = new Map<string, { source?: 'in-app' | 'system' | 'library' }>();
+
+    for (const [url, meta] of Object.entries(fallbackMeta || {})) {
+      const source = this.normalizeSourceValue(meta?.source);
+      if (!source) continue;
+      fallbackByNormalized.set(this.normalizeMediaPathForMerge(url), { source });
+    }
+
+    for (const url of (urls || [])) {
+      const explicit = this.normalizeSourceValue(existingMeta?.[url]?.source);
+      if (explicit) {
+        merged[url] = { source: explicit };
+        continue;
+      }
+
+      const fallback = fallbackByNormalized.get(this.normalizeMediaPathForMerge(url));
+      if (fallback?.source) {
+        merged[url] = { source: fallback.source };
+      }
+    }
+
+    return Object.keys(merged).length ? merged : undefined;
+  }
+
   /**
    * Navigate to the first incomplete item (only if step param not in URL)
    */
@@ -2428,14 +2532,78 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       return;
     }
     
-    // Find first incomplete parent item (level 0)
-    const firstIncompleteIndex = this.itemProgress.findIndex(p => 
-      !p.completed && (p.item.level === 0 || !p.item.level)
-    );
+    const isActionableTask = (p: ChecklistItemProgress | undefined): boolean => {
+      if (!p || p.completed) {
+        return false;
+      }
+
+      const submissionType = String((p.item as any)?.submission_type || '').toLowerCase();
+      const pictureRequired = !!p.item?.photo_requirements?.picture_required;
+      const hasMinPhotos = Number(p.item?.photo_requirements?.min_photos || 0) > 0;
+
+      // Treat concrete media/check tasks as actionable; avoid jumping to folder/group rows.
+      if (submissionType === 'photo' || submissionType === 'video' || submissionType === 'audio' || submissionType === 'either') {
+        return true;
+      }
+
+      // For "none" submission type, only treat as actionable when explicit photo requirements exist.
+      return pictureRequired || hasMinPhotos;
+    };
+
+    const prioritizeRequiredFirst = this.consumeOpenChecklistNavigationHint();
+
+    let firstIncompleteIndex = -1;
+
+    if (prioritizeRequiredFirst) {
+      // My Open Checklists selection: prioritize first required incomplete task.
+      firstIncompleteIndex = this.itemProgress.findIndex((p) => !!p && !p.completed && !!p.item?.is_required && isActionableTask(p));
+
+      if (firstIncompleteIndex === -1) {
+        firstIncompleteIndex = this.itemProgress.findIndex((p) => isActionableTask(p));
+      }
+
+      if (firstIncompleteIndex === -1) {
+        firstIncompleteIndex = this.itemProgress.findIndex((p) => !p.completed);
+      }
+    } else {
+      // Default page load/reload behavior: first incomplete parent item.
+      firstIncompleteIndex = this.itemProgress.findIndex((p) => !p?.completed && (p?.item?.level === 0 || !p?.item?.level));
+
+      // Fallback: any first incomplete item.
+      if (firstIncompleteIndex === -1) {
+        firstIncompleteIndex = this.itemProgress.findIndex((p) => !p.completed);
+      }
+    }
     
     if (firstIncompleteIndex !== -1) {
-      this.currentStep = firstIncompleteIndex + 1; // Steps are 1-indexed
+      // Align step with the root parent while focusing the exact task row.
+      this.selectedItemIndex = firstIncompleteIndex;
+      const rootIndex = this.findRootParentIndex(firstIncompleteIndex);
+      const rootProgress = rootIndex >= 0 ? this.itemProgress[rootIndex] : this.itemProgress[firstIncompleteIndex];
+      const step = this.getItemNumber(rootProgress);
+      this.currentStep = step > 0 ? step : firstIncompleteIndex + 1;
       this.updateUrlWithCurrentStep();
+    }
+  }
+
+  private setOpenChecklistNavigationHint(instanceId: number): void {
+    try {
+      if (Number.isFinite(instanceId) && instanceId > 0) {
+        sessionStorage.setItem(this.openChecklistNavHintKey, String(instanceId));
+      }
+    } catch {
+      // ignore storage failures
+    }
+  }
+
+  private consumeOpenChecklistNavigationHint(): boolean {
+    try {
+      const raw = sessionStorage.getItem(this.openChecklistNavHintKey);
+      sessionStorage.removeItem(this.openChecklistNavHintKey);
+      const hintedId = Number(raw || 0);
+      return hintedId > 0 && hintedId === Number(this.instanceId || 0);
+    } catch {
+      return false;
     }
   }
 
@@ -2531,7 +2699,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
 
       this.uploadProgress[itemIdKey] = 0;
       this.photoOps.uploadPhoto(this.instanceId, dbItemId, firstFile!, {
-        captureSource: captureSource === 'library' ? 'library' : 'camera',
+        captureSource,
         userId: this.currentUserId || undefined
       }).subscribe({
         next: (response) => {
@@ -2593,7 +2761,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       const file = files[index];
       
       this.photoOps.uploadPhoto(this.instanceId, dbItemId, file, {
-        captureSource: captureSource === 'library' ? 'library' : 'camera',
+        captureSource,
         userId: this.currentUserId || undefined
       }).subscribe({
         next: (response) => {
@@ -3127,7 +3295,8 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       }
       for (const video of (p.videos || [])) {
         const url = this.getPhotoUrl(video);
-        media.push({ url, type: 'video', progress: p, source: null });
+        const source = p.videoMeta?.[video]?.source ?? null;
+        media.push({ url, type: 'video', progress: p, source });
       }
     }
     this.lightboxMedia = media;
@@ -3873,7 +4042,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     this.uploadProgress[itemIdKey] = 0;
 
     this.photoOps.uploadPhoto(this.instanceId, dbItemId, file, {
-      captureSource: captureSource === 'library' ? 'library' : 'camera',
+      captureSource,
       userId: this.currentUserId || undefined
     }).subscribe({
       next: (response) => {
@@ -4428,16 +4597,19 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   /**
    * Navigate to a different checklist instance
    */
-  switchToChecklist(instanceId: number): void {
+  switchToChecklist(instanceId: number, fromOpenChecklistSelection: boolean = false): void {
     this.offcanvasService.dismiss();
+
+    if (fromOpenChecklistSelection) {
+      this.setOpenChecklistNavigationHint(instanceId);
+    }
 
     const isStandalone = this.router.url?.includes('/standalone/checklist/instance');
     const targetRoute = isStandalone ? '/standalone/checklist/instance' : '/quality/checklist/instance';
     
-    // Navigate without step param so it auto-navigates to first incomplete item
+    // Navigate without step param so default auto-navigation applies.
     this.router.navigate([targetRoute], { 
       queryParams: { id: instanceId }
-      // NOTE: No step param - this triggers auto-navigation to first incomplete item
     }).catch(err => {
       console.error('Navigation error:', err);
     });

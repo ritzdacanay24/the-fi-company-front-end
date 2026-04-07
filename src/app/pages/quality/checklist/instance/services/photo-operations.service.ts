@@ -29,7 +29,7 @@ export class PhotoOperationsService {
     instanceId: number,
     itemId: number,
     file: File,
-    options?: { captureSource?: 'camera' | 'library'; userId?: number | string }
+    options?: { captureSource?: 'in-app' | 'system' | 'library'; userId?: number | string }
   ): Observable<any> {
     return this.photoChecklistService.uploadPhoto(instanceId, itemId, file, options);
   }

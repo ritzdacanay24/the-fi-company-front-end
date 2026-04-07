@@ -1,0 +1,81 @@
+<div class="summary-shell card shadow-sm mt-3" *ngIf="template && ticket">
+  <div class="card-header bg-white d-flex justify-content-between align-items-center gap-2">
+    <div>
+      <h6 class="mb-0">Completed Checklist Summary</h6>
+      <p class="mb-0 text-muted small">Professional print layout for customer and internal handoff</p>
+    </div>
+    <button class="btn btn-sm btn-primary" type="button" (click)="printSummary()">Print Summary</button>
+  </div>
+
+  <div class="card-body">
+    <div class="summary-meta-grid mb-3">
+      <div class="summary-meta-item">
+        <span class="meta-label">Ticket</span>
+        <span class="meta-value">{{ ticket.ticketId }}</span>
+      </div>
+      <div class="summary-meta-item">
+        <span class="meta-label">Status</span>
+        <span class="meta-value text-uppercase">{{ ticket.status }}</span>
+      </div>
+      <div class="summary-meta-item">
+        <span class="meta-label">Completion</span>
+        <span class="meta-value">{{ completionPercent }}%</span>
+      </div>
+      <div class="summary-meta-item">
+        <span class="meta-label">Approved Amount</span>
+        <span class="meta-value">{{ formatCurrency(approvedAmount) }}</span>
+      </div>
+      <div class="summary-meta-item">
+        <span class="meta-label">Created</span>
+        <span class="meta-value">{{ formatDateTime(ticket.createdAt) }}</span>
+      </div>
+      <div class="summary-meta-item">
+        <span class="meta-label">Finalized</span>
+        <span class="meta-value">{{ formatDateTime(ticket.finalizedAt) }}</span>
+      </div>
+    </div>
+
+    <div class="summary-section mb-3">
+      <h6 class="summary-section-title">Header Information</h6>
+      <table class="table table-sm table-bordered summary-table mb-0">
+        <tbody>
+          <tr *ngFor="let field of template.headerFields">
+            <th>{{ field.label }}</th>
+            <td>{{ valueFor(field.key) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="summary-section">
+      <h6 class="summary-section-title">Process Timeline</h6>
+      <table class="table table-sm table-bordered summary-table mb-0">
+        <tbody>
+          <tr *ngFor="let field of template.processFields">
+            <th>{{ field.label }}</th>
+            <td>{{ valueFor(field.key) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="summary-section mt-3">
+      <h6 class="summary-section-title">Attachments</h6>
+      <div class="attachments-empty" *ngIf="!summaryAttachments.length">No attachments uploaded for this checklist.</div>
+
+      <div class="summary-attachment-list" *ngIf="summaryAttachments.length">
+        <div class="summary-attachment-item" *ngFor="let attachment of summaryAttachments">
+          <div class="summary-attachment-main">
+            <button class="summary-attachment-file-btn" type="button" (click)="openAttachment(attachment)">
+              {{ attachment.fileName }}
+            </button>
+            <div class="summary-attachment-meta">
+              Uploaded by {{ attachment.uploadedBy || 'Unknown User' }} | {{ formatFileSize(attachment.fileSize) }} | {{ formatDateTime(attachment.uploadedAt) }}
+              <span class="summary-attachment-meta-secondary"> | {{ attachment.fieldLabel || 'Attachment' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

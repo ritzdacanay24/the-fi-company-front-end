@@ -1,0 +1,126 @@
+.summary-shell {
+  border: 1px solid #dbe3ef;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.summary-meta-grid {
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.summary-meta-item {
+  border: 1px solid #dbe3ef;
+  border-radius: 8px;
+  background: #f8fbff;
+  padding: 0.55rem 0.65rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.meta-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #5f6b7a;
+  font-weight: 700;
+}
+
+.meta-value {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #1f2a38;
+  line-height: 1.3;
+}
+
+.summary-section-title {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #5f6b7a;
+  font-weight: 700;
+}
+
+.summary-table {
+  border-color: #dbe3ef;
+
+  th {
+    width: 42%;
+    background: #f8fafc;
+    color: #334155;
+    font-weight: 600;
+  }
+
+  td {
+    background: #ffffff;
+    color: #0f172a;
+  }
+}
+
+.summary-attachment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.summary-attachment-item {
+  border: 1px solid #dbe3ef;
+  border-radius: 8px;
+  background: #fbfdff;
+  padding: 0.55rem 0.65rem;
+}
+
+.summary-attachment-file {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.summary-attachment-file-btn {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font-weight: 700;
+  color: #0f172a;
+  text-align: left;
+  text-decoration: underline;
+  text-decoration-color: #bfdbfe;
+  text-underline-offset: 2px;
+}
+
+.summary-attachment-file-btn:hover {
+  color: #1d4ed8;
+  text-decoration-color: #1d4ed8;
+}
+
+.summary-attachment-meta {
+  margin-top: 0.18rem;
+  color: #5f6b7a;
+  font-size: 0.78rem;
+}
+
+.summary-attachment-meta-secondary {
+  color: #94a3b8;
+}
+
+.attachments-empty {
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  padding: 0.7rem;
+  color: #5f6b7a;
+  font-size: 0.84rem;
+  background: #fcfdff;
+}
+
+@media (max-width: 992px) {
+  .summary-meta-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 576px) {
+  .summary-meta-grid {
+    grid-template-columns: 1fr;
+  }
+}

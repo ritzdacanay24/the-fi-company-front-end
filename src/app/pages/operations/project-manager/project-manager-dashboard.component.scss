@@ -217,6 +217,17 @@
   white-space: nowrap;
 }
 
+.gate-link-btn {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
+.gate-link-btn:hover .gate-tag {
+  filter: brightness(0.96);
+}
+
 .tag-awarded {
   color: #855f00;
   background: #fff7df;
@@ -245,6 +256,87 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
+}
+
+.readiness-progress {
+  width: 100%;
+  min-width: 90px;
+  height: 8px;
+  border-radius: 999px;
+  background: #e5e7eb;
+  overflow: hidden;
+}
+
+.readiness-progress-table {
+  width: 76px;
+  min-width: 76px;
+  height: 6px;
+}
+
+.readiness-progress-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.readiness-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.2s ease;
+}
+
+.readiness-progress-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #475467;
+  min-width: 30px;
+}
+
+.readiness-progress-compact {
+  margin-top: 0.25rem;
+  min-width: 120px;
+  max-width: 220px;
+  height: 6px;
+}
+
+.bar-track {
+  background: #19c37d;
+}
+
+.bar-risk {
+  background: #f4b83f;
+}
+
+.bar-overdue {
+  background: #ff475f;
+}
+
+.task-progress-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.task-progress {
+  width: 64px;
+  height: 6px;
+  border-radius: 999px;
+  background: #e5e7eb;
+  overflow: hidden;
+}
+
+.task-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: #3b82ff;
+  transition: width 0.2s ease;
+}
+
+.task-progress-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #475467;
+  min-width: 30px;
 }
 
 .dot {
@@ -339,6 +431,17 @@
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
+}
+
+.gate-step-link {
+  border: 0;
+  background: transparent;
+  color: #0d6efd;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  padding: 0;
+  font-size: 0.82rem;
+  cursor: pointer;
 }
 
 .progress-checkbox {

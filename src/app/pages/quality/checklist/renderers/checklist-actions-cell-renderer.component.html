@@ -1,0 +1,14 @@
+<ng-container *ngIf="params?.data">
+  <div class="d-flex gap-1 align-items-center h-100" *ngIf="params.mode === 'template'">
+    <button class="btn btn-sm btn-outline-primary" (click)="onPreview()" title="Preview Template">
+      <i class="mdi mdi-eye"></i>
+    </button>
+    <button class="btn btn-sm btn-primary" (click)="onStart()" title="Start Checklist">
+      <i class="mdi mdi-plus"></i>
+    </button>
+  </div>
+
+  <button class="btn btn-sm btn-outline-primary" *ngIf="params.mode === 'instance'" (click)="onOpen()" title="Open Checklist">
+    <i class="mdi mdi-open-in-new me-1"></i>Open
+  </button>
+</ng-container>

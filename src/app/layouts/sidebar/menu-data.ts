@@ -507,6 +507,13 @@ export const MENU_DATA: MenuItem[] = [
                 icon: "las la-clipboard-list",
                 activatedRoutes: "/quality/checklist/*"
             },
+            {
+                label: "Permit Checklists",
+                link: "/quality/permit-checklists",
+                description: "DCA and Seismic document workflow forms",
+                icon: "las la-file-alt",
+                activatedRoutes: "/quality/permit-checklists/*"
+            },
             // {
             //     label: "Inspection Checklists",
             //     link: "/inspection/dashboard",

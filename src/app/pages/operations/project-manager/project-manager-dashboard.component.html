@@ -76,7 +76,13 @@
               </td>
               <td>{{ project.customer }}</td>
               <td>
-                <span [ngClass]="'gate-tag ' + getGateTagClass(project.gateTag)">{{ project.gateLabel }}</span>
+                <button
+                  type="button"
+                  class="gate-link-btn"
+                  (click)="openProjectGate(project, $event)"
+                  [attr.aria-label]="'Open ' + project.gateLabel + ' for ' + project.name">
+                  <span [ngClass]="'gate-tag ' + getGateTagClass(project.gateTag)">{{ project.gateLabel }}</span>
+                </button>
               </td>
               <td>
                 <div class="readiness">
@@ -84,8 +90,22 @@
                   <span>{{ getChecklistCompletion(project) }}%</span>
                 </div>
               </td>
-              <td>{{ project.readiness }}%</td>
-              <td>{{ project.taskCompletion || 0 }}%</td>
+              <td>
+                <div class="readiness-progress-wrap">
+                  <div class="readiness-progress readiness-progress-table" role="progressbar" [attr.aria-valuemin]="0" [attr.aria-valuemax]="100" [attr.aria-valuenow]="project.readiness">
+                    <div class="readiness-progress-fill" [style.width.%]="project.readiness" [ngClass]="getReadinessBarClass(project.readiness)"></div>
+                  </div>
+                  <div class="readiness-progress-label">{{ project.readiness }}%</div>
+                </div>
+              </td>
+              <td>
+                <div class="task-progress-wrap">
+                  <div class="task-progress" role="progressbar" [attr.aria-valuemin]="0" [attr.aria-valuemax]="100" [attr.aria-valuenow]="project.taskCompletion || 0">
+                    <div class="task-progress-fill" [style.width.%]="project.taskCompletion || 0"></div>
+                  </div>
+                  <div class="task-progress-label">{{ project.taskCompletion || 0 }}%</div>
+                </div>
+              </td>
               <td>
                 <span [ngClass]="'status-pill ' + getStatusClass(project.status)">{{ project.status }}</span>
               </td>
@@ -153,7 +173,7 @@
                 disabled
                 [attr.aria-label]="step.label + ' completion'"
               />
-              <span>{{ step.label }}</span>
+              <button type="button" class="gate-step-link" (click)="openSelectedProjectGate(step.label)">{{ step.label }}</button>
             </div>
             <span class="muted">Tasks {{ step.taskCompletion }}% . {{ step.days }}d</span>
           </div>
@@ -167,7 +187,19 @@
         <div class="alert-item" *ngFor="let project of bottleneckAlerts">
           <div>
             <div class="project-name">{{ project.name }}</div>
-            <div class="project-code">{{ project.gateLabel }}</div>
+            <div class="project-code d-flex align-items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                class="gate-link-btn"
+                (click)="openProjectGate(project, $event)"
+                [attr.aria-label]="'Open ' + project.gateLabel + ' for ' + project.name">
+                <span [ngClass]="'gate-tag ' + getGateTagClass(project.gateTag)">{{ project.gateLabel }}</span>
+              </button>
+              <span class="readiness-progress-label mb-0">{{ project.readiness }}%</span>
+            </div>
+            <div class="readiness-progress readiness-progress-compact" role="progressbar" [attr.aria-valuemin]="0" [attr.aria-valuemax]="100" [attr.aria-valuenow]="project.readiness">
+              <div class="readiness-progress-fill" [style.width.%]="project.readiness" [ngClass]="getReadinessBarClass(project.readiness)"></div>
+            </div>
           </div>
           <span [ngClass]="'status-pill ' + getStatusClass(project.status)">{{ project.status }}</span>
         </div>

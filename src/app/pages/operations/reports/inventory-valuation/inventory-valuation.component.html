@@ -1,0 +1,90 @@
+<!-- <div class="row">
+  <div class="col-sm-12 col-xl-3 grid-margin">
+
+    <div class="card overflow-hidden" [ngClass]="{'fullscreen' : tableConfig.fullscreen}"><div class="card-header align-items-center">
+      <div class="d-flex align-items-center">
+        <h5 class="pb-0 mb-n1 ml-1 text-uppercase">Current Inventory By Class</h5>
+      </div>
+    </div>
+      <div class="card-body p-0">
+        <table class="table table-bordered table-sm">
+          <tr>
+            <td>pt_abc</td>
+            <td>total</td>
+          </tr>
+          <tr *ngFor="let row of resultsq">
+            <td>{{row.pt_abc}}</td>
+            <td>{{row.total | currency}}</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div> -->
+
+<div class="row">
+  <div class="col-12 col-xl-12 stretch-card">
+    <div class="card overflow-hidden" [ngClass]="{'fullscreen' : tableConfig.fullscreen}">
+
+      <div class="card-header card-header-sm my-auto">
+        <div class="valuation-toolbar">
+          <div class="valuation-toolbar-left">
+            <h5 class="valuation-title mb-0">Inventory Valuation</h5>
+
+            <select class="form-control form-control-sm valuation-site-select"
+              [(ngModel)]="sites"
+              (ngModelChange)="getData()">
+              <option *ngFor="let row of ['JX01', 'RMLV', 'FGLV', 'All']" [value]="row">{{row}}</option>
+            </select>
+
+            <div class="valuation-search-wrap">
+              <input
+                type="text"
+                class="form-control form-control-sm"
+                placeholder="Search part, customer, status..."
+                [ngModel]="quickSearch"
+                (ngModelChange)="onQuickSearchChange($event)">
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-secondary"
+                (click)="clearQuickSearch()"
+                [disabled]="!quickSearch">
+                Clear
+              </button>
+            </div>
+          </div>
+
+          <div class="valuation-toolbar-right">
+            <small class="text-muted" *ngIf="lastUpdate">Updated: {{ lastUpdate | date:'medium' }}</small>
+          </div>
+        </div>
+
+        <div class="summary-cards">
+          <div class="summary-card">
+            <div class="summary-label">Total</div>
+            <div class="summary-value">{{ formatCurrency(totalInventory) }}</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-label">Inventory Turns >= 1</div>
+            <div class="summary-value">{{ formatCurrency(greaterThanOne) }}</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-label">Inventory Turns < 1</div>
+            <div class="summary-value">{{ formatCurrency(lessThanOrEqualToOne) }}</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-label">Other</div>
+            <div class="summary-value">{{ formatCurrency(other) }}</div>
+          </div>
+        </div>
+      </div>
+
+      <ag-grid-angular
+        (filterChanged)="onFilterChanged($event)"
+        [gridOptions]="gridOptions"
+        class="{{tableConfig.theme}} ag-full-md inventory-grid"
+        [rowData]="data">
+      </ag-grid-angular>
+    </div>
+  </div>
+</div>
