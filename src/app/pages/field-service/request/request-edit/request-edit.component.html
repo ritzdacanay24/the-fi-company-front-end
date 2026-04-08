@@ -97,6 +97,10 @@
       </div>
       <div class="card-footer d-flex  d-flex justify-content-between" *ngIf="data && id">
         <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
+        <button class="btn btn-outline-danger ms-2" [disabled]="isLoading || !canCancelRequestAsAdmin || data?.active == 0"
+          (click)="openCancelRequestModal()">
+          Cancel Request
+        </button>
         <!-- Buttons with Label -->
 
         <button type="button" class="btn btn-light btn-label waves-effect waves-light  ms-auto me-2" (click)="onPrint()"
@@ -161,6 +165,42 @@
       </div>
     </div>
 
+  </div>
+</div>
+
+<div class="modal fade show" tabindex="-1" role="dialog" *ngIf="isCancelRequestModalOpen"
+  style="display: block; background: rgba(0, 0, 0, 0.45)">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Cancel Field Service Request</h5>
+        <button type="button" class="btn-close" aria-label="Close" (click)="closeCancelRequestModal()"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label required">Reason</label>
+          <select class="form-select" [(ngModel)]="cancelReason">
+            <option value="" disabled>Select cancellation reason</option>
+            <option *ngFor="let reason of cancelReasonOptions" [value]="reason">{{ reason }}</option>
+          </select>
+        </div>
+
+        <div class="mb-0">
+          <label class="form-label required">Notes</label>
+          <textarea
+            class="form-control"
+            rows="4"
+            [(ngModel)]="cancelNotes"
+            placeholder="Add cancellation notes for audit trail and communication."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-light" type="button" (click)="closeCancelRequestModal()">Close</button>
+        <button class="btn btn-danger" type="button" [disabled]="isLoading" (click)="confirmCancelRequest()">
+          Confirm Cancel Request
+        </button>
+      </div>
+    </div>
   </div>
 </div>
 

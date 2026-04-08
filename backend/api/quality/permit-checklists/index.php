@@ -252,7 +252,7 @@ function handleHardDeleteTicket(PDO $db, array $payload): void {
         respond(403, ['success' => false, 'error' => 'Admin authorization required']);
     }
 
-    $adminStmt = $db->prepare('SELECT isAdmin, employeeType FROM db.users WHERE id = ? LIMIT 1');
+    $adminStmt = $db->prepare('SELECT admin isAdmin, employeeType FROM db.users WHERE id = ? LIMIT 1');
     $adminStmt->execute([$currentUserId]);
     $userRow = $adminStmt->fetch(PDO::FETCH_ASSOC);
     if (!$userRow) {

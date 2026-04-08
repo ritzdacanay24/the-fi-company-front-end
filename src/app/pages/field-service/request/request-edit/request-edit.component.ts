@@ -9,7 +9,6 @@ import { RequestService } from "@app/core/api/field-service/request.service";
 import { SchedulerService } from "@app/core/api/field-service/scheduler.service";
 import { CommentsService } from "@app/core/api/field-service/comments.service";
 import moment from "moment";
-import { JobFormComponent } from "../../job/job-form/job-form.component";
 import { RequestScheduleJobComponent } from "../request-schedule-job/request-schedule-job.component";
 import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
 import { FIELD_SERVICE } from "../../field-service-constant";
@@ -29,7 +28,6 @@ import { RequestChangeModalService } from "../request-change/request-change-moda
   imports: [
     SharedModule,
     RequestFormComponent,
-    JobFormComponent,
     RequestScheduleJobComponent,
     AutosizeModule,
     SafeHtmlPipe,
@@ -56,6 +54,23 @@ export class RequestEditComponent {
     private requestChangeModalService: RequestChangeModalService
   ) {
     this.name = this.authenticationService.currentUserValue.full_name;
+  }
+
+  cancelReasonOptions: string[] = [
+    "Customer changed their mind",
+    "Fully booked",
+    "No license",
+    "Duplicate request",
+  ];
+  isCancelRequestModalOpen = false;
+  cancelReason = "";
+  cancelNotes = "";
+
+  get canCancelRequestAsAdmin(): boolean {
+    const user = this.authenticationService.currentUserValue || {};
+    const isAdmin = user?.isAdmin === true || user?.isAdmin === 1 || user?.isAdmin === "1";
+    const employeeType = Number(user?.employeeType ?? 0);
+    return !!(isAdmin || employeeType !== 0);
   }
 
   async onRequestChanges(row) {
@@ -256,6 +271,89 @@ export class RequestEditComponent {
       //this.goBack();
       this.form.markAsPristine();
     } catch (err) {
+      this.isLoading = false;
+    }
+  }
+
+  openCancelRequestModal(): void {
+    if (!this.canCancelRequestAsAdmin) {
+      alert("Only admin users can cancel requests.");
+      return;
+    }
+
+    if (!this.id || !this.data) {
+      return;
+    }
+
+    if (Number(this.data?.active) === 0) {
+      alert("This request is already canceled.");
+      return;
+    }
+
+    this.cancelReason = "";
+    this.cancelNotes = "";
+    this.isCancelRequestModalOpen = true;
+  }
+
+  closeCancelRequestModal(): void {
+    this.isCancelRequestModalOpen = false;
+  }
+
+  async confirmCancelRequest(): Promise<void> {
+    if (!this.cancelReason.trim()) {
+      alert("Please select a cancellation reason.");
+      return;
+    }
+
+    const notes = String(this.cancelNotes || "").trim();
+    if (!notes) {
+      alert("Please add notes before canceling this request.");
+      return;
+    }
+
+    const canceledById = this.authenticationService.currentUserValue?.id ?? null;
+    const canceledBy = this.authenticationService.currentUserValue?.full_name || this.name || "Unknown User";
+    const canceledAt = moment().format("YYYY-MM-DD HH:mm:ss");
+    const commentBody = [
+      "REQUEST CANCELED",
+      `Reason: ${this.cancelReason}`,
+      `Notes: ${notes}`,
+      `Canceled By: ${canceledBy}`,
+      `Canceled At: ${canceledAt}`,
+    ].join("\n");
+
+    try {
+      this.isLoading = true;
+
+      await this.requestService.update(this.id, {
+        active: 0,
+        cancellation_reason: this.cancelReason,
+        cancellation_notes: notes,
+        canceled_by: canceledById,
+        canceled_by_name: canceledBy,
+        canceled_at: canceledAt,
+      });
+
+      await this.commentsService.createComment(this.form.value.token, this.form.value.email, {
+        name: canceledBy,
+        comment: commentBody,
+        fs_request_id: this.id,
+        created_date: canceledAt,
+      });
+
+      this.form.patchValue({ active: 0 });
+      this.data.active = 0;
+      this.data.cancellation_reason = this.cancelReason;
+      this.data.cancellation_notes = notes;
+      this.data.canceled_by = canceledById;
+      this.data.canceled_by_name = canceledBy;
+      this.data.canceled_at = canceledAt;
+      this.isCancelRequestModalOpen = false;
+      await this.getComments();
+      this.toastrService.success("Request canceled successfully.");
+    } catch (err) {
+      alert("Unable to cancel request. Please contact administrator.");
+    } finally {
       this.isLoading = false;
     }
   }

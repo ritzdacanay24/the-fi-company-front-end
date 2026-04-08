@@ -217,6 +217,30 @@ export class RequestsListComponent implements OnInit {
       filter: "agMultiColumnFilter",
     },
     { field: "active", headerName: "Active", filter: "agMultiColumnFilter" },
+    {
+      field: "cancellation_reason",
+      headerName: "Cancellation Reason",
+      filter: "agMultiColumnFilter",
+      minWidth: 200,
+    },
+    {
+      field: "cancellation_notes",
+      headerName: "Cancellation Notes",
+      filter: "agMultiColumnFilter",
+      minWidth: 280,
+    },
+    {
+      field: "canceled_by_name",
+      headerName: "Canceled By",
+      filter: "agMultiColumnFilter",
+      minWidth: 170,
+    },
+    {
+      field: "canceled_at",
+      headerName: "Canceled At",
+      filter: "agMultiColumnFilter",
+      minWidth: 190,
+    },
     { field: "customer", headerName: "Customer", filter: "agMultiColumnFilter" },
   ];
 
