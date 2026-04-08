@@ -5,7 +5,7 @@ import { ICellRendererParams } from "ag-grid-community";
 
 interface PermitTicketActionRendererParams extends ICellRendererParams {
   onOpen?: (ticketId: string) => void;
-  onDelete?: (ticketId: string) => void;
+  onArchive?: (ticketId: string) => void;
 }
 
 @Component({
@@ -34,11 +34,11 @@ export class PermitTicketActionsRendererComponent implements ICellRendererAngula
     }
   }
 
-  onDelete(event: Event): void {
+  onArchive(event: Event): void {
     event.stopPropagation();
     const ticketId = this.params?.data?.ticketId;
     if (ticketId) {
-      this.params.onDelete?.(ticketId);
+      this.params.onArchive?.(ticketId);
     }
   }
 }

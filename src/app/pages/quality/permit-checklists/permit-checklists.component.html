@@ -218,6 +218,7 @@
                       class="form-select"
                       [ngModel]="getFieldEditValue(field.key)"
                       (ngModelChange)="updateFieldDraft(field.key, $event)"
+                      (keydown.tab)="onFieldTab($event, field.key)"
                       [disabled]="!canEditActiveTicket || !isFieldEditing(field.key)"
                     >
                       <option value="">Select customer</option>
@@ -235,6 +236,7 @@
                         class="form-select"
                         [ngModel]="getFieldEditValue(field.key)"
                         (ngModelChange)="updateFieldDraft(field.key, $event)"
+                        (keydown.tab)="onFieldTab($event, field.key)"
                         [disabled]="!canEditActiveTicket || !isFieldEditing(field.key)"
                       >
                         <option value="">Select architect</option>
@@ -254,6 +256,7 @@
                       type="date"
                       [ngModel]="getFieldEditValue(field.key)"
                       (ngModelChange)="updateFieldDraft(field.key, $event)"
+                      (keydown.tab)="onFieldTab($event, field.key)"
                       [disabled]="!canEditActiveTicket || !isFieldEditing(field.key)"
                     />
                     <button
@@ -273,6 +276,7 @@
                     [type]="resolveFieldType(field)"
                     [ngModel]="getFieldEditValue(field.key)"
                     (ngModelChange)="updateFieldDraft(field.key, $event)"
+                    (keydown.tab)="onFieldTab($event, field.key)"
                     [disabled]="!canEditActiveTicket || !isFieldEditing(field.key)"
                     [placeholder]="field.placeholder || 'Enter value'"
                   />
@@ -336,6 +340,7 @@
                       type="date"
                       [ngModel]="getFieldEditValue(field.key)"
                       (ngModelChange)="updateFieldDraft(field.key, $event)"
+                      (keydown.tab)="onFieldTab($event, field.key)"
                       [disabled]="!canEditActiveTicket || !isFieldEditing(field.key)"
                     />
                     <button
@@ -354,6 +359,7 @@
                     [type]="resolveFieldType(field)"
                     [ngModel]="getFieldEditValue(field.key)"
                     (ngModelChange)="updateFieldDraft(field.key, $event)"
+                    (keydown.tab)="onFieldTab($event, field.key)"
                     [disabled]="!canEditActiveTicket || !isFieldEditing(field.key)"
                     placeholder="Date or status update"
                   />
@@ -563,7 +569,7 @@
           <div class="fee-breakdown mt-3" *ngIf="eyefiBillingBreakdown.length; else noEyefiBillingRows">
             <div class="d-flex align-items-center justify-content-between">
               <p class="fw-semibold mb-0">Eyefi Billing Breakdown</p>
-              <button class="btn btn-sm btn-outline-primary" type="button" [disabled]="!canEditActiveTicket" (click)="addBillingLine('eyefi')">
+              <button class="btn btn-sm btn-outline-primary mb-1" type="button" [disabled]="!canEditActiveTicket" (click)="addBillingLine('eyefi')">
                 Add Fee Line
               </button>
             </div>
@@ -808,8 +814,8 @@
                     type="button"
                     ngbDropdownItem
                     [disabled]="!activeTicket"
-                    (click)="deleteCurrentTicket()">
-                    Delete Checklist
+                    (click)="hardDeleteCurrentTicket()">
+                    Permanently Delete
                   </button>
                 </li>
               </ul>

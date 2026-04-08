@@ -10,6 +10,7 @@ import { PermitTicketActionsRendererComponent } from "./permit-ticket-actions-re
 import { PermitChecklistSummaryComponent } from "./permit-checklist-summary.component";
 import { AuthenticationService } from "@app/core/services/auth.service";
 import { THE_FI_COMPANY_CURRENT_USER } from "@app/core/guards/admin.guard";
+import { PermitChecklistsService } from "@app/core/api/quality/permit-checklists.service";
 import { NgbDropdownModule, NgbModal, NgbModalModule, NgbModalRef } from "@ng-bootstrap/ng-bootstrap";
 import * as mammoth from "mammoth";
 
@@ -177,7 +178,6 @@ interface StoredChecklistData {
   styleUrls: ["./permit-checklists.component.scss"],
 })
 export class PermitChecklistsComponent implements OnInit {
-  private readonly storageKey = "quality_permit_checklists_v2";
   private readonly maxTransactions = 2000;
   private readonly defaultCustomerNames: string[] = [
     "AGS",
@@ -200,6 +200,14 @@ export class PermitChecklistsComponent implements OnInit {
   ];
   private readonly defaultArchitectNames: string[] = ["R2 Architects"];
   private routeSub?: Subscription;
+  private ticketSyncTimer: ReturnType<typeof setTimeout> | null = null;
+  private directorySyncDirty = false;
+  private billingDefaultsSyncDirty = false;
+  private dirtyTransactionTicketIds = new Set<string>();
+  private isHydratingApi = false;
+  private pendingRouteTicketId = "";
+  private pendingRouteFormType = "";
+  private pendingRouteView = "";
 
   viewMode: "home" | "form" | "summary" = "home";
   homeTab: "tickets" | "audit" | "approved-report" = "tickets";
@@ -429,7 +437,7 @@ export class PermitChecklistsComponent implements OnInit {
         onOpen: (ticketId: string) => {
           this.openTicket(ticketId);
         },
-        onDelete: (ticketId: string) => {
+        onArchive: (ticketId: string) => {
           this.deleteTicket(ticketId);
         },
       },
@@ -552,43 +560,59 @@ export class PermitChecklistsComponent implements OnInit {
     private readonly router: Router,
     private readonly authenticationService: AuthenticationService,
     private readonly sanitizer: DomSanitizer,
-    private readonly modalService: NgbModal
+    private readonly modalService: NgbModal,
+    private readonly permitChecklistsService: PermitChecklistsService
   ) {}
 
   ngOnInit(): void {
     this.loadSavedData();
     this.routeSub = this.route.queryParamMap.subscribe((params) => {
-      const ticketId = (params.get("ticketId") || "").trim();
-      const formType = (params.get("formType") || "").trim().toLowerCase();
-      const view = (params.get("view") || "").trim().toLowerCase();
+      this.pendingRouteTicketId = (params.get("ticketId") || "").trim();
+      this.pendingRouteFormType = (params.get("formType") || "").trim().toLowerCase();
+      this.pendingRouteView = (params.get("view") || "").trim().toLowerCase();
+      this.applyRouteQueryState();
+    });
+  }
 
-      if (formType === "seismic" || formType === "dca") {
-        this.draftFormType = formType;
+  private applyRouteQueryState(): void {
+    const ticketId = this.pendingRouteTicketId;
+    const formType = this.pendingRouteFormType;
+    const view = this.pendingRouteView;
+
+    if (formType === "seismic" || formType === "dca") {
+      this.draftFormType = formType;
+    }
+
+    if (ticketId) {
+      const targetTicket = this.tickets.find((ticket) => ticket.ticketId === ticketId);
+      if (targetTicket) {
+        this.activeTicketId = ticketId;
+        const isFinalized = targetTicket.status === "finalized";
+        this.viewMode = view === "summary" || isFinalized ? "summary" : "form";
+        this.statusMessage = "";
+        return;
       }
 
-      if (ticketId) {
-        const targetTicket = this.tickets.find((ticket) => ticket.ticketId === ticketId);
-        if (targetTicket) {
-          this.activeTicketId = ticketId;
-          const isFinalized = targetTicket.status === "finalized";
-          this.viewMode = view === "summary" || isFinalized ? "summary" : "form";
-          this.statusMessage = "";
-          return;
-        }
-
-        this.activeTicketId = null;
-        this.viewMode = "home";
-        this.statusMessage = `Ticket ${ticketId} not found.`;
+      if (this.isHydratingApi) {
         return;
       }
 
       this.activeTicketId = null;
       this.viewMode = "home";
-    });
+      this.statusMessage = `Ticket ${ticketId} not found.`;
+      return;
+    }
+
+    this.activeTicketId = null;
+    this.viewMode = "home";
   }
 
   ngOnDestroy(): void {
     this.routeSub?.unsubscribe();
+    if (this.ticketSyncTimer) {
+      clearTimeout(this.ticketSyncTimer);
+      this.ticketSyncTimer = null;
+    }
     this.customerDirectoryModalRef?.close();
     this.customerBillingDefaultsModalRef?.close();
     this.objectUrlByAttachmentId.forEach((url) => URL.revokeObjectURL(url));
@@ -941,6 +965,7 @@ export class PermitChecklistsComponent implements OnInit {
     ];
     this.newCustomerBillingDefaultLabelDraft = "";
     this.newCustomerBillingDefaultAmountDraft = 0;
+    this.billingDefaultsSyncDirty = true;
     this.persistLocalData();
   }
 
@@ -953,6 +978,7 @@ export class PermitChecklistsComponent implements OnInit {
 
     rows[idx].label = String(label || "").trim();
     this.customerBillingDefaultsByType[this.customerBillingDefaultsFormType] = [...rows];
+    this.billingDefaultsSyncDirty = true;
     this.persistLocalData();
   }
 
@@ -965,6 +991,7 @@ export class PermitChecklistsComponent implements OnInit {
 
     rows[idx].amount = this.normalizeCurrencyAmount(value);
     this.customerBillingDefaultsByType[this.customerBillingDefaultsFormType] = [...rows];
+    this.billingDefaultsSyncDirty = true;
     this.persistLocalData();
   }
 
@@ -976,6 +1003,7 @@ export class PermitChecklistsComponent implements OnInit {
 
     target.amount = this.normalizeCurrencyAmount(target.amount || 0);
     this.customerBillingDefaultsByType[this.customerBillingDefaultsFormType] = [...this.customerBillingDefaultRows];
+    this.billingDefaultsSyncDirty = true;
     this.persistLocalData();
   }
 
@@ -987,6 +1015,7 @@ export class PermitChecklistsComponent implements OnInit {
     this.customerBillingDefaultsByType[this.customerBillingDefaultsFormType] = this.customerBillingDefaultRows.filter(
       (item) => item.key !== feeKey
     );
+    this.billingDefaultsSyncDirty = true;
     this.persistLocalData();
   }
 
@@ -1021,6 +1050,7 @@ export class PermitChecklistsComponent implements OnInit {
     ].sort((a, b) => a.name.localeCompare(b.name));
 
     this.newArchitectNameDraft = "";
+    this.directorySyncDirty = true;
     this.persistLocalData();
     this.statusMessage = "Architect added.";
   }
@@ -1033,6 +1063,7 @@ export class PermitChecklistsComponent implements OnInit {
 
     this.architects = this.architects.filter((architect) => architect.id !== architectId);
 
+    this.directorySyncDirty = true;
     this.persistLocalData();
     this.statusMessage = `Architect ${target.name} removed.`;
   }
@@ -1059,6 +1090,7 @@ export class PermitChecklistsComponent implements OnInit {
     ].sort((a, b) => a.name.localeCompare(b.name));
 
     this.newCustomerNameDraft = "";
+    this.directorySyncDirty = true;
     this.persistLocalData();
     this.statusMessage = "Customer added.";
   }
@@ -1070,6 +1102,7 @@ export class PermitChecklistsComponent implements OnInit {
     }
 
     this.customers = this.customers.filter((customer) => customer.id !== customerId);
+    this.directorySyncDirty = true;
     this.persistLocalData();
     this.statusMessage = `Customer ${target.name} removed.`;
   }
@@ -1192,6 +1225,43 @@ export class PermitChecklistsComponent implements OnInit {
 
   getFieldEditorId(fieldKey: string): string {
     return `pc-field-editor-${fieldKey}`;
+  }
+
+  onFieldTab(event: any, fieldKey: string): void {
+    if (!this.canEditActiveTicket) {
+      return;
+    }
+
+    if (!(event instanceof KeyboardEvent)) {
+      return;
+    }
+
+    const fieldKeys = this.getChecklistFieldKeys();
+    const currentIndex = fieldKeys.indexOf(fieldKey);
+    if (currentIndex === -1) {
+      return;
+    }
+
+    const nextIndex = currentIndex + (event.shiftKey ? -1 : 1);
+    if (nextIndex < 0 || nextIndex >= fieldKeys.length) {
+      return;
+    }
+
+    const nextFieldKey = fieldKeys[nextIndex];
+    event.preventDefault();
+
+    if (!this.isFieldEditing(nextFieldKey)) {
+      this.beginFieldEdit(nextFieldKey, false);
+    }
+
+    setTimeout(() => this.focusFieldEditor(nextFieldKey), 0);
+  }
+
+  private getChecklistFieldKeys(): string[] {
+    return [
+      ...this.activeTemplate.headerFields.map((field) => field.key),
+      ...this.activeTemplate.processFields.map((field) => field.key),
+    ];
   }
 
   private focusFieldEditor(fieldKey: string): void {
@@ -2018,12 +2088,55 @@ export class PermitChecklistsComponent implements OnInit {
       return;
     }
 
-    const confirmed = window.confirm(`Delete checklist ${ticket.ticketId}? This cannot be undone.`);
+    const confirmed = window.confirm(`Delete checklist ${ticket.ticketId}? This will be soft-deleted and kept as archived.`);
     if (!confirmed) {
       return;
     }
 
-    this.deleteTicket(ticket.ticketId);
+    this.deleteTicket(ticket.ticketId, true);
+  }
+
+  async hardDeleteCurrentTicket(): Promise<void> {
+    const ticket = this.activeTicket;
+    if (!ticket) {
+      return;
+    }
+
+    if (!this.isCurrentUserAdmin()) {
+      window.alert("Only admin users can permanently delete checklist tickets.");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Permanently delete checklist ${ticket.ticketId}? This cannot be undone and will remove it from the database.`
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    const currentUserId = this.getCurrentUserId();
+    if (!currentUserId) {
+      this.statusMessage = "Unable to resolve current user. Permanent delete is blocked.";
+      return;
+    }
+
+    try {
+      await this.permitChecklistsService.hardDeleteTicket(ticket.ticketId, currentUserId);
+    } catch {
+      this.statusMessage = "Permanent delete failed. Please try again.";
+      return;
+    }
+
+    this.tickets = this.tickets.filter((item) => item.ticketId !== ticket.ticketId);
+    this.transactions = this.transactions.filter((tx) => tx.ticketId !== ticket.ticketId);
+    this.refreshAuditLogRows();
+    this.refreshRecentTickets();
+    if (this.activeTicketId === ticket.ticketId) {
+      this.activeTicketId = null;
+      this.viewMode = "home";
+    }
+    this.syncUrlState();
+    this.statusMessage = `Ticket ${ticket.ticketId} permanently deleted.`;
   }
 
   goToFormView(): void {
@@ -2084,7 +2197,7 @@ export class PermitChecklistsComponent implements OnInit {
     this.refreshRecentTickets();
     this.persistLocalData();
     void this.persistTicketToApi(ticket);
-    this.statusMessage = `Ticket ${ticket.ticketId} saved locally.`;
+    this.statusMessage = `Ticket ${ticket.ticketId} saved.`;
   }
 
   submitAndPrint(): void {
@@ -2152,17 +2265,34 @@ export class PermitChecklistsComponent implements OnInit {
     this.statusMessage = `Ticket ${ticket.ticketId} finalized. Review summary and print.`;
   }
 
-  deleteTicket(ticketId: string): void {
-    this.appendTransaction(ticketId, "delete");
-    this.tickets = this.tickets.filter((ticket) => ticket.ticketId !== ticketId);
-    this.refreshRecentTickets();
-    if (this.activeTicketId === ticketId) {
-      this.activeTicketId = null;
-      this.viewMode = "home";
+  deleteTicket(ticketId: string, skipConfirm = false): void {
+    if (!skipConfirm) {
+      const confirmed = window.confirm(`Delete checklist ${ticketId}? This will be soft-deleted and kept as archived.`);
+      if (!confirmed) {
+        return;
+      }
     }
+
+    const ticket = this.tickets.find((item) => item.ticketId === ticketId);
+    if (!ticket) {
+      this.statusMessage = `Ticket ${ticketId} not found.`;
+      return;
+    }
+
+    if (ticket.status === "archived") {
+      this.statusMessage = `Ticket ${ticketId} is already archived.`;
+      return;
+    }
+
+    ticket.status = "archived";
+    ticket.updatedAt = new Date().toISOString();
+
+    this.appendTransaction(ticketId, "delete");
+    this.refreshRecentTickets();
     this.persistLocalData();
+    void this.deleteTicketFromApi(ticketId);
     this.syncUrlState();
-    this.statusMessage = "Ticket removed.";
+    this.statusMessage = `Ticket ${ticketId} soft-deleted (archived).`;
   }
 
   clearCurrent(): void {
@@ -2352,16 +2482,10 @@ export class PermitChecklistsComponent implements OnInit {
     return `${prefix}-${y}${m}${d}-${sequence}`;
   }
 
-  private persistLocalData(): void {
-    const payload: StoredChecklistData = {
-      tickets: this.tickets,
-      draftFormType: this.draftFormType,
-      transactions: this.transactions,
-      customers: this.customers,
-      architects: this.architects,
-      customerBillingDefaultsByType: this.customerBillingDefaultsByType,
-    };
-    localStorage.setItem(this.storageKey, JSON.stringify(payload));
+  private persistLocalData(shouldSyncApi = true): void {
+    if (shouldSyncApi) {
+      this.scheduleApiSync();
+    }
   }
 
   private syncUrlState(): void {
@@ -2380,29 +2504,106 @@ export class PermitChecklistsComponent implements OnInit {
     });
   }
 
-  private async persistTicketToApi(_ticket: PermitChecklistTicket): Promise<void> {
-    // API wiring placeholder:
-    // Next step is POSTing ticket payload to backend endpoint when available.
-    return Promise.resolve();
+  private scheduleApiSync(): void {
+    if (this.ticketSyncTimer) {
+      clearTimeout(this.ticketSyncTimer);
+    }
+
+    this.ticketSyncTimer = setTimeout(() => {
+      const ticket = this.activeTicket;
+      if (ticket) {
+        void this.persistTicketToApi(ticket);
+      }
+
+      if (this.dirtyTransactionTicketIds.size > 0) {
+        for (const ticketId of Array.from(this.dirtyTransactionTicketIds)) {
+          void this.flushTransactionsToApi(ticketId);
+        }
+      }
+
+      if (this.directorySyncDirty || this.billingDefaultsSyncDirty) {
+        void this.syncReferenceDataToApi();
+      }
+    }, 900);
   }
 
-  private async flushTransactionsToApi(_ticketId: string): Promise<void> {
-    // API wiring placeholder:
-    // Next step is POST /transactions with pending entries for this ticket.
-    return Promise.resolve();
+  private async persistTicketToApi(ticket: PermitChecklistTicket): Promise<void> {
+    try {
+      await this.permitChecklistsService.upsertTicket(ticket);
+    } catch {
+      this.statusMessage = "Unable to sync ticket to API. Data remains cached locally.";
+    }
   }
 
-  private loadSavedData(): void {
-    const raw = localStorage.getItem(this.storageKey);
-    if (!raw) {
-      this.ensureDefaultDirectoryValues();
+  private async deleteTicketFromApi(ticketId: string): Promise<void> {
+    try {
+      await this.permitChecklistsService.deleteTicket(ticketId);
+    } catch {
+      this.statusMessage = "Ticket deleted locally, but API delete failed.";
+    }
+  }
+
+  private async syncReferenceDataToApi(): Promise<void> {
+    try {
+      if (this.directorySyncDirty) {
+        await this.permitChecklistsService.syncDirectories(this.customers, this.architects);
+        this.directorySyncDirty = false;
+      }
+
+      if (this.billingDefaultsSyncDirty) {
+        await this.permitChecklistsService.syncBillingDefaults(this.customerBillingDefaultsByType);
+        this.billingDefaultsSyncDirty = false;
+      }
+    } catch {
+      this.statusMessage = "Unable to sync reference settings to API. Changes remain cached locally.";
+    }
+  }
+
+  private async flushTransactionsToApi(ticketId: string): Promise<void> {
+    const transactions = this.transactions.filter((tx) => tx.ticketId === ticketId);
+    if (!transactions.length) {
+      this.dirtyTransactionTicketIds.delete(ticketId);
       return;
     }
 
     try {
-      const saved = JSON.parse(raw) as Partial<StoredChecklistData>;
-      this.draftFormType = saved.draftFormType === "dca" ? "dca" : "seismic";
-      this.tickets = (saved.tickets || []).map((ticket) => ({
+      await this.permitChecklistsService.syncTransactions(transactions);
+      this.dirtyTransactionTicketIds.delete(ticketId);
+    } catch {
+      this.statusMessage = "Unable to sync transaction log to API. Entries remain cached locally.";
+    }
+  }
+
+  private loadSavedData(): void {
+    this.ensureDefaultDirectoryValues();
+    this.directorySyncDirty = true;
+    void this.hydrateFromApi();
+  }
+
+  private async hydrateFromApi(): Promise<void> {
+    this.isHydratingApi = true;
+    try {
+      const response = await this.permitChecklistsService.bootstrap();
+
+      if (!response?.success || !response.data) {
+        return;
+      }
+
+      const apiData = response.data;
+      const hasApiState =
+        (Array.isArray(apiData.tickets) && apiData.tickets.length > 0) ||
+        (Array.isArray(apiData.transactions) && apiData.transactions.length > 0) ||
+        (Array.isArray(apiData.customers) && apiData.customers.length > 0) ||
+        (Array.isArray(apiData.architects) && apiData.architects.length > 0);
+
+      if (!hasApiState) {
+        if (this.directorySyncDirty || this.billingDefaultsSyncDirty) {
+          void this.syncReferenceDataToApi();
+        }
+        return;
+      }
+
+      this.tickets = (apiData.tickets || []).map((ticket) => ({
         ...ticket,
         createdBy: ticket.createdBy || this.getCurrentUserDisplay(),
         fieldUpdatedAt: ticket.fieldUpdatedAt && typeof ticket.fieldUpdatedAt === "object" ? ticket.fieldUpdatedAt : {},
@@ -2419,20 +2620,27 @@ export class PermitChecklistsComponent implements OnInit {
           ...(ticket.values || {}),
         },
       }));
-      this.transactions = (saved.transactions || []).map((tx) => ({
+
+      this.transactions = (apiData.transactions || []).map((tx) => ({
         ...tx,
         actor: tx.actor || this.resolveTransactionActor(tx),
       }));
-      this.customers = this.normalizeCustomers(saved.customers);
-      this.architects = this.normalizeArchitects(saved.architects);
-      this.customerBillingDefaultsByType = this.normalizeCustomerBillingDefaultsByType(saved.customerBillingDefaultsByType);
+
+      this.customers = this.normalizeCustomers(apiData.customers);
+      this.architects = this.normalizeArchitects(apiData.architects);
+      this.customerBillingDefaultsByType = this.normalizeCustomerBillingDefaultsByType(apiData.customerBillingDefaultsByType);
       this.bootstrapDirectoryFromTicketValues();
       this.ensureDefaultDirectoryValues();
+      this.directorySyncDirty = false;
+      this.billingDefaultsSyncDirty = false;
+      this.dirtyTransactionTicketIds.clear();
       this.refreshRecentTickets();
       this.refreshAuditLogRows();
     } catch {
-      this.statusMessage = "Saved checklist data could not be loaded.";
-      this.ensureDefaultDirectoryValues();
+      this.statusMessage = "Unable to load permit checklist data from API.";
+    } finally {
+      this.isHydratingApi = false;
+      this.applyRouteQueryState();
     }
   }
 
@@ -2528,6 +2736,7 @@ export class PermitChecklistsComponent implements OnInit {
     if (this.transactions.length > this.maxTransactions) {
       this.transactions = this.transactions.slice(this.transactions.length - this.maxTransactions);
     }
+    this.dirtyTransactionTicketIds.add(ticketId);
     this.refreshAuditLogRows();
   }
 
@@ -2825,6 +3034,46 @@ export class PermitChecklistsComponent implements OnInit {
     }
 
     return "Unknown User";
+  }
+
+  private getCurrentUserId(): string {
+    const currentUser: any = this.authenticationService.currentUserValue;
+    if (currentUser?.id !== undefined && currentUser?.id !== null) {
+      return String(currentUser.id);
+    }
+
+    try {
+      const rawUser = localStorage.getItem(THE_FI_COMPANY_CURRENT_USER);
+      if (!rawUser) {
+        return "";
+      }
+
+      const parsed: any = JSON.parse(rawUser);
+      return parsed?.id !== undefined && parsed?.id !== null ? String(parsed.id) : "";
+    } catch {
+      return "";
+    }
+  }
+
+  private isCurrentUserAdmin(): boolean {
+    const currentUser: any = this.authenticationService.currentUserValue;
+    if (currentUser) {
+      if (currentUser.isAdmin === true || currentUser.isAdmin === 1 || currentUser.isAdmin === "1") {
+        return true;
+      }
+    }
+
+    try {
+      const rawUser = localStorage.getItem(THE_FI_COMPANY_CURRENT_USER);
+      if (!rawUser) {
+        return false;
+      }
+
+      const parsed: any = JSON.parse(rawUser);
+      return parsed?.isAdmin === true || parsed?.isAdmin === 1 || parsed?.isAdmin === "1";
+    } catch {
+      return false;
+    }
   }
 
   private resolveTransactionActor(tx: PermitChecklistTransaction): string {
