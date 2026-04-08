@@ -179,6 +179,8 @@ interface StoredChecklistData {
 })
 export class PermitChecklistsComponent implements OnInit {
   private readonly maxTransactions = 2000;
+  private readonly legacyStorageCleanupFlag = "quality_permit_checklists_cleanup_done_v1";
+  private readonly legacyChecklistStorageKeys = ["quality_permit_checklists_v2", "quality_permit_checklists_v1"];
   private readonly defaultCustomerNames: string[] = [
     "AGS",
     "Ainsworth",
@@ -565,6 +567,7 @@ export class PermitChecklistsComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.clearLegacyPermitChecklistLocalCache();
     this.loadSavedData();
     this.routeSub = this.route.queryParamMap.subscribe((params) => {
       this.pendingRouteTicketId = (params.get("ticketId") || "").trim();
@@ -2578,6 +2581,22 @@ export class PermitChecklistsComponent implements OnInit {
     this.ensureDefaultDirectoryValues();
     this.directorySyncDirty = true;
     void this.hydrateFromApi();
+  }
+
+  private clearLegacyPermitChecklistLocalCache(): void {
+    try {
+      if (localStorage.getItem(this.legacyStorageCleanupFlag) === "1") {
+        return;
+      }
+
+      for (const key of this.legacyChecklistStorageKeys) {
+        localStorage.removeItem(key);
+      }
+
+      localStorage.setItem(this.legacyStorageCleanupFlag, "1");
+    } catch {
+      // Ignore storage access errors and continue with API bootstrap.
+    }
   }
 
   private async hydrateFromApi(): Promise<void> {

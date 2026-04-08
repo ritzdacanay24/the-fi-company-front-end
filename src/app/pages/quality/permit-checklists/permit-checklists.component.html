@@ -569,7 +569,7 @@
           <div class="fee-breakdown mt-3" *ngIf="eyefiBillingBreakdown.length; else noEyefiBillingRows">
             <div class="d-flex align-items-center justify-content-between">
               <p class="fw-semibold mb-0">Eyefi Billing Breakdown</p>
-              <button class="btn btn-sm btn-outline-primary mb-1" type="button" [disabled]="!canEditActiveTicket" (click)="addBillingLine('eyefi')">
+              <button class="btn btn-sm btn-outline-primary mb-2" type="button" [disabled]="!canEditActiveTicket" (click)="addBillingLine('eyefi')">
                 Add Fee Line
               </button>
             </div>
