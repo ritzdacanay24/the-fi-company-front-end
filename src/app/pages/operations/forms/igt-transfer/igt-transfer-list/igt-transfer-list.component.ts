@@ -14,6 +14,7 @@ import { highlightRowView, autoSizeColumns } from "src/assets/js/util";
 import moment from "moment";
 import { NAVIGATION_ROUTE } from "../igt-transfer-constant";
 import { DateRangeComponent } from "@app/shared/components/date-range/date-range.component";
+import { BreadcrumbItem } from "@app/shared/components/breadcrumb/breadcrumb.component";
 import { IgtTransferService } from "@app/core/api/operations/igt-transfer/igt-transfer.service";
 import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
 
@@ -238,5 +239,13 @@ export class IgtTransferListComponent implements OnInit {
     if (!this.data) return 0;
     // Assuming a transfer is completed if it has both from and to locations filled
     return this.data.filter(item => item.from_location && item.to_location && item.date).length;
+  }
+
+  breadcrumbItems(): BreadcrumbItem[] {
+    return [
+      { label: "Operations", link: "/operations" },
+      { label: "Forms", link: "/operations/forms" },
+      { label: "IGT Transfers", active: true },
+    ];
   }
 }

@@ -118,7 +118,8 @@ export class ChecklistStateService {
     const item = this.findItemProgress(itemId);
     if (!item) return;
 
-    const newPhotos = [...item.photos, photoUrl];
+    // Keep newest uploads first so replacement flows immediately show the latest photo.
+    const newPhotos = [photoUrl, ...item.photos.filter(p => p !== photoUrl)];
     
     // Check if item should be marked as completed
     // For photo items, if min_photos requirement is met
@@ -447,5 +448,26 @@ export class ChecklistStateService {
       lastModifiedByUserId: p.lastModifiedByUserId,
       lastModifiedByName: p.lastModifiedByName
     }));
+  }
+
+  getCompletionDataForItem(itemId: number | string): CompletionData | null {
+    const progress = this.findItemProgress(itemId);
+    if (!progress) {
+      return null;
+    }
+
+    return {
+      itemId: progress.item.id,
+      completed: progress.completed,
+      completedAt: progress.completedAt?.toISOString(),
+      notes: progress.notes || '',
+      completedByUserId: progress.completedByUserId,
+      completedByName: progress.completedByName,
+      photoMeta: progress.photoMeta,
+      videoMeta: progress.videoMeta,
+      lastModifiedAt: progress.lastModifiedAt?.toISOString(),
+      lastModifiedByUserId: progress.lastModifiedByUserId,
+      lastModifiedByName: progress.lastModifiedByName,
+    };
   }
 }

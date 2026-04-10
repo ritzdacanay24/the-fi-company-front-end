@@ -74,6 +74,9 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   // Optional media UI toggles (tablet-friendly)
   showOptionalPhotoCapture: { [itemId: number]: boolean } = {};
 
+  // Track recently uploaded items to show success badge
+  recentlyUploadedItems: { [itemId: number]: boolean } = {};
+
   // Instructions overflow hint (scrolling container; show hint when content is clipped)
   instructionsHasMore: { [itemId: string]: boolean } = {};
 
@@ -110,6 +113,11 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     this.showOptionalPhotoCapture[itemId] = false;
   }
 
+  isRecentlyUploaded(itemId: any): boolean {
+    const numericId = Number(itemId);
+    return Number.isFinite(numericId) && this.recentlyUploadedItems[numericId] === true;
+  }
+
   onInstructionsScroll(event: Event, itemId: number | string): void {
     const el = event.target as HTMLElement | null;
     if (!el) return;
@@ -124,6 +132,16 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   @HostListener('window:resize')
   onWindowResize(): void {
     this.updateInstructionsOverflowHints();
+  }
+
+  @HostListener('window:beforeunload', ['$event'])
+  onBeforeUnload(event: BeforeUnloadEvent): void {
+    if (this.inFlightMediaUploads <= 0) {
+      return;
+    }
+
+    event.preventDefault();
+    event.returnValue = '';
   }
 
   openItemNotes(progress: ChecklistItemProgress): void {
@@ -278,11 +296,13 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   private notesAutoSaveTimeout: any = null;
   notesSaving = false;
   notesLastSaved: Date | null = null;
+  verificationSavingItemId: number | string | null = null;
 
   // Websocket sync (minimal real-time)
   private wsSessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10);
   private wsSubscription?: Subscription;
   private wsRefreshTimeout: any = null;
+  private inFlightMediaUploads = 0;
 
   // Standalone/tablet mode styling hook
   private readonly standaloneBodyClass = 'standalone-checklist-instance';
@@ -1211,9 +1231,13 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
       const blob = new Blob(this.videoChunks, { type: mimeType });
       const file = new File([blob], `camera_video_${this.instanceId}_${Date.now()}.${ext}`, { type: mimeType });
+      const currentProgress = this.stateService.findItemProgress(itemId);
 
       uploadStarted = true;
-      this.uploadSingleFile(itemId, file, 'in-app', { closeVideoModalOnSuccess: true });
+      this.uploadSingleFile(itemId, file, 'in-app', {
+        closeVideoModalOnSuccess: true,
+        replaceVideoUrls: [...(currentProgress?.videos || [])]
+      });
       this.videoCaptureStatus = 'uploading';
       Swal.fire({
         title: 'Saving video...',
@@ -2061,7 +2085,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         if (!canViewChecklist) {
           this.loading = false;
           alert(`Access Denied: This checklist belongs to ${instance.operator_name}. You can only modify your own checklists.`);
-          this.router.navigate(['/quality/checklist/execution']);
+          this.router.navigate([this.getExecutionRoute()]);
           return;
         }
 
@@ -2623,6 +2647,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     const files = input?.files;
     if (!files || files.length === 0) return;
     const captureSource = this.getCaptureSourceFromInput(input);
+    const replaceExisting = String(input?.getAttribute('data-replace-existing') || '').toLowerCase() === 'true';
 
     const firstFile = files[0] as File | undefined;
     const isMediaSelection = this.isVideoOrAudioFile(firstFile);
@@ -2638,16 +2663,19 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     const progress = this.stateService.findItemProgress(itemId);
     if (progress) {
       if (!isMediaSelection) {
-        const validation = this.photoValidation.validateFileSelection(
-          files, 
-          progress.photos.length, 
-          progress.item
-        );
-        
-        if (!validation.valid) {
-          alert(validation.error);
-          event.target.value = '';
-          return;
+        // For replace flows, skip max-count validation because old photos are removed first.
+        if (!replaceExisting) {
+          const validation = this.photoValidation.validateFileSelection(
+            files,
+            progress.photos.length,
+            progress.item
+          );
+
+          if (!validation.valid) {
+            alert(validation.error);
+            event.target.value = '';
+            return;
+          }
         }
       } else {
         // Video/audio are tracked separately from photos; do not apply photo count limits.
@@ -2662,10 +2690,20 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     // Store files and upload
     const numericKey = this.idExtractor.toNumericKey(itemId);
     this.selectedFiles[numericKey] = files;
-    this.uploadPhotos(itemId, captureSource);
+    if (replaceExisting && !isMediaSelection) {
+      this.uploadPhotos(itemId, captureSource, { replacePhotoUrls: [...(progress?.photos || [])] });
+    } else if (replaceExisting && isMediaSelection) {
+      this.uploadPhotos(itemId, captureSource, { replaceVideoUrls: [...(progress?.videos || [])] });
+    } else {
+      this.uploadPhotos(itemId, captureSource);
+    }
   }
 
-  uploadPhotos(itemId: number | string, captureSource: 'in-app' | 'system' | 'library' = 'library'): void {
+  uploadPhotos(
+    itemId: number | string,
+    captureSource: 'in-app' | 'system' | 'library' = 'library',
+    options?: { replacePhotoUrls?: string[]; replaceVideoUrls?: string[] }
+  ): void {
     if (!this.ensureCanModify(true)) return;
     const itemIdKey = this.idExtractor.toNumericKey(itemId);
     const files = this.selectedFiles[itemIdKey];
@@ -2698,17 +2736,60 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       }
 
       this.uploadProgress[itemIdKey] = 0;
+      this.inFlightMediaUploads++;
       this.photoOps.uploadPhoto(this.instanceId, dbItemId, firstFile!, {
         captureSource,
         userId: this.currentUserId || undefined
       }).subscribe({
         next: (response) => {
-          this.stateService.addVideo(itemId, response.file_url, this.currentUserId || undefined, this.currentUserName, captureSource);
+          const uploadedUrl = String(response?.file_url || '').trim();
+          if (!uploadedUrl) {
+            const mediaLabel = isAudioSelection ? 'audio' : 'video';
+            delete this.uploadProgress[itemIdKey];
+            alert(`Error uploading ${mediaLabel}: upload completed but no persisted file URL was returned.`);
+            return;
+          }
+
+          this.stateService.addVideo(itemId, uploadedUrl, this.currentUserId || undefined, this.currentUserName, captureSource);
+
+          // Replacement flow for media: upload first, then remove prior media.
+          const oldVideoUrls = (options?.replaceVideoUrls || []).filter(url => !!url && url !== uploadedUrl);
+          if (oldVideoUrls.length > 0) {
+            oldVideoUrls.forEach((oldUrl) => {
+              const deleteOld = this.photoOps.deletePhotoByUrl(oldUrl, itemId, this.instanceId);
+              if (deleteOld) {
+                deleteOld.subscribe({
+                  next: () => {
+                    this.cdr.detectChanges();
+                  },
+                  error: (deleteError) => {
+                    console.error('Failed to delete previous media during replace:', deleteError);
+                    alert('New media uploaded, but an older media file could not be removed. Please delete it manually.');
+                  }
+                });
+              }
+            });
+          }
+
+          // Mark as recently uploaded to show success badge
+          const numericItemId = Number(itemId);
+          if (Number.isFinite(numericItemId)) {
+            this.recentlyUploadedItems[numericItemId] = true;
+            this.cdr.detectChanges();
+            setTimeout(() => {
+              this.recentlyUploadedItems[numericItemId] = false;
+              this.cdr.detectChanges();
+            }, 3000);
+          }
+
           delete this.uploadProgress[itemIdKey];
           delete this.selectedFiles[itemIdKey];
           this.cdr.detectChanges();
-          this.saveProgress();
+          this.saveProgressForItem(itemId);
           this.broadcastChecklistUpdate(this.getMediaAddedAction(firstFile), { itemId });
+        },
+        complete: () => {
+          this.inFlightMediaUploads = Math.max(0, this.inFlightMediaUploads - 1);
         },
         error: (error) => {
           const mediaLabel = isAudioSelection ? 'audio' : 'video';
@@ -2716,6 +2797,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
           delete this.uploadProgress[itemIdKey];
           const errorMessage = error.error?.error || error.message || 'Upload failed';
           alert(`Error uploading ${mediaLabel}: ${errorMessage}`);
+          this.inFlightMediaUploads = Math.max(0, this.inFlightMediaUploads - 1);
         }
       });
 
@@ -2724,18 +2806,30 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
 
     // Pre-upload validation
     if (progressItem) {
-      const validation = this.photoValidation.validateFileSelection(
-        files,
-        progressItem.photos.length,
-        progressItem.item
-      );
-      
-      if (!validation.valid) {
-        alert(validation.error);
-        delete this.selectedFiles[itemIdKey];
-        return;
+      // Skip max-count validation for replacement flows; old photos are removed after successful upload.
+      if (!(options?.replacePhotoUrls && options.replacePhotoUrls.length > 0)) {
+        const validation = this.photoValidation.validateFileSelection(
+          files,
+          progressItem.photos.length,
+          progressItem.item
+        );
+
+        if (!validation.valid) {
+          alert(validation.error);
+          delete this.selectedFiles[itemIdKey];
+          return;
+        }
       }
     }
+
+    // Show saving alert for photos
+    Swal.fire({
+      title: 'Saving photo...',
+      text: 'Please wait while your photo is uploaded.',
+      allowOutsideClick: false,
+      showConfirmButton: false,
+      didOpen: () => Swal.showLoading()
+    });
 
     this.uploadProgress[itemIdKey] = 0;
     const totalFiles = files.length;
@@ -2745,7 +2839,9 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       if (index >= totalFiles) {
         delete this.uploadProgress[itemIdKey];
         delete this.selectedFiles[itemIdKey];
-        this.saveProgress();
+        // Delay closing the alert to ensure it's visible
+        setTimeout(() => Swal.close(), 800);
+        this.saveProgressForItem(itemId);
         return;
       }
 
@@ -2754,18 +2850,47 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       if (currentItem && !this.photoValidation.canAddMorePhotos(currentItem.photos.length, currentItem.item)) {
         delete this.uploadProgress[itemIdKey];
         delete this.selectedFiles[itemIdKey];
+        setTimeout(() => Swal.close(), 800);
         alert('Maximum photos reached. Some files were not uploaded.');
         return;
       }
 
       const file = files[index];
       
+      this.inFlightMediaUploads++;
       this.photoOps.uploadPhoto(this.instanceId, dbItemId, file, {
         captureSource,
         userId: this.currentUserId || undefined
       }).subscribe({
         next: (response) => {
-          this.stateService.addPhoto(itemId, response.file_url, this.currentUserId || undefined, this.currentUserName, captureSource);
+          const uploadedUrl = String(response?.file_url || '').trim();
+          if (!uploadedUrl) {
+            delete this.uploadProgress[itemIdKey];
+            setTimeout(() => Swal.close(), 800);
+            alert('Error uploading photos: upload completed but no persisted file URL was returned.');
+            return;
+          }
+
+          this.stateService.addPhoto(itemId, uploadedUrl, this.currentUserId || undefined, this.currentUserName, captureSource);
+
+          // Replacement flow: after successful upload, delete old photos so users never lose evidence on cancel/failure.
+          const oldUrls = (options?.replacePhotoUrls || []).filter(url => !!url && url !== uploadedUrl);
+          if (oldUrls.length > 0) {
+            oldUrls.forEach((oldUrl) => {
+              const deleteOld = this.photoOps.deletePhotoByUrl(oldUrl, itemId, this.instanceId);
+              if (deleteOld) {
+                deleteOld.subscribe({
+                  next: () => {
+                    this.cdr.detectChanges();
+                  },
+                  error: (deleteError) => {
+                    console.error('Failed to delete previous photo during replace:', deleteError);
+                    alert('New photo uploaded, but an older photo could not be removed. Please delete it manually.');
+                  }
+                });
+              }
+            });
+          }
           
           uploadedCount++;
           this.uploadProgress[itemIdKey] = Math.round((uploadedCount / totalFiles) * 100);
@@ -2780,12 +2905,17 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
           
           uploadNextFile(index + 1);
         },
+        complete: () => {
+          this.inFlightMediaUploads = Math.max(0, this.inFlightMediaUploads - 1);
+        },
         error: (error) => {
           console.error(`Error uploading photo ${index + 1}:`, error);
           delete this.uploadProgress[itemIdKey];
+          setTimeout(() => Swal.close(), 800);
           
           const errorMessage = error.error?.error || error.message || 'Upload failed';
           alert(`Error uploading photos: ${errorMessage}`);
+          this.inFlightMediaUploads = Math.max(0, this.inFlightMediaUploads - 1);
         }
       });
     };
@@ -2843,9 +2973,10 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     });
   }
 
-  saveProgress(): void {
+  saveProgress(onComplete?: () => void): void {
     if (!this.instanceId) {
       console.error('Cannot save progress: Instance ID is not available');
+      onComplete?.();
       return;
     }
 
@@ -2879,13 +3010,72 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
 
         // Minimal real-time sync: notify other viewers
         this.broadcastChecklistUpdate('progress_saved');
+        onComplete?.();
       },
       error: (error) => {
         console.error('Error saving progress:', error);
         this.saving = false;
         alert('Error saving progress. Please try again.');
+        onComplete?.();
       }
     });
+  }
+
+  private saveProgressForItem(itemId: number | string, onComplete?: () => void): void {
+    if (!this.instanceId) {
+      this.saveProgress(onComplete);
+      return;
+    }
+
+    this.updateParentCompletion();
+
+    const itemProgress = this.stateService.findItemProgress(itemId);
+    if (!itemProgress) {
+      this.saveProgress(onComplete);
+      return;
+    }
+
+    const dbItemId = this.idExtractor.extractBaseItemId(
+      itemProgress.item.id,
+      (itemProgress.item as any).baseItemId
+    );
+
+    const completion = this.stateService.getCompletionDataForItem(itemId);
+    if (!completion) {
+      this.saveProgress(onComplete);
+      return;
+    }
+
+    const progressPercent = this.stateService.getCompletionPercentage();
+    const status: ChecklistInstance['status'] = progressPercent === 100 ? 'completed' : 'in_progress';
+
+    this.saving = true;
+    this.photoChecklistService
+      .updateInstanceItemCompletion(this.instanceId, dbItemId, {
+        completion,
+        progress_percentage: progressPercent,
+        status,
+        operator_id: this.currentUserId || undefined,
+        operator_name: this.currentUserName || undefined,
+        updated_at: new Date().toISOString(),
+      })
+      .subscribe({
+        next: () => {
+          this.saving = false;
+          this.notesLastSaved = new Date();
+          if (this.instance) {
+            this.instance.progress_percentage = progressPercent;
+            this.instance.status = status;
+          }
+          this.broadcastChecklistUpdate('progress_saved');
+          this.cdr.detectChanges();
+          onComplete?.();
+        },
+        error: (error) => {
+          console.error('Error saving item progress; falling back to full save:', error);
+          this.saveProgress(onComplete);
+        },
+      });
   }
 
   submitChecklist(): void {
@@ -3005,8 +3195,17 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     return this.lastVisibleItems;
   }
 
+  private getExecutionRoute(): string {
+    const returnTo = this.route.snapshot.queryParams['returnTo'];
+    if (this.isStandaloneMode && returnTo === 'kanban') {
+      return '/standalone/checklist/kanban';
+    }
+
+    return this.isStandaloneMode ? '/standalone/checklist/execution' : '/quality/checklist/execution';
+  }
+
   goBack(): void {
-    this.router.navigate(['/quality/checklist/execution']);
+    this.router.navigate([this.getExecutionRoute()]);
   }
 
   deleteInspection(offcanvas?: any): void {
@@ -3073,7 +3272,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       }
 
       this.stateService.toggleItemCompletion(itemId, this.currentUserId || undefined, this.currentUserName);
-      this.saveProgress();
+      this.saveProgressForItem(itemId);
     }
   }
 
@@ -3090,7 +3289,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       completedAt: new Date(),
       notes: progress.notes || 'Verified without photos'
     });
-    this.saveProgress();
+    this.saveProgressForItem(progress.item.id);
     
     // Auto-advance to next step if available
     if (!this.isLastItem()) {
@@ -3100,6 +3299,8 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
 
   toggleVerification(progress?: ChecklistItemProgress): void {
     if (!this.ensureCanModify(true)) return;
+    if (this.saving) return;
+
     const activeIndex = this.getActiveNavIndex();
     const target = progress || (activeIndex >= 0 ? this.itemProgress[activeIndex] : undefined);
     if (!target) return;
@@ -3130,18 +3331,53 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         setTimeout(() => this.nextOpenItem(), 300);
       }
     }
-    
-    this.saveProgress();
+
+    this.verificationSavingItemId = target.item.id;
+    const loadingStartedAt = Date.now();
+    const minimumLoadingMs = 700;
+
+    Swal.fire({
+      title: 'Saving completion...',
+      text: 'Please wait while we save your update.',
+      allowOutsideClick: false,
+      showConfirmButton: false,
+      didOpen: () => Swal.showLoading()
+    });
+
+    this.saveProgressForItem(target.item.id, () => {
+      const elapsedMs = Date.now() - loadingStartedAt;
+      const remainingMs = Math.max(0, minimumLoadingMs - elapsedMs);
+      setTimeout(() => {
+        Swal.close();
+        this.verificationSavingItemId = null;
+      }, remainingMs);
+    });
+  }
+
+  isVerificationSaving(progress?: ChecklistItemProgress): boolean {
+    if (!progress || this.verificationSavingItemId === null) {
+      return false;
+    }
+
+    return this.saving && String(this.verificationSavingItemId) === String(progress.item.id);
   }
 
   removePhoto(itemId: number | string, photoIndex: number): void {
     if (!this.ensureCanModify(true)) return;
     if (!confirm('Are you sure you want to remove this photo?')) return;
 
+    Swal.fire({
+      title: 'Deleting photo...',
+      text: 'Please wait while we remove your photo.',
+      allowOutsideClick: false,
+      showConfirmButton: false,
+      didOpen: () => Swal.showLoading()
+    });
+
     const result = this.photoOps.deletePhotoByIndex(
       itemId, 
       photoIndex, 
-      this.instance?.items || []
+      this.instanceId
     );
 
     if (result) {
@@ -3153,9 +3389,11 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
           this.broadcastChecklistUpdate('photo_deleted', { itemId });
           this.cdr.detectChanges();
           setTimeout(() => this.initializeCarousels(), 100);
+          setTimeout(() => Swal.close(), 800);
         },
         error: (error) => {
           console.error('Error deleting photo:', error);
+          setTimeout(() => Swal.close(), 800);
           alert('Error deleting photo. Please try again.');
         }
       });
@@ -3164,6 +3402,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       this.stampLastModified(itemId, 'media');
       this.saveProgress();
       this.cdr.detectChanges();
+      setTimeout(() => Swal.close(), 800);
     }
   }
 
@@ -3173,7 +3412,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
 
     const result = this.photoOps.deleteAllPhotos(
       itemId,
-      this.instance?.items || []
+      this.instanceId
     );
 
     if (result) {
@@ -3203,54 +3442,35 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     if (!this.ensureCanModify(true)) return;
     if (!confirm('Are you sure you want to remove this media?')) return;
 
-    const attemptDelete = (instanceItems: any[], didRefresh: boolean) => {
-      const result = this.photoOps.deletePhotoByUrl(
-        photoUrl,
-        itemId,
-        instanceItems
-      );
+    Swal.fire({
+      title: 'Deleting media...',
+      text: 'Please wait while we remove your media.',
+      allowOutsideClick: false,
+      showConfirmButton: false,
+      didOpen: () => Swal.showLoading()
+    });
 
-      if (result) {
-        result.subscribe({
-          next: () => {
-            this.stampLastModified(itemId, 'media');
-            this.saveProgress();
-            this.broadcastChecklistUpdate('media_deleted', { itemId });
-            this.cdr.detectChanges();
-            setTimeout(() => this.initializeCarousels(), 100);
-          },
-          error: () => {
-            alert('Error deleting media. Please try again.');
-          }
-        });
-        return;
+    const result = this.photoOps.deletePhotoByUrl(photoUrl, itemId, this.instanceId);
+    if (!result) {
+      setTimeout(() => Swal.close(), 800);
+      alert('Error deleting media. Missing required delete context.');
+      return;
+    }
+
+    result.subscribe({
+      next: () => {
+        this.stampLastModified(itemId, 'media');
+        this.saveProgress();
+        this.broadcastChecklistUpdate('media_deleted', { itemId });
+        this.cdr.detectChanges();
+        setTimeout(() => this.initializeCarousels(), 100);
+        setTimeout(() => Swal.close(), 800);
+      },
+      error: () => {
+        setTimeout(() => Swal.close(), 800);
+        alert('Error deleting media. Please try again.');
       }
-
-      // If we couldn't find a backend ID (common right after upload because instanceItems is stale), refresh once and retry.
-      if (!didRefresh && this.idExtractor.isValidInstanceId(this.instanceId)) {
-        this.photoChecklistService.getInstance(this.instanceId).subscribe({
-          next: (fresh) => {
-            this.instance = fresh as any;
-            this.cdr.detectChanges();
-            attemptDelete((fresh as any)?.items || [], true);
-          },
-          error: () => {
-            // fallback: UI-only removal already handled by service; still recompute
-            this.stampLastModified(itemId, 'media');
-            this.saveProgress();
-            this.cdr.detectChanges();
-          }
-        });
-        return;
-      }
-
-      // UI-only removal path
-      this.stampLastModified(itemId, 'media');
-      this.saveProgress();
-      this.cdr.detectChanges();
-    };
-
-    attemptDelete(this.instance?.items || [], false);
+    });
   }
 
   previewImage(imageUrl: string): void {
@@ -3996,7 +4216,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     itemId: number | string,
     file: File,
     captureSource: 'in-app' | 'system' | 'library',
-    options?: { closeVideoModalOnSuccess?: boolean }
+    options?: { closeVideoModalOnSuccess?: boolean; replaceVideoUrls?: string[] }
   ): void {
     if (!this.ensureCanModify(true)) return;
     // Validate instance ID
@@ -4041,6 +4261,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     const itemIdKey = this.idExtractor.toNumericKey(itemId);
     this.uploadProgress[itemIdKey] = 0;
 
+    this.inFlightMediaUploads++;
     this.photoOps.uploadPhoto(this.instanceId, dbItemId, file, {
       captureSource,
       userId: this.currentUserId || undefined
@@ -4060,6 +4281,25 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
 
         if (isMedia) {
           this.stateService.addVideo(itemId, uploadedUrl, this.currentUserId || undefined, this.currentUserName, captureSource);
+
+          // Replacement flow for in-app media capture (re-record): upload first, then remove prior media.
+          const oldVideoUrls = (options?.replaceVideoUrls || []).filter(url => !!url && url !== uploadedUrl);
+          if (oldVideoUrls.length > 0) {
+            oldVideoUrls.forEach((oldUrl) => {
+              const deleteOld = this.photoOps.deletePhotoByUrl(oldUrl, itemId, this.instanceId);
+              if (deleteOld) {
+                deleteOld.subscribe({
+                  next: () => {
+                    this.cdr.detectChanges();
+                  },
+                  error: (deleteError) => {
+                    console.error('Failed to delete previous media during re-record:', deleteError);
+                    alert('New media uploaded, but an older media file could not be removed. Please delete it manually.');
+                  }
+                });
+              }
+            });
+          }
         } else {
           this.stateService.addPhoto(
             itemId,
@@ -4069,7 +4309,18 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
             captureSource
           );
         }
+
         this.uploadProgress[itemIdKey] = 100;
+        // Mark as recently uploaded to show success badge
+        const numericItemId = Number(itemId);
+        if (Number.isFinite(numericItemId)) {
+          this.recentlyUploadedItems[numericItemId] = true;
+          this.cdr.detectChanges();
+          setTimeout(() => {
+            this.recentlyUploadedItems[numericItemId] = false;
+            this.cdr.detectChanges();
+          }, 3000);
+        }
         Swal.close();
         this.cdr.detectChanges();
         setTimeout(() => this.initializeCarousels(), 100);
@@ -4078,30 +4329,17 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         }
 
         // Persist progress + notify other viewers
-        this.saveProgress();
+        this.saveProgressForItem(itemId);
         this.broadcastChecklistUpdate(this.getMediaAddedAction(file), { itemId });
 
         if (options?.closeVideoModalOnSuccess) {
-          this.photoChecklistService.getInstance(this.instanceId).subscribe({
-            next: (fresh) => {
-              const persisted = this.instanceHasMediaUrl(fresh, uploadedUrl);
-              if (persisted) {
-                this.instance = fresh as any;
-                this.videoCaptureStatus = 'idle';
-                this.closeVideoCapture();
-              } else {
-                this.videoCaptureStatus = 'preview';
-                alert('Video capture closed but was not found on the server yet. Please record again.');
-              }
-              this.cdr.detectChanges();
-            },
-            error: () => {
-              this.videoCaptureStatus = 'preview';
-              alert('Unable to verify saved video on server. Please try recording again.');
-              this.cdr.detectChanges();
-            }
-          });
+          this.videoCaptureStatus = 'idle';
+          this.closeVideoCapture();
+          this.cdr.detectChanges();
         }
+      },
+      complete: () => {
+        this.inFlightMediaUploads = Math.max(0, this.inFlightMediaUploads - 1);
       },
       error: (error) => {
         const mediaLabel = isMedia ? (isAudio ? 'audio' : 'video') : 'photo';
@@ -4114,44 +4352,9 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         }
         const errorMessage = error.error?.error || error.message || 'Upload failed';
         alert(`Error uploading ${mediaLabel}: ${errorMessage}`);
+        this.inFlightMediaUploads = Math.max(0, this.inFlightMediaUploads - 1);
       }
     });
-  }
-
-  private normalizeMediaPath(url: string | undefined | null): string {
-    const raw = String(url || '').trim();
-    if (!raw) return '';
-
-    try {
-      const parsed = new URL(raw, 'https://dashboard.eye-fi.com');
-      return decodeURIComponent(parsed.pathname).replace(/^\/+/, '').toLowerCase();
-    } catch {
-      return raw
-        .replace(/^https?:\/\/[^/]+\//i, '')
-        .replace(/^\/+/, '')
-        .toLowerCase();
-    }
-  }
-
-  private instanceHasMediaUrl(instance: ChecklistInstance | null, mediaUrl: string): boolean {
-    const target = this.normalizeMediaPath(mediaUrl);
-    if (!target) return false;
-
-    const items = (instance as any)?.items;
-    if (!Array.isArray(items)) return false;
-
-    for (const item of items) {
-      const photos = Array.isArray(item?.photos) ? item.photos : [];
-      const videos = Array.isArray(item?.videos) ? item.videos : [];
-
-      const hasPhoto = photos.some((p: any) => this.normalizeMediaPath(String(p?.file_url || p?.url || p || '')) === target);
-      if (hasPhoto) return true;
-
-      const hasVideo = videos.some((v: any) => this.normalizeMediaPath(String(v?.file_url || v?.url || v || '')) === target);
-      if (hasVideo) return true;
-    }
-
-    return false;
   }
 
   /**
@@ -4186,13 +4389,14 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
    */
   openFilePicker(fileInput: HTMLInputElement, itemId: number | string): void {
     // Preserve input-level attributes (including capture) and just open picker.
+    // Inputs with capture attribute are treated as system capture; others as library.
     const source = fileInput.hasAttribute('capture') ? 'system' : 'library';
     fileInput.setAttribute('data-capture-source', source);
     fileInput.click();
   }
 
   openLibraryOnlyPicker(fileInput: HTMLInputElement): void {
-    // Force library-only behavior by removing capture before opening picker.
+    // Force library-only behavior and explicit source tracking.
     fileInput.removeAttribute('capture');
     fileInput.setAttribute('data-capture-source', 'library');
     fileInput.click();

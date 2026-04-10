@@ -289,6 +289,13 @@ class PhotoChecklistConfigAPI {
                     }
                     break;
 
+                case 'instance_item_completion':
+                    $id = $_GET['id'] ?? null;
+                    if ($method === 'POST' && $id) {
+                        echo json_encode($this->updateInstanceItemCompletion($id));
+                    }
+                    break;
+
                 // Photo Management
                 case 'photos':
                     if ($method === 'POST') {
@@ -298,8 +305,14 @@ class PhotoChecklistConfigAPI {
 
                 case 'photo':
                     $id = $_GET['id'] ?? null;
-                    if ($method === 'DELETE' && $id) {
+                    if (($method === 'DELETE' || $method === 'POST') && $id) {
                         echo json_encode($this->deletePhoto($id));
+                    } elseif ($method === 'POST') {
+                        $payload = json_decode(file_get_contents('php://input'), true);
+                        $instanceId = isset($payload['instance_id']) ? (int)$payload['instance_id'] : 0;
+                        $itemId = isset($payload['item_id']) ? (int)$payload['item_id'] : 0;
+                        $fileUrl = isset($payload['file_url']) ? (string)$payload['file_url'] : '';
+                        echo json_encode($this->deletePhotoByLocator($instanceId, $itemId, $fileUrl));
                     }
                     break;
 
@@ -3294,7 +3307,7 @@ class PhotoChecklistConfigAPI {
                     END,
                     citm.level,
                     citm.order_index,
-                    ps.created_at";
+                    ps.created_at DESC";
         
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$id, $instance['template_id']]);
@@ -3477,6 +3490,142 @@ class PhotoChecklistConfigAPI {
         }
     }
 
+    private function normalizeCompletionItemId($rawItemId) {
+        if ($rawItemId === null) {
+            return '';
+        }
+
+        if (is_int($rawItemId) || is_float($rawItemId)) {
+            return (string)((int)$rawItemId);
+        }
+
+        $value = trim((string)$rawItemId);
+        if ($value === '') {
+            return '';
+        }
+
+        if (strpos($value, '_') !== false) {
+            $parts = explode('_', $value, 2);
+            $candidate = isset($parts[1]) ? trim((string)$parts[1]) : '';
+            if ($candidate !== '') {
+                return $candidate;
+            }
+        }
+
+        return $value;
+    }
+
+    public function updateInstanceItemCompletion($id) {
+        $instanceId = (int)$id;
+        if ($instanceId <= 0) {
+            return ['success' => false, 'error' => 'Invalid instance id'];
+        }
+
+        $data = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($data)) {
+            return ['success' => false, 'error' => 'Invalid payload'];
+        }
+
+        $itemId = isset($data['item_id']) ? (int)$data['item_id'] : 0;
+        $completion = isset($data['completion']) && is_array($data['completion']) ? $data['completion'] : null;
+
+        if ($itemId <= 0 || !$completion) {
+            return ['success' => false, 'error' => 'Missing item_id or completion'];
+        }
+
+        if (!$this->validateItemBelongsToInstance($itemId, $instanceId)) {
+            return ['success' => false, 'error' => 'Invalid item ID or item does not belong to this instance template'];
+        }
+
+        $stmt = $this->conn->prepare("SELECT item_completion FROM checklist_instances WHERE id = ? LIMIT 1");
+        $stmt->execute([$instanceId]);
+        $existingRow = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$existingRow) {
+            return ['success' => false, 'error' => 'Instance not found'];
+        }
+
+        $currentCompletion = [];
+        $rawCompletion = $existingRow['item_completion'] ?? null;
+        if (is_string($rawCompletion) && trim($rawCompletion) !== '') {
+            $decoded = json_decode($rawCompletion, true);
+            if (is_array($decoded)) {
+                $currentCompletion = $decoded;
+            }
+        } elseif (is_array($rawCompletion)) {
+            $currentCompletion = $rawCompletion;
+        }
+
+        $targetKey = $this->normalizeCompletionItemId($completion['itemId'] ?? $itemId);
+        if ($targetKey === '') {
+            $targetKey = (string)$itemId;
+        }
+
+        $completion['itemId'] = $completion['itemId'] ?? $itemId;
+
+        $updated = false;
+        foreach ($currentCompletion as $index => $entry) {
+            if (!is_array($entry)) {
+                continue;
+            }
+
+            $entryKey = $this->normalizeCompletionItemId($entry['itemId'] ?? null);
+            if ($entryKey !== '' && $entryKey === $targetKey) {
+                $currentCompletion[$index] = array_merge($entry, $completion);
+                $updated = true;
+                break;
+            }
+        }
+
+        if (!$updated) {
+            $currentCompletion[] = $completion;
+        }
+
+        $updateFields = [
+            "item_completion = ?",
+            "updated_at = CURRENT_TIMESTAMP"
+        ];
+        $params = [json_encode(array_values($currentCompletion))];
+
+        if (array_key_exists('progress_percentage', $data)) {
+            $updateFields[] = "progress_percentage = ?";
+            $params[] = (float)$data['progress_percentage'];
+        }
+
+        if (array_key_exists('status', $data) && !empty($data['status'])) {
+            $status = (string)$data['status'];
+            $allowed = ['draft', 'in_progress', 'review', 'completed', 'submitted'];
+            if (in_array($status, $allowed, true)) {
+                $updateFields[] = "status = ?";
+                $params[] = $status;
+
+                if ($status === 'in_progress') {
+                    $updateFields[] = "started_at = COALESCE(started_at, CURRENT_TIMESTAMP)";
+                } elseif ($status === 'completed') {
+                    $updateFields[] = "completed_at = CURRENT_TIMESTAMP";
+                } elseif ($status === 'submitted') {
+                    $updateFields[] = "submitted_at = CURRENT_TIMESTAMP";
+                }
+            }
+        }
+
+        $params[] = $instanceId;
+        $sql = "UPDATE checklist_instances SET " . implode(', ', $updateFields) . " WHERE id = ?";
+        $updateStmt = $this->conn->prepare($sql);
+        $updateStmt->execute($params);
+
+        $this->logAction($instanceId, 'item_completion_updated', $data['operator_id'] ?? null, [
+            'item_id' => $itemId,
+            'completed' => $completion['completed'] ?? null,
+        ]);
+
+        return [
+            'success' => true,
+            'instance_id' => $instanceId,
+            'item_id' => $itemId
+        ];
+    }
+
     public function deleteInstance($id) {
         $instanceId = (int)$id;
         if ($instanceId <= 0) {
@@ -3647,6 +3796,24 @@ class PhotoChecklistConfigAPI {
                 $uploadedFile['type'],
                 $photoMetadata
             ]);
+
+            // Durability check: ensure the media row is persisted before returning success.
+            $verifyStmt = $this->conn->prepare(
+                "SELECT id, item_id, file_url, file_type, file_name, created_at
+                 FROM photo_submissions
+                 WHERE instance_id = ? AND item_id = ? AND file_url = ?
+                 ORDER BY id DESC
+                 LIMIT 1"
+            );
+            $verifyStmt->execute([
+                $instanceId,
+                $itemId,
+                '/attachments/photo-submissions/' . $fileName
+            ]);
+            $persistedRow = $verifyStmt->fetch(PDO::FETCH_ASSOC);
+            if (!$persistedRow) {
+                throw new Exception('Upload saved file but failed to persist media record.');
+            }
             
             // Update instance progress
             $this->updateInstanceProgress($instanceId);
@@ -3660,7 +3827,18 @@ class PhotoChecklistConfigAPI {
                 'capture_source' => $captureSource
             ]);
             
-            return ['success' => true, 'file_url' => '/attachments/photo-submissions/' . $fileName];
+            return [
+                'success' => true,
+                'file_url' => '/attachments/photo-submissions/' . $fileName,
+                'media' => [
+                    'id' => isset($persistedRow['id']) ? (int)$persistedRow['id'] : null,
+                    'item_id' => isset($persistedRow['item_id']) ? (int)$persistedRow['item_id'] : null,
+                    'file_url' => $persistedRow['file_url'] ?? ('/attachments/photo-submissions/' . $fileName),
+                    'file_type' => $persistedRow['file_type'] ?? (strpos($uploadedFile['type'], 'video') !== false ? 'video' : 'image'),
+                    'file_name' => $persistedRow['file_name'] ?? $fileName,
+                    'created_at' => $persistedRow['created_at'] ?? null
+                ]
+            ];
         } else {
             throw new Exception('Failed to upload file');
         }
@@ -3728,6 +3906,74 @@ class PhotoChecklistConfigAPI {
         } catch (Exception $e) {
             throw $e;
         }
+    }
+
+    private function normalizeMediaLocatorPath($url) {
+        $raw = trim((string)$url);
+        if ($raw === '') {
+            return '';
+        }
+
+        $path = $raw;
+        if (preg_match('/^https?:\/\//i', $raw)) {
+            $parts = parse_url($raw);
+            $path = $parts['path'] ?? '';
+        }
+
+        $path = preg_replace('/\?.*$/', '', (string)$path);
+        $path = urldecode((string)$path);
+        $path = '/' . ltrim((string)$path, '/');
+
+        return $path;
+    }
+
+    public function deletePhotoByLocator($instanceId, $itemId, $fileUrl) {
+        $instanceId = (int)$instanceId;
+        $itemId = (int)$itemId;
+        $normalizedPath = $this->normalizeMediaLocatorPath($fileUrl);
+
+        if ($instanceId <= 0 || $itemId <= 0 || $normalizedPath === '') {
+            return ['success' => false, 'error' => 'Missing required locator fields'];
+        }
+
+        $candidates = [];
+        $candidates[] = $normalizedPath;
+
+        $trimmed = ltrim($normalizedPath, '/');
+        if ($trimmed !== '') {
+            $candidates[] = $trimmed;
+            $candidates[] = '/' . $trimmed;
+        }
+
+        $seen = [];
+        $uniqueCandidates = [];
+        foreach ($candidates as $candidate) {
+            if ($candidate === '' || isset($seen[$candidate])) {
+                continue;
+            }
+            $seen[$candidate] = true;
+            $uniqueCandidates[] = $candidate;
+        }
+
+        $placeholders = implode(',', array_fill(0, count($uniqueCandidates), '?'));
+        $sql = "SELECT id
+                FROM photo_submissions
+                WHERE instance_id = ?
+                  AND item_id = ?
+                  AND file_url IN ($placeholders)
+                ORDER BY id DESC
+                LIMIT 1";
+
+        $params = array_merge([$instanceId, $itemId], $uniqueCandidates);
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($params);
+        $photoId = (int)($stmt->fetchColumn() ?: 0);
+
+        if ($photoId <= 0) {
+            return ['success' => false, 'error' => 'Media not found for provided locator'];
+        }
+
+        return $this->deletePhoto($photoId);
     }
 
     // ==============================================

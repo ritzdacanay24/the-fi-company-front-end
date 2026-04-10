@@ -447,14 +447,6 @@ interface FamilyNavNode {
                 </div>
               </ng-template>
             </div>
-            
-            <div class="card-footer bg-light text-muted d-flex align-items-center">
-              <i class="mdi mdi-information me-2"></i>
-              <span>Click "View" to preview templates or "Edit" to modify template configurations</span>
-              <div class="ms-auto">
-                <small>Selected Major: {{getSelectedBranchTemplates()?.length || 0}} versions</small>
-              </div>
-            </div>
           </div>
           
         </div>

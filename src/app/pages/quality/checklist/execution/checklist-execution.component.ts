@@ -1,5 +1,5 @@
 import { PhotosService } from './photos/photos.service';
-import { Component, OnInit } from '@angular/core';
+import { Component, Inject, OnDestroy, OnInit, Renderer2 } from '@angular/core';
 import { Router } from '@angular/router';
 import { first } from 'rxjs/operators';
 import { WorkOrderInfoService } from '@app/core/api/work-order/work-order-info.service';
@@ -7,6 +7,7 @@ import { QualityPhotoChecklistService } from '@app/core/api/quality-photo-checkl
 import { PhotoChecklistConfigService, ChecklistTemplate, ChecklistInstance } from '@app/core/api/photo-checklist-config/photo-checklist-config.service';
 import { SharedModule } from '@app/shared/shared.module';
 import { AuthenticationService } from '@app/core/services/auth.service';
+import { DOCUMENT } from '@angular/common';
 
 @Component({
   standalone:true, 
@@ -15,7 +16,7 @@ import { AuthenticationService } from '@app/core/services/auth.service';
   templateUrl: './checklist-execution.component.html',
   styleUrls: ['./checklist-execution.component.scss']
 })
-export class ChecklistExecutionComponent implements OnInit {
+export class ChecklistExecutionComponent implements OnInit, OnDestroy {
 
   // Updated to use dynamic data instead of hardcoded
   checklistTemplates: ChecklistTemplate[] = [];
@@ -28,7 +29,8 @@ export class ChecklistExecutionComponent implements OnInit {
   selectedTemplate: string = '';
   selectedOperator: string = ''; // Filter by operator
   currentUser: any = null;
-  showMyChecklistsOnly: boolean = true; // Default to showing current user's checklists only
+  isStandaloneMode = false;
+  private readonly standaloneBodyClass = 'standalone-checklist-execution';
 
   constructor(
     private photosService: PhotosService,
@@ -36,7 +38,9 @@ export class ChecklistExecutionComponent implements OnInit {
     private workOrderInfoService: WorkOrderInfoService,
     private photoChecklistConfigService: PhotoChecklistConfigService,
     private router: Router,
-    private authService: AuthenticationService
+    private authService: AuthenticationService,
+    private renderer: Renderer2,
+    @Inject(DOCUMENT) private document: Document
   ) {
     this.currentUser = this.authService.currentUser();
   }
@@ -101,6 +105,7 @@ export class ChecklistExecutionComponent implements OnInit {
       this.loading = false;
       // Load ALL checklists including completed and submitted
       this.openChecklists = data || [];
+      this.applyDefaultOperatorFilter();
       this.applyFilters(); // Apply filters after loading data
     }, () => this.loading = false);
   }
@@ -118,11 +123,6 @@ export class ChecklistExecutionComponent implements OnInit {
   private applyFilters() {
     this.filteredChecklists = this.openChecklists.filter(checklist => {
       let matches = true;
-
-      // Filter by current user by default if enabled
-      if (this.showMyChecklistsOnly && this.currentUser?.id) {
-        matches = matches && checklist.operator_id?.toString() === this.currentUser.id.toString();
-      }
 
       // Filter by work order number
       if (this.woNumber && this.woNumber.trim()) {
@@ -202,6 +202,68 @@ export class ChecklistExecutionComponent implements OnInit {
     });
   }
 
+  private normalizeText(value: unknown): string {
+    return (value || '').toString().trim().toLowerCase().replace(/\s+/g, ' ');
+  }
+
+  private getCurrentUserName(currentUser: any): string {
+    const first = currentUser?.firstName || currentUser?.first_name || '';
+    const last = currentUser?.lastName || currentUser?.last_name || '';
+    return this.normalizeText(`${first} ${last}`);
+  }
+
+  private getCurrentUserIdCandidates(currentUser: any): string[] {
+    const candidates = [
+      currentUser?.id,
+      currentUser?.user_id,
+      currentUser?.userId,
+      currentUser?.operator_id,
+      currentUser?.operatorId,
+      currentUser?.employee_id,
+      currentUser?.employeeId
+    ]
+      .filter(value => value !== null && value !== undefined && value !== '')
+      .map(value => value.toString());
+
+    return Array.from(new Set(candidates));
+  }
+
+  private applyDefaultOperatorFilter() {
+    const currentUser = this.authService.currentUser();
+    if (!currentUser) {
+      this.selectedOperator = '';
+      return;
+    }
+
+    const operators = this.getUniqueOperators();
+    const idCandidates = this.getCurrentUserIdCandidates(currentUser);
+
+    if (idCandidates.length > 0) {
+      const idMatch = operators.find(operator =>
+        idCandidates.includes(operator.operator_id?.toString() || '')
+      );
+
+      if (idMatch?.operator_id) {
+        this.selectedOperator = idMatch.operator_id.toString();
+        return;
+      }
+    }
+
+    const currentUserName = this.getCurrentUserName(currentUser);
+    if (currentUserName) {
+      const nameMatch = operators.find(operator =>
+        this.normalizeText(operator.operator_name) === currentUserName
+      );
+
+      if (nameMatch?.operator_id) {
+        this.selectedOperator = nameMatch.operator_id.toString();
+        return;
+      }
+    }
+
+    this.selectedOperator = '';
+  }
+
   results = [];
   openPhotos(action?: string, instanceId?: number) {
     if (instanceId) {
@@ -224,14 +286,21 @@ export class ChecklistExecutionComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // Set default filter to current user
-    const currentUser = this.authService.currentUser();
-    if (currentUser?.id) {
-      this.selectedOperator = currentUser.id.toString();
+    this.isStandaloneMode = this.router.url?.includes('/standalone/checklist/execution');
+    if (this.isStandaloneMode) {
+      this.renderer.addClass(this.document.body, this.standaloneBodyClass);
     }
     
     this.getOpenChecklists();
     this.filteredChecklists = [...this.openChecklists]; // Initialize filtered list
+  }
+
+  ngOnDestroy(): void {
+    try {
+      this.renderer.removeClass(this.document.body, this.standaloneBodyClass);
+    } catch {
+      // ignore
+    }
   }
 
 }

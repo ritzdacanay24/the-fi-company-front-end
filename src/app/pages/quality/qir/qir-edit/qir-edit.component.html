@@ -42,20 +42,6 @@
           </div>
         </div>
 
-        <div class="alert alert-danger border-danger border-opacity-25 bg-danger bg-opacity-10" role="alert"
-          *ngIf="data && id && !isQirClosed">
-          <div class="d-flex align-items-start">
-            <i class="mdi mdi-pencil-outline text-danger me-3 mt-1 fs-5"></i>
-            <div>
-              <h6 class="alert-heading text-danger mb-2">Edit Mode Active</h6>
-              <p class="mb-2">
-                You are currently editing QIR #{{data.id}}. Make necessary changes and click <strong>Update QIR</strong>
-                to save modifications.
-              </p>
-            </div>
-          </div>
-        </div>
-
         <div class="alert alert-warning border-warning border-opacity-25 bg-warning bg-opacity-10" role="alert"
           *ngIf="data && id && isQirClosed">
           <div class="d-flex align-items-start">

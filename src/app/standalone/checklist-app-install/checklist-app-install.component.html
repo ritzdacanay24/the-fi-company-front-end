@@ -1,0 +1,32 @@
+<div class="checklist-install-page container-fluid">
+  <div class="card border-0 shadow-sm install-card">
+    <div class="card-body p-4 p-md-5">
+      <div class="d-flex align-items-center gap-3 mb-3">
+        <div class="icon-shell">
+          <i class="mdi mdi-view-kanban fs-3"></i>
+        </div>
+        <div>
+          <h2 class="mb-1 text-primary fw-bold">Install Quality Inspection App</h2>
+          <div class="text-muted">Create a separate home screen icon for the standalone quality inspection workflow.</div>
+        </div>
+      </div>
+
+      <div class="alert alert-primary border-0">
+        Open browser menu and use <strong>Add to Home Screen</strong> while on this page.
+      </div>
+
+      <div class="small text-muted mb-4">
+        This uses a separate web app identity so it can coexist with your main dashboard app.
+      </div>
+
+      <div class="d-flex flex-wrap gap-2">
+        <button type="button" class="btn btn-primary" (click)="openWorkflow()">
+          <i class="mdi mdi-arrow-right me-1"></i>Open Quality Inspection
+        </button>
+        <a class="btn btn-outline-secondary" [routerLink]="['/standalone/checklist']">
+          <i class="mdi mdi-open-in-new me-1"></i>Open in New Tab
+        </a>
+      </div>
+    </div>
+  </div>
+</div>

@@ -142,6 +142,7 @@ export class RequestFormComponent {
     { name: "ATI", code: "ATI" },
     { name: "Bally", code: "" },
     { name: "Bellagio", code: "" },
+    { name: "Bluberi", code: "bluberi" },
     { name: "Casino", code: "" },
     { name: "EpicTech", code: "" },
     { name: "Everi", code: "EVIGAM" },

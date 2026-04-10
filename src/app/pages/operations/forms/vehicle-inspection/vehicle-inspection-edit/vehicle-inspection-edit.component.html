@@ -43,18 +43,6 @@
           </div>
         </div>
         
-        <div class="alert alert-info border-info border-opacity-25 bg-info bg-opacity-10" role="alert" *ngIf="data && id">
-          <div class="d-flex align-items-start">
-            <i class="mdi mdi-pencil-outline text-info me-3 mt-1 fs-5"></i>
-            <div>
-              <h6 class="alert-heading text-info mb-2">Edit Mode Active</h6>
-              <p class="mb-2">
-                You are currently editing vehicle inspection record #{{id}}. Make necessary changes and click <strong>Update</strong> to save modifications.
-              </p>
-            </div>
-          </div>
-        </div>
-
         <!-- Safety Alert for Failed Inspections -->
         <div class="alert alert-danger border-danger border-opacity-25 bg-danger bg-opacity-10" role="alert" *ngIf="hasFailedInspections()">
           <div class="d-flex align-items-start">

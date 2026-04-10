@@ -13,6 +13,7 @@ import { ActivatedRoute, Router } from "@angular/router";
 import { highlightRowView, autoSizeColumns } from "src/assets/js/util";
 import moment from "moment";
 import { DateRangeComponent } from "@app/shared/components/date-range/date-range.component";
+import { BreadcrumbItem } from "@app/shared/components/breadcrumb/breadcrumb.component";
 import { NAVIGATION_ROUTE } from "../safety-incident-constant";
 import { SafetyIncidentService } from "@app/core/api/operations/safety-incident/safety-incident.service";
 import { GridFiltersComponent } from "@app/shared/grid-filters/grid-filters.component";
@@ -263,5 +264,13 @@ export class SafetyIncidentListComponent implements OnInit {
     } catch (err) {
       this.gridApi?.hideOverlay();
     }
+  }
+
+  breadcrumbItems(): BreadcrumbItem[] {
+    return [
+      { label: "Operations", link: "/dashboard/operations" },
+      { label: "Forms", link: "/operations/forms" },
+      { label: "Safety Incidents", active: true },
+    ];
   }
 }

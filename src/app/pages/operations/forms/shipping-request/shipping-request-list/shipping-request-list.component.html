@@ -1,13 +1,6 @@
 
 <div class="container-fluid">
-  <!-- Breadcrumb -->
-  <nav aria-label="breadcrumb" class="mb-3">
-    <ol class="breadcrumb mb-0">
-      <li class="breadcrumb-item"><a routerLink="/dashboard/operations">Operations</a></li>
-      <li class="breadcrumb-item"><a routerLink="/operations/forms">Forms</a></li>
-      <li class="breadcrumb-item active" aria-current="page">Shipping Requests</li>
-    </ol>
-  </nav>
+  <app-breadcrumb [items]="breadcrumbItems()"></app-breadcrumb>
 
   <div class="row justify-content-center">
     <div class="col-12">
@@ -31,17 +24,6 @@
               title="Create new Shipping Request">
               <i class="las la-plus me-2"></i>Create Shipping Request
             </button>
-          </div>
-        </div>
-        <div class="alert alert-primary border-primary border-opacity-25 bg-primary bg-opacity-10" role="alert">
-          <div class="d-flex align-items-start">
-            <i class="las la-info-circle text-primary me-3 mt-1 fs-5"></i>
-            <div>
-              <h6 class="alert-heading text-primary mb-2">Shipping Request Overview</h6>
-              <p class="mb-0">
-                Shipping requests help <strong>organize and track logistics</strong> for outgoing shipments. Each record includes details for destination, carrier, and status.
-              </p>
-            </div>
           </div>
         </div>
       </div>
@@ -110,13 +92,6 @@
               </div>
             </div>
           </ng-template>
-        </div>
-        <div class="card-footer bg-light text-muted d-flex align-items-center">
-          <i class="las la-info-circle me-2"></i>
-          <span>Click "SELECT" to view/edit shipping requests and manage logistics workflows</span>
-          <div class="ms-auto">
-            <small>Total: {{data?.length || 0}} shipping requests</small>
-          </div>
         </div>
       </div>
     </div>

@@ -492,6 +492,27 @@ export class PhotoChecklistConfigService {
     );
   }
 
+  updateInstanceItemCompletion(
+    instanceId: number,
+    itemId: number,
+    payload: {
+      completion: any;
+      progress_percentage?: number;
+      status?: ChecklistInstance['status'];
+      operator_id?: number;
+      operator_name?: string;
+      updated_at?: string;
+    }
+  ): Observable<{ success: boolean; instance_id?: number; item_id?: number; error?: string }> {
+    return this.http.post<{ success: boolean; instance_id?: number; item_id?: number; error?: string }>(
+      `${this.baseUrl}?request=instance_item_completion&id=${instanceId}`,
+      {
+        item_id: itemId,
+        ...payload,
+      }
+    );
+  }
+
   updateInstanceStatus(id: number, status: ChecklistInstance['status']): Observable<{success: boolean}> {
     return this.updateInstance(id, { status });
   }
@@ -513,19 +534,7 @@ export class PhotoChecklistConfigService {
     itemId: number,
     file: File,
     options?: { captureSource?: 'in-app' | 'system' | 'library'; userId?: number | string }
-  ): Observable<{success: boolean, file_url: string}> {
-    // Add debugging to see what values are actually received
-    console.log('PhotoChecklistConfigService.uploadPhoto called with:', {
-      instanceId: instanceId,
-      itemId: itemId,
-      file: file,
-      instanceIdType: typeof instanceId,
-      itemIdType: typeof itemId,
-      instanceIdIsNull: instanceId === null,
-      instanceIdIsUndefined: instanceId === undefined,
-      instanceIdValue: instanceId
-    });
-    
+  ): Observable<{success: boolean, file_url: string, media?: { id: number | null; item_id: number | null; file_url: string; file_type: 'image' | 'video'; file_name: string; created_at: string | null }}> {
     // Add validation in the service as a safety net
     if (!instanceId || instanceId <= 0) {
       throw new Error(`Invalid instanceId: ${instanceId}`);
@@ -551,15 +560,27 @@ export class PhotoChecklistConfigService {
       formData.append('user_id', String(options.userId));
     }
 
-    return this.http.post<{success: boolean, file_url: string}>(
+    return this.http.post<{success: boolean, file_url: string, media?: { id: number | null; item_id: number | null; file_url: string; file_type: 'image' | 'video'; file_name: string; created_at: string | null }}>(
       `${this.baseUrl}?request=photos`, 
       formData
     );
   }
 
   deletePhoto(photoId: number): Observable<{success: boolean}> {
-    return this.http.delete<{success: boolean}>(
-      `${this.baseUrl}?request=photo&id=${photoId}`
+    return this.http.post<{success: boolean}>(
+      `${this.baseUrl}?request=photo&id=${photoId}`,
+      {}
+    );
+  }
+
+  deleteMediaByLocator(instanceId: number, itemId: number, fileUrl: string): Observable<{success: boolean}> {
+    return this.http.post<{success: boolean}>(
+      `${this.baseUrl}?request=photo`,
+      {
+        instance_id: instanceId,
+        item_id: itemId,
+        file_url: fileUrl
+      }
     );
   }
 

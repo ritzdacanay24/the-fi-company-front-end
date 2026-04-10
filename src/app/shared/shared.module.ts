@@ -19,6 +19,7 @@ import { SimplebarAngularModule } from "simplebar-angular";
 import { NgxMaskDirective, provideNgxMask } from "ngx-mask";
 import { LoadingComponent } from "./loading/loading.component";
 import { IgtHelpModule } from "./components/igt-help/igt-help.module";
+import { BreadcrumbComponent } from "./components/breadcrumb/breadcrumb.component";
 
 // AG Grid
 import { AgGridModule } from "ag-grid-angular";
@@ -37,6 +38,7 @@ import { AgGridModule } from "ag-grid-angular";
     LoadingComponent,
     IgtHelpModule,
     AgGridModule,
+    BreadcrumbComponent,
   ],
   imports: [
     CommonModule,
@@ -54,6 +56,7 @@ import { AgGridModule } from "ag-grid-angular";
     LoadingComponent,
     IgtHelpModule,
     AgGridModule,
+    BreadcrumbComponent,
   ],
   providers: [provideNgxMask(), provideHttpClient(withInterceptorsFromDi())],
 })

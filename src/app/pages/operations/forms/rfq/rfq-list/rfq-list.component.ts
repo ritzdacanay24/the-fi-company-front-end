@@ -13,6 +13,7 @@ import { ActivatedRoute, Router } from "@angular/router";
 import { highlightRowView, autoSizeColumns } from "src/assets/js/util";
 import moment from "moment";
 import { DateRangeComponent } from "@app/shared/components/date-range/date-range.component";
+import { BreadcrumbItem } from "@app/shared/components/breadcrumb/breadcrumb.component";
 import { NAVIGATION_ROUTE } from "../rfq-constant";
 import { RfqService } from "@app/core/api/rfq/rfq-service";
 import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
@@ -298,5 +299,13 @@ export class RfqListComponent implements OnInit {
     return this.data.filter(item => 
       item.status && (item.status.toLowerCase() === 'completed' || item.status.toLowerCase() === 'closed' || item.status.toLowerCase() === 'awarded')
     ).length;
+  }
+
+  breadcrumbItems(): BreadcrumbItem[] {
+    return [
+      { label: "Operations", link: "/operations" },
+      { label: "Forms", link: "/operations/forms" },
+      { label: "Request for Quote (RFQ)", active: true },
+    ];
   }
 }

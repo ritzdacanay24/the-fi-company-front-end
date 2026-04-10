@@ -1,12 +1,23 @@
 <?php
 class Database {
-    private $host = "localhost";
-    private $port = "3306";
-    private $database_name = "igt_database"; // Update with your actual database name
-    private $username = "root"; // Update with your database username
-    private $password = ""; // Update with your database password
+    private $host;
+    private $port;
+    private $database_name;
+    private $username;
+    private $password;
     private $charset = "utf8mb4";
     public $conn;
+
+    public function __construct() {
+        $this->host = getenv("DB_HOST") ?: "localhost";
+        $this->port = getenv("DB_PORT") ?: "3306";
+        $this->database_name = getenv("DB_NAME") ?: "igt_database";
+        $this->username = getenv("DB_USER") ?: "root";
+        $this->password = getenv("DB_PASSWORD");
+        if ($this->password === false) {
+            $this->password = "";
+        }
+    }
 
     public function getConnection() {
         $this->conn = null;

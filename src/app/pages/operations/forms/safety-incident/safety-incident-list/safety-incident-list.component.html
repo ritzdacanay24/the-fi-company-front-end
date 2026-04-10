@@ -1,12 +1,5 @@
 <div class="container-fluid">
-  <!-- Breadcrumb -->
-  <nav aria-label="breadcrumb" class="mb-3">
-    <ol class="breadcrumb mb-0">
-      <li class="breadcrumb-item"><a routerLink="/dashboard/operations">Operations</a></li>
-      <li class="breadcrumb-item"><a routerLink="/operations/forms">Forms</a></li>
-      <li class="breadcrumb-item active" aria-current="page">Safety Incidents</li>
-    </ol>
-  </nav>
+  <app-breadcrumb [items]="breadcrumbItems()"></app-breadcrumb>
 
   <div class="row justify-content-center">
     <div class="col-12">
@@ -38,19 +31,6 @@
               title="Create new safety incident report">
               <i class="mdi mdi-plus me-2"></i>Report Incident
             </button>
-          </div>
-        </div>
-        
-        <div class="alert alert-warning border-warning border-opacity-25 bg-warning bg-opacity-10" role="alert">
-          <div class="d-flex align-items-start">
-            <i class="mdi mdi-information text-warning me-3 mt-1 fs-5"></i>
-            <div>
-              <h6 class="alert-heading text-warning mb-2">Safety Incident Overview</h6>
-              <p class="mb-0">
-                Safety incidents are <strong>critical compliance records</strong> for regulatory reporting. 
-                Each report tracks incident details, corrective actions, and investigation status.
-              </p>
-            </div>
           </div>
         </div>
       </div>
@@ -115,13 +95,6 @@
               </div>
             </div>
           </ng-template>
-        </div>
-        <div class="card-footer bg-light text-muted d-flex align-items-center">
-          <i class="mdi mdi-information me-2"></i>
-          <span>Use "View" to see safety incident details or "Edit" to modify investigation workflows</span>
-          <div class="ms-auto">
-            <small>Total: {{data?.length || 0}} safety incidents</small>
-          </div>
         </div>
       </div>
     </div>

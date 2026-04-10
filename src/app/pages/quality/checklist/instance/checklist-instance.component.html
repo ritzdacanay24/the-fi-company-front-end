@@ -535,9 +535,15 @@
                       <button class="btn"
                               [ngClass]="progress.completed ? 'btn-outline-warning btn-sm' : 'btn-success px-4 fw-semibold'"
                               (click)="toggleVerification(progress)"
-                              [disabled]="!canModifyChecklist">
-                        <i class="mdi me-1" [ngClass]="progress.completed ? 'mdi-close-circle' : 'mdi-check-circle'"></i>
-                        {{ progress.completed ? 'Unmark Verified' : 'Mark as Verified' }}
+                              [disabled]="!canModifyChecklist || isVerificationSaving(progress)">
+                        <ng-container *ngIf="isVerificationSaving(progress); else toggleVerifiedLabel">
+                          <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                          Saving...
+                        </ng-container>
+                        <ng-template #toggleVerifiedLabel>
+                          <i class="mdi me-1" [ngClass]="progress.completed ? 'mdi-close-circle' : 'mdi-check-circle'"></i>
+                          {{ progress.completed ? 'Unmark Verified' : 'Mark as Verified' }}
+                        </ng-template>
                       </button>
                     </div>
                   </div>
@@ -570,9 +576,15 @@
                     <button class="btn"
                             [ngClass]="progress.completed ? 'btn-outline-warning btn-sm' : 'btn-success px-4 fw-semibold'"
                             (click)="toggleVerification(progress)"
-                            [disabled]="!canModifyChecklist">
-                      <i class="mdi me-1" [ngClass]="progress.completed ? 'mdi-close-circle' : 'mdi-check-circle'"></i>
-                      {{ progress.completed ? 'Unmark Complete' : 'Mark as Complete' }}
+                            [disabled]="!canModifyChecklist || isVerificationSaving(progress)">
+                      <ng-container *ngIf="isVerificationSaving(progress); else toggleCompleteLabel">
+                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        Saving...
+                      </ng-container>
+                      <ng-template #toggleCompleteLabel>
+                        <i class="mdi me-1" [ngClass]="progress.completed ? 'mdi-close-circle' : 'mdi-check-circle'"></i>
+                        {{ progress.completed ? 'Unmark Complete' : 'Mark as Complete' }}
+                      </ng-template>
                     </button>
                   </div>
                 </div>
@@ -624,8 +636,11 @@
                   <div class="h-100">
                     <h6 class="text-primary mb-3 d-flex align-items-center">
                       <i class="mdi mdi-camera me-2"></i>Take Photo
-                      <span class="badge bg-secondary ms-auto" *ngIf="progress.photos && progress.photos.length > 0">Photo uploaded</span>
-                      <span class="badge bg-outline-secondary ms-auto" *ngIf="!progress.photos || progress.photos.length === 0">No photo</span>
+                      <span class="badge bg-success ms-auto" *ngIf="isRecentlyUploaded(progress.item.id)">
+                        <i class="mdi mdi-check-circle me-1"></i>Uploaded!
+                      </span>
+                      <span class="badge bg-secondary ms-auto" *ngIf="!isRecentlyUploaded(progress.item.id) && progress.photos && progress.photos.length > 0">Photo uploaded</span>
+                      <span class="badge bg-outline-secondary ms-auto" *ngIf="!isRecentlyUploaded(progress.item.id) && (!progress.photos || progress.photos.length === 0)">No photo</span>
                     </h6>
 
                     <div class="mb-2 text-end" *ngIf="progress.item.photo_requirements?.picture_required === false && showOptionalPhotoCapture[progress.item.id] && (!progress.photos || progress.photos.length === 0)">
@@ -685,7 +700,7 @@
                         <input type="file"
                                #photoLibraryInput
                                (change)="onFileSelected($event, progress.item.id)"
-                               accept=".jpg,.jpeg,.png,.webp,.heic,.heif,.bmp,.gif,.tif,.tiff"
+                             accept="image/*"
                                class="d-none">
                         <div class="d-flex gap-2 justify-content-center mb-3">
                           <button class="btn btn-primary btn-sm px-2 py-1"
@@ -707,17 +722,6 @@
 
                     <!-- Current Photo -->
                     <div *ngIf="progress.photos && progress.photos.length > 0">
-                       <input type="file"
-                         #replaceCapturePhotoFileInput
-                         (change)="onFileSelected($event, progress.item.id)"
-                         accept="image/*"
-                         capture="environment"
-                         class="d-none">
-                      <input type="file" 
-                             #replaceFileInput 
-                             (change)="onFileSelected($event, progress.item.id)" 
-                             accept="image/*" 
-                             class="d-none">
                       <div class="position-relative border border-2 border-dashed border-secondary rounded" 
                            style="min-height: 280px; display: flex; align-items: center; justify-content: center;">
                     <img [src]="getPhotoUrl(progress.photos[0])" 
@@ -742,18 +746,9 @@
                           <i class="mdi mdi-close"></i>
                         </button>
                       </div>
-                      <div class="mt-2 text-center">
-                        <button *ngIf="canModifyChecklist"
-                          class="btn btn-outline-primary btn-sm me-2"
-                                (click)="replaceCapturePhotoFileInput.click()"
-                                [disabled]="!canModifyChecklist">
-                          Retake (System)
-                        </button>
-                        <button class="btn btn-primary btn-sm me-2"
-                                (click)="replaceFileInput.click()"
-                                [disabled]="!canModifyChecklist">
-                          Replace from Library
-                        </button>
+                      <div class="alert alert-warning mt-2 mb-0 py-2 px-3 small" role="alert">
+                        <i class="mdi mdi-alert-outline me-1"></i>
+                        To replace this photo, delete the current photo first.
                       </div>
                     </div>
 
@@ -824,8 +819,11 @@
                   <div class="h-100">
                     <h6 class="text-primary mb-3 d-flex align-items-center">
                       <i class="mdi mdi-video me-2"></i>Capture/Select Video
-                      <span class="badge bg-secondary ms-auto" *ngIf="progress.videos && progress.videos.length > 0">Video uploaded</span>
-                      <span class="badge bg-outline-secondary ms-auto" *ngIf="!progress.videos || progress.videos.length === 0">No video</span>
+                      <span class="badge bg-success ms-auto" *ngIf="isRecentlyUploaded(progress.item.id)">
+                        <i class="mdi mdi-check-circle me-1"></i>Uploaded!
+                      </span>
+                      <span class="badge bg-secondary ms-auto" *ngIf="!isRecentlyUploaded(progress.item.id) && progress.videos && progress.videos.length > 0">Video uploaded</span>
+                      <span class="badge bg-outline-secondary ms-auto" *ngIf="!isRecentlyUploaded(progress.item.id) && (!progress.videos || progress.videos.length === 0)">No video</span>
                     </h6>
 
                     <!-- Video Upload Area -->
@@ -870,7 +868,7 @@
                         <input type="file"
                                #videoFileInput
                                (change)="onFileSelected($event, progress.item.id)" 
-                             accept=".mp4,.mov,.m4v,.webm,.3gp,.avi" 
+                             accept="video/*" 
                                class="d-none">
                         <div class="d-flex gap-2 justify-content-center mb-3">
                           <button class="btn btn-primary btn-sm px-2 py-1"
@@ -879,13 +877,6 @@
                                   [disabled]="!canModifyChecklist"
                                   title="Record video in-app with rear camera preview">
                             Record In-App
-                          </button>
-                          <button class="btn btn-outline-primary btn-sm px-2 py-1"
-                            style="min-width: 96px;"
-                                  (click)="openFilePicker(videoCaptureInput, progress.item.id)"
-                                  [disabled]="!canModifyChecklist"
-                                  title="Record video using system camera chooser">
-                            Record (System)
                           </button>
                           <button class="btn btn-primary btn-sm px-2 py-1"
                             style="min-width: 96px;"
@@ -900,17 +891,6 @@
 
                     <!-- Current Video -->
                     <div *ngIf="progress.videos && progress.videos.length > 0">
-                      <input type="file" 
-                             #replaceCaptureVideoFileInput
-                             (change)="onFileSelected($event, progress.item.id)"
-                             accept="video/*"
-                             capture="environment"
-                             class="d-none">
-                      <input type="file"
-                             #replaceVideoFileInput 
-                             (change)="onFileSelected($event, progress.item.id)" 
-                         accept=".mp4,.mov,.m4v,.webm,.3gp,.avi" 
-                             class="d-none">
                       <div class="position-relative border border-2 border-dashed border-secondary rounded" 
                            style="min-height: 280px; display: flex; align-items: center; justify-content: center; background-color: #000;">
                         <video [src]="getPhotoUrl(progress.videos[0])" 
@@ -933,24 +913,9 @@
                           <i class="mdi mdi-close"></i>
                         </button>
                       </div>
-                      <div class="mt-2 text-center">
-                        <button *ngIf="canModifyChecklist"
-                          class="btn btn-outline-primary btn-sm me-2"
-                                (click)="startVideoCapture(progress.item.id)"
-                                [disabled]="!canModifyChecklist">
-                          Re-record In-App
-                        </button>
-                        <button *ngIf="canModifyChecklist"
-                          class="btn btn-outline-primary btn-sm me-2"
-                                (click)="replaceCaptureVideoFileInput.click()"
-                                [disabled]="!canModifyChecklist">
-                          Re-record (System)
-                        </button>
-                        <button class="btn btn-primary btn-sm me-2"
-                          (click)="openLibraryOnlyPicker(replaceVideoFileInput)"
-                                [disabled]="!canModifyChecklist">
-                          Replace from Library
-                        </button>
+                      <div class="alert alert-warning mt-2 mb-0 py-2 px-3 small" role="alert">
+                        <i class="mdi mdi-alert-outline me-1"></i>
+                        To replace this video, delete the current video first.
                       </div>
                     </div>
 
@@ -991,8 +956,11 @@
                   <div class="h-100">
                     <h6 class="text-primary mb-3 d-flex align-items-center">
                       <i class="mdi mdi-microphone me-2"></i>Record/Select Audio
-                      <span class="badge bg-secondary ms-auto" *ngIf="progress.videos && progress.videos.length > 0">Audio uploaded</span>
-                      <span class="badge bg-outline-secondary ms-auto" *ngIf="!progress.videos || progress.videos.length === 0">No audio</span>
+                      <span class="badge bg-success ms-auto" *ngIf="isRecentlyUploaded(progress.item.id)">
+                        <i class="mdi mdi-check-circle me-1"></i>Uploaded!
+                      </span>
+                      <span class="badge bg-secondary ms-auto" *ngIf="!isRecentlyUploaded(progress.item.id) && progress.videos && progress.videos.length > 0">Audio uploaded</span>
+                      <span class="badge bg-outline-secondary ms-auto" *ngIf="!isRecentlyUploaded(progress.item.id) && (!progress.videos || progress.videos.length === 0)">No audio</span>
                     </h6>
 
                     <!-- Audio Upload Area -->

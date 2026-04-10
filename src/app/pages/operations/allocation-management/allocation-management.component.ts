@@ -71,19 +71,6 @@ import { AllocationTableComponent } from '../../../shared/components/allocation-
                 </button>
               </div>
             </div>
-            
-            <div class="alert alert-primary border-primary border-opacity-25 bg-primary bg-opacity-10" role="alert">
-              <div class="d-flex align-items-start">
-                <i class="mdi mdi-information text-primary me-3 mt-1 fs-5"></i>
-                <div>
-                  <h6 class="alert-heading text-primary mb-2">Allocation Management Overview</h6>
-                  <p class="mb-0">
-                    This system provides <strong>intelligent work order allocation</strong> with FIFO logic, manual overrides, and priority management. 
-                    Use filters to focus on specific parts or allocation types, and leverage bulk operations for efficient management.
-                  </p>
-                </div>
-              </div>
-            </div>
           </div>
 
           <!-- Advanced Filters Card -->

@@ -31,19 +31,6 @@
             </button>
           </div>
         </div>
-        
-        <div class="alert alert-primary border-primary border-opacity-25 bg-primary bg-opacity-10" role="alert">
-          <div class="d-flex align-items-start">
-            <i class="mdi mdi-information text-primary me-3 mt-1 fs-5"></i>
-            <div>
-              <h6 class="alert-heading text-primary mb-2">Serial Number Overview</h6>
-              <p class="mb-0">
-                Serial number reports provide comprehensive tracking of generated numbers across all <strong>templates and usage categories</strong>. 
-                Monitor availability, usage patterns, and generate detailed exports for compliance reporting.
-              </p>
-            </div>
-          </div>
-        </div>
       </div>
 
       <div class="card shadow-sm border-0">
@@ -119,14 +106,6 @@
               </div>
             </div>
           </ng-template>
-        </div>
-        
-        <div class="card-footer bg-light text-muted d-flex align-items-center">
-          <i class="mdi mdi-information me-2"></i>
-          <span>Click on serial numbers to view barcode or copy to clipboard for tracking purposes</span>
-          <div class="ms-auto">
-            <small>Total: {{serialNumbers?.length || 0}} serial numbers</small>
-          </div>
         </div>
       </div>
       

@@ -38,12 +38,12 @@ export class PhotoOperationsService {
    * Delete photo from server and update state
    * @param photoUrl - URL of photo to delete
    * @param itemId - Compound or numeric item ID
-   * @param instanceItems - Instance items array from backend
+   * @param instanceId - Checklist instance ID
    */
   deletePhotoByUrl(
     photoUrl: string, 
     itemId: number | string, 
-    instanceItems: any[]
+    instanceId: number
   ): Observable<any> | null {
     const progress = this.stateService.findItemProgress(itemId);
     if (!progress) {
@@ -58,39 +58,19 @@ export class PhotoOperationsService {
       console.warn('Media not found in progress state, will attempt server delete by URL:', photoUrl);
     }
 
-    // Extract base item ID for instance lookup
+    if (!instanceId || instanceId <= 0) {
+      console.error('Invalid instanceId for deletePhotoByUrl:', instanceId);
+      return null;
+    }
+
+    // Extract base DB item ID and delete by locator to avoid stale index/ID mapping bugs.
     const baseItemId = this.idExtractor.extractBaseItemId(
       progress.item.id, 
       (progress.item as any).baseItemId
     );
 
-    // Find instance item using matcher service
-    const instanceItem = this.instanceMatcher.findInstanceItem(instanceItems, baseItemId);
-    
-    // Get photo object
-    let photoToDelete = this.instanceMatcher.getPhotoByIndex(instanceItem, photoIndex);
-
-    if (isVideo) {
-      photoToDelete = this.instanceMatcher.getVideoByIndex(instanceItem, videoIndex);
-    }
-    
-    // Fallback: search by URL across all instance items
-    if (!photoToDelete || !photoToDelete.id) {
-      photoToDelete = this.instanceMatcher.findPhotoByUrl(instanceItems, photoUrl);
-    }
-
-    if (!photoToDelete || !photoToDelete.id) {
-      console.warn('Photo has no ID, removing from UI only');
-      if (isVideo) {
-        this.stateService.removeVideoByUrl(itemId, photoUrl);
-      } else {
-        this.stateService.removePhotoByUrl(itemId, photoUrl);
-      }
-      return null;
-    }
-
-    // Delete from server
-    return this.photoChecklistService.deletePhoto(photoToDelete.id).pipe(
+    // Delete from server using stable locator fields.
+    return this.photoChecklistService.deleteMediaByLocator(instanceId, baseItemId, photoUrl).pipe(
       tap(() => {
         // Remove from state after successful deletion
         if (isVideo) {
@@ -108,7 +88,7 @@ export class PhotoOperationsService {
   deletePhotoByIndex(
     itemId: number | string,
     photoIndex: number,
-    instanceItems: any[]
+    instanceId: number
   ): Observable<any> | null {
     const progress = this.stateService.findItemProgress(itemId);
     if (!progress) {
@@ -122,7 +102,7 @@ export class PhotoOperationsService {
     }
 
     const photoUrl = progress.photos[photoIndex];
-    return this.deletePhotoByUrl(photoUrl, itemId, instanceItems);
+    return this.deletePhotoByUrl(photoUrl, itemId, instanceId);
   }
 
   /**
@@ -130,7 +110,7 @@ export class PhotoOperationsService {
    */
   deleteAllPhotos(
     itemId: number | string,
-    instanceItems: any[]
+    instanceId: number
   ): Observable<any[]> | null {
     const progress = this.stateService.findItemProgress(itemId);
     if (!progress) {
@@ -144,30 +124,22 @@ export class PhotoOperationsService {
       return null;
     }
 
-    // Extract base item ID
+    if (!instanceId || instanceId <= 0) {
+      console.error('Invalid instanceId for deleteAllPhotos:', instanceId);
+      return null;
+    }
+
+    // Create array of delete observables using stable locator fields.
+    const deleteObservables: Observable<any>[] = [];
     const baseItemId = this.idExtractor.extractBaseItemId(
       progress.item.id,
       (progress.item as any).baseItemId
     );
 
-    // Find instance item
-    const instanceItem = this.instanceMatcher.findInstanceItem(instanceItems, baseItemId);
-    
-    if (!instanceItem || !instanceItem.photos || instanceItem.photos.length === 0) {
-      console.log('No photos found in instance item, clearing UI only');
-      this.stateService.removeAllPhotos(itemId);
-      return null;
-    }
-
-    // Create array of delete observables
-    const deleteObservables: Observable<any>[] = [];
-    
-    instanceItem.photos.forEach((photo: any) => {
-      if (photo.id) {
-        deleteObservables.push(
-          this.photoChecklistService.deletePhoto(photo.id)
-        );
-      }
+    progress.photos.forEach((photoUrl: string) => {
+      deleteObservables.push(
+        this.photoChecklistService.deleteMediaByLocator(instanceId, baseItemId, photoUrl)
+      );
     });
 
     if (deleteObservables.length === 0) {

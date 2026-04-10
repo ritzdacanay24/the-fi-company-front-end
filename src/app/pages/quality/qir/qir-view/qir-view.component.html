@@ -42,18 +42,6 @@
           </div>
         </div>
         
-        <div class="alert alert-info border-info border-opacity-25 bg-info bg-opacity-10" role="alert" *ngIf="data && id">
-          <div class="d-flex align-items-start">
-            <i class="mdi mdi-information-outline text-info me-3 mt-1 fs-5"></i>
-            <div>
-              <h6 class="alert-heading text-info mb-2">QIR View Mode</h6>
-              <p class="mb-2">
-                You are viewing Quality Issue Report #{{id}}. Status: <strong>{{data?.status}}</strong>. 
-                <span *ngIf="!isQirClosed">Use the Edit button to modify this report.</span>
-              </p>
-            </div>
-          </div>
-        </div>
       </div>
 
       <div class="card shadow-sm border-0">

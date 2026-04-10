@@ -34,7 +34,7 @@
               "src/assets",
               "src/.htaccess",
               "src/manifest.webmanifest",
-              "src/manifest.webmanifest"
+              "src/checklist-manifest.webmanifest"
             ],
             "styles": [
               "node_modules/flatpickr/dist/flatpickr.css",
@@ -176,7 +176,8 @@
             "assets": [
               "src/favicon.ico",
               "src/assets",
-              "src/manifest.webmanifest"
+              "src/manifest.webmanifest",
+              "src/checklist-manifest.webmanifest"
             ],
             "styles": [
               "src/styles.scss"

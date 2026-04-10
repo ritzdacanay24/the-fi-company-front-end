@@ -14,6 +14,7 @@ import { highlightRowView, autoSizeColumns } from "src/assets/js/util";
 import moment from "moment";
 import { NAVIGATION_ROUTE } from "../shipping-request-constant";
 import { DateRangeComponent } from "@app/shared/components/date-range/date-range.component";
+import { BreadcrumbItem } from "@app/shared/components/breadcrumb/breadcrumb.component";
 import { ShippingRequestService } from "@app/core/api/operations/shippging-request/shipping-request.service";
 import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
 
@@ -353,5 +354,13 @@ export class ShippingRequestListComponent implements OnInit {
     } catch (err) {
       this.gridApi?.hideOverlay();
     }
+  }
+
+  breadcrumbItems(): BreadcrumbItem[] {
+    return [
+      { label: "Operations", link: "/dashboard/operations" },
+      { label: "Forms", link: "/operations/forms" },
+      { label: "Shipping Requests", active: true },
+    ];
   }
 }

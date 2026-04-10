@@ -2513,21 +2513,29 @@ export class PermitChecklistsComponent implements OnInit {
     }
 
     this.ticketSyncTimer = setTimeout(() => {
-      const ticket = this.activeTicket;
-      if (ticket) {
-        void this.persistTicketToApi(ticket);
-      }
-
-      if (this.dirtyTransactionTicketIds.size > 0) {
-        for (const ticketId of Array.from(this.dirtyTransactionTicketIds)) {
-          void this.flushTransactionsToApi(ticketId);
-        }
-      }
-
-      if (this.directorySyncDirty || this.billingDefaultsSyncDirty) {
-        void this.syncReferenceDataToApi();
-      }
+      void this.runScheduledApiSync();
     }, 900);
+  }
+
+  private async runScheduledApiSync(): Promise<void> {
+    const ticket = this.activeTicket;
+    if (ticket) {
+      // Persist ticket first so transaction FK inserts can succeed.
+      await this.persistTicketToApi(ticket);
+      if (this.dirtyTransactionTicketIds.has(ticket.ticketId)) {
+        await this.flushTransactionsToApi(ticket.ticketId);
+      }
+    }
+
+    if (this.dirtyTransactionTicketIds.size > 0) {
+      for (const ticketId of Array.from(this.dirtyTransactionTicketIds)) {
+        await this.flushTransactionsToApi(ticketId);
+      }
+    }
+
+    if (this.directorySyncDirty || this.billingDefaultsSyncDirty) {
+      await this.syncReferenceDataToApi();
+    }
   }
 
   private async persistTicketToApi(ticket: PermitChecklistTicket): Promise<void> {

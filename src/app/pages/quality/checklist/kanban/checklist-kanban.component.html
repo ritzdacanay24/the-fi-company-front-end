@@ -1,0 +1,159 @@
+<div class="kanban-page container-fluid">
+  <div class="kanban-header card border-0 shadow-sm mb-3">
+    <div class="card-body">
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+          <h3 class="mb-1 text-primary fw-bold">
+            <i class="mdi mdi-view-kanban me-2"></i>Quality Inspection Board
+          </h3>
+          <div class="text-muted small">Standalone user-focused board for quality checklist execution</div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <a class="btn btn-outline-secondary" [routerLink]="['/checklist-app']">
+            <i class="mdi mdi-cellphone-arrow-down me-1"></i>Install App
+          </a>
+          <button type="button" class="btn btn-outline-secondary" (click)="openExecutionList()">
+            <i class="mdi mdi-format-list-bulleted me-1"></i>List View
+          </button>
+          <button type="button" class="btn btn-outline-primary" (click)="loadChecklists()" [disabled]="loading">
+            <i class="mdi mdi-refresh me-1"></i>Refresh
+          </button>
+        </div>
+      </div>
+
+      <div class="new-inspection-panel mt-3 p-3 rounded-3 border">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+          <h6 class="mb-0 fw-semibold">
+            <i class="mdi mdi-clipboard-plus-outline me-1 text-primary"></i>Start New Inspection
+          </h6>
+          <small class="text-muted">Select checklist template before starting</small>
+        </div>
+
+        <div class="row g-2 align-items-end">
+          <div class="col-12 col-md-3">
+            <label class="form-label small fw-semibold mb-1">Work Order</label>
+            <input
+              type="text"
+              class="form-control"
+              placeholder="Enter work order"
+              [(ngModel)]="woNumber">
+          </div>
+
+          <div class="col-12 col-md-2">
+            <button type="button" class="btn btn-outline-primary w-100" (click)="loadWorkOrderDetails()" [disabled]="createLoading">
+              <i class="mdi mdi-magnify me-1"></i>Load WO
+            </button>
+          </div>
+
+          <div class="col-12 col-md-2">
+            <label class="form-label small fw-semibold mb-1">Part Number</label>
+            <input type="text" class="form-control" [value]="partNumber || '-'" readonly>
+          </div>
+
+          <div class="col-12 col-md-2">
+            <label class="form-label small fw-semibold mb-1">Serial</label>
+            <input type="text" class="form-control" [value]="serialNumber || '-'" readonly>
+          </div>
+
+          <div class="col-12 col-md-3">
+            <label class="form-label small fw-semibold mb-1">Checklist Template</label>
+            <select class="form-select" [(ngModel)]="selectedTemplateId" [disabled]="createLoading">
+              <option value="">Select template</option>
+              <option *ngFor="let template of getTemplateOptions()" [value]="template.id">
+                {{ template.name }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mt-2">
+          <small class="text-danger" *ngIf="createError">{{ createError }}</small>
+          <button type="button" class="btn btn-primary ms-auto" (click)="startInspection()" [disabled]="createLoading">
+            <span *ngIf="!createLoading"><i class="mdi mdi-play-circle-outline me-1"></i>Start Inspection</span>
+            <span *ngIf="createLoading"><span class="spinner-border spinner-border-sm me-1" role="status"></span>Starting...</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="row g-2 mt-1 align-items-end">
+        <div class="col-12 col-md-4">
+          <label class="form-label small fw-semibold mb-1">Search</label>
+          <input
+            type="text"
+            class="form-control"
+            placeholder="Work order, serial, part, template"
+            [(ngModel)]="searchText"
+            (ngModelChange)="applyFilters()">
+        </div>
+
+        <div class="col-12 col-md-4">
+          <label class="form-label small fw-semibold mb-1">Operator</label>
+          <select class="form-select" [(ngModel)]="selectedOperator" (change)="applyFilters()">
+            <option value="">All Operators</option>
+            <option *ngFor="let operator of getUniqueOperators()" [value]="operator.operator_id">
+              {{ operator.operator_name || ('User #' + operator.operator_id) }}
+            </option>
+          </select>
+        </div>
+
+        <div class="col-12 col-md-4 d-flex justify-content-md-end">
+          <button type="button" class="btn btn-light border" (click)="clearFilters()">
+            <i class="mdi mdi-filter-remove-outline me-1"></i>Reset Filters
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="text-center py-4" *ngIf="loading">
+    <div class="spinner-border text-primary" role="status"></div>
+  </div>
+
+  <div class="kanban-board" *ngIf="!loading">
+    <section class="kanban-column" *ngFor="let col of columns">
+      <header class="kanban-column-header">
+        <div class="d-flex align-items-center justify-content-between">
+          <h6 class="mb-0 fw-semibold">
+            <i class="mdi {{ col.icon }} me-1"></i>{{ col.label }}
+          </h6>
+          <span class="badge rounded-pill {{ col.badgeClass }}">{{ getStatusCount(col.status) }}</span>
+        </div>
+      </header>
+
+      <div class="kanban-column-body">
+        <button
+          type="button"
+          class="kanban-card"
+          *ngFor="let item of getColumnItems(col.status); trackBy: trackByChecklistId"
+          (click)="openChecklist(item.id)">
+          <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+            <div class="fw-semibold text-primary text-start">WO {{ item.work_order_number || 'N/A' }}</div>
+            <span class="small text-muted">#{{ item.id }}</span>
+          </div>
+
+          <div class="small text-muted mb-2 text-start">
+            <div><i class="mdi mdi-barcode me-1"></i>{{ item.serial_number || 'No serial' }}</div>
+            <div><i class="mdi mdi-cube-outline me-1"></i>{{ item.part_number || 'No part' }}</div>
+            <div><i class="mdi mdi-account-outline me-1"></i>{{ item.operator_name || ('User #' + item.operator_id) }}</div>
+          </div>
+
+          <div class="small fw-semibold text-body text-start mb-2">{{ item.template_name || getTemplateName(item.template_id?.toString() || '') }}</div>
+
+          <div class="d-flex align-items-center gap-2">
+            <div class="progress flex-grow-1" style="height: 8px;">
+              <div
+                class="progress-bar"
+                [ngClass]="getProgressClass(item.progress_percentage)"
+                [style.width.%]="item.progress_percentage || 0"></div>
+            </div>
+            <span class="small fw-semibold">{{ item.progress_percentage || 0 }}%</span>
+          </div>
+        </button>
+
+        <div class="kanban-empty" *ngIf="getStatusCount(col.status) === 0">
+          No items
+        </div>
+      </div>
+    </section>
+  </div>
+</div>

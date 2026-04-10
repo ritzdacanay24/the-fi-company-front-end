@@ -36,20 +36,6 @@
             </button>
           </div>
         </div>
-
-        <div class="alert alert-primary border-primary border-opacity-25 bg-primary bg-opacity-10" role="alert">
-          <div class="d-flex align-items-start">
-            <i class="mdi mdi-information text-primary me-3 mt-1 fs-5"></i>
-            <div>
-              <h6 class="alert-heading text-primary mb-2">SG Asset Overview</h6>
-              <p class="mb-0">
-                SG assets are the foundation of your gaming asset tracking. Each asset defines <strong>unique serial
-                  numbers</strong>
-                and contains specific part information with quality control tracking.
-              </p>
-            </div>
-          </div>
-        </div>
       </div>
 
       <div class="card shadow-sm border-0">
@@ -146,14 +132,6 @@
           <ag-grid-angular class="ag-theme-quartz no-border" [rowData]="data" [gridOptions]="gridOptions"
             style="width: 100%;height: calc(100vh - 300px);">
           </ag-grid-angular>
-        </div>
-
-        <div class="card-footer bg-light text-muted d-flex align-items-center">
-          <i class="mdi mdi-information me-2"></i>
-          <span>Click "SELECT" to modify asset settings or view detailed SG asset information</span>
-          <div class="ms-auto">
-            <small>Total: {{data?.length || 0}} SG assets</small>
-          </div>
         </div>
       </div>
 

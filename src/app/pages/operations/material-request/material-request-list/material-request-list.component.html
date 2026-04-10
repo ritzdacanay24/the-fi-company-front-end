@@ -47,7 +47,7 @@
   <div class="card-body p-0">
     <ng-container *ngIf="data?.length; else noRecords">
       <ag-grid-angular class="ag-theme-quartz no-border" [rowData]="data" [columnDefs]="columnDefs"
-        [gridOptions]="gridOptions" style="width: 100%;height: calc(100vh - 300px);">
+        [gridOptions]="gridOptions" style="width: 100%;height: calc(100vh - 346px);">
       </ag-grid-angular>
     </ng-container>
     <ng-template #noRecords>
@@ -73,11 +73,4 @@
     </ng-template>
   </div>
 
-  <div class="card-footer bg-light text-muted d-flex align-items-center">
-    <i class="mdi mdi-information me-2"></i>
-    <span>Click "VIEW" to see material request details or "EDIT" to modify and manage request workflows</span>
-    <div class="ms-auto">
-      <small>Total: {{data?.length || 0}} material requests</small>
-    </div>
-  </div>
 </div>

@@ -1,6 +1,9 @@
 <div class="container-fluid">
   <div class="row justify-content-center">
     <div class="col-12">
+
+      <!-- Breadcrumb Navigation -->
+      <app-breadcrumb [items]="breadcrumbItems()"></app-breadcrumb>
       
       <!-- Page Header with Context -->
       <div class="mb-4">
@@ -28,19 +31,6 @@
               title="View RFQ reports">
               <i class="mdi mdi-chart-line me-2"></i>Reports
             </button>
-          </div>
-        </div>
-        
-        <div class="alert alert-secondary border-secondary border-opacity-25 bg-secondary bg-opacity-10" role="alert">
-          <div class="d-flex align-items-start">
-            <i class="mdi mdi-information text-secondary me-3 mt-1 fs-5"></i>
-            <div>
-              <h6 class="alert-heading text-secondary mb-2">RFQ Management</h6>
-              <p class="mb-0">
-                Monitor request for quotes including <strong>vendor communications</strong>, 
-                quote responses, pricing comparisons, and procurement decision workflows.
-              </p>
-            </div>
           </div>
         </div>
       </div>
@@ -94,7 +84,7 @@
         <div class="card-body p-0">
           <ng-container *ngIf="data?.length; else noRecords">
             <ag-grid-angular class="ag-theme-quartz no-border" [rowData]="data" [columnDefs]="columnDefs"
-              [gridOptions]="gridOptions" style="width: 100%;height: calc(100vh - 300px);">
+              [gridOptions]="gridOptions" style="width: 100%;height: calc(100vh - 264px);">
             </ag-grid-angular>
           </ng-container>
           <ng-template #noRecords>
@@ -120,13 +110,6 @@
           </ng-template>
         </div>
         
-        <div class="card-footer bg-light text-muted d-flex align-items-center">
-          <i class="mdi mdi-information me-2"></i>
-          <span>Use action buttons to view RFQ details or edit records. Manage vendor quote workflows efficiently.</span>
-          <div class="ms-auto">
-            <small>Total: {{data?.length || 0}} RFQs</small>
-          </div>
-        </div>
       </div>
       
     </div>
