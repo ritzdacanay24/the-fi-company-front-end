@@ -23,6 +23,10 @@ export const environment = {
   mindeeApiKey: "md_sww7fqkDrHsHjx81ujTmBJRj0JGtfJbO",
   projectManagerDataSource: 'mock' as 'mock' | 'api',
   pmApiUrl: '/api/operations/project-manager',
+  useApiV2WipReport: true,
+  useApiV2TrainingSessions: true,
+  legacyApiBaseUrl: 'https://dashboard.eye-fi.com/server/Api',
+  apiV2BaseUrl: 'http://localhost:3001',
 };
 
 /*

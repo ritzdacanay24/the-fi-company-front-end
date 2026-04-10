@@ -16,7 +16,7 @@ export class ApiPrefixInterceptor implements HttpInterceptor {
       });
 
     } else if (request.url.indexOf("assets/i18n/") == 0) {
-    } else if (request.url.indexOf("https://") == 0) {
+    } else if (request.url.indexOf("https://") == 0 || request.url.indexOf("http://") == 0) {
       request = request.clone({ url: request.url });
 
     } else if (request.url.indexOf("api/") == 0) {

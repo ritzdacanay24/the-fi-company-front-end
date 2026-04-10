@@ -2,6 +2,7 @@
 
 # compiled output
 /dist
+/qad-api/dist
 /tmp
 /out-tsc
 # Only exists if Bazel was run
@@ -44,6 +45,15 @@ testem.log
 # System Files
 .DS_Store
 Thumbs.db
+
+# Environment and secrets
+.env
+.env.*
+!.env.local.example
+!.env.qad-api.example
+
+# Local QAD ODBC driver files
+qad-driver/
 
 #main app config
 /src/app/config/app.config.ts

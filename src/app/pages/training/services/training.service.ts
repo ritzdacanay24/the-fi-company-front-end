@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject } from 'rxjs';
+import { environment } from 'src/environments/environment';
 import { 
   TrainingSession, 
   TrainingAttendance, 
@@ -21,9 +22,17 @@ export class TrainingService {
 
   constructor(private http: HttpClient) {}
 
+  private getTrainingSessionsEndpoint(): string {
+    if (environment.useApiV2TrainingSessions) {
+      return `${environment.apiV2BaseUrl}/api/training/index`;
+    }
+
+    return `${this.apiUrl}/index.php?path=sessions`;
+  }
+
   // Training Session Management
   getTrainingSessions(): Observable<TrainingSession[]> {
-    return this.http.get<TrainingSession[]>(`${this.apiUrl}/index.php?path=sessions`);
+    return this.http.get<TrainingSession[]>(this.getTrainingSessionsEndpoint());
   }
 
   getTrainingSession(id: number): Observable<TrainingSession> {

@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { environment } from 'src/environments/environment';
 
 let url = 'Operations/report/wip-report';
 
@@ -11,8 +12,16 @@ export class ReportService {
 
   constructor(private http: HttpClient) { }
 
+  private getWipEndpoint(): string {
+    if (environment.useApiV2WipReport) {
+      return `${environment.apiV2BaseUrl}/api/WipReport/index`;
+    }
+
+    return `${environment.legacyApiBaseUrl}/WipReport/index`;
+  }
+
   getWipReport = async () =>
-    await firstValueFrom(this.http.get<any[]>(`https://dashboard.eye-fi.com/server/Api/WipReport/index`));
+    await firstValueFrom(this.http.get<any[]>(this.getWipEndpoint()));
 
   getTransitValueReport = async () =>
     await firstValueFrom(this.http.get<any[]>(`https://dashboard.eye-fi.com/server/Api/JiaxingLocationValue/read?name=TRANSIT`));
