@@ -1,0 +1,21 @@
+<?php
+
+use EyefiDb\Api\LateReasonCodes\LateReasonCodes;
+use EyefiDb\Databases\DatabaseEyefi;
+
+$db_connect = new DatabaseEyefi();
+$db = $db_connect->getConnection();
+
+$data = new LateReasonCodes($db);
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+    $post = json_decode(file_get_contents('php://input'), true);
+
+    $results = $data->save($post);
+
+    echo json_encode($results);
+} else {
+    http_response_code(500);
+    die('Unauthorized');
+}

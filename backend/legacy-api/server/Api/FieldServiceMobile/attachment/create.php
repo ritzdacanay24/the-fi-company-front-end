@@ -1,0 +1,43 @@
+<?php
+    use EyefiDb\Databases\DatabaseEyefi;
+
+    $db_connect = new DatabaseEyefi();
+    $db = $db_connect->getConnection();
+    $db->setAttribute(PDO::ATTR_CASE, PDO::CASE_NATURAL);
+    $db->setAttribute(PDO::ATTR_ORACLE_NULLS, PDO::NULL_EMPTY_STRING);
+
+    require "/var/www/html/server/Api/FieldServiceMobile/functions/index.php";
+
+    $table = 'attachments';
+
+    if($_FILES){
+        $_POST['fileName'] = upload();
+    }
+
+    $qry = dynamicInsert($table, $_POST);
+    
+    $query = $db->prepare($qry);
+    $query->execute();
+
+    echo $db_connect->json_encode($qry);
+
+    function upload(){
+        
+        $filename = basename($_FILES['file']['name']);
+        $file1 = $_FILES['file']['tmp_name'];
+
+        $time = time();        
+        
+        $target = '/var/www/html/attachments/fieldService/' . $time . "_" . $filename;
+
+        $fileName_ = $time . "_" . $filename;
+
+        //$compressedImage = compressImage($file1, $target, 75); 
+
+        if(move_uploaded_file($file1,$target)){
+            return $fileName_;
+        }else{
+            return false;
+        }
+
+    }

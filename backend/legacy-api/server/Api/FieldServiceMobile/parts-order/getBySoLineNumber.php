@@ -1,0 +1,18 @@
+<?php
+use EyefiDb\Databases\DatabaseEyefi;
+
+$db_connect = new DatabaseEyefi();
+$db = $db_connect->getConnection();
+$db->setAttribute(PDO::ATTR_CASE, PDO::CASE_NATURAL);
+
+$mainQry = "
+    select *
+    from fs_parts_order
+    where so_number = :id
+";
+$query = $db->prepare($mainQry);
+$query->bindParam(':id', $_GET['so_number'], PDO::PARAM_STR);
+$query->execute();
+$results =  $query->fetch(PDO::FETCH_ASSOC);
+
+echo $db_connect->json_encode($results);

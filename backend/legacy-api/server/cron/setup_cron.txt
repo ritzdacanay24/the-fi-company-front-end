@@ -1,0 +1,18 @@
+To set up the scheduled job, add this line to your crontab:
+
+# Check for low serial numbers daily at 8:00 AM
+0 8 * * * /usr/bin/php /var/www/html/server/cron/check_low_serial_numbers.php >> /var/log/serial_numbers_check.log 2>&1
+
+# Alternative: Check every 4 hours
+0 */4 * * * /usr/bin/php /var/www/html/server/cron/check_low_serial_numbers.php >> /var/log/serial_numbers_check.log 2>&1
+
+To add to crontab:
+1. Run: crontab -e
+2. Add the line above
+3. Save and exit
+
+To view current crontab:
+crontab -l
+
+To check if the job is running:
+tail -f /var/log/serial_numbers_check.log
