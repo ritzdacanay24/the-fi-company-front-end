@@ -2,6 +2,15 @@
 
 This service is the new NestJS backend structure, modeled after the Creorx backend layout.
 
+## Foundation Included
+
+- Global config loading with environment validation
+- Request context middleware (`x-request-id` propagation)
+- Global HTTP exception filter
+- Global request logging interceptor
+- Global validation pipe
+- Environment-driven CORS
+
 ## Scope
 
 - Implemented now: WIP report only
