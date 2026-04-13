@@ -28,35 +28,6 @@ services:
       - ./backend/nest-api/tsconfig.json:/app/tsconfig.json:ro
       - ${QAD_DRIVER_PATH:-./backend/qad-driver/Connect64_for_ODBC_71}:/opt1/Progress/DataDirect/Connect64_for_ODBC_71:ro
 
-  qad-api:
-    build:
-      context: ./backend/qad-api
-      dockerfile: Dockerfile
-    container_name: eyefi-qad-api
-    command: ${QAD_API_COMMAND:-npm start}
-    ports:
-      - "3001:3000"
-    environment:
-      PORT: ${PORT:-3000}
-      NODE_ENV: ${NODE_ENV:-production}
-      CHOKIDAR_USEPOLLING: ${CHOKIDAR_USEPOLLING:-false}
-      CHOKIDAR_INTERVAL: ${CHOKIDAR_INTERVAL:-800}
-      DB_HOST: ${DB_HOST:-mysql}
-      DB_PORT: ${DB_PORT:-3306}
-      DB_NAME: ${DB_NAME:-eyefidb}
-      DB_USER: ${DB_USER:-change_me}
-      DB_PASSWORD: ${DB_PASSWORD:-change_me}
-      QAD_DSN: ${QAD_DSN:-DEV}
-      QAD_USER: ${QAD_USER:-change_me}
-      QAD_PASSWORD: ${QAD_PASSWORD:-change_me}
-      ODBCINI: ${ODBCINI:-/opt1/Progress/DataDirect/Connect64_for_ODBC_71/odbc.ini}
-      ODBCINST: ${ODBCINST:-/opt1/Progress/DataDirect/Connect64_for_ODBC_71/odbcinst.ini}
-      LD_LIBRARY_PATH: ${LD_LIBRARY_PATH:-/opt1/Progress/DataDirect/Connect64_for_ODBC_71/lib}
-    volumes:
-      - ./backend/qad-api/src:/app/src
-      - ./backend/qad-api/tsconfig.json:/app/tsconfig.json:ro
-      - ${QAD_DRIVER_PATH:-./backend/qad-driver/Connect64_for_ODBC_71}:/opt1/Progress/DataDirect/Connect64_for_ODBC_71:ro
-
   php:
     build:
       context: .

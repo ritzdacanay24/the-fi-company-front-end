@@ -1,19 +1,19 @@
-# Deploy QAD API V2 (Side-by-Side)
+# Deploy Nest API (Production)
 
-This deploy keeps legacy PHP APIs running while enabling the new TypeScript API under `ApiV2`.
+This deploy keeps legacy PHP APIs running while enabling the Nest API runtime for migrated modules.
 
 ## 1) Prepare secrets on server
 
 Create `backend/.env.production` from `backend/.env.production.example` and set real credentials.
 Ensure `QAD_DRIVER_PATH=/opt1/Progress/DataDirect/Connect64_for_ODBC_71`.
 
-## 2) Start only QAD API V2 in production mode
+## 2) Start Nest API in production mode
 
 ```bash
 docker compose \
   --env-file backend/.env.production \
   -f docker-compose.yml \
-  up -d --build qad-api
+  up -d --build nest-api
 ```
 
 ## 3) Verify service health
@@ -25,23 +25,27 @@ docker compose \
   ps
 
 curl http://127.0.0.1:3001/health
-curl "http://127.0.0.1:3001/server/ApiV2/WipReport/index?limit=2"
+curl "http://127.0.0.1:3002/health"
+curl "http://127.0.0.1:3002/api/WipReport/index?limit=2"
+curl "http://127.0.0.1:3002/api/vehicle/getById?id=3"
 ```
 
 ## 4) Reverse proxy path
 
-Map this public path to the container:
-- `/server/ApiV2/` -> `http://127.0.0.1:3001/server/ApiV2/`
+Map these public paths to nest-api:
+- `/api/` -> `http://127.0.0.1:3002/api/`
+- `/health` -> `http://127.0.0.1:3002/health`
 
-## 5) Frontend toggle (WIP only)
+## 5) Frontend toggles
 
 In production environment config:
 - `useApiV2WipReport = false` keeps legacy
-- `useApiV2WipReport = true` switches WIP only to V2
+- `useApiV2WipReport = true` switches WIP to Nest API
+- `useApiV2VehicleList = true` switches Vehicle module to Nest API
 
 ## Rollback
 
-Set `useApiV2WipReport = false` and redeploy frontend.
+Set feature flags to `false` and redeploy frontend.
 
 ## Local run (auto-reload enabled)
 
@@ -49,11 +53,11 @@ Set `useApiV2WipReport = false` and redeploy frontend.
 docker compose \
   --env-file backend/.env.development \
   -f docker-compose.yml \
-  up -d --build qad-api
+  up -d --build nest-api
 ```
 
 Create `backend/.env.development` from `backend/.env.development.example` for local defaults.
-After first startup, code changes under `backend/qad-api/src` reload automatically; use `docker compose restart qad-api` only if env values change.
+After first startup, code changes under `backend/nest-api/src` reload automatically; use `docker compose restart nest-api` only if env values change.
 
 ## Troubleshooting
 
@@ -64,7 +68,7 @@ Symptom:
   - `{"ok":false,"endpoint":"/api/WipReport/index","error":"[odbc] Error connecting to the database"}`
 
 Most common cause:
-- `qad-api` started without `backend/.env.development`, so container falls back to `QAD_USER=change_me` and `QAD_PASSWORD=change_me`.
+- `nest-api` started without `backend/.env.development`, so container falls back to `QAD_USER=change_me` and `QAD_PASSWORD=change_me`.
 
 Fix:
 
@@ -72,20 +76,20 @@ Fix:
 docker compose \
   --env-file backend/.env.development \
   -f docker-compose.yml \
-  up -d --force-recreate qad-api php
+  up -d --force-recreate nest-api php
 ```
 
 Verify effective env in container:
 
 ```bash
-docker exec eyefi-qad-api sh -lc "env | grep -E '^(QAD_|ODBC|DB_)' | sort"
+docker exec eyefi-nest-api sh -lc "env | grep -E '^(QAD_|ODBC|DB_)' | sort"
 ```
 
 Verify connectivity:
 
 ```bash
-curl http://127.0.0.1:3001/health
-curl "http://127.0.0.1:3001/qad/test?sql=select%20top%201%20*%20from%20sod_det"
+curl http://127.0.0.1:3002/health
+curl "http://127.0.0.1:3002/api/WipReport/index?limit=1"
 ```
 
 ### `SQLSTATE[HY000] ... Errcode: 28 - No space left on device` (server)

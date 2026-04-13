@@ -36,23 +36,23 @@ Run locally via Docker:
 - service: `php` from `docker-compose.yml`
 - mount: `./backend/php -> /var/www/html`
 
-## Backend (QAD API, Node/TypeScript)
+## Backend (Nest API, Node/TypeScript)
 
 Location:
-- `backend/qad-api/`
+- `backend/nest-api/`
 
 Purpose:
-- TypeScript API (ApiV2 pathing) for QAD and selected server integrations.
+- TypeScript/NestJS API for new backend modules and incremental migration.
 
 Run locally via Docker:
-- service: `qad-api` from `docker-compose.yml`
-- command comes from `QAD_API_COMMAND` env (defaults to `npm start`)
+- service: `nest-api` from `docker-compose.yml`
+- command comes from `NEST_API_COMMAND` env (defaults to `npm start`)
 
 ## Database and Infrastructure
 
 - `backend/database/` SQL migrations/views used by application features
 - `backend/docker/` container Dockerfiles and runtime support files
-- `docker-compose.yml` local orchestration for php, mysql, and qad-api
+- `docker-compose.yml` local orchestration for php, mysql, and nest-api
 - `backend/qad-driver/` local ODBC driver mount path (ignored in git for local driver files)
 
 ## Documentation and Utility Areas
@@ -64,6 +64,6 @@ Run locally via Docker:
 
 - Frontend code belongs in `frontend/`.
 - PHP backend code belongs in `backend/php/`.
-- QAD Node/TS backend code belongs in `backend/qad-api/`.
+- Nest Node/TS backend code belongs in `backend/nest-api/`.
 - SQL migrations/views belong in `backend/database/`.
 - Do not add application code under `docs/` or `scripts/`.

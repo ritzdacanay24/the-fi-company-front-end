@@ -25,11 +25,11 @@ export const environment = {
   pmApiUrl: '/api/operations/project-manager',
   useApiV2WipReport: true,
   useApiV2VehicleList: true,
-  useApiV2TrainingSessions: true,
+  useApiV2TrainingSessions: false,
   legacyApiBaseUrl: 'https://dashboard.eye-fi.com/server/Api',
   wipApiBaseUrl: 'http://localhost:3002',
   vehicleApiBaseUrl: 'http://localhost:3002',
-  apiV2BaseUrl: 'http://localhost:3001',
+  apiV2BaseUrl: 'http://localhost:3002',
 };
 
 /*

@@ -30,7 +30,7 @@ Angular workspace for Eyefi operations and quality workflows.
 
 - Frontend (Angular): [frontend/src/](frontend/src)
 - Backend (PHP): [backend/](backend)
-- Backend (QAD Node/TS): [backend/qad-api/](backend/qad-api)
+- Backend (NestJS API): [backend/nest-api/](backend/nest-api)
 - Database SQL assets: [backend/database/](backend/database)
 
 ## Repository Conventions
