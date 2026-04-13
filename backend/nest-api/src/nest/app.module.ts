@@ -4,6 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 import { envValidationSchema } from './config/env.validation';
 import { LoggingInterceptor } from './interceptors/logging.interceptor';
 import { RequestContextMiddleware } from './middlewares/request-context.middleware';
+import { ForkliftInspectionModule } from './modules/forklift-inspection';
 import { HealthModule } from './modules/health';
 import { SafetyIncidentModule } from './modules/safety-incident';
 import { VehicleModule } from './modules/vehicle';
@@ -23,6 +24,7 @@ import { MysqlModule } from '../shared/database/mysql.module';
       cache: true,
     }),
     MysqlModule,
+    ForkliftInspectionModule,
     HealthModule,
     SafetyIncidentModule,
     VehicleModule,
