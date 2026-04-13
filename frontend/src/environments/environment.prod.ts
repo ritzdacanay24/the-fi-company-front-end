@@ -20,9 +20,11 @@ export const environment = {
   projectManagerDataSource: 'mock' as 'mock' | 'api',
   pmApiUrl: '/api/operations/project-manager',
   useApiV2WipReport: false,
+  useApiV2VehicleList: false,
   useApiV2TrainingSessions: false,
   legacyApiBaseUrl: 'https://dashboard.eye-fi.com/server/Api',
   wipApiBaseUrl: '/server/ApiV2',
+  vehicleApiBaseUrl: '/server/ApiV2',
   apiV2BaseUrl: '/server/ApiV2',
 
 };

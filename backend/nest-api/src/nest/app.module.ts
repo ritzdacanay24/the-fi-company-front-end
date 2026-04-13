@@ -5,7 +5,9 @@ import { envValidationSchema } from './config/env.validation';
 import { LoggingInterceptor } from './interceptors/logging.interceptor';
 import { RequestContextMiddleware } from './middlewares/request-context.middleware';
 import { HealthModule } from './modules/health';
+import { VehicleModule } from './modules/vehicle';
 import { WipModule } from './modules/wip';
+import { MysqlModule } from '../shared/database/mysql.module';
 
 @Module({
   imports: [
@@ -19,7 +21,9 @@ import { WipModule } from './modules/wip';
       },
       cache: true,
     }),
+    MysqlModule,
     HealthModule,
+    VehicleModule,
     WipModule,
   ],
   providers: [

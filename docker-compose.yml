@@ -12,6 +12,11 @@ services:
       NODE_ENV: ${NODE_ENV:-development}
       CHOKIDAR_USEPOLLING: ${CHOKIDAR_USEPOLLING:-false}
       CHOKIDAR_INTERVAL: ${CHOKIDAR_INTERVAL:-800}
+      DB_HOST: ${DB_HOST:-mysql}
+      DB_PORT: ${DB_PORT:-3306}
+      DB_NAME: ${DB_NAME:-eyefidb}
+      DB_USER: ${DB_USER:-change_me}
+      DB_PASSWORD: ${DB_PASSWORD:-change_me}
       QAD_DSN: ${QAD_DSN:-DEV}
       QAD_USER: ${QAD_USER:-change_me}
       QAD_PASSWORD: ${QAD_PASSWORD:-change_me}
