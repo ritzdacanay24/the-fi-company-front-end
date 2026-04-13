@@ -5,6 +5,7 @@ import { envValidationSchema } from './config/env.validation';
 import { LoggingInterceptor } from './interceptors/logging.interceptor';
 import { RequestContextMiddleware } from './middlewares/request-context.middleware';
 import { HealthModule } from './modules/health';
+import { SafetyIncidentModule } from './modules/safety-incident';
 import { VehicleModule } from './modules/vehicle';
 import { WipModule } from './modules/wip';
 import { MysqlModule } from '../shared/database/mysql.module';
@@ -23,6 +24,7 @@ import { MysqlModule } from '../shared/database/mysql.module';
     }),
     MysqlModule,
     HealthModule,
+    SafetyIncidentModule,
     VehicleModule,
     WipModule,
   ],

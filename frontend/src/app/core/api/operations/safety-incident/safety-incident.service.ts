@@ -1,16 +1,18 @@
-import { Injectable } from "@angular/core";
-import { HttpClient } from "@angular/common/http";
-import { DataService } from "../../DataService";
-import { firstValueFrom } from "rxjs";
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { DataService } from '../../DataService';
+import { firstValueFrom } from 'rxjs';
+import { queryString } from 'src/assets/js/util/queryString';
 
-let url = "operations/safety-incident";
+const url = 'apiV2/safety-incident';
+const legacyUrl = 'operations/safety-incident';
 
 @Injectable({
-  providedIn: "root",
+  providedIn: 'root',
 })
 export class SafetyIncidentService extends DataService<any> {
   constructor(http: HttpClient) {
-    super(url, http);
+    super(legacyUrl, http);
   }
 
   getList = async (
@@ -18,16 +20,60 @@ export class SafetyIncidentService extends DataService<any> {
     dateFrom: string,
     dateTo: string,
     isAll = false
-  ) =>
-    await firstValueFrom(
+  ) => {
+    return await firstValueFrom(
       this.http.get<any[]>(
-        `${url}/getList?selectedViewType=${selectedViewType}&dateFrom=${dateFrom}&dateTo=${dateTo}&isAll=${isAll}`
+        `${url}/getList?selectedViewType=${encodeURIComponent(selectedViewType)}&dateFrom=${encodeURIComponent(dateFrom)}&dateTo=${encodeURIComponent(dateTo)}&isAll=${isAll}`
       )
     );
+  };
+
+  override find = async (params: any): Promise<any[]> => {
+    const result = queryString(params);
+    return await firstValueFrom(this.http.get<any[]>(`${url}/find${result}`));
+  };
+
+  override findOne = async (params: any): Promise<any> => {
+    const result = queryString(params);
+    return await firstValueFrom(this.http.get<any>(`${url}/findOne${result}`));
+  };
+
+  override getAll = async (): Promise<any[]> => {
+    return await firstValueFrom(this.http.get<any[]>(`${url}/getAll`));
+  };
+
+  override getById = async (id: number): Promise<any> => {
+    return await firstValueFrom(this.http.get<any>(`${url}/getById?id=${id}`));
+  };
+
+  override create = async (params: any): Promise<{ message: string; insertId?: number }> => {
+    const response = await firstValueFrom(
+      this.http.post<any>(`${url}/create`, params)
+    );
+
+    return {
+      message: 'Safety incident created successfully',
+      insertId: response?.id,
+    };
+  };
+
+  override update = async (id: number | string, params: any): Promise<{ message: string }> => {
+    await firstValueFrom(
+      this.http.put<any>(`${url}/updateById/${id}`, params)
+    );
+    return { message: 'Safety incident updated successfully' };
+  };
+
+  override delete = async (id: number): Promise<{ message: string }> => {
+    await firstValueFrom(
+      this.http.delete<any>(`${url}/deleteById/${id}`)
+    );
+    return { message: 'Safety incident deleted successfully' };
+  };
 
   async _create(params: any) {
     return await firstValueFrom(
-      this.http.put<any>(`/safety-incident/index`, params)
+      this.http.put<any>('/safety-incident/index', params)
     );
   }
 

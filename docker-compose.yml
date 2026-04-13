@@ -4,22 +4,22 @@ services:
       context: ./backend/nest-api
       dockerfile: Dockerfile
     container_name: eyefi-nest-api
-    command: ${NEST_API_COMMAND:-npm start}
+    command: "${NEST_API_COMMAND:-npm start}"
     ports:
       - "3002:3000"
     environment:
       PORT: ${NEST_API_PORT:-3000}
-      NODE_ENV: ${NODE_ENV:-development}
+      NODE_ENV: ${NODE_ENV:-production}
       CHOKIDAR_USEPOLLING: ${CHOKIDAR_USEPOLLING:-false}
       CHOKIDAR_INTERVAL: ${CHOKIDAR_INTERVAL:-800}
       DB_HOST: ${DB_HOST:-mysql}
       DB_PORT: ${DB_PORT:-3306}
       DB_NAME: ${DB_NAME:-eyefidb}
-      DB_USER: ${DB_USER:-change_me}
-      DB_PASSWORD: ${DB_PASSWORD:-change_me}
-      QAD_DSN: ${QAD_DSN:-DEV}
-      QAD_USER: ${QAD_USER:-change_me}
-      QAD_PASSWORD: ${QAD_PASSWORD:-change_me}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      QAD_DSN: ${QAD_DSN}
+      QAD_USER: ${QAD_USER}
+      QAD_PASSWORD: ${QAD_PASSWORD}
       ODBCINI: ${ODBCINI:-/opt1/Progress/DataDirect/Connect64_for_ODBC_71/odbc.ini}
       ODBCINST: ${ODBCINST:-/opt1/Progress/DataDirect/Connect64_for_ODBC_71/odbcinst.ini}
       LD_LIBRARY_PATH: ${LD_LIBRARY_PATH:-/opt1/Progress/DataDirect/Connect64_for_ODBC_71/lib}
@@ -28,37 +28,14 @@ services:
       - ./backend/nest-api/tsconfig.json:/app/tsconfig.json:ro
       - ${QAD_DRIVER_PATH:-./backend/qad-driver/Connect64_for_ODBC_71}:/opt1/Progress/DataDirect/Connect64_for_ODBC_71:ro
 
-  php:
-    build:
-      context: .
-      dockerfile: backend/docker/php/Dockerfile
-    container_name: eyefi-php
-    ports:
-      - "8080:80"
-    volumes:
-      - ./backend/php:/var/www/html
-      - ${QAD_DRIVER_PATH:-./backend/qad-driver/Connect64_for_ODBC_71}:/opt1/Progress/DataDirect/Connect64_for_ODBC_71:ro
-    environment:
-      DB_HOST: mysql
-      DB_PORT: 3306
-      DB_NAME: eyefidb
-      DB_USER: ${DB_USER:-change_me}
-      DB_PASSWORD: ${DB_PASSWORD:-change_me}
-      QAD_DSN: ${QAD_DSN:-DEV}
-      QAD_USER: ${QAD_USER:-change_me}
-      QAD_PASSWORD: ${QAD_PASSWORD:-change_me}
-      ODBCINI: /opt1/Progress/DataDirect/Connect64_for_ODBC_71/odbc.ini
-      ODBCINST: /opt1/Progress/DataDirect/Connect64_for_ODBC_71/odbcinst.ini
-      LD_LIBRARY_PATH: /opt1/Progress/DataDirect/Connect64_for_ODBC_71/lib
-    depends_on:
-      mysql:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "php -m >/dev/null || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 20s
+  # php service disabled - Dockerfile not yet created
+  # php:
+  #   build:
+  #     context: .
+  #     dockerfile: backend/docker/php/Dockerfile
+  #   container_name: eyefi-php
+  #   ports:
+  #     - "8080:80"
 
   mysql:
     image: mysql:8.0
@@ -67,7 +44,7 @@ services:
     ports:
       - "3306:3306"
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-change_me}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: eyefidb
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -proot --silent"]

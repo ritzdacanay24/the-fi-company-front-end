@@ -2,25 +2,17 @@ import { Injectable } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
 import { DataService } from "../../DataService";
 import { firstValueFrom } from "rxjs";
-import { environment } from "src/environments/environment";
 import { queryString } from "src/assets/js/util/queryString";
 
-let url = "vehicle";
+const url = "apiV2/vehicle";
+const legacyUrl = "vehicle";
 
 @Injectable({
   providedIn: "root",
 })
 export class VehicleService extends DataService<any> {
   constructor(http: HttpClient) {
-    super(url, http);
-  }
-
-  private get useV2(): boolean {
-    return environment.useApiV2VehicleList;
-  }
-
-  private get apiV2VehicleBaseUrl(): string {
-    return environment.vehicleApiBaseUrl || environment.apiV2BaseUrl;
+    super(legacyUrl, http);
   }
 
   private toQueryString(params: Record<string, unknown>): string {
@@ -38,70 +30,42 @@ export class VehicleService extends DataService<any> {
     isAll = false
   ) => {
     const query = `selectedViewType=${encodeURIComponent(selectedViewType)}&dateFrom=${encodeURIComponent(dateFrom)}&dateTo=${encodeURIComponent(dateTo)}&isAll=${isAll}`;
-
-    if (this.useV2) {
-      return await firstValueFrom(this.http.get<any[]>(`${this.apiV2VehicleBaseUrl}/api/vehicle/getList?${query}`));
-    }
-
     return await firstValueFrom(this.http.get<any[]>(`${url}/getList?${query}`));
   };
 
   override findOne = async (params: Partial<any>): Promise<any> => {
-    if (this.useV2) {
-      return await firstValueFrom(this.http.get<any>(`${this.apiV2VehicleBaseUrl}/api/vehicle/findOne${this.toQueryString(params as Record<string, unknown>)}`));
-    }
-    const result = queryString(params);
-    return await firstValueFrom(this.http.get<any>(`${url}/findOne.php${result}`));
+    return await firstValueFrom(this.http.get<any>(`${url}/findOne${this.toQueryString(params as Record<string, unknown>)}`));
   }
 
   override find = async (params: Partial<any>): Promise<any[]> => {
-    if (this.useV2) {
-      return await firstValueFrom(this.http.get<any[]>(`${this.apiV2VehicleBaseUrl}/api/vehicle/find${this.toQueryString(params as Record<string, unknown>)}`));
-    }
-    const result = queryString(params);
-    return await firstValueFrom(this.http.get<any[]>(`${url}/find.php${result}`));
+    return await firstValueFrom(this.http.get<any[]>(`${url}/find${this.toQueryString(params as Record<string, unknown>)}`));
   }
 
   override getAll = async (): Promise<any[]> => {
-    if (this.useV2) {
-      return await firstValueFrom(this.http.get<any[]>(`${this.apiV2VehicleBaseUrl}/api/vehicle/getAll`));
-    }
-    return await firstValueFrom(this.http.get<any[]>(`${url}/getAll.php`));
+    return await firstValueFrom(this.http.get<any[]>(`${url}/getAll`));
   }
 
   override getById = async (id: number): Promise<any> => {
-    if (this.useV2) {
-      return await firstValueFrom(this.http.get<any>(`${this.apiV2VehicleBaseUrl}/api/vehicle/getById?id=${id}`));
-    }
-    return await firstValueFrom(this.http.get<any>(`${url}/getById.php?id=${id}`));
+    return await firstValueFrom(this.http.get<any>(`${url}/getById?id=${id}`));
   }
 
   override create = async (params: Partial<any>): Promise<{ message: string; insertId?: number }> => {
-    if (this.useV2) {
-      const response = await firstValueFrom(this.http.post<{ insertId: number }>(`${this.apiV2VehicleBaseUrl}/api/vehicle/create`, params));
-      return { message: 'success', insertId: response.insertId };
-    }
-    return await firstValueFrom(this.http.post<{ message: string; insertId?: number }>(`${url}/create.php`, params));
+    const response = await firstValueFrom(this.http.post<{ insertId: number }>(`${url}/create`, params));
+    return { message: 'success', insertId: response.insertId };
   }
 
   override update = async (id: string | number, params: Partial<any>): Promise<{ message: string }> => {
-    if (this.useV2) {
-      await firstValueFrom(this.http.put<{ rowCount: number }>(`${this.apiV2VehicleBaseUrl}/api/vehicle/updateById?id=${id}`, params));
-      return { message: 'success' };
-    }
-    return await firstValueFrom(this.http.put<{ message: string }>(`${url}/updateById.php?id=${id}`, params));
+    await firstValueFrom(this.http.put<{ rowCount: number }>(`${url}/updateById?id=${id}`, params));
+    return { message: 'success' };
   }
 
   override delete = async (id: number): Promise<{ message: string }> => {
-    if (this.useV2) {
-      await firstValueFrom(this.http.delete<{ rowCount: number }>(`${this.apiV2VehicleBaseUrl}/api/vehicle/deleteById?id=${id}`));
-      return { message: 'success' };
-    }
-    return await firstValueFrom(this.http.delete<{ message: string }>(`${url}/deleteById.php?id=${id}`));
+    await firstValueFrom(this.http.delete<{ rowCount: number }>(`${url}/deleteById?id=${id}`));
+    return { message: 'success' };
   }
 
   checkAnyFailures = async (license: string) =>
     await firstValueFrom(
-      this.http.get<any[]>(`${url}/checkAnyFailures?license=${license}`)
+      this.http.get<any[]>(`${legacyUrl}/checkAnyFailures?license=${license}`)
     );
 }

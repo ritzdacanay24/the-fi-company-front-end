@@ -12,7 +12,7 @@ import {
 import { CreateVehicleDto, UpdateVehicleDto } from './dto';
 import { VehicleService } from './vehicle.service';
 
-@Controller('api/vehicle')
+@Controller('vehicle')
 export class VehicleController {
   constructor(@Inject(VehicleService) private readonly vehicleService: VehicleService) {}
 

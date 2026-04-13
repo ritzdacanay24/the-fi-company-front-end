@@ -1,11 +1,11 @@
 import { Controller, Get, InternalServerErrorException, Query } from '@nestjs/common';
 import { WipService } from './wip.service';
 
-@Controller()
+@Controller('wip-report')
 export class WipController {
   constructor(private readonly wipService: WipService) {}
 
-  @Get('api/WipReport/index')
+  @Get()
   async getWipReport(@Query('limit') limitRaw?: string) {
     const raw = Number(limitRaw || 0);
     const limit = Number.isFinite(raw) ? Math.max(0, Math.min(raw, 500)) : 0;
@@ -16,14 +16,9 @@ export class WipController {
       const error = err instanceof Error ? err.message : String(err);
       throw new InternalServerErrorException({
         ok: false,
-        endpoint: '/api/WipReport/index',
+        endpoint: '/api/wip-report',
         error,
       });
     }
-  }
-
-  @Get('server/ApiV2/WipReport/index')
-  async getWipReportCompat(@Query('limit') limitRaw?: string) {
-    return this.getWipReport(limitRaw);
   }
 }

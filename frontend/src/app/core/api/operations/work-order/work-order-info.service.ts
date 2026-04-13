@@ -12,7 +12,7 @@ export class WorkOrderInfoService {
         return this.http.get<any>(`/work_order_view/work_order_view?Details=${workOrderNumber}`).toPromise();
     }
     getWipReport(): Observable<any> {
-        return this.http.get<any>(`/WipReport/index`);
+        return this.http.get<any>(`/server/ApiV2/api/wip-report`);
     }
 
     getCompletedWorkers() {

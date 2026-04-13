@@ -1,29 +1,44 @@
 import { Injectable } from '@angular/core';
 import { HttpEvent, HttpInterceptor, HttpHandler, HttpRequest, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from 'src/environments/environment';
 
 @Injectable()
 export class ApiPrefixInterceptor implements HttpInterceptor {
 
   intercept(request: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+    const url = request.url;
+    const apiV2PrefixRegex = /^\/?apiv2\//i;
+    const apiV2BaseUrl = (environment.apiV2BaseUrl || '').replace(/\/+$/, '');
 
-    if (request.url.indexOf("https://api.mindee.net/v1/products/mindee/expense_receipts/v3/predict") == 0) {
+    if (url.indexOf("https://api.mindee.net/v1/products/mindee/expense_receipts/v3/predict") == 0) {
       request = request.clone({
-        url: request.url
+        url
         , setHeaders: {
           Authorization: `Token ${request.body.apikey}`
         }
       });
 
-    } else if (request.url.indexOf("assets/i18n/") == 0) {
-    } else if (request.url.indexOf("https://") == 0 || request.url.indexOf("http://") == 0) {
-      request = request.clone({ url: request.url });
+    } else if (url.indexOf("assets/i18n/") == 0) {
+    } else if (url.indexOf("https://") == 0 || url.indexOf("http://") == 0) {
+      request = request.clone({ url });
 
-    } else if (request.url.indexOf("api/") == 0) {
-      request = request.clone({ url: 'https://dashboard.eye-fi.com/' + request.url });
+    } else if (apiV2PrefixRegex.test(url)) {
+      const pathWithoutPrefix = url.replace(apiV2PrefixRegex, '');
+      request = request.clone({ url: `${apiV2BaseUrl}/api/${pathWithoutPrefix}` });
+
+    } else if (url.indexOf("/ApiV2") == 0) {
+      request = request.clone({ url: 'https://dashboard.eye-fi.com' + url });
+
+    } else if (url.indexOf("/api/") == 0) {
+      request = request.clone({ url: 'https://dashboard.eye-fi.com' + url });
+
+    } else if (url.indexOf("api/") == 0) {
+      request = request.clone({ url: 'https://dashboard.eye-fi.com/' + url });
 
     } else {
-      request = request.clone({ url: 'https://dashboard.eye-fi.com/server/Api/' + request.url });
+      const normalizedUrl = url.indexOf('/') === 0 ? url.substring(1) : url;
+      request = request.clone({ url: 'https://dashboard.eye-fi.com/server/Api/' + normalizedUrl });
 
     }
 

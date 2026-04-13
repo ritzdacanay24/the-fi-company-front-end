@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from 'src/environments/environment';
 
-let url = 'Operations/report/wip-report';
+const wipUrl = 'apiV2/wip-report';
 
 @Injectable({
   providedIn: 'root'
@@ -13,12 +13,7 @@ export class ReportService {
   constructor(private http: HttpClient) { }
 
   private getWipEndpoint(): string {
-    if (environment.useApiV2WipReport) {
-      const wipBase = environment.wipApiBaseUrl || environment.apiV2BaseUrl;
-      return `${wipBase}/api/WipReport/index`;
-    }
-
-    return `${environment.legacyApiBaseUrl}/WipReport/index`;
+    return wipUrl;
   }
 
   getWipReport = async () =>

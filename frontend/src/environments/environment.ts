@@ -25,6 +25,7 @@ export const environment = {
   pmApiUrl: '/api/operations/project-manager',
   useApiV2WipReport: true,
   useApiV2VehicleList: true,
+  useApiV2SafetyIncident: true,
   useApiV2TrainingSessions: false,
   legacyApiBaseUrl: 'https://dashboard.eye-fi.com/server/Api',
   wipApiBaseUrl: 'http://localhost:3002',

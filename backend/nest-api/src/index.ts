@@ -1,12 +1,18 @@
 import 'reflect-metadata';
 
-import { Logger, ValidationPipe } from '@nestjs/common';
+import { Logger, RequestMethod, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './nest/app.module';
 import { GlobalHttpExceptionFilter } from './nest/filters/http-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  app.setGlobalPrefix('api', {
+    exclude: [
+      { path: 'health', method: RequestMethod.GET },
+    ],
+  });
 
   const corsOriginRaw = process.env.CORS_ORIGIN || '';
   const corsOrigins = corsOriginRaw
