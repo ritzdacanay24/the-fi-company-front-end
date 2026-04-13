@@ -4,8 +4,9 @@ This directory groups all backend runtimes and backend infrastructure.
 
 ## Subfolders
 
-- `php/`: primary PHP backend (mounted into the `php` container)
-- `qad-api/`: Node/TypeScript QAD API service
+- `php/`: legacy PHP backend (mounted into the `php` container)
+- `qad-api/`: legacy Node/TypeScript QAD API service
+- `nest-api/`: new NestJS backend service (WIP implemented first)
 - `database/`: backend SQL migrations/views
 - `docker/`: backend container Dockerfiles and support files
 - `igt_api/`: legacy IGT-related backend artifacts
@@ -14,9 +15,10 @@ This directory groups all backend runtimes and backend infrastructure.
 
 ## Run (from repo root)
 
-- `docker compose --env-file backend/.env.local up -d`
+- `docker compose --env-file backend/.env.development up -d`
 
 ## Notes
 
-- Add new PHP backend APIs under `backend/php/api/`.
-- Add new QAD TypeScript endpoints under `backend/qad-api/src/`.
+- Keep `php/` and `qad-api/` as legacy runtime paths while features are migrated.
+- Add all new backend features to `backend/nest-api/src/nest/modules/`.
+- Current Nest migration scope: WIP report endpoint only.

@@ -14,9 +14,9 @@ This folder contains project documentation and implementation notes.
 - Install dependencies with `npm --prefix frontend install`.
 - Run frontend locally with `npm --prefix frontend run start:local`.
 - Start local Docker-backed services with:
-	- `docker compose --env-file backend/.env.local up -d`
+	- `docker compose --env-file backend/.env.development up -d`
 - Keep secrets in local `.env` or `.env.*` files (do not commit secrets).
-- Commit only example env files such as `backend/.env.local.example` and `backend/.env.qad-api.example`.
+- Commit only example env files such as `backend/.env.development.example` and `backend/.env.production.example`.
 
 ## Why this exists
 

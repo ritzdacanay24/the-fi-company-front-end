@@ -4,14 +4,14 @@ This deploy keeps legacy PHP APIs running while enabling the new TypeScript API 
 
 ## 1) Prepare secrets on server
 
-Create `backend/.env.qad-api` from `backend/.env.qad-api.example` and set real credentials.
+Create `backend/.env.production` from `backend/.env.production.example` and set real credentials.
 Ensure `QAD_DRIVER_PATH=/opt1/Progress/DataDirect/Connect64_for_ODBC_71`.
 
 ## 2) Start only QAD API V2 in production mode
 
 ```bash
 docker compose \
-  --env-file backend/.env.qad-api \
+  --env-file backend/.env.production \
   -f docker-compose.yml \
   up -d --build qad-api
 ```
@@ -20,7 +20,7 @@ docker compose \
 
 ```bash
 docker compose \
-  --env-file backend/.env.qad-api \
+  --env-file backend/.env.production \
   -f docker-compose.yml \
   ps
 
@@ -47,12 +47,12 @@ Set `useApiV2WipReport = false` and redeploy frontend.
 
 ```bash
 docker compose \
-  --env-file backend/.env.local \
+  --env-file backend/.env.development \
   -f docker-compose.yml \
   up -d --build qad-api
 ```
 
-Create `backend/.env.local` from `backend/.env.local.example` for local defaults.
+Create `backend/.env.development` from `backend/.env.development.example` for local defaults.
 After first startup, code changes under `backend/qad-api/src` reload automatically; use `docker compose restart qad-api` only if env values change.
 
 ## Troubleshooting
@@ -64,13 +64,13 @@ Symptom:
   - `{"ok":false,"endpoint":"/api/WipReport/index","error":"[odbc] Error connecting to the database"}`
 
 Most common cause:
-- `qad-api` started without `backend/.env.local`, so container falls back to `QAD_USER=change_me` and `QAD_PASSWORD=change_me`.
+- `qad-api` started without `backend/.env.development`, so container falls back to `QAD_USER=change_me` and `QAD_PASSWORD=change_me`.
 
 Fix:
 
 ```bash
 docker compose \
-  --env-file backend/.env.local \
+  --env-file backend/.env.development \
   -f docker-compose.yml \
   up -d --force-recreate qad-api php
 ```

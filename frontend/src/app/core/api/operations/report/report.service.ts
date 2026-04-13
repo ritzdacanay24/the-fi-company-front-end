@@ -14,7 +14,8 @@ export class ReportService {
 
   private getWipEndpoint(): string {
     if (environment.useApiV2WipReport) {
-      return `${environment.apiV2BaseUrl}/api/WipReport/index`;
+      const wipBase = environment.wipApiBaseUrl || environment.apiV2BaseUrl;
+      return `${wipBase}/api/WipReport/index`;
     }
 
     return `${environment.legacyApiBaseUrl}/WipReport/index`;

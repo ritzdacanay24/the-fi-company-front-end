@@ -12,7 +12,7 @@ This service is the TypeScript backend for QAD-focused endpoints and ApiV2 integ
 ## Local Runtime
 
 Start from repository root:
-- `docker compose --env-file backend/.env.local up -d qad-api`
+- `docker compose --env-file backend/.env.development up -d qad-api`
 
 Useful checks:
 - `curl http://127.0.0.1:3001/health`

@@ -17,7 +17,7 @@ Docker mount from repository root:
 - `./backend/php` -> `/var/www/html`
 
 Start via root compose file:
-- `docker compose --env-file backend/.env.local up -d php mysql`
+- `docker compose --env-file backend/.env.development up -d php mysql`
 
 ## Notes
 

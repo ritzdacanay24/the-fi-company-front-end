@@ -49,8 +49,8 @@ Thumbs.db
 # Environment and secrets
 .env
 .env.*
-!backend/.env.local.example
-!backend/.env.qad-api.example
+!backend/.env.development.example
+!backend/.env.production.example
 
 # Local QAD ODBC driver files
 backend/qad-driver/

@@ -10,7 +10,7 @@ Angular workspace for Eyefi operations and quality workflows.
 - Open `http://localhost:4200`
 
 ### Docker Services
-- Run `docker compose --env-file backend/.env.local up -d`
+- Run `docker compose --env-file backend/.env.development up -d`
 
 ## Build
 
@@ -38,9 +38,9 @@ Angular workspace for Eyefi operations and quality workflows.
 - Package manager: use `npm` only.
 - Lockfile policy: `frontend/package-lock.json` is the source of truth.
 - Environment files:
-	- Start local Docker services with `docker compose --env-file backend/.env.local up -d`.
+	- Start local Docker services with `docker compose --env-file backend/.env.development up -d`.
 	- Keep secrets in untracked `.env.*` files.
-	- Commit only example env files such as `backend/.env.local.example` and `backend/.env.qad-api.example`.
+	- Commit only example env files such as `backend/.env.development.example` and `backend/.env.production.example`.
 - Documentation conventions:
 	- Add new stable docs in `docs/` using lowercase kebab-case file names.
 	- Keep legacy migrated root notes in `docs/root-notes/` with original names to preserve history/context.

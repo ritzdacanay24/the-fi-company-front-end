@@ -1,4 +1,28 @@
 services:
+  nest-api:
+    build:
+      context: ./backend/nest-api
+      dockerfile: Dockerfile
+    container_name: eyefi-nest-api
+    command: ${NEST_API_COMMAND:-npm start}
+    ports:
+      - "3002:3000"
+    environment:
+      PORT: ${NEST_API_PORT:-3000}
+      NODE_ENV: ${NODE_ENV:-development}
+      CHOKIDAR_USEPOLLING: ${CHOKIDAR_USEPOLLING:-false}
+      CHOKIDAR_INTERVAL: ${CHOKIDAR_INTERVAL:-800}
+      QAD_DSN: ${QAD_DSN:-DEV}
+      QAD_USER: ${QAD_USER:-change_me}
+      QAD_PASSWORD: ${QAD_PASSWORD:-change_me}
+      ODBCINI: ${ODBCINI:-/opt1/Progress/DataDirect/Connect64_for_ODBC_71/odbc.ini}
+      ODBCINST: ${ODBCINST:-/opt1/Progress/DataDirect/Connect64_for_ODBC_71/odbcinst.ini}
+      LD_LIBRARY_PATH: ${LD_LIBRARY_PATH:-/opt1/Progress/DataDirect/Connect64_for_ODBC_71/lib}
+    volumes:
+      - ./backend/nest-api/src:/app/src
+      - ./backend/nest-api/tsconfig.json:/app/tsconfig.json:ro
+      - ${QAD_DRIVER_PATH:-./backend/qad-driver/Connect64_for_ODBC_71}:/opt1/Progress/DataDirect/Connect64_for_ODBC_71:ro
+
   qad-api:
     build:
       context: ./backend/qad-api

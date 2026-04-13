@@ -22,6 +22,7 @@ export const environment = {
   useApiV2WipReport: false,
   useApiV2TrainingSessions: false,
   legacyApiBaseUrl: 'https://dashboard.eye-fi.com/server/Api',
+  wipApiBaseUrl: '/server/ApiV2',
   apiV2BaseUrl: '/server/ApiV2',
 
 };

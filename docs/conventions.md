@@ -11,11 +11,11 @@ This file defines lightweight standards for consistency across local development
 ## Environment Files
 
 - Local Docker workflows should use:
-  - `docker compose --env-file backend/.env.local up -d`
+  - `docker compose --env-file backend/.env.development up -d`
 - Keep secrets in untracked `.env` and `.env.*` files.
 - Commit only safe examples:
-  - `backend/.env.local.example`
-  - `backend/.env.qad-api.example`
+  - `backend/.env.development.example`
+  - `backend/.env.production.example`
 
 ## Documentation Naming
 
