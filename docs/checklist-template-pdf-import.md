@@ -182,7 +182,7 @@ Your PDF "QA-FRM-202 VWL-03505-310_IC_Rev 2_2025725.pdf":
 ## Technical Notes
 
 ### PDF Parser Service
-Located: `src/app/pages/quality/checklist-template-editor/services/pdf-parser.service.ts`
+Located: `frontend/src/app/pages/quality/checklist-template-editor/services/pdf-parser.service.ts`
 
 Key methods:
 - `parsePdfToTemplate()` - Main PDF parsing (text + images)

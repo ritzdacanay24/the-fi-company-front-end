@@ -127,12 +127,12 @@ The system includes automatic fallback to the legacy API if the new system is no
 
 1. **Database Migration**: Run the SQL migration script:
    ```sql
-   mysql -u [username] -p [database] < database/migrations/create_photo_checklist_tables.sql
+   mysql -u [username] -p [database] < backend/database/migrations/create_photo_checklist_tables.sql
    ```
 
 2. **API Setup**: Deploy the new API file:
    ```
-   igt_api/photo-checklist-config.php
+   backend/igt_api/photo-checklist-config.php
    ```
 
 3. **Angular Integration**: The new service is already integrated into the existing photo component

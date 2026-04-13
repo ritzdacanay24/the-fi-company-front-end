@@ -3,7 +3,7 @@
 ## What Was Implemented
 
 ### 1. Database Migration ✅
-**File:** `database/migrations/add_workflow_verification_tracking.sql`
+**File:** `backend/database/migrations/add_workflow_verification_tracking.sql`
 
 - Added `workflow_session_id` to `serial_assignments` table
 - Added `workflow_session_id` to `verification_sessions` table  
@@ -12,14 +12,14 @@
 
 ### 2. Angular Frontend Changes ✅
 
-**File:** `src/app/standalone/eyefi-serial-workflow/eyefi-serial-workflow.component.ts`
+**File:** `frontend/src/app/standalone/eyefi-serial-workflow/eyefi-serial-workflow.component.ts`
 
 - Added `workflowSessionId` property
 - Generate UUID on component init: `this.workflowSessionId = this.generateUUID()`
 - Pass `workflowSessionId` to verification session creation
 - Added `generateUUID()` helper method
 
-**File:** `src/app/features/serial-assignments/services/serial-assignments.service.ts`
+**File:** `frontend/src/app/features/serial-assignments/services/serial-assignments.service.ts`
 
 - Updated `createVerificationSession()` to accept `workflowSessionId` parameter
 - Pass `workflow_session_id` in request body to backend
@@ -117,7 +117,7 @@ Can now show in UI:
 ### 1. Run Migration (REQUIRED)
 ```sql
 -- Run on your database:
-source database/migrations/add_workflow_verification_tracking.sql;
+source backend/database/migrations/add_workflow_verification_tracking.sql;
 ```
 
 ### 2. Deploy Files to Server

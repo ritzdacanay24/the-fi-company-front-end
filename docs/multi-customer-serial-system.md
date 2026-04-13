@@ -111,7 +111,7 @@ VALUES ('aristoc', 'Aristocrat Technologies', 'ART', '{PREFIX}-{YEAR}-{SEQUENCE:
 
 **Application (Optional - if not using database-driven):**
 ```typescript
-// src/app/models/customer-types.ts
+// frontend/src/app/models/customer-types.ts
 export const CUSTOMER_TYPES = {
   igt: { code: 'igt', name: 'IGT', prefix: 'IGT', color: 'success' },
   sg: { code: 'sg', name: 'Light & Wonder', prefix: 'LW', color: 'warning' },

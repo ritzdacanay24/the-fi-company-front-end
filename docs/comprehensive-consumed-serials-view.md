@@ -248,7 +248,7 @@ GET ?action=get_work_order_serials&work_order=40745
 
 ## Angular Service Methods
 
-File: `src/app/features/serial-assignments/services/serial-assignments.service.ts`
+File: `frontend/src/app/features/serial-assignments/services/serial-assignments.service.ts`
 
 ### 1. getAllConsumedSerials(filters?)
 Get all consumed serials from all sources
@@ -399,8 +399,8 @@ CREATE INDEX idx_igt_used_at ON igt_serial_numbers(used_at);
 
 ## Files Created/Modified
 
-- ✅ `database/views/vw_all_consumed_serials.sql` - Database views
+- ✅ `backend/database/views/vw_all_consumed_serials.sql` - Database views
 - ✅ `backend/api/serial-assignments/index.php` - API endpoints
-- ✅ `src/app/features/serial-assignments/services/serial-assignments.service.ts` - Service methods
-- 📝 `src/app/features/serial-assignments/serial-assignments.component.ts` - Component (needs AG Grid update)
-- 📝 `src/app/features/serial-assignments/serial-assignments.component.html` - Template (needs AG Grid update)
+- ✅ `frontend/src/app/features/serial-assignments/services/serial-assignments.service.ts` - Service methods
+- 📝 `frontend/src/app/features/serial-assignments/serial-assignments.component.ts` - Component (needs AG Grid update)
+- 📝 `frontend/src/app/features/serial-assignments/serial-assignments.component.html` - Template (needs AG Grid update)

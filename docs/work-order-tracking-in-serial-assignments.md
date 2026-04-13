@@ -6,7 +6,7 @@ Added comprehensive work order tracking to the `serial_assignments` table to mai
 ## Database Changes
 
 ### Migration File
-Location: `database/migrations/add_work_order_fields_to_serial_assignments.sql`
+Location: `backend/database/migrations/add_work_order_fields_to_serial_assignments.sql`
 
 ### New Columns Added to `serial_assignments` Table
 
@@ -30,7 +30,7 @@ Location: `database/migrations/add_work_order_fields_to_serial_assignments.sql`
 ## Code Changes
 
 ### Frontend (TypeScript)
-**File**: `src/app/standalone/eyefi-serial-workflow/eyefi-serial-workflow.component.ts`
+**File**: `frontend/src/app/standalone/eyefi-serial-workflow/eyefi-serial-workflow.component.ts`
 
 Updated all asset generation methods to include work order information:
 - `generateSGAssets()` - Light and Wonder assets
@@ -146,7 +146,7 @@ ORDER BY wo_due_date DESC;
 1. **Run SQL Migration**
    ```bash
    # Execute migration file on database
-   mysql -u user -p database < database/migrations/add_work_order_fields_to_serial_assignments.sql
+   mysql -u user -p database < backend/database/migrations/add_work_order_fields_to_serial_assignments.sql
    ```
 
 2. **Deploy Frontend Changes**
@@ -172,8 +172,8 @@ ORDER BY wo_due_date DESC;
 
 ## Related Files
 
-- Migration: `database/migrations/add_work_order_fields_to_serial_assignments.sql`
-- Frontend: `src/app/standalone/eyefi-serial-workflow/eyefi-serial-workflow.component.ts`
+- Migration: `backend/database/migrations/add_work_order_fields_to_serial_assignments.sql`
+- Frontend: `frontend/src/app/standalone/eyefi-serial-workflow/eyefi-serial-workflow.component.ts`
 - Backend: `backend/api/quality/BaseAssetGenerator.php`
 - Documentation: This file
 

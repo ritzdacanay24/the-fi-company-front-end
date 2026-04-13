@@ -10,7 +10,7 @@ Successfully moved photo checklist execution functionality from `quality/quailty
 ### 1. **Folder Restructure**
 ```
 BEFORE:
-src/app/pages/quality/
+frontend/src/app/pages/quality/
 ├── quailty-control-photos/          ← Old location
 │   ├── photos/
 │   └── [component files]
@@ -21,7 +21,7 @@ src/app/pages/quality/
     └── audit/
 
 AFTER:
-src/app/pages/quality/
+frontend/src/app/pages/quality/
 ├── checklist/
 │   ├── template-editor/             # Create/edit templates
 │   ├── template-manager/            # List/manage templates  

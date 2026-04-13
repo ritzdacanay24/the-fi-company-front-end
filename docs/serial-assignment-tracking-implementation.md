@@ -25,7 +25,7 @@ Implemented a scalable architecture for tracking serial number assignments acros
 
 #### Migration Files Location:
 ```
-database/migrations/
+backend/database/migrations/
 ├── 001_create_customer_types_table.sql
 ├── 002_create_serial_assignments_table.sql
 ├── 003_alter_eyefi_serial_numbers.sql
@@ -63,16 +63,16 @@ database/migrations/
 -- Run these in order:
 
 -- 1. Create customer_types table
-SOURCE database/migrations/001_create_customer_types_table.sql;
+SOURCE backend/database/migrations/001_create_customer_types_table.sql;
 
 -- 2. Create serial_assignments table
-SOURCE database/migrations/002_create_serial_assignments_table.sql;
+SOURCE backend/database/migrations/002_create_serial_assignments_table.sql;
 
 -- 3. Add tracking columns to eyefi_serial_numbers
-SOURCE database/migrations/003_alter_eyefi_serial_numbers.sql;
+SOURCE backend/database/migrations/003_alter_eyefi_serial_numbers.sql;
 
 -- 4. Add tracking columns to ul_labels
-SOURCE database/migrations/004_alter_ul_labels.sql;
+SOURCE backend/database/migrations/004_alter_ul_labels.sql;
 
 -- Verify
 SELECT * FROM customer_types;
@@ -355,7 +355,7 @@ If you need to undo the changes:
 
 ```sql
 -- Run rollback script
-SOURCE database/migrations/999_rollback.sql;
+SOURCE backend/database/migrations/999_rollback.sql;
 ```
 
 This will:

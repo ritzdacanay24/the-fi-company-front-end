@@ -7,19 +7,19 @@ The Photo Checklist Configuration System is a comprehensive solution that allows
 ## 🗂️ Files Created/Modified
 
 ### Database Schema
-- `database/migrations/create_photo_checklist_tables.sql` - Complete database schema with 6 tables
-- `deploy-checklist-config.sh` - Linux deployment script
-- `deploy-checklist-config.ps1` - Windows PowerShell deployment script
+- `backend/database/migrations/create_photo_checklist_tables.sql` - Complete database schema with 6 tables
+- `backend/scripts/deploy/deploy-checklist-config.sh` - Linux deployment script
+- `backend/scripts/deploy/deploy-checklist-config.ps1` - Windows PowerShell deployment script
 
 ### Backend API
-- `igt_api/photo-checklist-config.php` - Complete REST API with CRUD operations
-- `test-api.php` - Comprehensive API testing script
+- `backend/igt_api/photo-checklist-config.php` - Complete REST API with CRUD operations
+- `backend/scripts/testing/test-api.php` - Comprehensive API testing script
 
 ### Frontend Angular Components
-- `src/app/core/api/photo-checklist-config/photo-checklist-config.service.ts` - Angular service with TypeScript interfaces
-- `src/app/pages/quality/checklist-template-manager/checklist-template-manager.component.ts` - Template management component
-- Updated `src/app/pages/quality/quailty-control-photos/photos/photos.component.ts` - Enhanced with new configuration system
-- Updated `src/app/pages/quality/quality-routing.module.ts` - Added template manager route
+- `frontend/src/app/core/api/photo-checklist-config/photo-checklist-config.service.ts` - Angular service with TypeScript interfaces
+- `frontend/src/app/pages/quality/checklist-template-manager/checklist-template-manager.component.ts` - Template management component
+- Updated `frontend/src/app/pages/quality/quailty-control-photos/photos/photos.component.ts` - Enhanced with new configuration system
+- Updated `frontend/src/app/pages/quality/quality-routing.module.ts` - Added template manager route
 
 ## 🛠️ Implementation Details
 
@@ -147,8 +147,8 @@ System configuration settings.
 7. **Deployment Scripts**: Both Linux and Windows versions
 
 ### 🎯 Next Steps:
-1. Run deployment script: `./deploy-checklist-config.sh`
-2. Test API endpoints: `php test-api.php`
+1. Run deployment script: `./backend/scripts/deploy/deploy-checklist-config.sh`
+2. Test API endpoints: `php backend/scripts/testing/test-api.php`
 3. Access template manager: `/quality/template-manager`
 4. Create first template and test workflow
 
@@ -157,7 +157,7 @@ System configuration settings.
 ### Test the Complete API:
 ```bash
 # Test all endpoints
-php test-api.php
+php backend/scripts/testing/test-api.php
 
 # Or test individual endpoints:
 curl -X GET 'http://localhost/igt_api/photo-checklist-config.php?request=config'

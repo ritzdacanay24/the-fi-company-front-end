@@ -37,7 +37,7 @@ This is a **simpler, more explicit** approach to tracking EyeFi serial usage. In
 Run the stored procedure migration:
 
 ```bash
-mysql -u [username] -p [database] < database/migrations/setup_eyefi_stored_procedures.sql
+mysql -u [username] -p [database] < backend/database/migrations/setup_eyefi_stored_procedures.sql
 ```
 
 This creates 3 procedures:
@@ -423,7 +423,7 @@ ALTER TABLE ul_label_usages DROP FOREIGN KEY fk_ul_eyefi_serial;
 ALTER TABLE igt_assets DROP FOREIGN KEY fk_igt_eyefi_serial;
 
 -- Then run the stored procedure migration
-SOURCE database/migrations/setup_eyefi_stored_procedures.sql;
+SOURCE backend/database/migrations/setup_eyefi_stored_procedures.sql;
 ```
 
 ## Pros and Cons Summary

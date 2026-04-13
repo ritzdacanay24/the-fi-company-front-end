@@ -108,7 +108,7 @@ DELETE /backend/api/ul-labels/usage.php?id={id}
 ## Frontend Components
 
 ### UL Usage Report Component
-**File:** `src/app/features/ul-management/components/ul-usage-report/ul-usage-report.component.ts`
+**File:** `frontend/src/app/features/ul-management/components/ul-usage-report/ul-usage-report.component.ts`
 
 **Features:**
 - Status column showing ACTIVE/VOIDED badges
@@ -228,7 +228,7 @@ Voided records maintain complete audit trail:
 
 1. Run migration script:
    ```bash
-   mysql -u username -p eyefidb < database/migrations/add_ul_usage_void_columns.sql
+   mysql -u username -p eyefidb < backend/database/migrations/add_ul_usage_void_columns.sql
    ```
 
 2. Verify columns added:

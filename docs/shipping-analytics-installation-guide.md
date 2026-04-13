@@ -25,20 +25,20 @@ npm install bootstrap @popperjs/core
 npm install line-awesome
 ```
 
-### 2. Update angular.json
+### 2. Update frontend/angular.json
 Add Bootstrap and Line Awesome to your styles array:
 ```json
 "styles": [
   "node_modules/bootstrap/dist/css/bootstrap.min.css",
   "node_modules/line-awesome/dist/line-awesome/css/line-awesome.min.css",
-  "src/styles.scss"
+  "frontend/src/styles.scss"
 ]
 ```
 
 ### 3. File Structure
 The dashboard consists of these main files:
 ```
-src/app/
+frontend/src/app/
 ├── components/
 │   ├── shipping-analytics/
 │   │   ├── shipping-analytics.component.ts

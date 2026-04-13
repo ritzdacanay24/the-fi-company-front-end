@@ -19,7 +19,7 @@ This guide covers the **Option 2** implementation for tracking EyeFi serial numb
 ## Migration Scripts
 
 ### 1. AGS Serial Tracking
-**File:** `database/migrations/setup_ags_eyefi_tracking.sql`
+**File:** `backend/database/migrations/setup_ags_eyefi_tracking.sql`
 
 **Prerequisites:**
 - `ags_serial` table must have `serialNumber` column (already exists)
@@ -31,11 +31,11 @@ This guide covers the **Option 2** implementation for tracking EyeFi serial numb
 
 **Execute:**
 ```bash
-mysql -u [username] -p [database] < database/migrations/setup_ags_eyefi_tracking.sql
+mysql -u [username] -p [database] < backend/database/migrations/setup_ags_eyefi_tracking.sql
 ```
 
 ### 2. UL Label Usage Tracking
-**File:** `database/migrations/setup_ul_eyefi_tracking.sql`
+**File:** `backend/database/migrations/setup_ul_eyefi_tracking.sql`
 
 **Prerequisites:**
 - `ul_label_usages` table must have `eyefi_serial_number` column
@@ -48,11 +48,11 @@ mysql -u [username] -p [database] < database/migrations/setup_ags_eyefi_tracking
 
 **Execute:**
 ```bash
-mysql -u [username] -p [database] < database/migrations/setup_ul_eyefi_tracking.sql
+mysql -u [username] -p [database] < backend/database/migrations/setup_ul_eyefi_tracking.sql
 ```
 
 ### 3. IGT Assets Tracking
-**File:** `database/migrations/setup_igt_eyefi_tracking.sql`
+**File:** `backend/database/migrations/setup_igt_eyefi_tracking.sql`
 
 **Prerequisites:**
 - `igt_assets` table needs `eyefi_serial_number` column
@@ -65,7 +65,7 @@ mysql -u [username] -p [database] < database/migrations/setup_ul_eyefi_tracking.
 
 **Execute:**
 ```bash
-mysql -u [username] -p [database] < database/migrations/setup_igt_eyefi_tracking.sql
+mysql -u [username] -p [database] < backend/database/migrations/setup_igt_eyefi_tracking.sql
 ```
 
 ## How It Works

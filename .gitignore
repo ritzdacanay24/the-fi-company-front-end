@@ -1,15 +1,15 @@
 # See http://help.github.com/ignore-files/ for more about ignoring files.
 
 # compiled output
-/dist
-/qad-api/dist
+/frontend/dist
+/backend/qad-api/dist
 /tmp
 /out-tsc
 # Only exists if Bazel was run
 /bazel-out
 
 # dependencies
-/node_modules
+/frontend/node_modules
 
 # profiling files
 chrome-profiler-events*.json
@@ -49,12 +49,12 @@ Thumbs.db
 # Environment and secrets
 .env
 .env.*
-!.env.local.example
-!.env.qad-api.example
+!backend/.env.local.example
+!backend/.env.qad-api.example
 
 # Local QAD ODBC driver files
-qad-driver/
+backend/qad-driver/
 
 #main app config
-/src/app/config/app.config.ts
-/.angular
+/frontend/src/app/config/app.config.ts
+/frontend/.angular

@@ -6,7 +6,7 @@ Added support for parent-child relationships in checklist items to handle scenar
 ## Database Changes
 
 ### Schema Update
-**File:** `database/migrations/add_hierarchy_to_checklist_items.sql`
+**File:** `backend/database/migrations/add_hierarchy_to_checklist_items.sql`
 
 Added two columns to `checklist_items` table:
 - `parent_id` (INT NULL): References the `order_index` of the parent item
@@ -68,7 +68,7 @@ Enhanced Y-position grouping:
 ## Frontend Changes
 
 ### Service Layer
-**File:** `src/app/pages/quality/checklist-template-editor/services/pdf-parser.service.ts`
+**File:** `frontend/src/app/pages/quality/checklist-template-editor/services/pdf-parser.service.ts`
 
 Updated `ParsedChecklistItem` interface:
 ```typescript
@@ -89,7 +89,7 @@ Logic in `extractChecklistItems()`:
 - Preserves text extracted from PDF for parent items
 
 ### Component
-**File:** `src/app/pages/quality/checklist-template-editor/checklist-template-editor.component.ts`
+**File:** `frontend/src/app/pages/quality/checklist-template-editor/checklist-template-editor.component.ts`
 
 Updated form building:
 ```typescript

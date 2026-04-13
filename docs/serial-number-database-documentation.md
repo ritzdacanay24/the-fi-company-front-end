@@ -211,22 +211,22 @@ Validates serial number format against a pattern.
 
 1. **Create Tables:**
    ```sql
-   SOURCE database/migrations/create_serial_number_tables.sql;
+   SOURCE backend/database/migrations/create_serial_number_tables.sql;
    ```
 
 2. **Insert Default Data:**
    ```sql
-   SOURCE database/migrations/insert_default_serial_templates.sql;
+   SOURCE backend/database/migrations/insert_default_serial_templates.sql;
    ```
 
 3. **Create Stored Procedures:**
    ```sql
-   SOURCE database/stored-procedures/serial_number_procedures.sql;
+   SOURCE backend/database/stored-procedures/serial_number_procedures.sql;
    ```
 
 4. **Create Views:**
    ```sql
-   SOURCE database/views/serial_number_views.sql;
+   SOURCE backend/database/views/serial_number_views.sql;
    ```
 
 ## Usage Examples

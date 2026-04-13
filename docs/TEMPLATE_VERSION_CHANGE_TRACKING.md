@@ -45,7 +45,7 @@ GET /api?request=compare_templates&source_id=X&target_id=Y
 - `updateTemplate()` - Could optionally prompt for version creation
 
 ### 4. **Frontend - Version Changes Dialog**
-**File:** `src/app/pages/quality/checklist/template-editor/components/version-changes-dialog.component.ts`
+**File:** `frontend/src/app/pages/quality/checklist/template-editor/components/version-changes-dialog.component.ts`
 
 **Features:**
 - Shows before saving changes
@@ -61,7 +61,7 @@ GET /api?request=compare_templates&source_id=X&target_id=Y
 - Optional version notes field
 
 ### 5. **Frontend - Version History Dialog**
-**File:** `src/app/pages/quality/checklist/template-editor/components/version-history-dialog.component.ts`
+**File:** `frontend/src/app/pages/quality/checklist/template-editor/components/version-history-dialog.component.ts`
 
 **Features:**
 - Timeline view of all versions
@@ -79,7 +79,7 @@ GET /api?request=compare_templates&source_id=X&target_id=Y
 - Scrollable, responsive design
 
 ### 6. **Frontend - Service Integration**
-**File:** `src/app/core/api/photo-checklist-config/photo-checklist-config.service.ts`
+**File:** `frontend/src/app/core/api/photo-checklist-config/photo-checklist-config.service.ts`
 
 **New Methods:**
 ```typescript

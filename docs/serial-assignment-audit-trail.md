@@ -191,7 +191,7 @@ Added soft delete columns:
 ### 3. Frontend Component Features
 
 #### Serial Assignments Management Interface
-Location: `src/app/features/serial-assignments/`
+Location: `frontend/src/app/features/serial-assignments/`
 
 **Key Features**:
 
@@ -435,7 +435,7 @@ ORDER BY performed_at DESC;
 
 1. **Run SQL Migration**:
    ```bash
-   mysql -u username -p database_name < database/migrations/create_serial_assignment_audit.sql
+   mysql -u username -p database_name < backend/database/migrations/create_serial_assignment_audit.sql
    ```
 
 2. **Verify Tables**:

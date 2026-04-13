@@ -239,9 +239,9 @@ customerAliases = {
 ```
 
 ## Related Files
-- TypeScript: `src/app/standalone/eyefi-serial-workflow/eyefi-serial-workflow.component.ts`
-- HTML: `src/app/standalone/eyefi-serial-workflow/eyefi-serial-workflow.component.html`
-- SCSS: `src/app/standalone/eyefi-serial-workflow/eyefi-serial-workflow.component.scss`
+- TypeScript: `frontend/src/app/standalone/eyefi-serial-workflow/eyefi-serial-workflow.component.ts`
+- HTML: `frontend/src/app/standalone/eyefi-serial-workflow/eyefi-serial-workflow.component.html`
+- SCSS: `frontend/src/app/standalone/eyefi-serial-workflow/eyefi-serial-workflow.component.scss`
 - Documentation: This file
 
 ## Author

@@ -1,46 +1,47 @@
-# Velzon
+# Eyefi Modern
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 13.1.4.
+Angular workspace for Eyefi operations and quality workflows.
 
-## Development server
+## Local Development
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The app will automatically reload if you change any of the source files.
+### Frontend
+- Run `npm --prefix frontend install`
+- Run `npm --prefix frontend run start:local`
+- Open `http://localhost:4200`
 
-## Code scaffolding
-
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+### Docker Services
+- Run `docker compose --env-file backend/.env.local up -d`
 
 ## Build
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.
+- Run `npm --prefix frontend run build`
 
-## Running unit tests
+## Tests
 
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
+- Run `npm --prefix frontend run test`
 
-## Running end-to-end tests
+## Documentation
 
-Run `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.
+- Main documentation index: [docs/README.md](docs/README.md)
+- Root notes moved from repo root: [docs/root-notes/README.md](docs/root-notes/README.md)
+- Codebase structure map: [docs/codebase-structure.md](docs/codebase-structure.md)
 
-## Further help
+## Codebase Areas
 
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.
+- Frontend (Angular): [frontend/src/](frontend/src)
+- Backend (PHP): [backend/](backend)
+- Backend (QAD Node/TS): [backend/qad-api/](backend/qad-api)
+- Database SQL assets: [backend/database/](backend/database)
 
+## Repository Conventions
 
-$ENV:NODE_ENV = 'development' 
-
-git add . ; git commit -m "update" ; git push
-
-ng build --output-hashing=all
-
-
-#install different node versions for different work stations. 
-##https://dev.to/stephengade/how-to-install-and-manage-multiple-versions-of-nodejs-on-windows-5h30
-
-chrome://flags#enable-desktop-pwas-tab-strip
-
-
-Documentation
-
-1. How to restart server
+- Package manager: use `npm` only.
+- Lockfile policy: `frontend/package-lock.json` is the source of truth.
+- Environment files:
+	- Start local Docker services with `docker compose --env-file backend/.env.local up -d`.
+	- Keep secrets in untracked `.env.*` files.
+	- Commit only example env files such as `backend/.env.local.example` and `backend/.env.qad-api.example`.
+- Documentation conventions:
+	- Add new stable docs in `docs/` using lowercase kebab-case file names.
+	- Keep legacy migrated root notes in `docs/root-notes/` with original names to preserve history/context.
     

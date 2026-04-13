@@ -6,7 +6,7 @@ Created a separate kanban priority system that mirrors the shipping priority imp
 ## Database Changes
 
 ### New Table: `kanban_priorities`
-**Location:** `database/migrations/add_kanban_priority.sql`
+**Location:** `backend/database/migrations/add_kanban_priority.sql`
 
 ```sql
 CREATE TABLE kanban_priorities (
@@ -183,11 +183,11 @@ export class KanbanBoardComponent {
 ## Files Created/Modified
 
 ### Created:
-1. ✅ `database/migrations/add_kanban_priority.sql` - Database migration
+1. ✅ `backend/database/migrations/add_kanban_priority.sql` - Database migration
 2. ✅ `backend/api/kanban-priorities/index.php` - Backend API endpoint
 
 ### Modified:
-1. ✅ `src/app/core/api/operations/master-scheduling/master-scheduling.service.ts`
+1. ✅ `frontend/src/app/core/api/operations/master-scheduling/master-scheduling.service.ts`
    - Added kanban priority methods
    - Added PriorityRequest/PriorityResponse interfaces
    - Added mock data support
@@ -206,7 +206,7 @@ export class KanbanBoardComponent {
 
 1. **Run the migration:**
    ```sql
-   source database/migrations/add_kanban_priority.sql
+   source backend/database/migrations/add_kanban_priority.sql
    ```
 
 2. **Update kanban component** to use the new priority methods
