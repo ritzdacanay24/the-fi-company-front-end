@@ -34,7 +34,7 @@ export class ReportService {
     await firstValueFrom(this.http.get<any[]>(`https://dashboard.eye-fi.com/server/Api/inventory_by_prod_line/las_vegas_raw_material`));
 
   getSafetyStock = async () =>
-    await firstValueFrom(this.http.get<any[]>(`https://dashboard.eye-fi.com/server/Api/inventory_by_prod_line/getSafetyStock`));
+    await firstValueFrom(this.http.get<any[]>(`${inventoryByProdLineUrl}/getSafetyStock`));
 
   getShippedOrdersReport = async (dateFrom, dateTo) =>
     await firstValueFrom(this.http.get<any[]>(`https://dashboard.eye-fi.com/server/Api/shipped_orders/shipped_orders?getGroupedOrders&dateFrom=${dateFrom}&dateTo=${dateTo}`));

@@ -114,4 +114,52 @@ export class InventoryByProdLineService {
 
     return result;
   }
+
+  async getSafetyStock(): Promise<Array<Record<string, unknown>>> {
+    const safetyStockSql = `
+      select *
+      from (
+        select a.pt_desc1 as PT_DESC1
+          , onHandQty * sct_cst_tot as TOTAL
+          , a.pt_desc2 as PT_DESC2
+          , a.pt_part as PT_PART
+          , a.pt_part_type as PT_PART_TYPE
+          , c.onHandQty as ONHANDQTY
+          , d.sct_cst_tot as SCT_CST_TOT
+          , c.loc_type as LOC_TYPE
+          , case when (
+              RIGHT(a.pt_part, 1) != 'U' AND RIGHT(a.pt_part, 1) != 'R' AND RIGHT(a.pt_part, 1) != 'N'
+            ) THEN '-' ELSE 'COI' END as IS_COI
+        from pt_mstr a
+          left join (
+            select sct_part
+              , max(sct_cst_tot) as sct_cst_tot
+            from sct_det
+            WHERE sct_sim = 'Standard'
+              and sct_domain = 'EYE'
+              and sct_site = 'EYE01'
+            group by sct_part
+          ) d ON CAST(a.pt_part AS CHAR(25)) = d.sct_part
+          join (
+            select a.ld_part
+              , sum(ld_qty_oh) as onHandQty
+              , loc_type
+            from ld_det a
+            join (
+              select loc_loc, loc_type
+              from loc_mstr
+              WHERE loc_domain = 'EYE' and loc_type = 'SS'
+              group by loc_loc, loc_type
+            ) cc ON cc.loc_loc = a.ld_loc
+            where a.ld_domain = 'EYE'
+              and a.ld_qty_oh > 0
+            GROUP BY a.ld_part, loc_type
+          ) c ON c.ld_part = a.pt_part
+        where pt_domain = 'EYE'
+      ) a
+      WHERE IS_COI <> 'COI'
+    `;
+
+    return this.qadOdbcService.query<Array<Record<string, unknown>>>(safetyStockSql);
+  }
 }

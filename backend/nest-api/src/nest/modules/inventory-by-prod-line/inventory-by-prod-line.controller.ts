@@ -12,4 +12,9 @@ export class InventoryByProdLineController {
   async getPastDueOrders() {
     return this.inventoryByProdLineService.getPastDueOrders();
   }
+
+  @Get('getSafetyStock')
+  async getSafetyStock() {
+    return this.inventoryByProdLineService.getSafetyStock();
+  }
 }
