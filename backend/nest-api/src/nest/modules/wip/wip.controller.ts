@@ -1,9 +1,12 @@
-import { Controller, Get, InternalServerErrorException, Query } from '@nestjs/common';
+import { Controller, Get, Inject, InternalServerErrorException, Query } from '@nestjs/common';
 import { WipService } from './wip.service';
 
 @Controller('wip-report')
 export class WipController {
-  constructor(private readonly wipService: WipService) {}
+  constructor(
+    @Inject(WipService)
+    private readonly wipService: WipService,
+  ) {}
 
   @Get()
   async getWipReport(@Query('limit') limitRaw?: string) {
@@ -15,9 +18,10 @@ export class WipController {
     } catch (err) {
       const error = err instanceof Error ? err.message : String(err);
       throw new InternalServerErrorException({
-        ok: false,
+        code: 'RC_WIP_QUERY_FAILED',
+        message: error,
+        details: error,
         endpoint: '/apiV2/wip-report',
-        error,
       });
     }
   }

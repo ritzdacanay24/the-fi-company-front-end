@@ -1,6 +1,7 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
+import { DataScrubModule } from './modules/data-scrub';
 import { envValidationSchema } from './config/env.validation';
 import { LoggingInterceptor } from './interceptors/logging.interceptor';
 import { RequestContextMiddleware } from './middlewares/request-context.middleware';
@@ -26,6 +27,7 @@ import { MysqlModule } from '../shared/database/mysql.module';
       cache: true,
     }),
     MysqlModule,
+    DataScrubModule,
     ForkliftInspectionModule,
     HealthModule,
     InventoryByProdLineModule,

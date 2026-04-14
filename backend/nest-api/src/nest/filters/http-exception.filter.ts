@@ -11,6 +11,13 @@ import { Request, Response } from 'express';
 @Catch()
 export class GlobalHttpExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(GlobalHttpExceptionFilter.name);
+  private static readonly DI_ERROR_PATTERNS: RegExp[] = [
+    /Nest can't resolve dependencies/i,
+    /can't resolve dependencies/i,
+    /Cannot read properties of undefined \(reading '.+'\)/i,
+    /Undefined dependency/i,
+    /UnknownDependenciesException/i,
+  ];
 
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
@@ -30,18 +37,49 @@ export class GlobalHttpExceptionFilter implements ExceptionFilter {
         ? (exceptionResponse as Record<string, unknown>)
         : null;
 
+    const details =
+      responseBody?.details ??
+      responseBody?.error ??
+      undefined;
+
+    const endpoint =
+      typeof responseBody?.endpoint === 'string'
+        ? (responseBody.endpoint as string)
+        : undefined;
+
     const message =
       typeof exceptionResponse === 'string'
         ? exceptionResponse
         : (exceptionResponse as { message?: string })?.message ||
+          (typeof details === 'string' ? details : undefined) ||
           (exception instanceof Error ? exception.message : 'Internal server error');
 
-    const code =
-      (responseBody?.code as string | undefined) ||
-      this.mapStatusToCode(status, request.url);
+    const isDependencyInjectionFailure = this.isLikelyDependencyInjectionFailure(
+      exception,
+      message,
+      details,
+    );
+
+    const code = isDependencyInjectionFailure
+      ? 'RC_DEPENDENCY_INJECTION_FAILED'
+      : (responseBody?.code as string | undefined) ||
+        this.mapStatusToCode(status, request.url);
+
+    const normalizedMessage = isDependencyInjectionFailure
+      ? 'Dependency injection failure in backend runtime'
+      : message;
+
+    const normalizedDetails = isDependencyInjectionFailure
+      ? {
+          originalMessage: message,
+          path: request.url,
+          hint:
+            'Verify provider registration, module exports/imports, and runtime metadata support for decorators.',
+        }
+      : details;
 
     this.logger.error(
-      `${request.method} ${request.url} failed with ${status}: ${message}`,
+      `${request.method} ${request.url} failed with ${status}: ${normalizedMessage}`,
       exception instanceof Error ? exception.stack : undefined,
     );
 
@@ -49,15 +87,37 @@ export class GlobalHttpExceptionFilter implements ExceptionFilter {
       ok: false,
       code,
       statusCode: status,
-      message,
+      message: normalizedMessage,
+      ...(normalizedDetails !== undefined ? { details: normalizedDetails } : {}),
+      ...(endpoint ? { endpoint } : {}),
       path: request.url,
       requestId: request.requestId || null,
       timestamp: new Date().toISOString(),
     });
   }
 
+  private isLikelyDependencyInjectionFailure(
+    exception: unknown,
+    message: string,
+    details: unknown,
+  ): boolean {
+    const detailMessage =
+      typeof details === 'string'
+        ? details
+        : details && typeof details === 'object' && 'message' in details
+          ? String((details as { message?: unknown }).message ?? '')
+          : '';
+
+    const stack = exception instanceof Error ? exception.stack || '' : '';
+    const combined = `${message}\n${detailMessage}\n${stack}`;
+
+    return GlobalHttpExceptionFilter.DI_ERROR_PATTERNS.some((pattern) =>
+      pattern.test(combined),
+    );
+  }
+
   private mapStatusToCode(status: number, path: string): string {
-    if (path.startsWith('/api/vehicle')) {
+    if (path.startsWith('/api/vehicle') || path.startsWith('/apiV2/vehicle')) {
       if (status >= 500) {
         return 'RC_VEHICLE_INTERNAL_ERROR';
       }

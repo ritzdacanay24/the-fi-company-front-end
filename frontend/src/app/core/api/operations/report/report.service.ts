@@ -5,6 +5,7 @@ import { environment } from 'src/environments/environment';
 
 const wipUrl = 'apiV2/wip-report';
 const inventoryByProdLineUrl = 'apiV2/inventory-by-prod-line';
+const dataScrubUrl = 'apiV2/data-scrub';
 
 @Injectable({
   providedIn: 'root'
@@ -47,10 +48,10 @@ export class ReportService {
   }
 
   getNegativeLcations = async () =>
-    await firstValueFrom(this.http.get<any>(`https://dashboard.eye-fi.com/server/Api/DataScrub/index?type=Negative Locations`))
+    await firstValueFrom(this.http.get<any>(`${dataScrubUrl}/negative-locations`))
 
   getEmptyLocations = async () =>
-    await firstValueFrom(this.http.get<any>(`https://dashboard.eye-fi.com/server/Api/DataScrub/index?type=Locations with 0 items`))
+    await firstValueFrom(this.http.get<any>(`${dataScrubUrl}/empty-locations`))
 
   getInventoryReport = async () =>
     await firstValueFrom(this.http.get<any>(`${inventoryByProdLineUrl}/pastDueOrders`))
