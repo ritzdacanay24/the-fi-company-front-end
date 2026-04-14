@@ -2,11 +2,11 @@ services:
   nest-api:
     build:
       context: ./backend/nest-api
-      dockerfile: Dockerfile.dev
+      dockerfile: ${NEST_API_DOCKERFILE:-Dockerfile.dev}
     container_name: eyefi-nest-api
-    command: "npm run dev"
+    command: ${NEST_API_COMMAND:-npm run dev}
     env_file:
-      - ./backend/.env.development
+      - ${BACKEND_ENV_FILE:-./backend/.env.development}
     ports:
       - "3002:3000"
     environment:
@@ -33,7 +33,7 @@ services:
     container_name: eyefi-mysql
     command: --default-authentication-plugin=mysql_native_password
     env_file:
-      - ./backend/.env.development
+      - ${BACKEND_ENV_FILE:-./backend/.env.development}
     ports:
       - "3306:3306"
     healthcheck:
