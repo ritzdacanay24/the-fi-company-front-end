@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { RowDataPacket } from 'mysql2/promise';
-import { MysqlService } from '../../../shared/database/mysql.service';
-import { BaseRepository } from '../../../shared/repositories';
+import { MysqlService } from '@/shared/database/mysql.service';
+import { BaseRepository } from '@/shared/repositories';
 
 export interface VehicleRow extends RowDataPacket {
   id: number;

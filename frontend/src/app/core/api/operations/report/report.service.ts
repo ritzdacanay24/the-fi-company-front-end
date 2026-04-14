@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 import { environment } from 'src/environments/environment';
 
 const wipUrl = 'apiV2/wip-report';
+const inventoryByProdLineUrl = 'apiV2/inventory-by-prod-line';
 
 @Injectable({
   providedIn: 'root'
@@ -52,10 +53,10 @@ export class ReportService {
     await firstValueFrom(this.http.get<any>(`https://dashboard.eye-fi.com/server/Api/DataScrub/index?type=Locations with 0 items`))
 
   getInventoryReport = async () =>
-    await firstValueFrom(this.http.get<any>(`https://dashboard.eye-fi.com/server/Api/inventory_by_prod_line/inventory_by_prod_line?pastDueOrders`))
+    await firstValueFrom(this.http.get<any>(`${inventoryByProdLineUrl}/pastDueOrders`))
 
   getInventoryValuationReport = async () =>
-    await firstValueFrom(this.http.get<any>(`https://dashboard.eye-fi.com/server/Api/inventory_by_prod_line/inventory_by_prod_line?pastDueOrders`))
+    await firstValueFrom(this.http.get<any>(`${inventoryByProdLineUrl}/pastDueOrders`))
 
   getOneSkuLocationReport = async () =>
     await firstValueFrom(this.http.get<any>(`https://dashboard.eye-fi.com/server/Api/OneSkuLocationReport/oneSkuLocationReport`))

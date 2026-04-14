@@ -6,6 +6,7 @@ import { LoggingInterceptor } from './interceptors/logging.interceptor';
 import { RequestContextMiddleware } from './middlewares/request-context.middleware';
 import { ForkliftInspectionModule } from './modules/forklift-inspection';
 import { HealthModule } from './modules/health';
+import { InventoryByProdLineModule } from './modules/inventory-by-prod-line';
 import { SafetyIncidentModule } from './modules/safety-incident';
 import { VehicleInspectionModule } from './modules/vehicle-inspection';
 import { VehicleModule } from './modules/vehicle';
@@ -27,6 +28,7 @@ import { MysqlModule } from '../shared/database/mysql.module';
     MysqlModule,
     ForkliftInspectionModule,
     HealthModule,
+    InventoryByProdLineModule,
     SafetyIncidentModule,
     VehicleInspectionModule,
     VehicleModule,

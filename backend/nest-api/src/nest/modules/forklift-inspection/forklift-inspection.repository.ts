@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
-import { MysqlService } from '../../../shared/database/mysql.service';
+import { MysqlService } from '@/shared/database/mysql.service';
 
 export interface ForkliftChecklistRow extends RowDataPacket {
   id: number;

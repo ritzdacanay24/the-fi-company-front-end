@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import odbc from 'odbc';
+import { Inject, Injectable } from '@nestjs/common';
+import { QadOdbcService } from '@/shared/database/qad-odbc.service';
 
 function pick(obj: Record<string, unknown>, ...keys: string[]): unknown {
   for (const key of keys) {
@@ -23,13 +23,10 @@ function pick(obj: Record<string, unknown>, ...keys: string[]): unknown {
 
 @Injectable()
 export class WipService {
-  private qadConnStr(): string {
-    const dsn = process.env.QAD_DSN || 'DEV';
-    const user = process.env.QAD_USER || 'change_me';
-    const password = process.env.QAD_PASSWORD || 'change_me';
-
-    return `DSN=${dsn};UID=${user};PWD=${password}`;
-  }
+  constructor(
+    @Inject(QadOdbcService)
+    private readonly qadOdbcService: QadOdbcService,
+  ) {}
 
   async getWipReport(limit: number): Promise<Record<string, unknown>[]> {
     const sql = `
@@ -63,26 +60,17 @@ export class WipService {
       order by wo_due_date DESC
     `;
 
-    let conn: odbc.Connection | null = null;
+    const rows = await this.qadOdbcService.query<Record<string, unknown>[]>(sql);
 
-    try {
-      conn = await odbc.connect(this.qadConnStr());
-      const rows = (await conn.query(sql)) as Record<string, unknown>[];
+    const normalized = rows.map((row) => ({
+      ...row,
+      id: pick(row, 'wo_nbr', 'WO_NBR') ?? pick(row, 'id', 'ID'),
+    }));
 
-      const normalized = rows.map((row) => ({
-        ...row,
-        id: pick(row, 'wo_nbr', 'WO_NBR') ?? pick(row, 'id', 'ID'),
-      }));
-
-      if (limit > 0) {
-        return normalized.slice(0, limit);
-      }
-
-      return normalized;
-    } finally {
-      if (conn) {
-        await conn.close();
-      }
+    if (limit > 0) {
+      return normalized.slice(0, limit);
     }
+
+    return normalized;
   }
 }
