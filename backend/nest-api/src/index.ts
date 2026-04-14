@@ -8,7 +8,7 @@ import { GlobalHttpExceptionFilter } from './nest/filters/http-exception.filter'
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  app.setGlobalPrefix('api', {
+  app.setGlobalPrefix('apiV2', {
     exclude: [
       { path: 'health', method: RequestMethod.GET },
     ],

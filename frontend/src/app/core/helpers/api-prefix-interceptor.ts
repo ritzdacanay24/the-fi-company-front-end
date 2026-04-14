@@ -25,7 +25,7 @@ export class ApiPrefixInterceptor implements HttpInterceptor {
 
     } else if (apiV2PrefixRegex.test(url)) {
       const pathWithoutPrefix = url.replace(apiV2PrefixRegex, '');
-      request = request.clone({ url: `${apiV2BaseUrl}/api/${pathWithoutPrefix}` });
+      request = request.clone({ url: `${apiV2BaseUrl}/apiV2/${pathWithoutPrefix}` });
 
     } else if (url.indexOf("/ApiV2") == 0) {
       request = request.clone({ url: 'https://dashboard.eye-fi.com' + url });

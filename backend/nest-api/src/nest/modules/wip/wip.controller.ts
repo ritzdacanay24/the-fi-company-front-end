@@ -16,7 +16,7 @@ export class WipController {
       const error = err instanceof Error ? err.message : String(err);
       throw new InternalServerErrorException({
         ok: false,
-        endpoint: '/api/wip-report',
+        endpoint: '/apiV2/wip-report',
         error,
       });
     }

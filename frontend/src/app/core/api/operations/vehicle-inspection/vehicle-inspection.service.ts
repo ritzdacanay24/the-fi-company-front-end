@@ -3,14 +3,15 @@ import { HttpClient } from "@angular/common/http";
 import { DataService } from "../../DataService";
 import { firstValueFrom } from "rxjs";
 
-let url = "operations/vehicle-inspection";
+const url = "apiV2/vehicle-inspection";
+const legacyUrl = "operations/vehicle-inspection";
 
 @Injectable({
   providedIn: "root",
 })
 export class VehicleInspectionService extends DataService<any> {
   constructor(http: HttpClient) {
-    super(url, http);
+    super(legacyUrl, http);
   }
 
   getList = async () =>
@@ -18,20 +19,20 @@ export class VehicleInspectionService extends DataService<any> {
 
   async _create(params: any) {
     return await firstValueFrom(
-      this.http.put<any>(`/VehicleInspection/index`, params)
+      this.http.put<any>(`${url}/index`, params)
     );
   }
 
   async _searchById(id: number) {
     return await firstValueFrom(
-      this.http.get<any>(`/VehicleInspection/index?searchById=${id}`)
+      this.http.get<any>(`${url}/index?searchById=${id}`)
     );
   }
 
   async saveDetailById(id: number, params) {
     return await firstValueFrom(
       this.http.put<any>(
-        `/VehicleInspection/index?saveDetailById=${id}`,
+        `${url}/index?saveDetailById=${id}`,
         params
       )
     );
@@ -39,7 +40,7 @@ export class VehicleInspectionService extends DataService<any> {
 
   async getDetaliById(id: number) {
     return await firstValueFrom(
-      this.http.get<any>(`/VehicleInspection/index?getDetaliById=${id}`)
+      this.http.get<any>(`${url}/index?getDetaliById=${id}`)
     );
   }
 

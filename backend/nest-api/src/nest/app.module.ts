@@ -7,6 +7,7 @@ import { RequestContextMiddleware } from './middlewares/request-context.middlewa
 import { ForkliftInspectionModule } from './modules/forklift-inspection';
 import { HealthModule } from './modules/health';
 import { SafetyIncidentModule } from './modules/safety-incident';
+import { VehicleInspectionModule } from './modules/vehicle-inspection';
 import { VehicleModule } from './modules/vehicle';
 import { WipModule } from './modules/wip';
 import { MysqlModule } from '../shared/database/mysql.module';
@@ -27,6 +28,7 @@ import { MysqlModule } from '../shared/database/mysql.module';
     ForkliftInspectionModule,
     HealthModule,
     SafetyIncidentModule,
+    VehicleInspectionModule,
     VehicleModule,
     WipModule,
   ],
