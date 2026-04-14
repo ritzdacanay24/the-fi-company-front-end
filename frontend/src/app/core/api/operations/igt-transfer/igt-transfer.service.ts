@@ -4,6 +4,7 @@ import { DataService } from '../../DataService';
 import { firstValueFrom } from 'rxjs';
 
 let url = 'operations/igt_transfer';
+const igtTransferApiV2Url = 'apiV2/igt-transfer';
 
 @Injectable({
   providedIn: 'root'
@@ -15,15 +16,15 @@ export class IgtTransferService extends DataService<any> {
   }
 
   getList = async (selectedViewType: string, dateFrom: string, dateTo: string, isAll = false) =>
-    await firstValueFrom(this.http.get<any[]>(`${url}/getList?selectedViewType=${selectedViewType}&dateFrom=${dateFrom}&dateTo=${dateTo}&isAll=${isAll}`));
+    await firstValueFrom(this.http.get<any[]>(`${igtTransferApiV2Url}/getList?selectedViewType=${selectedViewType}&dateFrom=${dateFrom}&dateTo=${dateTo}&isAll=${isAll}`));
 
   getHeader = async (id) =>
-    await firstValueFrom(this.http.get<any[]>(`${url}/getHeader?id=${id}`));
+    await firstValueFrom(this.http.get<any[]>(`${igtTransferApiV2Url}/getHeader?id=${id}`));
 
   getSoLineDetails = async (order: string) =>
-    await firstValueFrom(this.http.get<any[]>(`https://dashboard.eye-fi.com/server/Api/Shipping/index?getLineNumbers&so_number=${order}`));
+    await firstValueFrom(this.http.get<any[]>(`${igtTransferApiV2Url}/getSoLineDetails?so_number=${order}`));
 
   automatedIGTTransfer(id, params: any) {
-    return this.http.post(`${url}/automatedIGTTransfer?id=${id}`, params).toPromise()
+    return this.http.post(`${igtTransferApiV2Url}/automatedIGTTransfer?id=${id}`, params).toPromise()
   }
 }

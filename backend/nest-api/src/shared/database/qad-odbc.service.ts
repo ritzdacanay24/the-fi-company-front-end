@@ -26,4 +26,14 @@ export class QadOdbcService {
       return rows;
     });
   }
+
+  async queryWithParams<T = Record<string, unknown>[]>(
+    sql: string,
+    params: readonly (string | number)[],
+  ): Promise<T> {
+    return this.withConnection(async (conn) => {
+      const rows = (await conn.query(sql, [...params])) as T;
+      return rows;
+    });
+  }
 }

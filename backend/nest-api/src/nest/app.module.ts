@@ -7,12 +7,15 @@ import { LoggingInterceptor } from './interceptors/logging.interceptor';
 import { RequestContextMiddleware } from './middlewares/request-context.middleware';
 import { ForkliftInspectionModule } from './modules/forklift-inspection';
 import { HealthModule } from './modules/health';
+import { IgtTransferModule } from './modules/igt-transfer/igt-transfer.module';
 import { InventoryByProdLineModule } from './modules/inventory-by-prod-line';
+import { QadModule } from './modules/qad';
 import { SafetyIncidentModule } from './modules/safety-incident';
 import { VehicleInspectionModule } from './modules/vehicle-inspection';
 import { VehicleModule } from './modules/vehicle';
 import { WipModule } from './modules/wip';
 import { MysqlModule } from '../shared/database/mysql.module';
+import { EmailModule } from '../shared/email/email.module';
 
 @Module({
   imports: [
@@ -27,10 +30,13 @@ import { MysqlModule } from '../shared/database/mysql.module';
       cache: true,
     }),
     MysqlModule,
+    EmailModule,
     DataScrubModule,
     ForkliftInspectionModule,
     HealthModule,
+    IgtTransferModule,
     InventoryByProdLineModule,
+    QadModule,
     SafetyIncidentModule,
     VehicleInspectionModule,
     VehicleModule,

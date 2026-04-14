@@ -93,19 +93,39 @@ export class IgtTransferFormComponent {
     this.details?.clear();
     try {
       this.form.disable();
-      let data: any = await this.api.getSoLineDetails($event.sod_nbr);
+      const soNumber = $event?.sod_nbr || $event?.SOD_NBR;
+      const data: any[] = await this.api.getSoLineDetails(soNumber);
 
-      let firstInfo = data[0];
+      if (!Array.isArray(data) || data.length === 0) {
+        this.form.patchValue(
+          {
+            main: {
+              so_number: soNumber || null,
+              transfer_reference: null,
+              transfer_reference_description: "",
+              to_location: "",
+            },
+          },
+          { emitEvent: false }
+        );
+        this.form.enable();
+        return;
+      }
+
+      const firstInfo = data[0];
+      const toLocation = firstInfo.to_loc ?? firstInfo.TO_LOC ?? "";
+      const soPo = firstInfo.so_po ?? firstInfo.SO_PO ?? null;
+      const soRemarks = firstInfo.so_rmks ?? firstInfo.SO_RMKS ?? "";
 
       this.form.patchValue(
         {
           main: {
-            transfer_reference: firstInfo.so_po,
-            transfer_reference_description: firstInfo.so_rmks,
+            transfer_reference: soPo,
+            transfer_reference_description: soRemarks,
             date: moment().format("YYYY-MM-DD"),
             from_location: "Z009",
-            to_location: firstInfo.TO_LOC,
-            so_number: $event.sod_nbr,
+            to_location: toLocation,
+            so_number: soNumber,
           },
         },
         { emitEvent: false }
@@ -115,12 +135,13 @@ export class IgtTransferFormComponent {
         this.isIGTOrder = false;
         this.details = this.form.get("details") as FormArray;
         for (let i = 0; i < data.length; i++) {
+          const row = data[i] || {};
           this.details.push(
             this.fb.group({
-              so_line: data[i].sod_line,
-              part_number: data[i].SOD_PART,
-              description: data[i].PT_DESC1 + " " + data[i].PT_DESC2,
-              qty: data[i].sod_qty_ord,
+              so_line: row.sod_line ?? row.SOD_LINE ?? "",
+              part_number: row.sod_part ?? row.SOD_PART ?? "",
+              description: `${row.pt_desc1 ?? row.PT_DESC1 ?? ""} ${row.pt_desc2 ?? row.PT_DESC2 ?? ""}`.trim(),
+              qty: row.sod_qty_ord ?? row.SOD_QTY_ORD ?? 0,
               pallet_count: 1,
               serial_numbers: "NA",
             })
@@ -130,7 +151,8 @@ export class IgtTransferFormComponent {
 
       this.form.enable();
     } catch (err) {
-      this.form.disable();
+      console.error("Failed to load IGT SO line details", err);
+      this.form.enable();
     }
   }
 }

@@ -12,6 +12,16 @@ Angular workspace for Eyefi operations and quality workflows.
 ### Docker Services
 - Run `docker compose --env-file backend/.env.development up -d`
 
+### Test Email (Mailpit)
+- Start only Mailpit: `docker compose up -d mailpit`
+- Open Mailpit inbox UI: `http://localhost:8025`
+- Mailpit SMTP listener: `localhost:1025`
+- For Nest email testing, use these env values in `backend/.env.development`:
+	- `SMTP_HOST=mailpit`
+	- `SMTP_PORT=1025`
+	- `SMTP_SECURE=false`
+- Rebuild/restart Nest after env changes: `docker compose up -d --build nest-api`
+
 ## Build
 
 - Run `npm --prefix frontend run build`
