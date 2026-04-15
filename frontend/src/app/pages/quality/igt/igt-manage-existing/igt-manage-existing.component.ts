@@ -175,7 +175,7 @@ export class IgtManageExistingComponent implements OnInit {
         width: 50,
         pinned: 'left',
         lockPosition: true,
-        suppressMenu: true,
+        suppressHeaderMenuButton: true,
         sortable: false,
         filter: false
       },

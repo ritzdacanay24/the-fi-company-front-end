@@ -29,7 +29,7 @@ export class MenuComponent implements OnInit {
         { name: "Quality Dashboard", link: "/quality" },
         { name: "Quality Inspection (Standalone)", link: "/standalone/checklist" },
         { name: "Unique Label Generator (Standalone)", link: "/standalone/unique-label-generator" },
-        { name: "Training Management (Standalone)", link: "/standalone/training-management" },
+        { name: "Training Management", link: "/training-management" },
         { name: "Install Quality Inspection App", link: "/checklist-app" },
         {
           name: "Shipping Request Form",
@@ -46,7 +46,7 @@ export class MenuComponent implements OnInit {
         },
         {
           name: "Safety Incident Form",
-          link: "/operations/forms/safety-incident/create",
+          link: "/safety-incidents/create",
         },
         {
           name: "FS App",

@@ -220,7 +220,6 @@ interface AllocationDetailRow {
       [rowDragManaged]="true"
       [suppressRowClickSelection]="true"
       [enableRangeSelection]="true"
-      [enableCellChangeFlash]="true"
       [animateRows]="true">
     </ag-grid-angular>
     `,

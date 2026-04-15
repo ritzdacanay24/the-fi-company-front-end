@@ -436,10 +436,10 @@ export const MENU_DATA: MenuItem[] = [
             {
                 label: "Safety Incidents",
                 description: "Report and Track Safety Incidents",
-                link: "/operations/forms/safety-incident",
+                link: "/safety-incidents",
                 icon: "las la-exclamation-triangle",
                 accessRequired: false,
-                activatedRoutes: "/operations/forms/safety-incident/*"
+                activatedRoutes: "/safety-incidents/*"
             },
             {
                 label: "Vehicle Inspections",

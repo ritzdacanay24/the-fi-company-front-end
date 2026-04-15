@@ -42,11 +42,11 @@
               "node_modules/@ctrl/ngx-emoji-mart/picker.css",
               "node_modules/slick-carousel/slick/slick.scss",
               "node_modules/slick-carousel/slick/slick-theme.scss",
+              "node_modules/ag-grid-community/styles/ag-grid.css",
+              "node_modules/ag-grid-community/styles/ag-theme-quartz.css",
               "src/assets/scss/config/modern/bootstrap.scss",
               "src/assets/scss/config/modern/app.scss",
-              "src/assets/scss/icons.scss",
-              "node_modules/ag-grid-community/styles/ag-grid.css",
-              "node_modules/ag-grid-community/styles/ag-theme-alpine.css"
+              "src/assets/scss/icons.scss"
             ],
             "scripts": [
               "node_modules/jquery/dist/jquery.min.js",

@@ -399,7 +399,7 @@ export class BomViewModalComponent implements OnInit {
             allColumnIds.push(col.field || col.colId);
           }
         });
-        allColumnIds.forEach(colId => this.gridApi.autoSizeColumn(colId, false));
+        allColumnIds.forEach(colId => this.gridApi.autoSizeColumns([colId], false));
         
         // Custom sizing for the tree column
         this.autoSizeTreeColumn();

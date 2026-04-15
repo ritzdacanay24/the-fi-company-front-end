@@ -8,12 +8,12 @@ export function _compressToEncodedURIComponent(api) {
 }
 
 export function _decompressFromEncodedURIComponent(data, params) {
-  if (data) {
+  if (data && params?.api) {
 
     let e = JSON.parse(JSLZString.decompressFromEncodedURIComponent(data));
 
     if (e?.columnState)
-      params.api!.applyColumnState({
+      params.api.applyColumnState({
         state: e?.columnState,
         applyOrder: true,
       });

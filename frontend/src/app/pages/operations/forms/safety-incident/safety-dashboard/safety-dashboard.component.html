@@ -6,7 +6,7 @@
       <div class="col-12">
         <div class="dashboard-header text-center py-4 px-3" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); border-radius: 15px;">
           <div class="d-flex align-items-center justify-content-center mb-3">
-            <div class="bg-white rounded-circle me-3 shadow d-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+            <div class="bg-white rounded-circle me-3 shadow-sm d-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
               <i class="mdi mdi-shield-check text-success" style="font-size: 2.5rem; line-height: 1;"></i>
             </div>
             <div class="text-white">
@@ -17,14 +17,14 @@
           
           <!-- Display Mode Button - Only show when not in display mode -->
           <div class="mb-3" *ngIf="showDisplayButton && !isDisplayMode">
-            <a [href]="'/safety-dashboard-display'" target="_blank" class="btn btn-light btn-lg shadow">
+            <a [href]="'/safety-dashboard-display'" target="_blank" class="btn btn-light btn-lg shadow-sm">
               <i class="mdi mdi-monitor me-2"></i>
               Open Display Mode
             </a>
           </div>          <!-- Key Metrics Row -->
           <div class="row text-center mt-4">
             <div class="col-md-3 col-lg-2">
-              <div class="metric-card bg-white rounded-lg p-3 mx-2 shadow h-100 text-center d-flex flex-column justify-content-center">
+              <div class="metric-card bg-white rounded-lg p-3 mx-2 shadow-sm h-100 text-center d-flex flex-column justify-content-center">
                 <div class="metric-value display-6 fw-bold" [ngClass]="getDaysSinceColor()">
                   {{metrics.daysSinceLastIncident}}
                 </div>
@@ -32,7 +32,7 @@
               </div>
             </div>
             <div class="col-md-3 col-lg-2">
-              <div class="metric-card bg-white rounded-lg p-3 mx-2 shadow h-100 text-center d-flex flex-column justify-content-center">
+              <div class="metric-card bg-white rounded-lg p-3 mx-2 shadow-sm h-100 text-center d-flex flex-column justify-content-center">
                 <div class="metric-value display-6 fw-bold text-success">
                   {{metrics.longestSafetyStreak}}
                 </div>
@@ -40,7 +40,7 @@
               </div>
             </div>
             <div class="col-md-3 col-lg-2">
-              <div class="metric-card bg-white rounded-lg p-3 mx-2 shadow h-100 text-center d-flex flex-column justify-content-center">
+              <div class="metric-card bg-white rounded-lg p-3 mx-2 shadow-sm h-100 text-center d-flex flex-column justify-content-center">
                 <div class="metric-value display-6 fw-bold text-primary">
                   {{metrics.totalIncidents}}
                 </div>
@@ -48,7 +48,7 @@
               </div>
             </div>
             <div class="col-md-3 col-lg-2">
-              <div class="metric-card bg-white rounded-lg p-3 mx-2 shadow h-100 text-center d-flex flex-column justify-content-center">
+              <div class="metric-card bg-white rounded-lg p-3 mx-2 shadow-sm h-100 text-center d-flex flex-column justify-content-center">
                 <div class="metric-value display-6 fw-bold text-info">
                   {{metrics.averageResolutionDays}}
                 </div>
@@ -56,7 +56,7 @@
               </div>
             </div>
             <div class="col-md-3 col-lg-2">
-              <div class="metric-card bg-white rounded-lg p-3 mx-2 shadow h-100 text-center d-flex flex-column justify-content-center">
+              <div class="metric-card bg-white rounded-lg p-3 mx-2 shadow-sm h-100 text-center d-flex flex-column justify-content-center">
                 <div class="d-flex align-items-center justify-content-center mb-2">
                   <span class="metric-value display-6 fw-bold" [ngClass]="getPerformanceColor()">
                     {{Math.abs(metrics.improvementPercentage).toFixed(1)}}%
@@ -67,7 +67,7 @@
               </div>
             </div>
             <div class="col-md-3 col-lg-2">
-              <div class="metric-card bg-white rounded-lg p-3 mx-2 shadow h-100 text-center d-flex flex-column justify-content-center">
+              <div class="metric-card bg-white rounded-lg p-3 mx-2 shadow-sm h-100 text-center d-flex flex-column justify-content-center">
                 <div class="d-flex align-items-center justify-content-center mb-2">
                   <i class="mdi mdi-trophy text-warning me-2" style="font-size: 1.5rem;"></i>
                   <span class="metric-value fs-4 fw-bold" [ngClass]="metrics.daysSinceLastIncident >= metrics.longestSafetyStreak ? 'text-success' : 'text-muted'">

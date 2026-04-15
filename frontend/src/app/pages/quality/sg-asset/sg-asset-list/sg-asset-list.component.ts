@@ -90,7 +90,7 @@ export class SgAssetListComponent implements OnInit {
       minWidth: 130,
       sortable: false,
       filter: false,
-      suppressMenu: true
+      suppressHeaderMenuButton: true
     },
     { field: 'id', headerName: 'ID', filter: 'agMultiColumnFilter' },
     { field: 'generated_SG_asset', headerName: 'Asset Number', filter: 'agMultiColumnFilter' },

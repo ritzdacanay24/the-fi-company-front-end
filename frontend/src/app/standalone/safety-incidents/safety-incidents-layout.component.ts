@@ -3,7 +3,7 @@ import { Component, HostListener } from '@angular/core';
 import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { filter } from 'rxjs/operators';
 
-interface NavItem {
+interface SafetyNavItem {
   label: string;
   route: string;
   icon: string;
@@ -17,14 +17,14 @@ interface MainSectionItem {
 }
 
 @Component({
-  selector: 'app-training-management-layout',
+  selector: 'app-safety-incidents-layout',
   standalone: true,
   imports: [CommonModule, RouterModule],
-  templateUrl: './training-management-layout.component.html',
-  styleUrl: './training-management-layout.component.scss',
+  templateUrl: './safety-incidents-layout.component.html',
+  styleUrl: './safety-incidents-layout.component.scss',
 })
-export class TrainingManagementLayoutComponent {
-  currentSectionLabel = 'Live Sessions';
+export class SafetyIncidentsLayoutComponent {
+  currentSectionLabel = 'Incident List';
   isSidebarOpen = false;
 
   readonly mainSections: MainSectionItem[] = [
@@ -50,36 +50,24 @@ export class TrainingManagementLayoutComponent {
     },
   ];
 
-  readonly navItems: NavItem[] = [
+  readonly navItems: SafetyNavItem[] = [
     {
-      label: 'Live Sessions',
-      route: 'live',
-      icon: 'las la-video',
-      subtitle: 'Monitor active sessions and open attendance flow quickly.',
+      label: 'Incident List',
+      route: 'list',
+      icon: 'las la-list',
+      subtitle: 'Review, filter, and manage all submitted safety incidents.',
     },
     {
-      label: 'Session Setup',
-      route: 'setup',
-      icon: 'las la-calendar-plus',
-      subtitle: 'Create or edit training sessions with schedule and roster details.',
+      label: 'Report Incident',
+      route: 'create',
+      icon: 'las la-plus-circle',
+      subtitle: 'Capture incident details, evidence, and immediate corrective actions.',
     },
     {
-      label: 'Manage Sessions',
-      route: 'manage',
-      icon: 'las la-tasks',
-      subtitle: 'Review sessions, status, and operational actions in one list.',
-    },
-    {
-      label: 'Templates',
-      route: 'templates',
-      icon: 'las la-layer-group',
-      subtitle: 'Maintain reusable training templates for standardized delivery.',
-    },
-    {
-      label: 'Reports',
-      route: 'reports',
-      icon: 'las la-chart-bar',
-      subtitle: 'Review attendance, facilitator performance, and compliance trends.',
+      label: 'Safety Dashboard',
+      route: 'dashboard',
+      icon: 'las la-chart-line',
+      subtitle: 'Monitor incident trends, severity, and closure performance.',
     },
   ];
 
@@ -132,14 +120,14 @@ export class TrainingManagementLayoutComponent {
   private updateSectionLabel(url: string): void {
     const matched = this.navItems.find(
       (item) =>
-        url.includes(`/training-management/${item.route}`) ||
-        url.includes(`/training/${item.route}`) ||
-        url.includes(`/standalone/training-management/${item.route}`),
+        url.includes(`/safety-incidents/${item.route}`) ||
+        url.includes(`/operations/forms/safety-incident/${item.route}`)
     );
-    this.currentSectionLabel = matched ? matched.label : 'Live Sessions';
+
+    this.currentSectionLabel = matched ? matched.label : 'Incident List';
   }
 
-  get currentSection(): NavItem {
+  get currentSection(): SafetyNavItem {
     return this.navItems.find((item) => item.label === this.currentSectionLabel) || this.navItems[0];
   }
 }

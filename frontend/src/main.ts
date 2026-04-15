@@ -4,7 +4,11 @@ import { platformBrowserDynamic } from "@angular/platform-browser-dynamic";
 import { AppModule } from "./app/app.module";
 import { environment } from "./environments/environment";
 
-import { LicenseManager } from "ag-grid-enterprise";
+import { ModuleRegistry } from "ag-grid-community";
+import { AllEnterpriseModule, LicenseManager } from "ag-grid-enterprise";
+
+ModuleRegistry.registerModules([AllEnterpriseModule]);
+
 LicenseManager.setLicenseKey(environment.agKey);
 
 if (environment.production) {

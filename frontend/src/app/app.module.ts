@@ -68,7 +68,10 @@ try {
 // NOTE: Removed quill-better-table due to compatibility issues
 // Tables can still be used via standard Quill table functionality
 
-provideGlobalGridOptions(agGridOptions);
+provideGlobalGridOptions({
+  theme: "legacy",
+  ...agGridOptions,
+});
 
 export function createTranslateLoader(http: HttpClient): any {
   return new TranslateHttpLoader(http, "assets/i18n/", ".json");

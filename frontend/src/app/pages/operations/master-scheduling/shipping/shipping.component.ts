@@ -666,14 +666,14 @@ export class ShippingComponent implements OnInit {
     // Show/hide columns based on active tab
     if (this.activeTab === 'priority') {
       // In priority tab, show priority-specific columns and hide all orders actions
-      if (rowDragColumn) this.gridApi.setColumnVisible(rowDragColumn, true);
-      if (priorityPositionColumn) this.gridApi.setColumnVisible(priorityPositionColumn, true);
-      if (priorityActionsColumn) this.gridApi.setColumnVisible(priorityActionsColumn, false);
+      if (rowDragColumn) this.gridApi.setColumnsVisible([rowDragColumn], true);
+      if (priorityPositionColumn) this.gridApi.setColumnsVisible([priorityPositionColumn], true);
+      if (priorityActionsColumn) this.gridApi.setColumnsVisible([priorityActionsColumn], false);
     } else {
       // In all orders tab, hide priority-specific columns and show priority actions
-      if (rowDragColumn) this.gridApi.setColumnVisible(rowDragColumn, false);
-      if (priorityPositionColumn) this.gridApi.setColumnVisible(priorityPositionColumn, true); // Keep visible to show priority numbers
-      if (priorityActionsColumn) this.gridApi.setColumnVisible(priorityActionsColumn, true);
+      if (rowDragColumn) this.gridApi.setColumnsVisible([rowDragColumn], false);
+      if (priorityPositionColumn) this.gridApi.setColumnsVisible([priorityPositionColumn], true); // Keep visible to show priority numbers
+      if (priorityActionsColumn) this.gridApi.setColumnsVisible([priorityActionsColumn], true);
     }
   }
 

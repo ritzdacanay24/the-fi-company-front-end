@@ -725,12 +725,7 @@ ng-select {
 //     font-weight: bold;
 //     background: repeating-linear-gradient(-45deg, #f3f3f3, #f3f3f3 11px, #e5e5e5 11px, #e5e5e5 22px) !important
 // }
-// @import "./components/plugin-overrides/_ag-grid";
-
-@import "ag-grid-community/styles/ag-grid.css";
-@import "ag-grid-community/styles/ag-theme-quartz.css";
-
-@import "../../plugins/ag-grid.scss";
+@import "../../plugins/_ag-grid.scss";
 
 @import "ngx-toastr/toastr";
 // @import 'ngx-toastr/toastr-bs5-alert';

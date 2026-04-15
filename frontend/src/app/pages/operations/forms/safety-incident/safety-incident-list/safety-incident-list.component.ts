@@ -11,14 +11,10 @@ import {
 } from "src/assets/js/util/jslzString";
 import { ActivatedRoute, Router } from "@angular/router";
 import { highlightRowView, autoSizeColumns } from "src/assets/js/util";
-import moment from "moment";
-import { DateRangeComponent } from "@app/shared/components/date-range/date-range.component";
-import { BreadcrumbItem } from "@app/shared/components/breadcrumb/breadcrumb.component";
 import { NAVIGATION_ROUTE } from "../safety-incident-constant";
 import { SafetyIncidentService } from "@app/core/api/operations/safety-incident/safety-incident.service";
 import { GridFiltersComponent } from "@app/shared/grid-filters/grid-filters.component";
 import { GridSettingsComponent } from "@app/shared/grid-settings/grid-settings.component";
-import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
 import { SafetyIncidentActionsCellRendererComponent } from "../safety-incident-actions-cell-renderer.component";
 
 @Component({
@@ -28,7 +24,6 @@ import { SafetyIncidentActionsCellRendererComponent } from "../safety-incident-a
     ReactiveFormsModule,
     NgSelectModule,
     AgGridModule,
-    DateRangeComponent,
     GridSettingsComponent,
     GridFiltersComponent,
   ],
@@ -46,14 +41,7 @@ export class SafetyIncidentListComponent implements OnInit {
 
   ngOnInit(): void {
     this.activatedRoute.queryParams.subscribe((params) => {
-      this.dateFrom = params["dateFrom"] || this.dateFrom;
-      this.dateTo = params["dateTo"] || this.dateTo;
-      this.dateRange = [this.dateFrom, this.dateTo];
-
       this.id = params["id"];
-      this.isAll = params["isAll"]
-        ? params["isAll"].toLocaleLowerCase() === "true"
-        : this.isAll;
       this.selectedViewType =
         params["selectedViewType"] || this.selectedViewType;
     });
@@ -163,23 +151,6 @@ export class SafetyIncidentListComponent implements OnInit {
 
   id = null;
 
-  isAll = true;
-
-  changeIsAll() {}
-
-  dateFrom = moment()
-    .subtract(1, "months")
-    .startOf("month")
-    .format("YYYY-MM-DD");
-  dateTo = moment().endOf("month").format("YYYY-MM-DD");
-  dateRange = [this.dateFrom, this.dateTo];
-
-  onChangeDate($event) {
-    this.dateFrom = $event["dateFrom"];
-    this.dateTo = $event["dateTo"];
-    this.getData();
-  }
-
   gridOptions: GridOptions = {
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
@@ -234,27 +205,16 @@ export class SafetyIncidentListComponent implements OnInit {
     try {
       this.gridApi?.showLoadingOverlay();
 
-      let params: any = {};
-      if (this.selectedViewType != "All") {
-        let status = this.selectedViewOptions.find(
-          (person) => person.name == this.selectedViewType
-        );
-        params = { active: status.value };
-      }
-
       this.data = await this.api.getList(
         this.selectedViewType,
-        this.dateFrom,
-        this.dateTo,
-        this.isAll
+        "",
+        "",
+        true
       );
 
       this.router.navigate(["."], {
         queryParams: {
           selectedViewType: this.selectedViewType,
-          isAll: this.isAll,
-          dateFrom: this.dateFrom,
-          dateTo: this.dateTo,
         },
         relativeTo: this.activatedRoute,
         queryParamsHandling: "merge",
@@ -266,11 +226,4 @@ export class SafetyIncidentListComponent implements OnInit {
     }
   }
 
-  breadcrumbItems(): BreadcrumbItem[] {
-    return [
-      { label: "Operations", link: "/dashboard/operations" },
-      { label: "Forms", link: "/operations/forms" },
-      { label: "Safety Incidents", active: true },
-    ];
-  }
 }

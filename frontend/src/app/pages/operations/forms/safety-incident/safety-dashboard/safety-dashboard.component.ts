@@ -552,11 +552,11 @@ export class SafetyDashboardComponent implements OnInit, OnDestroy {
   }
 
   private navigateToList(): void {
-    this.router.navigate(['/operations/forms/safety-incident/list']);
+    this.router.navigate(['/safety-incidents/list']);
   }
 
   private navigateToCreate(): void {
-    this.router.navigate(['/operations/forms/safety-incident/create']);
+    this.router.navigate(['/safety-incidents/create']);
   }
 
   private calculateResolutionTrend(): { month: string; avgDays: number }[] {

@@ -590,7 +590,7 @@ export class BomViewComponent implements OnInit, OnChanges {
           }
         });
         // Auto-size all normal columns
-        allColumnIds.forEach(colId => this.gridApi.autoSizeColumn(colId, false));
+        allColumnIds.forEach(colId => this.gridApi.autoSizeColumns([colId], false));
         
         // Custom sizing for the tree column
         this.autoSizeTreeColumn();
@@ -722,7 +722,7 @@ export class BomViewComponent implements OnInit, OnChanges {
                 allColumnIds.push(col.field || col.colId);
               }
             });
-            allColumnIds.forEach(colId => this.gridApi.autoSizeColumn(colId, false));
+            allColumnIds.forEach(colId => this.gridApi.autoSizeColumns([colId], false));
             
             // Custom sizing for the tree column to account for badges and icons
             this.autoSizeTreeColumn();
@@ -1164,6 +1164,6 @@ export class BomViewComponent implements OnInit, OnChanges {
     maxWidth = Math.min(maxWidth, 600); // Increased cap from 500px to 600px
 
     // Apply the calculated width
-    this.gridApi.setColumnWidth('ag-Grid-AutoColumn', maxWidth);
+    this.gridApi.setColumnWidths([{ key: 'ag-Grid-AutoColumn', newWidth: maxWidth }]);
   }
 }

@@ -1,40 +1,6 @@
 <div class="container-fluid">
-  <app-breadcrumb [items]="breadcrumbItems()"></app-breadcrumb>
-
   <div class="row justify-content-center">
     <div class="col-12">
-      
-      <!-- Page Header with Context -->
-      <div class="mb-4">
-        <div class="d-flex align-items-center justify-content-between mb-3">
-          <div class="d-flex align-items-center">
-            <div class="bg-warning bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
-              <i class="mdi mdi-shield-alert text-white fs-4"></i>
-            </div>
-            <div>
-              <h2 class="mb-1 text-warning">Safety Incident Management</h2>
-              <p class="text-muted mb-0">Track and manage workplace safety incidents, near misses, and hazard reports</p>
-            </div>
-          </div>
-          <div class="d-flex gap-2">
-            <button 
-              type="button" 
-              class="btn btn-success"
-              [routerLink]="['/operations/forms/safety-incident/dashboard']"
-              title="View safety metrics and dashboard">
-              <i class="mdi mdi-chart-line me-2"></i>Safety Dashboard
-            </button>
-            <button 
-              type="button" 
-              class="btn btn-warning"
-              [routerLink]="['/operations/forms/safety-incident/create']"
-              title="Create new safety incident report">
-              <i class="mdi mdi-plus me-2"></i>Report Incident
-            </button>
-          </div>
-        </div>
-      </div>
-
       <div class="card shadow-sm border-0">
         <div class="card-header">
           <div class="d-flex align-items-center flex-wrap gap-3">
@@ -44,22 +10,11 @@
                 [(ngModel)]="searchName" placeholder="Search incidents...">
               <i class="ri-search-2-line"></i>
             </div>
-            
-            <div class="form-icon">
-              <app-date-range (setDateRange)="onChangeDate($event)" [value]="dateRange" [disabled]="this.isAll"
-                [displayOptions]="true"></app-date-range>
-            </div>
-            
+
             <ng-select [dropdownPosition]="'bottom'" [searchable]="false" bindLabel="name" bindValue="name"
               [clearable]="false" [items]="selectedViewOptions" [(ngModel)]="selectedViewType" (change)="getData()"
               style="width:150px" [appendTo]="'body'">
             </ng-select>
-            
-            <div class="form-check form-switch form-switch-md">
-              <input class="form-check-input" type="checkbox" id="flexSwitchCheckDefault" [(ngModel)]="isAll"
-                (change)="getData()">
-              <label class="form-check-label" for="flexSwitchCheckDefault">Show All</label>
-            </div>
 
             <div class="ms-auto d-flex gap-2">
               <app-grid-settings [gridApi]="gridApi" [pageId]="pageId"></app-grid-settings>
@@ -84,12 +39,12 @@
                 </div>
                 <h4 class="text-body-emphasis mb-3">No open safety incidents found</h4>
                 <p class="text-muted mb-4">
-                  There are no open safety incidents matching your current filters or date range. Try adjusting your criteria or create a new incident report.
+                  There are no open safety incidents matching your current filters. Try adjusting your criteria or create a new incident report.
                 </p>
                 <button 
                   type="button" 
                   class="btn btn-warning"
-                  [routerLink]="['/operations/forms/safety-incident/create']">
+                  [routerLink]="['/safety-incidents/create']">
                   <i class="mdi mdi-plus me-2"></i>Report Incident
                 </button>
               </div>

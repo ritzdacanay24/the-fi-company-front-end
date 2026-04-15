@@ -6,7 +6,6 @@ import { AgGridModule } from "ag-grid-angular";
 import { ActivatedRoute, Router } from "@angular/router";
 import moment from "moment";
 import { NAVIGATION_ROUTE } from "../igt-constant";
-import { DateRangeComponent } from "@app/shared/components/date-range/date-range.component";
 import { SharedModule } from "@app/shared/shared.module";
 import { highlightRowView, autoSizeColumns } from "src/assets/js/util";
 import {
@@ -16,7 +15,6 @@ import {
 import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
 import { SerialNumberService } from "../services/serial-number.service";
 import { IgtAssetService } from "@app/pages/quality/igt/services/igt-asset.service";
-import type { ISetFilter } from "ag-grid-community";
 
 @Component({
   standalone: true,
@@ -25,7 +23,6 @@ import type { ISetFilter } from "ag-grid-community";
     ReactiveFormsModule,
     NgSelectModule,
     AgGridModule,
-    DateRangeComponent,
   ],
   selector: "app-igt-list",
   templateUrl: "./igt-list.component.html",
@@ -348,15 +345,9 @@ export class IgtListComponent implements OnInit {
   onInspectorFilter(inspector: string) {
     this.inspectorFilter = inspector;
     if (!this.gridApi) return;
-    const filterInstance = this.gridApi.getFilterInstance('inspectorName') as ISetFilter | null;
-    if (filterInstance && typeof filterInstance.setModel === 'function') {
-      if (inspector) {
-        filterInstance.setModel({ values: [inspector] });
-      } else {
-        filterInstance.setModel(null);
-      }
-      this.gridApi.onFilterChanged();
-    }
+    this.gridApi
+      .setColumnFilterModel('inspectorName', inspector ? { values: [inspector] } : null)
+      .then(() => this.gridApi.onFilterChanged());
   }
 
   statusFilter: string = "";
@@ -364,15 +355,9 @@ export class IgtListComponent implements OnInit {
   onStatusFilter(status: string) {
     this.statusFilter = status;
     if (!this.gridApi) return;
-    const filterInstance = this.gridApi.getFilterInstance('serial_status') as ISetFilter | null;
-    if (filterInstance && typeof filterInstance.setModel === 'function') {
-      if (status) {
-        filterInstance.setModel({ values: [status] });
-      } else {
-        filterInstance.setModel(null);
-      }
-      this.gridApi.onFilterChanged();
-    }
+    this.gridApi
+      .setColumnFilterModel('serial_status', status ? { values: [status] } : null)
+      .then(() => this.gridApi.onFilterChanged());
   }
 
   clearFilters() {

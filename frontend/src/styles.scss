@@ -317,3 +317,22 @@ $color-muted: #596066; // neutral text
     }
   }
 }
+
+// Keep AG Grid pagination controls in a single horizontal row on mobile.
+@media (max-width: 767.98px) {
+  [class*="ag-theme-"] .ag-paging-panel {
+    height: auto !important;
+    min-height: 44px;
+    padding: 6px 8px;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+  }
+
+  [class*="ag-theme-"] .ag-paging-panel > * {
+    flex: 0 0 auto;
+  }
+}

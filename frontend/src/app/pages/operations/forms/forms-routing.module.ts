@@ -85,10 +85,17 @@ const routes: Routes = [
       {
         title: "Safety Incident",
         path: "safety-incident",
-        loadChildren: () =>
-          import("./safety-incident/safety-incident-routing.module").then(
-            (m) => m.SafetyIncidentRoutingModule
-          ),
+        redirectTo: "/safety-incidents",
+        pathMatch: "full",
+      },
+      {
+        path: "safety-incident/:child",
+        redirectTo: "/safety-incidents/:child",
+        pathMatch: "full",
+      },
+      {
+        path: "safety-incident/**",
+        redirectTo: "/safety-incidents",
         runGuardsAndResolvers: "always",
       },
     ],
