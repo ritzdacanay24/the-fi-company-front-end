@@ -525,15 +525,16 @@ export class IgtTransferService {
 
       const signOffY = y + 24;
       const signOffWidth = contentWidth;
-      const signOffHeight = 94;
-      const signAreaWidth = Math.floor(signOffWidth * 0.58);
-      const rightSectionX = leftX + signAreaWidth + 22;
-      const rightSectionMaxX = leftX + signOffWidth - 14;
+      const signOffHeight = 96;
+      const signAreaWidth = Math.floor(signOffWidth * 0.54);
+      const rightSectionX = leftX + signAreaWidth + 34;
+      const rightSectionMaxX = leftX + signOffWidth - 22;
       const fieldLabelWidth = 82;
-      const fieldLineWidth = Math.max(96, rightSectionMaxX - (rightSectionX + fieldLabelWidth));
-      const signatureLabelY = signOffY + 32;
-      const signatureTextY = signatureLabelY + 12;
-      const signatureLineY = signOffY + 66;
+      const rawFieldLineWidth = rightSectionMaxX - (rightSectionX + fieldLabelWidth);
+      const fieldLineWidth = Math.max(96, Math.min(158, rawFieldLineWidth));
+      const signatureLabelY = signOffY + 30;
+      const signatureLineY = signOffY + 70;
+      const signatureTextY = signatureLineY - 20;
       const signatureValue = (printedName || 'Authorized User').trim();
 
       doc
@@ -546,15 +547,15 @@ export class IgtTransferService {
       doc.fillColor('#000000').font('Helvetica').fontSize(10).text('Eyefi Signature', leftX + 14, signatureLabelY);
       doc.moveTo(leftX + 14, signatureLineY).lineTo(leftX + signAreaWidth - 8, signatureLineY).lineWidth(0.9).stroke('#6f6f6f');
 
-      doc.fillColor('#163a70').font('Helvetica-Oblique').fontSize(17).text(signatureValue, leftX + 20, signatureTextY, {
+      doc.fillColor('#163a70').font('Times-Italic').fontSize(15).text(signatureValue, leftX + 20, signatureTextY, {
         width: signAreaWidth - 30,
-        characterSpacing: 0.25,
+        characterSpacing: 0.15,
       });
 
       doc.fillColor('#64748b').font('Helvetica-Oblique').fontSize(8).text('Electronically signed and timestamped', leftX + 14, signatureLineY + 8);
 
-      const printNameY = signOffY + 38;
-      const dateY = signOffY + 63;
+      const printNameY = signOffY + 40;
+      const dateY = signOffY + 65;
 
       doc.fillColor('#111827').font('Helvetica-Bold').fontSize(9).text('Print Name', rightSectionX, printNameY, {
         width: fieldLabelWidth,
