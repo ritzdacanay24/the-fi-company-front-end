@@ -11,6 +11,12 @@ interface NavItem {
   subtitle: string;
 }
 
+interface MainSectionItem {
+  label: string;
+  route: string;
+  icon: string;
+}
+
 @Component({
   selector: 'app-unique-label-generator-layout',
   standalone: true,
@@ -21,6 +27,29 @@ interface NavItem {
 export class UniqueLabelGeneratorLayoutComponent {
   currentSectionLabel = 'Create Batch';
   isSidebarOpen = false;
+
+  readonly mainSections: MainSectionItem[] = [
+    {
+      label: 'Operations',
+      route: '/operations',
+      icon: 'las la-cogs',
+    },
+    {
+      label: 'Quality',
+      route: '/quality',
+      icon: 'las la-clipboard-check',
+    },
+    {
+      label: 'Field Service',
+      route: '/field-service',
+      icon: 'las la-tools',
+    },
+    {
+      label: 'Admin',
+      route: '/admin',
+      icon: 'las la-user-shield',
+    },
+  ];
 
   readonly navItems: NavItem[] = [
     {
@@ -70,6 +99,10 @@ export class UniqueLabelGeneratorLayoutComponent {
 
   toggleSidebar(): void {
     this.isSidebarOpen = !this.isSidebarOpen;
+  }
+
+  isMainSectionActive(route: string): boolean {
+    return this.router.url.startsWith(route);
   }
 
   closeSidebar(): void {

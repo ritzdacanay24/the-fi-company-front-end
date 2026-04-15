@@ -13,6 +13,19 @@
     <a class="btn btn-sm btn-outline-secondary" routerLink="/menu" target="_self">Back to Main Menu</a>
   </header>
 
+  <nav class="ulg-section-rail" aria-label="Main Sections">
+    <a
+      *ngFor="let section of mainSections"
+      class="ulg-rail-link"
+      [routerLink]="section.route"
+      [class.active]="isMainSectionActive(section.route)"
+      [attr.title]="section.label"
+    >
+      <i [class]="section.icon"></i>
+      <span class="visually-hidden">{{ section.label }}</span>
+    </a>
+  </nav>
+
   <aside class="app-menu navbar-menu ulg-sidebar" [class.open]="isSidebarOpen">
     <div class="navbar-brand-box">
       <a routerLink="/standalone/unique-label-generator/create" class="logo logo-dark">
@@ -22,6 +35,10 @@
     </div>
 
     <div class="h-100 d-flex flex-column">
+      <div class="ulg-nav-group">
+        <small class="ulg-nav-group-title">Unique Label Generator</small>
+      </div>
+
       <nav class="nav flex-column py-2">
         <a
           *ngFor="let item of navItems"
