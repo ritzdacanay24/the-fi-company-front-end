@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 
-import express from 'express';
+import express, { NextFunction, Request, Response } from 'express';
 import { Logger, RequestMethod, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { join } from 'path';
@@ -9,6 +9,17 @@ import { GlobalHttpExceptionFilter } from './nest/filters/http-exception.filter'
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Keep compatibility with legacy proxy prefixes that still forward to /api.
+  // This intentionally complements the frontend interceptor's /apiV2 normalization.
+  app.use((req: Request, _res: Response, next: NextFunction) => {
+    if (req.url === '/api/apiV2' || req.url.startsWith('/api/apiV2/')) {
+      req.url = req.url.replace(/^\/api\/apiV2/, '/apiV2');
+    } else if (req.url === '/api' || req.url.startsWith('/api/')) {
+      req.url = req.url.replace(/^\/api/, '/apiV2');
+    }
+    next();
+  });
 
   app.setGlobalPrefix('apiV2', {
     exclude: [
