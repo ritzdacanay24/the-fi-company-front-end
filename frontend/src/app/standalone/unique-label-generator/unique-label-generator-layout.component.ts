@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, HostListener } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 import { RouterModule } from '@angular/router';
 import { filter } from 'rxjs/operators';
@@ -20,6 +20,7 @@ interface NavItem {
 })
 export class UniqueLabelGeneratorLayoutComponent {
   currentSectionLabel = 'Create Batch';
+  isSidebarOpen = false;
 
   readonly navItems: NavItem[] = [
     {
@@ -49,6 +50,7 @@ export class UniqueLabelGeneratorLayoutComponent {
   ];
 
   constructor(private readonly router: Router) {
+    this.syncSidebarForViewport();
     this.updateSectionLabel(this.router.url);
 
     this.router.events
@@ -56,7 +58,37 @@ export class UniqueLabelGeneratorLayoutComponent {
       .subscribe((event) => {
         const navEvent = event as NavigationEnd;
         this.updateSectionLabel(navEvent.urlAfterRedirects);
+        if (!this.isDesktopViewport) {
+          this.isSidebarOpen = false;
+        }
       });
+  }
+
+  get isDesktopViewport(): boolean {
+    return typeof window !== 'undefined' && window.innerWidth >= 992;
+  }
+
+  toggleSidebar(): void {
+    this.isSidebarOpen = !this.isSidebarOpen;
+  }
+
+  closeSidebar(): void {
+    this.isSidebarOpen = false;
+  }
+
+  onNavClick(): void {
+    if (!this.isDesktopViewport) {
+      this.closeSidebar();
+    }
+  }
+
+  @HostListener('window:resize')
+  onViewportResize(): void {
+    this.syncSidebarForViewport();
+  }
+
+  private syncSidebarForViewport(): void {
+    this.isSidebarOpen = this.isDesktopViewport;
   }
 
   private updateSectionLabel(url: string): void {

@@ -1,45 +1,16 @@
 <div class="card border-0 shadow-sm">
-  <div class="card-header bg-white">
-    <h3 class="h6 mb-0">Admin Settings</h3>
-  </div>
-  <div class="card-body">
-    <form [formGroup]="form" (ngSubmit)="save()">
-      <div class="row g-3">
-        <div class="col-md-4">
-          <label class="form-label">Default Quantity Printed</label>
-          <input class="form-control" type="number" min="1" max="20" formControlName="quantity_printed_default" />
-        </div>
-        <div class="col-md-8">
-          <label class="form-label">Label Template Name</label>
-          <input class="form-control" type="text" formControlName="label_template_name" />
-        </div>
-        <div class="col-12">
-          <div class="form-check">
-            <input class="form-check-input" id="allowReprint" type="checkbox" formControlName="allow_reprint" />
-            <label class="form-check-label" for="allowReprint">Allow Reprint</label>
-          </div>
-        </div>
-      </div>
-
-      <div class="d-flex justify-content-end mt-3">
-        <button class="btn btn-primary" type="submit" [disabled]="isSaving">{{ isSaving ? 'Saving...' : 'Save Settings' }}</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<div class="card border-0 shadow-sm mt-3">
   <div class="card-header bg-white d-flex justify-content-between align-items-center gap-2 flex-wrap">
     <h3 class="h6 mb-0">Batch Lifecycle Management</h3>
     <div class="d-flex align-items-center gap-2 flex-wrap">
-      <input class="form-control form-control-sm" style="width: 140px;" type="text" [(ngModel)]="actorName" placeholder="Actor name" />
-      <select class="form-select form-select-sm" style="width: 140px;" [(ngModel)]="lifecycleStatus" (change)="loadBatches()">
+      <input class="form-control" style="width: 160px;" type="text" [(ngModel)]="actorName" placeholder="Actor name" />
+      <input class="form-control" style="width: 240px;" type="text" [(ngModel)]="searchTerm" placeholder="Search batches..." />
+      <select class="form-select" style="width: 160px;" [(ngModel)]="lifecycleStatus" (change)="loadBatches()">
         <option value="active">Active</option>
         <option value="archived">Archived</option>
         <option value="deleted">Deleted</option>
         <option value="all">All</option>
       </select>
-      <button class="btn btn-sm btn-outline-secondary" (click)="loadBatches()" [disabled]="isLoadingBatches">Refresh</button>
+      <button class="btn btn-outline-secondary" (click)="loadBatches()" [disabled]="isLoadingBatches">Refresh</button>
     </div>
   </div>
   <div class="card-body">
@@ -59,7 +30,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let row of batches">
+          <tr *ngFor="let row of filteredBatches">
             <td>{{ row.id }}</td>
             <td><span class="badge bg-secondary text-uppercase">{{ row.status }}</span></td>
             <td>{{ row.source_type }}</td>
@@ -84,8 +55,8 @@
               </div>
             </td>
           </tr>
-          <tr *ngIf="!isLoadingBatches && batches.length === 0">
-            <td colspan="9" class="text-center text-muted">No batches for selected status.</td>
+          <tr *ngIf="!isLoadingBatches && filteredBatches.length === 0">
+            <td colspan="9" class="text-center text-muted">No batches for selected status/search.</td>
           </tr>
         </tbody>
       </table>

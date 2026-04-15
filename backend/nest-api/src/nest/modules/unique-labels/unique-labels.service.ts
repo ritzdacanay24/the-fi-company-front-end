@@ -653,14 +653,23 @@ export class UniqueLabelsService {
       const weekUsage = await this.mysqlService.query<RowDataPacket[]>(
         `
           SELECT
-            year_num,
-            week_num,
-            last_sequence,
-            (999 - last_sequence) AS remaining
-          FROM unique_label_weekly_sequences
-          ORDER BY year_num DESC, week_num DESC
+            ws.year_num,
+            ws.week_num,
+            ws.last_sequence,
+            (999 - ws.last_sequence) AS remaining
+          FROM unique_label_weekly_sequences ws
+          INNER JOIN (
+            SELECT DISTINCT year_num, week_num
+            FROM unique_label_identifiers
+            WHERE created_at >= DATE_SUB(NOW(), INTERVAL :days DAY)
+              AND status != 'deleted'
+          ) filtered_weeks
+            ON filtered_weeks.year_num = ws.year_num
+           AND filtered_weeks.week_num = ws.week_num
+          ORDER BY ws.year_num DESC, ws.week_num DESC
           LIMIT 8
         `,
+        { days },
       );
 
       return {

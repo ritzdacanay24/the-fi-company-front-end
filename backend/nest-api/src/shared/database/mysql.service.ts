@@ -14,6 +14,7 @@ export class MysqlService implements OnModuleDestroy {
       database: process.env.DB_NAME || 'eyefidb',
       user: process.env.DB_USER || 'change_me',
       password: process.env.DB_PASSWORD || 'change_me',
+      dateStrings: ['DATE', 'DATETIME', 'TIMESTAMP'],
       namedPlaceholders: true,
       waitForConnections: true,
       connectionLimit: 10,

@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, TemplateRef, inject } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { NgbModal, NgbModalModule, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrService } from 'ngx-toastr';
 import {
@@ -7,6 +8,7 @@ import {
   UniqueLabelGeneratorApiService,
   UniqueLabelIdentifier,
 } from './unique-label-generator-api.service';
+import { printZplToZebra } from './unique-label-zpl.util';
 
 interface BatchDetails {
   batch: Record<string, unknown>;
@@ -16,7 +18,7 @@ interface BatchDetails {
 @Component({
   selector: 'app-unique-label-history',
   standalone: true,
-  imports: [CommonModule, NgbModalModule],
+  imports: [CommonModule, FormsModule, NgbModalModule],
   templateUrl: './unique-label-history.component.html',
 })
 export class UniqueLabelHistoryComponent implements OnInit {
@@ -27,9 +29,34 @@ export class UniqueLabelHistoryComponent implements OnInit {
   isLoading = false;
   isLoadingDetails = false;
   isReprintEnabled = true;
+  searchTerm = '';
   batches: UniqueLabelBatch[] = [];
   selectedBatchDetails: BatchDetails | null = null;
   private detailsModalRef: NgbModalRef | null = null;
+
+  get filteredBatches(): UniqueLabelBatch[] {
+    const term = this.searchTerm.trim().toLowerCase();
+    if (!term) {
+      return this.batches;
+    }
+
+    return this.batches.filter((batch) => {
+      const searchable = [
+        String(batch.id),
+        batch.source_type,
+        batch.work_order_number || '',
+        batch.part_number,
+        String(batch.requested_quantity),
+        String(batch.generated_count),
+        batch.created_by_name,
+        batch.created_at,
+      ]
+        .join(' ')
+        .toLowerCase();
+
+      return searchable.includes(term);
+    });
+  }
 
   async ngOnInit(): Promise<void> {
     await Promise.all([this.loadBatches(), this.loadSettings()]);
@@ -110,6 +137,44 @@ export class UniqueLabelHistoryComponent implements OnInit {
     const details = this.selectedBatchDetails;
     const batchId = String(details?.batch?.['id'] ?? '-');
     this.openPrintPopup([item], `Reprint Label ${item.unique_identifier}`, batchId);
+  }
+
+  async printBatchZpl(): Promise<void> {
+    if (!this.isReprintEnabled) {
+      this.toastr.warning('Reprint is currently disabled in admin settings.');
+      return;
+    }
+
+    const details = this.selectedBatchDetails;
+    if (!details || !details.identifiers.length) {
+      this.toastr.warning('No identifiers available for Zebra print.');
+      return;
+    }
+
+    try {
+      await printZplToZebra(details.identifiers);
+      this.toastr.success('Batch labels sent to default Zebra printer.');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to print batch labels.';
+      this.toastr.error(message);
+      console.error(error);
+    }
+  }
+
+  async printIdentifierZpl(item: UniqueLabelIdentifier): Promise<void> {
+    if (!this.isReprintEnabled) {
+      this.toastr.warning('Reprint is currently disabled in admin settings.');
+      return;
+    }
+
+    try {
+      await printZplToZebra([item]);
+      this.toastr.success(`Label ${item.unique_identifier} sent to default Zebra printer.`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : `Failed to print ${item.unique_identifier}.`;
+      this.toastr.error(message);
+      console.error(error);
+    }
   }
 
   private openPrintPopup(items: UniqueLabelIdentifier[], title: string, batchId: string): void {

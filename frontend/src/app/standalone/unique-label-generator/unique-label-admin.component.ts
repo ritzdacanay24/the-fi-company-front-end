@@ -18,20 +18,14 @@ export class UniqueLabelAdminComponent implements OnInit {
   private readonly modalService = inject(NgbModal);
   private readonly toastr = inject(ToastrService);
 
-  isSaving = false;
   isLoadingBatches = false;
   isSavingEdit = false;
   lifecycleStatus: 'active' | 'archived' | 'deleted' | 'all' = 'active';
+  searchTerm = '';
   actorName = 'Admin';
   batches: UniqueLabelBatch[] = [];
   selectedBatchId: number | null = null;
   private editModalRef: NgbModalRef | null = null;
-
-  readonly form = this.fb.group({
-    quantity_printed_default: this.fb.nonNullable.control(2, [Validators.required, Validators.min(1), Validators.max(20)]),
-    label_template_name: this.fb.nonNullable.control('default-2x4', [Validators.required, Validators.maxLength(64)]),
-    allow_reprint: this.fb.nonNullable.control(true),
-  });
 
   readonly editForm = this.fb.group({
     source_type: this.fb.nonNullable.control<'WO' | 'MANUAL'>('MANUAL'),
@@ -39,43 +33,32 @@ export class UniqueLabelAdminComponent implements OnInit {
     part_number: this.fb.nonNullable.control('', [Validators.required, Validators.maxLength(128)]),
   });
 
-  async ngOnInit(): Promise<void> {
-    try {
-      const response = await this.api.getSettings();
-      if (response.success && response.data) {
-        this.form.patchValue(response.data);
-      }
-    } catch (error) {
-      this.toastr.error('Failed to load admin settings.');
-      console.error(error);
+  get filteredBatches(): UniqueLabelBatch[] {
+    const term = this.searchTerm.trim().toLowerCase();
+    if (!term) {
+      return this.batches;
     }
 
-    await this.loadBatches();
+    return this.batches.filter((batch) => {
+      const searchable = [
+        String(batch.id),
+        batch.status,
+        batch.source_type,
+        batch.work_order_number || '',
+        batch.part_number,
+        String(batch.requested_quantity),
+        batch.created_by_name,
+        batch.created_at,
+      ]
+        .join(' ')
+        .toLowerCase();
+
+      return searchable.includes(term);
+    });
   }
 
-  async save(): Promise<void> {
-    this.form.markAllAsTouched();
-    if (this.form.invalid) {
-      this.toastr.warning('Please fix validation errors before saving.');
-      return;
-    }
-
-    this.isSaving = true;
-    try {
-      const response = await this.api.updateSettings(this.form.getRawValue());
-      if (!response.success || !response.data) {
-        this.toastr.error(response.message || 'Failed to save settings.');
-        return;
-      }
-
-      this.form.patchValue(response.data);
-      this.toastr.success('Settings saved.');
-    } catch (error) {
-      this.toastr.error('Failed to save settings.');
-      console.error(error);
-    } finally {
-      this.isSaving = false;
-    }
+  async ngOnInit(): Promise<void> {
+    await this.loadBatches();
   }
 
   async loadBatches(): Promise<void> {

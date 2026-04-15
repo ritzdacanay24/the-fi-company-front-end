@@ -1,8 +1,10 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AuthenticationService } from '../../core/services/auth.service';
 import { ToastrService } from 'ngx-toastr';
-import { UniqueLabelGeneratorApiService } from './unique-label-generator-api.service';
+import { UniqueLabelGeneratorApiService, UniqueLabelIdentifier } from './unique-label-generator-api.service';
+import { printZplToZebra } from './unique-label-zpl.util';
 
 @Component({
   selector: 'app-unique-label-generator',
@@ -14,6 +16,7 @@ import { UniqueLabelGeneratorApiService } from './unique-label-generator-api.ser
 export class UniqueLabelGeneratorComponent {
   private readonly fb = inject(FormBuilder);
   private readonly api = inject(UniqueLabelGeneratorApiService);
+  private readonly authenticationService = inject(AuthenticationService);
   private readonly toastr = inject(ToastrService);
 
   readonly sourceTypes = [
@@ -31,15 +34,13 @@ export class UniqueLabelGeneratorComponent {
 
   isLoadingWo = false;
   isGenerating = false;
+  isAuthenticatedCreator = false;
   generatedBatchId: number | null = null;
-  generatedIdentifiers: Array<{
-    unique_identifier: string;
-    part_number: string;
-    work_order_number: string | null;
-    quantity_printed: number;
-  }> = [];
+  generatedIdentifiers: UniqueLabelIdentifier[] = [];
 
   constructor() {
+    this.prefillCreatedByFromAuthenticatedUser();
+
     this.form.controls.source_type.valueChanges.subscribe((value) => {
       if (value === 'MANUAL') {
         this.form.controls.work_order_number.setValue('');
@@ -50,6 +51,43 @@ export class UniqueLabelGeneratorComponent {
 
   get isWorkOrderMode(): boolean {
     return this.form.controls.source_type.value === 'WO';
+  }
+
+  private prefillCreatedByFromAuthenticatedUser(): void {
+    const currentUser = this.authenticationService.currentUserValue;
+    const resolvedName = this.resolveDisplayName(currentUser);
+
+    if (!resolvedName) {
+      return;
+    }
+
+    this.form.controls.created_by_name.setValue(resolvedName);
+    this.isAuthenticatedCreator = true;
+  }
+
+  private resolveDisplayName(user: Record<string, unknown> | null | undefined): string {
+    if (!user) {
+      return '';
+    }
+
+    const fullName = String(user['full_name'] || '').trim();
+    if (fullName) {
+      return fullName;
+    }
+
+    const firstName = String(user['first_name'] || '').trim();
+    const lastName = String(user['last_name'] || '').trim();
+    const combinedName = `${firstName} ${lastName}`.trim();
+    if (combinedName) {
+      return combinedName;
+    }
+
+    const username = String(user['username'] || '').trim();
+    if (username) {
+      return username;
+    }
+
+    return String(user['name'] || '').trim();
   }
 
   async lookupWorkOrder(): Promise<void> {
@@ -169,5 +207,21 @@ export class UniqueLabelGeneratorComponent {
       </html>
     `);
     popup.document.close();
+  }
+
+  async printGeneratedZpl(): Promise<void> {
+    if (!this.generatedIdentifiers.length) {
+      this.toastr.warning('No labels available for Zebra print.');
+      return;
+    }
+
+    try {
+      await printZplToZebra(this.generatedIdentifiers);
+      this.toastr.success('Labels sent to default Zebra printer.');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to print Zebra labels.';
+      this.toastr.error(message);
+      console.error(error);
+    }
   }
 }

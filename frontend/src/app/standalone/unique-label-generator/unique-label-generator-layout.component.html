@@ -1,16 +1,19 @@
-<div id="layout-wrapper" class="ulg-shell">
+<div id="layout-wrapper" class="ulg-shell" [class.sidebar-open]="isSidebarOpen">
   <header class="ulg-topbar d-flex align-items-center justify-content-between px-3 px-md-4">
     <div class="d-flex align-items-center gap-2">
+      <button class="btn btn-outline-secondary ulg-sidebar-toggle" type="button" (click)="toggleSidebar()">
+        <i class="las la-bars"></i>
+      </button>
       <div class="ulg-logo-badge">ULG</div>
       <div>
         <h1 class="h6 mb-0">Unique Label Generator</h1>
-        <small class="text-muted">Standalone Module Shell</small>
+        <small class="text-muted">Batch Creation, Reprint, and Sequence Tracking</small>
       </div>
     </div>
     <a class="btn btn-sm btn-outline-secondary" routerLink="/menu" target="_self">Back to Main Menu</a>
   </header>
 
-  <aside class="app-menu navbar-menu ulg-sidebar">
+  <aside class="app-menu navbar-menu ulg-sidebar" [class.open]="isSidebarOpen">
     <div class="navbar-brand-box">
       <a routerLink="/standalone/unique-label-generator/create" class="logo logo-dark">
         <span class="logo-sm">ULG</span>
@@ -25,6 +28,7 @@
           class="nav-link d-flex align-items-center gap-2"
           [routerLink]="item.route"
           routerLinkActive="active"
+          (click)="onNavClick()"
         >
           <i [class]="item.icon"></i>
           <span>{{ item.label }}</span>
@@ -32,6 +36,8 @@
       </nav>
     </div>
   </aside>
+
+  <div class="ulg-sidebar-backdrop" *ngIf="isSidebarOpen && !isDesktopViewport" (click)="closeSidebar()"></div>
 
   <div class="main-content">
     <div class="page-content">

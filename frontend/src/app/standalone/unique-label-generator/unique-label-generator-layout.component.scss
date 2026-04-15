@@ -1,4 +1,5 @@
 .ulg-shell {
+  position: relative;
   min-height: 100vh;
   background: #f3f6f9;
 }
@@ -23,13 +24,40 @@
   justify-content: center;
 }
 
+.ulg-sidebar-toggle {
+  display: none;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+}
+
+.ulg-sidebar-toggle i {
+  font-size: 1.15rem;
+}
+
 .ulg-sidebar {
+  position: fixed;
+  left: 0;
   width: 250px;
   background: #1f3b73;
   color: #fff;
   top: 70px;
   height: calc(100vh - 70px);
+  overflow-y: auto;
   padding-top: 0;
+  z-index: 1003;
+}
+
+.ulg-sidebar-backdrop {
+  position: fixed;
+  top: 70px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.35);
+  z-index: 1002;
 }
 
 .ulg-sidebar .navbar-brand-box {
@@ -112,17 +140,29 @@
 }
 
 @media (max-width: 991.98px) {
+  .ulg-sidebar-toggle {
+    display: inline-flex;
+  }
+
   .ulg-topbar,
   .ulg-shell .main-content {
     margin-left: 0;
   }
 
   .ulg-sidebar {
-    position: static;
-    top: auto;
-    height: auto;
-    width: 100%;
+    position: fixed;
+    top: 70px;
+    left: 0;
+    width: min(280px, 85vw);
+    height: calc(100vh - 70px);
     min-height: auto;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  }
+
+  .ulg-sidebar.open {
+    transform: translateX(0);
   }
 
   .ulg-sidebar .navbar-brand-box {
