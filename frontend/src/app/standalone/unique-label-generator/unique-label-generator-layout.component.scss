@@ -181,7 +181,7 @@
 }
 
 .module-title .h3 {
-  color: #5f6f82;
+  color: #1f3b73;
   font-weight: 700;
   font-size: 2rem;
 }
@@ -189,16 +189,21 @@
 .module-title-icon {
   width: 58px;
   height: 58px;
-  background: #6c7f92;
+  background: linear-gradient(135deg, #1f3b73 0%, #365892 100%);
   color: #fff;
   font-size: 1.45rem;
   flex-shrink: 0;
+  box-shadow: 0 0 0 3px rgba(10, 179, 156, 0.2);
 }
 
 .module-title {
   background: transparent;
   border: 0;
   box-shadow: none;
+}
+
+.module-title .text-muted {
+  color: #5a6c85 !important;
 }
 
 @media (max-width: 991.98px) {

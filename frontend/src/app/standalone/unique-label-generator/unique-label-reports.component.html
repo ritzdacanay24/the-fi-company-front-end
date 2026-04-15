@@ -9,10 +9,10 @@
   </div>
   <div class="card-body" *ngIf="totals">
     <div class="row g-2">
-      <div class="col-md-3"><div class="border rounded p-2"><small class="text-muted">Total Batches</small><div class="h5 mb-0">{{ totals.total_batches }}</div></div></div>
-      <div class="col-md-3"><div class="border rounded p-2"><small class="text-muted">Total Labels</small><div class="h5 mb-0">{{ totals.total_labels }}</div></div></div>
-      <div class="col-md-3"><div class="border rounded p-2"><small class="text-muted">WO Batches</small><div class="h5 mb-0">{{ totals.wo_batches }}</div></div></div>
-      <div class="col-md-3"><div class="border rounded p-2"><small class="text-muted">Manual Batches</small><div class="h5 mb-0">{{ totals.manual_batches }}</div></div></div>
+      <div class="col-md-3"><div class="border rounded p-2"><small class="text-muted">Total Batches</small><div class="h5 mb-0">{{ totals.total_batches ?? 0 }}</div></div></div>
+      <div class="col-md-3"><div class="border rounded p-2"><small class="text-muted">Total Labels</small><div class="h5 mb-0">{{ totals.total_labels ?? 0 }}</div></div></div>
+      <div class="col-md-3"><div class="border rounded p-2"><small class="text-muted">WO Batches</small><div class="h5 mb-0">{{ totals.wo_batches ?? 0 }}</div></div></div>
+      <div class="col-md-3"><div class="border rounded p-2"><small class="text-muted">Manual Batches</small><div class="h5 mb-0">{{ totals.manual_batches ?? 0 }}</div></div></div>
     </div>
   </div>
 </div>
