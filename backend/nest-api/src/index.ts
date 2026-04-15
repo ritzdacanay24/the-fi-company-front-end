@@ -1,7 +1,9 @@
 import 'reflect-metadata';
 
+import express from 'express';
 import { Logger, RequestMethod, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { join } from 'path';
 import { AppModule } from './nest/app.module';
 import { GlobalHttpExceptionFilter } from './nest/filters/http-exception.filter';
 
@@ -24,6 +26,8 @@ async function bootstrap() {
     origin: corsOrigins.length > 0 ? corsOrigins : true,
     credentials: true,
   });
+
+  app.use('/uploads', express.static(join(process.cwd(), 'uploads')));
 
   app.useGlobalPipes(
     new ValidationPipe({

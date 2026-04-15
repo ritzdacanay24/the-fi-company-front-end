@@ -235,7 +235,7 @@ export class ULLabelsReportComponent implements OnInit {
   loadULLabels(): void {
     this.isLoading = true;
 
-    this.ulLabelService.getAllULLabels().subscribe({
+    this.ulLabelService.listLabels().subscribe({
       next: (response) => {
         this.isLoading = false;
         if (response.success) {
@@ -312,7 +312,7 @@ export class ULLabelsReportComponent implements OnInit {
   }
 
   exportData(): void {
-    this.ulLabelService.exportULLabels().subscribe({
+    this.ulLabelService.exportLabels().subscribe({
       next: (blob) => {
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -528,7 +528,7 @@ export class ULLabelsReportComponent implements OnInit {
     const action = newStatus === 'active' ? 'enable' : 'disable';
     
     if (confirm(`Are you sure you want to ${action} this UL label?`)) {
-      this.ulLabelService.updateULLabelStatus(idNumber, newStatus as 'active' | 'inactive').subscribe({
+      this.ulLabelService.updateLabelStatus(idNumber, newStatus as 'active' | 'inactive').subscribe({
         next: (response) => {
           this.toastr.success(`UL label ${action}d successfully`);
           this.loadULLabels(); // Reload the data
@@ -551,7 +551,7 @@ export class ULLabelsReportComponent implements OnInit {
     }
 
     if (confirm('Are you sure you want to delete this UL label? This action cannot be undone.')) {
-      this.ulLabelService.deleteULLabel(idNumber).subscribe({
+      this.ulLabelService.deleteLabel(idNumber).subscribe({
         next: (response) => {
           this.toastr.success('UL label deleted successfully');
           this.loadULLabels(); // Reload the data

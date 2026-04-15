@@ -181,7 +181,7 @@ export class ULLabelMockService {
   private nextUsageId = 6;
 
   // UL Labels CRUD Operations
-  getULLabels(): Observable<{ success: boolean; data: ULLabel[]; message: string }> {
+  listLabels(): Observable<{ success: boolean; data: ULLabel[]; message: string }> {
     return of({
       success: true,
       data: [...this.mockLabels],
@@ -189,7 +189,7 @@ export class ULLabelMockService {
     }).pipe(delay(500)); // Simulate network delay
   }
 
-  getULLabel(id: number): Observable<{ success: boolean; data: ULLabel; message: string }> {
+  getLabelById(id: number): Observable<{ success: boolean; data: ULLabel; message: string }> {
     const label = this.mockLabels.find(l => l.id === id);
     if (label) {
       return of({
@@ -202,7 +202,7 @@ export class ULLabelMockService {
     }
   }
 
-  createULLabel(label: Partial<ULLabel>): Observable<{ success: boolean; data: { id: number }; message: string }> {
+  createLabel(label: Partial<ULLabel>): Observable<{ success: boolean; data: { id: number }; message: string }> {
     // Check for duplicate UL number
     if (this.mockLabels.some(l => l.ul_number === label.ul_number)) {
       return throwError(() => ({ success: false, error: 'DUPLICATE_ENTRY', message: 'UL Number already exists' }));
@@ -233,7 +233,7 @@ export class ULLabelMockService {
     }).pipe(delay(800));
   }
 
-  updateULLabel(id: number, label: Partial<ULLabel>): Observable<{ success: boolean; data: { id: number }; message: string }> {
+  updateLabel(id: number, label: Partial<ULLabel>): Observable<{ success: boolean; data: { id: number }; message: string }> {
     const index = this.mockLabels.findIndex(l => l.id === id);
     if (index === -1) {
       return throwError(() => ({ success: false, error: 'NOT_FOUND', message: 'UL Label not found' }));
@@ -253,7 +253,7 @@ export class ULLabelMockService {
     }).pipe(delay(600));
   }
 
-  deleteULLabel(id: number): Observable<{ success: boolean; message: string }> {
+  deleteLabel(id: number): Observable<{ success: boolean; message: string }> {
     const index = this.mockLabels.findIndex(l => l.id === id);
     if (index === -1) {
       return throwError(() => ({ success: false, error: 'NOT_FOUND', message: 'UL Label not found' }));
@@ -270,7 +270,7 @@ export class ULLabelMockService {
   }
 
   // Bulk create UL Labels (for range uploads)
-  bulkCreateULLabels(labels: Partial<ULLabel>[]): Observable<{ success: boolean; data: { uploaded_count: number; errors: any[] }; message: string }> {
+  createLabelsBulk(labels: Partial<ULLabel>[]): Observable<{ success: boolean; data: { uploaded_count: number; errors: any[] }; message: string }> {
     const errors: any[] = [];
     let uploadedCount = 0;
 
@@ -324,7 +324,7 @@ export class ULLabelMockService {
   }
 
   // Bulk upload from file (CSV/Excel)
-  bulkUploadULLabels(file: File): Observable<{ success: boolean; data: { uploaded_count: number; errors: any[] }; message: string }> {
+  uploadLabelsFile(file: File): Observable<{ success: boolean; data: { uploaded_count: number; errors: any[] }; message: string }> {
     // This is a mock implementation - in real app, you'd parse the file
     return new Observable(subscriber => {
       const reader = new FileReader();
@@ -359,7 +359,7 @@ export class ULLabelMockService {
   }
 
   // UL Numbers for autocomplete
-  getULNumbers(): Observable<{ success: boolean; data: string[]; message: string }> {
+  listLabelNumbers(): Observable<{ success: boolean; data: string[]; message: string }> {
     const ulNumbers = this.mockLabels
       .filter(l => l.status === 'active')
       .map(l => l.ul_number);
@@ -372,7 +372,7 @@ export class ULLabelMockService {
   }
 
   // Get available UL labels (full objects for ng-select)
-  getAvailableULNumbers(): Observable<{ success: boolean; data: ULLabel[]; message: string }> {
+  listAvailableLabels(): Observable<{ success: boolean; data: ULLabel[]; message: string }> {
     const availableLabels = this.mockLabels
       .filter(l => l.status === 'active')
       .sort((a, b) => a.ul_number.localeCompare(b.ul_number));
@@ -385,7 +385,7 @@ export class ULLabelMockService {
   }
 
   // UL Number validation
-  validateULNumber(ulNumber: string): Observable<{ success: boolean; data: ULLabel; message: string }> {
+  validateLabelNumber(ulNumber: string): Observable<{ success: boolean; data: ULLabel; message: string }> {
     const label = this.mockLabels.find(l => l.ul_number === ulNumber);
     if (label) {
       const usageStats = this.calculateUsageStats(label.id);
@@ -407,7 +407,7 @@ export class ULLabelMockService {
   }
 
   // Usage CRUD Operations
-  getULUsages(): Observable<{ success: boolean; data: ULLabelUsage[]; message: string }> {
+  listUsages(): Observable<{ success: boolean; data: ULLabelUsage[]; message: string }> {
     return of({
       success: true,
       data: [...this.mockUsages],
@@ -415,7 +415,7 @@ export class ULLabelMockService {
     }).pipe(delay(500));
   }
 
-  createULUsage(usage: Partial<ULLabelUsage>): Observable<{ success: boolean; data: { id: number }; message: string }> {
+  createUsage(usage: Partial<ULLabelUsage>): Observable<{ success: boolean; data: { id: number }; message: string }> {
     // Validate UL label exists and is active
     const label = this.mockLabels.find(l => l.id === usage.ul_label_id);
     if (!label) {
@@ -450,8 +450,114 @@ export class ULLabelMockService {
     }).pipe(delay(800));
   }
 
-  // Bulk upload
-  bulkUpload(file: File): Observable<{ success: boolean; data: { uploaded_count: number; errors: any[] }; message: string }> {
+  createLabelsFromRange(rangeData: {
+    start_number: number | string;
+    end_number: number | string;
+    prefix?: string;
+    suffix?: string;
+    description?: string;
+    category?: string;
+    manufacturer?: string;
+    status?: ULLabel['status'];
+  }): Observable<{ success: boolean; data: { uploaded_count: number; errors: any[] }; message: string }> {
+    const start = Number(rangeData.start_number);
+    const end = Number(rangeData.end_number);
+    const prefix = rangeData.prefix || '';
+    const suffix = rangeData.suffix || '';
+    const generated: Partial<ULLabel>[] = [];
+
+    for (let num = start; num <= end; num += 1) {
+      generated.push({
+        ul_number: `${prefix}${num}${suffix}`,
+        description: rangeData.description || 'UL certified product',
+        category: rangeData.category || 'New',
+        manufacturer: rangeData.manufacturer || null,
+        status: rangeData.status || 'active',
+      });
+    }
+
+    return this.createLabelsBulk(generated);
+  }
+
+  searchLabels(query: string): Observable<{ success: boolean; data: ULLabel[]; message: string }> {
+    const filteredLabels = this.mockLabels.filter(label =>
+      label.ul_number.toLowerCase().includes(query.toLowerCase()) ||
+      label.description.toLowerCase().includes(query.toLowerCase()) ||
+      label.category.toLowerCase().includes(query.toLowerCase()) ||
+      (label.manufacturer && label.manufacturer.toLowerCase().includes(query.toLowerCase()))
+    );
+
+    return of({
+      success: true,
+      data: filteredLabels,
+      message: 'Search results retrieved successfully'
+    }).pipe(delay(300));
+  }
+
+  listUsageHistory(ulLabelId: number): Observable<{ success: boolean; data: ULLabelUsage[]; message: string }> {
+    const usageRows = this.mockUsages.filter((usage) => usage.ul_label_id === ulLabelId);
+    return of({
+      success: true,
+      data: usageRows,
+      message: 'Usage records retrieved successfully'
+    }).pipe(delay(300));
+  }
+
+  updateUsage(id: number, usage: Partial<ULLabelUsage>): Observable<{ success: boolean; data: { id: number }; message: string }> {
+    const index = this.mockUsages.findIndex((u) => u.id === id);
+    if (index === -1) {
+      return throwError(() => ({ success: false, error: 'NOT_FOUND', message: 'Usage record not found' }));
+    }
+
+    this.mockUsages[index] = {
+      ...this.mockUsages[index],
+      ...usage,
+      id,
+      updated_at: new Date().toISOString(),
+    };
+
+    return of({
+      success: true,
+      data: { id },
+      message: 'Usage record updated successfully',
+    }).pipe(delay(400));
+  }
+
+  deleteUsage(id: number): Observable<{ success: boolean; message: string }> {
+    const index = this.mockUsages.findIndex((u) => u.id === id);
+    if (index === -1) {
+      return throwError(() => ({ success: false, error: 'NOT_FOUND', message: 'Usage record not found' }));
+    }
+
+    this.mockUsages.splice(index, 1);
+
+    return of({
+      success: true,
+      message: 'Usage record deleted successfully',
+    }).pipe(delay(300));
+  }
+
+  voidUsage(id: number, voidReason?: string): Observable<{ success: boolean; data: { id: number; void_reason?: string }; message: string }> {
+    const index = this.mockUsages.findIndex((u) => u.id === id);
+    if (index === -1) {
+      return throwError(() => ({ success: false, error: 'NOT_FOUND', message: 'Usage record not found' }));
+    }
+
+    this.mockUsages[index] = {
+      ...this.mockUsages[index],
+      notes: voidReason || this.mockUsages[index].notes,
+      updated_at: new Date().toISOString(),
+    };
+
+    return of({
+      success: true,
+      data: { id, void_reason: voidReason },
+      message: 'Usage record voided successfully',
+    }).pipe(delay(300));
+  }
+
+  // Reports
+  getLabelsReport(filters?: any): Observable<{ success: boolean; data: ULLabelReport[]; summary: any; message: string }> {
     // Simulate bulk upload processing
     return of({
       success: true,
@@ -468,24 +574,7 @@ export class ULLabelMockService {
     }).pipe(delay(2000));
   }
 
-  // Search functionality
-  searchULLabels(query: string): Observable<{ success: boolean; data: ULLabel[]; message: string }> {
-    const filteredLabels = this.mockLabels.filter(label =>
-      label.ul_number.toLowerCase().includes(query.toLowerCase()) ||
-      label.description.toLowerCase().includes(query.toLowerCase()) ||
-      label.category.toLowerCase().includes(query.toLowerCase()) ||
-      (label.manufacturer && label.manufacturer.toLowerCase().includes(query.toLowerCase()))
-    );
-
-    return of({
-      success: true,
-      data: filteredLabels,
-      message: 'Search results retrieved successfully'
-    }).pipe(delay(300));
-  }
-
-  // Reports
-  getLabelsReport(filters?: any): Observable<{ success: boolean; data: ULLabelReport[]; summary: any; message: string }> {
+  getUsagesReport(filters?: any): Observable<{ success: boolean; data: ULUsageReport[]; summary: any; message: string }> {
     const reportData: ULLabelReport[] = this.mockLabels.map(label => {
       const usageStats = this.calculateUsageStats(label.id);
       return {
@@ -513,7 +602,6 @@ export class ULLabelMockService {
     }).pipe(delay(800));
   }
 
-  getUsageReport(filters?: any): Observable<{ success: boolean; data: ULUsageReport[]; summary: any; message: string }> {
     const reportData: ULUsageReport[] = this.mockUsages.map(usage => {
       const label = this.mockLabels.find(l => l.id === usage.ul_label_id);
       return {
@@ -546,6 +634,63 @@ export class ULLabelMockService {
       summary,
       message: 'Usage report generated successfully'
     }).pipe(delay(800));
+  }
+
+  exportLabels(): Observable<Blob> {
+    const csv = ['ul_number,description,category,status', ...this.mockLabels.map((l) => `${l.ul_number},${l.description},${l.category},${l.status}`)].join('\n');
+    return of(new Blob([csv], { type: 'text/csv' })).pipe(delay(200));
+  }
+
+  exportUsagesReport(): Observable<Blob> {
+    const csv = ['ul_number,serial_number,quantity_used,date_used,user_name,customer_name', ...this.mockUsages.map((u) => `${u.ul_number},${u.eyefi_serial_number},${u.quantity_used},${u.date_used},${u.user_name},${u.customer_name}`)].join('\n');
+    return of(new Blob([csv], { type: 'text/csv' })).pipe(delay(200));
+  }
+
+  uploadLabelAsset(ulLabelId: number, file: File): Observable<{ success: boolean; data: { ul_label_id: number; label_image_url: string }; message: string }> {
+    const label = this.mockLabels.find((l) => l.id === ulLabelId);
+    if (!label) {
+      return throwError(() => ({ success: false, error: 'NOT_FOUND', message: 'UL Label not found' }));
+    }
+
+    const fakePath = `/uploads/ul-labels/mock-${ulLabelId}-${Date.now()}-${file.name}`;
+    label.label_image_url = fakePath;
+    label.updated_at = new Date().toISOString();
+
+    return of({
+      success: true,
+      data: { ul_label_id: ulLabelId, label_image_url: fakePath },
+      message: 'Label image uploaded successfully',
+    }).pipe(delay(300));
+  }
+
+  updateLabelStatus(id: number, status: ULLabel['status']): Observable<{ success: boolean; data: { id: number }; message: string }> {
+    const index = this.mockLabels.findIndex((l) => l.id === id);
+    if (index === -1) {
+      return throwError(() => ({ success: false, error: 'NOT_FOUND', message: 'UL Label not found' }));
+    }
+
+    this.mockLabels[index] = {
+      ...this.mockLabels[index],
+      status,
+      updated_at: new Date().toISOString(),
+    };
+
+    return of({
+      success: true,
+      data: { id },
+      message: 'UL Label status updated successfully',
+    }).pipe(delay(250));
+  }
+
+  validateWorkOrderUsage(workOrderNumber: string | number): Observable<{ success: boolean; data: ULLabelUsage[]; count: number; message: string }> {
+    const wo = String(workOrderNumber);
+    const matched = this.mockUsages.filter((usage) => String(usage.wo_nbr || '') === wo);
+    return of({
+      success: true,
+      data: matched,
+      count: matched.length,
+      message: matched.length > 0 ? 'Work order found in existing usage records' : 'Work order not found in existing usage records',
+    }).pipe(delay(250));
   }
 
   // Dashboard statistics

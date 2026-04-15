@@ -74,7 +74,7 @@ export class ULLabelUploadComponent implements OnInit {
       this.isLoading = true;
       const ulLabel: ULLabel = this.uploadForm.value;
 
-      this.ulLabelService.createULLabel(ulLabel).subscribe({
+      this.ulLabelService.createLabel(ulLabel).subscribe({
         next: (response) => {
           this.isLoading = false;
           if (response.success) {
@@ -118,7 +118,7 @@ export class ULLabelUploadComponent implements OnInit {
       this.uploadProgress = 0;
 
       // Use the new range upload method
-      this.ulLabelService.createULLabelsFromRange(formData).subscribe({
+      this.ulLabelService.createLabelsFromRange(formData).subscribe({
         next: (response) => {
           this.isLoading = false;
           if (response.success) {
@@ -189,7 +189,7 @@ export class ULLabelUploadComponent implements OnInit {
     this.isLoading = true;
     this.uploadProgress = 0;
 
-    this.ulLabelService.bulkUploadULLabels(this.selectedFile).subscribe({
+    this.ulLabelService.uploadLabelsFile(this.selectedFile).subscribe({
       next: (response) => {
         this.isLoading = false;
         if (response.success) {

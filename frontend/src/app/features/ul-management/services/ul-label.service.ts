@@ -7,50 +7,47 @@ import { ULLabel, ULLabelUsage, ULLabelReport, ULUsageReport } from '../models/u
   providedIn: 'root'
 })
 export class ULLabelService {
-  private readonly API_URL = '/ul-labels';
+  private readonly API_URL = '/apiV2/ul-labels';
 
   constructor(private http: HttpClient) {}
 
   // UL Label CRUD Operations
-  getAllULLabels(): Observable<any> {
-    return this.http.get(`${this.API_URL}/index.php`);
+  listLabels(): Observable<any> {
+    return this.http.get(`${this.API_URL}`);
   }
 
-  getULLabelById(id: number): Observable<any> {
-    return this.http.get(`${this.API_URL}/index.php?id=${id}`);
+  getLabelById(id: number): Observable<any> {
+    return this.http.get(`${this.API_URL}/${id}`);
   }
 
-  createULLabel(ulLabel: ULLabel): Observable<any> {
-    return this.http.post(`${this.API_URL}/index.php`, ulLabel);
+  createLabel(ulLabel: ULLabel): Observable<any> {
+    return this.http.post(`${this.API_URL}`, ulLabel);
   }
 
-  updateULLabel(id: number, ulLabel: ULLabel): Observable<any> {
-    return this.http.put(`${this.API_URL}/index.php?id=${id}`, ulLabel);
+  updateLabel(id: number, ulLabel: ULLabel): Observable<any> {
+    return this.http.put(`${this.API_URL}/${id}`, ulLabel);
   }
 
-  deleteULLabel(id: number): Observable<any> {
-    return this.http.delete(`${this.API_URL}/index.php?id=${id}`);
+  deleteLabel(id: number): Observable<any> {
+    return this.http.delete(`${this.API_URL}/${id}`);
   }
 
   // Bulk create UL labels (for range uploads)
-  bulkCreateULLabels(labels: Partial<ULLabel>[]): Observable<any> {
-    return this.http.post(`${this.API_URL}/bulk-upload.php`, { labels });
+  createLabelsBulk(labels: Partial<ULLabel>[]): Observable<any> {
+    return this.http.post(`${this.API_URL}/bulk`, { labels });
   }
 
-  // Create UL labels from range
-  createULLabelsFromRange(rangeData: any): Observable<any> {
-    return this.http.post(`${this.API_URL}/bulk-upload.php`, rangeData);
+  createLabelsFromRange(rangeData: any): Observable<any> {
+    return this.http.post(`${this.API_URL}/bulk`, rangeData);
   }
 
-  // Bulk upload UL labels
-  bulkUploadULLabels(file: File): Observable<any> {
+  uploadLabelsFile(file: File): Observable<any> {
     const formData = new FormData();
     formData.append('file', file);
-    return this.http.post(`${this.API_URL}/bulk-upload`, formData);
+    return this.http.post(`${this.API_URL}/bulk`, formData);
   }
 
-  // Search UL labels with filters
-  searchULLabels(searchQuery: string, additionalFilters?: any): Observable<any> {
+  searchLabels(searchQuery: string, additionalFilters?: any): Observable<any> {
     let params = new HttpParams().set('search', searchQuery);
     
     if (additionalFilters) {
@@ -61,107 +58,98 @@ export class ULLabelService {
       });
     }
     
-    return this.http.get(`${this.API_URL}/index.php`, { params });
+    return this.http.get(`${this.API_URL}`, { params });
   }
 
-  // UL Label Usage Operations
-  recordULLabelUsage(usage: ULLabelUsage): Observable<any> {
-    return this.http.post(`${this.API_URL}/usage.php`, usage);
+  createUsage(usage: ULLabelUsage): Observable<any> {
+    return this.http.post(`${this.API_URL}/usages`, usage);
   }
 
-  getULLabelUsageHistory(ulLabelId: number): Observable<any> {
-    return this.http.get(`${this.API_URL}/usage.php?ul_label_id=${ulLabelId}`);
+  listUsageHistory(ulLabelId: number): Observable<any> {
+    const params = new HttpParams().set('ulLabelId', ulLabelId.toString());
+    return this.http.get(`${this.API_URL}/usages`, { params });
   }
 
-  getAllULLabelUsages(): Observable<any> {
-    return this.http.get(`${this.API_URL}/usage.php`);
+  listUsages(): Observable<any> {
+    return this.http.get(`${this.API_URL}/usages`);
   }
 
-  updateULLabelUsage(id: number, usage: ULLabelUsage): Observable<any> {
-    return this.http.put(`${this.API_URL}/usage.php?id=${id}`, usage);
+  updateUsage(id: number, usage: ULLabelUsage): Observable<any> {
+    return this.http.put(`${this.API_URL}/usages/${id}`, usage);
   }
 
-  deleteULLabelUsage(id: number): Observable<any> {
-    return this.http.delete(`${this.API_URL}/usage.php?id=${id}`);
+  deleteUsage(id: number): Observable<any> {
+    return this.http.delete(`${this.API_URL}/usages/${id}`);
   }
 
-  voidULLabelUsage(id: number, voidReason?: string): Observable<any> {
-    return this.http.post(`${this.API_URL}/usage.php?id=${id}&action=void`, {
+  voidUsage(id: number, voidReason?: string): Observable<any> {
+    return this.http.post(`${this.API_URL}/usages/${id}/void`, {
       void_reason: voidReason
     });
   }
 
-  // Reporting
-  getULLabelReport(startDate?: string, endDate?: string): Observable<any> {
+  getLabelsReport(startDate?: string, endDate?: string): Observable<any> {
     let params = new HttpParams();
     if (startDate) params = params.set('start_date', startDate);
     if (endDate) params = params.set('end_date', endDate);
     
-    return this.http.get(`${this.API_URL}/index.php`, { params });
+    return this.http.get(`${this.API_URL}`, { params });
   }
 
-  getULUsageReport(startDate?: string, endDate?: string, customerName?: string): Observable<any> {
+  getUsagesReport(startDate?: string, endDate?: string, customerName?: string): Observable<any> {
     let params = new HttpParams();
     if (startDate) params = params.set('start_date', startDate);
     if (endDate) params = params.set('end_date', endDate);
     if (customerName) params = params.set('customer_name', customerName);
     
-    return this.http.get(`${this.API_URL}/usage.php`, { params });
+    return this.http.get(`${this.API_URL}/usages`, { params });
   }
 
-  // Export functions
-  exportULLabels(): Observable<Blob> {
+  exportLabels(): Observable<Blob> {
     const params = new HttpParams().set('export', 'true');
-    return this.http.get(`${this.API_URL}/index.php`, { params, responseType: 'blob' });
+    return this.http.get(`${this.API_URL}`, { params, responseType: 'blob' });
   }
 
-  exportULUsageReport(startDate?: string, endDate?: string): Observable<Blob> {
+  exportUsagesReport(startDate?: string, endDate?: string): Observable<Blob> {
     let params = new HttpParams();
     if (startDate) params = params.set('start_date', startDate);
     if (endDate) params = params.set('end_date', endDate);
     params = params.set('export', 'true');
     
-    return this.http.get(`${this.API_URL}/usage.php`, { params, responseType: 'blob' });
+    return this.http.get(`${this.API_URL}/usages`, { params, responseType: 'blob' });
   }
 
-  // File upload for label images
-  uploadLabelImage(ulLabelId: number, file: File): Observable<any> {
+  uploadLabelAsset(ulLabelId: number, file: File): Observable<any> {
     const formData = new FormData();
     formData.append('image', file);
-    formData.append('ul_label_id', ulLabelId.toString());
-    return this.http.post(`${this.API_URL}/upload-image.php`, formData);
+    return this.http.post(`${this.API_URL}/${ulLabelId}/image`, formData);
   }
 
-  // Status management
-  updateULLabelStatus(id: number, status: 'active' | 'inactive' | 'expired'): Observable<any> {
-    return this.http.put(`${this.API_URL}/index.php?id=${id}`, { status });
+  updateLabelStatus(id: number, status: 'active' | 'inactive' | 'expired'): Observable<any> {
+    return this.http.put(`${this.API_URL}/${id}`, { status });
   }
 
-  // Get UL numbers for dropdown/autocomplete
-  getULNumbers(): Observable<any> {
-    return this.http.get(`${this.API_URL}/ul-numbers.php`);
+  listLabelNumbers(): Observable<any> {
+    return this.http.get(`${this.API_URL}/numbers`);
   }
 
-  // Get available UL numbers (active status, not fully used)
-  getAvailableULNumbers(): Observable<any> {
+  listAvailableLabels(): Observable<any> {
     const params = new HttpParams().set('available', 'true');
-    return this.http.get(`${this.API_URL}/index.php`, { params });
+    return this.http.get(`${this.API_URL}`, { params });
   }
 
-  // Validate UL number exists
-  validateULNumber(ulNumber: string): Observable<any> {
-    const params = new HttpParams().set('ul_number', ulNumber);
-    return this.http.get(`${this.API_URL}/validate.php`, { params });
+  validateLabelNumber(ulNumber: string): Observable<any> {
+    const params = new HttpParams().set('ulNumber', ulNumber);
+    return this.http.get(`${this.API_URL}/validation/number`, { params });
   }
 
   // Dashboard statistics
   getDashboardStats(): Observable<any> {
-    return this.http.get(`${this.API_URL}/dashboard-stats.php`);
+    return this.http.get(`${this.API_URL}/stats/dashboard`);
   }
 
-  // Work Order Validation
-  checkWorkOrderUsage(workOrderNumber: string | number): Observable<any> {
-    const params = new HttpParams().set('wo_nbr', workOrderNumber.toString());
-    return this.http.get(`${this.API_URL}/validate-work-order.php`, { params });
+  validateWorkOrderUsage(workOrderNumber: string | number): Observable<any> {
+    const params = new HttpParams().set('workOrderNumber', workOrderNumber.toString());
+    return this.http.get(`${this.API_URL}/validation/work-order`, { params });
   }
 }

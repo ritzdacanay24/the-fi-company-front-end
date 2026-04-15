@@ -289,8 +289,8 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
     try {
       // Load available UL numbers and usage records in parallel
       const [ulResponse, usageResponse] = await Promise.all([
-        this.ulLabelService.getAvailableULNumbers().toPromise(),
-        this.ulLabelService.getAllULLabelUsages().toPromise()
+        this.ulLabelService.listAvailableLabels().toPromise(),
+        this.ulLabelService.listUsages().toPromise()
       ]);
 
       if (ulResponse && ulResponse.success) {
@@ -496,7 +496,7 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
           }) : ''
         };
         
-        return this.ulLabelService.recordULLabelUsage(apiUsageRecord as ULLabelUsage).toPromise();
+        return this.ulLabelService.createUsage(apiUsageRecord as ULLabelUsage).toPromise();
       });
 
       const results = await Promise.all(submissionPromises);
@@ -1263,7 +1263,7 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
     this.workOrderValidationLoading = true;
     this.showWorkOrderWarning = false;
 
-    this.ulLabelService.checkWorkOrderUsage(workOrderNumber).subscribe({
+    this.ulLabelService.validateWorkOrderUsage(workOrderNumber).subscribe({
       next: (response) => {
         this.workOrderValidationLoading = false;
         

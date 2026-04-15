@@ -303,7 +303,7 @@ export class ULUsageReportComponent implements OnInit {
     this.isLoading = true;
     const filters = this.filterForm.value;
 
-    this.ulLabelService.getULUsageReport(
+    this.ulLabelService.getUsagesReport(
       filters.startDate,
       filters.endDate,
       filters.customer
@@ -374,7 +374,7 @@ export class ULUsageReportComponent implements OnInit {
   exportData(): void {
     const filters = this.filterForm.value;
 
-    this.ulLabelService.exportULUsageReport(
+    this.ulLabelService.exportUsagesReport(
       filters.startDate,
       filters.endDate
     ).subscribe({
@@ -465,7 +465,7 @@ export class ULUsageReportComponent implements OnInit {
   confirmVoid(): void {
     if (!this.selectedUsageId) return;
 
-    this.ulLabelService.voidULLabelUsage(this.selectedUsageId, this.voidReason).subscribe({
+    this.ulLabelService.voidUsage(this.selectedUsageId, this.voidReason).subscribe({
       next: (response) => {
         this.toastr.success('UL usage voided successfully. EyeFi serial and UL label freed.');
         this.closeVoidModal();
@@ -492,7 +492,7 @@ export class ULUsageReportComponent implements OnInit {
   confirmDelete(): void {
     if (!this.selectedUsageId) return;
 
-    this.ulLabelService.deleteULLabelUsage(this.selectedUsageId).subscribe({
+    this.ulLabelService.deleteUsage(this.selectedUsageId).subscribe({
       next: (response) => {
         this.toastr.success('UL usage record deleted successfully');
         this.closeDeleteModal();

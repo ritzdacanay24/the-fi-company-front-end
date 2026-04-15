@@ -38,7 +38,7 @@ export class ULManagementComponent implements OnInit {
     this.isLoadingStats = true;
     
     // Load basic statistics
-    this.ulLabelService.getAllULLabels().subscribe({
+    this.ulLabelService.listLabels().subscribe({
       next: (response) => {
         this.isLoadingStats = false;
         if (response.success) {
@@ -55,7 +55,7 @@ export class ULManagementComponent implements OnInit {
     });
 
     // Load recent usage count
-    this.ulLabelService.getAllULLabelUsages().subscribe({
+    this.ulLabelService.listUsages().subscribe({
       next: (response) => {
         if (response.success) {
           this.stats.recentUsages = response.data?.length || 0;

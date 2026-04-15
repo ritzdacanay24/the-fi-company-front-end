@@ -58,7 +58,7 @@ export class ULLabelUsageComponent implements OnInit {
   }
 
   loadULNumbers(): void {
-    this.ulLabelService.getULNumbers().subscribe({
+    this.ulLabelService.listLabelNumbers().subscribe({
       next: (response) => {
         if (response.success && response.data) {
           this.ulNumbers = response.data;
@@ -93,7 +93,7 @@ export class ULLabelUsageComponent implements OnInit {
       // Update the form control value first
       this.usageForm.patchValue({ ul_number: ulNumber });
       
-      this.ulLabelService.validateULNumber(ulNumber).subscribe({
+      this.ulLabelService.validateLabelNumber(ulNumber).subscribe({
         next: (response) => {
           if (response.success && response.data) {
             this.selectedULLabel = response.data;
@@ -135,7 +135,7 @@ export class ULLabelUsageComponent implements OnInit {
         ul_label_id: this.selectedULLabel.id
       };
       
-      this.ulLabelService.recordULLabelUsage(usageData).subscribe({
+      this.ulLabelService.createUsage(usageData).subscribe({
         next: (response) => {
           this.isLoading = false;
           if (response.success) {

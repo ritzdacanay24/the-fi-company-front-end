@@ -240,8 +240,8 @@ export class UlLabelSearchNgSelectComponent implements OnInit, OnChanges, Contro
       // This ensures we can still show ~10 after filtering
       filters.limit = 50;
       
-      // Use searchULLabels which passes the search term to backend
-      const response = await firstValueFrom(this.ulLabelService.searchULLabels(term || '', filters));
+      // Use searchLabels which passes the search term to backend
+      const response = await firstValueFrom(this.ulLabelService.searchLabels(term || '', filters));
       
       console.log('🔍 UL Search - Raw response:', response);
       
@@ -380,8 +380,8 @@ export class UlLabelSearchNgSelectComponent implements OnInit, OnChanges, Contro
 
   private async loadLabelByNumber(ulNumber: string): Promise<void> {
     try {
-      // Use getAvailableULNumbers to find the label
-      const response = await firstValueFrom(this.ulLabelService.getAvailableULNumbers());
+      // Use listAvailableLabels to find the label
+      const response = await firstValueFrom(this.ulLabelService.listAvailableLabels());
       
       let labels = [];
       if (response?.data) {
