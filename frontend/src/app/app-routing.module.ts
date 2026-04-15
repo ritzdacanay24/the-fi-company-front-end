@@ -137,6 +137,14 @@ const routes: Routes = [
     loadComponent: () => import("./standalone/standalone-serial-generator/standalone-serial-generator.component").then(c => c.StandaloneSerialGeneratorComponent),
     title: "Serial Number Generator"
   },
+  {
+    path: "standalone/unique-label-generator",
+    loadComponent: () =>
+      import("./standalone/unique-label-generator/unique-label-generator.component").then(
+        (c) => c.UniqueLabelGeneratorComponent,
+      ),
+    title: "Unique Label Generator",
+  },
   { 
     path: "standalone/ul-audit-signoff", 
     loadComponent: () => import("./features/ul-audit-signoff/ul-audit-signoff.component").then(c => c.UlAuditSignoffComponent),
