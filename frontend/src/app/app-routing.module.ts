@@ -139,9 +139,9 @@ const routes: Routes = [
   },
   {
     path: "standalone/unique-label-generator",
-    loadComponent: () =>
-      import("./standalone/unique-label-generator/unique-label-generator.component").then(
-        (c) => c.UniqueLabelGeneratorComponent,
+    loadChildren: () =>
+      import("./standalone/unique-label-generator/unique-label-generator.routes").then(
+        (m) => m.UNIQUE_LABEL_GENERATOR_ROUTES,
       ),
     title: "Unique Label Generator",
   },

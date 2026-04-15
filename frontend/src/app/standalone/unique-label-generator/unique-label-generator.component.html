@@ -1,116 +1,87 @@
-<div class="unique-label-page">
-  <header class="hero">
-    <h1>Unique Label Generator</h1>
-    <p>Create WWYYSSS labels from Work Order or Manual mode without touching existing workflows.</p>
-  </header>
+<div class="container py-4 unique-label-page">
 
-  <section class="panel form-panel">
-    <h2>Create Batch</h2>
-    <form [formGroup]="form" (ngSubmit)="generateBatch()">
-      <div class="form-grid">
-        <label>
-          Source Type
-          <select formControlName="source_type">
-            <option *ngFor="let item of sourceTypes" [value]="item.value">{{ item.label }}</option>
-          </select>
-        </label>
-
-        <label>
-          Created By
-          <input type="text" formControlName="created_by_name" placeholder="Your name" />
-        </label>
-
-        <label>
-          Work Order #
-          <div class="inline-input">
-            <input
-              type="text"
-              formControlName="work_order_number"
-              placeholder="Scan or enter WO"
-              [disabled]="!isWorkOrderMode"
-            />
-            <button type="button" (click)="lookupWorkOrder()" [disabled]="!isWorkOrderMode || isLoadingWo">
-              {{ isLoadingWo ? 'Loading...' : 'Lookup' }}
-            </button>
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-header bg-white">
+      <h2 class="h5 mb-0">Create Batch</h2>
+    </div>
+    <div class="card-body">
+      <form [formGroup]="form" (ngSubmit)="generateBatch()">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Source Type</label>
+            <select class="form-select" formControlName="source_type">
+              <option *ngFor="let item of sourceTypes" [value]="item.value">{{ item.label }}</option>
+            </select>
           </div>
-        </label>
 
-        <label>
-          Part Number
-          <input type="text" formControlName="part_number" placeholder="Part number" />
-        </label>
+          <div class="col-md-6">
+            <label class="form-label">Created By</label>
+            <input class="form-control" type="text" formControlName="created_by_name" placeholder="Your name" />
+          </div>
 
-        <label>
-          Quantity
-          <input type="number" formControlName="quantity" min="1" max="200" />
-        </label>
+          <div class="col-md-6">
+            <label class="form-label">Work Order #</label>
+            <div class="input-group">
+              <input
+                class="form-control"
+                type="text"
+                formControlName="work_order_number"
+                placeholder="Scan or enter WO"
+                [disabled]="!isWorkOrderMode"
+              />
+              <button class="btn btn-outline-primary" type="button" (click)="lookupWorkOrder()" [disabled]="!isWorkOrderMode || isLoadingWo">
+                {{ isLoadingWo ? 'Loading...' : 'Lookup' }}
+              </button>
+            </div>
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label">Part Number</label>
+            <input class="form-control" type="text" formControlName="part_number" placeholder="Part number" />
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label">Quantity</label>
+            <input class="form-control" type="number" formControlName="quantity" min="1" max="200" />
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-end mt-3">
+          <button class="btn btn-success" type="submit" [disabled]="isGenerating">
+            {{ isGenerating ? 'Generating...' : 'Generate Labels' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm mb-3" *ngIf="generatedIdentifiers.length > 0">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center gap-2">
+      <h2 class="h5 mb-0">Generated Labels (Batch {{ generatedBatchId }})</h2>
+      <button class="btn btn-outline-secondary btn-sm" type="button" (click)="printGenerated()">Print View</button>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-sm table-striped align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Unique ID</th>
+              <th>Part Number</th>
+              <th>WO #</th>
+              <th>Qty Printed</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of generatedIdentifiers">
+              <td>{{ item.unique_identifier }}</td>
+              <td>{{ item.part_number }}</td>
+              <td>{{ item.work_order_number || '-' }}</td>
+              <td>{{ item.quantity_printed }}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
-
-      <div class="actions">
-        <button type="submit" [disabled]="isGenerating">{{ isGenerating ? 'Generating...' : 'Generate Labels' }}</button>
-      </div>
-    </form>
-  </section>
-
-  <section class="panel" *ngIf="generatedIdentifiers.length > 0">
-    <div class="panel-head">
-      <h2>Generated Labels (Batch {{ generatedBatchId }})</h2>
-      <button type="button" (click)="printGenerated()">Print View</button>
     </div>
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Unique ID</th>
-            <th>Part Number</th>
-            <th>WO #</th>
-            <th>Qty Printed</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let item of generatedIdentifiers">
-            <td>{{ item.unique_identifier }}</td>
-            <td>{{ item.part_number }}</td>
-            <td>{{ item.work_order_number || '-' }}</td>
-            <td>{{ item.quantity_printed }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
+  </div>
 
-  <section class="panel">
-    <h2>Recent Batches</h2>
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Source</th>
-            <th>WO #</th>
-            <th>Part Number</th>
-            <th>Requested</th>
-            <th>Generated</th>
-            <th>Created By</th>
-            <th>Created At</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let row of recentBatches">
-            <td>{{ row.id }}</td>
-            <td>{{ row.source_type }}</td>
-            <td>{{ row.work_order_number || '-' }}</td>
-            <td>{{ row.part_number }}</td>
-            <td>{{ row.requested_quantity }}</td>
-            <td>{{ row.generated_count }}</td>
-            <td>{{ row.created_by_name }}</td>
-            <td>{{ row.created_at }}</td>
-          </tr>
-          <tr *ngIf="recentBatches.length === 0">
-            <td colspan="8">No batches yet.</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
 </div>

@@ -1,48 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpParams } from '@angular/common/http';
 import { Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { firstValueFrom } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
-
-interface WorkOrderLookupResponse {
-  success: boolean;
-  data?: {
-    work_order_number: string;
-    part_number: string;
-    quantity: number;
-  };
-  message?: string;
-}
-
-interface CreateBatchResponse {
-  success: boolean;
-  data?: {
-    batch_id: number;
-    identifiers: Array<{
-      unique_identifier: string;
-      part_number: string;
-      work_order_number: string | null;
-      quantity_printed: number;
-    }>;
-  };
-  message?: string;
-}
-
-interface RecentBatchesResponse {
-  success: boolean;
-  data?: Array<{
-    id: number;
-    source_type: string;
-    work_order_number: string | null;
-    part_number: string;
-    requested_quantity: number;
-    created_by_name: string;
-    created_at: string;
-    generated_count: number;
-  }>;
-  message?: string;
-}
+import { UniqueLabelGeneratorApiService } from './unique-label-generator-api.service';
 
 @Component({
   selector: 'app-unique-label-generator',
@@ -53,7 +13,7 @@ interface RecentBatchesResponse {
 })
 export class UniqueLabelGeneratorComponent {
   private readonly fb = inject(FormBuilder);
-  private readonly http = inject(HttpClient);
+  private readonly api = inject(UniqueLabelGeneratorApiService);
   private readonly toastr = inject(ToastrService);
 
   readonly sourceTypes = [
@@ -79,17 +39,6 @@ export class UniqueLabelGeneratorComponent {
     quantity_printed: number;
   }> = [];
 
-  recentBatches: Array<{
-    id: number;
-    source_type: string;
-    work_order_number: string | null;
-    part_number: string;
-    requested_quantity: number;
-    created_by_name: string;
-    created_at: string;
-    generated_count: number;
-  }> = [];
-
   constructor() {
     this.form.controls.source_type.valueChanges.subscribe((value) => {
       if (value === 'MANUAL') {
@@ -97,7 +46,6 @@ export class UniqueLabelGeneratorComponent {
       }
     });
 
-    this.loadRecentBatches();
   }
 
   get isWorkOrderMode(): boolean {
@@ -113,9 +61,7 @@ export class UniqueLabelGeneratorComponent {
 
     this.isLoadingWo = true;
     try {
-      const response = await firstValueFrom(
-        this.http.get<WorkOrderLookupResponse>(`/apiV2/unique-labels/work-orders/${encodeURIComponent(woNumber)}`),
-      );
+      const response = await this.api.lookupWorkOrder(woNumber);
 
       if (!response.success || !response.data) {
         this.toastr.error(response.message || 'Work order not found.');
@@ -159,9 +105,7 @@ export class UniqueLabelGeneratorComponent {
 
     this.isGenerating = true;
     try {
-      const response = await firstValueFrom(
-        this.http.post<CreateBatchResponse>('/apiV2/unique-labels/batches', payload),
-      );
+      const response = await this.api.createBatch(payload);
 
       if (!response.success || !response.data) {
         this.toastr.error(response.message || 'Failed to generate labels.');
@@ -171,7 +115,6 @@ export class UniqueLabelGeneratorComponent {
       this.generatedBatchId = response.data.batch_id;
       this.generatedIdentifiers = response.data.identifiers || [];
       this.toastr.success(`Generated ${this.generatedIdentifiers.length} unique labels.`);
-      this.loadRecentBatches();
     } catch (error) {
       this.toastr.error('Failed to generate labels.');
       console.error(error);
@@ -226,19 +169,5 @@ export class UniqueLabelGeneratorComponent {
       </html>
     `);
     popup.document.close();
-  }
-
-  async loadRecentBatches(): Promise<void> {
-    try {
-      const params = new HttpParams().set('limit', '10');
-      const response = await firstValueFrom(
-        this.http.get<RecentBatchesResponse>('/apiV2/unique-labels/batches', { params }),
-      );
-
-      this.recentBatches = response.success && response.data ? response.data : [];
-    } catch (error) {
-      this.recentBatches = [];
-      console.error(error);
-    }
   }
 }

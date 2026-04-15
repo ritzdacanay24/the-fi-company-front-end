@@ -1,0 +1,62 @@
+<div id="layout-wrapper" class="ulg-shell">
+  <header class="ulg-topbar d-flex align-items-center justify-content-between px-3 px-md-4">
+    <div class="d-flex align-items-center gap-2">
+      <div class="ulg-logo-badge">ULG</div>
+      <div>
+        <h1 class="h6 mb-0">Unique Label Generator</h1>
+        <small class="text-muted">Standalone Module Shell</small>
+      </div>
+    </div>
+    <a class="btn btn-sm btn-outline-secondary" routerLink="/menu" target="_self">Back to Main Menu</a>
+  </header>
+
+  <aside class="app-menu navbar-menu ulg-sidebar">
+    <div class="navbar-brand-box">
+      <a routerLink="/standalone/unique-label-generator/create" class="logo logo-dark">
+        <span class="logo-sm">ULG</span>
+        <span class="logo-lg text-white">Unique Label</span>
+      </a>
+    </div>
+
+    <div class="h-100 d-flex flex-column">
+      <nav class="nav flex-column py-2">
+        <a
+          *ngFor="let item of navItems"
+          class="nav-link d-flex align-items-center gap-2"
+          [routerLink]="item.route"
+          routerLinkActive="active"
+        >
+          <i [class]="item.icon"></i>
+          <span>{{ item.label }}</span>
+        </a>
+      </nav>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <div class="page-content">
+      <div class="container-fluid py-2 py-md-3">
+        <nav aria-label="breadcrumb" class="mb-2">
+          <ol class="breadcrumb breadcrumb-custom mb-0">
+            <li class="breadcrumb-item">
+              <a routerLink="/standalone/unique-label-generator/create">Unique Label Generator</a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">{{ currentSectionLabel }}</li>
+          </ol>
+        </nav>
+
+        <div class="module-title mb-3 d-flex align-items-center gap-3 py-1">
+          <div class="module-title-icon rounded-circle d-inline-flex align-items-center justify-content-center">
+            <i [class]="currentSection.icon"></i>
+          </div>
+          <div>
+            <h2 class="h3 mb-1">{{ currentSection.label }}</h2>
+            <p class="text-muted mb-0">{{ currentSection.subtitle }}</p>
+          </div>
+        </div>
+
+        <router-outlet></router-outlet>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,135 @@
+.ulg-shell {
+  min-height: 100vh;
+  background: #f3f6f9;
+}
+
+.ulg-topbar {
+  height: 70px;
+  background: #ffffff;
+  border-bottom: 1px solid #e6edf3;
+  margin-left: 0;
+}
+
+.ulg-logo-badge {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: #0ab39c;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ulg-sidebar {
+  width: 250px;
+  background: #1f3b73;
+  color: #fff;
+  top: 70px;
+  height: calc(100vh - 70px);
+  padding-top: 0;
+}
+
+.ulg-sidebar .navbar-brand-box {
+  display: none;
+}
+
+.ulg-sidebar .logo-sm,
+.ulg-sidebar .logo-lg {
+  color: #fff;
+}
+
+.ulg-sidebar .nav-link {
+  color: rgba(255, 255, 255, 0.9);
+  padding: 0.65rem 1rem;
+  margin: 0.15rem 0.5rem;
+  border-radius: 0.4rem;
+  border-left: 3px solid transparent;
+}
+
+.ulg-sidebar .nav-link:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.ulg-sidebar .nav-link.active {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.18);
+  border-left-color: #0ab39c;
+}
+
+.ulg-sidebar .nav-link i {
+  font-size: 1.1rem;
+}
+
+.ulg-shell .main-content {
+  margin-left: 250px;
+}
+
+.ulg-shell .page-content {
+  min-height: calc(100vh - 70px);
+  padding-top: 0 !important;
+}
+
+.breadcrumb-custom {
+  font-size: 0.82rem;
+}
+
+.breadcrumb-custom .breadcrumb-item + .breadcrumb-item::before {
+  color: #94a3b8;
+}
+
+.breadcrumb-custom a {
+  color: #3b4d7a;
+  text-decoration: none;
+}
+
+.breadcrumb-custom a:hover {
+  text-decoration: underline;
+}
+
+.module-title .h3 {
+  color: #5f6f82;
+  font-weight: 700;
+  font-size: 2rem;
+}
+
+.module-title-icon {
+  width: 58px;
+  height: 58px;
+  background: #6c7f92;
+  color: #fff;
+  font-size: 1.45rem;
+  flex-shrink: 0;
+}
+
+.module-title {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+@media (max-width: 991.98px) {
+  .ulg-topbar,
+  .ulg-shell .main-content {
+    margin-left: 0;
+  }
+
+  .ulg-sidebar {
+    position: static;
+    top: auto;
+    height: auto;
+    width: 100%;
+    min-height: auto;
+  }
+
+  .ulg-sidebar .navbar-brand-box {
+    display: flex;
+    height: 70px;
+    align-items: center;
+    padding: 0 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  }
+}

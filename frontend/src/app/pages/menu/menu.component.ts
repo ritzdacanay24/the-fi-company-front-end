@@ -28,6 +28,7 @@ export class MenuComponent implements OnInit {
         { name: "Field Service Dashboard", link: "/field-service" },
         { name: "Quality Dashboard", link: "/quality" },
         { name: "Quality Inspection (Standalone)", link: "/standalone/checklist" },
+        { name: "Unique Label Generator (Standalone)", link: "/standalone/unique-label-generator" },
         { name: "Install Quality Inspection App", link: "/checklist-app" },
         {
           name: "Shipping Request Form",
