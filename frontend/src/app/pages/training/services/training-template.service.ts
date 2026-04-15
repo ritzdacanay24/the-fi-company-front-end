@@ -8,12 +8,15 @@ import { TrainingTemplate, TrainingTemplateCategory } from '../models/training.m
   providedIn: 'root'
 })
 export class TrainingTemplateService {
-  private apiUrl = 'training';
+  private readonly apiUrl = '/apiV2/training';
 
   constructor(private http: HttpClient) {}
 
   // Transform API response from snake_case to camelCase
   private transformTemplate(apiTemplate: any): TrainingTemplate {
+    const rawActive = apiTemplate.is_active;
+    const isActive = rawActive === true || rawActive === 1 || rawActive === '1' || String(rawActive).toLowerCase() === 'true';
+
     return {
       id: parseInt(apiTemplate.id),
       name: apiTemplate.name,
@@ -23,7 +26,7 @@ export class TrainingTemplateService {
       defaultDurationMinutes: parseInt(apiTemplate.default_duration_minutes),
       defaultLocation: apiTemplate.default_location,
       categoryId: parseInt(apiTemplate.category_id),
-      isActive: apiTemplate.is_active === '1' || apiTemplate.is_active === true,
+      isActive,
       createdBy: parseInt(apiTemplate.created_by),
       createdDate: apiTemplate.created_date,
       category: apiTemplate.category_name
@@ -46,20 +49,20 @@ export class TrainingTemplateService {
   }
 
   getTemplates(): Observable<TrainingTemplate[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/index.php?path=templates`).pipe(
+    return this.http.get<any[]>(`${this.apiUrl}/templates`).pipe(
       map(apiTemplates => apiTemplates.map(apiTemplate => this.transformTemplate(apiTemplate)))
     );
   }
 
   getActiveTemplates(): Observable<TrainingTemplate[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/index.php?path=templates&active=true`).pipe(
+    return this.http.get<any[]>(`${this.apiUrl}/templates?active=true`).pipe(
       map(apiTemplates => apiTemplates.map(apiTemplate => this.transformTemplate(apiTemplate)))
     );
   }
 
   getTemplate(id: number): Observable<TrainingTemplate> {
     console.log('Service: Getting template with ID:', id);
-    return this.http.get<any>(`${this.apiUrl}/index.php?path=templates&id=${id}`).pipe(
+    return this.http.get<any>(`${this.apiUrl}/templates/${id}`).pipe(
       map(response => {
         console.log('Service: Raw API response for getTemplate:', response);
         
@@ -83,24 +86,24 @@ export class TrainingTemplateService {
 
   createTemplate(template: TrainingTemplate): Observable<TrainingTemplate> {
     const apiTemplate = this.transformTemplateForApi(template);
-    return this.http.post<any>(`${this.apiUrl}/index.php?path=templates`, apiTemplate).pipe(
+    return this.http.post<any>(`${this.apiUrl}/templates`, apiTemplate).pipe(
       map(response => this.transformTemplate(response))
     );
   }
 
   updateTemplate(id: string | number, template: TrainingTemplate): Observable<TrainingTemplate> {
     const apiTemplate = this.transformTemplateForApi(template);
-    return this.http.put<any>(`${this.apiUrl}/index.php?path=templates&id=${id}`, apiTemplate).pipe(
+    return this.http.put<any>(`${this.apiUrl}/templates/${id}`, apiTemplate).pipe(
       map(response => this.transformTemplate(response))
     );
   }
 
   deleteTemplate(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/index.php?path=templates&id=${id}`);
+    return this.http.delete<void>(`${this.apiUrl}/templates/${id}`);
   }
 
   getCategories(): Observable<TrainingTemplateCategory[]> {
-    return this.http.get<TrainingTemplateCategory[]>(`${this.apiUrl}/index.php?path=templates/categories`);
+    return this.http.get<TrainingTemplateCategory[]>(`${this.apiUrl}/categories`);
   }
 
   private getMockTemplates(): TrainingTemplate[] {

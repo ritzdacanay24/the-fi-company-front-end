@@ -20,13 +20,6 @@
       <div class="mb-4">
         <div class="d-flex align-items-center justify-content-between mb-3">
           <div class="d-flex align-items-center">
-            <button 
-              type="button" 
-              class="btn btn-outline-secondary me-3" 
-              (click)="goBack()"
-              title="Back to Training Sessions">
-              <i class="mdi mdi-arrow-left me-2"></i>Back
-            </button>
             <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
               <i class="mdi mdi-file-document-multiple text-white fs-4"></i>
             </div>
@@ -43,19 +36,6 @@
               title="Create new training template">
               <i class="mdi mdi-plus me-2"></i>Create Template
             </button>
-          </div>
-        </div>
-        
-        <div class="alert alert-primary border-primary border-opacity-25 bg-primary bg-opacity-10" role="alert">
-          <div class="d-flex align-items-start">
-            <i class="mdi mdi-information text-primary me-3 mt-1 fs-5"></i>
-            <div>
-              <h6 class="alert-heading text-primary mb-2">Training Templates Overview</h6>
-              <p class="mb-0">
-                Templates provide <strong>consistent training structures</strong> that can be reused across multiple sessions. 
-                Create, edit, and organize templates by category for efficient training management.
-              </p>
-            </div>
           </div>
         </div>
       </div>
@@ -81,7 +61,7 @@
             
             <div class="form-check form-switch">
               <input class="form-check-input" type="checkbox" id="activeFilter" 
-                     [(ngModel)]="showActiveOnly" (change)="onActiveFilterChange()">
+                     [(ngModel)]="showActiveOnly" (ngModelChange)="onActiveFilterChange()">
               <label class="form-check-label" for="activeFilter">Active Only</label>
             </div>
             

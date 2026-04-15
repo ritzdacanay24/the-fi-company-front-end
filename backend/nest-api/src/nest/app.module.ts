@@ -11,6 +11,7 @@ import { IgtTransferModule } from './modules/igt-transfer/igt-transfer.module';
 import { InventoryByProdLineModule } from './modules/inventory-by-prod-line';
 import { QadModule } from './modules/qad';
 import { SafetyIncidentModule } from './modules/safety-incident';
+import { TrainingModule } from './modules/training';
 import { UniqueLabelsModule } from './modules/unique-labels';
 import { UlLabelsModule } from './modules/ul-labels';
 import { VehicleInspectionModule } from './modules/vehicle-inspection';
@@ -40,6 +41,7 @@ import { EmailModule } from '../shared/email/email.module';
     InventoryByProdLineModule,
     QadModule,
     SafetyIncidentModule,
+    TrainingModule,
     UniqueLabelsModule,
     UlLabelsModule,
     VehicleInspectionModule,

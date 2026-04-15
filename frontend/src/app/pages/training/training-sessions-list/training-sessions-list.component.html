@@ -1,4 +1,4 @@
-<div class="container-fluid">
+<div class="container-fluid training-sessions-page">
   <div class="row justify-content-center">
     <div class="col-12">
       
@@ -48,7 +48,7 @@
         
       </div>
 
-      <div class="card shadow-sm border-0">
+      <div class="card shadow-sm border-0 sessions-grid-card">
         <div class="card-header">
           <form [formGroup]="searchForm" class="d-flex align-items-center flex-wrap gap-3">
             <div class="flex-grow-1" style="min-width: 250px;">
@@ -114,7 +114,7 @@
         
         <div class="card-body p-0">
           <ng-container *ngIf="filteredSessions?.length; else noRecords">
-            <div class="table-responsive">
+            <div class="table-responsive sessions-table-container">
               <table class="table table-hover mb-0">
                 <thead class="table-light">
                   <tr>
@@ -258,7 +258,7 @@
             </div>
           </ng-container>
           <ng-template #noRecords>
-            <div class="d-flex flex-column align-items-center justify-content-center p-5">
+            <div class="d-flex flex-column align-items-center justify-content-center p-5 h-100">
               <div class="text-center" style="max-width: 500px;">
                 <div class="mb-4">
                   <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mx-auto" style="width: 120px; height: 120px;">

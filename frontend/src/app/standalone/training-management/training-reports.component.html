@@ -1,0 +1,181 @@
+<nav aria-label="breadcrumb" class="mb-2">
+  <ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a routerLink="/standalone/training-management/live">Training</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Reports</li>
+  </ol>
+</nav>
+
+<div class="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-3">
+  <div>
+    <h2 class="h3 mb-1 text-primary">Training Admin Reports</h2>
+    <p class="text-muted mb-0">Attendance trends, facilitator performance, and compliance insights.</p>
+  </div>
+  <div class="d-flex align-items-center flex-wrap gap-2">
+    <label class="small text-muted mb-0">From</label>
+    <input class="form-control" style="width: 160px;" type="date" [(ngModel)]="dateFrom" />
+    <label class="small text-muted mb-0">To</label>
+    <input class="form-control" style="width: 160px;" type="date" [(ngModel)]="dateTo" />
+    <button class="btn btn-outline-primary" (click)="loadReport()" [disabled]="isLoading">Refresh</button>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-xl-3 col-md-6">
+    <div class="card border-0 bg-light-subtle h-100 mb-0">
+      <div class="card-body py-3">
+        <div class="d-flex align-items-center">
+          <div class="flex-shrink-0">
+            <div class="bg-primary bg-opacity-10 rounded-3 p-3">
+              <i class="las la-calendar-check text-primary fs-3"></i>
+            </div>
+          </div>
+          <div class="flex-grow-1 ms-3">
+            <h3 class="fs-2 fw-bold mb-1 text-dark">{{ totals.total_sessions }}</h3>
+            <p class="mb-1 fw-medium text-muted">Total Sessions</p>
+            <small class="text-muted">{{ selectedRangeLabel }}</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6">
+    <div class="card border-0 bg-light-subtle h-100 mb-0">
+      <div class="card-body py-3">
+        <div class="d-flex align-items-center">
+          <div class="flex-shrink-0">
+            <div class="bg-success bg-opacity-10 rounded-3 p-3">
+              <i class="las la-check-circle text-success fs-3"></i>
+            </div>
+          </div>
+          <div class="flex-grow-1 ms-3">
+            <h3 class="fs-2 fw-bold mb-1 text-dark">{{ completionRate }}%</h3>
+            <p class="mb-1 fw-medium text-muted">Completion Rate</p>
+            <small class="text-success">{{ totals.completed_sessions }} completed</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6">
+    <div class="card border-0 bg-light-subtle h-100 mb-0">
+      <div class="card-body py-3">
+        <div class="d-flex align-items-center">
+          <div class="flex-shrink-0">
+            <div class="bg-info bg-opacity-10 rounded-3 p-3">
+              <i class="las la-users text-info fs-3"></i>
+            </div>
+          </div>
+          <div class="flex-grow-1 ms-3">
+            <h3 class="fs-2 fw-bold mb-1 text-dark">{{ totals.attendance_rate }}%</h3>
+            <p class="mb-1 fw-medium text-muted">Attendance Rate</p>
+            <small class="text-muted">{{ totals.actual_attendees }} / {{ totals.expected_attendees }} attendees</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6">
+    <div class="card border-0 bg-light-subtle h-100 mb-0">
+      <div class="card-body py-3">
+        <div class="d-flex align-items-center">
+          <div class="flex-shrink-0">
+            <div class="bg-warning bg-opacity-10 rounded-3 p-3">
+              <i class="las la-ban text-warning fs-3"></i>
+            </div>
+          </div>
+          <div class="flex-grow-1 ms-3">
+            <h3 class="fs-2 fw-bold mb-1 text-dark">{{ totals.cancelled_sessions }}</h3>
+            <p class="mb-1 fw-medium text-muted">Cancelled Sessions</p>
+            <small class="text-muted">{{ totals.scheduled_sessions }} currently scheduled</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-7">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white"><h4 class="h6 mb-0">Weekly Expected vs Actual Attendance</h4></div>
+      <div class="card-body">
+        <apx-chart
+          [series]="weeklyAttendanceChart.series"
+          [chart]="weeklyAttendanceChart.chart"
+          [xaxis]="weeklyAttendanceChart.xaxis"
+          [yaxis]="weeklyAttendanceChart.yaxis"
+          [dataLabels]="weeklyAttendanceChart.dataLabels"
+          [grid]="weeklyAttendanceChart.grid"
+          [legend]="weeklyAttendanceChart.legend"
+          [tooltip]="weeklyAttendanceChart.tooltip"
+          [plotOptions]="weeklyAttendanceChart.plotOptions"
+          [colors]="weeklyAttendanceChart.colors"
+        ></apx-chart>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white"><h4 class="h6 mb-0">Facilitator Performance</h4></div>
+      <div class="card-body">
+        <apx-chart
+          [series]="facilitatorChart.series"
+          [chart]="facilitatorChart.chart"
+          [xaxis]="facilitatorChart.xaxis"
+          [yaxis]="facilitatorChart.yaxis"
+          [dataLabels]="facilitatorChart.dataLabels"
+          [grid]="facilitatorChart.grid"
+          [legend]="facilitatorChart.legend"
+          [tooltip]="facilitatorChart.tooltip"
+          [plotOptions]="facilitatorChart.plotOptions"
+          [colors]="facilitatorChart.colors"
+        ></apx-chart>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white"><h4 class="h6 mb-0">Department Compliance</h4></div>
+      <div class="card-body">
+        <apx-chart
+          [series]="departmentChart.series"
+          [chart]="departmentChart.chart"
+          [xaxis]="departmentChart.xaxis"
+          [yaxis]="departmentChart.yaxis"
+          [dataLabels]="departmentChart.dataLabels"
+          [grid]="departmentChart.grid"
+          [legend]="departmentChart.legend"
+          [tooltip]="departmentChart.tooltip"
+          [plotOptions]="departmentChart.plotOptions"
+          [colors]="departmentChart.colors"
+        ></apx-chart>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white"><h4 class="h6 mb-0">Status Breakdown</h4></div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-sm mb-0">
+            <tbody>
+              <tr><th>Scheduled</th><td class="text-end">{{ totals.scheduled_sessions }}</td></tr>
+              <tr><th>In Progress</th><td class="text-end">{{ totals.in_progress_sessions }}</td></tr>
+              <tr><th>Completed</th><td class="text-end">{{ totals.completed_sessions }}</td></tr>
+              <tr><th>Cancelled</th><td class="text-end">{{ totals.cancelled_sessions }}</td></tr>
+              <tr><th>Expected Attendees</th><td class="text-end">{{ totals.expected_attendees }}</td></tr>
+              <tr><th>Actual Attendees</th><td class="text-end">{{ totals.actual_attendees }}</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

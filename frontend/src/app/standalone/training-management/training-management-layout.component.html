@@ -1,0 +1,66 @@
+<div id="layout-wrapper" class="tmg-shell" [class.sidebar-open]="isSidebarOpen">
+  <header class="tmg-topbar d-flex align-items-center justify-content-between px-3 px-md-4">
+    <div class="d-flex align-items-center gap-2">
+      <button class="btn btn-outline-secondary tmg-sidebar-toggle" type="button" (click)="toggleSidebar()">
+        <i class="las la-bars"></i>
+      </button>
+      <div class="tmg-logo-badge">TRN</div>
+      <div>
+        <h1 class="h6 mb-0">Training Management</h1>
+        <small class="text-muted">Session Setup, Live Tracking, and Template Governance</small>
+      </div>
+    </div>
+    <a class="btn btn-sm btn-outline-secondary" routerLink="/menu" target="_self">Back to Main Menu</a>
+  </header>
+
+  <nav class="tmg-section-rail" aria-label="Main Sections">
+    <a
+      *ngFor="let section of mainSections"
+      class="tmg-rail-link"
+      [routerLink]="section.route"
+      [class.active]="isMainSectionActive(section.route)"
+      [attr.title]="section.label"
+    >
+      <i [class]="section.icon"></i>
+      <span class="visually-hidden">{{ section.label }}</span>
+    </a>
+  </nav>
+
+  <aside class="app-menu navbar-menu tmg-sidebar" [class.open]="isSidebarOpen">
+    <div class="navbar-brand-box">
+      <a routerLink="/standalone/training-management/live" class="logo logo-dark">
+        <span class="logo-sm">TRN</span>
+        <span class="logo-lg text-white">Training</span>
+      </a>
+    </div>
+
+    <div class="h-100 d-flex flex-column">
+      <div class="tmg-nav-group">
+        <small class="tmg-nav-group-title">Training Management</small>
+      </div>
+
+      <nav class="nav flex-column py-2">
+        <a
+          *ngFor="let item of navItems"
+          class="nav-link d-flex align-items-center gap-2"
+          [routerLink]="item.route"
+          routerLinkActive="active"
+          (click)="onNavClick()"
+        >
+          <i [class]="item.icon"></i>
+          <span>{{ item.label }}</span>
+        </a>
+      </nav>
+    </div>
+  </aside>
+
+  <div class="tmg-sidebar-backdrop" *ngIf="isSidebarOpen && !isDesktopViewport" (click)="closeSidebar()"></div>
+
+  <div class="main-content">
+    <div class="page-content">
+      <div class="container-fluid py-2 py-md-3">
+        <router-outlet></router-outlet>
+      </div>
+    </div>
+  </div>
+</div>

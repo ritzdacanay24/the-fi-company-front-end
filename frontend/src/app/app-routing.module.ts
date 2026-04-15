@@ -145,6 +145,15 @@ const routes: Routes = [
       ),
     title: "Unique Label Generator",
   },
+  {
+    path: "standalone/training-management",
+    canActivate: [AuthGuard],
+    loadChildren: () =>
+      import("./standalone/training-management/training-management.routes").then(
+        (m) => m.TRAINING_MANAGEMENT_ROUTES,
+      ),
+    title: "Training Management",
+  },
   { 
     path: "standalone/ul-audit-signoff", 
     loadComponent: () => import("./features/ul-audit-signoff/ul-audit-signoff.component").then(c => c.UlAuditSignoffComponent),
@@ -346,20 +355,12 @@ const routes: Routes = [
   // Training Management routes
   {
     path: "training",
-    component: LayoutComponent,
     canActivate: [AuthGuard],
-    runGuardsAndResolvers: "always",
-    children: [
-      { path: "", redirectTo: "sessions", pathMatch: "full" },
-      {
-        title: "Training Management",
-        path: "",
-        loadChildren: () =>
-          import("./pages/training/training-routing.module").then(
-            (m) => m.TrainingRoutingModule
-          ),
-      },
-    ],
+    loadChildren: () =>
+      import("./standalone/training-management/training-management.routes").then(
+        (m) => m.TRAINING_MANAGEMENT_ROUTES,
+      ),
+    title: "Training Management",
   },
   // Public: Shareable inspection report (no auth)
   {
