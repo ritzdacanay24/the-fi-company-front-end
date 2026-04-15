@@ -1,6 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { AgGridModule } from 'ag-grid-angular';
+import { ColDef } from 'ag-grid-community';
 import {
   ApexAxisChartSeries,
   ApexChart,
@@ -34,7 +36,7 @@ type SequenceUtilizationChartOptions = {
 @Component({
   selector: 'app-unique-label-reports',
   standalone: true,
-  imports: [CommonModule, FormsModule, NgApexchartsModule],
+  imports: [CommonModule, FormsModule, NgApexchartsModule, AgGridModule],
   templateUrl: './unique-label-reports.component.html',
 })
 export class UniqueLabelReportsComponent implements OnInit {
@@ -46,6 +48,25 @@ export class UniqueLabelReportsComponent implements OnInit {
   totals: any = null;
   topParts: any[] = [];
   weekUsage: any[] = [];
+
+  readonly defaultColDef: ColDef = {
+    sortable: true,
+    filter: true,
+    resizable: true,
+    floatingFilter: true,
+  };
+
+  readonly topPartsColumnDefs: ColDef[] = [
+    { headerName: 'Part Number', field: 'part_number', minWidth: 180, flex: 1 },
+    { headerName: 'Labels Generated', field: 'labels_generated', width: 160, filter: 'agNumberColumnFilter' },
+  ];
+
+  readonly weekUsageColumnDefs: ColDef[] = [
+    { headerName: 'Year', field: 'year_num', width: 110, filter: 'agNumberColumnFilter' },
+    { headerName: 'Week', field: 'week_num', width: 100, filter: 'agNumberColumnFilter' },
+    { headerName: 'Used', field: 'last_sequence', width: 120, filter: 'agNumberColumnFilter' },
+    { headerName: 'Remaining', field: 'remaining', width: 130, filter: 'agNumberColumnFilter' },
+  ];
   sequenceUtilizationChart: SequenceUtilizationChartOptions = {
     series: [
       { name: 'Used %', data: [] },

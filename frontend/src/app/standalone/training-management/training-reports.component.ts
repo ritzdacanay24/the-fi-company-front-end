@@ -2,6 +2,8 @@ import { CommonModule } from '@angular/common';
 import { AfterViewInit, ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { AgGridModule } from 'ag-grid-angular';
+import { ColDef } from 'ag-grid-community';
 import {
   ApexAxisChartSeries,
   ApexChart,
@@ -34,7 +36,7 @@ type BarChartOptions = {
 @Component({
   selector: 'app-training-reports',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, NgApexchartsModule],
+  imports: [CommonModule, FormsModule, RouterModule, NgApexchartsModule, AgGridModule],
   templateUrl: './training-reports.component.html',
 })
 export class TrainingReportsComponent implements OnInit, AfterViewInit {
@@ -156,6 +158,17 @@ export class TrainingReportsComponent implements OnInit, AfterViewInit {
     },
   };
 
+  readonly statusDefaultColDef: ColDef = {
+    sortable: false,
+    filter: false,
+    resizable: true,
+  };
+
+  readonly statusColumnDefs: ColDef[] = [
+    { headerName: 'Metric', field: 'metric', minWidth: 220, flex: 1 },
+    { headerName: 'Value', field: 'value', width: 140, cellClass: 'text-end' },
+  ];
+
   async ngOnInit(): Promise<void> {
     await this.loadReport();
   }
@@ -258,6 +271,17 @@ export class TrainingReportsComponent implements OnInit, AfterViewInit {
       return 'Custom range';
     }
     return `${this.dateFrom} to ${this.dateTo}`;
+  }
+
+  get statusRows(): Array<{ metric: string; value: number }> {
+    return [
+      { metric: 'Scheduled', value: Number(this.totals.scheduled_sessions || 0) },
+      { metric: 'In Progress', value: Number(this.totals.in_progress_sessions || 0) },
+      { metric: 'Completed', value: Number(this.totals.completed_sessions || 0) },
+      { metric: 'Cancelled', value: Number(this.totals.cancelled_sessions || 0) },
+      { metric: 'Expected Attendees', value: Number(this.totals.expected_attendees || 0) },
+      { metric: 'Actual Attendees', value: Number(this.totals.actual_attendees || 0) },
+    ];
   }
 
   private toDateInputValue(date: Date): string {

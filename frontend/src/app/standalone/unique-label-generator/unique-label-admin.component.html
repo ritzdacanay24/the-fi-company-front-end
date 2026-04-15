@@ -14,53 +14,13 @@
     </div>
   </div>
   <div class="card-body">
-    <div class="table-responsive">
-      <table class="table table-sm align-middle table-striped mb-0">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Status</th>
-            <th>Source</th>
-            <th>WO #</th>
-            <th>Part Number</th>
-            <th>Qty</th>
-            <th>Created By</th>
-            <th>Created At</th>
-            <th style="width: 260px;">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let row of filteredBatches">
-            <td>{{ row.id }}</td>
-            <td><span class="badge bg-secondary text-uppercase">{{ row.status }}</span></td>
-            <td>{{ row.source_type }}</td>
-            <td>{{ row.work_order_number || '-' }}</td>
-            <td>{{ row.part_number }}</td>
-            <td>{{ row.requested_quantity }}</td>
-            <td>{{ row.created_by_name }}</td>
-            <td>{{ row.created_at }}</td>
-            <td>
-              <div class="btn-group" ngbDropdown container="body">
-                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" ngbDropdownToggle>
-                  Actions
-                </button>
-                <div class="dropdown-menu dropdown-menu-end" ngbDropdownMenu>
-                  <button ngbDropdownItem type="button" (click)="startEdit(row, editBatchModal)">Edit</button>
-                  <button ngbDropdownItem type="button" (click)="archiveBatch(row)" [disabled]="row.status === 'archived'">Archive</button>
-                  <button ngbDropdownItem type="button" (click)="softDeleteBatch(row)" [disabled]="row.status === 'deleted'">Soft Delete</button>
-                  <button ngbDropdownItem type="button" (click)="restoreBatch(row)" [disabled]="row.status === 'active'">Restore</button>
-                  <div class="dropdown-divider"></div>
-                  <button ngbDropdownItem type="button" class="text-danger" (click)="hardDeleteBatch(row)">Hard Delete</button>
-                </div>
-              </div>
-            </td>
-          </tr>
-          <tr *ngIf="!isLoadingBatches && filteredBatches.length === 0">
-            <td colspan="9" class="text-center text-muted">No batches for selected status/search.</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <ag-grid-angular
+      class="ag-theme-quartz no-border"
+      style="width: 100%; height: calc(100vh - 280px); min-height: 420px;"
+      [columnDefs]="batchColumnDefs"
+      [defaultColDef]="defaultColDef"
+      [rowData]="filteredBatches">
+    </ag-grid-angular>
   </div>
 </div>
 

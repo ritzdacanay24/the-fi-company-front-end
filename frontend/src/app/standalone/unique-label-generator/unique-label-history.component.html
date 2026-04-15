@@ -13,47 +13,13 @@
     </div>
   </div>
   <div class="card-body">
-    <div class="table-responsive">
-      <table class="table table-sm table-striped align-middle mb-0">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Source</th>
-            <th>WO #</th>
-            <th>Part Number</th>
-            <th>Requested</th>
-            <th>Generated</th>
-            <th>Created By</th>
-            <th>Created At</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let row of filteredBatches">
-            <td>{{ row.id }}</td>
-            <td>{{ row.source_type }}</td>
-            <td>{{ row.work_order_number || '-' }}</td>
-            <td>{{ row.part_number }}</td>
-            <td>{{ row.requested_quantity }}</td>
-            <td>{{ row.generated_count }}</td>
-            <td>{{ row.created_by_name }}</td>
-            <td>{{ row.created_at }}</td>
-            <td>
-              <button
-                class="btn btn-outline-primary"
-                (click)="viewBatchDetails(row.id, batchDetailsModal)"
-                [disabled]="isLoadingDetails"
-              >
-                {{ isLoadingDetails ? 'Loading...' : 'View Details' }}
-              </button>
-            </td>
-          </tr>
-          <tr *ngIf="!isLoading && filteredBatches.length === 0">
-            <td colspan="9" class="text-center text-muted">No batch history found for this search.</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <ag-grid-angular
+      class="ag-theme-quartz no-border"
+      style="width: 100%; height: calc(100vh - 280px); min-height: 420px;"
+      [columnDefs]="batchColumnDefs"
+      [defaultColDef]="defaultColDef"
+      [rowData]="filteredBatches">
+    </ag-grid-angular>
   </div>
 </div>
 
@@ -64,50 +30,14 @@
   </div>
 
   <div class="modal-body">
-    <div *ngIf="selectedBatchDetails?.identifiers?.length; else emptyState" class="table-responsive">
-      <table class="table table-sm table-bordered align-middle mb-0">
-        <thead>
-          <tr>
-            <th>Unique ID</th>
-            <th>Part Number</th>
-            <th>WO #</th>
-            <th>Qty Printed</th>
-            <th>Created At</th>
-            <th class="text-end">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let item of selectedBatchDetails?.identifiers">
-            <td>{{ item.unique_identifier }}</td>
-            <td>{{ item.part_number }}</td>
-            <td>{{ item.work_order_number || '-' }}</td>
-            <td>{{ item.quantity_printed }}</td>
-            <td>{{ item['created_at'] || '-' }}</td>
-            <td class="text-end">
-              <div class="d-inline-flex align-items-center gap-2">
-                <button
-                  type="button"
-                  class="btn btn-sm btn-outline-secondary"
-                  (click)="reprintIdentifier(item)"
-                  [disabled]="!isReprintEnabled"
-                  [attr.title]="isReprintEnabled ? null : 'Reprint is disabled in admin settings'"
-                >
-                  Reprint
-                </button>
-                <button
-                  type="button"
-                  class="btn btn-sm btn-outline-primary"
-                  (click)="printIdentifierZpl(item)"
-                  [disabled]="!isReprintEnabled"
-                  [attr.title]="isReprintEnabled ? null : 'Reprint is disabled in admin settings'"
-                >
-                  Zebra
-                </button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <div *ngIf="selectedBatchDetails?.identifiers?.length; else emptyState">
+      <ag-grid-angular
+        class="ag-theme-quartz no-border"
+        style="width: 100%; height: calc(100vh - 260px); min-height: 300px;"
+        [columnDefs]="detailColumnDefs"
+        [defaultColDef]="defaultColDef"
+        [rowData]="selectedBatchDetails?.identifiers">
+      </ag-grid-angular>
     </div>
 
     <ng-template #emptyState>

@@ -1,7 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, TemplateRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { NgbModal, NgbModalModule, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
+import { AgGridModule } from 'ag-grid-angular';
+import { ColDef } from 'ag-grid-community';
 import { ToastrService } from 'ngx-toastr';
 import {
   UniqueLabelBatch,
@@ -18,7 +20,7 @@ interface BatchDetails {
 @Component({
   selector: 'app-unique-label-history',
   standalone: true,
-  imports: [CommonModule, FormsModule, NgbModalModule],
+  imports: [CommonModule, FormsModule, NgbModalModule, AgGridModule],
   templateUrl: './unique-label-history.component.html',
 })
 export class UniqueLabelHistoryComponent implements OnInit {
@@ -33,6 +35,78 @@ export class UniqueLabelHistoryComponent implements OnInit {
   batches: UniqueLabelBatch[] = [];
   selectedBatchDetails: BatchDetails | null = null;
   private detailsModalRef: NgbModalRef | null = null;
+
+  readonly defaultColDef: ColDef = {
+    sortable: true,
+    filter: true,
+    resizable: true,
+    floatingFilter: true,
+  };
+
+  @ViewChild('batchDetailsModal', { static: true }) batchDetailsModalTpl?: TemplateRef<unknown>;
+
+  readonly batchColumnDefs: ColDef[] = [
+    { headerName: 'ID', field: 'id', width: 90 },
+    { headerName: 'Source', field: 'source_type', width: 110 },
+    { headerName: 'WO #', field: 'work_order_number', width: 120, valueFormatter: (p: any) => p.value || '-' },
+    { headerName: 'Part Number', field: 'part_number', minWidth: 180, flex: 1 },
+    { headerName: 'Requested', field: 'requested_quantity', width: 110, filter: 'agNumberColumnFilter' },
+    { headerName: 'Generated', field: 'generated_count', width: 110, filter: 'agNumberColumnFilter' },
+    { headerName: 'Created By', field: 'created_by_name', width: 140 },
+    { headerName: 'Created At', field: 'created_at', width: 170 },
+    {
+      headerName: 'Actions',
+      colId: 'actions',
+      width: 130,
+      pinned: 'right',
+      sortable: false,
+      filter: false,
+      floatingFilter: false,
+      cellRenderer: () => '<button class="btn btn-outline-primary btn-sm action-btn" data-action="view">View Details</button>',
+      onCellClicked: (params: any) => {
+        const button = params?.event?.target?.closest?.('.action-btn');
+        if (button && params?.data?.id) {
+          if (this.batchDetailsModalTpl) {
+            this.viewBatchDetails(params.data.id, this.batchDetailsModalTpl);
+          }
+        }
+      },
+    },
+  ];
+
+  readonly detailColumnDefs: ColDef[] = [
+    { headerName: 'Unique ID', field: 'unique_identifier', minWidth: 180, flex: 1 },
+    { headerName: 'Part Number', field: 'part_number', width: 150 },
+    { headerName: 'WO #', field: 'work_order_number', width: 120, valueFormatter: (p: any) => p.value || '-' },
+    { headerName: 'Qty Printed', field: 'quantity_printed', width: 120, filter: 'agNumberColumnFilter' },
+    { headerName: 'Created At', field: 'created_at', width: 170, valueFormatter: (p: any) => p.value || '-' },
+    {
+      headerName: 'Actions',
+      colId: 'detailActions',
+      width: 180,
+      pinned: 'right',
+      sortable: false,
+      filter: false,
+      floatingFilter: false,
+      cellRenderer: () => `
+        <div class="d-inline-flex align-items-center gap-2">
+          <button type="button" class="btn btn-sm btn-outline-secondary action-btn" data-action="reprint">Reprint</button>
+          <button type="button" class="btn btn-sm btn-outline-primary action-btn" data-action="zebra">Zebra</button>
+        </div>
+      `,
+      onCellClicked: (params: any) => {
+        const button = params?.event?.target?.closest?.('.action-btn');
+        const action = button?.getAttribute?.('data-action');
+        if (!action || !params?.data) return;
+        if (action === 'reprint') {
+          this.reprintIdentifier(params.data);
+        } else if (action === 'zebra') {
+          this.printIdentifierZpl(params.data);
+        }
+      },
+    },
+  ];
+
 
   get filteredBatches(): UniqueLabelBatch[] {
     const term = this.searchTerm.trim().toLowerCase();

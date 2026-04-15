@@ -70,26 +70,13 @@
       </div>
     </div>
     <div class="card-body">
-      <div class="table-responsive">
-        <table class="table table-sm table-striped align-middle mb-0">
-          <thead>
-            <tr>
-              <th>Unique ID</th>
-              <th>Part Number</th>
-              <th>WO #</th>
-              <th>Qty Printed</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let item of generatedIdentifiers">
-              <td>{{ item.unique_identifier }}</td>
-              <td>{{ item.part_number }}</td>
-              <td>{{ item.work_order_number || '-' }}</td>
-              <td>{{ item.quantity_printed }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <ag-grid-angular
+        class="ag-theme-quartz no-border"
+        style="width: 100%; height: calc(100vh - 420px); min-height: 260px;"
+        [columnDefs]="generatedColumnDefs"
+        [defaultColDef]="generatedDefaultColDef"
+        [rowData]="generatedIdentifiers">
+      </ag-grid-angular>
     </div>
   </div>
 

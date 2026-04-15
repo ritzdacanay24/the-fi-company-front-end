@@ -22,15 +22,13 @@
     <div class="card border-0 shadow-sm h-100">
       <div class="card-header bg-white"><h4 class="h6 mb-0">Top Parts</h4></div>
       <div class="card-body">
-        <div class="table-responsive">
-          <table class="table table-sm mb-0">
-            <thead><tr><th>Part Number</th><th>Labels Generated</th></tr></thead>
-            <tbody>
-              <tr *ngFor="let row of topParts"><td>{{ row.part_number }}</td><td>{{ row.labels_generated }}</td></tr>
-              <tr *ngIf="topParts.length === 0"><td colspan="2" class="text-center text-muted">No data</td></tr>
-            </tbody>
-          </table>
-        </div>
+        <ag-grid-angular
+          class="ag-theme-quartz no-border"
+          style="width: 100%; height: calc(100vh - 520px); min-height: 260px;"
+          [columnDefs]="topPartsColumnDefs"
+          [defaultColDef]="defaultColDef"
+          [rowData]="topParts">
+        </ag-grid-angular>
       </div>
     </div>
   </div>
@@ -54,20 +52,13 @@
         ></apx-chart>
       </div>
       <div class="card-body">
-        <div class="table-responsive">
-          <table class="table table-sm mb-0">
-            <thead><tr><th>Year</th><th>Week</th><th>Used</th><th>Remaining</th></tr></thead>
-            <tbody>
-              <tr *ngFor="let row of weekUsage">
-                <td>{{ row.year_num }}</td>
-                <td>{{ row.week_num }}</td>
-                <td>{{ row.last_sequence }}</td>
-                <td>{{ row.remaining }}</td>
-              </tr>
-              <tr *ngIf="weekUsage.length === 0"><td colspan="4" class="text-center text-muted">No data</td></tr>
-            </tbody>
-          </table>
-        </div>
+        <ag-grid-angular
+          class="ag-theme-quartz no-border"
+          style="width: 100%; height: calc(100vh - 520px); min-height: 260px;"
+          [columnDefs]="weekUsageColumnDefs"
+          [defaultColDef]="defaultColDef"
+          [rowData]="weekUsage">
+        </ag-grid-angular>
       </div>
     </div>
   </div>

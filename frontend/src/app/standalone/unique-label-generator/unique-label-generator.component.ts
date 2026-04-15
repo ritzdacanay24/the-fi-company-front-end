@@ -5,11 +5,13 @@ import { AuthenticationService } from '../../core/services/auth.service';
 import { ToastrService } from 'ngx-toastr';
 import { UniqueLabelGeneratorApiService, UniqueLabelIdentifier } from './unique-label-generator-api.service';
 import { printZplToZebra } from './unique-label-zpl.util';
+import { AgGridModule } from 'ag-grid-angular';
+import { ColDef } from 'ag-grid-community';
 
 @Component({
   selector: 'app-unique-label-generator',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, AgGridModule],
   templateUrl: './unique-label-generator.component.html',
   styleUrl: './unique-label-generator.component.scss',
 })
@@ -37,6 +39,20 @@ export class UniqueLabelGeneratorComponent {
   isAuthenticatedCreator = false;
   generatedBatchId: number | null = null;
   generatedIdentifiers: UniqueLabelIdentifier[] = [];
+
+  readonly generatedDefaultColDef: ColDef = {
+    sortable: true,
+    filter: true,
+    resizable: true,
+    floatingFilter: true,
+  };
+
+  readonly generatedColumnDefs: ColDef[] = [
+    { headerName: 'Unique ID', field: 'unique_identifier', minWidth: 180, flex: 1 },
+    { headerName: 'Part Number', field: 'part_number', minWidth: 140, flex: 1 },
+    { headerName: 'WO #', field: 'work_order_number', width: 130, valueFormatter: (p: any) => p.value || '-' },
+    { headerName: 'Qty Printed', field: 'quantity_printed', width: 120, filter: 'agNumberColumnFilter' },
+  ];
 
   constructor() {
     this.prefillCreatedByFromAuthenticatedUser();

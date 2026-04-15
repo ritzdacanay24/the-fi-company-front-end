@@ -3,13 +3,15 @@ import { Component, OnInit, TemplateRef, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { NgbDropdownModule, NgbModal, NgbModalModule, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
+import { AgGridModule } from 'ag-grid-angular';
+import { ColDef } from 'ag-grid-community';
 import { ToastrService } from 'ngx-toastr';
 import { UniqueLabelBatch, UniqueLabelGeneratorApiService } from './unique-label-generator-api.service';
 
 @Component({
   selector: 'app-unique-label-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, NgbDropdownModule, NgbModalModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, NgbDropdownModule, NgbModalModule, AgGridModule],
   templateUrl: './unique-label-admin.component.html',
 })
 export class UniqueLabelAdminComponent implements OnInit {
@@ -26,6 +28,65 @@ export class UniqueLabelAdminComponent implements OnInit {
   batches: UniqueLabelBatch[] = [];
   selectedBatchId: number | null = null;
   private editModalRef: NgbModalRef | null = null;
+
+  readonly defaultColDef: ColDef = {
+    sortable: true,
+    filter: true,
+    resizable: true,
+    floatingFilter: true,
+  };
+
+  readonly batchColumnDefs: ColDef[] = [
+    { headerName: 'ID', field: 'id', width: 90 },
+    {
+      headerName: 'Status',
+      field: 'status',
+      width: 120,
+      cellRenderer: (params: any) => `<span class="badge bg-secondary text-uppercase">${params.value || '-'}</span>`,
+      filter: 'agSetColumnFilter',
+    },
+    { headerName: 'Source', field: 'source_type', width: 110 },
+    { headerName: 'WO #', field: 'work_order_number', width: 120, valueFormatter: (p: any) => p.value || '-' },
+    { headerName: 'Part Number', field: 'part_number', minWidth: 180, flex: 1 },
+    { headerName: 'Qty', field: 'requested_quantity', width: 90, filter: 'agNumberColumnFilter' },
+    { headerName: 'Created By', field: 'created_by_name', width: 140 },
+    { headerName: 'Created At', field: 'created_at', width: 170 },
+    {
+      headerName: 'Actions',
+      colId: 'actions',
+      width: 280,
+      pinned: 'right',
+      sortable: false,
+      filter: false,
+      floatingFilter: false,
+      cellRenderer: (params: any) => {
+        const status = params?.data?.status;
+        return `
+          <div class="d-flex gap-1">
+            <button class="btn btn-sm btn-outline-warning action-btn" data-action="archive" ${status === 'archived' ? 'disabled' : ''}>Archive</button>
+            <button class="btn btn-sm btn-outline-danger action-btn" data-action="soft-delete" ${status === 'deleted' ? 'disabled' : ''}>Soft Delete</button>
+            <button class="btn btn-sm btn-outline-success action-btn" data-action="restore" ${status === 'active' ? 'disabled' : ''}>Restore</button>
+            <button class="btn btn-sm btn-danger action-btn" data-action="hard-delete">Hard Delete</button>
+          </div>
+        `;
+      },
+      onCellClicked: (params: any) => {
+        const button = params?.event?.target?.closest?.('.action-btn');
+        const action = button?.getAttribute?.('data-action');
+        if (!action || !params?.data) return;
+
+        if (action === 'archive') {
+          this.archiveBatch(params.data);
+        } else if (action === 'soft-delete') {
+          this.softDeleteBatch(params.data);
+        } else if (action === 'restore') {
+          this.restoreBatch(params.data);
+        } else if (action === 'hard-delete') {
+          this.hardDeleteBatch(params.data);
+        }
+      },
+    },
+  ];
 
   readonly editForm = this.fb.group({
     source_type: this.fb.nonNullable.control<'WO' | 'MANUAL'>('MANUAL'),
