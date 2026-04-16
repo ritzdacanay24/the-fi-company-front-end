@@ -42,6 +42,11 @@ const routes: Routes = [
     loadComponent: () => import('./components/sn-stats/sn-stats.component').then(c => c.SnStatsComponent),
     data: { title: 'Serial Number Statistics' }
   },
+  {
+    path: 'usage-report',
+    loadComponent: () => import('./components/sn-usage-report/sn-usage-report.component').then(c => c.SnUsageReportComponent),
+    data: { title: 'EyeFi Serials Usage Report' }
+  },
 
   {
     path: '**',

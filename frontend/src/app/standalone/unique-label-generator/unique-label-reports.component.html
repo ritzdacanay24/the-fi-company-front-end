@@ -1,64 +1,171 @@
-<div class="card border-0 shadow-sm mb-3">
-  <div class="card-header bg-white d-flex justify-content-between align-items-center gap-2">
-    <h3 class="h6 mb-0">Reports</h3>
-    <div class="d-flex align-items-center gap-2">
-      <label class="small text-muted mb-0">Days</label>
-      <input class="form-control form-control-sm" style="width: 90px;" type="number" [(ngModel)]="days" min="1" max="365" />
-      <button class="btn btn-sm btn-outline-primary" (click)="loadReport()" [disabled]="isLoading">Refresh</button>
-    </div>
-  </div>
-  <div class="card-body" *ngIf="totals">
-    <div class="row g-2">
-      <div class="col-md-3"><div class="border rounded p-2"><small class="text-muted">Total Batches</small><div class="h5 mb-0">{{ totals.total_batches ?? 0 }}</div></div></div>
-      <div class="col-md-3"><div class="border rounded p-2"><small class="text-muted">Total Labels</small><div class="h5 mb-0">{{ totals.total_labels ?? 0 }}</div></div></div>
-      <div class="col-md-3"><div class="border rounded p-2"><small class="text-muted">WO Batches</small><div class="h5 mb-0">{{ totals.wo_batches ?? 0 }}</div></div></div>
-      <div class="col-md-3"><div class="border rounded p-2"><small class="text-muted">Manual Batches</small><div class="h5 mb-0">{{ totals.manual_batches ?? 0 }}</div></div></div>
-    </div>
-  </div>
-</div>
+<div class="container-fluid">
+  <div class="row justify-content-center">
+    <div class="col-12">
 
-<div class="row g-3">
-  <div class="col-lg-6">
-    <div class="card border-0 shadow-sm h-100">
-      <div class="card-header bg-white"><h4 class="h6 mb-0">Top Parts</h4></div>
-      <div class="card-body">
-        <ag-grid-angular
-          class="ag-theme-quartz no-border"
-          style="width: 100%; height: calc(100vh - 520px); min-height: 260px;"
-          [columnDefs]="topPartsColumnDefs"
-          [defaultColDef]="defaultColDef"
-          [rowData]="topParts">
-        </ag-grid-angular>
+      <!-- Page Header -->
+      <div class="mb-4">
+        <nav aria-label="breadcrumb" class="mb-2">
+          <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a routerLink="/serial-management">Serial Management</a></li>
+            <li class="breadcrumb-item"><a routerLink="/serial-management/ul-generator">Unique Label Generator</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Reports</li>
+          </ol>
+        </nav>
+        <div class="d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center">
+            <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center"
+              style="width: 60px; height: 60px;">
+              <i class="mdi mdi-chart-bar text-white fs-4"></i>
+            </div>
+            <div>
+              <h2 class="mb-1 text-primary">Label Usage Reports</h2>
+              <p class="text-muted mb-0">Analyze label generation trends and usage statistics</p>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
 
-  <div class="col-lg-6">
-    <div class="card border-0 shadow-sm h-100">
-      <div class="card-header bg-white"><h4 class="h6 mb-0">Weekly Sequence Utilization</h4></div>
-      <div class="card-body border-bottom" *ngIf="weekUsage.length > 0">
-        <apx-chart
-          [series]="sequenceUtilizationChart.series"
-          [chart]="sequenceUtilizationChart.chart"
-          [xaxis]="sequenceUtilizationChart.xaxis"
-          [yaxis]="sequenceUtilizationChart.yaxis"
-          [stroke]="sequenceUtilizationChart.stroke"
-          [dataLabels]="sequenceUtilizationChart.dataLabels"
-          [tooltip]="sequenceUtilizationChart.tooltip"
-          [legend]="sequenceUtilizationChart.legend"
-          [grid]="sequenceUtilizationChart.grid"
-          [markers]="sequenceUtilizationChart.markers"
-          [colors]="sequenceUtilizationChart.colors"
-        ></apx-chart>
-      </div>
-      <div class="card-body">
-        <ag-grid-angular
-          class="ag-theme-quartz no-border"
-          style="width: 100%; height: calc(100vh - 520px); min-height: 260px;"
-          [columnDefs]="weekUsageColumnDefs"
-          [defaultColDef]="defaultColDef"
-          [rowData]="weekUsage">
-        </ag-grid-angular>
+      <div class="card shadow-sm border-0">
+        <div class="card-header">
+          <div class="d-flex align-items-center">
+            <button class="btn btn-outline-secondary me-3" (click)="loadReport()" [disabled]="isLoading" title="Refresh data">
+              <i class="mdi mdi-refresh me-1"></i>Refresh
+            </button>
+            <div class="d-flex align-items-center gap-2">
+              <label class="small text-muted mb-0">Days</label>
+              <input class="form-control form-control-sm" style="width: 90px;" type="number" [(ngModel)]="days" min="1" max="365" />
+            </div>
+            <div class="ms-auto d-flex align-items-center">
+              <h4 class="card-title mb-0">
+                <i class="mdi mdi-chart-box-outline me-2"></i>Unique Label Analytics
+              </h4>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-body text-center py-5" *ngIf="isLoading">
+          <div class="spinner-border text-primary"></div>
+        </div>
+
+        <div class="card-body border-bottom igt-analytics-strip" *ngIf="!isLoading && totals">
+          <div class="row g-3 mb-3">
+            <div class="col-6 col-lg-3">
+              <div class="metric-card metric-card-with-pie">
+                <div>
+                  <small>Capacity Used</small>
+                  <h4 class="mb-0">{{ latestUsedCount() }}</h4>
+                  <small class="metric-subtext">{{ capacityUsedPct() }}% of capacity</small>
+                </div>
+                <div class="mini-pie" [style.background]="miniPieBackground(capacityUsedPct(), '#f06548')">
+                  <div class="mini-pie-inner">{{ capacityUsedPct() }}%</div>
+                </div>
+              </div>
+            </div>
+            <div class="col-6 col-lg-3">
+              <div class="metric-card metric-card-with-pie">
+                <div>
+                  <small>Capacity Remaining</small>
+                  <h4 class="mb-0">{{ latestRemainingCount() }}</h4>
+                  <small class="metric-subtext">{{ capacityRemainingPct() }}% available</small>
+                </div>
+                <div class="mini-pie" [style.background]="miniPieBackground(capacityRemainingPct(), '#2e8b57')">
+                  <div class="mini-pie-inner">{{ capacityRemainingPct() }}%</div>
+                </div>
+              </div>
+            </div>
+            <div class="col-6 col-lg-3">
+              <div class="metric-card metric-card-with-pie">
+                <div>
+                  <small>WO Batches</small>
+                  <h4 class="mb-0">{{ totals.wo_batches ?? 0 }}</h4>
+                  <small class="metric-subtext">of total batches</small>
+                </div>
+                <div class="mini-pie" [style.background]="miniPieBackground(woBatchPct(), '#3b7ed4')">
+                  <div class="mini-pie-inner">{{ woBatchPct() }}%</div>
+                </div>
+              </div>
+            </div>
+            <div class="col-6 col-lg-3">
+              <div class="metric-card metric-card-with-pie">
+                <div>
+                  <small>Weeks Remaining</small>
+                  <h4 class="mb-0">{{ estimatedWeeksRemainingLabel() }}</h4>
+                  <small class="metric-subtext">based on recent weekly burn</small>
+                </div>
+                <div class="mini-pie" [style.background]="miniPieBackground(weeksRemainingGaugePct(), '#3b7ed4')">
+                  <div class="mini-pie-inner">{{ weeksRemainingGaugePct() }}%</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-12 col-lg-8">
+              <div class="analytics-card">
+                <h6 class="mb-2">Weekly Sequence Utilization</h6>
+                <apx-chart
+                  [series]="sequenceUtilizationChart.series"
+                  [chart]="sequenceUtilizationChart.chart"
+                  [xaxis]="sequenceUtilizationChart.xaxis"
+                  [yaxis]="sequenceUtilizationChart.yaxis"
+                  [stroke]="sequenceUtilizationChart.stroke"
+                  [dataLabels]="sequenceUtilizationChart.dataLabels"
+                  [tooltip]="sequenceUtilizationChart.tooltip"
+                  [legend]="sequenceUtilizationChart.legend"
+                  [grid]="sequenceUtilizationChart.grid"
+                  [markers]="sequenceUtilizationChart.markers"
+                  [colors]="sequenceUtilizationChart.colors"
+                ></apx-chart>
+              </div>
+            </div>
+
+            <div class="col-12 col-lg-4">
+              <div class="analytics-card">
+                <h6 class="mb-2">Current Sequence Capacity</h6>
+                <apx-chart
+                  [series]="remainingOverviewChart.series"
+                  [chart]="remainingOverviewChart.chart"
+                  [labels]="remainingOverviewChart.labels"
+                  [legend]="remainingOverviewChart.legend"
+                  [dataLabels]="remainingOverviewChart.dataLabels"
+                  [tooltip]="remainingOverviewChart.tooltip"
+                  [colors]="remainingOverviewChart.colors"
+                  [stroke]="remainingOverviewChart.stroke"
+                  [plotOptions]="remainingOverviewChart.plotOptions"
+                ></apx-chart>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-12 col-lg-6">
+              <div class="analytics-card">
+                <h6 class="mb-2">Top Parts</h6>
+                <ag-grid-angular
+                  class="ag-theme-quartz no-border"
+                  style="width: 100%; height: 320px;"
+                  [columnDefs]="topPartsColumnDefs"
+                  [defaultColDef]="defaultColDef"
+                  [rowData]="topParts">
+                </ag-grid-angular>
+              </div>
+            </div>
+
+            <div class="col-12 col-lg-6">
+              <div class="analytics-card">
+                <h6 class="mb-2">Week Usage Table</h6>
+                <ag-grid-angular
+                  class="ag-theme-quartz no-border"
+                  style="width: 100%; height: 320px;"
+                  [columnDefs]="weekUsageColumnDefs"
+                  [defaultColDef]="defaultColDef"
+                  [rowData]="weekUsage">
+                </ag-grid-angular>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>

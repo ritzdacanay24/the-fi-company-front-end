@@ -1,0 +1,3 @@
+@use '../shared/standalone-shell-layout.shared' as standaloneShell;
+
+@include standaloneShell.shell('tmg', $content-offset-mode: 'padding');

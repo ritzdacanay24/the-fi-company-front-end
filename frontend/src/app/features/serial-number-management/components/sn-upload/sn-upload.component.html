@@ -1,261 +1,223 @@
 <div class="container-fluid">
   <div class="row justify-content-center">
     <div class="col-12 col-lg-11 col-xl-10 col-xxl-8">
-      
+
       <!-- Breadcrumb -->
       <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb mb-0">
           <li class="breadcrumb-item">
-            <a href="#" class="text-decoration-none" routerLink="/quality">
-              <i class="mdi mdi-home-outline me-1"></i>Quality
-            </a>
+            <a routerLink="/serial-management">Serial Management</a>
           </li>
           <li class="breadcrumb-item">
-            <a href="#" class="text-decoration-none" routerLink="../list">
-              EyeFi Serials
-            </a>
+            <a routerLink="/serial-management/eyefi-serials">EyeFi Serials</a>
           </li>
-          <li class="breadcrumb-item active" aria-current="page">
-            Add Serial Range
-          </li>
+          <li class="breadcrumb-item active" aria-current="page">Upload Serials</li>
         </ol>
       </nav>
-      
+
       <!-- Page Header with Context -->
       <div class="mb-4">
         <div class="d-flex align-items-center mb-3">
-          <button 
-            type="button" 
-            class="btn btn-outline-secondary me-3"
-            routerLink="../list"
+          <button type="button" class="btn btn-outline-secondary me-3" routerLink="../list"
             title="Back to EyeFi Serial List">
             <i class="mdi mdi-arrow-left me-2"></i>Back
           </button>
-          <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+          <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center"
+            style="width: 60px; height: 60px;">
             <i class="mdi mdi-plus-circle text-white fs-4"></i>
           </div>
           <div>
             <h2 class="mb-1 text-primary">Add EyeFi Serial Number Range</h2>
-            <p class="text-muted mb-0">Register new EyeFi device serial numbers for inventory tracking and assignment</p>
+            <p class="text-muted mb-0">Register new EyeFi device serial numbers for inventory tracking and assignment
+            </p>
           </div>
         </div>
       </div>
 
       <!-- Range Input Section -->
       <div class="card shadow-sm border-0 mb-4">
-    <div class="card-header bg-light">
-      <h5 class="mb-0">
-        <i class="mdi mdi-numeric me-2"></i>Serial Number Range Input
-      </h5>
-    </div>
-    <div class="card-body p-4">
-      <p class="text-muted mb-4">Enter the range of numeric EyeFi device serial numbers (e.g., 132081 to 132100).</p>
-      
-      <!-- Range Input Method Selection -->
-      <div class="mb-4">
-        <label class="form-label fw-semibold">Input Method</label>
-        <div class="btn-group w-100" role="group">
-          <input type="radio" class="btn-check" name="inputMethod" id="rangeMethod" 
-                 value="range" [(ngModel)]="inputMethod" autocomplete="off" checked>
-          <label class="btn btn-outline-primary" for="rangeMethod">
-            <i class="mdi mdi-arrow-expand-horizontal me-1"></i> Range Input (132081 to 132100)
-          </label>
-          
-          <input type="radio" class="btn-check" name="inputMethod" id="listMethod" 
-                 value="list" [(ngModel)]="inputMethod" autocomplete="off">
-          <label class="btn btn-outline-primary" for="listMethod">
-            <i class="mdi mdi-format-list-numbered me-1"></i> Individual List
-          </label>
+        <div class="card-header ">
+          <h5 class="mb-0">
+            <i class="mdi mdi-numeric me-2"></i>Serial Number Range Input
+          </h5>
         </div>
-      </div>
+        <div class="card-body p-4">
+          <p class="text-muted mb-4">Enter the range of numeric EyeFi device serial numbers (e.g., 132081 to 132100).
+          </p>
 
-      <!-- Range Input Form -->
-      <div *ngIf="inputMethod === 'range'">
-        <div class="row g-3">
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Prefix (Optional)</label>
-            <input 
-              type="text" 
-              class="form-control"
-              [(ngModel)]="rangePrefix"
-              placeholder="Leave empty for numeric only"
-              maxlength="20">
-            <small class="form-text text-muted">Optional prefix (usually left empty for EyeFi)</small>
-          </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Start Number <span class="text-danger">*</span></label>
-            <input 
-              type="number" 
-              class="form-control"
-              [(ngModel)]="rangeStart"
-              placeholder="132081"
-              min="0"
-              max="999999">
-          </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">End Number <span class="text-danger">*</span></label>
-            <input 
-              type="number" 
-              class="form-control"
-              [(ngModel)]="rangeEnd"
-              placeholder="132100"
-              min="0"
-              max="999999">
-          </div>
-          <div class="col-md-2">
-            <label class="form-label fw-semibold">Padding</label>
-            <select class="form-control" [(ngModel)]="rangePadding">
-              <option value="0">None (132081)</option>
-              <option value="6">6 digits (132081)</option>
-              <option value="7">7 digits (0132081)</option>
-            </select>
-          </div>
-        </div>
-        
-        <div class="mt-4 d-flex align-items-center gap-3">
-          <button 
-            class="btn btn-info"
-            (click)="generatePreview()"
-            [disabled]="!isValidRange()">
-            <i class="mdi mdi-eye me-1"></i> Preview Range
-          </button>
-          <span class="text-muted" *ngIf="isValidRange()">
-            <i class="mdi mdi-information me-1"></i>Will generate <strong>{{ getRangeCount() }}</strong> serial numbers
-          </span>
-        </div>
-      </div>
+          <!-- Range Input Method Selection -->
+          <div class="mb-4">
+            <label class="form-label fw-semibold">Input Method</label>
+            <div class="btn-group w-100" role="group">
+              <input type="radio" class="btn-check" name="inputMethod" id="rangeMethod" value="range"
+                [(ngModel)]="inputMethod" autocomplete="off" checked>
+              <label class="btn btn-outline-primary" for="rangeMethod">
+                <i class="mdi mdi-arrow-expand-horizontal me-1"></i> Range Input (132081 to 132100)
+              </label>
 
-      <!-- Individual List Input -->
-      <div *ngIf="inputMethod === 'list'">
-        <label class="form-label fw-semibold">Serial Numbers <span class="text-danger">*</span></label>
-        <textarea 
-          class="form-control" 
-          rows="8"
-          [(ngModel)]="individualList"
-          placeholder="Enter serial numbers, one per line:&#10;132081&#10;132082&#10;132083&#10;132084"></textarea>
-        <small class="form-text text-muted">Enter one numeric serial number per line (no commas)</small>
-        
-        <div class="mt-3">
-          <button 
-            class="btn btn-info"
-            (click)="parseIndividualList()"
-            [disabled]="!individualList?.trim()">
-            <i class="mdi mdi-eye me-1"></i> Preview List
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
+              <input type="radio" class="btn-check" name="inputMethod" id="listMethod" value="list"
+                [(ngModel)]="inputMethod" autocomplete="off">
+              <label class="btn btn-outline-primary" for="listMethod">
+                <i class="mdi mdi-format-list-numbered me-1"></i> Individual List
+              </label>
+            </div>
+          </div>
 
-  <!-- Preview and Submit Section -->
-  <div class="card shadow-sm border-0 mb-4" *ngIf="previewSerialNumbers.length > 0">
-    <div class="card-header bg-light d-flex align-items-center justify-content-between">
-      <h5 class="mb-0">
-        <i class="mdi mdi-eye me-2"></i>Preview Serial Numbers
-      </h5>
-      <span class="badge bg-info">{{ previewSerialNumbers.length }} numbers</span>
-    </div>
-    <div class="card-body p-4">
-      <div class="preview-list mb-4">
-        <div class="row g-2">
-          <div class="col-md-3 col-sm-4 col-6" *ngFor="let serial of previewSerialNumbers.slice(0, 20)">
-            <div class="bg-light p-2 rounded text-center">
-              <code class="text-primary fw-semibold">{{ serial }}</code>
+          <!-- Range Input Form -->
+          <div *ngIf="inputMethod === 'range'">
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Prefix (Optional)</label>
+                <input type="text" class="form-control" [(ngModel)]="rangePrefix"
+                  placeholder="Leave empty for numeric only" maxlength="20">
+                <small class="form-text text-muted">Optional prefix (usually left empty for EyeFi)</small>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Start Number <span class="text-danger">*</span></label>
+                <input type="number" class="form-control" [(ngModel)]="rangeStart" placeholder="132081" min="0"
+                  max="999999">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">End Number <span class="text-danger">*</span></label>
+                <input type="number" class="form-control" [(ngModel)]="rangeEnd" placeholder="132100" min="0"
+                  max="999999">
+              </div>
+              <div class="col-md-2">
+                <label class="form-label fw-semibold">Padding</label>
+                <select class="form-control" [(ngModel)]="rangePadding">
+                  <option value="0">None (132081)</option>
+                  <option value="6">6 digits (132081)</option>
+                  <option value="7">7 digits (0132081)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="mt-4 d-flex align-items-center gap-3">
+              <button class="btn btn-info" (click)="generatePreview()" [disabled]="!isValidRange()">
+                <i class="mdi mdi-eye me-1"></i> Preview Range
+              </button>
+              <span class="text-muted" *ngIf="isValidRange()">
+                <i class="mdi mdi-information me-1"></i>Will generate <strong>{{ getRangeCount() }}</strong> serial
+                numbers
+              </span>
+            </div>
+          </div>
+
+          <!-- Individual List Input -->
+          <div *ngIf="inputMethod === 'list'">
+            <label class="form-label fw-semibold">Serial Numbers <span class="text-danger">*</span></label>
+            <textarea class="form-control" rows="8" [(ngModel)]="individualList"
+              placeholder="Enter serial numbers, one per line:&#10;132081&#10;132082&#10;132083&#10;132084"></textarea>
+            <small class="form-text text-muted">Enter one numeric serial number per line (no commas)</small>
+
+            <div class="mt-3">
+              <button class="btn btn-info" (click)="parseIndividualList()" [disabled]="!individualList?.trim()">
+                <i class="mdi mdi-eye me-1"></i> Preview List
+              </button>
             </div>
           </div>
         </div>
-        <div *ngIf="previewSerialNumbers.length > 20" class="mt-3 text-center">
-          <em class="text-muted">
-            <i class="mdi mdi-dots-horizontal"></i> and {{ previewSerialNumbers.length - 20 }} more serial numbers
-          </em>
+      </div>
+
+      <!-- Preview and Submit Section -->
+      <div class="card shadow-sm border-0 mb-4" *ngIf="previewSerialNumbers.length > 0">
+        <div class="card-header  d-flex align-items-center justify-content-between">
+          <h5 class="mb-0">
+            <i class="mdi mdi-eye me-2"></i>Preview Serial Numbers
+          </h5>
+          <span class="badge bg-info">{{ previewSerialNumbers.length }} numbers</span>
+        </div>
+        <div class="card-body p-4">
+          <div class="preview-list mb-4">
+            <div class="row g-2">
+              <div class="col-md-3 col-sm-4 col-6" *ngFor="let serial of previewSerialNumbers.slice(0, 20)">
+                <div class=" p-2 rounded text-center">
+                  <code class="text-primary fw-semibold">{{ serial }}</code>
+                </div>
+              </div>
+            </div>
+            <div *ngIf="previewSerialNumbers.length > 20" class="mt-3 text-center">
+              <em class="text-muted">
+                <i class="mdi mdi-dots-horizontal"></i> and {{ previewSerialNumbers.length - 20 }} more serial numbers
+              </em>
+            </div>
+          </div>
+
+          <div class="d-flex gap-2 pt-3 border-top">
+            <button class="btn btn-success" (click)="addRangeToDatabase()" [disabled]="isUploading">
+              @if (isUploading) {
+              <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+              Adding to Database...
+              } @else {
+              <i class="mdi mdi-database-plus me-1"></i> Add {{ previewSerialNumbers.length }} Serial Numbers
+              }
+            </button>
+
+            <button class="btn btn-outline-secondary" (click)="resetForm()" [disabled]="isUploading">
+              <i class="mdi mdi-close me-1"></i> Clear
+            </button>
+          </div>
         </div>
       </div>
-      
-      <div class="d-flex gap-2 pt-3 border-top">
-        <button 
-          class="btn btn-success"
-          (click)="addRangeToDatabase()"
-          [disabled]="isUploading">
-          @if (isUploading) {
-            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
-            Adding to Database...
-          } @else {
-            <i class="mdi mdi-database-plus me-1"></i> Add {{ previewSerialNumbers.length }} Serial Numbers
-          }
-        </button>
-        
-        <button 
-          class="btn btn-outline-secondary"
-          (click)="resetForm()"
-          [disabled]="isUploading">
-          <i class="mdi mdi-close me-1"></i> Clear
-        </button>
-      </div>
-    </div>
-  </div>
 
-  <!-- Results Section -->
-  <div class="card shadow-sm border-0 mb-4" *ngIf="uploadResult">
-    <div class="card-header" [ngClass]="uploadResult.success ? 'bg-success' : 'bg-danger'">
-      <h5 class="mb-0 text-white">
-        <i class="mdi" [ngClass]="uploadResult.success ? 'mdi-check-circle' : 'mdi-alert-circle'"></i>
-        {{ uploadResult.success ? 'Successfully Added' : 'Error Occurred' }}
-      </h5>
-    <div class="card-body p-4">
-      <div class="result-summary">
-        <p class="lead mb-4">{{ uploadResult.message }}</p>
-        
-        <div class="row g-3 mb-4">
-          <div class="col-md-4 text-center">
-            <div class="p-4 bg-light rounded">
-              <h3 class="mb-2 text-primary">{{ uploadResult.totalRows }}</h3>
-              <p class="mb-0 text-muted">Total Processed</p>
-            </div>
-          </div>
-          <div class="col-md-4 text-center">
-            <div class="p-4 bg-success bg-opacity-10 rounded">
-              <h3 class="mb-2 text-success">{{ uploadResult.successCount }}</h3>
-              <p class="mb-0 text-muted">Successfully Added</p>
-            </div>
-          </div>
-          <div class="col-md-4 text-center" *ngIf="uploadResult.errorCount > 0">
-            <div class="p-4 bg-danger bg-opacity-10 rounded">
-              <h3 class="mb-2 text-danger">{{ uploadResult.errorCount }}</h3>
-              <p class="mb-0 text-muted">Errors</p>
+      <!-- Results Section -->
+      <div class="card shadow-sm border-0 mb-4" *ngIf="uploadResult">
+        <div class="card-header" [ngClass]="uploadResult.success ? 'bg-success' : 'bg-danger'">
+          <h5 class="mb-0 text-white">
+            <i class="mdi" [ngClass]="uploadResult.success ? 'mdi-check-circle' : 'mdi-alert-circle'"></i>
+            {{ uploadResult.success ? 'Successfully Added' : 'Error Occurred' }}
+          </h5>
+          <div class="card-body p-4">
+            <div class="result-summary">
+              <p class="lead mb-4">{{ uploadResult.message }}</p>
+
+              <div class="row g-3 mb-4">
+                <div class="col-md-4 text-center">
+                  <div class="p-4  rounded">
+                    <h3 class="mb-2 text-primary">{{ uploadResult.totalRows }}</h3>
+                    <p class="mb-0 text-muted">Total Processed</p>
+                  </div>
+                </div>
+                <div class="col-md-4 text-center">
+                  <div class="p-4 bg-success bg-opacity-10 rounded">
+                    <h3 class="mb-2 text-success">{{ uploadResult.successCount }}</h3>
+                    <p class="mb-0 text-muted">Successfully Added</p>
+                  </div>
+                </div>
+                <div class="col-md-4 text-center" *ngIf="uploadResult.errorCount > 0">
+                  <div class="p-4 bg-danger bg-opacity-10 rounded">
+                    <h3 class="mb-2 text-danger">{{ uploadResult.errorCount }}</h3>
+                    <p class="mb-0 text-muted">Errors</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Error Details -->
+              <div class="alert alert-danger border-danger"
+                *ngIf="uploadResult.errors && uploadResult.errors.length > 0">
+                <div class="d-flex align-items-start">
+                  <i class="mdi mdi-alert-circle me-2 mt-1"></i>
+                  <div>
+                    <h6 class="alert-heading mb-2">Errors Encountered:</h6>
+                    <ul class="mb-0 ps-3">
+                      <li *ngFor="let error of uploadResult.errors">{{ error }}</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div class="d-flex gap-2 pt-3 border-top">
+                <button class="btn btn-primary" (click)="resetForm()">
+                  <i class="mdi mdi-plus me-1"></i> Add More Serial Numbers
+                </button>
+
+                <button class="btn btn-success" routerLink="../list" *ngIf="uploadResult.success">
+                  <i class="mdi mdi-view-list me-1"></i> View All Serial Numbers
+                </button>
+              </div>
             </div>
           </div>
         </div>
-
-        <!-- Error Details -->
-        <div class="alert alert-danger border-danger" *ngIf="uploadResult.errors && uploadResult.errors.length > 0">
-          <div class="d-flex align-items-start">
-            <i class="mdi mdi-alert-circle me-2 mt-1"></i>
-            <div>
-              <h6 class="alert-heading mb-2">Errors Encountered:</h6>
-              <ul class="mb-0 ps-3">
-                <li *ngFor="let error of uploadResult.errors">{{ error }}</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        <div class="d-flex gap-2 pt-3 border-top">
-          <button 
-            class="btn btn-primary"
-            (click)="resetForm()">
-            <i class="mdi mdi-plus me-1"></i> Add More Serial Numbers
-          </button>
-          
-          <button 
-            class="btn btn-success"
-            routerLink="../list"
-            *ngIf="uploadResult.success">
-            <i class="mdi mdi-view-list me-1"></i> View All Serial Numbers
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
 
       </div>
     </div>

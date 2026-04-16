@@ -1,22 +1,28 @@
 <div class="container-fluid">
   <div class="row justify-content-center">
-    <div class="col-12 col-lg-11 col-xl-10 col-xxl-9">
+    <div class="col-12 col-lg-11 col-xl-10 col-xxl-8">
       
+      <!-- Breadcrumb -->
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0">
+          <li class="breadcrumb-item">
+            <a routerLink="/serial-management">Serial Management</a>
+          </li>
+          <li class="breadcrumb-item">
+            <a routerLink="/serial-management/igt-inventory">IGT</a>
+          </li>
+          <li class="breadcrumb-item active" aria-current="page">Upload Serial Numbers</li>
+        </ol>
+      </nav>
+
       <!-- Page Header with Context -->
       <div class="mb-4">
         <div class="d-flex align-items-center mb-3">
-          <button 
-            type="button" 
-            class="btn btn-outline-secondary me-3"
-            (click)="goBack()"
-            title="Back to Serial Number Manager">
-            <i class="mdi mdi-arrow-left me-2"></i>Back
-          </button>
-          <div class="bg-info bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+          <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
             <i class="mdi mdi-upload text-white fs-4"></i>
           </div>
           <div>
-            <h2 class="mb-1 text-info">Upload Serial Numbers</h2>
+            <h2 class="mb-1 text-primary">Upload Serial Numbers</h2>
             <p class="text-muted mb-0">Import serial numbers via CSV file or manual text entry</p>
           </div>
         </div>
@@ -48,13 +54,13 @@
                     <div class="btn-group w-100" role="group">
                       <input type="radio" class="btn-check" name="uploadMethod" id="csvMethod" value="csv" 
                              [(ngModel)]="selectedUploadMethod" (ngModelChange)="onUploadMethodChange()" autocomplete="off" checked>
-                      <label class="btn btn-outline-info" for="csvMethod">
+                      <label class="btn btn-outline-primary" for="csvMethod">
                         <i class="mdi mdi-file-upload me-2"></i>CSV File Upload
                       </label>
 
                       <input type="radio" class="btn-check" name="uploadMethod" id="manualMethod" value="manual" 
                              [(ngModel)]="selectedUploadMethod" (ngModelChange)="onUploadMethodChange()" autocomplete="off">
-                      <label class="btn btn-outline-info" for="manualMethod">
+                      <label class="btn btn-outline-primary" for="manualMethod">
                         <i class="mdi mdi-format-list-bulleted me-2"></i>Manual Text Entry
                       </label>
                     </div>
@@ -264,7 +270,7 @@
           <button type="button" class="btn btn-outline-secondary me-2" (click)="goBack()">
             <i class="mdi mdi-arrow-left me-1"></i>Back to Manager
           </button>
-          <button type="submit" class="btn btn-info ms-auto" 
+          <button type="submit" class="btn btn-primary ms-auto" 
                   [disabled]="isUploading || !canUpload()"
                   (click)="uploadSerialNumbers()">
             @if (isUploading) {

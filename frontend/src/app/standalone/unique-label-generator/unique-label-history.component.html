@@ -1,6 +1,33 @@
-<div class="card border-0 shadow-sm mb-3">
-  <div class="card-header bg-white d-flex justify-content-between align-items-center">
-    <h3 class="h6 mb-0">Batch History</h3>
+<div class="container-fluid">
+  <div class="row justify-content-center">
+    <div class="col-12">
+
+      <!-- Page Header -->
+      <div class="mb-4">
+        <nav aria-label="breadcrumb" class="mb-2">
+          <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a routerLink="/serial-management">Serial Management</a></li>
+            <li class="breadcrumb-item"><a routerLink="/serial-management/ul-generator">Unique Label Generator</a></li>
+            <li class="breadcrumb-item active" aria-current="page">History</li>
+          </ol>
+        </nav>
+        <div class="d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center">
+            <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center"
+              style="width: 60px; height: 60px;">
+              <i class="mdi mdi-history text-white fs-4"></i>
+            </div>
+            <div>
+              <h2 class="mb-1 text-primary">Label Batch History</h2>
+              <p class="text-muted mb-0">View and manage previously generated label batches</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+          <h3 class="h6 mb-0">Batch History</h3>
     <div class="d-flex align-items-center gap-2">
       <input
         class="form-control"
@@ -12,14 +39,18 @@
       <button class="btn btn-outline-secondary" (click)="loadBatches()" [disabled]="isLoading">Refresh</button>
     </div>
   </div>
-  <div class="card-body">
+  <div class="card-body p-0">
     <ag-grid-angular
       class="ag-theme-quartz no-border"
-      style="width: 100%; height: calc(100vh - 280px); min-height: 420px;"
+      style="width: 100%; height: calc(100vh - 304px); min-height: 420px;"
       [columnDefs]="batchColumnDefs"
       [defaultColDef]="defaultColDef"
       [rowData]="filteredBatches">
     </ag-grid-angular>
+  </div>
+</div>
+
+    </div>
   </div>
 </div>
 

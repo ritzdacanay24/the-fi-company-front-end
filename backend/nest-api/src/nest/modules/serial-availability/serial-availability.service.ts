@@ -5,6 +5,11 @@ import { SerialAvailabilityRepository } from './serial-availability.repository';
 export class SerialAvailabilityService {
   constructor(private readonly repo: SerialAvailabilityRepository) {}
 
+  async getSummary() {
+    const data = await this.repo.getAvailabilitySummary();
+    return { success: true, data };
+  }
+
   async getAvailableEyefiSerials(limit?: number) {
     const data = await this.repo.getAvailableEyefiSerials(limit ?? 10);
     return { success: true, data, count: data.length };

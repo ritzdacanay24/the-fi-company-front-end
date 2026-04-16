@@ -19,14 +19,10 @@
       <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb mb-0">
           <li class="breadcrumb-item">
-            <a href="#" class="text-decoration-none" (click)="$event.preventDefault(); onCancel()">
-              <i class="mdi mdi-home-outline me-1"></i>Quality
-            </a>
+            <a routerLink="/serial-management">Serial Management</a>
           </li>
           <li class="breadcrumb-item">
-            <a href="#" class="text-decoration-none" (click)="$event.preventDefault(); onCancel()">
-              SG Assets
-            </a>
+            <a routerLink="/serial-management/sg-asset">SG Assets</a>
           </li>
           <li class="breadcrumb-item active" aria-current="page">
             View Record #{{id}}

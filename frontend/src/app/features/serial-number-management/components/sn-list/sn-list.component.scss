@@ -400,3 +400,19 @@
     }
   }
 }
+
+#serial-number-grid.ag-theme-quartz .ag-row-selected,
+#serial-number-grid.ag-theme-quartz .ag-row-hover.ag-row-selected {
+  background-color: inherit !important;
+}
+
+#serial-number-grid.ag-theme-quartz .ag-cell-focus,
+#serial-number-grid.ag-theme-quartz .ag-cell-range-selected,
+#serial-number-grid.ag-theme-quartz .ag-cell-range-selected-1,
+#serial-number-grid.ag-theme-quartz .ag-cell-range-selected-2,
+#serial-number-grid.ag-theme-quartz .ag-cell-range-selected-3,
+#serial-number-grid.ag-theme-quartz .ag-cell-range-selected-4 {
+  background-color: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}

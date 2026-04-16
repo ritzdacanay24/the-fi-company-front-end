@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { AuthenticationService } from '../../core/services/auth.service';
 import { ToastrService } from 'ngx-toastr';
 import { UniqueLabelGeneratorApiService, UniqueLabelIdentifier } from './unique-label-generator-api.service';
@@ -11,7 +12,7 @@ import { ColDef } from 'ag-grid-community';
 @Component({
   selector: 'app-unique-label-generator',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, AgGridModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, AgGridModule],
   templateUrl: './unique-label-generator.component.html',
   styleUrl: './unique-label-generator.component.scss',
 })

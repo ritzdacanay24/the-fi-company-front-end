@@ -5,6 +5,11 @@ import { SerialAvailabilityService } from './serial-availability.service';
 export class SerialAvailabilityController {
   constructor(private readonly serialAvailabilityService: SerialAvailabilityService) {}
 
+  @Get('summary')
+  async summary() {
+    return this.serialAvailabilityService.getSummary();
+  }
+
   @Get('available/eyefi-serials')
   async availableEyefi(@Query('limit') limit?: string) {
     return this.serialAvailabilityService.getAvailableEyefiSerials(limit ? Number(limit) : undefined);

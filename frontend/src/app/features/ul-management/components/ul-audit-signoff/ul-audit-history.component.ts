@@ -236,7 +236,8 @@ export class UlAuditHistoryComponent implements OnInit {
   breadcrumbItems(): BreadcrumbItem[] {
     return [
       { label: 'Dashboard', link: '/dashboard' },
-      { label: 'UL Management', link: '/ul-management' },
+      { label: 'Serial Management', link: '/serial-management' },
+      { label: 'UL Management', link: '/serial-management/ul-labels' },
       { label: 'UL Audit History' },
     ];
   }

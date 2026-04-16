@@ -1,83 +1,100 @@
-<div class="container py-4 unique-label-page">
+<div class="container-fluid">
+  <div class="row justify-content-center">
+    <div class="col-12">
 
-  <div class="card border-0 shadow-sm mb-3">
-    <div class="card-header bg-white">
-      <h2 class="h5 mb-0">Create Batch</h2>
-    </div>
-    <div class="card-body">
-      <form [formGroup]="form" (ngSubmit)="generateBatch()">
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label">Source Type</label>
-            <select class="form-select" formControlName="source_type">
-              <option *ngFor="let item of sourceTypes" [value]="item.value">{{ item.label }}</option>
-            </select>
+      <!-- Page Header -->
+
+      <div class="mb-4">
+        <nav aria-label="breadcrumb" class="mb-2">
+          <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a routerLink="/serial-management">Serial Management</a></li>
+            <li class="breadcrumb-item"><a routerLink="/serial-management/ul-generator">Unique Label Generator</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Generate Labels</li>
+          </ol>
+        </nav>
+        <div class="d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center">
+            <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center"
+              style="width: 60px; height: 60px;">
+              <i class="mdi mdi-label-outline text-white fs-4"></i>
+            </div>
+            <div>
+              <h2 class="mb-1 text-primary">Unique Label Generator</h2>
+              <p class="text-muted mb-0">Generate and print unique label batches</p>
+            </div>
           </div>
+        </div>
+      </div>
 
-          <div class="col-md-6">
-            <label class="form-label">Created By</label>
-            <input
-              class="form-control"
-              type="text"
-              formControlName="created_by_name"
-              placeholder="Your name"
-              [readonly]="isAuthenticatedCreator"
-            />
-          </div>
+      <div class="row">
+        <div class="col-12 col-lg-8 col-xl-7">
+          <div class="card border-0 shadow-sm mb-3" style="min-height: 420px;">
+            <div class="card-header bg-white">
+              <h2 class="h5 mb-0">Create Batch</h2>
+            </div>
+            <div class="card-body">
+              <form [formGroup]="form" (ngSubmit)="generateBatch()" id="generateForm">
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label class="form-label">Source Type</label>
+                    <select class="form-select" formControlName="source_type">
+                      <option *ngFor="let item of sourceTypes" [value]="item.value">{{ item.label }}</option>
+                    </select>
+                  </div>
 
-          <div class="col-md-6">
-            <label class="form-label">Work Order #</label>
-            <div class="input-group">
-              <input
-                class="form-control"
-                type="text"
-                formControlName="work_order_number"
-                placeholder="Scan or enter WO"
-                [disabled]="!isWorkOrderMode"
-              />
-              <button class="btn btn-outline-primary" type="button" (click)="lookupWorkOrder()" [disabled]="!isWorkOrderMode || isLoadingWo">
-                {{ isLoadingWo ? 'Loading...' : 'Lookup' }}
+                  <div class="col-md-6">
+                    <label class="form-label">Created By</label>
+                    <input class="form-control" type="text" formControlName="created_by_name" placeholder="Your name"
+                      [readonly]="isAuthenticatedCreator" />
+                  </div>
+
+                  <div class="col-md-6">
+                    <label class="form-label">Work Order #</label>
+                    <div class="input-group">
+                      <input class="form-control" type="text" formControlName="work_order_number"
+                        placeholder="Scan or enter WO" [disabled]="!isWorkOrderMode" />
+                      <button class="btn btn-outline-primary" type="button" (click)="lookupWorkOrder()"
+                        [disabled]="!isWorkOrderMode || isLoadingWo">
+                        {{ isLoadingWo ? 'Loading...' : 'Lookup' }}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="col-md-3">
+                    <label class="form-label">Part Number</label>
+                    <input class="form-control" type="text" formControlName="part_number" placeholder="Part number" />
+                  </div>
+
+                  <div class="col-md-3">
+                    <label class="form-label">Quantity</label>
+                    <input class="form-control" type="number" formControlName="quantity" min="1" max="200" />
+                  </div>
+                </div>
+              </form>
+            </div>
+            <div class="card-footer bg-white d-flex justify-content-end">
+              <button class="btn btn-success" type="submit" form="generateForm" [disabled]="isGenerating">
+                {{ isGenerating ? 'Generating...' : 'Generate Labels' }}
               </button>
             </div>
           </div>
 
-          <div class="col-md-3">
-            <label class="form-label">Part Number</label>
-            <input class="form-control" type="text" formControlName="part_number" placeholder="Part number" />
+          <div class="card border-0 shadow-sm mb-3" *ngIf="generatedIdentifiers.length > 0">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center gap-2">
+              <h2 class="h5 mb-0">Generated Labels (Batch {{ generatedBatchId }})</h2>
+              <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-outline-secondary btn-sm" type="button" (click)="printGenerated()">Print
+                  View</button>
+                <button class="btn btn-outline-primary btn-sm" type="button" (click)="printGeneratedZpl()">Print
+                  Zebra</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <ag-grid-angular class="ag-theme-quartz no-border"
+                style="width: 100%; height: calc(100vh - 420px); min-height: 260px;" [columnDefs]="generatedColumnDefs"
+                [defaultColDef]="generatedDefaultColDef" [rowData]="generatedIdentifiers">
+              </ag-grid-angular>
+            </div>
           </div>
 
-          <div class="col-md-3">
-            <label class="form-label">Quantity</label>
-            <input class="form-control" type="number" formControlName="quantity" min="1" max="200" />
-          </div>
         </div>
-
-        <div class="d-flex justify-content-end mt-3">
-          <button class="btn btn-success" type="submit" [disabled]="isGenerating">
-            {{ isGenerating ? 'Generating...' : 'Generate Labels' }}
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <div class="card border-0 shadow-sm mb-3" *ngIf="generatedIdentifiers.length > 0">
-    <div class="card-header bg-white d-flex justify-content-between align-items-center gap-2">
-      <h2 class="h5 mb-0">Generated Labels (Batch {{ generatedBatchId }})</h2>
-      <div class="d-flex align-items-center gap-2">
-        <button class="btn btn-outline-secondary btn-sm" type="button" (click)="printGenerated()">Print View</button>
-        <button class="btn btn-outline-primary btn-sm" type="button" (click)="printGeneratedZpl()">Print Zebra</button>
-      </div>
-    </div>
-    <div class="card-body">
-      <ag-grid-angular
-        class="ag-theme-quartz no-border"
-        style="width: 100%; height: calc(100vh - 420px); min-height: 260px;"
-        [columnDefs]="generatedColumnDefs"
-        [defaultColDef]="generatedDefaultColDef"
-        [rowData]="generatedIdentifiers">
-      </ag-grid-angular>
-    </div>
-  </div>
-
-</div>

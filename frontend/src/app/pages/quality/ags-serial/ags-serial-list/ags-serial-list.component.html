@@ -6,13 +6,9 @@
       <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb mb-0">
           <li class="breadcrumb-item">
-            <a href="#" class="text-decoration-none" (click)="$event.preventDefault()">
-              <i class="mdi mdi-home-outline me-1"></i>Quality
-            </a>
+            <a routerLink="/serial-management">Serial Management</a>
           </li>
-          <li class="breadcrumb-item active" aria-current="page">
-            AGS Serial
-          </li>
+          <li class="breadcrumb-item active" aria-current="page">AGS Serial</li>
         </ol>
       </nav>
       
@@ -65,7 +61,7 @@
         <div class="card-body p-0">
           <ng-container *ngIf="data?.length; else noRecords">
             <ag-grid-angular [gridOptions]="gridOptions" class="ag-theme-quartz no-border"
-              style="width: 100%;height: calc(100vh - 300px);"
+              style="width: 100%;height: calc(100vh - 319px);"
               [rowData]="data" [columnDefs]="columnDefs">
             </ag-grid-angular>
           </ng-container>

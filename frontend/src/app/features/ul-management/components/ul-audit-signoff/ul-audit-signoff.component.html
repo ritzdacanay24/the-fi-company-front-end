@@ -19,20 +19,6 @@
             <button 
               type="button" 
               class="btn btn-outline-secondary"
-              routerLink="/menu"
-              title="Back to main menu">
-              <i class="mdi mdi-arrow-left me-2"></i>Back to Menu
-            </button>
-            <button 
-              type="button" 
-              class="btn btn-outline-info"
-              routerLink="/ul-management/audit-history"
-              title="View audit history">
-              <i class="mdi mdi-history me-2"></i>Audit History
-            </button>
-            <button 
-              type="button" 
-              class="btn btn-outline-secondary"
               (click)="refresh()"
               title="Refresh data">
               <i class="mdi mdi-refresh me-2"></i>Refresh
@@ -109,7 +95,7 @@
           <ng-container *ngIf="!loading && filteredItems.length; else noRecords">
             <ag-grid-angular
               class="ag-theme-quartz no-border"
-              style="width: 100%; height: calc(100vh - 350px);"
+              style="width: 100%; height: calc(100vh - 309px);"
               [rowData]="filteredItems"
               [columnDefs]="columnDefs"
               [gridOptions]="gridOptions"

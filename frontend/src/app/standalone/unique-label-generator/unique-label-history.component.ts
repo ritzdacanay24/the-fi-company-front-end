@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, TemplateRef, ViewChild, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { NgbModal, NgbModalModule, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { AgGridModule } from 'ag-grid-angular';
 import { ColDef } from 'ag-grid-community';
@@ -20,7 +21,7 @@ interface BatchDetails {
 @Component({
   selector: 'app-unique-label-history',
   standalone: true,
-  imports: [CommonModule, FormsModule, NgbModalModule, AgGridModule],
+  imports: [CommonModule, FormsModule, RouterModule, NgbModalModule, AgGridModule],
   templateUrl: './unique-label-history.component.html',
 })
 export class UniqueLabelHistoryComponent implements OnInit {

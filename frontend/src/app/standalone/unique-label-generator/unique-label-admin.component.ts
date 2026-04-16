@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, TemplateRef, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { NgbModal, NgbModalModule, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { AgGridModule } from 'ag-grid-angular';
 import { ColDef } from 'ag-grid-community';
@@ -16,6 +17,7 @@ import { UniqueLabelAdminActionDropdownRendererComponent } from './unique-label-
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
+    RouterModule,
     NgbModalModule,
     AgGridModule,
   ],

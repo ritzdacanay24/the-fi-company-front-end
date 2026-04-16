@@ -161,6 +161,10 @@ export class SerialNumberService {
     return await firstValueFrom(this.http.get(`${this.AVAILABILITY_URL}/available/eyefi-serials`, { params }));
   }
 
+  async getAvailabilitySummaryFromAPI(): Promise<any> {
+    return await firstValueFrom(this.http.get(`${this.AVAILABILITY_URL}/summary`));
+  }
+
   async getAvailableUlLabelsFromAPI(limit?: number): Promise<any> {
     let params = new HttpParams();
     if (limit) params = params.set('limit', limit.toString());

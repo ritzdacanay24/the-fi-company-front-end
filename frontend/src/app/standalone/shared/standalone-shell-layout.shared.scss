@@ -1,4 +1,5 @@
 @mixin shell($prefix, $content-offset-mode: 'padding') {
+  $company-red: #ff3b30;
   .#{$prefix}-shell {
     position: relative;
     min-height: 100vh;
@@ -35,6 +36,7 @@
 
   .#{$prefix}-rail-link i {
     font-size: 1.2rem;
+    color: rgba(255, 255, 255, 0.9) !important;
   }
 
   .#{$prefix}-rail-link:hover {
@@ -45,7 +47,7 @@
   .#{$prefix}-rail-link.active {
     color: #fff;
     background: rgba(255, 255, 255, 0.22);
-    box-shadow: inset 2px 0 0 #0ab39c;
+    box-shadow: inset 2px 0 0 $company-red;
   }
 
   .#{$prefix}-topbar {
@@ -64,7 +66,7 @@
     width: 34px;
     height: 34px;
     border-radius: 8px;
-    background: #0ab39c;
+    background: $company-red;
     color: #fff;
     font-size: 12px;
     font-weight: 700;
@@ -94,15 +96,73 @@
     color: #fff;
     top: 70px;
     height: calc(100vh - 70px);
-    overflow-y: auto;
+    overflow: hidden;
     overflow-x: hidden;
     padding-top: 0;
     z-index: 1003;
+    display: flex;
+    flex-direction: column;
   }
 
-  .#{$prefix}-sidebar .h-100 {
+  .#{$prefix}-sidebar .standalone-sidebar-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-bottom: 48px;
     position: relative;
     z-index: 1;
+
+    // Hidden scrollbar by default, visible on hover (mirrors main sidemenu simplebar behaviour)
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: transparent;
+      border-radius: 7px;
+      transition: background 0.2s ease;
+    }
+    &:hover::-webkit-scrollbar-thumb {
+      background: #a2adb7;
+    }
+    &::-webkit-scrollbar-thumb:hover {
+      background: #8a959f;
+    }
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+
+    &:hover {
+      scrollbar-color: #a2adb7 transparent;
+    }
+  }
+
+  .#{$prefix}-sidebar .standalone-sidebar-footer {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 46px;
+    padding: 4px 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0));
+    z-index: 5;
+    overflow: hidden;
+  }
+
+  .#{$prefix}-sidebar .standalone-sidebar-footer img {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 110px;
+    max-width: none;
+    height: auto;
+    transform: translate(-50%, -50%) scale(1);
+    transform-origin: center;
+    opacity: 0.92;
+    pointer-events: none;
   }
 
   .#{$prefix}-sidebar .sidebar-background {
@@ -158,16 +218,18 @@
   .#{$prefix}-sidebar .nav-link:hover {
     color: #fff;
     background: rgba(255, 255, 255, 0.12);
+    border-left: 4px solid $company-red !important;
   }
 
   .#{$prefix}-sidebar .nav-link.active {
     color: #fff;
     background: rgba(255, 255, 255, 0.18);
-    border-left-color: #0ab39c;
+    border-left: 4px solid $company-red !important;
   }
 
   .#{$prefix}-sidebar .nav-link i {
     font-size: 1.1rem;
+    color: rgba(255, 255, 255, 0.92) !important;
   }
 
   .#{$prefix}-nav-group {

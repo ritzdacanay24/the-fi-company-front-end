@@ -339,39 +339,27 @@ const routes: Routes = [
       ),
     title: "IGT Management",
   },
+  // Serial Numbers unified hub
+  {
+    path: "serial-management",
+    canActivate: [AuthGuard],
+    loadChildren: () =>
+      import("./standalone/serial-management/serial-management.routes").then(
+        (m) => m.SERIAL_MANAGEMENT_ROUTES,
+      ),
+    title: "Serial Numbers",
+  },
   // EyeFi Serial Number Management routes
   {
     path: "eyefi-serial-number-management",
-    component: LayoutComponent,
-    canActivate: [AuthGuard],
-    runGuardsAndResolvers: "always",
-    children: [
-      { path: "", redirectTo: "list", pathMatch: "full" },
-      {
-        title: "EyeFi Serial Number Management",
-        path: "",
-        loadChildren: () =>
-          import("./features/serial-number-management/serial-number-management-routing.module").then(
-            (m) => m.SerialNumberManagementRoutingModule
-          ),
-      },
-    ],
+    redirectTo: "/serial-management/eyefi-serials",
+    pathMatch: "prefix",
   },
   // Serial Assignments Management
   {
     path: "serial-assignments",
-    component: LayoutComponent,
-    canActivate: [AuthGuard],
-    children: [
-      {
-        path: "",
-        title: "Serial Assignments",
-        loadComponent: () =>
-          import("./features/serial-assignments/serial-assignments.component").then(
-            (c) => c.SerialAssignmentsComponent
-          ),
-      }
-    ],
+    redirectTo: "/serial-management/serial-assignments",
+    pathMatch: "prefix",
   },
   // Training Management routes
   {

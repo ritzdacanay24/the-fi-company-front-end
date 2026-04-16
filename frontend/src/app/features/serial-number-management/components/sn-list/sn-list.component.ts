@@ -22,6 +22,7 @@ type SerialNumberStatus = 'available' | 'assigned' | 'shipped' | 'returned' | 'd
 export class SnListComponent implements OnInit {
   serialNumbers: SerialNumber[] = [];
   filteredSerialNumbers: SerialNumber[] = [];
+  quickSearchTerm = '';
 
   filterForm: FormGroup;
   isLoading = false;
@@ -67,8 +68,6 @@ export class SnListComponent implements OnInit {
       filter: true,
       width: 180,
       pinned: 'left',
-      checkboxSelection: true,
-      headerCheckboxSelection: true,
       cellRenderer: (params: any) => {
         if (!params.value) return '';
         const serialNumber = params.value.toString();
@@ -263,6 +262,7 @@ export class SnListComponent implements OnInit {
 
   onGridReady(params: GridReadyEvent): void {
     this.gridApi = params.api;
+    this.onQuickSearchChange();
 
     // Handle action button clicks
     const eGridDiv = document.querySelector('#serial-number-grid');
@@ -282,6 +282,17 @@ export class SnListComponent implements OnInit {
         }
       });
     }
+  }
+
+  onQuickSearchChange(): void {
+    if (!this.gridApi) return;
+
+    this.gridApi.setGridOption('quickFilterText', this.quickSearchTerm?.trim() || '');
+  }
+
+  clearQuickSearch(): void {
+    this.quickSearchTerm = '';
+    this.onQuickSearchChange();
   }
 
   async loadSerialNumbers() {

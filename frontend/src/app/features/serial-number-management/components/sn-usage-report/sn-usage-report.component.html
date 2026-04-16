@@ -1,4 +1,4 @@
-﻿<div class="container-fluid">
+<div class="container-fluid">
   <div class="row justify-content-center">
     <div class="col-12">
 
@@ -6,29 +6,25 @@
       <div class="mb-4">
         <nav aria-label="breadcrumb" class="mb-2">
           <ol class="breadcrumb mb-0">
-            <li class="breadcrumb-item">
-              <a routerLink="/serial-management">Serial Management</a>
-            </li>
-            <li class="breadcrumb-item">
-              <a routerLink="/serial-management/igt-inventory">IGT</a>
-            </li>
+            <li class="breadcrumb-item"><a routerLink="/serial-management">Serial Management</a></li>
+            <li class="breadcrumb-item"><a routerLink="/serial-management/eyefi-serials">EyeFi Serials</a></li>
             <li class="breadcrumb-item active" aria-current="page">Usage Report</li>
           </ol>
         </nav>
-        <div class="d-flex align-items-center justify-content-between mb-3">
+        <div class="d-flex align-items-center justify-content-between">
           <div class="d-flex align-items-center">
             <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center"
               style="width: 60px; height: 60px;">
-              <i class="mdi mdi-chip text-white fs-4"></i>
+              <i class="las la-microchip text-white fs-4"></i>
             </div>
             <div>
-              <h2 class="mb-1 text-primary">IGT Serial Numbers Report</h2>
-              <p class="text-muted mb-0">View and manage all IGT serial numbers and their status information</p>
+              <h2 class="mb-1 text-primary">EyeFi Serial Numbers Report</h2>
+              <p class="text-muted mb-0">View and manage all EyeFi serial numbers and their status information</p>
             </div>
           </div>
           <div class="d-flex gap-2">
-            <a class="btn btn-outline-primary" routerLink="/igt-management/upload">
-              <i class="mdi mdi-upload me-2"></i>Upload Serial Numbers
+            <a class="btn btn-outline-primary" routerLink="../upload">
+              <i class="mdi mdi-upload me-2"></i>Upload Serials
             </a>
           </div>
         </div>
@@ -45,13 +41,14 @@
             </button>
             <div class="ms-auto d-flex align-items-center">
               <div class="me-3 d-flex align-items-center flex-wrap gap-2">
-                <span class="badge bg-light text-dark border">Inactive: {{ inventoryInsights.inactive }}</span>
-                <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Used: {{ inventoryInsights.used }}</span>
                 <span class="badge bg-success-subtle text-success border border-success-subtle">Available: {{ inventoryInsights.available }}</span>
-                <span class="badge bg-info-subtle text-info border border-info-subtle">Last Added: {{ inventoryInsights.lastUploadDateDisplay }}</span>
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Assigned: {{ inventoryInsights.assigned }}</span>
+                <span class="badge bg-info-subtle text-info border border-info-subtle">Shipped: {{ inventoryInsights.shipped }}</span>
+                <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Defective: {{ inventoryInsights.defective }}</span>
+                <span class="badge bg-light text-dark border">Last Added: {{ inventoryInsights.lastAddedDisplay }}</span>
               </div>
               <h4 class="card-title mb-0">
-                <i class="mdi mdi-chip me-2"></i>IGT Serial Inventory
+                <i class="las la-microchip me-2"></i>EyeFi Serial Inventory
               </h4>
             </div>
           </div>
@@ -73,11 +70,11 @@
             <div class="col-6 col-lg-3">
               <div class="metric-card metric-card-with-pie">
                 <div>
-                  <small>Available Serials</small>
+                  <small>Available</small>
                   <h4 class="mb-0">{{ inventoryInsights.available }}</h4>
-                  <small class="metric-subtext">of total serials ({{ inventoryInsights.total }})</small>
+                  <small class="metric-subtext">of total ({{ inventoryInsights.total }})</small>
                 </div>
-                <div class="mini-pie" [style.background]="miniPieBackground(inventoryInsights.availablePct, '#0ab39c')">
+                <div class="mini-pie" [style.background]="miniPieBackground(inventoryInsights.availablePct, '#2e8b57')">
                   <div class="mini-pie-inner">{{ inventoryInsights.availablePct }}%</div>
                 </div>
               </div>
@@ -85,32 +82,33 @@
             <div class="col-6 col-lg-3">
               <div class="metric-card metric-card-with-pie">
                 <div>
-                  <small>Used Serials</small>
-                  <h4 class="mb-0">{{ inventoryInsights.used }}</h4>
-                  <small class="metric-subtext">of total serials ({{ inventoryInsights.total }})</small>
+                  <small>Assigned</small>
+                  <h4 class="mb-0">{{ inventoryInsights.assigned }}</h4>
+                  <small class="metric-subtext">of total ({{ inventoryInsights.total }})</small>
                 </div>
-                <div class="mini-pie" [style.background]="miniPieBackground(inventoryInsights.usedPct, '#c43d3d')">
-                  <div class="mini-pie-inner">{{ inventoryInsights.usedPct }}%</div>
-                </div>
-              </div>
-            </div>
-            <div class="col-6 col-lg-3">
-              <div class="metric-card metric-card-with-pie">
-                <div>
-                  <small>Total Remaining</small>
-                  <h4 class="mb-0">{{ inventoryInsights.totalRemaining }}</h4>
-                </div>
-                <div class="mini-pie" [style.background]="miniPieBackground(inventoryInsights.remainingPct, '#b7852f')">
-                  <div class="mini-pie-inner">{{ inventoryInsights.remainingPct }}%</div>
+                <div class="mini-pie" [style.background]="miniPieBackground(inventoryInsights.assignedPct, '#3b7ed4')">
+                  <div class="mini-pie-inner">{{ inventoryInsights.assignedPct }}%</div>
                 </div>
               </div>
             </div>
             <div class="col-6 col-lg-3">
               <div class="metric-card metric-card-with-pie">
                 <div>
-                  <small>Last Added</small>
-                  <h6 class="mb-1">{{ inventoryInsights.lastUploadDateDisplay }}</h6>
-                  <small class="metric-subtext">Active Health</small>
+                  <small>Shipped</small>
+                  <h4 class="mb-0">{{ inventoryInsights.shipped }}</h4>
+                  <small class="metric-subtext">of total ({{ inventoryInsights.total }})</small>
+                </div>
+                <div class="mini-pie" [style.background]="miniPieBackground(inventoryInsights.shippedPct, '#17a2b8')">
+                  <div class="mini-pie-inner">{{ inventoryInsights.shippedPct }}%</div>
+                </div>
+              </div>
+            </div>
+            <div class="col-6 col-lg-3">
+              <div class="metric-card metric-card-with-pie">
+                <div>
+                  <small>Active Health</small>
+                  <h6 class="mb-1">{{ inventoryInsights.lastAddedDisplay }}</h6>
+                  <small class="metric-subtext">Last Added</small>
                 </div>
                 <div class="mini-pie" [style.background]="miniPieBackground(inventoryInsights.activePct, '#2e8b57')">
                   <div class="mini-pie-inner">{{ inventoryInsights.activePct }}%</div>
@@ -122,7 +120,7 @@
           <div class="row g-3">
             <div class="col-12 col-lg-4">
               <div class="analytics-card">
-                <h6 class="mb-2">Available vs Used vs Reserved</h6>
+                <h6 class="mb-2">Status Breakdown</h6>
                 <apx-chart
                   [series]="statusBarChart.series!"
                   [chart]="statusBarChart.chart!"
@@ -138,7 +136,7 @@
 
             <div class="col-12 col-lg-4">
               <div class="analytics-card">
-                <h6 class="mb-2">Serial Status Distribution</h6>
+                <h6 class="mb-2">Status Distribution</h6>
                 <apx-chart
                   [series]="statusDistributionChart.series!"
                   [chart]="statusDistributionChart.chart!"
@@ -152,7 +150,7 @@
 
             <div class="col-12 col-lg-4">
               <div class="analytics-card">
-                <h6 class="mb-2">Upload Trend (Last 8 Months)</h6>
+                <h6 class="mb-2">Serial Addition Trend (Last 8 Months)</h6>
                 <apx-chart
                   [series]="uploadTrendChart.series!"
                   [chart]="uploadTrendChart.chart!"

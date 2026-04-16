@@ -70,4 +70,193 @@ export class SerialAvailabilityRepository extends BaseRepository<RowDataPacket> 
        LIMIT ${Math.max(1, Math.floor(limit))}`,
     );
   }
+
+  async getAvailabilitySummary(): Promise<RowDataPacket> {
+    const rows = await this.rawQuery<RowDataPacket>(
+      `SELECT
+        (
+          SELECT COUNT(*)
+          FROM eyefi_serial_numbers esn
+          WHERE esn.is_active = 1
+            AND esn.status = 'available'
+            AND NOT EXISTS (
+              SELECT 1
+              FROM serial_assignments sa
+              WHERE sa.eyefi_serial_id = esn.id
+                AND COALESCE(sa.is_voided, 0) = 0
+                AND COALESCE(sa.status, '') <> 'voided'
+            )
+            AND NOT EXISTS (
+              SELECT 1
+              FROM ul_label_usages ulu
+              WHERE BINARY ulu.eyefi_serial_number = BINARY esn.serial_number
+                AND COALESCE(ulu.is_voided, 0) = 0
+            )
+            AND NOT EXISTS (
+              SELECT 1
+              FROM agsSerialGenerator ags
+              WHERE BINARY ags.serialNumber = BINARY esn.serial_number
+                AND COALESCE(ags.active, 1) = 1
+            )
+            AND NOT EXISTS (
+              SELECT 1
+              FROM sgAssetGenerator sg
+              WHERE BINARY sg.serialNumber = BINARY esn.serial_number
+                AND COALESCE(sg.active, 1) = 1
+            )
+        ) AS eyefi_available,
+        (
+          SELECT COUNT(*)
+          FROM ul_labels ul
+          WHERE ul.status = 'active'
+            AND NOT EXISTS (
+              SELECT 1
+              FROM serial_assignments sa
+              WHERE sa.ul_label_id = ul.id
+                AND COALESCE(sa.is_voided, 0) = 0
+                AND COALESCE(sa.status, '') <> 'voided'
+            )
+            AND NOT EXISTS (
+              SELECT 1
+              FROM ul_label_usages ulu
+              WHERE ulu.ul_label_id = ul.id
+                AND COALESCE(ulu.is_voided, 0) = 0
+            )
+        ) AS ul_available,
+        (
+          SELECT COUNT(*)
+          FROM igt_serial_numbers igt
+          WHERE igt.is_active = 1
+            AND igt.status = 'available'
+        ) AS igt_available,
+        (
+          SELECT COUNT(DISTINCT esn.id)
+          FROM eyefi_serial_numbers esn
+          WHERE esn.is_active = 1
+            AND (
+              EXISTS (
+                SELECT 1
+                FROM serial_assignments sa
+                WHERE sa.eyefi_serial_id = esn.id
+                  AND COALESCE(sa.is_voided, 0) = 0
+                  AND COALESCE(sa.status, '') <> 'voided'
+              )
+              OR EXISTS (
+                SELECT 1
+                FROM ul_label_usages ulu
+                WHERE BINARY ulu.eyefi_serial_number = BINARY esn.serial_number
+                  AND COALESCE(ulu.is_voided, 0) = 0
+              )
+              OR EXISTS (
+                SELECT 1
+                FROM agsSerialGenerator ags
+                WHERE BINARY ags.serialNumber = BINARY esn.serial_number
+                  AND COALESCE(ags.active, 1) = 1
+              )
+              OR EXISTS (
+                SELECT 1
+                FROM sgAssetGenerator sg
+                WHERE BINARY sg.serialNumber = BINARY esn.serial_number
+                  AND COALESCE(sg.active, 1) = 1
+              )
+            )
+        ) AS eyefi_recently_used,
+        (
+          SELECT COUNT(DISTINCT ul.id)
+          FROM ul_labels ul
+          WHERE EXISTS (
+            SELECT 1
+            FROM serial_assignments sa
+            WHERE sa.ul_label_id = ul.id
+              AND COALESCE(sa.is_voided, 0) = 0
+              AND COALESCE(sa.status, '') <> 'voided'
+          )
+          OR EXISTS (
+            SELECT 1
+            FROM ul_label_usages ulu
+            WHERE ulu.ul_label_id = ul.id
+              AND COALESCE(ulu.is_voided, 0) = 0
+          )
+        ) AS ul_recently_used,
+        (
+          SELECT COUNT(*)
+          FROM igt_serial_numbers igt
+          WHERE igt.is_active = 1
+            AND (igt.used_at IS NOT NULL OR igt.status = 'used')
+        ) AS igt_recently_used,
+        (
+          SELECT COUNT(DISTINCT esn.id)
+          FROM eyefi_serial_numbers esn
+          WHERE esn.is_active = 1
+            AND (
+              EXISTS (
+                SELECT 1
+                FROM serial_assignments sa
+                WHERE sa.eyefi_serial_id = esn.id
+                  AND COALESCE(sa.is_voided, 0) = 0
+                  AND COALESCE(sa.status, '') <> 'voided'
+                  AND sa.consumed_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+              )
+              OR EXISTS (
+                SELECT 1
+                FROM ul_label_usages ulu
+                WHERE BINARY ulu.eyefi_serial_number = BINARY esn.serial_number
+                  AND COALESCE(ulu.is_voided, 0) = 0
+                  AND COALESCE(ulu.date_used, DATE(ulu.created_at)) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+              )
+              OR EXISTS (
+                SELECT 1
+                FROM agsSerialGenerator ags
+                WHERE BINARY ags.serialNumber = BINARY esn.serial_number
+                  AND COALESCE(ags.active, 1) = 1
+                  AND ags.timeStamp >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+              )
+              OR EXISTS (
+                SELECT 1
+                FROM sgAssetGenerator sg
+                WHERE BINARY sg.serialNumber = BINARY esn.serial_number
+                  AND COALESCE(sg.active, 1) = 1
+                  AND sg.timeStamp >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+              )
+            )
+        ) AS eyefi_used_last_7_days,
+        (
+          SELECT COUNT(DISTINCT ul.id)
+          FROM ul_labels ul
+          WHERE EXISTS (
+            SELECT 1
+            FROM serial_assignments sa
+            WHERE sa.ul_label_id = ul.id
+              AND COALESCE(sa.is_voided, 0) = 0
+              AND COALESCE(sa.status, '') <> 'voided'
+              AND sa.consumed_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+          )
+          OR EXISTS (
+            SELECT 1
+            FROM ul_label_usages ulu
+            WHERE ulu.ul_label_id = ul.id
+              AND COALESCE(ulu.is_voided, 0) = 0
+              AND COALESCE(ulu.date_used, DATE(ulu.created_at)) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+          )
+        ) AS ul_used_last_7_days,
+        (
+          SELECT COUNT(*)
+          FROM igt_serial_numbers igt
+          WHERE igt.is_active = 1
+            AND igt.used_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+        ) AS igt_used_last_7_days`,
+    );
+
+    return rows[0] ?? {
+      eyefi_available: 0,
+      ul_available: 0,
+      igt_available: 0,
+      eyefi_recently_used: 0,
+      ul_recently_used: 0,
+      igt_recently_used: 0,
+      eyefi_used_last_7_days: 0,
+      ul_used_last_7_days: 0,
+      igt_used_last_7_days: 0,
+    };
+  }
 }

@@ -155,7 +155,6 @@ export class IgtManageExistingComponent implements OnInit {
         // Update statistics with all data
         this.updateStatistics(this.rowData, this.rowData.length);
         this.isLoading = false;
-        this.toastr.success(`Loaded ${this.rowData.length} serial numbers successfully`);
       })
       .catch((error) => {
         console.error('Error loading serial numbers:', error);

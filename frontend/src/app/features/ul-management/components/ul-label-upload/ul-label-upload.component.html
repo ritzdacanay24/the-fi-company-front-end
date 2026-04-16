@@ -8,9 +8,6 @@
       <!-- Page Header with Context -->
       <div class="mb-4">
         <div class="d-flex align-items-center mb-3">
-          <button type="button" class="btn btn-outline-secondary me-3" (click)="goBack()" title="Back to UL Management">
-            <i class="mdi mdi-arrow-left me-2"></i>Back
-          </button>
           <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center"
             style="width: 60px; height: 60px;">
             <i class="mdi mdi-upload text-white fs-4"></i>
@@ -187,7 +184,7 @@
             </form>
           </div>
 
-          <div class="card-footer bg-light border-top d-flex justify-content-between p-3">
+          <div class="card-footer d-flex justify-content-between p-3">
             <button class="btn btn-light" type="button" 
                     (click)="rangeForm.reset(); rangeForm.patchValue({status: 'active', description: 'UL certified product'})">
               <i class="mdi mdi-refresh me-1"></i>Reset Form

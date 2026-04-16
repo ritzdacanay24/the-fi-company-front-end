@@ -98,19 +98,13 @@ const routes: Routes = [
   },
   {
     path: "sg-asset",
-    loadChildren: () =>
-      import("./sg-asset/sg-asset-routing.module").then(
-        (m) => m.SgAssetRoutingModule
-      ),
-    runGuardsAndResolvers: "always",
+    redirectTo: "/serial-management/sg-asset",
+    pathMatch: "prefix",
   },
   {
     path: "ags-serial",
-    loadChildren: () =>
-      import("./ags-serial/ags-serial-routing.module").then(
-        (m) => m.AgsSerialRoutingModule
-      ),
-    runGuardsAndResolvers: "always",
+    redirectTo: "/serial-management/ags-serial",
+    pathMatch: "prefix",
   },
   {
     path: "igt",
