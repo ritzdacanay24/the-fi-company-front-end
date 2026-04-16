@@ -329,6 +329,16 @@ const routes: Routes = [
       ),
     title: "UL Management",
   },
+  // IGT Management routes
+  {
+    path: "igt-management",
+    canActivate: [AuthGuard],
+    loadChildren: () =>
+      import("./standalone/igt-management/igt-management.routes").then(
+        (m) => m.IGT_MANAGEMENT_ROUTES,
+      ),
+    title: "IGT Management",
+  },
   // EyeFi Serial Number Management routes
   {
     path: "eyefi-serial-number-management",

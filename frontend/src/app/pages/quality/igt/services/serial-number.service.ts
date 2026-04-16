@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 
-const API_URL = 'IgtAssets/igt_serial_numbers_crud';
+const API_URL = 'apiV2/igt-serial-numbers';
 
 @Injectable({
   providedIn: 'root'
@@ -11,97 +11,79 @@ export class SerialNumberService {
 
   constructor(private http: HttpClient) { }
 
-  // Get all serial numbers
   getAll(params?: { includeInactive?: boolean }): Promise<any[]> {
-    let url = API_URL + '?path=serial-numbers';
-    if (params?.includeInactive === true) {
-      url += `&includeInactive=1`;
-    }
-    return firstValueFrom(this.http.get<any[]>(url));
+    let httpParams = new HttpParams();
+    if (params?.includeInactive) httpParams = httpParams.set('includeInactive', '1');
+    return firstValueFrom(this.http.get<any[]>(API_URL, { params: httpParams }));
   }
 
-  // Get a serial number by ID
   getById(id: number): Promise<any> {
-    return firstValueFrom(this.http.get<any>(`${API_URL}?path=serial-numbers&id=${id}`));
+    return firstValueFrom(this.http.get<any>(`${API_URL}/${id}`));
   }
 
-  // Add a single serial number
   add(serial: any): Promise<any> {
-    return firstValueFrom(this.http.post(API_URL + '?path=serial-numbers', serial));
+    return firstValueFrom(this.http.post(API_URL, serial));
   }
 
-  // Create a single serial number (alias for add)
   create(serial: any): Promise<any> {
     return this.add(serial);
   }
 
-  // Bulk upload serial numbers
   bulkUpload(serials: any[]): Promise<any> {
-    return firstValueFrom(this.http.post(API_URL + '?path=serial-numbers', serials));
+    return firstValueFrom(this.http.post(`${API_URL}/bulk`, { serials }));
   }
 
-  // Update a serial number (implement in PHP if needed)
   update(id: number, data: any): Promise<any> {
-    return firstValueFrom(this.http.put(`${API_URL}?path=serial-numbers&id=${id}`, data));
+    return firstValueFrom(this.http.put(`${API_URL}/${id}`, data));
   }
 
-  // Delete a serial number (soft delete - marks as is_active = 0)
   delete(id: number): Promise<any> {
-    return firstValueFrom(this.http.delete(`${API_URL}?path=serial-numbers&id=${id}`));
+    return firstValueFrom(this.http.delete(`${API_URL}/${id}`));
   }
 
-  // Hard delete a serial number (permanently removes from database)
   hardDelete(id: number): Promise<any> {
-    return firstValueFrom(this.http.delete(`${API_URL}?path=serial-numbers&id=${id}&hard=true`));
+    return firstValueFrom(this.http.delete(`${API_URL}/${id}?hard=true`));
   }
 
-  // Bulk delete serial numbers (soft delete)
   bulkDelete(ids: number[]): Promise<any> {
-    return firstValueFrom(this.http.delete(API_URL + '?path=serial-numbers', { 
-      body: { ids },
-      headers: { 'Content-Type': 'application/json' }
-    }));
+    return firstValueFrom(this.http.post(`${API_URL}/bulk-delete`, { ids }));
   }
 
-  // Bulk hard delete serial numbers (permanently removes from database)
   bulkHardDelete(ids: number[]): Promise<any> {
-    return firstValueFrom(this.http.delete(API_URL + '?path=serial-numbers', { 
-      body: { ids, hard: true },
-      headers: { 'Content-Type': 'application/json' }
-    }));
+    return firstValueFrom(this.http.post(`${API_URL}/bulk-delete`, { ids, hard: true }));
   }
 
-  // Get usage statistics
   getUsageStatistics(): Promise<any> {
-    return firstValueFrom(this.http.get<any>(API_URL + '?path=serial-numbers/stats'));
+    return firstValueFrom(this.http.get<any>(`${API_URL}/stats`));
   }
 
-  // Get available serial numbers for selection
   getAvailable(category: string = 'gaming', limit: number = 5000): Promise<any[]> {
-    return firstValueFrom(this.http.get<any[]>(`${API_URL}?path=serial-numbers/available&category=${category}&limit=${limit}`));
+    return firstValueFrom(
+      this.http.get<any[]>(`${API_URL}/available`, {
+        params: new HttpParams().set('category', category).set('limit', limit.toString())
+      })
+    );
   }
 
-  // Reserve a serial number (mark as reserved temporarily)
   reserveSerialNumber(serialNumber: string): Promise<any> {
-    return firstValueFrom(this.http.post(`${API_URL}?path=serial-numbers/reserve`, { serial_number: serialNumber }));
+    return firstValueFrom(this.http.post(`${API_URL}/reserve`, { serial_number: serialNumber }));
   }
 
-  // Release a reserved serial number (mark as available again)
   releaseSerialNumber(serialNumber: string): Promise<any> {
-    return firstValueFrom(this.http.post(`${API_URL}?path=serial-numbers/release`, { serial_number: serialNumber }));
+    return firstValueFrom(this.http.post(`${API_URL}/release`, { serial_number: serialNumber }));
   }
 
-  // Check if serial numbers already exist
   checkExistingSerials(serialNumbers: string[]): Promise<string[]> {
-    return firstValueFrom(this.http.post<string[]>(`${API_URL}?path=serial-numbers/check-existing`, { serial_numbers: serialNumbers }));
+    return firstValueFrom(
+      this.http.post<string[]>(`${API_URL}/check-existing`, { serial_numbers: serialNumbers })
+    );
   }
 
-  // Bulk upload with options
   bulkUploadWithOptions(options: {
     serialNumbers: { serial_number: string; category: string }[];
     duplicateStrategy: 'skip' | 'replace' | 'error';
     category: string;
   }): Promise<{ created: number; updated: number; errors: any[] }> {
-    return firstValueFrom(this.http.post<any>(`${API_URL}?path=serial-numbers/bulk-upload`, options));
+    return firstValueFrom(this.http.post<any>(`${API_URL}/bulk-upload`, options));
   }
 }

@@ -11,6 +11,8 @@ import { LoggingInterceptor } from './interceptors/logging.interceptor';
 import { RequestContextMiddleware } from './middlewares/request-context.middleware';
 import { ForkliftInspectionModule } from './modules/forklift-inspection';
 import { HealthModule } from './modules/health';
+import { IgtSerialNumbersModule } from './modules/igt-serial-numbers';
+import { SerialAssignmentsModule } from './modules/serial-assignments';
 import { IgtTransferModule } from './modules/igt-transfer/igt-transfer.module';
 import { InventoryByProdLineModule } from './modules/inventory-by-prod-line';
 import { QadModule } from './modules/qad';
@@ -46,10 +48,12 @@ import { EmailModule } from '../shared/email/email.module';
     DataScrubModule,
     ForkliftInspectionModule,
     HealthModule,
+    IgtSerialNumbersModule,
     IgtTransferModule,
     InventoryByProdLineModule,
     QadModule,
     SafetyIncidentModule,
+    SerialAssignmentsModule,
     SgAssetModule,
     TrainingModule,
     UniqueLabelsModule,

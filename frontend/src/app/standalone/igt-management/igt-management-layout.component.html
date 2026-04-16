@@ -1,0 +1,49 @@
+<div id="layout-wrapper" class="tmg-shell" [class.sidebar-open]="isSidebarOpen">
+  <header class="tmg-topbar d-flex align-items-center justify-content-between px-3 px-md-4">
+    <div class="d-flex align-items-center gap-2">
+      <button class="btn btn-outline-secondary tmg-sidebar-toggle" type="button" (click)="toggleSidebar()">
+        <i class="las la-bars"></i>
+      </button>
+      <div class="tmg-logo-badge">IGT</div>
+      <div>
+        <h1 class="h6 mb-0">IGT Management</h1>
+        <small class="text-muted">Serial inventory, assignment tracking, and uploads</small>
+      </div>
+    </div>
+    <a class="btn btn-sm btn-outline-secondary" routerLink="/menu" target="_self">Back to Main Menu</a>
+  </header>
+
+  <nav class="tmg-section-rail" aria-label="Main Sections">
+    <a
+      *ngFor="let section of mainSections"
+      class="tmg-rail-link"
+      [routerLink]="section.route"
+      [class.active]="isMainSectionActive(section.route)"
+      [attr.title]="section.label"
+    >
+      <i [class]="section.icon"></i>
+      <span class="visually-hidden">{{ section.label }}</span>
+    </a>
+  </nav>
+
+  <app-standalone-sidenav
+    prefix="tmg"
+    [isOpen]="isSidebarOpen"
+    brandRoute="/igt-management/inventory"
+    logoSm="IGT"
+    logoLg="IGT Serials"
+    groupTitle="IGT Management"
+    [navItems]="navItems"
+    (navItemClick)="onNavClick()"
+  ></app-standalone-sidenav>
+
+  <div class="tmg-sidebar-backdrop" *ngIf="isSidebarOpen && !isDesktopViewport" (click)="closeSidebar()"></div>
+
+  <div class="main-content">
+    <div class="page-content">
+      <div class="container-fluid py-2 py-md-3">
+        <router-outlet></router-outlet>
+      </div>
+    </div>
+  </div>
+</div>

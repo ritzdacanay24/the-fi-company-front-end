@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+﻿import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 
@@ -6,16 +6,12 @@ import { firstValueFrom } from 'rxjs';
   providedIn: 'root'
 })
 export class SerialAssignmentsService {
-  private readonly API_URL = 'serial-assignments';
+  private readonly API_URL = 'apiV2/serial-assignments';
 
   constructor(private http: HttpClient) {}
 
-  /**
-   * Get all serial assignments with optional filters
-   */
   async getAssignments(filters?: any): Promise<any> {
-    let params = new HttpParams().set('action', 'get_assignments');
-    
+    let params = new HttpParams();
     if (filters) {
       Object.keys(filters).forEach(key => {
         if (filters[key] !== null && filters[key] !== undefined && filters[key] !== '') {
@@ -23,87 +19,43 @@ export class SerialAssignmentsService {
         }
       });
     }
-    
-    return await firstValueFrom(this.http.get(`${this.API_URL}/index.php`, { params }));
+    return firstValueFrom(this.http.get(this.API_URL, { params }));
   }
 
-  /**
-   * Get assignment by ID
-   */
   async getAssignmentById(id: number): Promise<any> {
-    const params = new HttpParams()
-      .set('action', 'get_assignment')
-      .set('id', id.toString());
-    
-    return await firstValueFrom(this.http.get(`${this.API_URL}/index.php`, { params }));
+    return firstValueFrom(this.http.get(`${this.API_URL}/${id}`));
   }
 
-  /**
-   * Get assignments by work order
-   */
   async getAssignmentsByWorkOrder(workOrderNumber: string): Promise<any> {
-    const params = new HttpParams()
-      .set('action', 'get_assignments')
-      .set('work_order_number', workOrderNumber);
-    
-    return await firstValueFrom(this.http.get(`${this.API_URL}/index.php`, { params }));
+    const params = new HttpParams().set('wo_number', workOrderNumber);
+    return firstValueFrom(this.http.get(this.API_URL, { params }));
   }
 
-  /**
-   * Get assignments by serial number
-   */
   async getAssignmentsBySerial(serialNumber: string): Promise<any> {
-    const params = new HttpParams()
-      .set('action', 'get_assignments')
-      .set('serial_number', serialNumber);
-    
-    return await firstValueFrom(this.http.get(`${this.API_URL}/index.php`, { params }));
+    const params = new HttpParams().set('eyefi_serial_number', serialNumber);
+    return firstValueFrom(this.http.get(this.API_URL, { params }));
   }
 
-  /**
-   * Get assignment statistics
-   */
   async getStatistics(): Promise<any> {
-    const params = new HttpParams().set('action', 'get_statistics');
-    return await firstValueFrom(this.http.get(`${this.API_URL}/index.php`, { params }));
+    return firstValueFrom(this.http.get(`${this.API_URL}/stats`));
   }
 
-  /**
-   * Get assignments grouped by serial type
-   */
   async getAssignmentsByType(): Promise<any> {
-    const params = new HttpParams().set('action', 'get_by_type');
-    return await firstValueFrom(this.http.get(`${this.API_URL}/index.php`, { params }));
+    return firstValueFrom(this.http.get(`${this.API_URL}/stats`));
   }
 
-  /**
-   * Get recent assignments
-   */
   async getRecentAssignments(limit: number = 10): Promise<any> {
-    const params = new HttpParams()
-      .set('action', 'get_recent')
-      .set('limit', limit.toString());
-    
-    return await firstValueFrom(this.http.get(`${this.API_URL}/index.php`, { params }));
+    const params = new HttpParams().set('limit', limit.toString());
+    return firstValueFrom(this.http.get(this.API_URL, { params }));
   }
 
-  /**
-   * Search assignments
-   */
   async searchAssignments(searchTerm: string): Promise<any> {
-    const params = new HttpParams()
-      .set('action', 'search')
-      .set('term', searchTerm);
-    
-    return await firstValueFrom(this.http.get(`${this.API_URL}/index.php`, { params }));
+    const params = new HttpParams().set('eyefi_serial_number', searchTerm);
+    return firstValueFrom(this.http.get(this.API_URL, { params }));
   }
 
-  /**
-   * Export assignments to CSV
-   */
   async exportAssignments(filters?: any): Promise<Blob> {
-    let params = new HttpParams().set('action', 'export');
-    
+    let params = new HttpParams();
     if (filters) {
       Object.keys(filters).forEach(key => {
         if (filters[key] !== null && filters[key] !== undefined && filters[key] !== '') {
@@ -111,98 +63,51 @@ export class SerialAssignmentsService {
         }
       });
     }
-    
-    return await firstValueFrom(
-      this.http.get(`${this.API_URL}/index.php`, { 
-        params,
-        responseType: 'blob'
-      })
-    );
+    return firstValueFrom(this.http.get(this.API_URL, { params, responseType: 'blob' }));
   }
 
-  /**
-   * Void an assignment (soft delete)
-   */
   async voidAssignment(id: number, reason: string, performedBy: string): Promise<any> {
-    const params = new HttpParams().set('action', 'void_assignment');
-    const body = { id, reason, performed_by: performedBy };
-    
-    return await firstValueFrom(
-      this.http.post(`${this.API_URL}/index.php`, body, { params })
+    return firstValueFrom(
+      this.http.post(`${this.API_URL}/${id}/void`, { reason, performed_by: performedBy })
     );
   }
 
-  /**
-   * Delete an assignment (hard delete)
-   */
   async deleteAssignment(id: number, reason: string, performedBy: string): Promise<any> {
-    const params = new HttpParams().set('action', 'delete_assignment');
-    const body = { id, reason, performed_by: performedBy };
-    
-    return await firstValueFrom(
-      this.http.post(`${this.API_URL}/index.php`, body, { params })
+    return firstValueFrom(
+      this.http.delete(`${this.API_URL}/${id}`, { body: { reason, performed_by: performedBy } } as any)
     );
   }
 
-  /**
-   * Restore a voided assignment
-   */
   async restoreAssignment(id: number, performedBy: string): Promise<any> {
-    const params = new HttpParams().set('action', 'restore_assignment');
-    const body = { id, performed_by: performedBy };
-    
-    return await firstValueFrom(
-      this.http.post(`${this.API_URL}/index.php`, body, { params })
+    return firstValueFrom(
+      this.http.post(`${this.API_URL}/${id}/restore`, { performed_by: performedBy })
     );
   }
 
-  /**
-   * Bulk void assignments
-   */
   async bulkVoidAssignments(ids: number[], reason: string, performedBy: string): Promise<any> {
-    const params = new HttpParams().set('action', 'bulk_void');
-    const body = { ids, reason, performed_by: performedBy };
-    
-    return await firstValueFrom(
-      this.http.post(`${this.API_URL}/index.php`, body, { params })
+    return firstValueFrom(
+      this.http.post(`${this.API_URL}/bulk-void`, { ids, reason, performed_by: performedBy })
     );
   }
 
-  /**
-   * Bulk create "Other" customer assignments
-   * Creates assignment records without customer asset generation
-   */
   async bulkCreateOther(assignments: any[], performedBy: string): Promise<any> {
-    const params = new HttpParams().set('action', 'bulk_create_other');
-    const body = { assignments, performed_by: performedBy };
-    
-    return await firstValueFrom(
-      this.http.post(`${this.API_URL}/index.php`, body, { params })
+    // Not yet migrated â€” kept for backward compatibility
+    return firstValueFrom(
+      this.http.post(`${this.API_URL}/bulk-create-other`, { assignments, performed_by: performedBy })
     );
   }
 
-  /**
-   * Get audit trail for assignment(s)
-   */
   async getAuditTrail(assignmentId?: number, limit: number = 100): Promise<any> {
-    let params = new HttpParams()
-      .set('action', 'get_audit_trail')
-      .set('limit', limit.toString());
-    
     if (assignmentId) {
-      params = params.set('assignment_id', assignmentId.toString());
+      const params = new HttpParams().set('limit', limit.toString());
+      return firstValueFrom(this.http.get(`${this.API_URL}/${assignmentId}/audit`, { params }));
     }
-    
-    return await firstValueFrom(this.http.get(`${this.API_URL}/index.php`, { params }));
+    const params = new HttpParams().set('limit', limit.toString());
+    return firstValueFrom(this.http.get(`${this.API_URL}/audit-trail`, { params }));
   }
 
-  /**
-   * Get all consumed serials from all sources (comprehensive view)
-   * Includes: serial_assignments, ul_label_usages, agsSerialGenerator, sgAssetGenerator, used igt_serial_numbers
-   */
   async getAllConsumedSerials(filters?: any): Promise<any> {
-    let params = new HttpParams().set('action', 'get_all_consumed_serials');
-    
+    let params = new HttpParams();
     if (filters) {
       Object.keys(filters).forEach(key => {
         if (filters[key] !== null && filters[key] !== undefined && filters[key] !== '') {
@@ -210,117 +115,69 @@ export class SerialAssignmentsService {
         }
       });
     }
-    
-    return await firstValueFrom(this.http.get(`${this.API_URL}/index.php`, { params }));
+    return firstValueFrom(this.http.get(this.API_URL, { params }));
   }
 
-  /**
-   * Get consumed serials summary statistics
-   */
   async getConsumedSerialsSummary(): Promise<any> {
-    const params = new HttpParams().set('action', 'get_consumed_summary');
-    return await firstValueFrom(this.http.get(`${this.API_URL}/index.php`, { params }));
+    return firstValueFrom(this.http.get(`${this.API_URL}/consumed-summary`));
   }
 
-  /**
-   * Get daily consumption trend (last 30 days)
-   */
   async getDailyConsumptionTrend(): Promise<any> {
-    const params = new HttpParams().set('action', 'get_consumption_trend');
-    return await firstValueFrom(this.http.get(`${this.API_URL}/index.php`, { params }));
+    return firstValueFrom(this.http.get(`${this.API_URL}/consumption-trend`));
   }
 
-  /**
-   * Get user consumption activity
-   */
   async getUserConsumptionActivity(): Promise<any> {
-    const params = new HttpParams().set('action', 'get_user_activity');
-    return await firstValueFrom(this.http.get(`${this.API_URL}/index.php`, { params }));
+    return firstValueFrom(this.http.get(`${this.API_URL}/user-activity`));
   }
 
-  /**
-   * Get work order serial tracking
-   */
   async getWorkOrderSerials(workOrder?: string): Promise<any> {
-    let params = new HttpParams().set('action', 'get_work_order_serials');
-    
-    if (workOrder) {
-      params = params.set('work_order', workOrder);
-    }
-    
-    return await firstValueFrom(this.http.get(`${this.API_URL}/index.php`, { params }));
+    const params = workOrder ? new HttpParams().set('work_order', workOrder) : new HttpParams();
+    return firstValueFrom(this.http.get(`${this.API_URL}/work-orders`, { params }));
   }
 
-  /**
-   * VERIFICATION SYSTEM - Create verification session (supports batch mode)
-   */
+  // â”€â”€ Verification system (still on PHP, not yet migrated) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
   async createVerificationSession(
-    assignmentId: number, 
-    expectedSerial: string | string[], // Can be single serial or array of serials for batch
+    assignmentId: number,
+    expectedSerial: string | string[],
     createdBy: string,
     expectedUl?: string,
-    workflowSessionId?: string // Add workflow session ID parameter
+    workflowSessionId?: string,
   ): Promise<any> {
-    const body: any = {
-      assignment_id: assignmentId,
-      created_by: createdBy
-    };
-    
-    // Handle batch mode (array) or single mode (string)
+    const body: any = { assignment_id: assignmentId, created_by: createdBy };
     if (Array.isArray(expectedSerial)) {
-      body.expected_serials = expectedSerial; // Batch mode
+      body.expected_serials = expectedSerial;
     } else {
-      body.expected_serial = expectedSerial; // Single mode (backward compatibility)
+      body.expected_serial = expectedSerial;
     }
-    
-    // Add UL number if provided
-    if (expectedUl) {
-      body.expected_ul = expectedUl;
-    }
-    
-    // Add workflow session ID if provided
-    if (workflowSessionId) {
-      body.workflow_session_id = workflowSessionId;
-    }
-    
-    return await firstValueFrom(
-      this.http.post('verification-session/create-session.php', body)
-    );
+    if (expectedUl) body.expected_ul = expectedUl;
+    if (workflowSessionId) body.workflow_session_id = workflowSessionId;
+    return firstValueFrom(this.http.post('verification-session/create-session.php', body));
   }
 
-  /**
-   * VERIFICATION SYSTEM - Get verification session status
-   */
   async getVerificationSession(sessionId: string): Promise<any> {
     const params = new HttpParams().set('session_id', sessionId);
-    return await firstValueFrom(
-      this.http.get('verification-session/get-session.php', { params })
-    );
+    return firstValueFrom(this.http.get('verification-session/get-session.php', { params }));
   }
 
-  /**
-   * VERIFICATION SYSTEM - Update verification session
-   */
   async updateVerificationSession(
     sessionId: string,
     capturedSerial?: string,
     matchResult?: string,
     photoPath?: string,
     errorMessage?: string,
-    performedBy?: string
+    performedBy?: string,
   ): Promise<any> {
-    const body = {
-      session_id: sessionId,
-      captured_serial: capturedSerial,
-      match_result: matchResult,
-      photo_path: photoPath,
-      error_message: errorMessage,
-      performed_by: performedBy
-    };
-    
-    return await firstValueFrom(
-      this.http.post('verification-session/update-session.php', body)
+    return firstValueFrom(
+      this.http.post('verification-session/update-session.php', {
+        session_id: sessionId,
+        captured_serial: capturedSerial,
+        match_result: matchResult,
+        photo_path: photoPath,
+        error_message: errorMessage,
+        performed_by: performedBy,
+      }),
     );
   }
-
 }
+

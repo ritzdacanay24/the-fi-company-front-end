@@ -135,6 +135,7 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
 
   assignments: SerialAssignment[] = [];
   filteredAssignments: SerialAssignment[] = [];
+  searchTerm: string = '';
 
   loading: boolean = false;
   error: string | null = null;
@@ -261,6 +262,7 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
         headerName: 'Source',
         field: 'source_type',
         width: 140,
+        hide: true,
         cellRenderer: (params: any) => {
           if (!params.data) return '';
           const badgeClass = this.getSourceBadgeClass(params.data.source_table);
@@ -271,6 +273,7 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
         headerName: 'Status',
         field: 'status',
         width: 120,
+        hide: true,
         cellRenderer: (params: any) => {
           if (!params.data) return '';
           if (params.data.is_voided == 1 || params.data.is_voided === true) {
@@ -342,14 +345,23 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
         headerName: 'Batch ID',
         field: 'batch_id',
         width: 140,
-        rowGroup: true,
-        hide: true,
         valueFormatter: (params: any) => params.value || '-'
       },
       {
         headerName: 'Used Date',
         field: 'used_date',
         width: 160,
+        hide: true,
+        valueFormatter: (params: any) => {
+          if (!params.value) return '-';
+          return new Date(params.value).toLocaleString();
+        }
+      },
+      {
+        headerName: 'Created',
+        field: 'created_at',
+        width: 170,
+        sort: 'desc',
         valueFormatter: (params: any) => {
           if (!params.value) return '-';
           return new Date(params.value).toLocaleString();
@@ -358,12 +370,14 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
       {
         headerName: 'Used By',
         field: 'used_by',
-        width: 180
+        width: 180,
+        hide: true
       },
       {
         headerName: 'Verification',
         field: 'verification_status',
         width: 140,
+        hide: true,
         cellRenderer: (params: any) => {
           if (!params.data) return '';
           const status = params.value;
@@ -857,6 +871,22 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
     this.selectedAssignments.clear();
     this.loadAssignments(); // Load all records
     this.loadStatistics();
+  }
+
+  onSearch(term: string): void {
+    const lower = term.toLowerCase().trim();
+    if (!lower) {
+      this.filteredAssignments = [...this.assignments];
+    } else {
+      this.filteredAssignments = this.assignments.filter(a =>
+        Object.values(a).some(v => v != null && v.toString().toLowerCase().includes(lower))
+      );
+    }
+  }
+
+  clearSearch(): void {
+    this.searchTerm = '';
+    this.filteredAssignments = [...this.assignments];
   }
 
   getActiveCount(): number {

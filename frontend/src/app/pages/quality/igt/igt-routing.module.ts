@@ -14,12 +14,23 @@ const routes: Routes = [
     children: [
       {
         path: "",
-        redirectTo: "list",
+        redirectTo: "/igt-management/inventory",
         pathMatch: "full",
       },
       {
         path: "list",
-        component: IgtListComponent,
+        redirectTo: "/igt-management/inventory",
+        pathMatch: "full",
+      },
+      {
+        path: "manage-existing",
+        redirectTo: "/igt-management/inventory",
+        pathMatch: "full",
+      },
+      {
+        path: "serial-upload",
+        redirectTo: "/igt-management/upload",
+        pathMatch: "full",
       },
       {
         path: "edit",
@@ -32,14 +43,6 @@ const routes: Routes = [
       {
         path: "serial-manager",
         component: SerialNumberManagerComponent,
-      },
-      {
-        path: "serial-upload",
-        component: SerialNumberUploadComponent,
-      },
-      {
-        path: "manage-existing",
-        component: IgtManageExistingComponent,
       },
     ],
   },
