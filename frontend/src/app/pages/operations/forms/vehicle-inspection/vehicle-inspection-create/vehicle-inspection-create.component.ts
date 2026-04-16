@@ -229,6 +229,7 @@ export class VehicleInspectionCreateComponent {
     try {
       this.isLoading = true;
       let { insertId } = await this.api._create(this.form.value);
+      const uniqueData = String(insertId ?? "");
 
       // Upload vehicle photos with specific labels
       const photoPositions = this.useSplitSidePhotos
@@ -253,7 +254,7 @@ export class VehicleInspectionCreateComponent {
           formData.append("field", "Vehicle Inspection");
           const resolvedTitle = titleMap[position] || `Vehicle ${position} View`;
           formData.append("title", resolvedTitle);
-          formData.append("uniqueData", insertId);
+          formData.append("uniqueData", uniqueData);
           formData.append("folderName", "vehicleInformation");
           this.uploadService
             .upload(formData)
@@ -268,7 +269,7 @@ export class VehicleInspectionCreateComponent {
           formData.append("file", file);
           formData.append("field", "Vehicle Inspection");
           formData.append("title", `Vehicle Additional Photo ${index + 1}`);
-          formData.append("uniqueData", insertId);
+          formData.append("uniqueData", uniqueData);
           formData.append("folderName", "vehicleInformation");
           this.uploadService
             .upload(formData)

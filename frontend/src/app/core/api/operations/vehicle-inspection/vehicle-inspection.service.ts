@@ -18,30 +18,19 @@ export class VehicleInspectionService extends DataService<any> {
     await firstValueFrom(this.http.get<any[]>(`${url}/getList`));
 
   async _create(params: any) {
-    return await firstValueFrom(
-      this.http.put<any>(`${url}/index`, params)
-    );
+    return await firstValueFrom(this.http.post<any>(`${url}/create`, params));
   }
 
   async _searchById(id: number) {
-    return await firstValueFrom(
-      this.http.get<any>(`${url}/index?searchById=${id}`)
-    );
+    return await firstValueFrom(this.http.get<any>(`${url}/getById?id=${id}`));
   }
 
   async saveDetailById(id: number, params) {
-    return await firstValueFrom(
-      this.http.put<any>(
-        `${url}/index?saveDetailById=${id}`,
-        params
-      )
-    );
+    return await firstValueFrom(this.http.put<any>(`${url}/saveDetailById?id=${id}`, params));
   }
 
   async getDetaliById(id: number) {
-    return await firstValueFrom(
-      this.http.get<any>(`${url}/index?getDetaliById=${id}`)
-    );
+    return await firstValueFrom(this.http.get<any>(`${url}/getDetaliById?id=${id}`));
   }
 
   
