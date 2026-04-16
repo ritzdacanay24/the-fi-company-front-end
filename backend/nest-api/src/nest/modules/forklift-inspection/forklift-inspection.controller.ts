@@ -30,18 +30,6 @@ export class ForkliftInspectionController {
     return this.service.deleteById(id);
   }
 
-  // Legacy-compatible route shape for current edit/create pages.
-  @Put('index')
-  async createFromIndex(@Body() payload: Record<string, any>) {
-    return this.service.create(payload);
-  }
-
-  // Legacy-compatible search route shape for current edit pages.
-  @Get('index')
-  async searchByIdFromIndex(@Query('searchById', ParseIntPipe) id: number) {
-    return this.service.getById(id);
-  }
-
   @Put('updateById/:id')
   async updateByIdPath(
     @Param('id', ParseIntPipe) id: number,

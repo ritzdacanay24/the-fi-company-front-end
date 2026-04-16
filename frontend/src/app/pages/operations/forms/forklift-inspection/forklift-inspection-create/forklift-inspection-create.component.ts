@@ -81,13 +81,14 @@ export class ForkliftInspectionCreateComponent {
     try {
       this.isLoading = true;
       let { insertId } = await this.api._create(this.form.value);
+      const uniqueData = String(insertId ?? "");
 
       const formData = new FormData();
 
       for (var i = 0; i < this.myFiles.length; i++) {
         formData.append("file", this.myFiles[i]);
         formData.append("field", "Vehicle Inspection");
-        formData.append("uniqueData", insertId);
+        formData.append("uniqueData", uniqueData);
         formData.append("folderName", "vehicleInformation");
         this.uploadService
           .upload(formData)

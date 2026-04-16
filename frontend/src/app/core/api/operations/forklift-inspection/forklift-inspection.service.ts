@@ -58,12 +58,12 @@ export class ForkliftInspectionService extends DataService<any> {
 
 
   async _create(params: any) {
-    return await firstValueFrom(this.http.put<any>(`${url}/index`, params));
+    return await this.create(params);
   }
 
 
   async _searchById(id: number) {
-    return await firstValueFrom(this.http.get<any>(`${url}/index?searchById=${id}`));
+    return await this.getById(id);
   }
 
 
