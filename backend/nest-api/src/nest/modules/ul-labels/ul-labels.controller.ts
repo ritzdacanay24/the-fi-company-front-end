@@ -120,6 +120,21 @@ export class UlLabelsController {
     return this.ulLabelsService.validateWorkOrder(woNumber);
   }
 
+  @Get('consumed-serials')
+  async getConsumedSerials(@Query() query: Record<string, string>) {
+    return this.ulLabelsService.getConsumedSerials(query);
+  }
+
+  @Get('audit-signoffs')
+  async getAuditSignoffs() {
+    return this.ulLabelsService.getAuditSignoffs();
+  }
+
+  @Post('audit-signoffs')
+  async submitAuditSignoff(@Body() body: Record<string, unknown> = {}) {
+    return this.ulLabelsService.submitAuditSignoff(body);
+  }
+
   @Post(':id/image')
   @UseInterceptors(FileInterceptor('image'))
   async uploadImage(

@@ -1,0 +1,13 @@
+<ng-container *ngIf="params?.data">
+  <div class="btn-group" ngbDropdown container="body" placement="bottom-end">
+    <button type="button" class="btn btn-outline-secondary btn-sm" ngbDropdownToggle title="Actions">
+      <i class="mdi mdi-dots-vertical"></i>
+    </button>
+
+    <div ngbDropdownMenu class="dropdown-menu-end">
+      <button ngbDropdownItem (click)="onViewDetails()">
+        <i class="mdi mdi-eye-outline me-2"></i>View Details
+      </button>
+    </div>
+  </div>
+</ng-container>

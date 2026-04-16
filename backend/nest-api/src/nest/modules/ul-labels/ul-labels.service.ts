@@ -4,6 +4,7 @@ import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { extname, join } from 'path';
 import * as XLSX from 'xlsx';
 import { MysqlService } from '@/shared/database/mysql.service';
+import { EmailService } from '@/shared/email/email.service';
 
 interface ApiResponse<T = unknown> {
   success: boolean;
@@ -24,6 +25,8 @@ export class UlLabelsService {
   constructor(
     @Inject(MysqlService)
     private readonly mysqlService: MysqlService,
+    @Inject(EmailService)
+    private readonly emailService: EmailService,
   ) {}
 
   async getLabels(filters: Record<string, string>): Promise<ApiResponse<RowDataPacket[]>> {
@@ -843,6 +846,183 @@ export class UlLabelsService {
     }
   }
 
+  async getConsumedSerials(filters: Record<string, string>): Promise<ApiResponse<RowDataPacket[]>> {
+    try {
+      const where: string[] = ['1=1'];
+      const params: unknown[] = [];
+
+      if (filters.source_table) {
+        where.push('source_table = ?');
+        params.push(filters.source_table);
+      }
+
+      if (filters.search) {
+        const search = `%${filters.search}%`;
+        where.push(
+          '(eyefi_serial_number LIKE ? OR ul_number LIKE ? OR igt_serial_number LIKE ? OR ags_serial_number LIKE ? OR sg_asset_number LIKE ? OR wo_number LIKE ? OR po_number LIKE ? OR used_by LIKE ?)',
+        );
+        params.push(search, search, search, search, search, search, search, search);
+      }
+
+      if (filters.used_by) {
+        where.push('used_by LIKE ?');
+        params.push(`%${filters.used_by}%`);
+      }
+
+      if (filters.wo_number) {
+        const woSearch = `%${filters.wo_number}%`;
+        where.push('(wo_number LIKE ? OR po_number LIKE ?)');
+        params.push(woSearch, woSearch);
+      }
+
+      if (filters.date_from) {
+        where.push('DATE(used_date) >= ?');
+        params.push(filters.date_from);
+      }
+
+      if (filters.date_to) {
+        where.push('DATE(used_date) <= ?');
+        params.push(filters.date_to);
+      }
+
+      if (filters.ul_category) {
+        where.push('ul_category = ?');
+        params.push(filters.ul_category);
+      }
+
+      const page = Math.max(1, Number(filters.page) || 1);
+      const limit = Math.min(500, Math.max(1, Number(filters.limit) || 50));
+      const offset = (page - 1) * limit;
+
+      const whereClause = where.join(' AND ');
+
+      const rows = await this.mysqlService.query<RowDataPacket[]>(
+        `
+          SELECT *
+          FROM vw_all_consumed_serials
+          WHERE ${whereClause}
+          ORDER BY used_date DESC
+          LIMIT ? OFFSET ?
+        `,
+        [...params, limit, offset],
+      );
+
+      return {
+        success: true,
+        data: rows,
+        count: rows.length,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `Error fetching consumed serials: ${this.getErrorMessage(error)}`,
+      };
+    }
+  }
+
+  async getAuditSignoffs(): Promise<ApiResponse<RowDataPacket[]>> {
+    try {
+      const rows = await this.mysqlService.query<RowDataPacket[]>(
+        `
+          SELECT *
+          FROM ul_audit_signoffs
+          ORDER BY audit_date DESC, created_at DESC
+        `,
+      );
+
+      const mapped = rows.map((row) => ({
+        ...row,
+        ul_numbers: this.parseJsonArray((row as Record<string, unknown>).ul_numbers),
+      }));
+
+      return {
+        success: true,
+        data: mapped,
+        message: 'Audit signoffs retrieved successfully',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `Failed to get audit signoffs: ${this.getErrorMessage(error)}`,
+      };
+    }
+  }
+
+  async submitAuditSignoff(body: Record<string, unknown>): Promise<ApiResponse<{ id: number; email_sent: boolean }>> {
+    const auditDate = String(body.audit_date || '').trim();
+    const auditorName = String(body.auditor_name || '').trim();
+    const auditorSignature = String(body.auditor_signature || '').trim();
+    const itemsAudited = Number(body.items_audited);
+    const ulNumbersRaw = Array.isArray(body.ul_numbers) ? body.ul_numbers : [];
+    const ulNumbers = ulNumbersRaw.map((ul) => String(ul || '').trim()).filter((ul) => !!ul);
+    const notes = String(body.notes || '').trim();
+    const email = String(body.email || '').trim();
+
+    if (!auditDate || !auditorName || !auditorSignature || !Number.isFinite(itemsAudited) || itemsAudited < 0) {
+      return {
+        success: false,
+        message: 'Missing or invalid required fields for audit signoff',
+      };
+    }
+
+    try {
+      const result = await this.mysqlService.execute<ResultSetHeader>(
+        `
+          INSERT INTO ul_audit_signoffs (
+            audit_date,
+            auditor_name,
+            auditor_signature,
+            items_audited,
+            ul_numbers,
+            notes
+          ) VALUES (?, ?, ?, ?, ?, ?)
+        `,
+        [auditDate, auditorName, auditorSignature, itemsAudited, JSON.stringify(ulNumbers), notes],
+      );
+
+      let emailSent = false;
+      if (email) {
+        try {
+          const formattedAuditDate = new Date(auditDate).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          });
+
+          await this.emailService.sendMail({
+            to: email,
+            subject: `UL New Audit Sign-Off Report - ${formattedAuditDate}`,
+            html: this.buildAuditSignoffEmailHtml({
+              auditDate,
+              auditorName,
+              auditorSignature,
+              itemsAudited,
+              ulNumbers,
+              notes,
+            }),
+          });
+          emailSent = true;
+        } catch {
+          emailSent = false;
+        }
+      }
+
+      return {
+        success: true,
+        message: `Audit signoff submitted successfully${email ? (emailSent ? ' and email sent' : ' (email send failed)') : ''}`,
+        data: {
+          id: result.insertId,
+          email_sent: emailSent,
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `Failed to submit audit signoff: ${this.getErrorMessage(error)}`,
+      };
+    }
+  }
+
   async exportLabelsCsv(filters: Record<string, string>): Promise<string> {
     const rows = await this.fetchLabelRows(filters);
     return this.toCsv(rows);
@@ -1226,6 +1406,63 @@ export class UlLabelsService {
     }
 
     return value;
+  }
+
+  private parseJsonArray(value: unknown): string[] {
+    if (Array.isArray(value)) {
+      return value.map((entry) => String(entry || '').trim()).filter((entry) => !!entry);
+    }
+
+    if (typeof value !== 'string' || !value.trim()) {
+      return [];
+    }
+
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) {
+        return parsed.map((entry) => String(entry || '').trim()).filter((entry) => !!entry);
+      }
+      return [];
+    } catch {
+      return [];
+    }
+  }
+
+  private buildAuditSignoffEmailHtml(payload: {
+    auditDate: string;
+    auditorName: string;
+    auditorSignature: string;
+    itemsAudited: number;
+    ulNumbers: string[];
+    notes: string;
+  }): string {
+    const ulNumbersHtml = payload.ulNumbers
+      .map((ul) => `<span style="display:inline-block;margin:2px;padding:4px 8px;background:#f1f3f5;border:1px solid #dee2e6;border-radius:4px;font-family:monospace;">${ul}</span>`)
+      .join('');
+
+    return `
+      <div style="font-family:Arial,sans-serif;line-height:1.4;color:#212529;">
+        <h2 style="color:#198754;margin-bottom:8px;">UL New Audit Sign-Off Report</h2>
+        <p style="margin:0 0 12px 0;color:#6c757d;">Generated ${new Date().toLocaleString()}</p>
+
+        <table style="border-collapse:collapse;width:100%;max-width:700px;margin-bottom:16px;">
+          <tr><td style="padding:6px 0;font-weight:600;width:180px;">Audit Date</td><td style="padding:6px 0;">${payload.auditDate}</td></tr>
+          <tr><td style="padding:6px 0;font-weight:600;">Auditor Name</td><td style="padding:6px 0;">${payload.auditorName}</td></tr>
+          <tr><td style="padding:6px 0;font-weight:600;">Auditor Signature</td><td style="padding:6px 0;">${payload.auditorSignature}</td></tr>
+          <tr><td style="padding:6px 0;font-weight:600;">Items Audited</td><td style="padding:6px 0;">${payload.itemsAudited}</td></tr>
+        </table>
+
+        <div style="margin-bottom:14px;">
+          <div style="font-weight:600;margin-bottom:6px;">UL Numbers Audited</div>
+          <div>${ulNumbersHtml || '<span style="color:#6c757d;">None</span>'}</div>
+        </div>
+
+        <div>
+          <div style="font-weight:600;margin-bottom:6px;">Notes</div>
+          <div style="padding:10px;border:1px solid #dee2e6;border-radius:4px;background:#f8f9fa;">${payload.notes || 'No notes provided'}</div>
+        </div>
+      </div>
+    `;
   }
 
   private getErrorMessage(error: unknown): string {

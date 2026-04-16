@@ -1,0 +1,27 @@
+<ng-container *ngIf="params?.data">
+  <div class="btn-group" ngbDropdown container="body" placement="bottom-end">
+    <button type="button" class="btn btn-outline-secondary btn-sm" ngbDropdownToggle title="Actions">
+      <i class="mdi mdi-dots-vertical"></i>
+    </button>
+
+    <div ngbDropdownMenu class="dropdown-menu-end">
+      <button ngbDropdownItem [disabled]="!canArchive" (click)="onArchive()">
+        <i class="mdi mdi-archive-arrow-down me-2"></i>Archive
+      </button>
+
+      <button ngbDropdownItem [disabled]="!canSoftDelete" (click)="onSoftDelete()">
+        <i class="mdi mdi-delete-outline me-2"></i>Soft Delete
+      </button>
+
+      <button ngbDropdownItem [disabled]="!canRestore" (click)="onRestore()">
+        <i class="mdi mdi-restore me-2"></i>Restore
+      </button>
+
+      <div class="dropdown-divider"></div>
+
+      <button ngbDropdownItem class="text-danger" (click)="onHardDelete()">
+        <i class="mdi mdi-delete-forever me-2"></i>Hard Delete
+      </button>
+    </div>
+  </div>
+</ng-container>

@@ -1,8 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { Component, HostListener, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit, ViewEncapsulation } from '@angular/core';
 import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { StandaloneLayoutThemeService } from '@app/standalone/shared/standalone-layout-theme.service';
+import { StandaloneSidenavComponent } from '@app/standalone/shared/standalone-sidenav.component';
 
 interface NavItem {
   label: string;
@@ -20,9 +21,10 @@ interface MainSectionItem {
 @Component({
   selector: 'app-training-management-layout',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, StandaloneSidenavComponent],
   templateUrl: './training-management-layout.component.html',
   styleUrl: './training-management-layout.component.scss',
+  encapsulation: ViewEncapsulation.None,
 })
 export class TrainingManagementLayoutComponent implements OnInit {
   currentSectionLabel = 'Live Sessions';

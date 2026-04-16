@@ -2,16 +2,23 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, TemplateRef, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { NgbDropdownModule, NgbModal, NgbModalModule, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
+import { NgbModal, NgbModalModule, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { AgGridModule } from 'ag-grid-angular';
 import { ColDef } from 'ag-grid-community';
 import { ToastrService } from 'ngx-toastr';
 import { UniqueLabelBatch, UniqueLabelGeneratorApiService } from './unique-label-generator-api.service';
+import { UniqueLabelAdminActionDropdownRendererComponent } from './unique-label-admin-action-dropdown-renderer.component';
 
 @Component({
   selector: 'app-unique-label-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, NgbDropdownModule, NgbModalModule, AgGridModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    NgbModalModule,
+    AgGridModule,
+  ],
   templateUrl: './unique-label-admin.component.html',
 })
 export class UniqueLabelAdminComponent implements OnInit {
@@ -54,36 +61,17 @@ export class UniqueLabelAdminComponent implements OnInit {
     {
       headerName: 'Actions',
       colId: 'actions',
-      width: 280,
+      width: 120,
       pinned: 'right',
       sortable: false,
       filter: false,
       floatingFilter: false,
-      cellRenderer: (params: any) => {
-        const status = params?.data?.status;
-        return `
-          <div class="d-flex gap-1">
-            <button class="btn btn-sm btn-outline-warning action-btn" data-action="archive" ${status === 'archived' ? 'disabled' : ''}>Archive</button>
-            <button class="btn btn-sm btn-outline-danger action-btn" data-action="soft-delete" ${status === 'deleted' ? 'disabled' : ''}>Soft Delete</button>
-            <button class="btn btn-sm btn-outline-success action-btn" data-action="restore" ${status === 'active' ? 'disabled' : ''}>Restore</button>
-            <button class="btn btn-sm btn-danger action-btn" data-action="hard-delete">Hard Delete</button>
-          </div>
-        `;
-      },
-      onCellClicked: (params: any) => {
-        const button = params?.event?.target?.closest?.('.action-btn');
-        const action = button?.getAttribute?.('data-action');
-        if (!action || !params?.data) return;
-
-        if (action === 'archive') {
-          this.archiveBatch(params.data);
-        } else if (action === 'soft-delete') {
-          this.softDeleteBatch(params.data);
-        } else if (action === 'restore') {
-          this.restoreBatch(params.data);
-        } else if (action === 'hard-delete') {
-          this.hardDeleteBatch(params.data);
-        }
+      cellRenderer: UniqueLabelAdminActionDropdownRendererComponent,
+      cellRendererParams: {
+        onArchive: (batch: UniqueLabelBatch) => this.archiveBatch(batch),
+        onSoftDelete: (batch: UniqueLabelBatch) => this.softDeleteBatch(batch),
+        onRestore: (batch: UniqueLabelBatch) => this.restoreBatch(batch),
+        onHardDelete: (batch: UniqueLabelBatch) => this.hardDeleteBatch(batch),
       },
     },
   ];

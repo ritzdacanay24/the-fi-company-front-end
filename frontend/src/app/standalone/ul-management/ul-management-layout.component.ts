@@ -1,14 +1,16 @@
 import { CommonModule } from '@angular/common';
-import { Component, HostListener, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit, ViewEncapsulation } from '@angular/core';
 import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { StandaloneLayoutThemeService } from '@app/standalone/shared/standalone-layout-theme.service';
+import { StandaloneSidenavComponent } from '@app/standalone/shared/standalone-sidenav.component';
 
 interface NavItem {
   label: string;
   route: string;
   icon: string;
   subtitle: string;
+  dividerBefore?: boolean;
 }
 
 interface MainSectionItem {
@@ -20,9 +22,10 @@ interface MainSectionItem {
 @Component({
   selector: 'app-ul-management-layout',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, StandaloneSidenavComponent],
   templateUrl: './ul-management-layout.component.html',
   styleUrl: './ul-management-layout.component.scss',
+  encapsulation: ViewEncapsulation.None,
 })
 export class UlManagementLayoutComponent implements OnInit {
   currentSectionLabel = 'Labels Report';
@@ -69,6 +72,19 @@ export class UlManagementLayoutComponent implements OnInit {
       route: 'usage-report',
       icon: 'las la-chart-bar',
       subtitle: 'Review UL usage trends, history, and accountability reporting.',
+    },
+    {
+      label: 'Audit Sign-Off',
+      route: 'audit-signoff',
+      icon: 'las la-clipboard-check',
+      subtitle: 'Run UL audit validation and capture official sign-off records.',
+      dividerBefore: true,
+    },
+    {
+      label: 'Audit History',
+      route: 'audit-history',
+      icon: 'las la-history',
+      subtitle: 'View audit trends, records, and print/export prior sign-off reports.',
     },
   ];
 

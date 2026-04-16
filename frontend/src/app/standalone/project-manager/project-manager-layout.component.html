@@ -26,33 +26,16 @@
     </a>
   </nav>
 
-  <aside class="app-menu navbar-menu pm-sidebar" [class.open]="isSidebarOpen">
-    <div class="navbar-brand-box">
-      <a routerLink="/project-manager/dashboard" class="logo logo-dark">
-        <span class="logo-sm">PM</span>
-        <span class="logo-lg text-white">Project Manager</span>
-      </a>
-    </div>
-
-    <div class="h-100 d-flex flex-column">
-      <div class="pm-nav-group">
-        <small class="pm-nav-group-title">Project Manager</small>
-      </div>
-
-      <nav class="nav flex-column py-2">
-        <a
-          *ngFor="let item of navItems"
-          class="nav-link d-flex align-items-center gap-2"
-          [routerLink]="item.route"
-          routerLinkActive="active"
-          (click)="onNavClick()"
-        >
-          <i [class]="item.icon"></i>
-          <span>{{ item.label }}</span>
-        </a>
-      </nav>
-    </div>
-  </aside>
+  <app-standalone-sidenav
+    prefix="pm"
+    [isOpen]="isSidebarOpen"
+    brandRoute="/project-manager/dashboard"
+    logoSm="PM"
+    logoLg="Project Manager"
+    groupTitle="Project Manager"
+    [navItems]="navItems"
+    (navItemClick)="onNavClick()"
+  ></app-standalone-sidenav>
 
   <div class="pm-sidebar-backdrop" *ngIf="isSidebarOpen && !isDesktopViewport" (click)="closeSidebar()"></div>
 

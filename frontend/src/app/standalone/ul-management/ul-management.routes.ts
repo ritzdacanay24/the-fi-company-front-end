@@ -33,6 +33,22 @@ export const UL_MANAGEMENT_ROUTES: Routes = [
           ),
       },
       {
+        path: 'audit-signoff',
+        title: 'UL Audit Sign-Off',
+        loadComponent: () =>
+          import('../../features/ul-management/components/ul-audit-signoff/ul-audit-signoff.component').then(
+            (c) => c.UlAuditSignoffComponent,
+          ),
+      },
+      {
+        path: 'audit-history',
+        title: 'UL Audit History',
+        loadComponent: () =>
+          import('../../features/ul-management/components/ul-audit-signoff/ul-audit-history.component').then(
+            (c) => c.UlAuditHistoryComponent,
+          ),
+      },
+      {
         path: 'v2',
         title: 'UL Management v2',
         loadComponent: () =>

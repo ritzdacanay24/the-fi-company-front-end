@@ -1,0 +1,178 @@
+<div class="container-fluid">
+  <div class="row justify-content-center">
+    <div class="col-12">
+      <app-breadcrumb [items]="breadcrumbItems()"></app-breadcrumb>
+
+      <div class="mb-4">
+        <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-3">
+          <div class="d-flex align-items-center">
+            <div class="bg-info bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+              <i class="mdi mdi-history text-white fs-4"></i>
+            </div>
+            <div>
+              <h2 class="mb-1 text-info">UL Audit History</h2>
+              <p class="text-muted mb-0">Review past sign-off records, coverage, and auditor performance.</p>
+            </div>
+          </div>
+          <div class="d-flex gap-2">
+            <a class="btn btn-outline-secondary" routerLink="/ul-management/audit-signoff" title="Back to audit sign-off">
+              <i class="mdi mdi-arrow-left me-2"></i>Back to Sign-Off
+            </a>
+            <button class="btn btn-outline-secondary" (click)="refresh()" [disabled]="loading" title="Refresh audit history data">
+              <i class="mdi mdi-refresh me-2"></i>Refresh
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <ng-container *ngIf="loading; else auditHistoryContent">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body text-center py-5">
+            <div class="spinner-border text-primary mb-2" role="status"></div>
+            <div class="text-muted">Loading audit history...</div>
+          </div>
+        </div>
+      </ng-container>
+
+      <ng-template #auditHistoryContent>
+        <div *ngIf="error" class="alert alert-danger mb-3">{{ error }}</div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-12 col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-header bg-light py-2">
+                <strong class="small">Audit Coverage</strong>
+              </div>
+              <div class="card-body" style="height: 260px;">
+                <ng-container *ngIf="coverageHasData; else coverageEmpty">
+                  <apx-chart
+                    [series]="coverageChart.series"
+                    [chart]="coverageChart.chart"
+                    [labels]="coverageChart.labels"
+                    [legend]="coverageChart.legend"
+                    [dataLabels]="coverageChart.dataLabels"
+                    [tooltip]="coverageChart.tooltip"
+                    [stroke]="coverageChart.stroke"
+                    [colors]="coverageChart.colors"
+                    [responsive]="coverageChart.responsive">
+                  </apx-chart>
+                </ng-container>
+                <ng-template #coverageEmpty>
+                  <div class="h-100 d-flex align-items-center justify-content-center text-muted small">
+                    No coverage data yet
+                  </div>
+                </ng-template>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-lg-8">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-header bg-light py-2">
+                <strong class="small">Audit Volume by Date</strong>
+              </div>
+              <div class="card-body" style="height: 260px;">
+                <apx-chart
+                  [series]="auditVolumeChart.series"
+                  [chart]="auditVolumeChart.chart"
+                  [xaxis]="auditVolumeChart.xaxis"
+                  [yaxis]="auditVolumeChart.yaxis"
+                  [plotOptions]="auditVolumeChart.plotOptions"
+                  [dataLabels]="auditVolumeChart.dataLabels"
+                  [tooltip]="auditVolumeChart.tooltip"
+                  [colors]="auditVolumeChart.colors">
+                </apx-chart>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-header bg-light py-2">
+                <strong class="small">Top Auditors</strong>
+              </div>
+              <div class="card-body" style="height: 260px;">
+                <apx-chart
+                  [series]="topAuditorsChart.series"
+                  [chart]="topAuditorsChart.chart"
+                  [xaxis]="topAuditorsChart.xaxis"
+                  [plotOptions]="topAuditorsChart.plotOptions"
+                  [dataLabels]="topAuditorsChart.dataLabels"
+                  [tooltip]="topAuditorsChart.tooltip"
+                  [colors]="topAuditorsChart.colors">
+                </apx-chart>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-header bg-light py-2">
+                <strong class="small">Q / T Completion</strong>
+              </div>
+              <div class="card-body" style="height: 260px;">
+                <apx-chart
+                  [series]="qtCompletionChart.series"
+                  [chart]="qtCompletionChart.chart"
+                  [xaxis]="qtCompletionChart.xaxis"
+                  [yaxis]="qtCompletionChart.yaxis"
+                  [plotOptions]="qtCompletionChart.plotOptions"
+                  [dataLabels]="qtCompletionChart.dataLabels"
+                  [legend]="qtCompletionChart.legend"
+                  [tooltip]="qtCompletionChart.tooltip"
+                  [colors]="qtCompletionChart.colors">
+                </apx-chart>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+          <div class="card-header bg-light py-2">
+            <strong class="small">Sign-Off Records ({{ auditHistory.length }})</strong>
+          </div>
+          <div class="card-body">
+            <div *ngIf="auditHistory.length === 0" class="text-center text-muted py-4">No audit history records found.</div>
+            <div *ngIf="auditHistory.length > 0" class="table-responsive">
+              <table class="table table-sm align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Auditor</th>
+                    <th>Items</th>
+                    <th>UL Numbers</th>
+                    <th class="text-end">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let record of auditHistory; trackBy: trackByAuditRecord">
+                    <td>{{ record.audit_date | date:'shortDate' }}</td>
+                    <td>{{ record.auditor_name }}</td>
+                    <td><span class="badge bg-primary-subtle text-primary-emphasis">{{ record.items_audited }}</span></td>
+                    <td>
+                      <div class="small text-muted text-truncate" style="max-width: 340px;" [title]="record.ul_numbers.join(', ')">
+                        {{ record.ul_numbers.join(', ') }}
+                      </div>
+                    </td>
+                    <td class="text-end">
+                      <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-primary" (click)="printAuditReport(record)">
+                          <i class="ri-printer-line me-1"></i>
+                          Print
+                        </button>
+                        <button class="btn btn-outline-secondary" (click)="exportSignoffReport(record)">
+                          <i class="ri-download-line me-1"></i>
+                          Export
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+</div>

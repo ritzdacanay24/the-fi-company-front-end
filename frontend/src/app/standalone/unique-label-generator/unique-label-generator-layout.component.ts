@@ -1,9 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { Component, HostListener, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit, ViewEncapsulation } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 import { RouterModule } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { StandaloneLayoutThemeService } from '@app/standalone/shared/standalone-layout-theme.service';
+import { StandaloneSidenavComponent } from '@app/standalone/shared/standalone-sidenav.component';
 
 interface NavItem {
   label: string;
@@ -21,9 +22,10 @@ interface MainSectionItem {
 @Component({
   selector: 'app-unique-label-generator-layout',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, StandaloneSidenavComponent],
   templateUrl: './unique-label-generator-layout.component.html',
   styleUrl: './unique-label-generator-layout.component.scss',
+  encapsulation: ViewEncapsulation.None,
 })
 export class UniqueLabelGeneratorLayoutComponent implements OnInit {
   currentSectionLabel = 'Create Batch';

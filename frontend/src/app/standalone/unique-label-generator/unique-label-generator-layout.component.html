@@ -26,33 +26,16 @@
     </a>
   </nav>
 
-  <aside class="app-menu navbar-menu ulg-sidebar" [class.open]="isSidebarOpen">
-    <div class="navbar-brand-box">
-      <a routerLink="/standalone/unique-label-generator/create" class="logo logo-dark">
-        <span class="logo-sm">ULG</span>
-        <span class="logo-lg text-white">Unique Label</span>
-      </a>
-    </div>
-
-    <div class="h-100 d-flex flex-column">
-      <div class="ulg-nav-group">
-        <small class="ulg-nav-group-title">Unique Label Generator</small>
-      </div>
-
-      <nav class="nav flex-column py-2">
-        <a
-          *ngFor="let item of navItems"
-          class="nav-link d-flex align-items-center gap-2"
-          [routerLink]="item.route"
-          routerLinkActive="active"
-          (click)="onNavClick()"
-        >
-          <i [class]="item.icon"></i>
-          <span>{{ item.label }}</span>
-        </a>
-      </nav>
-    </div>
-  </aside>
+  <app-standalone-sidenav
+    prefix="ulg"
+    [isOpen]="isSidebarOpen"
+    brandRoute="/standalone/unique-label-generator/create"
+    logoSm="ULG"
+    logoLg="Unique Label"
+    groupTitle="Unique Label Generator"
+    [navItems]="navItems"
+    (navItemClick)="onNavClick()"
+  ></app-standalone-sidenav>
 
   <div class="ulg-sidebar-backdrop" *ngIf="isSidebarOpen && !isDesktopViewport" (click)="closeSidebar()"></div>
 

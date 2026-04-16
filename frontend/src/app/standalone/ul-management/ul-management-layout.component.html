@@ -26,33 +26,16 @@
     </a>
   </nav>
 
-  <aside class="app-menu navbar-menu tmg-sidebar" [class.open]="isSidebarOpen">
-    <div class="navbar-brand-box">
-      <a routerLink="/ul-management/labels-report" class="logo logo-dark">
-        <span class="logo-sm">UL</span>
-        <span class="logo-lg text-white">UL Labels</span>
-      </a>
-    </div>
-
-    <div class="h-100 d-flex flex-column">
-      <div class="tmg-nav-group">
-        <small class="tmg-nav-group-title">UL Management</small>
-      </div>
-
-      <nav class="nav flex-column py-2">
-        <a
-          *ngFor="let item of navItems"
-          class="nav-link d-flex align-items-center gap-2"
-          [routerLink]="item.route"
-          routerLinkActive="active"
-          (click)="onNavClick()"
-        >
-          <i [class]="item.icon"></i>
-          <span>{{ item.label }}</span>
-        </a>
-      </nav>
-    </div>
-  </aside>
+  <app-standalone-sidenav
+    prefix="tmg"
+    [isOpen]="isSidebarOpen"
+    brandRoute="/ul-management/labels-report"
+    logoSm="UL"
+    logoLg="UL Labels"
+    groupTitle="UL Management"
+    [navItems]="navItems"
+    (navItemClick)="onNavClick()"
+  ></app-standalone-sidenav>
 
   <div class="tmg-sidebar-backdrop" *ngIf="isSidebarOpen && !isDesktopViewport" (click)="closeSidebar()"></div>
 

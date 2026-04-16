@@ -175,8 +175,8 @@ const routes: Routes = [
   },
   { 
     path: "standalone/ul-audit-signoff", 
-    loadComponent: () => import("./features/ul-audit-signoff/ul-audit-signoff.component").then(c => c.UlAuditSignoffComponent),
-    title: "UL Audit Sign-Off"
+    redirectTo: "ul-management/audit-signoff",
+    pathMatch: "full"
   },
 
   // Legacy route for backward compatibility

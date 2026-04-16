@@ -56,40 +56,27 @@
 
       <div class="card shadow-sm border-0">
         <div class="card-header">
-          <div class="d-flex align-items-center flex-wrap gap-3">
-            
-            <!-- Summary Stats -->
-            <div class="d-flex gap-4 small text-muted">
-              <span>
-                <i class="mdi mdi-clipboard-check text-primary me-1"></i>
-                <strong>{{ getUsageSummary().totalUsages }}</strong> Total Usages
-              </span>
-              <!-- <span>
-                <i class="mdi mdi-counter text-info me-1"></i>
-                <strong>{{ getUsageSummary().totalQuantity }}</strong> Total Quantity
-              </span> -->
-              <!-- <span>
-                <i class="mdi mdi-certificate text-success me-1"></i>
-                <strong>{{ getUsageSummary().uniqueULNumbers }}</strong> UL Numbers
-              </span> -->
-              <!-- <span>
-                <i class="mdi mdi-account-group text-warning me-1"></i>
-                <strong>{{ getUsageSummary().uniqueCustomers }}</strong> Customers
-              </span> -->
-              <span>
-                <i class="mdi mdi-clipboard-list text-purple me-1"></i>
-                <strong>{{ getUsageSummary().uniqueWorkOrders }}</strong> Work Orders
-              </span>
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div>
+              <h6 class="mb-1 text-body-emphasis">Track and analyze UL label usage patterns across customers and time periods</h6>
+              <p class="small text-muted mb-0">Search by UL number, serial, user, customer, or description</p>
             </div>
-            
-            <div class="ms-auto d-flex align-items-center gap-2">
-              <button class="btn btn-outline-secondary" (click)="refreshData()" title="Refresh data">
-                <i class="mdi mdi-refresh me-1"></i>Refresh
-              </button>
-              <div class="spinner-border spinner-border-sm text-primary" *ngIf="isLoading"></div>
+
+            <div class="w-100 w-md-auto" style="max-width: 420px;">
+              <div class="input-group">
+                <span class="input-group-text bg-light border-end-0">
+                  <i class="mdi mdi-magnify"></i>
+                </span>
+                <input
+                  type="text"
+                  class="form-control border-start-0"
+                  placeholder="Search usage records..."
+                  [ngModel]="filterForm.get('search')?.value"
+                  (ngModelChange)="filterForm.patchValue({ search: $event })"
+                  [ngModelOptions]="{ standalone: true }">
+              </div>
             </div>
           </div>
-          
         </div>
 
         <div class="card-body border-bottom usage-analytics-strip" *ngIf="filteredData?.length">

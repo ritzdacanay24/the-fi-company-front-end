@@ -1,12 +1,13 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SharedModule } from '@app/shared/shared.module';
+import { BreadcrumbComponent, BreadcrumbItem } from '@app/shared/components/breadcrumb/breadcrumb.component';
 import { AgGridAngular } from 'ag-grid-angular';
 import { ColDef, GridOptions, GridReadyEvent } from 'ag-grid-community';
-import { SerialAssignmentsService } from '../serial-assignments/services/serial-assignments.service';
-import { NgChartsModule } from 'ng2-charts';
-import { ChartConfiguration, ChartOptions } from 'chart.js';
+import { NgbModal, NgbModalModule, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
+import { UlAuditService } from '../../services/ul-audit.service';
+import { UlConsumedSerialsService } from '../../services/ul-consumed-serials.service';
 
 interface ULAuditItem {
   id: number;
@@ -36,11 +37,14 @@ interface AuditSignoff {
 @Component({
   selector: 'app-ul-audit-signoff',
   standalone: true,
-  imports: [CommonModule, FormsModule, SharedModule, AgGridAngular, NgChartsModule],
+  imports: [CommonModule, FormsModule, SharedModule, BreadcrumbComponent, AgGridAngular, NgbModalModule],
   templateUrl: './ul-audit-signoff.component.html',
   styleUrls: ['./ul-audit-signoff.component.scss']
 })
 export class UlAuditSignoffComponent implements OnInit {
+  @ViewChild('signoffModal', { static: true }) private signoffModalTpl!: TemplateRef<unknown>;
+  @ViewChild('successModal', { static: true }) private successModalTpl!: TemplateRef<unknown>;
+
   // Data
   ulItems: ULAuditItem[] = [];
   filteredItems: ULAuditItem[] = [];
@@ -53,10 +57,8 @@ export class UlAuditSignoffComponent implements OnInit {
   // UI State
   loading = false;
   error: string | null = null;
-  showSignoffModal = false;
-  showHistoryModal = false;
-  showSuccessModal = false;
   lastSignedOffRecord: AuditSignoff | null = null;
+  sentAuditorEmail = '';
 
   // Signoff Form
   auditorName = '';
@@ -71,33 +73,6 @@ export class UlAuditSignoffComponent implements OnInit {
   dateToFilter = '';
   showAuditedItems = false;
 
-  // Audit History Chart
-  auditChartType: 'bar' = 'bar';
-  auditChartData: ChartConfiguration<'bar'>['data'] = {
-    labels: [],
-    datasets: [
-      {
-        label: 'Items Audited',
-        data: [],
-        backgroundColor: 'rgba(25, 135, 84, 0.35)',
-        borderColor: 'rgba(25, 135, 84, 1)',
-        borderWidth: 1
-      }
-    ]
-  };
-  auditChartOptions: ChartOptions<'bar'> = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: true },
-      tooltip: { enabled: true }
-    },
-    scales: {
-      x: { ticks: { maxRotation: 0, autoSkip: true } },
-      y: { beginAtZero: true, ticks: { precision: 0 } }
-    }
-  };
-
   // AG Grid
   columnDefs: ColDef[] = [];
   gridOptions: GridOptions = {
@@ -108,9 +83,13 @@ export class UlAuditSignoffComponent implements OnInit {
     rowMultiSelectWithClick: true
   };
   private gridApi: any;
+  private signoffModalRef: NgbModalRef | null = null;
+  private successModalRef: NgbModalRef | null = null;
 
   constructor(
-    private serialAssignmentsService: SerialAssignmentsService
+    private modalService: NgbModal,
+    private ulConsumedSerialsService: UlConsumedSerialsService,
+    private ulAuditService: UlAuditService,
   ) {
     this.initializeGrid();
   }
@@ -118,6 +97,14 @@ export class UlAuditSignoffComponent implements OnInit {
   ngOnInit(): void {
     this.loadULItems();
     this.loadAuditHistory();
+  }
+
+  breadcrumbItems(): BreadcrumbItem[] {
+    return [
+      { label: 'Dashboard', link: '/dashboard' },
+      { label: 'UL Management', link: '/ul-management' },
+      { label: 'UL Audit Sign-Off' },
+    ];
   }
 
   initializeGrid(): void {
@@ -225,7 +212,7 @@ export class UlAuditSignoffComponent implements OnInit {
     this.error = null;
 
     try {
-      const response = await this.serialAssignmentsService.getAllConsumedSerials({
+      const response = await this.ulConsumedSerialsService.getAllConsumedSerials({
         ul_category: 'New' // Only load UL New items
       });
 
@@ -260,7 +247,7 @@ export class UlAuditSignoffComponent implements OnInit {
 
   async loadAuditHistory(): Promise<void> {
     try {
-      const response = await this.serialAssignmentsService.getAuditSignoffs();
+      const response = await this.ulAuditService.getAuditSignoffs();
       if (response.success) {
         this.auditHistory = response.data || [];
         
@@ -290,8 +277,6 @@ export class UlAuditSignoffComponent implements OnInit {
           item.audit_date = this.ulNumberToAuditDate.get(item.ul_number);
           item.audit_id = this.ulNumberToAuditId.get(item.ul_number);
         });
-
-        this.buildAuditChart();
         
         // Refresh grid to update status badges
         this.applyFilters();
@@ -306,42 +291,6 @@ export class UlAuditSignoffComponent implements OnInit {
     }
   }
 
-  private normalizeAuditDate(dateStr: string): string {
-    if (!dateStr) return '';
-    // Supports 'YYYY-MM-DD', 'YYYY-MM-DDTHH:mm:ss', and 'YYYY-MM-DD HH:mm:ss'
-    return dateStr.length >= 10 ? dateStr.substring(0, 10) : dateStr;
-  }
-
-  private toNumber(value: unknown): number {
-    const n = typeof value === 'number' ? value : Number(value);
-    return Number.isFinite(n) ? n : 0;
-  }
-
-  private buildAuditChart(): void {
-    const totalsByDate = new Map<string, number>();
-
-    for (const signoff of this.auditHistory) {
-      const dateKey = this.normalizeAuditDate(signoff.audit_date);
-      if (!dateKey) continue;
-      totalsByDate.set(dateKey, (totalsByDate.get(dateKey) ?? 0) + this.toNumber(signoff.items_audited));
-    }
-
-    const labels = Array.from(totalsByDate.keys()).sort((a, b) => a.localeCompare(b));
-    const data = labels.map(label => totalsByDate.get(label) ?? 0);
-
-    this.auditChartData = {
-      labels,
-      datasets: [
-        {
-          label: 'Items Audited',
-          data,
-          backgroundColor: 'rgba(25, 135, 84, 0.35)',
-          borderColor: 'rgba(25, 135, 84, 1)',
-          borderWidth: 1
-        }
-      ]
-    };
-  }
 
   applyFilters(): void {
     this.filteredItems = this.ulItems.filter(item => {
@@ -393,11 +342,19 @@ export class UlAuditSignoffComponent implements OnInit {
       alert('Please select at least one item to audit');
       return;
     }
-    this.showSignoffModal = true;
+
+    this.signoffModalRef = this.modalService.open(this.signoffModalTpl, {
+      size: 'lg',
+      backdrop: 'static',
+      keyboard: false,
+      centered: false,
+      scrollable: true,
+    });
   }
 
   closeSignoffModal(): void {
-    this.showSignoffModal = false;
+    this.signoffModalRef?.close();
+    this.signoffModalRef = null;
     this.auditorName = '';
     this.auditorSignature = '';
     this.auditorEmail = '';
@@ -431,10 +388,11 @@ export class UlAuditSignoffComponent implements OnInit {
     };
 
     try {
-      const response = await this.serialAssignmentsService.submitAuditSignoff(signoff, this.auditorEmail);
+      const response = await this.ulAuditService.submitAuditSignoff(signoff, this.auditorEmail);
       
       if (response.success) {
         this.lastSignedOffRecord = signoff;
+        this.sentAuditorEmail = this.auditorEmail;
         this.closeSignoffModal();
         
         // Clear form
@@ -456,9 +414,13 @@ export class UlAuditSignoffComponent implements OnInit {
         
         // Clear selection array
         this.selectedItems = [];
-        
+
         // Show success modal with print option
-        this.showSuccessModal = true;
+        this.successModalRef = this.modalService.open(this.successModalTpl, {
+          centered: true,
+          backdrop: 'static',
+          keyboard: true,
+        });
       } else {
         alert('Failed to submit audit signoff: ' + (response.error || 'Unknown error'));
       }
@@ -466,41 +428,6 @@ export class UlAuditSignoffComponent implements OnInit {
       alert('Error submitting audit signoff: ' + error.message);
       console.error('Error submitting signoff:', error);
     }
-  }
-
-  openHistoryModal(): void {
-    this.showHistoryModal = true;
-    this.buildAuditChart();
-  }
-
-  closeHistoryModal(): void {
-    this.showHistoryModal = false;
-  }
-
-  exportSignoffReport(signoff: AuditSignoff): void {
-    const content = `
-UL NEW AUDIT SIGN-OFF REPORT
-============================
-
-Audit Date: ${new Date(signoff.audit_date).toLocaleDateString()}
-Auditor: ${signoff.auditor_name}
-Signature: ${signoff.auditor_signature}
-Items Audited: ${signoff.items_audited}
-
-UL Numbers Audited:
-${signoff.ul_numbers.join('\n')}
-
-Notes:
-${signoff.notes || 'No notes provided'}
-    `.trim();
-
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `UL-Audit-Signoff-${signoff.audit_date}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
   }
 
   printAuditReport(signoff: AuditSignoff): void {
@@ -657,8 +584,10 @@ ${signoff.notes || 'No notes provided'}
   }
 
   closeSuccessModal(): void {
-    this.showSuccessModal = false;
+    this.successModalRef?.close();
+    this.successModalRef = null;
     this.lastSignedOffRecord = null;
+    this.sentAuditorEmail = '';
   }
 
   refresh(): void {

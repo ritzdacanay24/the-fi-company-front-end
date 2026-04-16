@@ -1,0 +1,16 @@
+<ng-container *ngIf="params?.data">
+  <div class="btn-group" ngbDropdown container="body" placement="bottom-end">
+    <button type="button" class="btn btn-outline-secondary btn-sm" ngbDropdownToggle title="Actions">
+      <i class="mdi mdi-dots-vertical"></i>
+    </button>
+
+    <div ngbDropdownMenu class="dropdown-menu-end">
+      <button ngbDropdownItem [disabled]="!isReprintEnabled" (click)="onReprint()">
+        <i class="mdi mdi-printer-outline me-2"></i>Reprint
+      </button>
+      <button ngbDropdownItem [disabled]="!isReprintEnabled" (click)="onZebra()">
+        <i class="mdi mdi-barcode-scan me-2"></i>Zebra
+      </button>
+    </div>
+  </div>
+</ng-container>
