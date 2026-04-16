@@ -192,8 +192,7 @@ frontend/src/app/features/ul-management/
 ├── components/       # Reusable components
 ├── models/          # Data interfaces
 ├── pages/           # Page components
-├── services/        # API services
-└── ul-management.module.ts
+└── services/        # API services
 ```
 
 ## Maintenance

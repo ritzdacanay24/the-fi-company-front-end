@@ -1,7 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component, HostListener } from '@angular/core';
+import { Component, HostListener, OnInit } from '@angular/core';
 import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { filter } from 'rxjs/operators';
+import { StandaloneLayoutThemeService } from '@app/standalone/shared/standalone-layout-theme.service';
 
 interface NavItem {
   label: string;
@@ -23,7 +24,7 @@ interface MainSectionItem {
   templateUrl: './training-management-layout.component.html',
   styleUrl: './training-management-layout.component.scss',
 })
-export class TrainingManagementLayoutComponent {
+export class TrainingManagementLayoutComponent implements OnInit {
   currentSectionLabel = 'Live Sessions';
   isSidebarOpen = false;
 
@@ -83,7 +84,10 @@ export class TrainingManagementLayoutComponent {
     },
   ];
 
-  constructor(private readonly router: Router) {
+  constructor(
+    private readonly router: Router,
+    private readonly standaloneLayoutThemeService: StandaloneLayoutThemeService,
+  ) {
     this.syncSidebarForViewport();
     this.updateSectionLabel(this.router.url);
 
@@ -96,6 +100,10 @@ export class TrainingManagementLayoutComponent {
           this.isSidebarOpen = false;
         }
       });
+  }
+
+  ngOnInit(): void {
+    this.standaloneLayoutThemeService.applyThemeLayoutAttributes();
   }
 
   get isDesktopViewport(): boolean {

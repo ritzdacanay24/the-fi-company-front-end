@@ -75,23 +75,36 @@ this.router.navigate(['./upload'], { relativeTo: this.route }); // Works!
 
 ## Router Configuration
 
-### Child Routes (ul-management-routing.module.ts)
+### Child Routes (app-routing.module.ts)
 ```typescript
-const routes: Routes = [
-  { path: '', component: ULManagementComponent },
-  { path: 'upload', component: ULLabelUploadComponent },
-  { path: 'labels-report', component: ULLabelsReportComponent },
-  { path: 'usage', component: ULLabelUsageComponent },
-  { path: 'usage-report', loadComponent: () => ... },
-  { path: '**', redirectTo: '' }
-];
+children: [
+  { path: '', redirectTo: 'labels-report', pathMatch: 'full' },
+  {
+    path: 'labels-report',
+    loadComponent: () => import('./features/ul-management/components/ul-labels-report/ul-labels-report.component').then(c => c.ULLabelsReportComponent)
+  },
+  {
+    path: 'upload',
+    loadComponent: () => import('./features/ul-management/components/ul-label-upload/ul-label-upload.component').then(c => c.ULLabelUploadComponent)
+  },
+  {
+    path: 'usage',
+    loadComponent: () => import('./features/ul-management/components/ul-label-usage/ul-label-usage.component').then(c => c.ULLabelUsageComponent)
+  },
+  {
+    path: 'usage-report',
+    loadComponent: () => import('./features/ul-management/components/ul-usage-report/ul-usage-report.component').then(c => c.ULUsageReportComponent)
+  }
+]
 ```
 
 ### Parent Route (app-routing.module.ts)
 ```typescript
 {
   path: "ul-management",
-  loadChildren: () => import("./features/ul-management/ul-management.module")
+  component: LayoutComponent,
+  canActivate: [AuthGuard],
+  children: [ ...standalone UL child routes... ]
 }
 ```
 

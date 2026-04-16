@@ -1,0 +1,1 @@
+// Intentionally left without exports; SG module imports DTOs directly.

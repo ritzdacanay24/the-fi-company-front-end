@@ -49,9 +49,29 @@ export class ChartService {
           tooltip: {
             callbacks: {
               label: (context) => {
-                const total = context.dataset.data.reduce((a: number, b: number) => a + b, 0);
-                const percentage = ((context.parsed / total) * 100).toFixed(1);
-                return `${context.label}: ${context.parsed} (${percentage}%)`;
+                const toNumber = (value: unknown): number => {
+                  if (typeof value === 'number') {
+                    return value;
+                  }
+                  if (Array.isArray(value) && typeof value[0] === 'number') {
+                    return value[0];
+                  }
+                  if (value && typeof value === 'object') {
+                    const point = value as { y?: unknown; r?: unknown };
+                    if (typeof point.y === 'number') {
+                      return point.y;
+                    }
+                    if (typeof point.r === 'number') {
+                      return point.r;
+                    }
+                  }
+                  return Number(value) || 0;
+                };
+
+                const total = context.dataset.data.reduce((sum, item) => sum + toNumber(item), 0);
+                const parsedValue = toNumber(context.parsed);
+                const percentage = total > 0 ? ((parsedValue / total) * 100).toFixed(1) : '0.0';
+                return `${context.label}: ${parsedValue} (${percentage}%)`;
               }
             }
           }

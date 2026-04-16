@@ -1,0 +1,80 @@
+.labels-analytics-strip {
+	background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+}
+
+.labels-analytics-strip .row > [class*="col-"] {
+	display: flex;
+}
+
+.metric-card {
+	border: 1px solid #d9e4f2;
+	border-radius: 10px;
+	background: #ffffff;
+	padding: 0.7rem 0.8rem;
+	min-height: 94px;
+	height: 100%;
+	width: 100%;
+}
+
+.metric-card-with-pie {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.5rem;
+}
+
+.metric-card small {
+	color: #596066;
+	font-weight: 600;
+	display: block;
+	margin-bottom: 0.25rem;
+}
+
+.metric-card h4,
+.metric-card h6 {
+	color: #1f4f80;
+	font-weight: 700;
+}
+
+.metric-subtext {
+	color: #7a8696;
+	font-size: 0.72rem;
+	font-weight: 600;
+}
+
+.mini-pie {
+	width: 46px;
+	height: 46px;
+	border-radius: 50%;
+	display: grid;
+	place-items: center;
+	flex: 0 0 auto;
+}
+
+.mini-pie-inner {
+	width: 38px;
+	height: 38px;
+	border-radius: 50%;
+	background: #ffffff;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 0.65rem;
+	font-weight: 700;
+	color: #334155;
+}
+
+.analytics-card {
+	border: 1px solid #e1e8f2;
+	border-radius: 10px;
+	background: #ffffff;
+	padding: 0.75rem;
+	min-height: 300px;
+	height: 100%;
+	width: 100%;
+}
+
+.analytics-card h6 {
+	color: #334155;
+	font-weight: 600;
+}

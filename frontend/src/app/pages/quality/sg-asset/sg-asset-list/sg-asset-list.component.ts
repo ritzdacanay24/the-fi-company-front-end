@@ -8,11 +8,10 @@ import { ActivatedRoute, Router } from '@angular/router'
 import moment from 'moment'
 import { SgAssetService } from '@app/core/api/quality/sg-asset.service'
 import { NAVIGATION_ROUTE, NAVIGATION_ROUTE_ID_TEMPLATE } from '../sg-asset-constant'
-import { DateRangeComponent } from '@app/shared/components/date-range/date-range.component'
 import { SharedModule } from '@app/shared/shared.module'
 import { highlightRowView, autoSizeColumns } from 'src/assets/js/util'
 import { _decompressFromEncodedURIComponent, _compressToEncodedURIComponent } from 'src/assets/js/util/jslzString'
-import { LinkRendererV2Component } from '@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component'
+import { SgAssetActionDropdownRendererComponent } from './sg-asset-action-dropdown-renderer.component'
 
 @Component({
   standalone: true,
@@ -20,8 +19,7 @@ import { LinkRendererV2Component } from '@app/shared/ag-grid/cell-renderers/link
     SharedModule,
     ReactiveFormsModule,
     NgSelectModule,
-    AgGridModule,
-    DateRangeComponent
+    AgGridModule
   ],
   selector: 'app-sg-asset-list',
   templateUrl: './sg-asset-list.component.html',
@@ -55,52 +53,25 @@ export class SgAssetListComponent implements OnInit {
       headerName: "Actions",
       pinned: "left",
       lockPosition: 'left',
-      cellRenderer: 'agGroupCellRenderer',
+      cellRenderer: SgAssetActionDropdownRendererComponent,
       cellRendererParams: {
-        innerRenderer: (params: any) => {
-          return `
-            <div class="d-flex justify-content-center align-items-center gap-2">
-              <button class="btn btn-outline-primary btn-sm view-btn" data-id="${params.data.id}" title="View Details">
-                <i class="mdi mdi-eye"></i>
-              </button>
-              <button class="btn btn-outline-secondary btn-sm edit-btn" data-id="${params.data.id}" title="Edit Record">
-                <i class="mdi mdi-pencil"></i>
-              </button>
-            </div>
-          `;
-        },
-        suppressCount: true
-      },
-      onCellClicked: (event: any) => {
-        const target = event.event?.target;
-        if (!target) return;
-
-        const viewBtn = target.closest('.view-btn');
-        const editBtn = target.closest('.edit-btn');
-
-        if (viewBtn) {
-          const id = viewBtn.getAttribute('data-id');
+        onView: (id: string) => {
           this.onView(id);
-        } else if (editBtn) {
-          const id = editBtn.getAttribute('data-id');
+        },
+        onEdit: (id: string) => {
           this.onEdit(id);
         }
       },
-      maxWidth: 130,
-      minWidth: 130,
+      maxWidth: 90,
+      minWidth: 90,
       sortable: false,
       filter: false,
       suppressHeaderMenuButton: true
     },
-    { field: 'id', headerName: 'ID', filter: 'agMultiColumnFilter' },
-    { field: 'generated_SG_asset', headerName: 'Asset Number', filter: 'agMultiColumnFilter' },
-    { field: 'inspectorName', headerName: 'Inspector Name', filter: 'agMultiColumnFilter' },
-    { field: 'lastUpdate', headerName: 'Last Update', filter: 'agMultiColumnFilter' },
-    { field: 'manualUpdate', headerName: 'Manual Update', filter: 'agMultiColumnFilter', cellDataType: 'text' },
-    { field: 'poNumber', headerName: 'WO Number', filter: 'agMultiColumnFilter', cellDataType: 'text' },
-    { field: 'property_site', headerName: 'Property Site', filter: 'agMultiColumnFilter' },
+    { field: 'id', headerName: 'ID', filter: 'agMultiColumnFilter', width: 90, minWidth: 90 },
+    { field: 'generated_SG_asset', headerName: 'Asset Number', filter: 'agMultiColumnFilter', minWidth: 170, flex: 1 },
     {
-      field: 'serialNumber', headerName: 'EyeFi Serial Number', filter: 'agMultiColumnFilter',
+      field: 'serialNumber', headerName: 'EyeFi Serial Number', filter: 'agMultiColumnFilter', minWidth: 170, flex: 1,
 
       cellRenderer: (params: any) => {
         if (!params.value) return '';
@@ -119,9 +90,15 @@ export class SgAssetListComponent implements OnInit {
         ">${serialNumber}</code>`;
       }
     },
-    { field: 'sgPartNumber', headerName: 'SG Part Number', filter: 'agMultiColumnFilter' },
-    { field: 'timeStamp', headerName: 'Created Date', filter: 'agMultiColumnFilter' },
-    { field: 'active', headerName: 'Active', filter: 'agMultiColumnFilter' },
+    { field: 'sgPartNumber', headerName: 'SG Part Number', filter: 'agMultiColumnFilter', minWidth: 150, flex: 1 },
+    { field: 'inspectorName', headerName: 'Inspector Name', filter: 'agMultiColumnFilter', minWidth: 150, flex: 1 },
+    { field: 'timeStamp', headerName: 'Created Date', filter: 'agMultiColumnFilter', minWidth: 160, sort: 'desc' },
+    { field: 'active', headerName: 'Status', filter: 'agMultiColumnFilter', width: 110, minWidth: 110 },
+
+    // Secondary operational fields kept available but hidden by default.
+    { field: 'poNumber', headerName: 'WO Number', filter: 'agMultiColumnFilter', cellDataType: 'text', hide: true },
+    { field: 'lastUpdate', headerName: 'Last Update', filter: 'agMultiColumnFilter', hide: true },
+    { field: 'manualUpdate', headerName: 'Manual Update', filter: 'agMultiColumnFilter', cellDataType: 'text', hide: true },
   ]
 
   @Input() selectedViewType = 'Active';
@@ -230,12 +207,6 @@ export class SgAssetListComponent implements OnInit {
     try {
       this.gridApi?.showLoadingOverlay()
 
-      let params: any = {};
-      if (this.selectedViewType != 'All') {
-        let status = this.selectedViewOptions.find(person => person.name == this.selectedViewType)
-        params = { active: status.value };
-      }
-
       this.data = await this.api.getList(this.selectedViewType, this.dateFrom, this.dateTo, this.isAll);
 
       this.router.navigate(['.'], {
@@ -251,7 +222,7 @@ export class SgAssetListComponent implements OnInit {
 
       this.gridApi?.hideOverlay()
 
-    } catch (err) {
+    } catch {
       this.gridApi?.hideOverlay()
     }
 

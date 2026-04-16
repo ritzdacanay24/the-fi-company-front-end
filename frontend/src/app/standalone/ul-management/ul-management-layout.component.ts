@@ -4,7 +4,7 @@ import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { StandaloneLayoutThemeService } from '@app/standalone/shared/standalone-layout-theme.service';
 
-interface SafetyNavItem {
+interface NavItem {
   label: string;
   route: string;
   icon: string;
@@ -18,14 +18,14 @@ interface MainSectionItem {
 }
 
 @Component({
-  selector: 'app-safety-incidents-layout',
+  selector: 'app-ul-management-layout',
   standalone: true,
   imports: [CommonModule, RouterModule],
-  templateUrl: './safety-incidents-layout.component.html',
-  styleUrl: './safety-incidents-layout.component.scss',
+  templateUrl: './ul-management-layout.component.html',
+  styleUrl: './ul-management-layout.component.scss',
 })
-export class SafetyIncidentsLayoutComponent implements OnInit {
-  currentSectionLabel = 'Incident List';
+export class UlManagementLayoutComponent implements OnInit {
+  currentSectionLabel = 'Labels Report';
   isSidebarOpen = false;
 
   readonly mainSections: MainSectionItem[] = [
@@ -51,24 +51,24 @@ export class SafetyIncidentsLayoutComponent implements OnInit {
     },
   ];
 
-  readonly navItems: SafetyNavItem[] = [
+  readonly navItems: NavItem[] = [
     {
-      label: 'Incident List',
-      route: 'list',
-      icon: 'las la-list',
-      subtitle: 'Review, filter, and manage all submitted safety incidents.',
+      label: 'Labels Report',
+      route: 'labels-report',
+      icon: 'las la-list-alt',
+      subtitle: 'Browse UL labels with status, category, and metadata filters.',
     },
     {
-      label: 'Report Incident',
-      route: 'create',
-      icon: 'las la-plus-circle',
-      subtitle: 'Capture incident details, evidence, and immediate corrective actions.',
+      label: 'Upload Labels',
+      route: 'upload',
+      icon: 'las la-upload',
+      subtitle: 'Add UL labels manually, by file upload, or by range generation.',
     },
     {
-      label: 'Safety Dashboard',
-      route: 'dashboard',
-      icon: 'las la-chart-line',
-      subtitle: 'Monitor incident trends, severity, and closure performance.',
+      label: 'Usage Report',
+      route: 'usage-report',
+      icon: 'las la-chart-bar',
+      subtitle: 'Review UL usage trends, history, and accountability reporting.',
     },
   ];
 
@@ -128,14 +128,13 @@ export class SafetyIncidentsLayoutComponent implements OnInit {
   private updateSectionLabel(url: string): void {
     const matched = this.navItems.find(
       (item) =>
-        url.includes(`/safety-incidents/${item.route}`) ||
-        url.includes(`/operations/forms/safety-incident/${item.route}`)
+        url.includes(`/ul-management/${item.route}`) ||
+        url.includes(`/standalone/ul-management/${item.route}`),
     );
-
-    this.currentSectionLabel = matched ? matched.label : 'Incident List';
+    this.currentSectionLabel = matched ? matched.label : 'Labels Report';
   }
 
-  get currentSection(): SafetyNavItem {
+  get currentSection(): NavItem {
     return this.navItems.find((item) => item.label === this.currentSectionLabel) || this.navItems[0];
   }
 }

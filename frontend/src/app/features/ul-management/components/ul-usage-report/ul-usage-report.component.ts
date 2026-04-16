@@ -8,10 +8,39 @@ import { ULUsageReport } from '../../models/ul-label.model';
 import { ColDef, GridApi, GridReadyEvent } from 'ag-grid-community';
 import moment from 'moment';
 import { AgGridModule } from 'ag-grid-angular';
+import { NgApexchartsModule } from 'ng-apexcharts';
+import {
+  ApexAxisChartSeries,
+  ApexChart,
+  ApexDataLabels,
+  ApexLegend,
+  ApexNonAxisChartSeries,
+  ApexPlotOptions,
+  ApexResponsive,
+  ApexStroke,
+  ApexTooltip,
+  ApexXAxis,
+  ApexYAxis,
+} from 'ng-apexcharts';
+
+type UsageChartOptions = {
+  series: ApexAxisChartSeries | ApexNonAxisChartSeries;
+  chart: ApexChart;
+  xaxis?: ApexXAxis;
+  yaxis?: ApexYAxis;
+  dataLabels?: ApexDataLabels;
+  stroke?: ApexStroke;
+  tooltip?: ApexTooltip;
+  legend?: ApexLegend;
+  plotOptions?: ApexPlotOptions;
+  labels?: string[];
+  colors?: string[];
+  responsive?: ApexResponsive[];
+};
 
 @Component({
   standalone: true,
-  imports: [SharedModule, AgGridModule],
+  imports: [SharedModule, AgGridModule, NgApexchartsModule],
   selector: 'app-ul-usage-report',
   templateUrl: './ul-usage-report.component.html',
   styleUrls: ['./ul-usage-report.component.scss']
@@ -28,6 +57,10 @@ export class ULUsageReportComponent implements OnInit {
   showDeleteModal = false;
   selectedUsageId: number | null = null;
   voidReason = '';
+
+  usageTrendChart: Partial<UsageChartOptions> = {};
+  topUsersChart: Partial<UsageChartOptions> = {};
+  statusDonutChart: Partial<UsageChartOptions> = {};
 
   // AG Grid Configuration
   columnDefs: ColDef[] = [
@@ -321,6 +354,7 @@ export class ULUsageReportComponent implements OnInit {
         }
         this.filteredData = [...this.usageData];
         this.applyFilters();
+          this.updateUsageCharts();
       },
       error: (error) => {
         this.isLoading = false;
@@ -361,6 +395,111 @@ export class ULUsageReportComponent implements OnInit {
     }
 
     this.filteredData = filtered;
+    this.updateUsageCharts();
+  }
+
+  private updateUsageCharts(): void {
+    const sortedByDate = [...this.filteredData]
+      .filter(item => !!item.date_used)
+      .sort((a, b) => new Date(a.date_used).getTime() - new Date(b.date_used).getTime());
+
+    const byDay = new Map<string, number>();
+    sortedByDate.forEach(item => {
+      const key = moment(item.date_used).format('MM/DD');
+      byDay.set(key, (byDay.get(key) || 0) + Number(item.quantity_used || 0));
+    });
+
+    const trendLabels = Array.from(byDay.keys());
+    const trendData = Array.from(byDay.values());
+
+    this.usageTrendChart = {
+      series: [
+        {
+          name: 'Qty Used',
+          data: trendData,
+        },
+      ],
+      chart: {
+        type: 'area',
+        height: 220,
+        toolbar: { show: false },
+      },
+      colors: ['#0ab39c'],
+      xaxis: {
+        categories: trendLabels,
+      },
+      yaxis: {
+        title: { text: 'Quantity' },
+      },
+      stroke: {
+        curve: 'smooth',
+        width: 2,
+      },
+      dataLabels: { enabled: false },
+      tooltip: { enabled: true },
+    };
+
+    const userTotals = new Map<string, number>();
+    this.filteredData.forEach(item => {
+      const user = (item.user_name || 'Unknown').trim();
+      userTotals.set(user, (userTotals.get(user) || 0) + Number(item.quantity_used || 0));
+    });
+
+    const topUsers = Array.from(userTotals.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
+
+    this.topUsersChart = {
+      series: [
+        {
+          name: 'Qty Used',
+          data: topUsers.map(([_, total]) => total),
+        },
+      ],
+      chart: {
+        type: 'bar',
+        height: 220,
+        toolbar: { show: false },
+      },
+      colors: ['#405189'],
+      xaxis: {
+        categories: topUsers.map(([user]) => user),
+      },
+      plotOptions: {
+        bar: {
+          horizontal: true,
+          borderRadius: 4,
+        },
+      },
+      dataLabels: { enabled: false },
+      tooltip: { enabled: true },
+    };
+
+    const voidedCount = this.filteredData.filter(item => item.is_voided === 1 || item.is_voided === true).length;
+    const activeCount = Math.max(0, this.filteredData.length - voidedCount);
+
+    this.statusDonutChart = {
+      series: [activeCount, voidedCount],
+      chart: {
+        type: 'donut',
+        height: 220,
+      },
+      labels: ['Active', 'Voided'],
+      colors: ['#0ab39c', '#f06548'],
+      legend: {
+        position: 'bottom',
+      },
+      responsive: [
+        {
+          breakpoint: 480,
+          options: {
+            chart: {
+              height: 200,
+            },
+          },
+        },
+      ],
+    };
   }
 
   editUsage(id: number): void {

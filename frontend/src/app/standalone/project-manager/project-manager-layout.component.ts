@@ -1,7 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component, HostListener } from '@angular/core';
+import { Component, HostListener, OnInit } from '@angular/core';
 import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { filter } from 'rxjs/operators';
+import { StandaloneLayoutThemeService } from '@app/standalone/shared/standalone-layout-theme.service';
 
 interface NavItem {
   label: string;
@@ -23,7 +24,7 @@ interface MainSectionItem {
   templateUrl: './project-manager-layout.component.html',
   styleUrl: './project-manager-layout.component.scss',
 })
-export class ProjectManagerLayoutComponent {
+export class ProjectManagerLayoutComponent implements OnInit {
   currentSectionLabel = 'Dashboard';
   isSidebarOpen = false;
 
@@ -71,7 +72,10 @@ export class ProjectManagerLayoutComponent {
     },
   ];
 
-  constructor(private readonly router: Router) {
+  constructor(
+    private readonly router: Router,
+    private readonly standaloneLayoutThemeService: StandaloneLayoutThemeService,
+  ) {
     this.syncSidebarForViewport();
     this.updateSectionLabel(this.router.url);
 
@@ -84,6 +88,10 @@ export class ProjectManagerLayoutComponent {
           this.isSidebarOpen = false;
         }
       });
+  }
+
+  ngOnInit(): void {
+    this.standaloneLayoutThemeService.applyThemeLayoutAttributes();
   }
 
   get isDesktopViewport(): boolean {

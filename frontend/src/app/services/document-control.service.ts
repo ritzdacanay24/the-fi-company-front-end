@@ -62,7 +62,7 @@ export interface CreateRevisionRequest {
   providedIn: 'root'
 })
 export class DocumentControlService {
-  private apiUrl = `${environment.apiUrl}/document-control`;
+  private apiUrl = `${environment.apiV2BaseUrl}/apiV2/document-control`;
 
   constructor(private http: HttpClient) { }
 

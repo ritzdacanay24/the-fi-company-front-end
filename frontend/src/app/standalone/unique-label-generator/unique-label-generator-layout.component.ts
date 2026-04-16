@@ -1,8 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { Component, HostListener } from '@angular/core';
+import { Component, HostListener, OnInit } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 import { RouterModule } from '@angular/router';
 import { filter } from 'rxjs/operators';
+import { StandaloneLayoutThemeService } from '@app/standalone/shared/standalone-layout-theme.service';
 
 interface NavItem {
   label: string;
@@ -24,7 +25,7 @@ interface MainSectionItem {
   templateUrl: './unique-label-generator-layout.component.html',
   styleUrl: './unique-label-generator-layout.component.scss',
 })
-export class UniqueLabelGeneratorLayoutComponent {
+export class UniqueLabelGeneratorLayoutComponent implements OnInit {
   currentSectionLabel = 'Create Batch';
   isSidebarOpen = false;
 
@@ -78,7 +79,10 @@ export class UniqueLabelGeneratorLayoutComponent {
     },
   ];
 
-  constructor(private readonly router: Router) {
+  constructor(
+    private readonly router: Router,
+    private readonly standaloneLayoutThemeService: StandaloneLayoutThemeService,
+  ) {
     this.syncSidebarForViewport();
     this.updateSectionLabel(this.router.url);
 
@@ -91,6 +95,10 @@ export class UniqueLabelGeneratorLayoutComponent {
           this.isSidebarOpen = false;
         }
       });
+  }
+
+  ngOnInit(): void {
+    this.standaloneLayoutThemeService.applyThemeLayoutAttributes();
   }
 
   get isDesktopViewport(): boolean {

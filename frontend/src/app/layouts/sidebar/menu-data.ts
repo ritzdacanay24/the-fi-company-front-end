@@ -555,7 +555,7 @@ export const MENU_DATA: MenuItem[] = [
             },
             {
                 label: "UL Labels",
-                link: "/ul-management/usage-report",
+                link: "/ul-management/labels-report",
                 accessRequired: false,
                 activatedRoutes: "/ul-management/*"
             },

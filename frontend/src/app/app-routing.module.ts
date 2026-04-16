@@ -164,6 +164,11 @@ const routes: Routes = [
     title: "Training Management",
   },
   {
+    path: "standalone/ul-management",
+    redirectTo: "ul-management",
+    pathMatch: "full",
+  },
+  {
     path: "standalone/training-management",
     redirectTo: "training-management",
     pathMatch: "full",
@@ -314,23 +319,15 @@ const routes: Routes = [
       },
     ],
   },
-  // UL Management routes (moved from dashboard)
+  // UL Management routes
   {
     path: "ul-management",
-    component: LayoutComponent,
     canActivate: [AuthGuard],
-    runGuardsAndResolvers: "always",
-    children: [
-      { path: "", redirectTo: "overview", pathMatch: "full" },
-      {
-        title: "UL Management",
-        path: "",
-        loadChildren: () =>
-          import("./features/ul-management/ul-management.module").then(
-            (m) => m.ULManagementModule
-          ),
-      },
-    ],
+    loadChildren: () =>
+      import("./standalone/ul-management/ul-management.routes").then(
+        (m) => m.UL_MANAGEMENT_ROUTES,
+      ),
+    title: "UL Management",
   },
   // EyeFi Serial Number Management routes
   {

@@ -45,15 +45,115 @@
               <i class="mdi mdi-filter-remove me-1"></i>Clear Filters
             </button>
             <div class="ms-auto d-flex align-items-center">
-              <div class="me-4">
-                <small class="text-muted">Total: </small>
-                <span class="badge bg-primary">{{ getStatusSummary().total }}</span>
-                <small class="text-muted ms-2">Active: </small>
-                <span class="badge bg-success">{{ getStatusSummary().active }}</span>
+              <div class="me-3 d-flex align-items-center flex-wrap gap-2">
+                <span class="badge bg-light text-dark border">Inactive: {{ getStatusSummary().inactive }}</span>
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Used: {{ inventoryInsights.usedCount }}</span>
+                <span class="badge bg-success-subtle text-success border border-success-subtle">Remaining: {{ inventoryInsights.totalRemaining }}</span>
+                <span class="badge bg-info-subtle text-info border border-info-subtle">Last Upload: {{ inventoryInsights.lastUploadDateDisplay }}</span>
               </div>
               <h4 class="card-title mb-0">
-                <i class="mdi mdi-certificate me-2"></i>{{title()}}
+                <i class="mdi mdi-certificate me-2"></i>UL Labels Inventory
               </h4>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-body border-bottom labels-analytics-strip" *ngIf="ulLabels?.length">
+          <div class="row g-3 mb-3">
+            <div class="col-6 col-lg-3">
+              <div class="metric-card metric-card-with-pie">
+                <div>
+                  <small>Q Labels Remaining</small>
+                  <h4 class="mb-0">{{ inventoryInsights.qRemaining }}</h4>
+                  <small class="metric-subtext">of total Q labels ({{ inventoryInsights.qTotal }})</small>
+                </div>
+                <div class="mini-pie" [style.background]="miniPieBackground(inventoryInsights.qSharePct, '#255f9e')">
+                  <div class="mini-pie-inner">{{ inventoryInsights.qSharePct }}%</div>
+                </div>
+              </div>
+            </div>
+            <div class="col-6 col-lg-3">
+              <div class="metric-card metric-card-with-pie">
+                <div>
+                  <small>T Labels Remaining</small>
+                  <h4 class="mb-0">{{ inventoryInsights.tRemaining }}</h4>
+                  <small class="metric-subtext">of total T labels ({{ inventoryInsights.tTotal }})</small>
+                </div>
+                <div class="mini-pie" [style.background]="miniPieBackground(inventoryInsights.tSharePct, '#117a8b')">
+                  <div class="mini-pie-inner">{{ inventoryInsights.tSharePct }}%</div>
+                </div>
+              </div>
+            </div>
+            <div class="col-6 col-lg-3">
+              <div class="metric-card metric-card-with-pie">
+                <div>
+                  <small>Total Remaining</small>
+                  <h4 class="mb-0">{{ inventoryInsights.totalRemaining }}</h4>
+                </div>
+                <div class="mini-pie" [style.background]="miniPieBackground(inventoryInsights.remainingPct, '#b7852f')">
+                  <div class="mini-pie-inner">{{ inventoryInsights.remainingPct }}%</div>
+                </div>
+              </div>
+            </div>
+            <div class="col-6 col-lg-3">
+              <div class="metric-card metric-card-with-pie">
+                <div>
+                  <small>Last Upload Date</small>
+                  <h6 class="mb-1">{{ inventoryInsights.lastUploadDateDisplay }}</h6>
+                  <small class="metric-subtext">Active Health</small>
+                </div>
+                <div class="mini-pie" [style.background]="miniPieBackground(inventoryInsights.activePct, '#2e8b57')">
+                  <div class="mini-pie-inner">{{ inventoryInsights.activePct }}%</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-12 col-lg-4">
+              <div class="analytics-card">
+                <h6 class="mb-2">Q vs T Remaining</h6>
+                <apx-chart
+                  [series]="qtRemainingChart.series"
+                  [chart]="qtRemainingChart.chart"
+                  [xaxis]="qtRemainingChart.xaxis"
+                  [yaxis]="qtRemainingChart.yaxis"
+                  [plotOptions]="qtRemainingChart.plotOptions"
+                  [dataLabels]="qtRemainingChart.dataLabels"
+                  [tooltip]="qtRemainingChart.tooltip"
+                  [colors]="qtRemainingChart.colors">
+                </apx-chart>
+              </div>
+            </div>
+
+            <div class="col-12 col-lg-4">
+              <div class="analytics-card">
+                <h6 class="mb-2">Label Status Distribution</h6>
+                <apx-chart
+                  [series]="statusDistributionChart.series"
+                  [chart]="statusDistributionChart.chart"
+                  [labels]="statusDistributionChart.labels"
+                  [legend]="statusDistributionChart.legend"
+                  [responsive]="statusDistributionChart.responsive"
+                  [colors]="statusDistributionChart.colors">
+                </apx-chart>
+              </div>
+            </div>
+
+            <div class="col-12 col-lg-4">
+              <div class="analytics-card">
+                <h6 class="mb-2">Upload Trend (Last 8 Months)</h6>
+                <apx-chart
+                  [series]="uploadTrendChart.series"
+                  [chart]="uploadTrendChart.chart"
+                  [xaxis]="uploadTrendChart.xaxis"
+                  [yaxis]="uploadTrendChart.yaxis"
+                  [stroke]="uploadTrendChart.stroke"
+                  [dataLabels]="uploadTrendChart.dataLabels"
+                  [tooltip]="uploadTrendChart.tooltip"
+                  [colors]="uploadTrendChart.colors">
+                </apx-chart>
+              </div>
             </div>
           </div>
         </div>

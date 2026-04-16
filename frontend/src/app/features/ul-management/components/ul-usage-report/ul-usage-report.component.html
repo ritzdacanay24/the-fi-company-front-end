@@ -91,6 +91,53 @@
           </div>
           
         </div>
+
+        <div class="card-body border-bottom usage-analytics-strip" *ngIf="filteredData?.length">
+          <div class="row g-3">
+            <div class="col-12 col-lg-6">
+              <div class="analytics-card">
+                <h6 class="mb-2">Usage Trend</h6>
+                <apx-chart
+                  [series]="usageTrendChart.series"
+                  [chart]="usageTrendChart.chart"
+                  [xaxis]="usageTrendChart.xaxis"
+                  [yaxis]="usageTrendChart.yaxis"
+                  [stroke]="usageTrendChart.stroke"
+                  [dataLabels]="usageTrendChart.dataLabels"
+                  [tooltip]="usageTrendChart.tooltip"
+                  [colors]="usageTrendChart.colors">
+                </apx-chart>
+              </div>
+            </div>
+            <div class="col-12 col-lg-3">
+              <div class="analytics-card">
+                <h6 class="mb-2">Top Users</h6>
+                <apx-chart
+                  [series]="topUsersChart.series"
+                  [chart]="topUsersChart.chart"
+                  [xaxis]="topUsersChart.xaxis"
+                  [plotOptions]="topUsersChart.plotOptions"
+                  [dataLabels]="topUsersChart.dataLabels"
+                  [tooltip]="topUsersChart.tooltip"
+                  [colors]="topUsersChart.colors">
+                </apx-chart>
+              </div>
+            </div>
+            <div class="col-12 col-lg-3">
+              <div class="analytics-card">
+                <h6 class="mb-2">Record Status</h6>
+                <apx-chart
+                  [series]="statusDonutChart.series"
+                  [chart]="statusDonutChart.chart"
+                  [labels]="statusDonutChart.labels"
+                  [legend]="statusDonutChart.legend"
+                  [responsive]="statusDonutChart.responsive"
+                  [colors]="statusDonutChart.colors">
+                </apx-chart>
+              </div>
+            </div>
+          </div>
+        </div>
         
         <div class="card-body p-0">
           <ng-container *ngIf="filteredData?.length; else noRecords">

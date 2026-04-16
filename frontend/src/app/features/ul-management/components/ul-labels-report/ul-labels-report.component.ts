@@ -11,10 +11,40 @@ import { ColDef, GridApi, GridReadyEvent, GridOptions } from 'ag-grid-community'
 import { BreadcrumbComponent, BreadcrumbItem } from "@app/shared/components/breadcrumb/breadcrumb.component";
 import moment from 'moment';
 import { AgGridModule } from 'ag-grid-angular';
+import { NgApexchartsModule } from 'ng-apexcharts';
+import {
+  ApexAxisChartSeries,
+  ApexChart,
+  ApexDataLabels,
+  ApexLegend,
+  ApexNonAxisChartSeries,
+  ApexPlotOptions,
+  ApexResponsive,
+  ApexStroke,
+  ApexTooltip,
+  ApexXAxis,
+  ApexYAxis,
+} from 'ng-apexcharts';
+import { ULLabelActionDropdownRendererComponent } from './ul-label-action-dropdown-renderer.component';
+
+type LabelsChartOptions = {
+  series: ApexAxisChartSeries | ApexNonAxisChartSeries;
+  chart: ApexChart;
+  xaxis?: ApexXAxis;
+  yaxis?: ApexYAxis;
+  dataLabels?: ApexDataLabels;
+  stroke?: ApexStroke;
+  tooltip?: ApexTooltip;
+  legend?: ApexLegend;
+  plotOptions?: ApexPlotOptions;
+  labels?: string[];
+  colors?: string[];
+  responsive?: ApexResponsive[];
+};
 
 @Component({
   standalone: true,
-  imports: [SharedModule, AgGridModule, BreadcrumbComponent],
+  imports: [SharedModule, AgGridModule, BreadcrumbComponent, NgApexchartsModule],
   selector: 'app-ul-labels-report',
   templateUrl: './ul-labels-report.component.html',
   styleUrls: ['./ul-labels-report.component.scss']
@@ -25,6 +55,24 @@ export class ULLabelsReportComponent implements OnInit {
   filteredData: ULLabel[] = [];
   isLoading = false;
   gridApi!: GridApi;
+
+  inventoryInsights = {
+    qRemaining: 0,
+    tRemaining: 0,
+    qTotal: 0,
+    tTotal: 0,
+    totalRemaining: 0,
+    usedCount: 0,
+    lastUploadDateDisplay: 'N/A',
+    qSharePct: 0,
+    tSharePct: 0,
+    remainingPct: 0,
+    activePct: 0,
+  };
+
+  qtRemainingChart: Partial<LabelsChartOptions> = {};
+  statusDistributionChart: Partial<LabelsChartOptions> = {};
+  uploadTrendChart: Partial<LabelsChartOptions> = {};
 
   // AG Grid Configuration
   columnDefs: ColDef[] = [
@@ -71,18 +119,6 @@ export class ULLabelsReportComponent implements OnInit {
       }
     },
     {
-      headerName: 'Manufacturer',
-      field: 'manufacturer',
-      sortable: true,
-      filter: 'agTextColumnFilter',
-      floatingFilter: true,
-      width: 150,
-      filterParams: {
-        filterOptions: ['contains', 'equals'],
-        defaultOption: 'contains'
-      }
-    },
-    {
       headerName: 'Status',
       field: 'status',
       sortable: true,
@@ -126,38 +162,12 @@ export class ULLabelsReportComponent implements OnInit {
       pinned: 'right',
       sortable: false,
       filter: false,
-      cellRenderer: (params: any) => {
-        const isActive = params.data.status === 'active';
-        const isUsed = params.data.is_used || false; // Assuming we have this field or will add it
-        
-        // If UL label has been used, don't show any action buttons
-        if (isUsed) {
-          return `
-            <div class="d-flex justify-content-center align-items-center text-muted" style="height: 100%;">
-              <small>Used</small>
-            </div>
-          `;
-        }
-        
-        // If not used, show all action buttons
-        const toggleText = isActive ? 'Disable' : 'Enable';
-        const toggleClass = isActive ? 'btn-outline-warning' : 'btn-outline-success';
-        const toggleIcon = isActive ? 'mdi-cancel' : 'mdi-check-circle';
-        
-        return `
-          <div class="d-flex gap-1">
-            <button class="btn btn-outline-primary btn-sm" onclick="window.editULLabel('${params.data.id}')" title="Edit UL label">
-              <i class="mdi mdi-pencil"></i>
-            </button>
-            <button class="btn ${toggleClass} btn-sm" onclick="window.toggleULLabel('${params.data.id}', '${params.data.status}')" title="${toggleText} UL label">
-              <i class="mdi ${toggleIcon}"></i>
-            </button>
-            <button class="btn btn-outline-danger btn-sm" onclick="window.deleteULLabel('${params.data.id}')" title="Delete UL label">
-              <i class="mdi mdi-delete"></i>
-            </button>
-          </div>
-        `;
-      }
+      cellRenderer: ULLabelActionDropdownRendererComponent,
+      cellRendererParams: {
+        onEdit: (id: number) => this.editULLabel(id),
+        onToggle: (id: number, status: string) => this.toggleULLabel(String(id), status),
+        onDelete: (id: number) => this.deleteULLabel(String(id)),
+      },
     }
   ];
 
@@ -202,34 +212,10 @@ export class ULLabelsReportComponent implements OnInit {
     this.filterForm.valueChanges.subscribe(() => {
       this.applyFilters();
     });
-
-    // Set up global window functions for grid actions
-    (window as any).editULLabel = (id: string) => this.editULLabel(parseInt(id));
-    (window as any).toggleULLabel = (id: string, status: string) => this.toggleULLabel(id, status);
-    (window as any).deleteULLabel = (id: string) => this.deleteULLabel(id);
-    (window as any).viewULLabel = (id: string) => this.viewULLabel(parseInt(id));
   }
 
   onGridReady(params: GridReadyEvent): void {
     this.gridApi = params.api;
-
-    // Handle action button clicks
-    const eGridDiv = document.querySelector('#ul-labels-grid');
-    if (eGridDiv) {
-      eGridDiv.addEventListener('click', (e: Event) => {
-        const target = e.target as HTMLElement;
-        if (target.classList.contains('action-btn')) {
-          const action = target.getAttribute('data-action');
-          const id = target.getAttribute('data-id');
-
-          if (action === 'use' && id) {
-            this.useULLabel(parseInt(id));
-          } else if (action === 'edit' && id) {
-            this.editULLabel(parseInt(id));
-          }
-        }
-      });
-    }
   }
 
   loadULLabels(): void {
@@ -241,6 +227,7 @@ export class ULLabelsReportComponent implements OnInit {
         if (response.success) {
           this.ulLabels = response.data || [];
           this.filteredData = [...this.ulLabels];
+          this.updateDashboardCharts();
         } else {
           this.toastr.error(response.message || 'Failed to load UL Labels');
         }
@@ -286,6 +273,155 @@ export class ULLabelsReportComponent implements OnInit {
     }
 
     this.filteredData = filtered;
+    this.updateDashboardCharts();
+  }
+
+  private isUsedLabel(label: ULLabel): boolean {
+    const isUsed = (label as ULLabel & { is_used?: boolean | number | string }).is_used;
+    return isUsed === true || isUsed === 1 || isUsed === '1';
+  }
+
+  private toPercentage(value: number, total: number): number {
+    if (total <= 0) {
+      return 0;
+    }
+
+    return Math.round((value / total) * 100);
+  }
+
+  miniPieBackground(percent: number, color: string): string {
+    return `conic-gradient(${color} 0 ${percent}%, #e6edf5 ${percent}% 100%)`;
+  }
+
+  private updateDashboardCharts(): void {
+    const allLabels = this.ulLabels || [];
+    const activeUnUsed = allLabels.filter((label) => label.status === 'active' && !this.isUsedLabel(label));
+
+    const qRemaining = activeUnUsed.filter((label) => (label.ul_number || '').toUpperCase().startsWith('Q')).length;
+    const tRemaining = activeUnUsed.filter((label) => (label.ul_number || '').toUpperCase().startsWith('T')).length;
+    const qTotal = allLabels.filter((label) => (label.ul_number || '').toUpperCase().startsWith('Q')).length;
+    const tTotal = allLabels.filter((label) => (label.ul_number || '').toUpperCase().startsWith('T')).length;
+    const usedCount = allLabels.filter((label) => this.isUsedLabel(label)).length;
+    const totalLabels = allLabels.length;
+    const totalRemaining = qRemaining + tRemaining;
+    const activeCount = allLabels.filter((label) => label.status === 'active').length;
+    const inactiveCount = allLabels.filter((label) => label.status === 'inactive').length;
+    const expiredCount = allLabels.filter((label) => label.status === 'expired').length;
+
+    const dates = allLabels
+      .map((label) => label.created_at)
+      .filter((value): value is string => !!value)
+      .sort((a, b) => moment(b).valueOf() - moment(a).valueOf());
+
+    const lastUploadDateDisplay = dates.length ? moment(dates[0]).format('MM/DD/YYYY h:mm A') : 'N/A';
+
+    this.inventoryInsights = {
+      qRemaining,
+      tRemaining,
+      qTotal,
+      tTotal,
+      totalRemaining,
+      usedCount,
+      lastUploadDateDisplay,
+      qSharePct: this.toPercentage(qRemaining, qTotal),
+      tSharePct: this.toPercentage(tRemaining, tTotal),
+      remainingPct: this.toPercentage(totalRemaining, totalLabels),
+      activePct: this.toPercentage(activeCount, totalLabels),
+    };
+
+    this.qtRemainingChart = {
+      series: [
+        {
+          name: 'Remaining Labels',
+          data: [qRemaining, tRemaining],
+        },
+      ],
+      chart: {
+        type: 'bar',
+        height: 240,
+        toolbar: { show: false },
+      },
+      xaxis: {
+        categories: ['Q Series', 'T Series'],
+      },
+      yaxis: {
+        title: { text: 'Count' },
+      },
+      plotOptions: {
+        bar: {
+          horizontal: false,
+          borderRadius: 6,
+          columnWidth: '45%',
+        },
+      },
+      colors: ['#255f9e'],
+      dataLabels: { enabled: true },
+      tooltip: { enabled: true },
+    };
+
+    this.statusDistributionChart = {
+      series: [activeCount, inactiveCount, expiredCount],
+      chart: {
+        type: 'donut',
+        height: 240,
+      },
+      labels: ['Active', 'Inactive', 'Expired'],
+      colors: ['#2e8b57', '#6c757d', '#c43d3d'],
+      legend: {
+        position: 'bottom',
+      },
+      responsive: [
+        {
+          breakpoint: 480,
+          options: {
+            chart: {
+              height: 220,
+            },
+          },
+        },
+      ],
+    };
+
+    const monthMap = new Map<string, number>();
+    allLabels.forEach((label) => {
+      if (!label.created_at) {
+        return;
+      }
+
+      const monthKey = moment(label.created_at).format('YYYY-MM');
+      monthMap.set(monthKey, (monthMap.get(monthKey) || 0) + 1);
+    });
+
+    const monthly = Array.from(monthMap.entries())
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .slice(-8);
+
+    this.uploadTrendChart = {
+      series: [
+        {
+          name: 'Uploaded Labels',
+          data: monthly.map(([, value]) => value),
+        },
+      ],
+      chart: {
+        type: 'area',
+        height: 240,
+        toolbar: { show: false },
+      },
+      xaxis: {
+        categories: monthly.map(([month]) => moment(month, 'YYYY-MM').format('MMM YY')),
+      },
+      yaxis: {
+        title: { text: 'Labels Uploaded' },
+      },
+      stroke: {
+        curve: 'smooth',
+        width: 2,
+      },
+      dataLabels: { enabled: false },
+      colors: ['#117a8b'],
+      tooltip: { enabled: true },
+    };
   }
 
   useULLabel(id: number): void {

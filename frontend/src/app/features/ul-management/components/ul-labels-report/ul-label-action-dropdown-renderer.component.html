@@ -1,0 +1,21 @@
+<ng-container *ngIf="params?.data">
+  <span class="text-muted small" *ngIf="isUsed">Used</span>
+
+  <div class="btn-group" ngbDropdown container="body" placement="bottom-end" *ngIf="!isUsed">
+    <button type="button" class="btn btn-outline-secondary btn-sm" ngbDropdownToggle title="Actions">
+      <i class="mdi mdi-dots-vertical"></i>
+    </button>
+    <div ngbDropdownMenu class="dropdown-menu-end">
+      <button ngbDropdownItem (click)="onEdit()">
+        <i class="mdi mdi-pencil me-2"></i>Edit
+      </button>
+      <button ngbDropdownItem (click)="onToggle()">
+        <i class="mdi mdi-sync me-2"></i>Enable/Disable
+      </button>
+      <div class="dropdown-divider"></div>
+      <button ngbDropdownItem class="text-danger" (click)="onDelete()">
+        <i class="mdi mdi-delete me-2"></i>Delete
+      </button>
+    </div>
+  </div>
+</ng-container>

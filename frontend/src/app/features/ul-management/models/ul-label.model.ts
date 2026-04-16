@@ -57,6 +57,9 @@ export interface ULUsageReport {
   user_name: string;
   customer_name: string;
   notes: string;
+  is_voided?: boolean | number;
+  void_reason?: string;
+  voided_at?: string;
   // Work Order Information
   wo_nbr?: number;
   wo_due_date?: string;
