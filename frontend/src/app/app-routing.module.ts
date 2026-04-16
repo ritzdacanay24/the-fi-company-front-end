@@ -146,6 +146,15 @@ const routes: Routes = [
     title: "Unique Label Generator",
   },
   {
+    path: "project-manager",
+    canActivate: [AuthGuard],
+    loadChildren: () =>
+      import("./standalone/project-manager/project-manager.routes").then(
+        (m) => m.PROJECT_MANAGER_ROUTES,
+      ),
+    title: "Project Manager",
+  },
+  {
     path: "training-management",
     canActivate: [AuthGuard],
     loadChildren: () =>

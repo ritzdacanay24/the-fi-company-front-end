@@ -1,6 +1,6 @@
 import { Component, OnInit, ViewChild, TemplateRef } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { SharedModule } from '@app/shared/shared.module';
 import { AgGridModule } from 'ag-grid-angular';
@@ -52,6 +52,8 @@ interface PmTreeRow {
   styleUrls: ['./project-manager-tasks.component.scss']
 })
 export class ProjectManagerTasksComponent implements OnInit {
+  private readonly projectManagerBaseRoute = '/project-manager';
+  private readonly operationsBaseRoute = '/operations/project-manager';
   private gridApi?: GridApi<PmTreeRow>;
   private nextId = 1;
   private activeProjectId = '';
@@ -407,6 +409,7 @@ export class ProjectManagerTasksComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private route: ActivatedRoute,
+    private router: Router,
     private tasksDataService: ProjectManagerTasksDataService,
     private projectsService: ProjectManagerProjectsService,
     private modalService: NgbModal
@@ -429,6 +432,20 @@ export class ProjectManagerTasksComponent implements OnInit {
       projectId: this.getActiveProjectId(),
       view: 'checklist'
     };
+  }
+
+  get executionChecklistRoute(): string {
+    return `${this.baseRoute}/new-project`;
+  }
+
+  get dashboardRoute(): string {
+    return `${this.baseRoute}/dashboard`;
+  }
+
+  private get baseRoute(): string {
+    return this.router.url.startsWith(this.projectManagerBaseRoute)
+      ? this.projectManagerBaseRoute
+      : this.operationsBaseRoute;
   }
 
   get currentProjectIdLabel(): string {

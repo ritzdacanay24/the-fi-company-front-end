@@ -371,17 +371,17 @@ export const MENU_DATA: MenuItem[] = [
         isCollapsed: true,
         hideCheckBox: true,
         accessRequired: false,
-        activatedRoutes: "/operations/project-manager/*",
+        activatedRoutes: "/project-manager/*",
         subItems: [
             {
                 label: "Dashboard",
-                link: "/operations/project-manager/dashboard",
+                link: "/project-manager/dashboard",
                 description: "Portfolio health and gate progress overview",
                 accessRequired: false,
             },
             {
                 label: "New Project",
-                link: "/operations/project-manager/new-project",
+                link: "/project-manager/new-project",
                 description: "Create and manage project intake forms",
                 accessRequired: false,
             }

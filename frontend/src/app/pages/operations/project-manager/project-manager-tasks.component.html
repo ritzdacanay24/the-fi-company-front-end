@@ -28,8 +28,8 @@
           <option *ngFor="let g of gateOptions" [value]="g">{{ g }}</option>
         </select>
       </div>
-      <a class="btn btn-sm btn-light border" routerLink="/operations/project-manager/new-project" [queryParams]="executionChecklistQueryParams">← Back to Execution Checklist</a>
-      <a class="btn btn-sm btn-light border" routerLink="/operations/project-manager/dashboard">Dashboard</a>
+      <a class="btn btn-sm btn-light border" [routerLink]="executionChecklistRoute" [queryParams]="executionChecklistQueryParams">← Back to Execution Checklist</a>
+      <a class="btn btn-sm btn-light border" [routerLink]="dashboardRoute">Dashboard</a>
     </div>
   </div>
 

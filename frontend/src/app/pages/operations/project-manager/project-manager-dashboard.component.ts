@@ -26,6 +26,8 @@ interface GateStageCard extends GateStageDefinition {
 })
 export class ProjectManagerDashboardComponent implements OnInit {
   activeTab: DashboardTab = 'overview';
+  private readonly projectManagerBaseRoute = '/project-manager';
+  private readonly operationsBaseRoute = '/operations/project-manager';
 
   private gateStages: GateStageDefinition[] = [
     {
@@ -161,19 +163,19 @@ export class ProjectManagerDashboardComponent implements OnInit {
   }
 
   private openExecutionFor(projectId: string): void {
-    this.router.navigate(['/operations/project-manager/new-project'], {
+    this.router.navigate([`${this.baseRoute}/new-project`], {
       queryParams: { projectId, view: 'checklist' }
     });
   }
 
   private openTasksFor(projectId: string): void {
-    this.router.navigate(['/operations/project-manager/tasks'], {
+    this.router.navigate([`${this.baseRoute}/tasks`], {
       queryParams: { projectId }
     });
   }
 
   private openIntakeFor(projectId: string): void {
-    this.router.navigate(['/operations/project-manager/new-project'], {
+    this.router.navigate([`${this.baseRoute}/new-project`], {
       queryParams: { projectId }
     });
   }
@@ -181,7 +183,7 @@ export class ProjectManagerDashboardComponent implements OnInit {
   openProjectGate(project: ProjectDashboardItem, event?: Event): void {
     event?.stopPropagation();
     const gateNumber = this.getGateIndex(project.gateTag) + 1;
-    this.router.navigate(['/operations/project-manager/new-project'], {
+    this.router.navigate([`${this.baseRoute}/new-project`], {
       queryParams: { projectId: project.id, view: 'checklist', gate: `gate${gateNumber}` }
     });
   }
@@ -196,9 +198,15 @@ export class ProjectManagerDashboardComponent implements OnInit {
     const gateNumber = match ? Number(match[1]) : this.getGateIndex(selected.gateTag) + 1;
     const safeGate = Number.isFinite(gateNumber) && gateNumber >= 1 && gateNumber <= 6 ? gateNumber : 1;
 
-    this.router.navigate(['/operations/project-manager/new-project'], {
+    this.router.navigate([`${this.baseRoute}/new-project`], {
       queryParams: { projectId: selected.id, view: 'checklist', gate: `gate${safeGate}` }
     });
+  }
+
+  private get baseRoute(): string {
+    return this.router.url.startsWith(this.projectManagerBaseRoute)
+      ? this.projectManagerBaseRoute
+      : this.operationsBaseRoute;
   }
 
   private deleteProject(project: ProjectDashboardItem): void {

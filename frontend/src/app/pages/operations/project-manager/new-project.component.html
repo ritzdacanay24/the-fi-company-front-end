@@ -1,19 +1,6 @@
 <div class="container-fluid">
   <div class="row justify-content-center">
     <div class="col-12 col-xxl-11">
-      <div class="mb-3">
-        <h2 class="mb-1 text-primary">Framework by Gates</h2>
-        <p class="text-muted mb-0">Gate-based project intake with calculated readiness summary</p>
-      </div>
-
-      <div class="mb-3 d-flex align-items-center gap-2">
-        <span class="badge bg-primary">Execution Checklist</span>
-        <span class="text-muted small">Single project workspace for cross-department gate completion</span>
-      </div>
-
-      <div>
-        <p class="mb-2 text-muted">This module is intended to serve as a structured project intake form that maps the "Framework by Gates" approach. It captures key project information and calculates readiness metrics based on the inputs provided.</p>
-      </div>
 
 
       <ng-container *ngIf="activeView === 'workflow'">
@@ -166,28 +153,6 @@
       <ng-container *ngIf="activeView === 'checklist'">
 
       <div class="card border-0 shadow-sm mb-3">
-        <div class="card-header bg-light d-flex align-items-center justify-content-between">
-          <h5 class="mb-0">
-            <i class="mdi mdi-cogs me-2 text-primary"></i>
-            Execution Workflow Engine
-          </h5>
-          <span class="badge" [class]="workflowStatusClass">{{ workflowProgress }}% Complete</span>
-        </div>
-        <div class="card-body">
-          <p class="mb-2 text-muted">
-            Working Project ID:
-            <strong *ngIf="hasProjectContext; else pendingProjectId">{{ generatedProjectId }}</strong>
-            <ng-template #pendingProjectId>Pending (created on draft save or submit)</ng-template>
-          </p>
-          <div class="d-flex flex-wrap gap-2">
-            <button type="button" class="btn btn-outline-primary btn-sm" [disabled]="!canOpenTasksBoard" (click)="openTasksBoard()">
-              Open Tasks Board ({{ taskBoardContextLabel }})
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div class="card border-0 shadow-sm mb-3">
         <div class="card-body py-2">
           <div class="d-flex flex-wrap align-items-center gap-2">
             <span class="fw-semibold me-2">Inputs of the System:</span>
@@ -213,13 +178,18 @@
             <div class="gate-card h-100">
               <div class="gate-header d-flex align-items-center justify-content-between">
                 <span>Gate #1</span>
-                <select class="form-select form-select-sm gate-status-select" formControlName="gate1Status">
-                  <option>Not Started</option>
-                  <option>In Progress</option>
-                  <option>Review</option>
-                  <option>Completed</option>
-                  <option>On Hold</option>
-                </select>
+                <div class="d-flex align-items-center gap-2">
+                  <button type="button" class="btn btn-outline-primary btn-sm" [disabled]="!canOpenTasksBoard" (click)="openTasksBoard()">
+                    Open Tasks Board ({{ taskBoardContextLabel }})
+                  </button>
+                  <select class="form-select form-select-sm gate-status-select" formControlName="gate1Status">
+                    <option>Not Started</option>
+                    <option>In Progress</option>
+                    <option>Review</option>
+                    <option>Completed</option>
+                    <option>On Hold</option>
+                  </select>
+                </div>
               </div>
               <div class="gate-body horizontal-gate-form">
                 <div class="small text-muted mb-2">Never changes</div>
@@ -323,13 +293,18 @@
             <div class="gate-card h-100">
               <div class="gate-header d-flex align-items-center justify-content-between">
                 <span>Gate #2 — Concept</span>
-                <select class="form-select form-select-sm gate-status-select" formControlName="gate2Status">
-                  <option>Not Started</option>
-                  <option>In Progress</option>
-                  <option>Review</option>
-                  <option>Completed</option>
-                  <option>On Hold</option>
-                </select>
+                <div class="d-flex align-items-center gap-2">
+                  <button type="button" class="btn btn-outline-primary btn-sm" [disabled]="!canOpenTasksBoard" (click)="openTasksBoard()">
+                    Open Tasks Board ({{ taskBoardContextLabel }})
+                  </button>
+                  <select class="form-select form-select-sm gate-status-select" formControlName="gate2Status">
+                    <option>Not Started</option>
+                    <option>In Progress</option>
+                    <option>Review</option>
+                    <option>Completed</option>
+                    <option>On Hold</option>
+                  </select>
+                </div>
               </div>
               <div class="gate-body horizontal-gate-form">
                 <div class="yes-no-field mb-2">
@@ -365,13 +340,18 @@
             <div class="gate-card h-100">
               <div class="gate-header d-flex align-items-center justify-content-between">
                 <span>Gate #3 — Awarded</span>
-                <select class="form-select form-select-sm gate-status-select" formControlName="gate3Status">
-                  <option>Not Started</option>
-                  <option>In Progress</option>
-                  <option>Review</option>
-                  <option>Completed</option>
-                  <option>On Hold</option>
-                </select>
+                <div class="d-flex align-items-center gap-2">
+                  <button type="button" class="btn btn-outline-primary btn-sm" [disabled]="!canOpenTasksBoard" (click)="openTasksBoard()">
+                    Open Tasks Board ({{ taskBoardContextLabel }})
+                  </button>
+                  <select class="form-select form-select-sm gate-status-select" formControlName="gate3Status">
+                    <option>Not Started</option>
+                    <option>In Progress</option>
+                    <option>Review</option>
+                    <option>Completed</option>
+                    <option>On Hold</option>
+                  </select>
+                </div>
               </div>
               <div class="gate-body horizontal-gate-form">
                 <div class="yes-no-field mb-2">
@@ -404,13 +384,18 @@
             <div class="gate-card h-100">
               <div class="gate-header d-flex align-items-center justify-content-between">
                 <span>Gate #4 — Engineering</span>
-                <select class="form-select form-select-sm gate-status-select" formControlName="gate4Status">
-                  <option>Not Started</option>
-                  <option>In Progress</option>
-                  <option>Review</option>
-                  <option>Completed</option>
-                  <option>On Hold</option>
-                </select>
+                <div class="d-flex align-items-center gap-2">
+                  <button type="button" class="btn btn-outline-primary btn-sm" [disabled]="!canOpenTasksBoard" (click)="openTasksBoard()">
+                    Open Tasks Board ({{ taskBoardContextLabel }})
+                  </button>
+                  <select class="form-select form-select-sm gate-status-select" formControlName="gate4Status">
+                    <option>Not Started</option>
+                    <option>In Progress</option>
+                    <option>Review</option>
+                    <option>Completed</option>
+                    <option>On Hold</option>
+                  </select>
+                </div>
               </div>
               <div class="gate-body horizontal-gate-form">
                 <div class="yes-no-field mb-2">
@@ -463,13 +448,18 @@
             <div class="gate-card h-100">
               <div class="gate-header d-flex align-items-center justify-content-between">
                 <span>Gate #5 — Validation</span>
-                <select class="form-select form-select-sm gate-status-select" formControlName="gate5Status">
-                  <option>Not Started</option>
-                  <option>In Progress</option>
-                  <option>Review</option>
-                  <option>Completed</option>
-                  <option>On Hold</option>
-                </select>
+                <div class="d-flex align-items-center gap-2">
+                  <button type="button" class="btn btn-outline-primary btn-sm" [disabled]="!canOpenTasksBoard" (click)="openTasksBoard()">
+                    Open Tasks Board ({{ taskBoardContextLabel }})
+                  </button>
+                  <select class="form-select form-select-sm gate-status-select" formControlName="gate5Status">
+                    <option>Not Started</option>
+                    <option>In Progress</option>
+                    <option>Review</option>
+                    <option>Completed</option>
+                    <option>On Hold</option>
+                  </select>
+                </div>
               </div>
               <div class="gate-body horizontal-gate-form">
                 <div class="yes-no-field mb-2">
@@ -505,13 +495,18 @@
             <div class="gate-card h-100">
               <div class="gate-header d-flex align-items-center justify-content-between">
                 <span>Gate #6 — Production</span>
-                <select class="form-select form-select-sm gate-status-select" formControlName="gate6Status">
-                  <option>Not Started</option>
-                  <option>In Progress</option>
-                  <option>Review</option>
-                  <option>Completed</option>
-                  <option>On Hold</option>
-                </select>
+                <div class="d-flex align-items-center gap-2">
+                  <button type="button" class="btn btn-outline-primary btn-sm" [disabled]="!canOpenTasksBoard" (click)="openTasksBoard()">
+                    Open Tasks Board ({{ taskBoardContextLabel }})
+                  </button>
+                  <select class="form-select form-select-sm gate-status-select" formControlName="gate6Status">
+                    <option>Not Started</option>
+                    <option>In Progress</option>
+                    <option>Review</option>
+                    <option>Completed</option>
+                    <option>On Hold</option>
+                  </select>
+                </div>
               </div>
               <div class="gate-body horizontal-gate-form">
                 <div class="yes-no-field mb-2">

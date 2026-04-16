@@ -30,6 +30,8 @@ type IntakeStoragePayload = {
   styleUrls: ['./new-project.component.scss']
 })
 export class NewProjectComponent implements OnDestroy {
+  private readonly projectManagerBaseRoute = '/project-manager';
+  private readonly operationsBaseRoute = '/operations/project-manager';
   readonly stakeholderSignoffConfig: Array<{ key: 'production' | 'qc' | 'npi' | 'gm'; label: string; owner: string; aliases: string[] }> = [
     { key: 'production', label: 'Production', owner: 'Juvenal', aliases: ['juvenal', 'production'] },
     { key: 'qc', label: 'QC', owner: 'Temenuga', aliases: ['temenuga', 'qc', 'quality'] },
@@ -261,7 +263,7 @@ export class NewProjectComponent implements OnDestroy {
     this.saveMessage = 'Project intake is complete and ready for backend submission.';
 
     // Continue in the checklist execution view for the newly created project.
-    this.router.navigate(['/operations/project-manager/new-project'], {
+    this.router.navigate([`${this.baseRoute}/new-project`], {
       queryParams: { projectId: createdProjectId, view: 'checklist' }
     });
   }
@@ -312,7 +314,7 @@ export class NewProjectComponent implements OnDestroy {
     this.saveMessageType = 'info';
     this.saveMessage = 'Draft saved. You can continue this project later from any gate.';
 
-    this.router.navigate(['/operations/project-manager/new-project'], {
+    this.router.navigate([`${this.baseRoute}/new-project`], {
       queryParams: { projectId: draftProjectId, view: 'checklist' },
       replaceUrl: true
     });
@@ -948,9 +950,15 @@ export class NewProjectComponent implements OnDestroy {
       return;
     }
 
-    this.router.navigate(['/operations/project-manager/tasks'], {
+    this.router.navigate([`${this.baseRoute}/tasks`], {
       queryParams: this.taskBoardQueryParams
     });
+  }
+
+  private get baseRoute(): string {
+    return this.router.url.startsWith(this.projectManagerBaseRoute)
+      ? this.projectManagerBaseRoute
+      : this.operationsBaseRoute;
   }
 
   private get linkProjectId(): string {
