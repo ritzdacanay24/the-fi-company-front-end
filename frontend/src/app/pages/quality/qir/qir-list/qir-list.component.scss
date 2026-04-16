@@ -1,0 +1,42 @@
+.qir-list-card {
+	.qir-toolbar {
+		width: 100%;
+	}
+
+	.qir-status-select-wrap {
+		width: 100%;
+		max-width: 180px;
+		flex: 0 0 180px;
+	}
+
+	.qir-search-wrap {
+		width: 100%;
+		flex: 1 1 auto;
+	}
+
+	.qir-search-input {
+		.input-group-text,
+		.form-control,
+		.btn {
+			min-height: 40px;
+		}
+	}
+
+	.qir-search-input-limited {
+		width: 100%;
+		max-width: 520px;
+	}
+
+	.form-select {
+		min-height: 40px;
+	}
+}
+
+@media (max-width: 991.98px) {
+	.qir-list-card {
+		.qir-status-select-wrap {
+			max-width: none;
+			flex: 1 1 auto;
+		}
+	}
+}

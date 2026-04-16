@@ -8,14 +8,12 @@ import { ActivatedRoute, Router } from "@angular/router";
 import moment from "moment";
 import { NAVIGATION_ROUTE } from "../qir-constant";
 import { QirService } from "@app/core/api/quality/qir.service";
-import { DateRangeComponent } from "@app/shared/components/date-range/date-range.component";
 import { SharedModule } from "@app/shared/shared.module";
 import { highlightRowView, autoSizeColumns } from "src/assets/js/util";
 import {
   _decompressFromEncodedURIComponent,
   _compressToEncodedURIComponent,
 } from "src/assets/js/util/jslzString";
-import { GridFiltersComponent } from "@app/shared/grid-filters/grid-filters.component";
 import { GridSettingsComponent } from "@app/shared/grid-settings/grid-settings.component";
 import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
 import { QirActionsCellRendererComponent } from './qir-actions-cell-renderer.component';
@@ -27,10 +25,7 @@ import { QirActionsCellRendererComponent } from './qir-actions-cell-renderer.com
     ReactiveFormsModule,
     NgSelectModule,
     AgGridModule,
-    DateRangeComponent,
     GridSettingsComponent,
-    GridFiltersComponent,
-    QirActionsCellRendererComponent,
   ],
   selector: "app-qir-list",
   templateUrl: "./qir-list.component.html",
@@ -38,6 +33,7 @@ import { QirActionsCellRendererComponent } from './qir-actions-cell-renderer.com
 })
 export class QirListComponent implements OnInit {
   pageId = "/qir/list-qir";
+  quickSearchTerm = "";
 
   constructor(
     public api: QirService,
@@ -53,17 +49,10 @@ export class QirListComponent implements OnInit {
 
   ngOnInit(): void {
     this.activatedRoute.queryParams.subscribe((params) => {
-      this.dateFrom = params["dateFrom"] || this.dateFrom;
-      this.dateTo = params["dateTo"] || this.dateTo;
-      this.dateRange = [this.dateFrom, this.dateTo];
-
       this.id = params["id"];
-      this.isAll = params["isAll"]
-        ? params["isAll"].toLocaleLowerCase() === "true"
-        : this.isAll;
       this.selectedViewType =
         params["selectedViewType"] || this.selectedViewType;
-      this.selectedType1 = params["selectedType1"] || this.selectedType1;
+      this.isAll = true;
     });
 
     this.getData();
@@ -198,9 +187,6 @@ export class QirListComponent implements OnInit {
     },
   ];
 
-  // New Type 1 filter properties
-  selectedType1 = "";
-  type1Options: { value: string; label: string; count: number }[] = [];
   filteredData: any[] = [];
 
   title = "QIR List";
@@ -235,6 +221,7 @@ export class QirListComponent implements OnInit {
 
       let data = this.activatedRoute.snapshot.queryParams["gridParams"];
       _decompressFromEncodedURIComponent(data, params);
+      this.onQuickSearchChange();
     },
     onFirstDataRendered: (params) => {
       highlightRowView(params, "id", this.id);
@@ -308,22 +295,19 @@ export class QirListComponent implements OnInit {
         this.selectedViewType,
         this.dateFrom,
         this.dateTo,
-        this.isAll
+        true
       );
 
-      // Calculate Type 1 options with counts
-      this.calculateType1Options();
-
-      // Apply client-side filters
       this.applyFilters();
+      this.onQuickSearchChange();
 
       this.router.navigate(["."], {
         queryParams: {
           selectedViewType: this.selectedViewType,
-          selectedType1: this.selectedType1,
-          isAll: this.isAll,
-          dateFrom: this.dateFrom,
-          dateTo: this.dateTo,
+          selectedType1: null,
+          isAll: null,
+          dateFrom: null,
+          dateTo: null,
         },
         relativeTo: this.activatedRoute,
         queryParamsHandling: "merge",
@@ -335,81 +319,32 @@ export class QirListComponent implements OnInit {
     }
   }
 
-  // New methods for improved filter UX
-  hasActiveFilters(): boolean {
-    return this.selectedViewType !== 'Open' || this.selectedType1 !== '' || (!this.isAll && this.dateRange && this.dateRange.length > 0);
-  }
-
   clearFilters(): void {
-    this.selectedViewType = 'Open'; // Default to Open instead of All
-    this.selectedType1 = '';
-    this.isAll = true;
-    this.dateFrom = moment().subtract(1, "months").startOf("month").format("YYYY-MM-DD");
-    this.dateTo = moment().endOf("month").format("YYYY-MM-DD");
-    this.dateRange = [this.dateFrom, this.dateTo];
-    this.getData();
-  }
-
-  clearStatusFilter(): void {
-    this.selectedViewType = 'Open'; // Default back to Open
-    this.getData();
-  }
-
-  clearType1Filter(): void {
-    this.selectedType1 = '';
-    this.getData();
-  }
-
-  clearDateFilter(): void {
+    this.selectedViewType = 'Open';
+    this.quickSearchTerm = '';
     this.isAll = true;
     this.getData();
   }
 
-  getDateRangeDisplay(): string {
-    if (this.isAll) return 'All dates';
-    return `${moment(this.dateFrom).format('MMM DD')} - ${moment(this.dateTo).format('MMM DD, YYYY')}`;
-  }
-
-  // Calculate Type 1 options with counts
-  private calculateType1Options(): void {
-    if (!this.data) {
-      this.type1Options = [];
+  onQuickSearchChange(): void {
+    if (!this.gridApi) {
       return;
     }
 
-    const type1Counts = new Map<string, number>();
-
-    this.data.forEach(item => {
-      const type1Value = item.type1 || 'Unspecified';
-      type1Counts.set(type1Value, (type1Counts.get(type1Value) || 0) + 1);
-    });
-
-    this.type1Options = Array.from(type1Counts.entries())
-      .map(([value, count]) => ({
-        value: value === 'Unspecified' ? '' : value,
-        label: value,
-        count: count
-      }))
-      .sort((a, b) => b.count - a.count); // Sort by count descending
+    this.gridApi.setGridOption('quickFilterText', this.quickSearchTerm.trim());
   }
 
-  // Apply client-side filtering
+  clearQuickSearch(): void {
+    this.quickSearchTerm = '';
+    this.onQuickSearchChange();
+  }
+
   private applyFilters(): void {
     if (!this.data) {
       this.filteredData = [];
       return;
     }
 
-    this.filteredData = this.data.filter(item => {
-      // Type 1 filter
-      if (this.selectedType1 && this.selectedType1 !== '') {
-        const itemType1 = item.type1 || '';
-        if (itemType1 !== this.selectedType1) {
-          return false;
-        }
-      }
-
-      return true;
-    });
+    this.filteredData = [...this.data];
   }
 }
