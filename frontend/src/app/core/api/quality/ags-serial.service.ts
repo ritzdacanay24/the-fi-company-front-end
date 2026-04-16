@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { DataService } from '../DataService';
 import { firstValueFrom } from 'rxjs';
 
-let url = 'Quality/ags-serial';
+const url = 'apiV2/quality/ags-serial';
 
 @Injectable({
   providedIn: 'root'
@@ -15,21 +15,32 @@ export class AgsSerialService extends DataService<any> {
   }
 
   getList = async (selectedViewType: string, dateFrom: string, dateTo: string, isAll = false) =>
-    await firstValueFrom(this.http.get<any[]>(`${url}/getList?selectedViewType=${selectedViewType}&dateFrom=${dateFrom}&dateTo=${dateTo}&isAll=${isAll}`));
+    await firstValueFrom(this.http.get<any[]>(`${url}?selectedViewType=${selectedViewType}&dateFrom=${dateFrom}&dateTo=${dateTo}&isAll=${isAll}`));
 
-  checkIfSerialIsFound = async (assetNumber) =>
-    await firstValueFrom(this.http.get<any[]>(`${url}/checkIfSerialIsFound?assetNumber=${assetNumber}`));
+  override getById = async (id: number) =>
+    await firstValueFrom(this.http.get<any>(`${url}/${id}`));
+
+  override create = async (payload: any) =>
+    await firstValueFrom(this.http.post<any>(url, payload));
+
+  override update = async (id: number, payload: any) =>
+    await firstValueFrom(this.http.put<any>(`${url}/${id}`, payload));
+
+  override delete = async (id: number) =>
+    await firstValueFrom(this.http.delete<any>(`${url}/${id}`));
+
+  checkIfSerialIsFound = async (assetNumber: string) =>
+    await firstValueFrom(this.http.get<any>(`${url}/serials/check?assetNumber=${assetNumber}`));
 
   /**
-   * Bulk create multiple AGS assets in a single transaction
-   * @param assignments Array of assignment objects with serialNumber, sgPartNumber, poNumber, etc.
-   * @param userFullName Full name of the user creating the assets (for inspector_name and consumed_by)
-   * @returns Promise with bulk creation response
+   * Bulk create multiple AGS serials in a single transaction.
+   * @param assignments Array of assignment objects.
+   * @param userFullName Full name of the user (for inspector_name and consumed_by).
    */
   bulkCreate = async (assignments: any[], userFullName: string) =>
-    await firstValueFrom(this.http.post<any>(`${url}/bulkCreate.php`, { 
+    await firstValueFrom(this.http.post<any>(`${url}/bulk`, {
       assignments,
-      user_full_name: userFullName 
+      user_full_name: userFullName,
     }));
 
 }

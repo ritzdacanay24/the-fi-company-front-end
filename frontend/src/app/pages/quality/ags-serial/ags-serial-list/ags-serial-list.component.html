@@ -43,42 +43,22 @@
       <div class="card shadow-sm border-0">
         <div class="card-header">
           <div class="d-flex align-items-center flex-wrap gap-3">
-            <div class="form-icon">
-              <app-date-range (setDateRange)="onChangeDate($event)" [value]="dateRange" [disabled]="this.isAll"
-                [displayOptions]="true"></app-date-range>
+            <div class="input-group" style="width: 280px;">
+              <span class="input-group-text bg-transparent border-end-0">
+                <i class="mdi mdi-magnify text-muted"></i>
+              </span>
+              <input
+                type="text"
+                class="form-control border-start-0"
+                placeholder="Search..."
+                [(ngModel)]="searchTerm"
+                (input)="onSearch()"
+              />
             </div>
-            
-            <ng-select [dropdownPosition]="'bottom'" [searchable]="false" bindLabel="name" bindValue="name"
-              [clearable]="false" [items]="selectedViewOptions" [(ngModel)]="selectedViewType"
-              (change)="getData()" style="width:150px" [appendTo]="'body'">
-            </ng-select>
-            
-            <div class="form-check form-switch form-switch-md">
-              <input class="form-check-input" type="checkbox" id="flexSwitchCheckDefault" [(ngModel)]="isAll"
-                (change)="getData()">
-              <label class="form-check-label" for="flexSwitchCheckDefault">Show All</label>
-            </div>
-            
+
             <button class="btn btn-outline-secondary" (click)="getData()" title="Refresh data">
               <i class="mdi mdi-refresh me-1"></i>Refresh
             </button>
-            
-            <div class="ms-auto">
-              <div class="d-flex align-items-center">
-                <div class="me-4 d-flex gap-4 small text-muted">
-                  <span>
-                    <i class="mdi mdi-database text-info me-1"></i>
-                    <strong>{{data?.length || 0}}</strong> Total
-                  </span>
-                  <span>
-                    <i class="mdi mdi-check-circle text-primary me-1" *ngIf="selectedViewType === 'Active'"></i>
-                    <i class="mdi mdi-cancel text-danger me-1" *ngIf="selectedViewType === 'Inactive'"></i>
-                    <i class="mdi mdi-view-list text-primary me-1" *ngIf="selectedViewType === 'All'"></i>
-                    <strong>{{selectedViewType}}</strong> Records
-                  </span>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
         

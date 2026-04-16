@@ -531,13 +531,6 @@ export const MENU_DATA: MenuItem[] = [
         hideCheckBox: true,
         subItems: [
             {
-                label: "Serial Generator",
-                link: "/quality/serial-number-report",
-                description: "View and manage quality serial numbers",
-                accessRequired: false,
-                activatedRoutes: "/quality/serial-number-report/*"
-            },
-            {
                 label: "IGT Serial Control",
                 link: "/quality/igt",
                 description: "View and manage IGT serial numbers",

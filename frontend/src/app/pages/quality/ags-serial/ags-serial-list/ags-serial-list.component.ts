@@ -1,30 +1,24 @@
 import { ColDef, GridApi, GridOptions } from "ag-grid-community";
-import { Component, Input, OnInit } from "@angular/core";
+import { Component, OnInit } from "@angular/core";
 import { ReactiveFormsModule } from "@angular/forms";
-import { NgSelectModule } from "@ng-select/ng-select";
 import { AgGridModule } from "ag-grid-angular";
 
 import { ActivatedRoute, Router } from "@angular/router";
-import moment from "moment";
 import { AgsSerialService } from "@app/core/api/quality/ags-serial.service";
 import { NAVIGATION_ROUTE } from "../ags-serial-constant";
-import { DateRangeComponent } from "@app/shared/components/date-range/date-range.component";
 import { SharedModule } from "@app/shared/shared.module";
 import { highlightRowView, autoSizeColumns } from "src/assets/js/util";
 import {
   _decompressFromEncodedURIComponent,
   _compressToEncodedURIComponent,
 } from "src/assets/js/util/jslzString";
-import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
 
 @Component({
   standalone: true,
   imports: [
     SharedModule,
     ReactiveFormsModule,
-    NgSelectModule,
     AgGridModule,
-    DateRangeComponent,
   ],
   selector: "app-ags-serial-list",
   templateUrl: "./ags-serial-list.component.html",
@@ -34,20 +28,11 @@ export class AgsSerialListComponent implements OnInit {
     public api: AgsSerialService,
     public router: Router,
     private activatedRoute: ActivatedRoute
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.activatedRoute.queryParams.subscribe((params) => {
-      this.dateFrom = params["dateFrom"] || this.dateFrom;
-      this.dateTo = params["dateTo"] || this.dateTo;
-      this.dateRange = [this.dateFrom, this.dateTo];
-
       this.id = params["id"];
-      this.isAll = params["isAll"]
-        ? params["isAll"].toLocaleLowerCase() === "true"
-        : false;
-      this.selectedViewType =
-        params["selectedViewType"] || this.selectedViewType;
     });
 
     this.getData();
@@ -56,10 +41,12 @@ export class AgsSerialListComponent implements OnInit {
   columnDefs: ColDef[] = [
     {
       field: "Actions",
-      headerName: "Actions",
+      headerName: "",
       filter: false,
       sortable: false,
       pinned: "left",
+      maxWidth: 90,
+      minWidth: 90,
       cellRenderer: (params: any) => {
         return `
           <div class="d-flex gap-1 align-items-center justify-content-center h-100">
@@ -80,40 +67,28 @@ export class AgsSerialListComponent implements OnInit {
           this.onEdit(params.data.id);
         }
       },
-      maxWidth: 120,
-      minWidth: 120,
     },
-    { field: "id", headerName: "ID", filter: "agMultiColumnFilter" },
     {
       field: "generated_SG_asset",
       headerName: "Asset Number",
       filter: "agMultiColumnFilter",
+      pinned: "left",
+      minWidth: 150,
     },
     {
-      field: "inspectorName",
-      headerName: "Inspector Name",
+      field: "id",
+      headerName: "ID",
       filter: "agMultiColumnFilter",
-    },
-    {
-      field: "lastUpdate",
-      headerName: "Last Update",
-      filter: "agMultiColumnFilter",
-    },
-    {
-      field: "manualUpdate",
-      headerName: "Manual Update",
-      filter: "agMultiColumnFilter",
-      cellDataType: "text",
+      maxWidth: 80,
     },
     {
       field: "poNumber",
       headerName: "WO Number",
       filter: "agMultiColumnFilter",
-      cellDataType: "text",
     },
     {
-      field: "property_site",
-      headerName: "Property Site",
+      field: "sgPartNumber",
+      headerName: "AGS Part Number",
       filter: "agMultiColumnFilter",
     },
     {
@@ -135,11 +110,17 @@ export class AgsSerialListComponent implements OnInit {
           padding: 1px 4px;
           text-transform: uppercase;
         ">${serialNumber}</code>`;
-      }
+      },
     },
     {
-      field: "sgPartNumber",
-      headerName: "AGS Part Number",
+      field: "property_site",
+      headerName: "Property Site",
+      filter: "agMultiColumnFilter",
+      hide: true
+    },
+    {
+      field: "inspectorName",
+      headerName: "Inspector",
       filter: "agMultiColumnFilter",
     },
     {
@@ -147,25 +128,10 @@ export class AgsSerialListComponent implements OnInit {
       headerName: "Created Date",
       filter: "agMultiColumnFilter",
     },
-    { field: "active", headerName: "Active", filter: "agMultiColumnFilter" },
-  ];
-
-  @Input() selectedViewType = "Active";
-
-  selectedViewOptions = [
     {
-      name: "Active",
-      value: 1,
-      selected: false,
-    },
-    {
-      name: "Inactive",
-      value: 0,
-      selected: false,
-    },
-    {
-      name: "All",
-      selected: false,
+      field: "lastUpdate",
+      headerName: "Last Update",
+      filter: "agMultiColumnFilter",
     },
   ];
 
@@ -174,24 +140,23 @@ export class AgsSerialListComponent implements OnInit {
   gridApi: GridApi;
 
   data: any[];
+  allData: any[];
 
   id = null;
 
-  isAll = false;
+  searchTerm = '';
 
-  changeIsAll() {}
-
-  dateFrom = moment()
-    .subtract(1, "months")
-    .startOf("month")
-    .format("YYYY-MM-DD");
-  dateTo = moment().endOf("month").format("YYYY-MM-DD");
-  dateRange = [this.dateFrom, this.dateTo];
-
-  onChangeDate($event) {
-    this.dateFrom = $event["dateFrom"];
-    this.dateTo = $event["dateTo"];
-    this.getData();
+  onSearch() {
+    if (!this.searchTerm?.trim()) {
+      this.data = this.allData;
+      return;
+    }
+    const term = this.searchTerm.toLowerCase();
+    this.data = (this.allData || []).filter((row) =>
+      Object.values(row).some((val) =>
+        val != null && String(val).toLowerCase().includes(term)
+      )
+    );
   }
 
   gridOptions: GridOptions = {
@@ -247,33 +212,9 @@ export class AgsSerialListComponent implements OnInit {
   async getData() {
     try {
       this.gridApi?.showLoadingOverlay();
-
-      let params: any = {};
-      if (this.selectedViewType != "All") {
-        let status = this.selectedViewOptions.find(
-          (person) => person.name == this.selectedViewType
-        );
-        params = { active: status.value };
-      }
-
-      this.data = await this.api.getList(
-        this.selectedViewType,
-        this.dateFrom,
-        this.dateTo,
-        this.isAll
-      );
-
-      this.router.navigate(["."], {
-        queryParams: {
-          selectedViewType: this.selectedViewType,
-          isAll: this.isAll,
-          dateFrom: this.dateFrom,
-          dateTo: this.dateTo,
-        },
-        relativeTo: this.activatedRoute,
-        queryParamsHandling: "merge",
-      });
-
+      this.allData = await this.api.getList('All', '', '', true);
+      this.data = this.allData;
+      this.searchTerm = '';
       this.gridApi?.hideOverlay();
     } catch (err) {
       this.gridApi?.hideOverlay();

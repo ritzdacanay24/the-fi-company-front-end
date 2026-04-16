@@ -156,15 +156,6 @@ const routes: Routes = [
       ),
     runGuardsAndResolvers: "always",
   },
-  {
-    title: "Serial Number Report",
-    path: "serial-number-report",
-    loadComponent: () =>
-      import("../tools/serial-number-report/serial-number-report.component").then(
-        (m) => m.SerialNumberReportComponent
-      ),
-    runGuardsAndResolvers: "always",
-  },
 ];
 
 @NgModule({

@@ -7,11 +7,9 @@ import { SerialNumber, SerialNumberAssignment, SerialNumberReport, SerialNumberU
   providedIn: 'root'
 })
 export class SerialNumberService {
-  // DO NOT MODIFY: This API_URL is correct for the current backend structure
-  // ANY CHANGES TO THIS WILL BREAK THE API CALLS
-  // The ApiPrefixInterceptor automatically adds: https://dashboard.eye-fi.com/server/Api/
-  // Final URL will be: https://dashboard.eye-fi.com/server/Api/eyefi-serial-numbers/index.php
-  private readonly API_URL = 'eyefi-serial-numbers';
+  private readonly API_URL = 'apiV2/eyefi-serial-numbers';
+  private readonly AVAILABILITY_URL = 'apiV2/serial-availability';
+  private readonly ASSET_URL = 'apiV2/eyefi-asset-numbers';
 
   constructor(private http: HttpClient) {}
 
@@ -25,57 +23,53 @@ export class SerialNumberService {
         }
       });
     }
-    return await firstValueFrom(this.http.get(`${this.API_URL}/index.php`, { params }));
+    return await firstValueFrom(this.http.get(`${this.API_URL}`, { params }));
   }
 
   async getSerialNumberById(id: number): Promise<any> {
-    const params = new HttpParams().set('id', id.toString());
-    return await firstValueFrom(this.http.get(`${this.API_URL}/index.php`, { params }));
+    return await firstValueFrom(this.http.get(`${this.API_URL}/${id}`));
   }
 
   async getSerialNumberByNumber(serialNumber: string): Promise<any> {
-    const params = new HttpParams().set('serial_number', serialNumber);
-    return await firstValueFrom(this.http.get(`${this.API_URL}/index.php`, { params }));
+    return await firstValueFrom(this.http.get(`${this.API_URL}/serial/${serialNumber}`));
   }
 
   async createSerialNumber(serialNumber: SerialNumber): Promise<any> {
-    return await firstValueFrom(this.http.post(`${this.API_URL}/index.php`, serialNumber));
+    return await firstValueFrom(this.http.post(`${this.API_URL}`, serialNumber));
   }
 
   async updateSerialNumber(id: number, serialNumber: SerialNumber): Promise<any> {
-    const params = new HttpParams().set('id', id.toString());
-    return await firstValueFrom(this.http.put(`${this.API_URL}/index.php`, serialNumber, { params }));
+    return await firstValueFrom(this.http.put(`${this.API_URL}/${id}`, serialNumber));
   }
 
   async deleteSerialNumber(id: number): Promise<any> {
-    const params = new HttpParams().set('id', id.toString());
-    return await firstValueFrom(this.http.delete(`${this.API_URL}/index.php`, { params }));
+    return await firstValueFrom(this.http.delete(`${this.API_URL}/${id}`));
   }
 
-  // Bulk create serial numbers (for range uploads)
+  // Bulk create serial numbers
   async bulkCreateSerialNumbers(serialNumbers: Partial<SerialNumber>[]): Promise<any> {
-    return await firstValueFrom(this.http.post(`${this.API_URL}/index.php?action=bulk-upload`, { serialNumbers: serialNumbers }));
+    return await firstValueFrom(this.http.post(`${this.API_URL}/bulk`, { serialNumbers }));
   }
 
-  // Create serial numbers from range
+  // Create serial numbers from range (alias for bulk create)
   async createSerialNumbersFromRange(rangeData: any): Promise<any> {
-    return await firstValueFrom(this.http.post(`${this.API_URL}/index.php?action=bulk-upload`, rangeData));
+    return await firstValueFrom(this.http.post(`${this.API_URL}/bulk`, rangeData));
   }
 
-  // Generate serial numbers batch  
+  // Generate serial numbers batch (alias for bulk create)
   async generateSerialNumbersBatch(batchData: Partial<SerialNumberBatch>): Promise<any> {
-    return await firstValueFrom(this.http.post(`${this.API_URL}/index.php?action=bulk-upload`, batchData));
+    return await firstValueFrom(this.http.post(`${this.API_URL}/bulk`, batchData));
   }
 
   // Get EyeFi serial statistics
   async getEyeFiStatistics(): Promise<any> {
-    return await firstValueFrom(this.http.get(`${this.API_URL}/index.php?action=statistics`));
+    return await firstValueFrom(this.http.get(`${this.API_URL}/statistics`));
   }
 
   // Search serial numbers with filters
   async searchSerialNumbers(searchQuery: string, additionalFilters?: any): Promise<any> {
     let params = new HttpParams().set('search', searchQuery);
-    
+
     if (additionalFilters) {
       Object.keys(additionalFilters).forEach(key => {
         if (additionalFilters[key] !== null && additionalFilters[key] !== undefined && additionalFilters[key] !== '') {
@@ -83,210 +77,139 @@ export class SerialNumberService {
         }
       });
     }
-    
-    return await firstValueFrom(this.http.get(`${this.API_URL}/index.php`, { params }));
+
+    return await firstValueFrom(this.http.get(`${this.API_URL}`, { params }));
   }
 
   // Serial Number Assignment Operations
   async assignSerialNumber(assignment: SerialNumberAssignment): Promise<any> {
-    return firstValueFrom(this.http.post(`${this.API_URL}/index.php?action=assign`, assignment));
+    return firstValueFrom(this.http.post(`${this.API_URL}/assignments`, assignment));
   }
 
   async getSerialNumberAssignments(filters: any = {}): Promise<any> {
-    let params = new HttpParams().set('action', 'assignments');
-    if (filters) {
-      Object.keys(filters).forEach(key => {
-        if (filters[key] !== null && filters[key] !== undefined && filters[key] !== '') {
-          params = params.set(key, filters[key]);
-        }
-      });
-    }
-    return await firstValueFrom(this.http.get(`${this.API_URL}/index.php`, { params }));
+    let params = new HttpParams();
+    Object.keys(filters).forEach(key => {
+      if (filters[key] !== null && filters[key] !== undefined && filters[key] !== '') {
+        params = params.set(key, filters[key]);
+      }
+    });
+    return await firstValueFrom(this.http.get(`${this.API_URL}/assignments`, { params }));
   }
 
   async getAssignmentBySerialNumber(serialNumber: string): Promise<any> {
-    const params = new HttpParams()
-      .set('action', 'assignments')
-      .set('serial_number', serialNumber);
-    return await firstValueFrom(this.http.get(`${this.API_URL}/index.php`, { params }));
+    return await firstValueFrom(this.http.get(`${this.API_URL}/assignments`, {
+      params: new HttpParams().set('serial_number', serialNumber)
+    }));
   }
 
-  async updateAssignment(id: number, assignment: SerialNumberAssignment): Promise<any> {
-    return await firstValueFrom(this.http.put(`${this.API_URL}/index.php?id=${id}`, assignment));
+  async updateAssignment(id: number, assignment: Partial<SerialNumberAssignment>): Promise<any> {
+    return await firstValueFrom(this.http.put(`${this.API_URL}/assignments/${id}`, assignment));
   }
 
   // Update serial number status
   async updateSerialNumberStatus(serialNumber: string, status: string, reason?: string): Promise<any> {
-    const data = { serial_number: serialNumber, status: status };
-    if (reason) {
-      (data as any).reason = reason;
-    }
-    return await firstValueFrom(this.http.put(`${this.API_URL}/index.php`, data));
+    const data: any = { status };
+    if (reason) data.reason = reason;
+    return await firstValueFrom(this.http.put(`${this.API_URL}/serial/${serialNumber}/status`, data));
   }
 
   // Export serial numbers to CSV
   async exportSerialNumbers(serialNumbers: string[] = []): Promise<any> {
-    let params = new HttpParams().set('action', 'export');
-    
+    let params = new HttpParams();
     if (serialNumbers.length > 0) {
       params = params.set('serial_numbers', serialNumbers.join(','));
     }
-    
-    return await firstValueFrom(this.http.get(`${this.API_URL}/index.php`, { 
+    return await firstValueFrom(this.http.get(`${this.API_URL}/export`, {
       params,
       responseType: 'blob' as 'json'
     }));
   }
 
-  // Serial Number Reports
+  // Serial Number Reports — use search endpoint with date filters
   async getSerialNumberReport(filters?: any): Promise<SerialNumberReport[]> {
-    let params = new HttpParams().set('action', 'reports');
+    let params = new HttpParams();
     if (filters) {
-      Object.keys(filters).forEach(key => {
-        if (filters[key]) {
-          params = params.set(key, filters[key]);
-        }
-      });
+      Object.keys(filters).forEach(key => { if (filters[key]) params = params.set(key, filters[key]); });
     }
-    return await firstValueFrom(this.http.get<SerialNumberReport[]>(`${this.API_URL}/index.php`, { params }));
+    return await firstValueFrom(this.http.get<SerialNumberReport[]>(`${this.API_URL}`, { params }));
   }
 
   async getUsageReport(filters?: any): Promise<SerialNumberUsageReport[]> {
-    let params = new HttpParams().set('action', 'usage-report');
+    let params = new HttpParams();
     if (filters) {
-      Object.keys(filters).forEach(key => {
-        if (filters[key]) {
-          params = params.set(key, filters[key]);
-        }
-      });
+      Object.keys(filters).forEach(key => { if (filters[key]) params = params.set(key, filters[key]); });
     }
-    return await firstValueFrom(this.http.get<SerialNumberUsageReport[]>(`${this.API_URL}/index.php`, { params }));
+    return await firstValueFrom(this.http.get<SerialNumberUsageReport[]>(`${this.API_URL}/assignments`, { params }));
   }
 
   // Serial Number Statistics
   async getSerialNumberStats(): Promise<SerialNumberStats> {
-    return await firstValueFrom(this.http.get<SerialNumberStats>(`${this.API_URL}/index.php?action=statistics`));
+    return await firstValueFrom(this.http.get<SerialNumberStats>(`${this.API_URL}/statistics`));
   }
 
-  // Utility Methods
+  // Get available serials (status filter)
   async getAvailableSerialNumbers(limit?: number): Promise<any> {
-    let params = new HttpParams().set('action', 'available');
-    if (limit) {
-      params = params.set('limit', limit.toString());
-    }
-    return await firstValueFrom(this.http.get(`${this.API_URL}/index.php`, { params }));
+    let params = new HttpParams().set('status', 'available');
+    if (limit) params = params.set('limit', limit.toString());
+    return await firstValueFrom(this.http.get(`${this.API_URL}`, { params }));
   }
 
-  /**
-   * Get available serials using new availability views
-   * Checks BOTH serial_assignments (new) AND legacy tables (ul_label_usages, agsSerialGenerator, sgAssetGenerator)
-   */
+  // Serial availability — available/recently-used via dedicated NestJS module
   async getAvailableSerialsFromViews(limit?: number): Promise<any> {
-    // Use relative path - ApiPrefixInterceptor will add the base URL
-    const API_URL = 'serial-availability';
-    let params = new HttpParams().set('action', 'get_available_eyefi_serials');
-    if (limit) {
-      params = params.set('limit', limit.toString());
-    }
-    return await firstValueFrom(this.http.get(`${API_URL}/index.php`, { params }));
+    let params = new HttpParams();
+    if (limit) params = params.set('limit', limit.toString());
+    return await firstValueFrom(this.http.get(`${this.AVAILABILITY_URL}/available/eyefi-serials`, { params }));
   }
 
   async getAvailableUlLabelsFromAPI(limit?: number): Promise<any> {
-    // Use NEW serial-availability API that excludes consumed ULs
-    const API_URL = 'serial-availability';
-    let params = new HttpParams().set('action', 'get_available_ul_labels');
-    if (limit) {
-      params = params.set('limit', limit.toString());
-    }
-    return await firstValueFrom(this.http.get(`${API_URL}/index.php`, { params }));
+    let params = new HttpParams();
+    if (limit) params = params.set('limit', limit.toString());
+    return await firstValueFrom(this.http.get(`${this.AVAILABILITY_URL}/available/ul-labels`, { params }));
   }
 
   async getAvailableEyefiSerialsFromAPI(limit?: number): Promise<any> {
-    // Use NEW serial-availability API
-    const API_URL = 'serial-availability';
-    let params = new HttpParams().set('action', 'get_available_eyefi_serials');
-    if (limit) {
-      params = params.set('limit', limit.toString());
-    }
-    return await firstValueFrom(this.http.get(`${API_URL}/index.php`, { params }));
+    let params = new HttpParams();
+    if (limit) params = params.set('limit', limit.toString());
+    return await firstValueFrom(this.http.get(`${this.AVAILABILITY_URL}/available/eyefi-serials`, { params }));
   }
 
   async getAvailableIgtSerialsFromAPI(limit?: number): Promise<any> {
-    // Use NEW serial-availability API
-    const API_URL = 'serial-availability';
-    let params = new HttpParams().set('action', 'get_available_igt_serials');
-    if (limit) {
-      params = params.set('limit', limit.toString());
-    }
-    return await firstValueFrom(this.http.get(`${API_URL}/index.php`, { params }));
+    let params = new HttpParams();
+    if (limit) params = params.set('limit', limit.toString());
+    return await firstValueFrom(this.http.get(`${this.AVAILABILITY_URL}/available/igt-serials`, { params }));
   }
 
   async getRecentlyUsedEyefiSerialsFromAPI(limit?: number): Promise<any> {
-    const API_URL = 'serial-availability';
-    let params = new HttpParams().set('action', 'get_recently_used_eyefi_serials');
-    if (limit) {
-      params = params.set('limit', limit.toString());
-    }
-    return await firstValueFrom(this.http.get(`${API_URL}/index.php`, { params }));
+    let params = new HttpParams();
+    if (limit) params = params.set('limit', limit.toString());
+    return await firstValueFrom(this.http.get(`${this.AVAILABILITY_URL}/recently-used/eyefi-serials`, { params }));
   }
 
   async getRecentlyUsedUlLabelsFromAPI(limit?: number): Promise<any> {
-    const API_URL = 'serial-availability';
-    let params = new HttpParams().set('action', 'get_recently_used_ul_labels');
-    if (limit) {
-      params = params.set('limit', limit.toString());
-    }
-    return await firstValueFrom(this.http.get(`${API_URL}/index.php`, { params }));
+    let params = new HttpParams();
+    if (limit) params = params.set('limit', limit.toString());
+    return await firstValueFrom(this.http.get(`${this.AVAILABILITY_URL}/recently-used/ul-labels`, { params }));
   }
 
   async getRecentlyUsedIgtSerialsFromAPI(limit?: number): Promise<any> {
-    const API_URL = 'serial-availability';
-    let params = new HttpParams().set('action', 'get_recently_used_igt_serials');
-    if (limit) {
-      params = params.set('limit', limit.toString());
-    }
-    return await firstValueFrom(this.http.get(`${API_URL}/index.php`, { params }));
+    let params = new HttpParams();
+    if (limit) params = params.set('limit', limit.toString());
+    return await firstValueFrom(this.http.get(`${this.AVAILABILITY_URL}/recently-used/igt-serials`, { params }));
   }
 
   async validateSerialNumber(serialNumber: string): Promise<any> {
-    const params = new HttpParams()
-      .set('action', 'validate')
-      .set('serial_number', serialNumber);
-    return await firstValueFrom(this.http.get(`${this.API_URL}/index.php`, { params }));
+    return await firstValueFrom(this.http.get(`${this.API_URL}/serial/${serialNumber}`));
   }
 
   async getProductModels(): Promise<string[]> {
-    return await firstValueFrom(this.http.get<string[]>(`${this.API_URL}/index.php?action=product-models`));
+    return await firstValueFrom(this.http.get<string[]>(`${this.API_URL}/product-models`));
   }
 
-  // QR Code and Barcode generation
-  async generateQRCode(serialNumber: string): Promise<any> {
-    const params = new HttpParams()
-      .set('action', 'qr-code')
-      .set('serial_number', serialNumber);
-    return await firstValueFrom(this.http.get(`${this.API_URL}/index.php`, { params }));
-  }
-
-  async generateBarcode(serialNumber: string): Promise<any> {
-    const params = new HttpParams()
-      .set('action', 'barcode')
-      .set('serial_number', serialNumber);
-    return  await firstValueFrom(this.http.get(`${this.API_URL}/index.php`, { params }));
-  }
-
-  /**
-   * Generate EYEFI Asset Numbers in format YYYYMMDDXXX
-   * Backend will generate sequential numbers for today's date
-   * Uses dedicated eyefi-asset-numbers API endpoint
-   */
+  // EyeFi Asset Number generation
   async generateEyefiAssetNumbers(count: number, category: string = 'New'): Promise<any> {
-    const API_URL = 'eyefi-asset-numbers';
     return await firstValueFrom(
-      this.http.post<any>(`${API_URL}/index.php?action=generate`, {
-        quantity: count,
-        category: category
-      })
+      this.http.post<any>(`${this.ASSET_URL}/generate`, { quantity: count, category })
     );
   }
-
 }
+

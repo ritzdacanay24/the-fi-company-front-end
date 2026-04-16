@@ -1,6 +1,10 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
+import { AgsSerialModule } from './modules/ags-serial';
+import { EyeFiAssetNumbersModule } from './modules/eyefi-asset-numbers';
+import { EyeFiSerialModule } from './modules/eyefi-serial';
+import { SerialAvailabilityModule } from './modules/serial-availability';
 import { DataScrubModule } from './modules/data-scrub';
 import { envValidationSchema } from './config/env.validation';
 import { LoggingInterceptor } from './interceptors/logging.interceptor';
@@ -35,6 +39,10 @@ import { EmailModule } from '../shared/email/email.module';
     }),
     MysqlModule,
     EmailModule,
+    AgsSerialModule,
+    EyeFiAssetNumbersModule,
+    EyeFiSerialModule,
+    SerialAvailabilityModule,
     DataScrubModule,
     ForkliftInspectionModule,
     HealthModule,

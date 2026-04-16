@@ -1,7 +1,7 @@
 <div class="container-fluid" *ngIf="!data && !id">
   <div class="row justify-content-center">
     <div class="col-12 col-lg-11 col-xl-10 col-xxl-7">
-      
+
       <div class="card shadow-sm border-0">
         <div class="card-body text-center p-5" style="min-height:300px">
           <div class="mb-4">
@@ -14,7 +14,7 @@
           </button>
         </div>
       </div>
-      
+
     </div>
   </div>
 </div>
@@ -22,34 +22,27 @@
 <div class="container-fluid" [hidden]="!data && !id">
   <div class="row justify-content-center">
     <div class="col-12 col-lg-11 col-xl-10 col-xxl-8">
-      
+
       <!-- Page Header with Context -->
       <div class="mb-4">
         <div class="d-flex align-items-center mb-3">
-          <button 
-            type="button" 
-            class="btn btn-outline-secondary me-3"
-            (click)="goBack()"
-            *ngIf="goBack"
+          <button type="button" class="btn btn-outline-secondary me-3" (click)="goBack()" *ngIf="goBack"
             title="Back to AGS Serial List">
             <i class="mdi mdi-arrow-left me-2"></i>Back
           </button>
-          <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+          <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center"
+            style="width: 60px; height: 60px;">
             <i class="mdi mdi-pencil text-white fs-4"></i>
           </div>
-          <div>
-            <h2 class="mb-1 text-primary">{{title}}</h2>
-            <p class="text-muted mb-0" *ngIf="id">Edit existing AGS serial record #{{id}}</p>
-          </div>
         </div>
-        
+
       </div>
 
       <div class="card shadow-sm border-0">
         <div class="card-body p-4">
           <app-ags-serial-form (setFormEmitter)="form = $event" [submitted]="submitted"></app-ags-serial-form>
         </div>
-        
+
         <div class="card-footer bg-light border-top d-flex p-3" *ngIf="data && id">
           <button type="button" class="btn btn-outline-secondary me-2" [disabled]="isLoading" (click)="onCancel()">
             <i class="mdi mdi-close me-1"></i>Cancel
@@ -57,17 +50,18 @@
           <button type="button" class="btn btn-outline-info me-2" [disabled]="isLoading" (click)="onPrint()">
             <i class="mdi mdi-printer me-1"></i>Print Label
           </button>
-          <button type="submit" class="btn btn-primary ms-auto" [disabled]="isLoading || isFormDisabled" (click)="onSubmit()">
+          <button type="submit" class="btn btn-primary ms-auto" [disabled]="isLoading || isFormDisabled"
+            (click)="onSubmit()">
             @if (isLoading) {
-              <span class="spinner-border spinner-border-sm me-2" role="status"></span>
-              Updating...
+            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+            Updating...
             } @else {
-              <i class="mdi mdi-check-circle-outline me-1"></i>Update AGS Serial
+            <i class="mdi mdi-check-circle-outline me-1"></i>Update AGS Serial
             }
           </button>
         </div>
       </div>
-      
+
     </div>
   </div>
 </div>
