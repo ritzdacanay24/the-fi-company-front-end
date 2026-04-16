@@ -9,12 +9,14 @@ import { DataScrubModule } from './modules/data-scrub';
 import { envValidationSchema } from './config/env.validation';
 import { LoggingInterceptor } from './interceptors/logging.interceptor';
 import { RequestContextMiddleware } from './middlewares/request-context.middleware';
+import { AttachmentsModule } from './modules/attachments/attachments.module';
 import { ForkliftInspectionModule } from './modules/forklift-inspection';
 import { HealthModule } from './modules/health';
 import { IgtSerialNumbersModule } from './modules/igt-serial-numbers';
 import { SerialAssignmentsModule } from './modules/serial-assignments';
 import { IgtTransferModule } from './modules/igt-transfer/igt-transfer.module';
 import { InventoryByProdLineModule } from './modules/inventory-by-prod-line';
+import { NcrModule } from './modules/ncr/ncr.module';
 import { QadModule } from './modules/qad';
 import { SafetyIncidentModule } from './modules/safety-incident';
 import { SgAssetModule } from './modules/sg-asset';
@@ -41,6 +43,7 @@ import { EmailModule } from '../shared/email/email.module';
     }),
     MysqlModule,
     EmailModule,
+    AttachmentsModule,
     AgsSerialModule,
     EyeFiAssetNumbersModule,
     EyeFiSerialModule,
@@ -51,6 +54,7 @@ import { EmailModule } from '../shared/email/email.module';
     IgtSerialNumbersModule,
     IgtTransferModule,
     InventoryByProdLineModule,
+    NcrModule,
     QadModule,
     SafetyIncidentModule,
     SerialAssignmentsModule,

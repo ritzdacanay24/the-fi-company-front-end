@@ -5,14 +5,13 @@ import { firstValueFrom } from 'rxjs';
 import { queryString } from 'src/assets/js/util/queryString';
 
 const url = 'apiV2/safety-incident';
-const legacyUrl = 'operations/safety-incident';
 
 @Injectable({
   providedIn: 'root',
 })
 export class SafetyIncidentService extends DataService<any> {
   constructor(http: HttpClient) {
-    super(legacyUrl, http);
+    super(url, http);
   }
 
   getList = async (
@@ -70,16 +69,4 @@ export class SafetyIncidentService extends DataService<any> {
     );
     return { message: 'Safety incident deleted successfully' };
   };
-
-  async _create(params: any) {
-    return await firstValueFrom(
-      this.http.put<any>('/safety-incident/index', params)
-    );
-  }
-
-  async _searchById(id: number) {
-    return await firstValueFrom(
-      this.http.get<any>(`/safety-incident/index?searchById=${id}`)
-    );
-  }
 }

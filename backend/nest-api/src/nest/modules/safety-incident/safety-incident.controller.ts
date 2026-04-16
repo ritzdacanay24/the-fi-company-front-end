@@ -12,7 +12,7 @@ import {
 import { CreateSafetyIncidentDto, UpdateSafetyIncidentDto } from './dto';
 import { SafetyIncidentService } from './safety-incident.service';
 
-@Controller(['safety-incident', 'operations/safety-incident'])
+@Controller('safety-incident')
 export class SafetyIncidentController {
   constructor(private readonly safetyIncidentService: SafetyIncidentService) {}
 

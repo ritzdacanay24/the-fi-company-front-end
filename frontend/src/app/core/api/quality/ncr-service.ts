@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { DataService } from '../DataService';
 import { firstValueFrom } from 'rxjs';
 
-let url = 'Quality/ncr';
+const url = 'apiV2/ncr';
 
 @Injectable({
   providedIn: 'root'
@@ -23,6 +23,31 @@ export class NcrService extends DataService<any> {
   getchart = async (dateFrom, dateTo, displayCustomers, typeOfView) =>
     await firstValueFrom(this.http.get<any[]>(`${url}/getchart?dateFrom=${dateFrom}&dateTo=${dateTo}&displayCustomers=${displayCustomers}&typeOfView=${typeOfView}`));
 
-  updateAndSendEmailToDepartment = (id, params) => this.http.put(`/Ncr/updateAndSendEmailToDepartment?id=${id}`, params).toPromise();
+  override getById = async (id: number): Promise<any> =>
+    await firstValueFrom(this.http.get<any>(`${url}/getById?id=${id}`));
+
+  override create = async (
+    params: any,
+  ): Promise<{ message: string; insertId?: number }> => {
+    const response = await firstValueFrom(
+      this.http.post<{ insertId?: number }>(`${url}/create`, params),
+    );
+
+    return {
+      message: 'NCR created successfully',
+      insertId: response?.insertId,
+    };
+  };
+
+  override update = async (
+    id: number | string,
+    params: any,
+  ): Promise<{ message: string }> => {
+    await firstValueFrom(this.http.put<{ rowCount?: number }>(`${url}/updateById/${id}`, params));
+    return { message: 'NCR updated successfully' };
+  };
+
+  updateAndSendEmailToDepartment = async (id: number, params: any) =>
+    await firstValueFrom(this.http.put(`${url}/updateAndSendEmailToDepartment?id=${id}`, params));
 
 }
