@@ -18,6 +18,8 @@ import { SerialAssignmentsModule } from './modules/serial-assignments';
 import { IgtTransferModule } from './modules/igt-transfer/igt-transfer.module';
 import { InventoryByProdLineModule } from './modules/inventory-by-prod-line';
 import { MrbModule } from './modules/mrb/mrb.module';
+import { MaterialRequestDetailModule } from './modules/material-request-detail/material-request-detail.module';
+import { MaterialRequestModule } from './modules/material-request/material-request.module';
 import { NcrModule } from './modules/ncr/ncr.module';
 import { PlacardModule } from './modules/placard/placard.module';
 import { PermitChecklistsModule } from './modules/permit-checklists/permit-checklists.module';
@@ -67,6 +69,8 @@ import { EmailModule } from '../shared/email/email.module';
     IgtSerialNumbersModule,
     IgtTransferModule,
     InventoryByProdLineModule,
+    MaterialRequestModule,
+    MaterialRequestDetailModule,
     MrbModule,
     NcrModule,
     PlacardModule,
