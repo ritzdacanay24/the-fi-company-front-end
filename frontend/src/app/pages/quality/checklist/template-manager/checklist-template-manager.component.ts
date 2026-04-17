@@ -4,6 +4,8 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Va
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { NgbModal, NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { CdkDragDrop, moveItemInArray, DragDropModule } from '@angular/cdk/drag-drop';
+import { AgGridModule } from 'ag-grid-angular';
+import { CellClickedEvent, ColDef, RowDoubleClickedEvent } from 'ag-grid-community';
 
 import { PhotoChecklistConfigService, ChecklistTemplate, ChecklistItem } from '@app/core/api/photo-checklist-config/photo-checklist-config.service';
 import { AttachmentsService } from '@app/core/api/attachments/attachments.service';
@@ -39,7 +41,7 @@ interface FamilyNavNode {
 @Component({
   selector: 'app-checklist-template-manager',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, NgbModule, DragDropModule, QualityDocumentSelectorComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, NgbModule, DragDropModule, AgGridModule, QualityDocumentSelectorComponent],
   template: `
     <div class="container-fluid">
       <div class="row justify-content-center">
@@ -68,15 +70,15 @@ interface FamilyNavNode {
                 </div>
                 <div>
                   <h2 class="mb-1 text-primary">Template Manager</h2>
-                  <p class="text-muted mb-0">Create and manage photo checklist templates</p>
+                  <p class="text-muted mb-0">Create and manage inspection checklist templates</p>
                 </div>
               </div>
               <div class="d-flex gap-2">
                 <button 
                   type="button" 
                   class="btn btn-outline-secondary"
-                  [routerLink]="['/quality/checklist']"
-                  title="Back to Photo Checklists">
+                  [routerLink]="['/inspection-checklist/execution']"
+                  title="Back to Inspection Checklists">
                   <i class="mdi mdi-arrow-left me-2"></i>Back to Checklists
                 </button>
                 <button 
@@ -89,18 +91,6 @@ interface FamilyNavNode {
               </div>
             </div>
             
-            <div class="alert alert-primary border-primary border-opacity-25 bg-primary bg-opacity-10" role="alert">
-              <div class="d-flex align-items-start">
-                <i class="mdi mdi-information text-primary me-3 mt-1 fs-5"></i>
-                <div>
-                  <h6 class="alert-heading text-primary mb-2">Template Manager Overview</h6>
-                  <p class="mb-0">
-                    Create and manage <strong>photo checklist templates</strong> for quality control processes. 
-                    Each template defines required photos, inspection points, and documentation standards.
-                  </p>
-                </div>
-              </div>
-            </div>
           </div>
 
           <div class="card shadow-sm border-0">
@@ -162,267 +152,18 @@ interface FamilyNavNode {
             
             <div class="card-body p-0">
               <ng-container *ngIf="getFilteredTemplates()?.length; else noRecords">
-                <div class="row g-0">
-                  <div #branchNavPanel class="col-12 col-lg-3 border-end bg-light branch-nav-panel">
-                    <div class="p-3">
-                      <div class="d-flex align-items-center justify-content-between mb-2">
-                        <h6 class="mb-0 text-primary">
-                          <i class="mdi mdi-folder-multiple-outline me-1"></i>Template Families
-                        </h6>
-                        <span class="badge bg-secondary">{{getFamilyNavNodes().length}}</span>
-                      </div>
-                      <small class="text-muted d-block mb-2">Select a part/customer</small>
-
-                      <div class="list-group branch-nav-list" *ngIf="getFamilyNavNodes().length; else noBranchRoots">
-                        <ng-container *ngFor="let family of getFamilyNavNodes(); trackBy: trackByFamilyNavNode">
-                          <button
-                            type="button"
-                            class="list-group-item list-group-item-action"
-                            (click)="onFamilyNavClick(family)"
-                            [class.active]="isFamilySelected(family.groupId)">
-                            <div class="d-flex justify-content-between align-items-center">
-                              <div class="d-flex align-items-center" style="gap: 6px; min-width: 0;">
-                                <i class="mdi"
-                                   *ngIf="(family.majorNodes?.length || 0) > 0"
-                                   [class.mdi-chevron-down]="isFamilySelected(family.groupId)"
-                                   [class.mdi-chevron-right]="!isFamilySelected(family.groupId)"></i>
-                                <i class="mdi mdi-folder-outline"></i>
-                                <span class="fw-semibold text-truncate">{{family.label}}</span>
-                              </div>
-                              <span class="badge" [class]="isFamilySelected(family.groupId) ? 'bg-light text-dark' : 'bg-secondary'">
-                                {{family.majorNodes?.length || 0}}
-                              </span>
-                            </div>
-                            <small [class]="isFamilySelected(family.groupId) ? 'text-white-50' : 'text-muted'">
-                              <ng-container *ngIf="family.currentTemplate as current; else majorsLabel">
-                                <ng-container *ngIf="current.customer_name">Customer: {{ current.customer_name }} · </ng-container>
-                                <ng-container *ngIf="!current.customer_name && current.customer_part_number">Customer: {{ current.customer_part_number }} · </ng-container>
-                                Current: v{{ current.version }}
-                              </ng-container>
-                              <ng-template #majorsLabel>Major versions</ng-template>
-                            </small>
-                          </button>
-
-                          <div class="ms-3 mt-1 mb-2" *ngIf="isFamilySelected(family.groupId)">
-                            <div class="list-group">
-                              <ng-container *ngFor="let node of family.majorNodes; trackBy: trackByMajorNavNode">
-                                <button
-                                  type="button"
-                                  class="list-group-item list-group-item-action"
-                                  (click)="onMajorNavClickForFamily(family.groupId, node); $event.stopPropagation()"
-                                  [class.active]="isMajorSelected(node.major)">
-                                  <div class="d-flex justify-content-between align-items-center">
-                                    <div class="d-flex align-items-center" style="gap: 6px; min-width: 0;">
-                                      <i class="mdi"
-                                         [class.mdi-chevron-down]="isMajorExpanded(family.groupId, node.major)"
-                                         [class.mdi-chevron-right]="!isMajorExpanded(family.groupId, node.major)"></i>
-                                      <i class="mdi"
-                                         [class.mdi-folder-open]="isMajorExpanded(family.groupId, node.major)"
-                                         [class.mdi-folder]="!isMajorExpanded(family.groupId, node.major)"></i>
-                                      <span class="fw-semibold text-truncate">v{{node.major}}</span>
-                                    </div>
-                                    <span class="badge" [class]="isMajorSelected(node.major) ? 'bg-light text-dark' : 'bg-secondary'">
-                                      {{node.templates?.length || 0}}
-                                    </span>
-                                  </div>
-                                  <small [class]="isMajorSelected(node.major) ? 'text-white-50' : 'text-muted'">
-                                    {{node.currentTemplate?.is_draft ? 'Draft' : 'Published'}}
-                                    <ng-container *ngIf="node.currentTemplate">· v{{node.currentTemplate.version}}</ng-container>
-                                  </small>
-                                </button>
-
-                                <div class="ms-3 mt-1 mb-2" *ngIf="isMajorExpanded(family.groupId, node.major)">
-                                  <div class="list-group list-group-flush">
-                                    <button
-                                      type="button"
-                                      class="list-group-item list-group-item-action py-1"
-                                      *ngFor="let tpl of node.templates; trackBy: trackByTemplateId"
-                                      (click)="openTemplateFromNav(tpl); $event.stopPropagation()"
-                                      [class.active]="isNavTemplateSelected(tpl)">
-                                      <div class="d-flex justify-content-between align-items-center">
-                                        <div class="d-flex align-items-center" style="gap: 6px; min-width: 0;">
-                                          <i class="mdi mdi-file-document-outline"></i>
-                                          <span class="small text-truncate">v{{tpl.version}}</span>
-                                        </div>
-                                        <span class="badge" [class]="tpl.is_draft ? 'bg-warning text-dark' : 'bg-light text-dark border'">
-                                          {{tpl.is_draft ? 'Draft' : 'Published'}}
-                                        </span>
-                                      </div>
-                                    </button>
-                                  </div>
-                                </div>
-                              </ng-container>
-                            </div>
-                          </div>
-                        </ng-container>
-                      </div>
-                      <ng-template #noBranchRoots>
-                        <div class="small text-muted py-2">No major versions match current filters.</div>
-                      </ng-template>
-                    </div>
-
-                  </div>
-
-                  <div class="col-12 col-lg-9">
-                    <div class="p-3 border-bottom bg-light">
-                      <div class="d-flex align-items-center justify-content-between">
-                        <h6 class="mb-0 text-primary">
-                          <i class="mdi mdi-source-branch me-1"></i>
-                          <ng-container *ngIf="getSelectedMajorNumber() !== null; else noMajorSelected">
-                            Major v{{ getSelectedMajorNumber() }}
-                          </ng-container>
-                          <ng-template #noMajorSelected>Versions</ng-template>
-                        </h6>
-                        <span class="badge bg-secondary" *ngIf="getSelectedMajorNumber() !== null">v{{ getSelectedMajorNumber() }}</span>
-                      </div>
-                      <small class="text-muted d-block" *ngIf="getSelectedMajorNumber() === null">Select a major version on the left to view its versions.</small>
-                    </div>
-
-                    <div #versionsTableContainer class="table-responsive">
-                      <table class="table table-hover mb-0">
-                        <thead class="table-light">
-                          <tr>
-                            <th style="width: 100px; min-width: 100px;" class="text-center">Type</th>
-                            <th style="width: 190px; min-width: 190px;">Actions</th>
-                            <th>Version</th>
-                            <th>Customer</th>
-                            <th>ID</th>
-                            <th>Template Name</th>
-                            <th>Category</th>
-                            <th>Part Number</th>
-                            <th>Items</th>
-                            <th>Status</th>
-                            <th>Created By</th>
-                            <th>Created</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr *ngFor="let template of getSelectedBranchTemplates(); trackBy: trackByTemplateId" class="align-middle">
-                        <td class="text-center" style="min-width: 100px; white-space: nowrap;">
-                          <span class="badge" [class]="template.is_draft ? 'bg-warning text-dark' : 'bg-light text-dark border'">
-                            {{template.is_draft ? 'Draft' : 'Published'}}
-                          </span>
-                        </td>
-                        <td style="min-width: 190px; white-space: nowrap;">
-                          <div class="d-flex gap-1">
-                            <div class="btn-group btn-group-sm" ngbDropdown container="body">
-                              <button class="btn btn-outline-secondary"
-                                      (click)="template.is_draft ? editTemplate(template) : viewTemplate(template)"
-                                      [title]="template.is_draft ? 'Edit Draft' : 'View Template'">
-                                <i class="mdi me-1" [class.mdi-pencil]="template.is_draft" [class.mdi-eye]="!template.is_draft"></i>
-                                {{ template.is_draft ? 'Edit' : 'View' }}
-                              </button>
-                              <button class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split"
-                                      ngbDropdownToggle
-                                      type="button"
-                                      aria-label="More actions">
-                              </button>
-                              <div ngbDropdownMenu>
-                                <button ngbDropdownItem
-                                        (click)="viewTemplate(template)">
-                                  <i class="mdi mdi-eye me-2"></i>View
-                                </button>
-                                <button ngbDropdownItem
-                                        *ngIf="!template.is_draft"
-                                        (click)="createNewParentVersion(template)">
-                                  <i class="mdi mdi-source-branch me-2"></i>New Major Version (v{{ getNextMajorVersion(template) }})
-                                </button>
-                                <button ngbDropdownItem
-                                        *ngIf="template.quality_document_metadata"
-                                        (click)="viewRevisionHistory(template)">
-                                  <i class="mdi mdi-history me-2"></i>Revision History
-                                </button>
-                                <button ngbDropdownItem
-                                        class="text-danger"
-                                        (click)="template.is_draft ? discardDraft(template) : deleteTemplate(template)">
-                                  <i class="mdi mdi-delete me-2"></i>{{ template.is_draft ? 'Discard Draft' : 'Delete' }}
-                                </button>
-                                <button ngbDropdownItem
-                                        class="text-danger"
-                                        *ngIf="!template.is_draft && !template.is_active"
-                                        (click)="hardDeleteTemplate(template)">
-                                  <i class="mdi mdi-delete-forever me-2"></i>Hard Delete (Permanent)
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td>
-                          <span class="badge bg-success bg-gradient" style="white-space: nowrap;">
-                            <i class="mdi mdi-check-circle me-1"></i>
-                            v{{template.version}}
-                          </span>
-                        </td>
-                        <td>
-                          <span class="text-muted">
-                            {{template.customer_name || template.customer_part_number || '—'}}
-                          </span>
-                        </td>
-                        <td>
-                          <div>
-                            <span class="text-muted">{{template.id}}</span>
-                            <small class="d-block text-info" *ngIf="getDraftParentId(template)">
-                              Parent ID: {{ getDraftParentId(template) }}
-                            </small>
-                            <small class="d-block text-info" *ngIf="getPublishedEditingTargetId(template)">
-                              Editing ID: {{ getPublishedEditingTargetId(template) }}
-                            </small>
-                          </div>
-                        </td>
-                        <td>
-                          <div class="d-flex align-items-center">
-                            <i class="mdi mdi-file-document-outline text-muted me-2"></i>
-                            <div>
-                              <div class="fw-semibold d-flex align-items-center gap-2">
-                                <span>{{template.name}}</span>
-                              </div>
-                              <small class="text-muted" *ngIf="template.is_draft && getParentTemplateVersion(template)">
-                                Editing parent v{{ getParentTemplateVersion(template) }}
-                              </small>
-                              <small class="text-muted" *ngIf="!template.is_draft || !getParentTemplateVersion(template)">
-                                Template version
-                              </small>
-                            </div>
-                          </div>
-                        </td>
-                        <td>
-                          <span class="badge bg-primary">{{template.category | titlecase}}</span>
-                        </td>
-                        <td>
-                          <code *ngIf="template.part_number">{{template.part_number}}</code>
-                          <span class="text-muted" *ngIf="!template.part_number">-</span>
-                        </td>
-                        <td>
-                          <div class="text-center">
-                            <div class="fw-semibold">{{template.item_count || 0}}</div>
-                            <small class="text-muted">items</small>
-                          </div>
-                        </td>
-                        <td>
-                          <span class="badge" [class]="template.is_active ? 'bg-success' : 'bg-danger'">
-                            {{template.is_active ? 'Active' : 'Inactive'}}
-                          </span>
-                        </td>
-                        <td>
-                          <small class="text-muted">
-                            {{$any(template).created_by || '—'}}
-                          </small>
-                        </td>
-                        <td>
-                          <small class="text-muted">
-                            {{template.created_at | date:'MMM d, y'}}
-                          </small>
-                        </td>
-                          </tr>
-                          <tr *ngIf="getSelectedBranchTemplates().length === 0">
-                            <td colspan="12" class="text-center text-muted py-4">
-                              Select a major version to view its versions.
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
+                <div #versionsTableContainer>
+                  <ag-grid-angular
+                    class="ag-theme-quartz no-border"
+                    style="width: 100%; height: calc(100vh - 280px); min-height: 400px;"
+                    [rowData]="getFilteredTemplates()"
+                    [columnDefs]="versionsColumnDefs"
+                    [defaultColDef]="versionsDefaultColDef"
+                    [overlayNoRowsTemplate]="versionsNoRowsOverlay"
+                    [suppressCellFocus]="true"
+                    (cellClicked)="onVersionsGridCellClicked($event)"
+                    (rowDoubleClicked)="onVersionsGridRowDoubleClicked($event)">
+                  </ag-grid-angular>
                 </div>
               </ng-container>
               <ng-template #noRecords>
@@ -1964,6 +1705,12 @@ interface FamilyNavNode {
     .items-container {
       min-height: 100px;
     }
+
+    .versions-grid {
+      width: 100%;
+      min-height: 360px;
+      height: calc(100vh - 320px);
+    }
     
     .item-number {
       min-width: 28px;
@@ -2450,6 +2197,127 @@ export class ChecklistTemplateManagerComponent implements OnInit {
   uploadingTemplateImage = false;
   selectedQualityDocument: QualityDocumentSelection | null = null;
 
+  readonly versionsNoRowsOverlay = '<span class="text-muted">No template versions match your current filters.</span>';
+  readonly versionsDefaultColDef: ColDef<ChecklistTemplate> = {
+    sortable: true,
+    filter: true,
+    resizable: true,
+    floatingFilter: true
+  };
+  readonly versionsColumnDefs: ColDef<ChecklistTemplate>[] = [
+    {
+      headerName: 'Actions',
+      colId: 'actions',
+      width: 230,
+      minWidth: 210,
+      pinned: 'left',
+      sortable: false,
+      filter: false,
+      suppressSizeToFit: true,
+      cellStyle: { display: 'flex', alignItems: 'center' },
+      cellRenderer: (params: any) => {
+        if (!params.data) {
+          return '';
+        }
+
+        const isDraft = Boolean(params.data.is_draft);
+        const primaryLabel = isDraft ? 'Edit' : 'View';
+        const primaryAction = isDraft ? 'edit' : 'view';
+        const majorItem = !isDraft
+          ? '<button class="dropdown-item" type="button" data-action="new-major"><i class="mdi mdi-source-branch me-2"></i>New Major Version</button>'
+          : '';
+        const revisionsItem = params.data.quality_document_metadata
+          ? '<button class="dropdown-item" type="button" data-action="revisions"><i class="mdi mdi-history me-2"></i>Revision History</button>'
+          : '';
+        const destructiveItem = isDraft
+          ? '<button class="dropdown-item text-danger" type="button" data-action="discard"><i class="mdi mdi-delete me-2"></i>Discard Draft</button>'
+          : '<button class="dropdown-item text-danger" type="button" data-action="delete"><i class="mdi mdi-delete me-2"></i>Delete</button>';
+        const hardDeleteItem = !isDraft && !params.data.is_active
+          ? '<button class="dropdown-item text-danger" type="button" data-action="hard-delete"><i class="mdi mdi-delete-forever me-2"></i>Hard Delete</button>'
+          : '';
+
+        return [
+          '<div class="btn-group btn-group-sm" role="group">',
+          `<button class="btn btn-primary" type="button" data-action="${primaryAction}">${primaryLabel}</button>`,
+          '<button class="btn btn-primary dropdown-toggle dropdown-toggle-split" type="button" data-bs-toggle="dropdown" aria-expanded="false">',
+          '<span class="visually-hidden">Toggle actions</span>',
+          '</button>',
+          '<div class="dropdown-menu">',
+          majorItem,
+          revisionsItem,
+          (majorItem || revisionsItem) ? '<div class="dropdown-divider"></div>' : '',
+          destructiveItem,
+          hardDeleteItem,
+          '</div>',
+          '</div>'
+        ].join('');
+      }
+    },
+    {
+      headerName: 'Name',
+      field: 'name',
+      minWidth: 240,
+      flex: 1
+    },
+    {
+      headerName: 'Part Number',
+      field: 'part_number',
+      width: 150,
+      minWidth: 120,
+      valueGetter: (params: any) => params.data?.part_number || '—'
+    },
+    {
+      headerName: 'Version',
+      field: 'version',
+      width: 110,
+      minWidth: 100,
+      cellRenderer: (params: any) => {
+        if (!params.data) return '';
+        return `<span class="badge bg-success bg-gradient">v${params.value || ''}</span>`;
+      }
+    },
+    {
+      headerName: 'Status',
+      colId: 'status',
+      width: 130,
+      minWidth: 120,
+      filter: false,
+      cellRenderer: (params: any) => {
+        if (!params.data) return '';
+        const isDraft = Boolean(params.data.is_draft);
+        const isActive = Boolean(params.data.is_active);
+        const typeBadge = isDraft
+          ? '<span class="badge bg-warning text-dark me-1">Draft</span>'
+          : '<span class="badge bg-light text-dark border me-1">Published</span>';
+        const activeBadge = isActive
+          ? '<span class="badge bg-success">Active</span>'
+          : '<span class="badge bg-danger">Inactive</span>';
+        return `<div class="d-flex gap-1 align-items-center">${typeBadge}${activeBadge}</div>`;
+      }
+    },
+    {
+      headerName: 'Customer',
+      width: 180,
+      minWidth: 150,
+      valueGetter: (params: any) => params.data?.customer_name || params.data?.customer_part_number || '—'
+    },
+    {
+      headerName: 'Items',
+      field: 'item_count',
+      width: 80,
+      minWidth: 70,
+      filter: false,
+      valueGetter: (params: any) => Number(params.data?.item_count || 0)
+    },
+    {
+      headerName: 'Created',
+      field: 'created_at',
+      width: 130,
+      minWidth: 120,
+      valueFormatter: (params: any) => this.formatGridDate(params.value)
+    }
+  ];
+
   @ViewChild('templateModal') templateModal!: TemplateRef<any>;
   @ViewChild('imagePreviewModal') imagePreviewModal!: TemplateRef<any>;
   @ViewChild('sampleImageUploadModal') sampleImageUploadModal!: TemplateRef<any>;
@@ -2513,6 +2381,83 @@ export class ChecklistTemplateManagerComponent implements OnInit {
     });
   }
 
+  onVersionsGridCellClicked(event: CellClickedEvent<ChecklistTemplate>): void {
+    const template = event.data;
+    if (!template || event.colDef.colId !== 'actions') {
+      return;
+    }
+
+    const target = event.event?.target as HTMLElement | null;
+    const actionButton = target?.closest('button[data-action]') as HTMLButtonElement | null;
+    if (!actionButton) {
+      return;
+    }
+
+    const action = actionButton.getAttribute('data-action') || '';
+    switch (action) {
+      case 'edit':
+        this.editTemplate(template);
+        break;
+      case 'view':
+        this.viewTemplate(template);
+        break;
+      case 'new-major':
+        this.createNewParentVersion(template);
+        break;
+      case 'revisions':
+        this.viewRevisionHistory(template);
+        break;
+      case 'discard':
+        this.discardDraft(template);
+        break;
+      case 'delete':
+        this.deleteTemplate(template);
+        break;
+      case 'hard-delete':
+        this.hardDeleteTemplate(template);
+        break;
+      default:
+        break;
+    }
+  }
+
+  onVersionsGridRowDoubleClicked(event: RowDoubleClickedEvent<ChecklistTemplate>): void {
+    const template = event.data;
+    if (!template) {
+      return;
+    }
+
+    if (template.is_draft) {
+      this.editTemplate(template);
+      return;
+    }
+
+    this.viewTemplate(template);
+  }
+
+  private formatGridDate(value: unknown): string {
+    const dateValue = String(value || '');
+    const date = new Date(dateValue);
+    if (Number.isNaN(date.getTime())) {
+      return '—';
+    }
+
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    }).format(date);
+  }
+
+  private toTitleCase(value: string): string {
+    return value
+      .replace(/_/g, ' ')
+      .split(' ')
+      .filter(Boolean)
+      .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+      .join(' ');
+  }
+
   // ==============================================
   // AGS Pattern Helper Methods
   // ==============================================
@@ -2524,8 +2469,8 @@ export class ChecklistTemplateManagerComponent implements OnInit {
   viewTemplate(template: ChecklistTemplate): void {
     // Navigate to view mode or open preview modal
     this.saveStateForReturn();
-    this.router.navigate(['/quality/checklist/template-editor', template.id], {
-      queryParams: { mode: 'view' }
+    this.router.navigate(['/inspection-checklist/template-editor', template.id], {
+      queryParams: { mode: 'view', returnTo: 'template-manager' }
     });
   }
 
@@ -2579,13 +2524,17 @@ export class ChecklistTemplateManagerComponent implements OnInit {
   editTemplate(template: ChecklistTemplate): void {
     // Navigate to the dedicated template editor page
     this.saveStateForReturn();
-    this.router.navigate(['/quality/checklist/template-editor', template.id]);
+    this.router.navigate(['/inspection-checklist/template-editor', template.id], {
+      queryParams: { returnTo: 'template-manager' }
+    });
   }
 
   createNewTemplate(): void {
     // Navigate to the template editor page for creating a new template
     this.saveStateForReturn();
-    this.router.navigate(['/quality/checklist/template-editor']);
+    this.router.navigate(['/inspection-checklist/template-editor'], {
+      queryParams: { returnTo: 'template-manager' }
+    });
   }
 
   private saveStateForReturn(): void {
@@ -5089,6 +5038,24 @@ Enter choice (1-4):`;
       .replace(/\s*\(v?\d+\.\d+.*\)$/i, '')
       .replace(/\s*v?\d+\.\d+.*$/i, '')
       .trim();
+  }
+
+  private getTemplateFamilyLabel(template: ChecklistTemplate | null): string {
+    if (!template) {
+      return 'Uncategorized';
+    }
+
+    const familyBase = String(template.part_number || this.getTemplateFamilyName(template) || template.name || 'Uncategorized').trim();
+    const customer = String(template.customer_name || template.customer_part_number || '').trim();
+    return customer ? `${familyBase} - ${customer}` : familyBase;
+  }
+
+  private getTemplateMajorLabel(template: ChecklistTemplate | null): string {
+    if (!template) {
+      return 'Major v0';
+    }
+
+    return `Major v${this.getMajorVersionNumber(template)}`;
   }
 
   getVersionFamilyCount(template: ChecklistTemplate): number {

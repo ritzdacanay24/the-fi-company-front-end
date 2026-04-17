@@ -93,7 +93,18 @@
     .ql-picker-options {
         background-color: var(--#{$prefix}secondary-bg);
         border-color: var(--#{$prefix}border-color) !important;
+        position: absolute;
+        z-index: 9999 !important;
     }
+}
+
+// Ensure toolbar doesn't clip dropdowns when inside an overflow:auto container
+.ql-toolbar.ql-snow {
+    overflow: visible !important;
+}
+
+.ql-container.ql-snow {
+    overflow: visible !important;
 }
 
 

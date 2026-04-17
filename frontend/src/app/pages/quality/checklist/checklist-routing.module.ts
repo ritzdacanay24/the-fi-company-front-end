@@ -21,7 +21,7 @@ const routes: Routes = [
   },
   {
     path: "template-manager",
-    loadComponent: () => import('./template-manager/checklist-template-manager.component').then(c => c.ChecklistTemplateManagerComponent),
+    loadComponent: () => import('./template-manager/checklist-template-list.component').then(c => c.ChecklistTemplateListComponent),
   },
   {
     path: "template-editor",

@@ -501,11 +501,11 @@ export const MENU_DATA: MenuItem[] = [
                 activatedRoutes: "/quality/qir/*"
             },
             {
-                label: "Photo Checklist",
-                link: "/quality/checklist",
-                description: "Select template and start new checklist",
+                label: "Inspection Checklist",
+                link: "/inspection-checklist",
+                description: "Standalone inspection checklist workflows",
                 icon: "las la-clipboard-list",
-                activatedRoutes: "/quality/checklist/*"
+                activatedRoutes: "/inspection-checklist/*"
             },
             {
                 label: "Permit Checklists",

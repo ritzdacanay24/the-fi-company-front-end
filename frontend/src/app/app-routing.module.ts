@@ -57,55 +57,28 @@ const routes: Routes = [
     title: "Install Quality Inspection App"
   },
   {
-    path: 'standalone/checklist',
+    path: 'quality-checklist',
+    redirectTo: 'inspection-checklist',
+    pathMatch: 'full'
+  },
+  {
+    path: 'standalone/quality-checklist',
+    redirectTo: 'inspection-checklist',
+    pathMatch: 'full'
+  },
+  {
+    path: 'inspection-checklist/instance',
     canActivate: [AuthGuard],
-    children: [
-      {
-        path: '',
-        loadComponent: () => import('./standalone/checklist-workflow-hub/checklist-workflow-hub.component').then(c => c.ChecklistWorkflowHubComponent),
-        title: 'Quality Inspection'
-      },
-      {
-        path: 'instance',
-        loadComponent: () => import('./pages/quality/checklist/instance/checklist-instance.component').then(c => c.ChecklistInstanceComponent),
-        title: 'Checklist Inspection'
-      },
-      {
-        path: 'execution',
-        loadComponent: () => import('./pages/quality/checklist/execution/checklist-execution.component').then(c => c.ChecklistExecutionComponent),
-        title: 'Checklist Execution'
-      },
-      {
-        path: 'kanban',
-        loadComponent: () => import('./pages/quality/checklist/kanban/checklist-kanban.component').then(c => c.ChecklistKanbanComponent),
-        title: 'Quality Inspection Board'
-      },
-      {
-        path: 'management',
-        loadComponent: () => import('./pages/quality/checklist/checklist.component').then(c => c.ChecklistComponent),
-        title: 'Checklist Management'
-      },
-      {
-        path: 'template-manager',
-        loadComponent: () => import('./pages/quality/checklist/template-manager/checklist-template-manager.component').then(c => c.ChecklistTemplateManagerComponent),
-        title: 'Checklist Template Manager'
-      },
-      {
-        path: 'template-editor',
-        loadComponent: () => import('./pages/quality/checklist/template-editor/checklist-template-editor.component').then(c => c.ChecklistTemplateEditorComponent),
-        title: 'Checklist Template Editor'
-      },
-      {
-        path: 'template-editor/:id',
-        loadComponent: () => import('./pages/quality/checklist/template-editor/checklist-template-editor.component').then(c => c.ChecklistTemplateEditorComponent),
-        title: 'Checklist Template Editor'
-      },
-      {
-        path: 'audit',
-        loadComponent: () => import('./pages/quality/checklist/audit/checklist-audit.component').then(c => c.ChecklistAuditComponent),
-        title: 'Checklist Audit'
-      }
-    ]
+    loadComponent: () => import('./pages/quality/checklist/instance/checklist-instance.component').then(c => c.ChecklistInstanceComponent),
+    title: 'Checklist Inspection'
+  },
+  {
+    path: 'inspection-checklist',
+    canActivate: [AuthGuard],
+    loadChildren: () =>
+      import('./standalone/inspection-checklist/inspection-checklist.routes').then(
+        (m) => m.INSPECTION_CHECKLIST_STANDALONE_ROUTES,
+      ),
   },
   { 
     path: "standalone/org-chart",

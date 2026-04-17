@@ -131,9 +131,8 @@
              [class.mdi-chevron-right]="!expandedItems.has(i)"
              [class.text-muted]="activeNavItemIndex !== i"
              [class.text-white]="activeNavItemIndex === i"
-             style="cursor: pointer;"
-             (click)="toggleNavExpansion(i, $event)"
-             style="font-size: 18px;"></i>
+             style="cursor: pointer; font-size: 18px;"
+             (click)="toggleNavExpansion(i, $event)"></i>
 
            <i class="mdi mdi-file-document-outline"
              *ngIf="!hasChildren"

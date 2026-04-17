@@ -12,33 +12,25 @@ import { RouterModule } from '@angular/router';
 export class ChecklistWorkflowHubComponent {
   readonly sections = [
     {
-      title: 'Quality Inspection Board',
-      description: 'Kanban board with quick filters and one-tap entry into active inspections.',
-      link: '/standalone/checklist/kanban',
-      icon: 'mdi-view-kanban',
-      button: 'Open Kanban',
-      tone: 'primary'
-    },
-    {
       title: 'Execution List',
       description: 'Table-style list view for search, filters, and inspection selection.',
-      link: '/standalone/checklist/execution',
+      link: '/inspection-checklist/execution',
       icon: 'mdi-format-list-bulleted',
       button: 'Open List',
       tone: 'secondary'
     },
     {
-      title: 'Quality Inspection Management',
-      description: 'Manage templates and checklist families in a dedicated standalone route.',
-      link: '/standalone/checklist/management',
+      title: 'Start Inspection',
+      description: 'Select an active checklist to begin your inspection.',
+      link: '/inspection-checklist/management',
       icon: 'mdi-clipboard-edit-outline',
-      button: 'Open Management',
+      button: 'Start Inspection',
       tone: 'success'
     },
     {
       title: 'Template Manager',
       description: 'Maintain published templates and start revisions for controlled updates.',
-      link: '/standalone/checklist/template-manager',
+      link: '/inspection-checklist/template-manager',
       icon: 'mdi-file-tree-outline',
       button: 'Open Templates',
       tone: 'info'
@@ -46,7 +38,7 @@ export class ChecklistWorkflowHubComponent {
     {
       title: 'Template Editor',
       description: 'Create or edit checklist templates directly in standalone mode.',
-      link: '/standalone/checklist/template-editor',
+      link: '/inspection-checklist/template-editor',
       icon: 'mdi-file-document-edit-outline',
       button: 'Open Editor',
       tone: 'warning'
@@ -54,7 +46,7 @@ export class ChecklistWorkflowHubComponent {
     {
       title: 'Audit View',
       description: 'Review checklist audit trail and quality evidence history.',
-      link: '/standalone/checklist/audit',
+      link: '/inspection-checklist/audit',
       icon: 'mdi-clipboard-search-outline',
       button: 'Open Audit',
       tone: 'dark'

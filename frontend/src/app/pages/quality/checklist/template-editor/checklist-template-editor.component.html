@@ -1,0 +1,1466 @@
+﻿
+    <!-- Loading overlay -->
+    <div class="editor-loading-overlay" *ngIf="loading" aria-live="polite" aria-busy="true">
+      <div class="editor-loading-card">
+        <div class="spinner-border text-primary" role="status" aria-hidden="true"></div>
+        <div class="fw-semibold mt-3">Loading template...</div>
+        <div class="text-muted small">Preparing editor data and checklist items</div>
+      </div>
+    </div>
+
+    <!-- Reorder feedback toast -->
+    <div class="reorder-feedback-toast" role="status" aria-live="polite" *ngIf="reorderFeedbackMessage">
+      <div class="alert alert-success border-success border-opacity-25 bg-success bg-opacity-95 py-2 px-3 d-flex align-items-center justify-content-between gap-3 mb-0 shadow">
+        <span class="small mb-0">{{ reorderFeedbackMessage }}</span>
+        <div class="d-flex align-items-center gap-2">
+          <button type="button" class="btn btn-sm btn-outline-success" (click)="undoLastReorder()"><i class="mdi mdi-undo me-1"></i>Undo</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" (click)="clearReorderFeedback()">Dismiss</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== MAIN LAYOUT ===== -->
+    <div class="chat-wrapper d-lg-flex gap-1 mx-n4 mt-n4 p-1 print-hide tce-wrapper">
+
+      <!-- ===== LEFT SIDEBAR: Items list ===== -->
+      <div class="chat-leftsidebar tce-sidebar">
+
+        <!-- Sidebar header: breadcrumb + template name + status -->
+        <div class="px-2 pt-3 pb-2 border-bottom">
+          <nav aria-label="breadcrumb" class="mb-2">
+            <ol class="breadcrumb mb-0" style="font-size:0.75rem;">
+              <li class="breadcrumb-item"><a [routerLink]="['/inspection-checklist']">Inspection</a></li>
+              <li class="breadcrumb-item"><a [routerLink]="['/inspection-checklist/template-manager']">Templates</a></li>
+              <li class="breadcrumb-item active">{{ editingTemplate ? 'Edit' : 'Create' }}</li>
+            </ol>
+          </nav>
+          <div class="d-flex align-items-start justify-content-between gap-2">
+            <div class="flex-grow-1 overflow-hidden">
+              <h6 class="mb-1 text-truncate fw-semibold">
+                {{ editingTemplate ? getDisplayTemplateName(editingTemplate) : 'New Template' }}
+              </h6>
+              <div class="d-flex flex-wrap gap-1" *ngIf="editingTemplate">
+                <span class="badge bg-light text-dark border">v{{ editingTemplate.version }}</span>
+                <span class="badge" [class]="editingTemplate.is_draft ? 'bg-warning text-dark' : 'bg-light text-dark border'">
+                  {{ editingTemplate.is_draft ? 'Draft' : 'Published' }}
+                </span>
+                <span class="badge" [class]="editingTemplate.is_active ? 'bg-success' : 'bg-danger'">
+                  {{ editingTemplate.is_active ? 'Active' : 'Inactive' }}
+                </span>
+                <span *ngIf="lastSavedAt" class="badge bg-success">
+                  <i class="mdi mdi-check-circle me-1"></i>Saved {{ lastSavedAt | date:'shortTime' }}
+                </span>
+              </div>
+            </div>
+            <!-- Top-right: import (create mode) or Â·Â·Â· menu -->
+            <div class="flex-shrink-0 d-flex gap-1">
+              <button type="button" class="btn btn-sm btn-outline-primary" (click)="openImportModal()" *ngIf="!editingTemplate" title="Import from PDF or CSV">
+                <i class="mdi mdi-file-import"></i>
+              </button>
+              <div ngbDropdown class="d-inline-block" *ngIf="items.length > 0 || editingTemplate">
+                <button type="button" class="btn btn-sm btn-outline-secondary" ngbDropdownToggle title="More actions">
+                  <i class="mdi mdi-dots-horizontal"></i>
+                </button>
+                <div ngbDropdownMenu class="dropdown-menu-end">
+                  <button ngbDropdownItem type="button" (click)="openPreviewModal()" *ngIf="items.length > 0"><i class="mdi mdi-eye me-2"></i>Preview</button>
+                  <button ngbDropdownItem type="button" (click)="printChecklist()" *ngIf="items.length > 0"><i class="mdi mdi-printer me-2"></i>Print</button>
+                  <div class="dropdown-divider" *ngIf="items.length > 0"></div>
+                  <div class="px-3 py-2" *ngIf="items.length > 0" (click)="$event.stopPropagation()">
+                    <div class="form-check form-switch mb-0">
+                      <input class="form-check-input" type="checkbox" id="showNavMediaSwitchMenu" [(ngModel)]="showNavMediaContext" (ngModelChange)="onShowNavMediaContextChange($event)" [ngModelOptions]="{standalone: true}">
+                      <label class="form-check-label small" for="showNavMediaSwitchMenu"><i class="mdi mdi-image-multiple me-1"></i>Show media indicators</label>
+                    </div>
+                  </div>
+                  <div class="dropdown-divider" *ngIf="items.length > 0 && editingTemplate"></div>
+                  <button ngbDropdownItem type="button" *ngIf="editingTemplate" [disabled]="saving || loading" (click)="setTemplateActiveStatus(!editingTemplate.is_active)">
+                    <i class="mdi me-2" [class.mdi-close-circle-outline]="editingTemplate.is_active" [class.mdi-check-circle-outline]="!editingTemplate.is_active"></i>
+                    {{ editingTemplate.is_active ? 'Deactivate' : 'Activate' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Template Info entry (pinned, always first) -->
+        <div class="px-1 pt-2">
+          <button
+            type="button"
+            class="list-group-item list-group-item-action d-flex align-items-center gap-2 rounded tce-info-entry"
+            [class.active]="activePanel === 'template-info'"
+            (click)="activePanel = 'template-info'">
+            <i class="mdi mdi-information-outline fs-5"></i>
+            <span class="fw-medium">Template Info</span>
+            <span class="badge bg-danger ms-auto" *ngIf="templateForm.get('name')?.invalid && templateForm.get('name')?.touched">!</span>
+          </button>
+        </div>
+
+        <!-- Items section header -->
+        <div class="d-flex align-items-center px-2 pt-3 pb-1">
+          <span class="text-muted small text-uppercase fw-semibold flex-grow-1">Items ({{ items.length }})</span>
+          <button type="button" class="btn btn-sm btn-soft-primary" (click)="addItem()" [disabled]="isPublishedLocked()" title="Add item">
+            <i class="mdi mdi-plus align-bottom"></i> Add
+          </button>
+        </div>
+
+        <!-- Items navigation list -->
+        <div class="tce-items-list" [formGroup]="templateForm">
+
+          <!-- Empty state -->
+          <div *ngIf="items.length === 0" class="text-center py-5 px-3">
+            <i class="mdi mdi-clipboard-list-outline text-muted d-block mb-2" style="font-size:2.5rem;"></i>
+            <p class="text-muted small mb-3">No checklist items yet</p>
+            <button type="button" class="btn btn-sm btn-primary" (click)="addItem()" [disabled]="isPublishedLocked()">
+              <i class="mdi mdi-plus me-1"></i>Add First Item
+            </button>
+          </div>
+
+          <div *ngIf="items.length > 0"
+               formArrayName="items"
+               class="tce-nav-list">
+
+            <ng-container *ngFor="let item of items.controls; let i = index; trackBy: trackByIndex">
+            <div *ngIf="isNavItemVisible(i)"
+                 [formGroupName]="i"
+                 class="tce-nav-item"
+                 [class.active]="activePanel === 'item' && selectedFormItemIndex === i"
+                 [class.tce-nav-item-child]="(item.get('level')?.value || 0) > 0"
+                 [class.tce-nav-item-invalid]="item.get('title')?.invalid && item.get('title')?.touched"
+                 [ngStyle]="{'padding-left.rem': 0.5 + (item.get('level')?.value || 0) * 1.15}"
+                 (click)="selectItem(i)">
+
+              <!-- Expand/collapse chevron for parent items -->
+              <span *ngIf="hasChildren(i)" class="tce-nav-chevron flex-shrink-0" (click)="toggleNavExpansion(i, $event)" style="cursor:pointer;">
+                <i class="mdi" [class.mdi-chevron-down]="expandedItems.has(i)" [class.mdi-chevron-right]="!expandedItems.has(i)" style="font-size:16px;"></i>
+              </span>
+              <span *ngIf="!hasChildren(i) && (item.get('level')?.value || 0) === 0" class="tce-nav-chevron flex-shrink-0" style="width:16px;display:inline-block;"></span>
+
+              <!-- Level indicator for children -->
+              <span *ngIf="(item.get('level')?.value || 0) > 0" class="tce-nav-child-icon flex-shrink-0">
+                <i class="mdi mdi-subdirectory-arrow-right text-primary"></i>
+              </span>
+
+              <!-- Outline number badge -->
+              <span class="badge tce-nav-badge flex-shrink-0"
+                    [class.bg-secondary]="activePanel !== 'item' || selectedFormItemIndex !== i"
+                    [class.bg-primary]="activePanel === 'item' && selectedFormItemIndex === i">{{ getOutlineNumber(i) }}</span>
+
+              <!-- Title -->
+              <span class="tce-nav-title flex-grow-1 text-truncate">
+                {{ item.get('title')?.value || 'Untitled' }}
+              </span>
+
+              <!-- Media indicators -->
+              <span *ngIf="showNavMediaContext" class="tce-nav-media flex-shrink-0 d-flex gap-1">
+                <i class="mdi mdi-image-outline"
+                   [class.text-success]="hasPrimarySampleImage(i) || getReferenceImageCount(i) > 0"
+                   [class.text-muted]="!hasPrimarySampleImage(i) && getReferenceImageCount(i) === 0"
+                   *ngIf="item.get('submission_type')?.value === 'photo' || item.get('submission_type')?.value === 'either' || item.get('submission_type')?.value === 'none'"
+                   title="Sample image"></i>
+                <i class="mdi mdi-video-outline"
+                   [class.text-info]="hasSampleVideo(i)"
+                   [class.text-muted]="!hasSampleVideo(i)"
+                   *ngIf="item.get('submission_type')?.value === 'video' || item.get('submission_type')?.value === 'either'"
+                   title="Sample video"></i>
+              </span>
+
+                <!-- Status decoration -->
+                <span class="tce-nav-status flex-shrink-0"
+                  *ngIf="shouldShowNavItemStatus(i)"
+                  [title]="getNavItemStatusTitle(i)">
+                  <i class="mdi"
+                 [class.mdi-close-circle]="isNavItemInvalid(i)"
+                 [class.text-danger]="isNavItemInvalid(i)"
+                 [class.mdi-check-circle]="!isNavItemInvalid(i)"
+                 [class.text-success]="!isNavItemInvalid(i)"></i>
+                </span>
+
+              <!-- Reorder + actions (only when not locked) -->
+              <span *ngIf="!isPublishedLocked()" class="tce-nav-actions flex-shrink-0 d-flex align-items-center gap-1" (click)="$event.stopPropagation()">
+                <div class="btn-group btn-group-sm">
+                  <button type="button" class="btn btn-outline-secondary py-0 px-1" (click)="moveItemUp(i)" title="Move up" [disabled]="i === 0">
+                    <i class="mdi mdi-chevron-up" style="font-size:14px;"></i>
+                  </button>
+                  <button type="button" class="btn btn-outline-secondary py-0 px-1" (click)="moveItemDown(i)" title="Move down" [disabled]="i === items.controls.length - 1">
+                    <i class="mdi mdi-chevron-down" style="font-size:14px;"></i>
+                  </button>
+                </div>
+                <div ngbDropdown placement="bottom-end" (click)="$event.stopPropagation()">
+                  <button type="button" class="tce-nav-btn" ngbDropdownToggle title="More actions">
+                    <i class="mdi mdi-dots-vertical"></i>
+                  </button>
+                  <div ngbDropdownMenu>
+                    <!-- Add child -->
+                    <button ngbDropdownItem type="button" (click)="addSubItem(i)">
+                      <i class="mdi mdi-subdirectory-arrow-right me-2"></i>Add Sub-item
+                    </button>
+
+                    <div class="dropdown-divider"></div>
+
+                    <!-- Indent / outdent -->
+                    <button ngbDropdownItem type="button"
+                            (click)="demoteItem(i)"
+                            [disabled]="i === 0 || (item.get('level')?.value || 0) >= 2"
+                            title="Nest under previous item (indent)">
+                      <i class="mdi mdi-arrow-right me-2"></i>Indent (nest under previous)
+                    </button>
+                    <button ngbDropdownItem type="button"
+                            (click)="promoteItem(i)"
+                            [disabled]="(item.get('level')?.value || 0) === 0"
+                            title="Move out to parent level (outdent)">
+                      <i class="mdi mdi-arrow-left me-2"></i>Outdent (move out)
+                    </button>
+
+                    <button ngbDropdownItem type="button"
+                            (click)="moveItemUnderFromDropdown(i)"
+                            [disabled]="!canMoveItemUnder(i)"
+                            title="Move item under a selected parent">
+                      <i class="mdi mdi-arrow-down-bold-circle-outline me-2"></i>Move Under...
+                    </button>
+
+                    <!-- Move into a specific group -->
+                    <ng-container *ngIf="getAvailableParentGroups(i).length > 0">
+                      <div class="dropdown-divider"></div>
+                      <h6 class="dropdown-header">Move into group</h6>
+                      <button ngbDropdownItem type="button"
+                              *ngFor="let grp of getAvailableParentGroups(i)"
+                              (click)="moveItemIntoGroup(i, grp.index)">
+                        <i class="mdi mdi-folder-move-outline me-2"></i>{{ grp.label }}
+                      </button>
+                    </ng-container>
+
+                    <div class="dropdown-divider"></div>
+                    <button ngbDropdownItem type="button" class="text-danger" (click)="deleteItemFromNav(i)">
+                      <i class="mdi mdi-delete-outline me-2"></i>Delete
+                    </button>
+                  </div>
+                </div>
+              </span>
+
+            </div>
+            </ng-container>
+          </div>
+        </div>
+
+      </div>
+      <!-- end left sidebar -->
+
+      <!-- ===== RIGHT PANEL: detail view ===== -->
+      <div class="user-chat tce-detail">
+
+            <!-- Topbar -->
+            <div class="p-3 user-chat-topbar border-bottom flex-shrink-0">
+              <div class="d-flex align-items-center justify-content-between gap-3">
+
+                <!-- Left: title + context -->
+                <div class="d-flex align-items-center gap-3 overflow-hidden">
+                  <div class="avatar-xs flex-shrink-0">
+                    <span class="avatar-title rounded-circle" [class.bg-primary]="activePanel === 'template-info'" [class.bg-secondary]="activePanel !== 'template-info'">
+                      <i class="mdi" [class.mdi-information-outline]="activePanel === 'template-info'" [class.mdi-clipboard-check-outline]="activePanel !== 'template-info'"></i>
+                    </span>
+                  </div>
+                  <div class="overflow-hidden">
+                    <h5 class="text-truncate mb-0 fs-15 fw-semibold lh-base">
+                      <ng-container *ngIf="activePanel === 'template-info'">Template Information</ng-container>
+                      <ng-container *ngIf="activePanel === 'item' && selectedFormItemIndex !== null">
+                        Item {{ getOutlineNumber(selectedFormItemIndex) }}: {{ items.at(selectedFormItemIndex)?.get('title')?.value || 'Untitled' }}
+                      </ng-container>
+                      <ng-container *ngIf="activePanel === 'item' && selectedFormItemIndex === null">Select an item</ng-container>
+                    </h5>
+                  </div>
+                </div>
+
+                <!-- Right: actions -->
+                <div class="d-flex align-items-center gap-2 flex-shrink-0">
+
+                  <!-- Item-level actions when item panel is active -->
+                  <ng-container *ngIf="activePanel === 'item' && selectedFormItemIndex !== null && !isPublishedLocked()">
+                    <button type="button" class="btn btn-sm btn-soft-primary" (click)="addSubItem(selectedFormItemIndex!)" title="Add sub-item">
+                      <i class="mdi mdi-subdirectory-arrow-right align-bottom me-1"></i>Sub-item
+                    </button>
+                  </ng-container>
+
+                  <!-- Save / Publish / Draft actions -->
+                  <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="saving" (click)="cancel()">
+                    <i class="mdi mdi-close me-1"></i>Cancel
+                  </button>
+                  <div ngbDropdown class="d-inline-block">
+                    <button type="button" class="btn btn-sm btn-outline-primary" ngbDropdownToggle [disabled]="saving">
+                      <i class="mdi mdi-content-save-edit-outline me-1"></i>Drafts
+                    </button>
+                    <div ngbDropdownMenu class="dropdown-menu-end">
+                      <button ngbDropdownItem type="button" (click)="saveDraft()" *ngIf="!editingTemplate || editingTemplate.is_draft">
+                        <i class="mdi mdi-content-save-edit-outline me-2"></i>Save Draft
+                      </button>
+                      <button ngbDropdownItem type="button" (click)="saveDraft()" *ngIf="editingTemplate && !editingTemplate.is_draft">
+                        <i class="mdi mdi-content-save-edit-outline me-2"></i>Start Sub-Version Draft
+                      </button>
+                      <button ngbDropdownItem type="button" (click)="startMajorVersionDraft()" *ngIf="editingTemplate && !editingTemplate.is_draft">
+                        <i class="mdi mdi-source-branch me-2"></i>Start Major Version Draft
+                      </button>
+                      <button ngbDropdownItem type="button" (click)="openCopyAsNewParentModal()" *ngIf="editingTemplate && !editingTemplate.is_draft">
+                        <i class="mdi mdi-content-copy me-2"></i>Copy as New Parent
+                      </button>
+                      <div class="dropdown-divider" *ngIf="editingTemplate?.is_draft"></div>
+                      <button ngbDropdownItem type="button" class="text-danger" (click)="discardCurrentDraft()" *ngIf="editingTemplate?.is_draft">
+                        <i class="mdi mdi-delete-outline me-2"></i>Discard Draft
+                      </button>
+                    </div>
+                  </div>
+                  <button type="button" class="btn btn-sm btn-success" *ngIf="!editingTemplate || editingTemplate.is_draft" [disabled]="saving" (click)="saveTemplate()">
+                    @if (saving) {
+                      <span class="spinner-border spinner-border-sm me-1" role="status"></span>Saving...
+                    } @else {
+                      <i class="mdi mdi-content-save me-1"></i>{{ editingTemplate ? 'Publish Draft' : 'Create Template' }}
+                    }
+                  </button>
+                  <button type="button" class="btn btn-sm btn-success" *ngIf="editingTemplate && !editingTemplate.is_draft && canReorderPublishedTemplateInPlace()" [disabled]="saving" (click)="saveTemplate()">
+                    @if (saving) {
+                      <span class="spinner-border spinner-border-sm me-1" role="status"></span>Saving...
+                    } @else {
+                      <i class="mdi mdi-content-save me-1"></i>Save Reorder
+                    }
+                  </button>
+                </div>
+
+              </div>
+            </div>
+            <!-- end topbar -->
+
+            <!-- Publish validation error banner -->
+            <div *ngIf="publishValidationErrors.length > 0"
+                 class="tce-validation-banner alert alert-danger border-danger border-opacity-25 mb-0 rounded-0 py-2 px-4 flex-shrink-0"
+                 role="alert">
+              <div class="d-flex align-items-start gap-2">
+                <i class="mdi mdi-alert-circle-outline text-danger mt-1 flex-shrink-0"></i>
+                <div class="flex-grow-1">
+                  <div class="fw-semibold small mb-1">Fix {{ publishValidationErrors.length }} issue{{ publishValidationErrors.length === 1 ? '' : 's' }} before publishing:</div>
+                  <ul class="mb-0 ps-3 small">
+                    <li *ngFor="let err of publishValidationErrors">{{ err }}</li>
+                  </ul>
+                </div>
+                <button type="button" class="btn-close btn-close-sm" aria-label="Dismiss" (click)="publishValidationErrors = []"></button>
+              </div>
+            </div>
+
+            <!-- Scrollable content area -->
+            <div class="tce-scroll-area">
+
+              <!-- ====== TEMPLATE INFO PANEL ====== -->
+              <div *ngIf="activePanel === 'template-info'" class="p-4" [formGroup]="templateForm">
+
+                <!-- Alerts -->
+                <div class="alert alert-info border-info border-opacity-25 bg-info bg-opacity-10 mb-4" role="alert"
+                     *ngIf="editingTemplate && !editingTemplate.is_draft">
+                  <div class="d-flex align-items-start">
+                    <i class="mdi mdi-lock-outline text-info me-3 mt-1 fs-5"></i>
+                    <div class="w-100">
+                      <h6 class="alert-heading text-info mb-2">Published Template (Read-Only)</h6>
+                      <p class="mb-2">Start a <strong>Sub-Version Draft</strong> or <strong>Major Version Draft</strong> to make changes.</p>
+                      <div class="d-flex gap-2 flex-wrap">
+                        <button type="button" class="btn btn-outline-primary btn-sm" [disabled]="saving" (click)="saveDraft()">
+                          <i class="mdi mdi-content-save-edit-outline me-1"></i>Start Sub-Version Draft
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="saving" (click)="startMajorVersionDraft()">
+                          <i class="mdi mdi-source-branch me-1"></i>Start Major Version Draft
+                        </button>
+                        <button type="button" class="btn btn-outline-dark btn-sm" [disabled]="saving" (click)="openCopyAsNewParentModal()">
+                          <i class="mdi mdi-content-copy me-1"></i>Copy as New Parent
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="alert alert-warning border-warning border-opacity-25 bg-warning bg-opacity-10 mb-4" role="alert"
+                     *ngIf="editingTemplate && editingTemplate.is_draft && !autoSaveEnabled">
+                  <div class="d-flex align-items-start">
+                    <i class="mdi mdi-alert text-warning me-3 mt-1 fs-5"></i>
+                    <div>
+                      <h6 class="alert-heading text-warning mb-1">Draft Mode</h6>
+                      <p class="mb-0">Use <strong>Publish Draft</strong> when ready to release this version.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="alert alert-info border-info border-opacity-25 bg-info bg-opacity-10 mb-4" role="alert" *ngIf="autoSaveEnabled">
+                  <div class="d-flex align-items-start">
+                    <i class="mdi mdi-information text-info me-3 mt-1 fs-5"></i>
+                    <div>
+                      <h6 class="alert-heading text-info mb-1">Auto-Save Enabled</h6>
+                      <p class="mb-0">Your changes are automatically saved as you edit.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div [class.readonly-form]="isPublishedLocked()">
+
+                  <!-- Basic Info -->
+                  <div class="mb-4 pb-4 border-bottom">
+                    <h5 class="mb-3">Template Information</h5>
+                    <div class="row">
+                      <div class="col-md-6 mb-3">
+                        <label class="form-label">Template Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" formControlName="name" placeholder="Enter template name"
+                               [ngClass]="{ 'is-invalid': templateForm.get('name')?.invalid && templateForm.get('name')?.touched }">
+                        <div class="invalid-feedback">Template name is required</div>
+                      </div>
+                      <div class="col-md-6 mb-3">
+                        <label class="form-label">Category <span class="text-danger">*</span></label>
+                        <select class="form-select" formControlName="category">
+                          <option value="inspection">Inspection</option>
+                        </select>
+                      </div>
+                      <div class="col-md-6 mb-3">
+                        <label class="form-label">Part Number</label>
+                        <input type="text" class="form-control" formControlName="part_number" placeholder="Enter part number">
+                      </div>
+                      <div class="col-md-6 mb-3">
+                        <label class="form-label">Product Type</label>
+                        <input type="text" class="form-control" formControlName="product_type" placeholder="Enter product type">
+                      </div>
+                      <div class="col-md-6 mb-3">
+                        <label class="form-label">Customer Name</label>
+                        <input type="text" class="form-control" formControlName="customer_name" placeholder="Enter customer name">
+                      </div>
+                      <div class="col-md-6 mb-3">
+                        <label class="form-label">Max Upload Size (MB)</label>
+                        <input type="number" class="form-control" formControlName="max_upload_size_mb" min="1" placeholder="Leave empty for defaults">
+                      </div>
+                      <div class="col-md-6 mb-3">
+                        <div class="form-check form-switch mt-2">
+                          <input class="form-check-input" type="checkbox" formControlName="disable_max_upload_limit" id="disableMaxUpload">
+                          <label class="form-check-label" for="disableMaxUpload">Disable Max Upload Size Limit</label>
+                        </div>
+                      </div>
+                      <div class="col-md-6 mb-3">
+                        <div class="form-check form-switch mt-2">
+                          <input class="form-check-input" type="checkbox" formControlName="is_active" id="activeStatus">
+                          <label class="form-check-label" for="activeStatus">Active Template</label>
+                        </div>
+                        <div class="form-text">Active templates are available for new inspections.</div>
+                      </div>
+                      <div class="col-12 mb-3">
+                        <label class="form-label">Description</label>
+                        <div class="border rounded" [ngClass]="{ 'border-danger border-2': templateForm.get('description')?.invalid && templateForm.get('description')?.touched }">
+                          <quill-editor formControlName="description" [modules]="quillConfig"
+                            (onContentChanged)="onQuillContentChanged($event)"
+                            placeholder="Enter template description"
+                            class="quill-auto-height quill-template">
+                          </quill-editor>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Quality Document -->
+                  <div class="mb-4">
+                    <h5 class="mb-3">Quality Document Reference</h5>
+                    <app-quality-document-selector (selectionChange)="onQualityDocumentSelected($event)"></app-quality-document-selector>
+                    <div class="form-text mt-2"><i class="mdi mdi-information-outline me-1"></i>Optionally link to a quality document for compliance tracking.</div>
+                  </div>
+
+                </div>
+              </div>
+              <!-- end template info panel -->
+
+              <!-- ====== ITEM PANEL ====== -->
+              <div *ngIf="activePanel === 'item'" class="p-4" [class.invisible]="selectingItem">
+
+                <!-- No item selected empty state -->
+                <div *ngIf="selectedFormItemIndex === null" class="d-flex align-items-center justify-content-center" style="min-height: calc(100vh - 250px);">
+                  <div class="text-center p-5">
+                    <div class="avatar-xl mx-auto mb-4">
+                      <div class="avatar-title bg-light text-primary rounded-circle">
+                        <i class="mdi mdi-clipboard-list-outline" style="font-size:2.5rem;"></i>
+                      </div>
+                    </div>
+                    <h4 class="mb-2">No Item Selected</h4>
+                    <p class="text-muted mb-4">Select an item from the list or add a new one.</p>
+                    <button type="button" class="btn btn-primary" (click)="addItem()" [disabled]="isPublishedLocked()">
+                      <i class="mdi mdi-plus me-1"></i>Add Item
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Item form -->
+                <div *ngIf="selectedFormItemIndex !== null" [formGroup]="templateForm">
+                  <div formArrayName="items">
+                    <div [formGroupName]="selectedFormItemIndex" [class.readonly-form]="isPublishedLocked()">
+
+                      <!-- Drag preview (hidden, needed for CDK) -->
+                      <input type="hidden" formControlName="order_index">
+
+                      <!-- Required toggle -->
+                      <div class="d-flex justify-content-end align-items-center gap-2 mb-3">
+                        <span class="small text-muted">Counts toward progress</span>
+                        <div class="form-check form-switch mb-0">
+                          <input class="form-check-input" type="checkbox" formControlName="is_required" [id]="'required-' + selectedFormItemIndex">
+                          <label class="form-check-label" [for]="'required-' + selectedFormItemIndex">Required</label>
+                        </div>
+                      </div>
+
+                      <!-- Title -->
+                      <div class="mb-3">
+                        <label class="form-label">Title <span class="text-danger">*</span></label>
+                        <input #itemTitleInput type="text" class="form-control" formControlName="title" placeholder="Enter item title"
+                               [ngClass]="{ 'is-invalid': items.at(selectedFormItemIndex!)?.get('title')?.invalid && items.at(selectedFormItemIndex!)?.get('title')?.touched }">
+                        <div class="invalid-feedback">Title is required</div>
+                      </div>
+
+                      <!-- Description -->
+                      <div class="mb-3">
+                        <label class="form-label">Description <span class="text-muted fw-normal">(optional)</span></label>
+                        <div class="border rounded">
+                          <quill-editor formControlName="description" [modules]="quillConfig"
+                            (onContentChanged)="onQuillContentChanged($event)"
+                            placeholder="Detailed instructions for this item (rich text supported)"
+                            class="quill-auto-height quill-item">
+                          </quill-editor>
+                        </div>
+                      </div>
+
+                      <!-- Links -->
+                      <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                          <label class="form-label mb-0"><i class="mdi mdi-link-variant me-1"></i>Links</label>
+                          <button type="button" class="btn btn-outline-primary btn-sm" (click)="openLinksModal(selectedFormItemIndex!)">
+                            <i class="mdi mdi-link-variant-plus me-1"></i>Manage Links
+                            <span class="badge bg-primary ms-1">{{ getLinksFormArray(selectedFormItemIndex!).length }}</span>
+                          </button>
+                        </div>
+                        <div *ngIf="getLinksFormArray(selectedFormItemIndex!).length === 0" class="text-muted small border rounded bg-light p-2">No links added.</div>
+                        <div *ngIf="getLinksFormArray(selectedFormItemIndex!).length > 0" class="mt-1 d-flex flex-column gap-1">
+                          <a *ngFor="let link of getLinksFormArray(selectedFormItemIndex!).value"
+                             class="small text-decoration-none text-primary text-truncate"
+                             [href]="link.url" target="_blank" rel="noopener noreferrer" [title]="link.title || link.url">
+                            <i class="mdi mdi-link-variant me-1"></i>{{ link.title || link.url }}
+                          </a>
+                        </div>
+                      </div>
+
+                      <!-- Submission Type -->
+                      <div class="mb-3">
+                        <label class="form-label"><i class="mdi mdi-checkbox-multiple-marked-circle text-info me-2"></i>Submission Type</label>
+                        <select class="form-select" formControlName="submission_type">
+                          <option value="photo">ðŸ“· Photo Only</option>
+                          <option value="video">ðŸŽ¥ Video Only</option>
+                          <option value="audio">ðŸŽ™ï¸ Audio Only</option>
+                          <option value="either">ðŸ“ Photo OR Video</option>
+                          <option value="none">ðŸš« No Media Required</option>
+                        </select>
+                      </div>
+
+                      <!-- Sample Images -->
+                      <div *ngIf="items.at(selectedFormItemIndex!)?.get('submission_type')?.value === 'photo' ||
+                                  items.at(selectedFormItemIndex!)?.get('submission_type')?.value === 'either' ||
+                                  items.at(selectedFormItemIndex!)?.get('submission_type')?.value === 'none'"
+                           class="mb-3"
+                           [ngClass]="{ 'border border-danger border-2 rounded p-2':
+                             (items.at(selectedFormItemIndex!)?.get('submission_type')?.value === 'photo' && items.at(selectedFormItemIndex!)?.get('photo_requirements')?.value?.picture_required && !hasPrimarySampleImage(selectedFormItemIndex!) && getReferenceImageCount(selectedFormItemIndex!) === 0) ||
+                             (items.at(selectedFormItemIndex!)?.get('submission_type')?.value === 'either' && !hasPrimarySampleImage(selectedFormItemIndex!) && getReferenceImageCount(selectedFormItemIndex!) === 0 && !hasSampleVideo(selectedFormItemIndex!)) }">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                          <label class="form-label mb-0">
+                            <i class="mdi mdi-image-multiple me-1"></i>
+                            {{ items.at(selectedFormItemIndex!)?.get('submission_type')?.value === 'none' ? 'Reference Images' : 'Sample Images' }}
+                          </label>
+                          <button type="button" class="btn btn-outline-primary btn-sm" (click)="openSampleImagesModal(selectedFormItemIndex!)">
+                            <i class="mdi mdi-cog me-1"></i>Manage Images
+                            <span class="badge bg-primary ms-1">{{ getTotalSampleImagesCount(selectedFormItemIndex!) }}</span>
+                          </button>
+                        </div>
+                        <div *ngIf="hasPrimarySampleImage(selectedFormItemIndex!) || getReferenceImageCount(selectedFormItemIndex!) > 0" class="border rounded p-2 bg-light">
+                          <div class="d-flex gap-2 flex-wrap">
+                            <div *ngIf="hasPrimarySampleImage(selectedFormItemIndex!)" class="position-relative">
+                              <img [src]="getPrimarySampleImageUrl(selectedFormItemIndex!)" class="img-thumbnail" [class.locked-media-clickable]="isPublishedLocked()" loading="lazy"
+                                   style="width:60px;height:60px;object-fit:cover;cursor:pointer;" (click)="previewSampleImage(selectedFormItemIndex!)">
+                              <span class="badge bg-primary position-absolute top-0 start-0" style="font-size:0.6rem;">Primary</span>
+                            </div>
+                            <div *ngFor="let refImage of getReferenceImages(selectedFormItemIndex!); let refIdx = index" class="position-relative">
+                              <img [src]="getReferenceImageUrl(refImage)" class="img-thumbnail" [class.locked-media-clickable]="isPublishedLocked()" loading="lazy"
+                                   style="width:60px;height:60px;object-fit:cover;cursor:pointer;" (click)="previewReferenceImage(selectedFormItemIndex!, refIdx)">
+                              <span class="badge bg-secondary position-absolute top-0 start-0" style="font-size:0.6rem;">Ref</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div *ngIf="!hasPrimarySampleImage(selectedFormItemIndex!) && getReferenceImageCount(selectedFormItemIndex!) === 0" class="text-muted text-center py-2 border rounded bg-white">
+                          <i class="mdi mdi-image-off-outline"></i><small class="d-block">No sample images</small>
+                        </div>
+                        <div class="text-danger small mt-2"
+                             *ngIf="items.at(selectedFormItemIndex!)?.get('submission_type')?.value === 'photo' && items.at(selectedFormItemIndex!)?.get('photo_requirements')?.value?.picture_required && !hasPrimarySampleImage(selectedFormItemIndex!) && getReferenceImageCount(selectedFormItemIndex!) === 0">
+                          Sample photo required for Photo submission type.
+                        </div>
+                        <div class="text-danger small mt-2"
+                             *ngIf="items.at(selectedFormItemIndex!)?.get('submission_type')?.value === 'either' && !hasPrimarySampleImage(selectedFormItemIndex!) && getReferenceImageCount(selectedFormItemIndex!) === 0 && !hasSampleVideo(selectedFormItemIndex!)">
+                          Add a sample image or sample video.
+                        </div>
+                      </div>
+
+                      <!-- Sample Video -->
+                      <div *ngIf="items.at(selectedFormItemIndex!)?.get('submission_type')?.value === 'video' ||
+                                  items.at(selectedFormItemIndex!)?.get('submission_type')?.value === 'either'"
+                           class="mb-3"
+                           [ngClass]="{ 'border border-danger border-2 rounded p-2':
+                             (items.at(selectedFormItemIndex!)?.get('submission_type')?.value === 'video' && !hasSampleVideo(selectedFormItemIndex!)) ||
+                             (items.at(selectedFormItemIndex!)?.get('submission_type')?.value === 'either' && !hasSampleVideo(selectedFormItemIndex!) && !hasPrimarySampleImage(selectedFormItemIndex!) && getReferenceImageCount(selectedFormItemIndex!) === 0) }">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                          <label class="form-label mb-0"><i class="mdi mdi-video me-1"></i>Sample Video</label>
+                          <button type="button" class="btn btn-outline-primary btn-sm" (click)="openSampleVideoModal(selectedFormItemIndex!)">
+                            <i class="mdi mdi-cog me-1"></i>Manage Video
+                          </button>
+                        </div>
+                        <div *ngIf="hasSampleVideo(selectedFormItemIndex!)" class="border rounded p-2 bg-light text-center">
+                          <video [src]="getPrimarySampleVideoUrl(selectedFormItemIndex!)" [class.locked-media-clickable]="isPublishedLocked()" preload="none"
+                                 style="max-height:80px;max-width:140px;object-fit:cover;cursor:pointer;" (click)="previewSampleVideo(selectedFormItemIndex!)"></video>
+                          <div class="mt-1"><small class="text-muted"><i class="mdi mdi-information-outline"></i> Click to preview</small></div>
+                        </div>
+                        <div *ngIf="!hasSampleVideo(selectedFormItemIndex!)" class="text-muted text-center py-2 border rounded bg-white">
+                          <i class="mdi mdi-video-off-outline"></i><small class="d-block">No sample video</small>
+                        </div>
+                        <div class="text-danger small mt-2"
+                             *ngIf="items.at(selectedFormItemIndex!)?.get('submission_type')?.value === 'video' && !hasSampleVideo(selectedFormItemIndex!)">
+                          Sample video required for Video submission type.
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+                </div>
+                <!-- end item form -->
+
+              </div>
+              <!-- end item panel -->
+
+            </div>
+            <!-- end scroll area -->
+
+      </div>
+      <!-- end right panel -->
+
+    </div>
+    <!-- end chat-wrapper -->
+
+
+
+    <!-- ===== PRINT VIEW (hidden on screen) ===== -->
+    <div class="print-only">
+      <div class="print-header">
+        <div class="title">{{editingTemplate?.name || 'Checklist Template'}}</div>
+        <div class="print-meta d-flex gap-4 mt-1">
+          <span *ngIf="editingTemplate?.part_number"><strong>Part:</strong> {{editingTemplate?.part_number}}</span>
+          <span *ngIf="editingTemplate?.customer_name"><strong>Customer:</strong> {{editingTemplate?.customer_name}}</span>
+          <span><strong>Version:</strong> {{editingTemplate?.version || '1.0'}}</span>
+          <span><strong>Date:</strong> {{today | date:'mediumDate'}}</span>
+        </div>
+      </div>
+      <table class="print-table" [formGroup]="templateForm">
+        <thead>
+          <tr>
+            <th style="width:40px;">#</th>
+            <th>Inspection Item</th>
+            <th style="width:60px;">Req.</th>
+            <th style="width:120px;">Operator Sign-off</th>
+          </tr>
+        </thead>
+        <tbody formArrayName="items">
+          <tr *ngFor="let item of items.controls; let i = index; trackBy: trackByIndex" [formGroupName]="i">
+            <td>{{ getOutlineNumber(i) }}</td>
+            <td>
+              <div class="fw-bold">{{ item.get('title')?.value }}</div>
+              <div *ngIf="item.get('description')?.value" class="print-muted mt-1" [innerHTML]="item.get('description')?.value"></div>
+            </td>
+            <td>{{ item.get('is_required')?.value ? 'Yes' : 'No' }}</td>
+            <td>
+              <div class="print-field-line"></div>
+              <div class="print-field-line"></div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Import Modal -->
+    <ng-template #importModal let-modal>
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">
+          <i class="mdi mdi-file-import me-2"></i>
+          Import Checklist Template
+        </h5>
+        <button type="button" class="btn-close btn-close-white" (click)="modal.dismiss()"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-info">
+          <i class="mdi mdi-information me-2"></i>
+          <strong>Import Options:</strong>
+          <ul class="mb-0 mt-2">
+            <li><strong>Word Document (.docx)</strong> - <span class="badge bg-success">Recommended</span> - Best extraction quality with reliable text and image parsing</li>
+            <li>PDF (.pdf) - May require manual review due to extraction limitations</li>
+            <li>CSV (.csv) - Simple text-based import</li>
+            <li>Manual creation - Specify number of items to create</li>
+          </ul>
+        </div>
+
+        <!-- File Upload Section -->
+        <div class="mb-4" *ngIf="!isCurrentModalNoMedia()">
+          <label class="form-label">Upload File</label>
+          <input 
+            type="file" 
+            class="form-control" 
+            accept=".docx,.doc,.pdf,.csv"
+            (change)="onImportFileSelected($event)"
+            #fileInput>
+          <div class="form-text">
+            <i class="mdi mdi-lightbulb-on-outline me-1 text-success"></i>
+            <strong>Tip:</strong> Word documents (.docx) provide the best import results with proper structure, formatting, and images.
+          </div>
+        </div>
+
+        <div class="text-center my-3">
+          <small class="text-muted">â€” OR â€”</small>
+        </div>
+
+        <!-- Manual Entry Section -->
+        <div class="mb-3">
+          <label class="form-label">Create Template Manually</label>
+          <div class="row">
+            <div class="col-md-8 mb-2">
+              <input 
+                type="text" 
+                class="form-control" 
+                [(ngModel)]="importManualName"
+                placeholder="Template name">
+            </div>
+            <div class="col-md-4 mb-2">
+              <input 
+                type="number" 
+                class="form-control" 
+                [(ngModel)]="importManualItemCount"
+                min="1"
+                max="50"
+                placeholder="# of items">
+            </div>
+          </div>
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Specify template name and number of checklist items to create
+          </div>
+        </div>
+
+        <div *ngIf="importing" class="text-center py-3">
+          <div class="spinner-border text-primary" role="status"></div>
+          <p class="mt-2 text-muted">Processing import...</p>
+        </div>
+
+        <div *ngIf="importError" class="alert alert-danger">
+          <i class="mdi mdi-alert me-2"></i>
+          {{ importError }}
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="modal.dismiss()" [disabled]="importing">
+          Cancel
+        </button>
+        <button 
+          type="button" 
+          class="btn btn-primary" 
+          (click)="processManualImport(); modal.close()"
+          [disabled]="!importManualName || !importManualItemCount || importing">
+          <i class="mdi mdi-plus me-1"></i>
+          Create Manual Template
+        </button>
+      </div>
+    </ng-template>
+
+    <!-- Copy as New Parent Modal -->
+    <ng-template #copyAsParentModal let-modal>
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">
+          <i class="mdi mdi-content-copy me-2"></i>
+          Copy Template as New Parent
+        </h5>
+        <button type="button" class="btn-close btn-close-white" (click)="modal.dismiss()" [disabled]="copyingAsParent"></button>
+      </div>
+      <div class="modal-body" [formGroup]="copyAsParentForm">
+        <p class="text-muted mb-3">
+          Configure the new template details. Checklist structure and text are copied, but all media is excluded.
+          <br>
+          <strong>Not copied:</strong> sample images, reference images, sample videos, and audio media.
+        </p>
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Template Name <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" formControlName="name" placeholder="Enter template name"
+                   [ngClass]="{ 'is-invalid': copyAsParentForm.get('name')?.invalid && copyAsParentForm.get('name')?.touched }">
+            <div class="invalid-feedback" *ngIf="copyAsParentForm.get('name')?.invalid && copyAsParentForm.get('name')?.touched">
+              Template name is required
+            </div>
+          </div>
+
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Category</label>
+            <input type="text" class="form-control" value="Inspection" readonly>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Part Number</label>
+            <input type="text" class="form-control" formControlName="part_number" placeholder="Enter part number">
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Product Type</label>
+            <input type="text" class="form-control" formControlName="product_type" placeholder="Enter product type">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Customer Name</label>
+            <input type="text" class="form-control" formControlName="customer_name" placeholder="Enter customer name">
+          </div>
+          <div class="col-md-6 mb-3">
+            <div class="form-check form-switch mt-4">
+              <input class="form-check-input" type="checkbox" formControlName="is_active" id="copyParentIsActive">
+              <label class="form-check-label" for="copyParentIsActive">Active Template</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-2">
+          <label class="form-label">Description</label>
+          <textarea class="form-control" rows="4" formControlName="description" placeholder="Enter template description"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="modal.dismiss()" [disabled]="copyingAsParent">Cancel</button>
+        <button type="button" class="btn btn-primary" (click)="createCopyAsNewParent(modal)" [disabled]="copyingAsParent">
+          <span *ngIf="copyingAsParent" class="spinner-border spinner-border-sm me-2" role="status"></span>
+          <i *ngIf="!copyingAsParent" class="mdi mdi-check me-1"></i>
+          {{ copyingAsParent ? 'Creating...' : 'Create Parent Template' }}
+        </button>
+      </div>
+    </ng-template>
+
+    <!-- Image Preview Modal -->
+    <ng-template #imagePreviewModal let-modal>
+      <div class="modal-header">
+        <h5 class="modal-title">Sample Image Preview</h5>
+        <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
+      </div>
+      <div class="modal-body text-center">
+        <img [src]="previewImageUrl" 
+             class="img-fluid" 
+             style="max-height: 70vh; max-width: 100%; object-fit: contain;"
+             alt="Sample image preview">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="modal.dismiss()">Close</button>
+      </div>
+    </ng-template>
+
+    <!-- Video Preview Modal -->
+    <ng-template #videoPreviewModal let-modal>
+      <div class="modal-header">
+        <h5 class="modal-title">Sample Video Preview</h5>
+        <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
+      </div>
+      <div class="modal-body text-center">
+        <video *ngIf="previewVideoUrl" [src]="previewVideoUrl" controls class="w-100" style="max-height:70vh; object-fit:contain;"></video>
+        <div *ngIf="!previewVideoUrl" class="text-muted">No video to preview</div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="modal.dismiss()">Close</button>
+      </div>
+    </ng-template>
+
+    <!-- Sample Images Management Modal -->
+    <ng-template #sampleImagesModalTemplate let-modal>
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="mdi mdi-image-multiple me-2"></i>
+          {{ isCurrentModalNoMedia() ? 'Manage Reference Images' : 'Manage Sample Images' }}
+        </h5>
+        <button type="button" class="btn-close btn-close-white" (click)="modal.dismiss()"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted mb-4">
+          <i class="mdi mdi-information-outline me-1"></i>
+          {{ isCurrentModalNoMedia()
+            ? 'Add reference images for this instruction-only item.'
+            : 'Configure the primary sample image and reference images for this checklist item.' }}
+        </p>
+
+        <!-- Primary Sample Image -->
+        <div class="mb-4" *ngIf="!isCurrentModalNoMedia()">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div>
+              <label class="form-label mb-0 fw-bold">Primary Sample Image</label>
+              <small class="d-block text-muted">The main image users should replicate when taking photos</small>
+            </div>
+            <button type="button" class="btn btn-outline-primary btn-sm" 
+                    (click)="openPrimarySampleImageUpload(currentModalItemIndex)"
+                    [disabled]="uploadingImage">
+              <span *ngIf="uploadingImage" class="spinner-border spinner-border-sm me-1" role="status"></span>
+              <i *ngIf="!uploadingImage" class="mdi" [class.mdi-plus]="!hasPrimarySampleImage(currentModalItemIndex)" [class.mdi-image-edit]="hasPrimarySampleImage(currentModalItemIndex)"></i>
+              {{uploadingImage ? 'Uploading...' : (hasPrimarySampleImage(currentModalItemIndex) ? 'Replace' : 'Add Sample')}}
+            </button>
+          </div>
+          
+          <div *ngIf="hasPrimarySampleImage(currentModalItemIndex)" class="d-flex align-items-center border rounded p-3 bg-light">
+            <div class="position-relative me-3">
+              <img [src]="getPrimarySampleImageUrl(currentModalItemIndex)"
+                   class="img-thumbnail border-primary"
+                   style="width: 150px; height: 150px; object-fit: contain; cursor: pointer; background: white; border-width: 3px !important;"
+                   [alt]="getPrimarySampleImage(currentModalItemIndex)?.label || 'Primary sample image'"
+                   (click)="previewSampleImage(currentModalItemIndex)"
+                   (error)="onSampleImageError(currentModalItemIndex)"
+                   (load)="onSampleImageLoad(currentModalItemIndex)">
+              <span class="badge bg-primary position-absolute bottom-0 start-50 translate-middle-x mb-1">
+                Primary
+              </span>
+              <button type="button"
+                      class="btn btn-danger position-absolute top-0 end-0"
+                      style="transform: translate(50%, -50%); width: 24px; height: 24px; padding: 0; border-radius: 50%;"
+                      (click)="removePrimarySampleImage(currentModalItemIndex)">
+                <i class="mdi mdi-close" style="font-size: 0.8rem;"></i>
+              </button>
+            </div>
+            <div class="flex-grow-1">
+              <div class="d-flex align-items-start mb-2">
+                <i class="mdi mdi-target text-primary me-2 mt-1"></i>
+                <div>
+                  <strong>Match This Photo</strong>
+                  <p class="mb-0 text-muted small">Users will compare their captured photo against this image</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div *ngIf="!hasPrimarySampleImage(currentModalItemIndex)" class="text-muted text-center py-4 border-2 border-dashed rounded bg-white" style="border: 2px dashed #dee2e6;">
+            <i class="mdi mdi-camera-outline text-primary mb-2" style="font-size: 2.5rem;"></i>
+            <p class="mb-0"><strong>No primary sample image</strong></p>
+            <p class="mb-0 small text-muted">Add the main reference photo users should replicate</p>
+          </div>
+        </div>
+
+        <hr *ngIf="!isCurrentModalNoMedia()">
+
+        <!-- Reference Images -->
+        <div class="mb-3">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div>
+              <label class="form-label mb-0 fw-bold">Reference Images</label>
+              <small class="d-block text-muted">Additional context images (max 5) - different angles, examples, diagrams</small>
+            </div>
+            <button type="button" class="btn btn-outline-secondary btn-sm" 
+                    (click)="openReferenceImageUpload(currentModalItemIndex)"
+                    [disabled]="uploadingImage || getReferenceImageCount(currentModalItemIndex) >= 5">
+              <span *ngIf="uploadingImage" class="spinner-border spinner-border-sm me-1" role="status"></span>
+              <i *ngIf="!uploadingImage" class="mdi mdi-plus"></i>
+              {{uploadingImage ? 'Uploading...' : 'Add Reference'}}
+              <span class="badge bg-secondary ms-1">{{getReferenceImageCount(currentModalItemIndex)}}/5</span>
+            </button>
+          </div>
+          
+          <!-- Reference Images Grid -->
+          <div *ngIf="getReferenceImages(currentModalItemIndex).length > 0" class="row g-2">
+            <div class="col-6 col-md-4" *ngFor="let refImage of getReferenceImages(currentModalItemIndex); let refIdx = index">
+              <div class="position-relative border rounded p-2 bg-white">
+                <img [src]="refImage.url"
+                     class="img-thumbnail w-100"
+                     style="height: 100px; object-fit: cover; cursor: pointer;"
+                     [alt]="refImage.label || 'Reference image'"
+                     (click)="previewReferenceImage(currentModalItemIndex, refIdx)">
+                <button type="button"
+                        class="btn btn-danger btn-sm position-absolute top-0 end-0"
+                        style="transform: translate(25%, -25%); width: 20px; height: 20px; padding: 0; border-radius: 50%;"
+                        (click)="removeReferenceImage(currentModalItemIndex, refIdx)">
+                  <i class="mdi mdi-close" style="font-size: 0.7rem;"></i>
+                </button>
+                <div class="mt-1">
+                  <input type="text" 
+                         class="form-control form-control-sm" 
+                         placeholder="Label (optional)"
+                         [(ngModel)]="refImage.label"
+                         [ngModelOptions]="{standalone: true}">
+                  <select class="form-select form-select-sm mt-1" 
+                          [(ngModel)]="refImage.image_type"
+                          [ngModelOptions]="{standalone: true}">
+                    <option value="reference">Reference</option>
+                    <option value="defect_example">Defect Example</option>
+                    <option value="diagram">Diagram</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div *ngIf="getReferenceImages(currentModalItemIndex).length === 0" class="text-muted text-center py-3 border rounded bg-light">
+            <i class="mdi mdi-image-multiple-outline mb-2" style="font-size: 1.5rem;"></i>
+            <p class="mb-0 small">No reference images added</p>
+          </div>
+        </div>
+
+        <hr *ngIf="!isCurrentModalNoMedia()">
+
+        <!-- Photo Requirements -->
+        <div class="mb-3" *ngIf="currentModalItemIndex >= 0 && getItemFormGroup(currentModalItemIndex) && !isCurrentModalNoMedia()">
+          <h6 class="mb-3 fw-bold">
+            <i class="mdi mdi-cog me-1"></i>Photo Requirements
+          </h6>
+          
+          <div [formGroup]="getItemFormGroup(currentModalItemIndex)!">
+            <div formGroupName="photo_requirements">
+            <!-- Photo Capture Guidelines -->
+            <div class="row mb-3 p-3 bg-light rounded">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Viewing Angle</label>
+                <select class="form-select form-select-sm" formControlName="angle">
+                  <option value="">Any Angle</option>
+                  <option value="front">Front View</option>
+                  <option value="back">Back View</option>
+                  <option value="side">Side View</option>
+                  <option value="top">Top View</option>
+                  <option value="bottom">Bottom View</option>
+                  <option value="diagonal">Diagonal View</option>
+                </select>
+                <small class="form-text text-muted">Required viewing angle</small>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Capture Distance</label>
+                <select class="form-select form-select-sm" formControlName="distance">
+                  <option value="">Any Distance</option>
+                  <option value="close">Close-up</option>
+                  <option value="medium">Medium</option>
+                  <option value="far">Wide View</option>
+                </select>
+                <small class="form-text text-muted">Required distance</small>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Lighting</label>
+                <select class="form-select form-select-sm" formControlName="lighting">
+                  <option value="">Any Lighting</option>
+                  <option value="bright">Bright</option>
+                  <option value="normal">Normal</option>
+                  <option value="dim">Dim</option>
+                </select>
+                <small class="form-text text-muted">Lighting conditions</small>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Focus Area</label>
+                <input type="text" class="form-control form-control-sm" formControlName="focus" placeholder="e.g., connector pins">
+                <small class="form-text text-muted">Specific focus area</small>
+              </div>
+            </div>
+
+            <!-- Photo Count Requirements -->
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label class="form-label">Minimum Photos</label>
+                <input type="number" class="form-control form-control-sm" formControlName="min_photos" min="0" max="10" placeholder="0">
+                <small class="form-text text-muted">Minimum required (0 = optional)</small>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Maximum Photos</label>
+                <input type="number" class="form-control form-control-sm" formControlName="max_photos" min="1" max="10" placeholder="10">
+                <small class="form-text text-muted">Maximum allowed per item</small>
+              </div>
+            </div>
+
+            <!-- Photo Required Toggle -->
+            <div class="p-3 bg-light rounded">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" formControlName="picture_required" [id]="'modal-picture-required-' + currentModalItemIndex">
+                <label class="form-check-label" [for]="'modal-picture-required-' + currentModalItemIndex">
+                  <strong>Picture Required</strong>
+                </label>
+              </div>
+              <small class="form-text text-muted d-block mt-2">
+                <i class="mdi mdi-lightbulb-on-outline"></i>
+                When <strong>ON</strong>: Users must take a photo. When <strong>OFF</strong>: Users can confirm without capturing.
+              </small>
+            </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" (click)="modal.close()">
+          <i class="mdi mdi-check me-1"></i>Done
+        </button>
+      </div>
+    </ng-template>
+
+    <!-- Sample Video Management Modal -->
+    <ng-template #sampleVideoModalTemplate let-modal>
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">
+          <i class="mdi mdi-video me-2"></i>
+          Manage Sample Video
+        </h5>
+        <button type="button" class="btn-close btn-close-white" (click)="modal.dismiss()"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted mb-4">
+          <i class="mdi mdi-information-outline me-1"></i>
+          Optional short video demonstrating the required capture (mp4/webm)
+        </p>
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <label class="form-label mb-0 fw-bold">Sample Video</label>
+          <div>
+            <button type="button" class="btn btn-outline-primary btn-sm me-2" (click)="openSampleVideoUpload(currentModalItemIndex)" [disabled]="uploadingVideo">
+              <span *ngIf="uploadingVideo" class="spinner-border spinner-border-sm me-1"></span>
+              <i *ngIf="!uploadingVideo" class="mdi mdi-video-plus"></i>
+              {{ uploadingVideo ? 'Uploading...' : (hasSampleVideo(currentModalItemIndex) ? 'Replace Video' : 'Add Video') }}
+            </button>
+            <button *ngIf="hasSampleVideo(currentModalItemIndex)" type="button" class="btn btn-outline-secondary btn-sm" (click)="previewSampleVideo(currentModalItemIndex)">
+              <i class="mdi mdi-play-circle me-1"></i>Preview
+            </button>
+            <button *ngIf="hasSampleVideo(currentModalItemIndex)" type="button" class="btn btn-danger btn-sm ms-2" (click)="removeSampleVideo(currentModalItemIndex)">
+              <i class="mdi mdi-delete"></i>
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="hasSampleVideo(currentModalItemIndex)" class="border rounded p-3 bg-light text-center">
+          <video [src]="getPrimarySampleVideoUrl(currentModalItemIndex)" controls style="max-height:300px; max-width:100%; object-fit:contain;"></video>
+        </div>
+        
+        <div *ngIf="!hasSampleVideo(currentModalItemIndex)" class="text-muted text-center py-5 border-2 border-dashed rounded bg-white" style="border: 2px dashed #dee2e6;">
+          <i class="mdi mdi-video-outline text-primary mb-2" style="font-size: 3rem;"></i>
+          <p class="mb-0"><strong>No sample video</strong></p>
+          <p class="mb-0 small text-muted">Add a short video demonstration</p>
+        </div>
+
+        <hr>
+
+        <!-- Video Requirements -->
+        <div class="mb-3" *ngIf="currentModalItemIndex >= 0 && getItemFormGroup(currentModalItemIndex)">
+          <h6 class="mb-3 fw-bold">
+            <i class="mdi mdi-cog me-1"></i>Video Requirements
+          </h6>
+          
+          <div [formGroup]="getItemFormGroup(currentModalItemIndex)!">
+            <div class="row">
+              <div class="col-md-6" formGroupName="photo_requirements">
+                <label class="form-label">Max Video Duration</label>
+                <input type="number" class="form-control form-control-sm" formControlName="max_video_duration_seconds" min="1" max="600">
+                <small class="form-text text-muted">Maximum video length in seconds</small>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Submission Time Limit</label>
+                <input type="number" class="form-control form-control-sm" formControlName="submission_time_seconds" min="0" placeholder="0 for no limit">
+                <small class="form-text text-muted">Time allowed to submit (seconds)</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" (click)="modal.close()">
+          <i class="mdi mdi-check me-1"></i>Done
+        </button>
+      </div>
+    </ng-template>
+
+    <!-- Links Management Modal -->
+    <ng-template #linksModalTemplate let-modal>
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="mdi mdi-link-variant me-2"></i>
+          Manage Links
+        </h5>
+        <button type="button" class="btn-close btn-close-white" (click)="modal.dismiss()"></button>
+      </div>
+      <div class="modal-body" *ngIf="currentLinksItemIndex >= 0 && getItemFormGroup(currentLinksItemIndex)">
+        <p class="text-muted mb-3">
+          <i class="mdi mdi-information-outline me-1"></i>
+          Add reference links for this checklist item (specs, drawings, videos, etc.).
+        </p>
+
+        <div [formGroup]="getItemFormGroup(currentLinksItemIndex)!">
+          <div formArrayName="links">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <label class="form-label mb-0">
+                Links
+              </label>
+              <button type="button" class="btn btn-outline-primary btn-sm" (click)="addLink(currentLinksItemIndex)">
+                <i class="mdi mdi-plus me-1"></i>Add Link
+              </button>
+            </div>
+
+            <div *ngIf="getLinksFormArray(currentLinksItemIndex).length === 0" class="text-muted small border rounded bg-light p-2">
+              No links added.
+            </div>
+
+            <div class="d-flex flex-column gap-2" *ngIf="getLinksFormArray(currentLinksItemIndex).length > 0">
+              <div *ngFor="let link of getLinksFormArray(currentLinksItemIndex).controls; let linkIndex = index" [formGroupName]="linkIndex" class="border rounded p-2">
+                <div class="row g-2 align-items-end">
+                  <div class="col-md-4">
+                    <label class="form-label mb-1">Title <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" formControlName="title" placeholder="Link title"
+                           [ngClass]="{ 'is-invalid': link.get('title')?.invalid && link.get('title')?.touched }">
+                    <div class="invalid-feedback" *ngIf="link.get('title')?.invalid && link.get('title')?.touched">
+                      Title is required
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label mb-1">URL <span class="text-danger">*</span></label>
+                    <input type="url" class="form-control" formControlName="url" placeholder="https://example.com"
+                           [ngClass]="{ 'is-invalid': link.get('url')?.invalid && link.get('url')?.touched }">
+                    <div class="invalid-feedback" *ngIf="link.get('url')?.invalid && link.get('url')?.touched">
+                      URL is required
+                    </div>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label mb-1">Description</label>
+                    <input type="text" class="form-control" formControlName="description" placeholder="Optional description">
+                  </div>
+                  <div class="col-md-1">
+                    <button type="button" class="btn btn-outline-danger btn-sm w-100" (click)="removeLink(currentLinksItemIndex, linkIndex)" title="Remove link">
+                      <i class="mdi mdi-delete"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" (click)="modal.close()">
+          <i class="mdi mdi-check me-1"></i>Done
+        </button>
+      </div>
+    </ng-template>
+
+    <!-- Preview Modal -->
+    <ng-template #previewModal let-modal>
+      <div class="modal-header bg-light">
+        <h5 class="modal-title">
+          <i class="mdi mdi-eye me-2"></i>Checklist Preview
+          <span class="badge bg-info ms-2">{{templateForm.get('name')?.value || 'Untitled Template'}}</span>
+        </h5>
+        <button type="button" class="btn-close" (click)="modal.dismiss()"></button>
+      </div>
+      <div class="modal-body p-0" style="max-height: calc(100vh - 140px); overflow: hidden;">
+        <div class="row g-0 h-100">
+          <!-- Main Content Area -->
+          <div class="col-md-9 pe-3" style="max-height: calc(100vh - 140px); overflow-y: auto; padding: 1rem;" #previewContent>
+            <!-- Template Info Banner -->
+            <div class="alert alert-info mb-4">
+              <div class="row">
+                <div class="col-md-6">
+                  <strong>Category:</strong> {{templateForm.get('category')?.value | titlecase}}<br>
+                  <strong>Part Number:</strong> {{templateForm.get('part_number')?.value || 'N/A'}}
+                </div>
+                <div class="col-md-6">
+                  <strong>Product Type:</strong> {{templateForm.get('product_type')?.value || 'N/A'}}<br>
+                  <strong>Total Items:</strong> {{items.length}}
+                </div>
+              </div>
+              
+              <!-- Quick Stats -->
+              <div class="border-top mt-3 pt-3">
+                <div class="row small">
+                  <div class="col-6 col-md-3">
+                    <i class="mdi mdi-checkbox-marked-circle text-danger me-1"></i>
+                    <strong>{{getRequiredItemsCount()}}</strong> Required
+                  </div>
+                  <div class="col-6 col-md-3">
+                    <i class="mdi mdi-camera text-primary me-1"></i>
+                    <strong>{{getPhotoItemsCount()}}</strong> Photo
+                  </div>
+                  <div class="col-6 col-md-3">
+                    <i class="mdi mdi-video text-success me-1"></i>
+                    <strong>{{getVideoItemsCount()}}</strong> Video
+                  </div>
+                  <div class="col-6 col-md-3">
+                    <i class="mdi mdi-image-multiple text-info me-1"></i>
+                    <strong>{{getItemsWithMediaCount()}}</strong> With Media
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Checklist Items Preview -->
+            <div *ngFor="let item of items.controls; let i = index; trackBy: trackByIndex" class="mb-3" [id]="'preview-item-' + i">
+              <div class="card border" 
+               [class.border-primary]="item.get('level')?.value === 0"
+               [class.border-secondary]="item.get('level')?.value > 0"
+               [style.margin-left.rem]="(item.get('level')?.value || 0) * 1.5">
+            <div class="card-body p-3">
+              <!-- Item Header -->
+              <div class="d-flex align-items-start mb-2">
+                <span class="badge bg-secondary me-2" style="min-width: 50px; font-size: 0.9rem;">
+                  {{getOutlineNumber(i)}}
+                </span>
+                <div class="flex-grow-1">
+                  <h6 class="mb-1" [class.fw-bold]="item.get('level')?.value === 0">
+                    {{item.get('title')?.value}}
+                    <span *ngIf="item.get('is_required')?.value" class="badge bg-danger ms-2">Required</span>
+                  </h6>
+                  
+                  <!-- Description (plain text, no rich editor) -->
+                  <div *ngIf="item.get('description')?.value" 
+                       class="text-muted small mb-2"
+                       [innerHTML]="item.get('description')?.value">
+                  </div>
+
+                  <!-- Links Preview -->
+                  <div *ngIf="getLinksFormArray(i).length > 0" class="mb-2">
+                    <small class="text-muted d-block mb-1">
+                      <i class="mdi mdi-link-variant me-1"></i>Links
+                    </small>
+                    <div class="list-group list-group-flush">
+                      <a *ngFor="let link of getLinksFormArray(i).value"
+                         class="list-group-item list-group-item-action px-0 py-1"
+                         [href]="link.url"
+                         target="_blank"
+                         rel="noopener noreferrer">
+                        <div class="fw-semibold text-truncate">{{ link.title || link.url }}</div>
+                        <div class="small text-muted" *ngIf="link.description">{{ link.description }}</div>
+                      </a>
+                    </div>
+                  </div>
+
+                  <!-- Submission Type Badge -->
+                  <div class="mb-2">
+                    <span class="badge" [ngSwitch]="item.get('submission_type')?.value">
+                      <span *ngSwitchCase="'photo'" class="badge bg-primary">
+                        <i class="mdi mdi-camera me-1"></i>Photo
+                      </span>
+                      <span *ngSwitchCase="'video'" class="badge bg-success">
+                        <i class="mdi mdi-video me-1"></i>Video
+                      </span>
+                      <span *ngSwitchCase="'audio'" class="badge bg-warning text-dark">
+                        <i class="mdi mdi-microphone me-1"></i>Audio
+                      </span>
+                      <span *ngSwitchCase="'either'" class="badge bg-info">
+                        <i class="mdi mdi-file-multiple me-1"></i>Photo/Video
+                      </span>
+                      <span *ngSwitchCase="'none'" class="badge bg-secondary">
+                        <i class="mdi mdi-cancel me-1"></i>No Media
+                      </span>
+                    </span>
+                  </div>
+
+                  <!-- Sample Images Preview (improved layout) -->
+                  <div *ngIf="(item.get('submission_type')?.value === 'photo' || item.get('submission_type')?.value === 'either' || item.get('submission_type')?.value === 'none') && getSampleImagesArray(i).length > 0">
+                    <!-- Primary Sample Image - Large, floated right -->
+                    <div *ngFor="let img of getSampleImagesArray(i)">
+                      <div *ngIf="img.is_primary" class="float-end ms-3 mb-2">
+                        <div class="text-center">
+                          <img [src]="img.url" 
+                               class="rounded border border-primary shadow-sm" 
+                               loading="lazy"
+                               style="width: 200px; height: 200px; object-fit: cover; cursor: pointer;"
+                               [title]="img.label || 'Primary Sample Image'"
+                               (click)="openImagePreview(img.url)">
+                          <div class="small text-muted mt-1">
+                            <i class="mdi mdi-star text-warning me-1"></i>Primary Sample
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <!-- Reference Images - Small thumbnails -->
+                    <div class="mb-2">
+                      <small class="text-muted d-block mb-2">
+                        <i class="mdi mdi-image-multiple me-1"></i>Reference Images:
+                      </small>
+                      <div class="d-flex flex-wrap gap-2">
+                        <div *ngFor="let img of getSampleImagesArray(i)" class="text-center">
+                          <img *ngIf="!img.is_primary"
+                               [src]="img.url" 
+                               class="rounded border" 
+                               loading="lazy"
+                               style="width: 60px; height: 60px; object-fit: cover; cursor: pointer;"
+                               [title]="img.label || 'Reference Image'"
+                               (click)="openImagePreview(img.url)">
+                          <div *ngIf="!img.is_primary" class="small text-muted" style="font-size: 0.7rem; max-width: 60px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                            {{img.label || 'Reference'}}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div class="clearfix"></div>
+                    
+                    <!-- Photo Requirements -->
+                    <div class="small text-muted mt-2">
+                      <i class="mdi mdi-cog me-1"></i>
+                      Min: {{item.get('photo_requirements.min_photos')?.value || 1}}, 
+                      Max: {{item.get('photo_requirements.max_photos')?.value || 5}}
+                      <span *ngIf="item.get('photo_requirements.angle')?.value">
+                        | Angle: {{item.get('photo_requirements.angle')?.value}}
+                      </span>
+                      <span *ngIf="item.get('photo_requirements.distance')?.value">
+                        | Distance: {{item.get('photo_requirements.distance')?.value}}
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- Sample Videos Preview -->
+                  <div *ngIf="(item.get('submission_type')?.value === 'video' || item.get('submission_type')?.value === 'either') && getSampleVideosArray(i).length > 0">
+                    <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+                      <small class="text-muted me-2">
+                        <i class="mdi mdi-video me-1"></i>Sample Videos:
+                      </small>
+                      <video *ngFor="let vid of getSampleVideosArray(i)" 
+                             [src]="vid.url" 
+                             class="rounded border" 
+                             preload="none"
+                             style="width: 80px; height: 50px; object-fit: cover;">
+                      </video>
+                    </div>
+                    
+                    <!-- Video Requirements -->
+                    <div class="small text-muted" *ngIf="item.get('photo_requirements.max_video_duration_seconds')?.value">
+                      <i class="mdi mdi-clock-outline me-1"></i>
+                      Max Duration: {{item.get('photo_requirements.max_video_duration_seconds')?.value}}s
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+            <!-- Empty State -->
+            <div *ngIf="items.length === 0" class="text-center text-muted py-5">
+              <i class="mdi mdi-clipboard-text-outline" style="font-size: 4rem;"></i>
+              <p class="mt-3">No items to preview</p>
+            </div>
+          </div>
+
+          <!-- Navigation Sidebar -->
+          <div class="col-md-3 border-start bg-light" style="max-height: calc(100vh - 140px); overflow-y: auto;">
+            <div class="p-2">
+              <app-checklist-navigation
+                [items]="editorNavItems"
+                [mode]="'readonly'"
+                [disableVirtualScroll]="true"
+                [showMediaContext]="showNavMediaContext"
+                [showSearch]="false"
+                [showExpandCollapse]="false"
+                [height]="previewNavHeight"
+                (itemSelected)="scrollToPreviewItem($event.index)">
+              </app-checklist-navigation>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="modal.dismiss()">
+          <i class="mdi mdi-close me-1"></i>Close
+        </button>
+        <button type="button" class="btn btn-primary" (click)="modal.dismiss(); saveTemplate()">
+          <i class="mdi mdi-content-save me-1"></i>Save Template
+        </button>
+      </div>
+    </ng-template>
+
+  

@@ -336,3 +336,11 @@ $color-muted: #596066; // neutral text
     flex: 0 0 auto;
   }
 }
+
+// Full-page editor pages (e.g. checklist template editor) — suppress body/page-content scroll
+body.tce-page-active,
+body.tce-page-active .main-content,
+body.tce-page-active .page-content {
+  overflow: hidden !important;
+  height: 100vh;
+}

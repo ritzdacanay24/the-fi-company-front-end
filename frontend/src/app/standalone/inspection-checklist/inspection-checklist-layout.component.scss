@@ -1,0 +1,3 @@
+@use '../shared/standalone-shell-layout.shared' as standaloneShell;
+
+@include standaloneShell.shell('icl', $content-offset-mode: 'padding');

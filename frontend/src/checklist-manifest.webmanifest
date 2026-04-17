@@ -4,7 +4,7 @@
   "theme_color": "#0d6efd",
   "background_color": "#ffffff",
   "display": "standalone",
-  "id": "./standalone/checklist",
+  "id": "./inspection-checklist",
   "scope": "./",
   "start_url": "./checklist-app?launch=1",
   "icons": [

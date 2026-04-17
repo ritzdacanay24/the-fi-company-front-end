@@ -1,0 +1,48 @@
+<div id="layout-wrapper" class="icl-shell" [class.sidebar-open]="isSidebarOpen">
+  <header class="icl-topbar d-flex align-items-center justify-content-between px-3 px-md-4">
+    <div class="d-flex align-items-center gap-2">
+      <button class="btn btn-outline-secondary icl-sidebar-toggle" type="button" (click)="toggleSidebar()">
+        <i class="las la-bars"></i>
+      </button>
+      <div class="icl-logo-badge">QC</div>
+      <div>
+        <h1 class="h6 mb-0">Inspection Checklist</h1>
+        <small class="text-muted">Standalone quality inspection workflow and controls</small>
+      </div>
+    </div>
+    <a class="btn btn-sm btn-outline-secondary" routerLink="/menu" target="_self">Back to Main Menu</a>
+  </header>
+
+  <nav class="icl-section-rail" aria-label="Main Sections">
+    <a
+      *ngFor="let section of mainSections"
+      class="icl-rail-link"
+      [routerLink]="section.route"
+      [class.active]="isMainSectionActive(section.route)"
+    >
+      <i [class]="section.icon"></i>
+      <span class="icl-rail-tooltip">{{ section.label }}</span>
+    </a>
+  </nav>
+
+  <app-standalone-sidenav
+    prefix="icl"
+    [isOpen]="isSidebarOpen"
+    brandRoute="/inspection-checklist"
+    logoSm="QC"
+    logoLg="Inspection"
+    groupTitle="Inspection Checklist"
+    [navItems]="navItems"
+    (navItemClick)="onNavClick()"
+  ></app-standalone-sidenav>
+
+  <div class="icl-sidebar-backdrop" *ngIf="isSidebarOpen && !isDesktopViewport" (click)="closeSidebar()"></div>
+
+  <div class="main-content">
+    <div class="page-content">
+      <div class="container-fluid py-2 py-md-3">
+        <router-outlet></router-outlet>
+      </div>
+    </div>
+  </div>
+</div>

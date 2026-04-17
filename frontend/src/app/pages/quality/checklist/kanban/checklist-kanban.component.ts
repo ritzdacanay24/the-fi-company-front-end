@@ -153,7 +153,7 @@ export class ChecklistKanbanComponent implements OnInit, OnDestroy {
   }
 
   openChecklist(instanceId: number): void {
-    this.router.navigate(['/standalone/checklist/instance'], {
+    this.router.navigate(['/inspection-checklist/instance'], {
       queryParams: {
         id: instanceId,
         returnTo: 'kanban'
@@ -162,7 +162,7 @@ export class ChecklistKanbanComponent implements OnInit, OnDestroy {
   }
 
   openExecutionList(): void {
-    this.router.navigate(['/standalone/checklist/execution']);
+    this.router.navigate(['/inspection-checklist/execution']);
   }
 
   loadWorkOrderDetails(): void {
@@ -256,7 +256,7 @@ export class ChecklistKanbanComponent implements OnInit, OnDestroy {
     this.createLoading = true;
     this.photoChecklistConfigService.createInstance(instanceData).pipe(first()).subscribe(response => {
       this.createLoading = false;
-      this.router.navigate(['/standalone/checklist/instance'], {
+      this.router.navigate(['/inspection-checklist/instance'], {
         queryParams: {
           id: response.instance_id,
           returnTo: 'kanban'

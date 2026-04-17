@@ -1592,7 +1592,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     this.loadConfig();
 
     // Add a scoped body class for standalone route so we can override styles for tablet UX
-    this.isStandaloneMode = this.router.url?.includes('/standalone/checklist/instance');
+    this.isStandaloneMode = this.router.url?.includes('/inspection-checklist/instance');
     if (this.isStandaloneMode) {
       this.renderer.addClass(this.document.body, this.standaloneBodyClass);
     }
@@ -3197,11 +3197,15 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
 
   private getExecutionRoute(): string {
     const returnTo = this.route.snapshot.queryParams['returnTo'];
-    if (this.isStandaloneMode && returnTo === 'kanban') {
-      return '/standalone/checklist/kanban';
+    if (returnTo === 'kanban') {
+      return '/inspection-checklist/execution';
     }
 
-    return this.isStandaloneMode ? '/standalone/checklist/execution' : '/quality/checklist/execution';
+    if (returnTo === 'execution') {
+      return '/inspection-checklist/execution';
+    }
+
+    return '/quality/checklist/execution';
   }
 
   goBack(): void {
@@ -4808,8 +4812,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       this.setOpenChecklistNavigationHint(instanceId);
     }
 
-    const isStandalone = this.router.url?.includes('/standalone/checklist/instance');
-    const targetRoute = isStandalone ? '/standalone/checklist/instance' : '/quality/checklist/instance';
+    const targetRoute = '/inspection-checklist/instance';
     
     // Navigate without step param so default auto-navigation applies.
     this.router.navigate([targetRoute], { 

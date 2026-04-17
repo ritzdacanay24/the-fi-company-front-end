@@ -11,7 +11,7 @@
             </a>
           </li>
           <li class="breadcrumb-item active" aria-current="page">
-            Photo Checklists
+            Inspection Checklists
           </li>
         </ol>
       </nav>
@@ -24,59 +24,26 @@
               <i class="mdi mdi-clipboard-check text-white fs-4"></i>
             </div>
             <div>
-              <h2 class="mb-1 text-primary">Photo Checklists</h2>
-              <p class="text-muted mb-0">Manage photo documentation for quality control</p>
+              <h2 class="mb-1 text-primary">Inspection Checklists</h2>
+              <p class="text-muted mb-0">Select a checklist template to start an inspection</p>
             </div>
           </div>
-          <div class="d-flex gap-2">
-            <button class="btn btn-outline-success" [routerLink]="['./execution']" [relativeTo]="route">
-              <i class="mdi mdi-clipboard-list me-2"></i>
-              Open Instances
-            </button>
-            <button class="btn btn-outline-info" [routerLink]="['../checklist-audit']" [relativeTo]="route">
-              <i class="mdi mdi-file-chart me-2"></i>
-              Audit Reports
-            </button>
-            <button class="btn btn-primary" [routerLink]="['../template-manager']" [relativeTo]="route">
-              <i class="mdi mdi-cog me-2"></i>
-              Manage Templates
-            </button>
-          </div>
+
         </div>
         
       </div>
 
       <div class="card shadow-sm border-0">
-        <!-- Card Header with View Selector -->
         <div class="card-header">
-          <div class="d-flex align-items-center justify-content-between">
-            <div class="d-flex align-items-center">
-              <h5 class="card-title mb-0">
-                <i class="mdi mdi-clipboard-check me-2 text-primary"></i>
-                Photo Checklist Management
-              </h5>
+          <div class="d-flex align-items-center gap-2">
+            <div class="form-icon" style="width: 280px;">
+              <input type="search" class="form-control form-control-icon" placeholder="Search inspection checklists..."
+                [(ngModel)]="templateSearch" (ngModelChange)="onTemplateSearch($event)">
+              <i class="ri-search-2-line"></i>
             </div>
-            <div class="d-flex align-items-center gap-3">
-              <div class="d-flex align-items-center">
-                <label class="form-label mb-0 me-2 fw-semibold">View:</label>
-                <select class="form-select form-select-sm" 
-                        [(ngModel)]="activeTab" 
-                        (ngModelChange)="switchTab($event)"
-                        style="min-width: 180px;">
-                  <option value="templates">
-                    📋 Available Templates
-                  </option>
-                  <option value="instances">
-                    ✅ Active Checklists
-                  </option>
-                </select>
-              </div>
-              <button class="btn btn-outline-secondary btn-sm" 
-                      *ngIf="activeTab === 'templates'" 
-                      title="Refresh templates">
-                <i class="mdi mdi-refresh"></i>
-              </button>
-            </div>
+            <button class="btn btn-outline-secondary" (click)="loadData()" title="Refresh">
+              <i class="mdi mdi-refresh"></i>
+            </button>
           </div>
         </div>
 
@@ -95,13 +62,13 @@
               </div>
 
               <!-- Templates Content -->
-              <div class="p-3" *ngIf="!loading">
+              <div *ngIf="!loading">
                 <ag-grid-angular
                   class="ag-theme-quartz no-border"
                   [rowData]="templateGridRows"
                   [gridOptions]="templateGridOptions"
                   [class.d-none]="templateGridRows.length === 0"
-                  style="width: 100%; height: calc(100vh - 420px);">
+                  style="width: 100%; height: calc(100vh - 318px);">
                 </ag-grid-angular>
 
                 <!-- Empty State -->

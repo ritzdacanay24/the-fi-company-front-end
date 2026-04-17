@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators, AbstractControl } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { NgbModal, NgbModule } from '@ng-bootstrap/ng-bootstrap';
-import { CdkDragDrop, CdkDragSortEvent, DragDropModule } from '@angular/cdk/drag-drop';
+
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { QuillModule, QuillModules } from 'ngx-quill';
 import Quill from 'quill';
 import { Subscription } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 
@@ -64,2014 +65,9 @@ interface ReorderUndoState {
 @Component({
   selector: 'app-checklist-template-editor',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, NgbModule, DragDropModule, QualityDocumentSelectorComponent, RouterModule, QuillModule, ChecklistNavigationComponent],
-  template: `
-    <div class="container-fluid">
-      <div class="print-hide">
-        <div class="editor-loading-overlay" *ngIf="loading" aria-live="polite" aria-busy="true">
-          <div class="editor-loading-card">
-            <div class="spinner-border text-primary" role="status" aria-hidden="true"></div>
-            <div class="fw-semibold mt-3">Loading template...</div>
-            <div class="text-muted small">Preparing editor data and checklist items</div>
-          </div>
-        </div>
-
-        <div class="row">
-          <div class="col-12">
-          
-          <!-- Breadcrumb Navigation -->
-          <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-              <li class="breadcrumb-item">
-                <a [routerLink]="['/quality']">Quality</a>
-              </li>
-              <li class="breadcrumb-item">
-                <a [routerLink]="['/quality/template-manager']">Template Manager</a>
-              </li>
-              <li class="breadcrumb-item active" aria-current="page">
-                {{editingTemplate ? 'Edit Template' : 'Create Template'}}
-              </li>
-            </ol>
-          </nav>
-
-          <!-- Page Header with Context -->
-          <div class="mb-4">
-              <div class="d-flex align-items-center mb-3">
-              <button 
-                type="button" 
-                class="btn btn-outline-secondary me-3"
-                [routerLink]="['/quality/template-manager']"
-                title="Back to Template Manager">
-                <i class="mdi mdi-arrow-left me-2"></i>Back
-              </button>
-              <button 
-                type="button" 
-                class="btn btn-outline-primary me-3"
-                (click)="openImportModal()"
-                title="Import from PDF or CSV"
-                *ngIf="!editingTemplate">
-                <i class="mdi mdi-file-import me-2"></i>Import
-              </button>
-              <button 
-                type="button" 
-                class="btn btn-outline-info me-3"
-                (click)="openPreviewModal()"
-                title="Preview Template"
-                *ngIf="items.length > 0">
-                <i class="mdi mdi-eye me-2"></i>Preview
-              </button>
-              <button 
-                type="button" 
-                class="btn btn-outline-dark me-3"
-                (click)="printChecklist()"
-                title="Print Template PDF"
-                *ngIf="items.length > 0">
-                <i class="mdi mdi-printer me-2"></i>Print Template
-              </button>
-              <button
-                type="button"
-                class="btn me-3"
-                *ngIf="editingTemplate"
-                [disabled]="saving || loading"
-                [class.btn-outline-danger]="editingTemplate.is_active"
-                [class.btn-outline-success]="!editingTemplate.is_active"
-                (click)="setTemplateActiveStatus(!editingTemplate.is_active)"
-                [title]="editingTemplate.is_active ? 'Make template inactive' : 'Make template active'">
-                <i class="mdi me-2" [class.mdi-close-circle-outline]="editingTemplate.is_active" [class.mdi-check-circle-outline]="!editingTemplate.is_active"></i>
-                {{ editingTemplate.is_active ? 'Deactivate' : 'Activate' }}
-              </button>
-              <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
-                <i class="mdi mdi-clipboard-edit-outline text-white fs-4"></i>
-              </div>
-              <div>
-                <h2 class="mb-1 text-primary">{{editingTemplate ? 'Edit Checklist Template' : 'Create Checklist Template'}}</h2>
-                <p class="text-muted mb-0" *ngIf="editingTemplate">
-                  {{getDisplayTemplateName(editingTemplate)}}
-                  <span class="badge bg-light text-dark border ms-2">Viewing v{{editingTemplate.version}}</span>
-                  <span class="badge bg-light text-dark border ms-2" *ngIf="editingTemplate.is_draft && draftParentVersion">Parent v{{draftParentVersion}}</span>
-                  <span class="badge ms-2" [class]="editingTemplate.is_draft ? 'bg-warning text-dark' : 'bg-light text-dark border'">
-                    {{editingTemplate.is_draft ? 'Draft' : 'Published'}}
-                  </span>
-                  <span class="badge ms-2" [class]="editingTemplate.is_active ? 'bg-success' : 'bg-danger'">
-                    {{ editingTemplate.is_active ? 'Active' : 'Inactive' }}
-                  </span>
-                  <span *ngIf="editingTemplate.quality_document_metadata" class="badge bg-info text-dark ms-2">
-                    <i class="mdi mdi-file-document me-1"></i>
-                    {{editingTemplate.quality_document_metadata.document_number}}, Rev {{editingTemplate.quality_document_metadata.revision_number}}
-                  </span>
-                  <span *ngIf="lastSavedAt" class="badge bg-success ms-2">
-                    <i class="mdi mdi-check-circle me-1"></i>Auto-saved at {{lastSavedAt | date:'shortTime'}}
-                  </span>
-                </p>
-                <p class="text-muted mb-0" *ngIf="!editingTemplate">
-                  Create a new photo checklist template with customizable inspection items
-                </p>
-              </div>
-            </div>
-            
-            <!-- Published templates are read-only; users must explicitly start a draft -->
-            <div
-              class="alert alert-info border-info border-opacity-25 bg-info bg-opacity-10"
-              role="alert"
-              *ngIf="editingTemplate && !editingTemplate.is_draft">
-              <div class="d-flex align-items-start">
-                <i class="mdi mdi-lock-outline text-info me-3 mt-1 fs-5"></i>
-                <div class="w-100">
-                  <h6 class="alert-heading text-info mb-2">Published Template (Read-Only)</h6>
-                  <p class="mb-2">
-                    Published templates cannot be edited directly. Start a <strong>Sub-Version Draft</strong> (e.g., {{ editingTemplate.version }} → {{ getNextSubVersionDisplay(editingTemplate.version || '1.0') }}) or a <strong>Major Version Draft</strong>.
-                  </p>
-                  <div class="d-flex gap-2 flex-wrap">
-                    <button type="button" class="btn btn-outline-primary btn-sm" [disabled]="saving" (click)="saveDraft()">
-                      <i class="mdi mdi-content-save-edit-outline me-1"></i>Start Sub-Version Draft
-                    </button>
-                    <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="saving" (click)="startMajorVersionDraft()">
-                      <i class="mdi mdi-source-branch me-1"></i>Start Major Version Draft
-                    </button>
-                    <button type="button" class="btn btn-outline-dark btn-sm" [disabled]="saving" (click)="openCopyAsNewParentModal()">
-                      <i class="mdi mdi-content-copy me-1"></i>Copy as New Parent
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Draft warning/info -->
-            <div class="alert alert-warning border-warning border-opacity-25 bg-warning bg-opacity-10" role="alert" *ngIf="editingTemplate && editingTemplate.is_draft && !autoSaveEnabled">
-              <div class="d-flex align-items-start">
-                <i class="mdi mdi-alert text-warning me-3 mt-1 fs-5"></i>
-                <div>
-                  <h6 class="alert-heading text-warning mb-2">Draft Mode</h6>
-                  <p class="mb-2">
-                    You are editing a <strong>draft</strong>. Use <strong>Publish Draft</strong> when you are ready to make it the current published version.
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            <!-- Auto-Save Info for Imported Templates -->
-            <div class="alert alert-info border-info border-opacity-25 bg-info bg-opacity-10" role="alert" *ngIf="autoSaveEnabled">
-              <div class="d-flex align-items-start">
-                <i class="mdi mdi-information text-info me-3 mt-1 fs-5"></i>
-                <div>
-                  <h6 class="alert-heading text-info mb-2">Auto-Save Enabled</h6>
-                  <p class="mb-0">
-                    Your changes are being <strong>automatically saved</strong> as you edit. You can continue making changes and they will be saved every few seconds.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Main Content with Navigation Sidebar -->
-          <div class="row">
-            <!-- Main Form Card -->
-            <div [ngClass]="items.length > 0 ? 'col-12 col-md-8 col-lg-8' : 'col-12'">
-              <div class="card shadow-sm border-0">
-                <div [formGroup]="templateForm">
-                  <div class="card-body p-4" [class.readonly-form]="isPublishedLocked()">
-              
-                    <!-- Template Basic Information Section -->
-                    <div class="mb-4 pb-4 border-bottom">
-                      <div class="mb-3">
-                        <h3 class="h5 mb-1">Template Information</h3>
-                        <p class="text-muted mb-0">
-                          Basic template details and categorization for the checklist.
-                        </p>
-                      </div>
-
-                      <div class="row">
-                  <div class="col-md-6 mb-3">
-                    <label class="form-label">
-                      Template Name <span class="text-danger">*</span>
-                      <span class="badge bg-light text-dark border ms-2" *ngIf="editingTemplate">Viewing v{{editingTemplate.version}}</span>
-                    </label>
-                    <input type="text" class="form-control" formControlName="name" 
-                           placeholder="Enter template name"
-                           [ngClass]="{ 'is-invalid': templateForm.get('name')?.invalid && templateForm.get('name')?.touched }">
-                    <div class="form-text">
-                      <i class="mdi mdi-information-outline me-1"></i>
-                      A descriptive name for this checklist template.
-                    </div>
-                    <div class="invalid-feedback" *ngIf="templateForm.get('name')?.invalid && templateForm.get('name')?.touched">
-                      Template name is required
-                    </div>
-                  </div>
-                  
-                  <div class="col-md-6 mb-3">
-                    <label class="form-label">Category <span class="text-danger">*</span></label>
-                    <select class="form-select" formControlName="category"
-                            [ngClass]="{ 'is-invalid': templateForm.get('category')?.invalid && templateForm.get('category')?.touched }">
-                      <option value="inspection">Inspection</option>
-                    </select>
-                    <div class="form-text">
-                      <i class="mdi mdi-information-outline me-1"></i>
-                      Template category is fixed to Inspection.
-                    </div>
-                    <div class="invalid-feedback" *ngIf="templateForm.get('category')?.invalid && templateForm.get('category')?.touched">
-                      Category is required
-                    </div>
-                  </div>
-                </div>
-
-                <div class="row">
-                  <div class="col-md-6 mb-3">
-                    <label class="form-label">Part Number</label>
-                    <input type="text" class="form-control" formControlName="part_number" placeholder="Enter part number">
-                    <div class="form-text">
-                      <i class="mdi mdi-information-outline me-1"></i>
-                      Optional part number reference for this template.
-                    </div>
-                  </div>
-                  <div class="col-md-6 mb-3">
-                    <label class="form-label">Product Type</label>
-                    <input type="text" class="form-control" formControlName="product_type" placeholder="Enter product type">
-                    <div class="form-text">
-                      <i class="mdi mdi-information-outline me-1"></i>
-                      Product type or classification for this template.
-                    </div>
-                  </div>
-                </div>
-
-                <div class="row">
-                  <div class="col-md-6 mb-3">
-                    <label class="form-label">Customer Name</label>
-                    <input type="text" class="form-control" formControlName="customer_name" placeholder="Enter customer name">
-                    <div class="form-text">
-                      <i class="mdi mdi-information-outline me-1"></i>
-                      Optional customer/account name for this checklist template.
-                    </div>
-                  </div>
-                </div>
-
-                <div class="row">
-                  <div class="col-md-6 mb-3">
-                    <label class="form-label">Max Upload Size (MB)</label>
-                    <input type="number" class="form-control" formControlName="max_upload_size_mb" min="1" placeholder="Leave empty for defaults">
-                    <div class="form-text">
-                      <i class="mdi mdi-information-outline me-1"></i>
-                      Optional per-template override for maximum upload file size (MB). If empty, images default to 5MB and videos to 50MB.
-                    </div>
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="col-md-6 mb-3">
-                    <div class="form-check form-switch">
-                      <input class="form-check-input" type="checkbox" formControlName="disable_max_upload_limit" id="disableMaxUpload">
-                      <label class="form-check-label" for="disableMaxUpload"><strong>Disable Max Upload Size</strong></label>
-                    </div>
-                    <div class="form-text">
-                      <i class="mdi mdi-information-outline me-1"></i>
-                      When enabled, client-side file size limits are disabled for this template. Server should still enforce limits if desired.
-                    </div>
-                  </div>
-                </div>
-
-                <div class="row">
-                  <div class="col-12 mb-3">
-                    <label class="form-label">Description</label>
-                    <div class="border rounded" [ngClass]="{ 'border-danger border-2': templateForm.get('description')?.invalid && templateForm.get('description')?.touched }">
-                      <quill-editor 
-                        formControlName="description" 
-                        [modules]="quillConfig"
-                        (onContentChanged)="onQuillContentChanged($event)"
-                        placeholder="Enter template description"
-                        class="quill-auto-height quill-template">
-                      </quill-editor>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Quality Document Section -->
-              <div class="mb-4 pb-4 border-bottom">
-                <div class="mb-3">
-                  <h3 class="h5 mb-1">Quality Document Reference</h3>
-                  <p class="text-muted mb-0">
-                    Optional quality document association for this template.
-                  </p>
-                </div>
-                
-                <div class="row">
-                  <div class="col-md-12 mb-3">
-                    <label class="form-label">Associated Quality Document</label>
-                    <app-quality-document-selector 
-                      (selectionChange)="onQualityDocumentSelected($event)">
-                    </app-quality-document-selector>
-                    <div class="form-text">
-                      <i class="mdi mdi-information-outline me-1"></i>
-                      Link this template to a quality document for reference and compliance tracking.
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <!-- Template Status Section -->
-              <div class="mb-4">
-                <div class="mb-3">
-                  <h3 class="h5 mb-1">Template Status</h3>
-                  <p class="text-muted mb-0">
-                    Configure the availability status of this template.
-                  </p>
-                </div>
-
-                <div class="row">
-                  <div class="col-md-6 mb-3">
-                    <label class="form-label">Template Status</label>
-                    <div class="form-check form-switch mt-2">
-                      <input class="form-check-input" type="checkbox" formControlName="is_active" id="activeStatus">
-                      <label class="form-check-label" for="activeStatus">
-                        Active Template
-                      </label>
-                    </div>
-                    <div class="form-text">
-                      <i class="mdi mdi-information-outline me-1"></i>
-                      Active templates are available for creating new checklist instances.
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-
-              <!-- Checklist Items Section -->
-              <div class="mb-4 pb-4 border-bottom">
-                <div class="mb-3">
-                  <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                      <h3 class="h5 mb-1">
-                        Checklist Items
-                        <span *ngIf="selectedFormItemIndex !== null && focusedEditMode" class="badge bg-info ms-2">
-                          Viewing Item {{getOutlineNumber(selectedFormItemIndex)}}
-                        </span>
-                        <span *ngIf="navViewMode !== 'all'" class="badge bg-light text-dark border ms-2">
-                          View: {{ navViewMode === 'groups' ? 'Groups' : 'Items' }}
-                        </span>
-                      </h3>
-                      <p class="text-muted mb-0">
-                        Define inspection items and photo requirements for this template.
-                      </p>
-                    </div>
-                    <div class="d-flex gap-2 align-items-center">
-                      <button *ngIf="selectedFormItemIndex !== null || navViewMode !== 'all'" 
-                              type="button" 
-                              class="btn btn-outline-secondary btn-sm" 
-                              (click)="showAllFormItems()">
-                        <i class="mdi mdi-eye me-1"></i>Show All
-                      </button>
-                      <button type="button" class="btn btn-primary" (click)="addItem()">
-                        <i class="mdi mdi-plus me-2"></i>
-                        Add Item
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Items List -->
-                <div *ngIf="stickyParentIndex !== null" class="sticky-parent-banner">
-                  <div class="d-flex align-items-center justify-content-between gap-2">
-                    <div class="d-flex align-items-center gap-2 min-w-0">
-                      <span class="badge bg-warning text-dark flex-shrink-0">Parent</span>
-                      <span class="badge bg-secondary flex-shrink-0">{{ getOutlineNumber(stickyParentIndex!) }}</span>
-                      <span class="text-truncate">
-                        {{ getItemTitle(stickyParentIndex!) }}
-                      </span>
-                      <span class="text-muted flex-shrink-0" *ngIf="getChildCount(stickyParentIndex!) > 0">
-                        ({{ getChildCount(stickyParentIndex!) }} child{{ getChildCount(stickyParentIndex!) !== 1 ? 'ren' : '' }})
-                      </span>
-                    </div>
-                    <button type="button" class="btn btn-sm btn-outline-primary flex-shrink-0" (click)="scrollToItem(stickyParentIndex!)">
-                      <i class="mdi mdi-arrow-up-bold me-1"></i>Jump to parent
-                    </button>
-                  </div>
-                </div>
-                <div
-                  class="reorder-live-hint alert alert-primary border-primary border-opacity-25 bg-primary bg-opacity-10 py-2 px-3"
-                  role="status"
-                  aria-live="polite"
-                  *ngIf="isReorderDragging">
-                  <div class="d-flex flex-wrap align-items-center gap-2">
-                    <span class="badge bg-primary">{{ dragSummaryLabel }}</span>
-                    <span class="small text-primary-emphasis">{{ dropHintText }}</span>
-                  </div>
-                </div>
-
-                <div formArrayName="items" cdkDropList [cdkDropListDisabled]="true" (cdkDropListSorted)="onItemDragSorted($event)" (cdkDropListDropped)="dropItem($event)">
-                  <div *ngFor="let item of items.controls; let i = index" 
-                       [id]="'edit-item-' + i"
-                       class="card mb-3 item-card" 
-                       [formGroupName]="i" 
-                       tabindex="0"
-                       (keydown)="onItemKeydown($event, i)"
-                       [ngStyle]="{'margin-left.rem': (item.get('level')?.value || 0) * 2}"
-                       [class.item-card-child]="(item.get('level')?.value || 0) > 0"
-                       [class.border-start]="(item.get('level')?.value || 0) > 0"
-                       [class.border-4]="(item.get('level')?.value || 0) > 0"
-                       [class.border-primary]="(item.get('level')?.value || 0) > 0"
-                       [style.display]="isFormItemVisible(i) ? 'block' : 'none'"
-                       [cdkDragData]="i"
-                       [cdkDragDisabled]="true"
-                       (cdkDragStarted)="onItemDragStarted(i)"
-                       (cdkDragEnded)="onItemDragEnded()"
-                       cdkDrag>
-                    
-                    <!-- Drag Preview (what you see while dragging) -->
-                    <div class="card drag-preview" *cdkDragPreview>
-                      <div class="card-header bg-light">
-                        <i class="mdi mdi-drag-vertical me-2"></i>
-                        <strong>{{getOutlineNumber(i)}}</strong> {{item.get('title')?.value || 'Untitled'}}
-                        <span class="badge bg-primary ms-2" *ngIf="draggedSubtreeLength > 1">
-                          +{{ draggedSubtreeLength - 1 }} child{{ draggedSubtreeLength - 1 === 1 ? '' : 'ren' }}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <!-- Drag Handle and Header -->
-                    <div class="card-header bg-light d-flex justify-content-between align-items-center item-card-header">
-                      <div class="d-flex align-items-center flex-grow-1" style="min-width: 0;">
-                        <div class="drag-handle me-3" cdkDragHandle title="Reorder from Navigation panel">
-                          <i class="mdi mdi-drag-vertical text-muted fs-4"></i>
-                        </div>
-                        <h6 class="mb-0 d-flex align-items-center flex-grow-1" style="min-width: 0;">
-                          <span class="badge bg-secondary me-2 flex-shrink-0">{{getOutlineNumber(i)}}</span>
-                          <span class="item-header-title" [class.text-primary]="(item.get('level')?.value || 0) > 0" [title]="item.get('title')?.value || 'Untitled'">
-                            <i class="mdi me-1 flex-shrink-0" [class.mdi-file-document-outline]="(item.get('level')?.value || 0) === 0" [class.mdi-subdirectory-arrow-right]="(item.get('level')?.value || 0) > 0"></i>
-                            <span class="text-truncate d-inline-block" style="max-width: 100%;">{{item.get('title')?.value || 'Untitled'}}</span>
-                          </span>
-                        </h6>
-                      </div>
-                      <div class="d-flex align-items-center gap-2 flex-shrink-0">
-                        <button 
-                          type="button" 
-                          class="btn btn-sm btn-outline-primary" 
-                          (click)="addSubItem(i)"
-                          title="Add nested item below this item">
-                          <i class="mdi mdi-plus me-1"></i>Add Sub-item
-                        </button>
-                        <div ngbDropdown class="d-inline-block">
-                          <button
-                            type="button"
-                            class="btn btn-sm btn-outline-secondary"
-                            ngbDropdownToggle
-                            title="More item actions"
-                            aria-label="More item actions">
-                            <i class="mdi mdi-dots-horizontal"></i>
-                          </button>
-                          <div ngbDropdownMenu>
-                            <button
-                              ngbDropdownItem
-                              type="button"
-                              (click)="demoteItem(i)"
-                              *ngIf="i > 0 && canDemote(i)">
-                              <i class="mdi mdi-arrow-right-bold me-2"></i>Indent
-                            </button>
-                            <button
-                              ngbDropdownItem
-                              type="button"
-                              (click)="promoteItem(i)"
-                              *ngIf="(item.get('level')?.value || 0) > 0">
-                              <i class="mdi mdi-arrow-left-bold me-2"></i>Outdent
-                            </button>
-                            <div class="dropdown-divider"></div>
-                            <button
-                              ngbDropdownItem
-                              type="button"
-                              class="text-danger"
-                              (click)="removeItem(i)">
-                              <i class="mdi mdi-delete me-2"></i>Delete Item
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- Item Content -->
-                    <div class="card-body">
-                      <div class="d-flex justify-content-end align-items-center gap-2 mb-2">
-                        <div class="small text-muted">
-                          Counts toward progress
-                        </div>
-                        <div class="form-check mb-0">
-                          <input class="form-check-input" type="checkbox" formControlName="is_required" [id]="'required-' + i">
-                          <label class="form-check-label" [for]="'required-' + i">
-                            Required
-                          </label>
-                        </div>
-                      </div>
-
-                      <div class="row mb-3">
-                        <div class="col-md-12">
-                          <label class="form-label">Title <span class="text-danger">*</span></label>
-                               <input #itemTitleInput type="text" class="form-control" formControlName="title" placeholder="Enter item title"
-                                 [ngClass]="{ 'is-invalid': item.get('title')?.invalid && item.get('title')?.touched }">
-                          <div class="form-text">
-                            <i class="mdi mdi-information-outline me-1"></i>
-                            Clear title describing what needs to be inspected.
-                          </div>
-                          <div class="invalid-feedback" *ngIf="item.get('title')?.invalid && item.get('title')?.touched">
-                            Title is required
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <!-- Hidden order field - auto-calculated, not editable -->
-                      <input type="hidden" formControlName="order_index">
-
-                      <div class="mb-3">
-                        <label class="form-label">Description <span class="text-muted fw-normal">(optional)</span></label>
-                        <div class="border rounded">
-                          <quill-editor 
-                            formControlName="description" 
-                            [modules]="quillConfig"
-                            (onContentChanged)="onQuillContentChanged($event)"
-                            placeholder="Enter item description (supports rich text formatting)"
-                            class="quill-auto-height quill-item">
-                          </quill-editor>
-                        </div>
-                        <div class="form-text">
-                          <i class="mdi mdi-information-outline me-1"></i>
-                          Detailed instructions for this inspection item. Rich text formatting is supported.
-                        </div>
-                      </div>
-
-                      <!-- Links Section (compact, open modal to edit) -->
-                      <div class="mb-3">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                          <label class="form-label mb-0">
-                            <i class="mdi mdi-link-variant me-1"></i>Links
-                          </label>
-                          <button type="button" class="btn btn-outline-primary btn-sm" (click)="openLinksModal(i)">
-                            <i class="mdi mdi-link-variant-plus me-1"></i>Manage Links
-                            <span class="badge bg-primary ms-2">{{ getLinksFormArray(i).length }}</span>
-                          </button>
-                        </div>
-
-                        <div *ngIf="getLinksFormArray(i).length === 0" class="text-muted small border rounded bg-light p-2">
-                          No links added.
-                        </div>
-
-                        <div *ngIf="getLinksFormArray(i).length > 0" class="small text-muted">
-                          <i class="mdi mdi-information-outline me-1"></i>
-                          {{ getLinksFormArray(i).length }} link{{ getLinksFormArray(i).length !== 1 ? 's' : '' }} added.
-                        </div>
-
-                        <div *ngIf="getLinksFormArray(i).length > 0" class="mt-1 d-flex flex-column gap-1">
-                          <a *ngFor="let link of getLinksFormArray(i).value"
-                             class="small text-decoration-none text-primary text-truncate"
-                             [href]="link.url"
-                             target="_blank"
-                             rel="noopener noreferrer"
-                             [title]="link.title || link.url">
-                            <i class="mdi mdi-link-variant me-1"></i>
-                            {{ link.title || link.url }}
-                          </a>
-                        </div>
-                      </div>
-
-                      <!-- Submission Type Selector (Controls what sections appear) -->
-                      <div class="mb-3">
-                        <label class="form-label">
-                          <i class="mdi mdi-checkbox-multiple-marked-circle text-info me-2"></i>
-                          Submission Type
-                        </label>
-                        <select class="form-select" formControlName="submission_type">
-                          <option value="photo">
-                            📷 Photo Only - Users submit photos
-                          </option>
-                          <option value="video">
-                            🎥 Video Only - Users submit videos
-                          </option>
-                          <option value="audio">
-                            🎙️ Audio Only - Users submit recordings
-                          </option>
-                          <option value="either">
-                            📁 Photo OR Video - Users choose one (mutually exclusive)
-                          </option>
-                          <option value="none">
-                            🚫 No Media Required - Instruction only
-                          </option>
-                        </select>
-                        <div class="form-text">
-                          <i class="mdi mdi-information-outline me-1"></i>
-                          Determines what type of media users can submit for this item.
-                        </div>
-                      </div>
-
-                        <!-- SAMPLE IMAGES SECTION (only for photo/either submissions) -->
-                        <div *ngIf="(item.get('submission_type')?.value === 'photo' || item.get('submission_type')?.value === 'either' || item.get('submission_type')?.value === 'none')"
-                          class="mb-3"
-                          [ngClass]="{ 'border border-danger border-2 rounded p-2': (item.get('submission_type')?.value === 'photo' && item.get('photo_requirements')?.value?.picture_required && !hasPrimarySampleImage(i) && getReferenceImageCount(i) === 0) || (item.get('submission_type')?.value === 'either' && !hasPrimarySampleImage(i) && getReferenceImageCount(i) === 0 && !hasSampleVideo(i)) }">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                          <label class="form-label mb-0">
-                            <i class="mdi mdi-image-multiple me-1"></i>{{ item.get('submission_type')?.value === 'none' ? 'Reference Images' : 'Sample Images' }}
-                          </label>
-                          <button type="button" class="btn btn-outline-primary btn-sm" (click)="openSampleImagesModal(i)">
-                            <i class="mdi mdi-cog me-1"></i>Manage Images
-                            <span class="badge bg-primary ms-2">{{getTotalSampleImagesCount(i)}}</span>
-                          </button>
-                        </div>
-                        
-                        <!-- Compact Display -->
-                        <div *ngIf="hasPrimarySampleImage(i) || getReferenceImageCount(i) > 0" class="border rounded p-2 bg-light">
-                          <div class="d-flex gap-2 flex-wrap">
-                            <!-- Primary Image Thumbnail -->
-                            <div *ngIf="hasPrimarySampleImage(i)" class="position-relative">
-                              <img [src]="getPrimarySampleImageUrl(i)"
-                                   class="img-thumbnail"
-                                [class.locked-media-clickable]="isPublishedLocked()"
-                                   loading="lazy"
-                                   style="width: 60px; height: 60px; object-fit: cover; cursor: pointer;"
-                                   (click)="previewSampleImage(i)">
-                              <span class="badge bg-primary position-absolute top-0 start-0" style="font-size: 0.6rem;">Primary</span>
-                            </div>
-                            <!-- Reference Images Thumbnails -->
-                            <div *ngFor="let refImage of getReferenceImages(i); let refIdx = index" class="position-relative">
-                              <img [src]="getReferenceImageUrl(refImage)"
-                                   class="img-thumbnail"
-                                [class.locked-media-clickable]="isPublishedLocked()"
-                                   loading="lazy"
-                                   style="width: 60px; height: 60px; object-fit: cover; cursor: pointer;"
-                                   (click)="previewReferenceImage(i, refIdx)">
-                              <span class="badge bg-secondary position-absolute top-0 start-0" style="font-size: 0.6rem;">Ref</span>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div *ngIf="!hasPrimarySampleImage(i) && getReferenceImageCount(i) === 0" class="text-muted text-center py-2 border rounded bg-white">
-                          <i class="mdi mdi-image-off-outline"></i>
-                          <small class="d-block">No sample images</small>
-                        </div>
-                        <div class="text-danger small mt-2" *ngIf="item.get('submission_type')?.value === 'photo' && item.get('photo_requirements')?.value?.picture_required && !hasPrimarySampleImage(i) && getReferenceImageCount(i) === 0">
-                          Sample photo required for Photo submission type.
-                        </div>
-                        <div class="text-danger small mt-2" *ngIf="item.get('submission_type')?.value === 'either' && !hasPrimarySampleImage(i) && getReferenceImageCount(i) === 0 && !hasSampleVideo(i)">
-                          Add a sample image or sample video.
-                        </div>
-                      </div>
-                      
-                      <!-- SAMPLE VIDEO SECTION (only for video/either submissions) -->
-                        <div *ngIf="(item.get('submission_type')?.value === 'video' || item.get('submission_type')?.value === 'either')"
-                          class="mb-3"
-                          [ngClass]="{ 'border border-danger border-2 rounded p-2': (item.get('submission_type')?.value === 'video' && !hasSampleVideo(i)) || (item.get('submission_type')?.value === 'either' && !hasSampleVideo(i) && !hasPrimarySampleImage(i) && getReferenceImageCount(i) === 0) }">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                          <label class="form-label mb-0">
-                            <i class="mdi mdi-video me-1"></i>Sample Video
-                          </label>
-                          <button type="button" class="btn btn-outline-primary btn-sm" (click)="openSampleVideoModal(i)">
-                            <i class="mdi mdi-cog me-1"></i>Manage Video
-                          </button>
-                        </div>
-                        
-                        <!-- Compact Display -->
-                        <div *ngIf="hasSampleVideo(i)" class="border rounded p-2 bg-light text-center">
-                          <video [src]="getPrimarySampleVideoUrl(i)" 
-                                 [class.locked-media-clickable]="isPublishedLocked()"
-                                 preload="none"
-                                 style="max-height: 80px; max-width: 140px; object-fit: cover; cursor: pointer;"
-                                 (click)="previewSampleVideo(i)"></video>
-                          <div class="mt-1">
-                            <small class="text-muted"><i class="mdi mdi-information-outline"></i> Click to preview</small>
-                          </div>
-                        </div>
-                        
-                        <div *ngIf="!hasSampleVideo(i)" class="text-muted text-center py-2 border rounded bg-white">
-                          <i class="mdi mdi-video-off-outline"></i>
-                          <small class="d-block">No sample video</small>
-                        </div>
-                        <div class="text-danger small mt-2" *ngIf="item.get('submission_type')?.value === 'video' && !hasSampleVideo(i)">
-                          Sample video required for Video submission type.
-                        </div>
-                        <div class="text-danger small mt-2" *ngIf="item.get('submission_type')?.value === 'either' && !hasSampleVideo(i) && !hasPrimarySampleImage(i) && getReferenceImageCount(i) === 0">
-                          Add a sample image or sample video.
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                </div>
-
-                <!-- No Items State -->
-                <div *ngIf="items.length === 0" class="text-center p-5 border rounded bg-light">
-                  <i class="mdi mdi-clipboard-list-outline text-muted mb-3" style="font-size: 3rem;"></i>
-                  <h6 class="text-muted">No Checklist Items</h6>
-                  <p class="text-muted mb-3">Add your first checklist item to get started</p>
-                  <button type="button" class="btn btn-primary" (click)="addItem()">
-                    <i class="mdi mdi-plus me-2"></i>
-                    Add First Item
-                  </button>
-                </div>
-
-              </div>
-
-                  </div> <!-- end card-body -->
-
-                </div>
-              </div>
-              
-                  <div class="card-footer template-editor-footer bg-light border-top d-flex p-3">
-                    <button type="button" class="btn btn-outline-secondary me-2" [disabled]="saving" (click)="cancel()">
-                      <i class="mdi mdi-close me-1"></i>Cancel
-                    </button>
-                    <button type="button" class="btn btn-outline-primary me-2" *ngIf="!editingTemplate || editingTemplate.is_draft" [disabled]="saving" (click)="saveDraft()">
-                      <i class="mdi mdi-content-save-edit-outline me-1"></i>Save Draft
-                    </button>
-                    <button type="button" class="btn btn-outline-primary me-2" *ngIf="editingTemplate && !editingTemplate.is_draft" [disabled]="saving" (click)="saveDraft()">
-                      <i class="mdi mdi-content-save-edit-outline me-1"></i>Start Sub-Version Draft
-                    </button>
-                    <button type="button" class="btn btn-outline-secondary me-2" *ngIf="editingTemplate && !editingTemplate.is_draft" [disabled]="saving" (click)="startMajorVersionDraft()">
-                      <i class="mdi mdi-source-branch me-1"></i>Start Major Version Draft
-                    </button>
-                    <button type="button" class="btn btn-outline-dark me-2" *ngIf="editingTemplate && !editingTemplate.is_draft" [disabled]="saving" (click)="openCopyAsNewParentModal()">
-                      <i class="mdi mdi-content-copy me-1"></i>Copy as New Parent
-                    </button>
-                    <button
-                      type="button"
-                      class="btn btn-outline-danger me-2"
-                      *ngIf="editingTemplate?.is_draft"
-                      [disabled]="saving"
-                      (click)="discardCurrentDraft()">
-                      <i class="mdi mdi-delete-outline me-1"></i>Discard Draft
-                    </button>
-                    <button type="button" class="btn btn-success ms-auto" *ngIf="!editingTemplate || editingTemplate.is_draft" [disabled]="saving" (click)="saveTemplate()">
-                      @if (saving) {
-                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
-                        Saving...
-                      } @else {
-                        <i class="mdi mdi-content-save me-1"></i>{{editingTemplate ? 'Publish Draft' : 'Create Template'}}
-                      }
-                    </button>
-                    <button
-                      type="button"
-                      class="btn btn-success ms-auto"
-                      *ngIf="editingTemplate && !editingTemplate.is_draft && canReorderPublishedTemplateInPlace()"
-                      [disabled]="saving"
-                      (click)="saveTemplate()">
-                      @if (saving) {
-                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
-                        Saving Reorder...
-                      } @else {
-                        <i class="mdi mdi-content-save me-1"></i>Save Reorder
-                      }
-                    </button>
-                  </div>
-            </div>
-            
-            <!-- Navigation Sidebar Card -->
-            <div class="col-12 col-md-4 col-lg-4 mt-3 mt-md-0" *ngIf="items.length > 0">
-              <div class="position-sticky" style="top: 66px;">
-                <div class="card shadow-sm border-0 mb-2">
-                  <div class="card-body py-2">
-                    <div class="form-check form-switch m-0">
-                      <input class="form-check-input" 
-                             type="checkbox" 
-                             id="focusedEditModeSwitch" 
-                             [(ngModel)]="focusedEditMode"
-                             [ngModelOptions]="{standalone: true}">
-                      <label class="form-check-label" for="focusedEditModeSwitch">
-                        <small><i class="mdi mdi-filter me-1"></i>Focus Mode</small>
-                      </label>
-                    </div>
-                    <div class="form-check form-switch m-0 mt-2">
-                      <input class="form-check-input"
-                             type="checkbox"
-                             id="showNavMediaSwitch"
-                             [(ngModel)]="showNavMediaContext"
-                             [ngModelOptions]="{standalone: true}">
-                      <label class="form-check-label" for="showNavMediaSwitch">
-                        <small><i class="mdi mdi-image-multiple me-1"></i>Show Nav Media</small>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-
-                <app-checklist-navigation
-                  [items]="editorNavItems"
-                  [activeItemIndex]="activeNavItemIndex"
-                  [mode]="isPublishedLocked() ? 'readonly' : 'editor'"
-                  [disableVirtualScroll]="true"
-                  [allowReadonlyReorder]="canReorderPublishedTemplateInPlace()"
-                  [autoScrollActive]="true"
-                  [showMediaContext]="showNavMediaContext"
-                  [height]="editorNavHeight"
-                  (itemSelected)="onNavItemSelected($event.index)"
-                  (navDrop)="dropNavItem($event)"
-                  (navAction)="handleNavAction($event)"
-                  (primaryImageRequested)="previewNavPrimaryImage($event.index)"
-                  (sampleVideoRequested)="previewNavSampleVideo($event.index)">
-                </app-checklist-navigation>
-              </div>
-            </div>
-            </div>
-          </div>
-    </div>
-
-    <div class="reorder-feedback-toast"
-         role="status"
-         aria-live="polite"
-         *ngIf="reorderFeedbackMessage">
-      <div class="alert alert-success border-success border-opacity-25 bg-success bg-opacity-95 py-2 px-3 d-flex align-items-center justify-content-between gap-3 mb-0 shadow">
-        <span class="small mb-0">{{ reorderFeedbackMessage }}</span>
-        <div class="d-flex align-items-center gap-2">
-          <button type="button" class="btn btn-sm btn-outline-success" (click)="undoLastReorder()">
-            <i class="mdi mdi-undo me-1"></i>Undo
-          </button>
-          <button type="button" class="btn btn-sm btn-outline-secondary" (click)="clearReorderFeedback()">
-            Dismiss
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Import Modal -->
-    <ng-template #importModal let-modal>
-      <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title">
-          <i class="mdi mdi-file-import me-2"></i>
-          Import Checklist Template
-        </h5>
-        <button type="button" class="btn-close btn-close-white" (click)="modal.dismiss()"></button>
-      </div>
-      <div class="modal-body">
-        <div class="alert alert-info">
-          <i class="mdi mdi-information me-2"></i>
-          <strong>Import Options:</strong>
-          <ul class="mb-0 mt-2">
-            <li><strong>Word Document (.docx)</strong> - <span class="badge bg-success">Recommended</span> - Best extraction quality with reliable text and image parsing</li>
-            <li>PDF (.pdf) - May require manual review due to extraction limitations</li>
-            <li>CSV (.csv) - Simple text-based import</li>
-            <li>Manual creation - Specify number of items to create</li>
-          </ul>
-        </div>
-
-        <!-- File Upload Section -->
-        <div class="mb-4" *ngIf="!isCurrentModalNoMedia()">
-          <label class="form-label">Upload File</label>
-          <input 
-            type="file" 
-            class="form-control" 
-            accept=".docx,.doc,.pdf,.csv"
-            (change)="onImportFileSelected($event)"
-            #fileInput>
-          <div class="form-text">
-            <i class="mdi mdi-lightbulb-on-outline me-1 text-success"></i>
-            <strong>Tip:</strong> Word documents (.docx) provide the best import results with proper structure, formatting, and images.
-          </div>
-        </div>
-
-        <div class="text-center my-3">
-          <small class="text-muted">— OR —</small>
-        </div>
-
-        <!-- Manual Entry Section -->
-        <div class="mb-3">
-          <label class="form-label">Create Template Manually</label>
-          <div class="row">
-            <div class="col-md-8 mb-2">
-              <input 
-                type="text" 
-                class="form-control" 
-                [(ngModel)]="importManualName"
-                placeholder="Template name">
-            </div>
-            <div class="col-md-4 mb-2">
-              <input 
-                type="number" 
-                class="form-control" 
-                [(ngModel)]="importManualItemCount"
-                min="1"
-                max="50"
-                placeholder="# of items">
-            </div>
-          </div>
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Specify template name and number of checklist items to create
-          </div>
-        </div>
-
-        <div *ngIf="importing" class="text-center py-3">
-          <div class="spinner-border text-primary" role="status"></div>
-          <p class="mt-2 text-muted">Processing import...</p>
-        </div>
-
-        <div *ngIf="importError" class="alert alert-danger">
-          <i class="mdi mdi-alert me-2"></i>
-          {{ importError }}
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" (click)="modal.dismiss()" [disabled]="importing">
-          Cancel
-        </button>
-        <button 
-          type="button" 
-          class="btn btn-primary" 
-          (click)="processManualImport(); modal.close()"
-          [disabled]="!importManualName || !importManualItemCount || importing">
-          <i class="mdi mdi-plus me-1"></i>
-          Create Manual Template
-        </button>
-      </div>
-    </ng-template>
-
-    <!-- Copy as New Parent Modal -->
-    <ng-template #copyAsParentModal let-modal>
-      <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title">
-          <i class="mdi mdi-content-copy me-2"></i>
-          Copy Template as New Parent
-        </h5>
-        <button type="button" class="btn-close btn-close-white" (click)="modal.dismiss()" [disabled]="copyingAsParent"></button>
-      </div>
-      <div class="modal-body" [formGroup]="copyAsParentForm">
-        <p class="text-muted mb-3">
-          Configure the new template details. Checklist structure and text are copied, but all media is excluded.
-          <br>
-          <strong>Not copied:</strong> sample images, reference images, sample videos, and audio media.
-        </p>
-
-        <div class="row">
-          <div class="col-md-6 mb-3">
-            <label class="form-label">Template Name <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" formControlName="name" placeholder="Enter template name"
-                   [ngClass]="{ 'is-invalid': copyAsParentForm.get('name')?.invalid && copyAsParentForm.get('name')?.touched }">
-            <div class="invalid-feedback" *ngIf="copyAsParentForm.get('name')?.invalid && copyAsParentForm.get('name')?.touched">
-              Template name is required
-            </div>
-          </div>
-
-          <div class="col-md-6 mb-3">
-            <label class="form-label">Category</label>
-            <input type="text" class="form-control" value="Inspection" readonly>
-          </div>
-        </div>
-
-        <div class="row">
-          <div class="col-md-6 mb-3">
-            <label class="form-label">Part Number</label>
-            <input type="text" class="form-control" formControlName="part_number" placeholder="Enter part number">
-          </div>
-          <div class="col-md-6 mb-3">
-            <label class="form-label">Product Type</label>
-            <input type="text" class="form-control" formControlName="product_type" placeholder="Enter product type">
-          </div>
-        </div>
-
-        <div class="row">
-          <div class="col-md-6 mb-3">
-            <label class="form-label">Customer Name</label>
-            <input type="text" class="form-control" formControlName="customer_name" placeholder="Enter customer name">
-          </div>
-          <div class="col-md-6 mb-3">
-            <div class="form-check form-switch mt-4">
-              <input class="form-check-input" type="checkbox" formControlName="is_active" id="copyParentIsActive">
-              <label class="form-check-label" for="copyParentIsActive">Active Template</label>
-            </div>
-          </div>
-        </div>
-
-        <div class="mb-2">
-          <label class="form-label">Description</label>
-          <textarea class="form-control" rows="4" formControlName="description" placeholder="Enter template description"></textarea>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" (click)="modal.dismiss()" [disabled]="copyingAsParent">Cancel</button>
-        <button type="button" class="btn btn-primary" (click)="createCopyAsNewParent(modal)" [disabled]="copyingAsParent">
-          <span *ngIf="copyingAsParent" class="spinner-border spinner-border-sm me-2" role="status"></span>
-          <i *ngIf="!copyingAsParent" class="mdi mdi-check me-1"></i>
-          {{ copyingAsParent ? 'Creating...' : 'Create Parent Template' }}
-        </button>
-      </div>
-    </ng-template>
-
-    <!-- Image Preview Modal -->
-    <ng-template #imagePreviewModal let-modal>
-      <div class="modal-header">
-        <h5 class="modal-title">Sample Image Preview</h5>
-        <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
-      </div>
-      <div class="modal-body text-center">
-        <img [src]="previewImageUrl" 
-             class="img-fluid" 
-             style="max-height: 70vh; max-width: 100%; object-fit: contain;"
-             alt="Sample image preview">
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" (click)="modal.dismiss()">Close</button>
-      </div>
-    </ng-template>
-
-    <!-- Video Preview Modal -->
-    <ng-template #videoPreviewModal let-modal>
-      <div class="modal-header">
-        <h5 class="modal-title">Sample Video Preview</h5>
-        <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
-      </div>
-      <div class="modal-body text-center">
-        <video *ngIf="previewVideoUrl" [src]="previewVideoUrl" controls class="w-100" style="max-height:70vh; object-fit:contain;"></video>
-        <div *ngIf="!previewVideoUrl" class="text-muted">No video to preview</div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" (click)="modal.dismiss()">Close</button>
-      </div>
-    </ng-template>
-
-    <!-- Sample Images Management Modal -->
-    <ng-template #sampleImagesModalTemplate let-modal>
-      <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title">
-          <i class="mdi mdi-image-multiple me-2"></i>
-          {{ isCurrentModalNoMedia() ? 'Manage Reference Images' : 'Manage Sample Images' }}
-        </h5>
-        <button type="button" class="btn-close btn-close-white" (click)="modal.dismiss()"></button>
-      </div>
-      <div class="modal-body">
-        <p class="text-muted mb-4">
-          <i class="mdi mdi-information-outline me-1"></i>
-          {{ isCurrentModalNoMedia()
-            ? 'Add reference images for this instruction-only item.'
-            : 'Configure the primary sample image and reference images for this checklist item.' }}
-        </p>
-
-        <!-- Primary Sample Image -->
-        <div class="mb-4" *ngIf="!isCurrentModalNoMedia()">
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <div>
-              <label class="form-label mb-0 fw-bold">Primary Sample Image</label>
-              <small class="d-block text-muted">The main image users should replicate when taking photos</small>
-            </div>
-            <button type="button" class="btn btn-outline-primary btn-sm" 
-                    (click)="openPrimarySampleImageUpload(currentModalItemIndex)"
-                    [disabled]="uploadingImage">
-              <span *ngIf="uploadingImage" class="spinner-border spinner-border-sm me-1" role="status"></span>
-              <i *ngIf="!uploadingImage" class="mdi" [class.mdi-plus]="!hasPrimarySampleImage(currentModalItemIndex)" [class.mdi-image-edit]="hasPrimarySampleImage(currentModalItemIndex)"></i>
-              {{uploadingImage ? 'Uploading...' : (hasPrimarySampleImage(currentModalItemIndex) ? 'Replace' : 'Add Sample')}}
-            </button>
-          </div>
-          
-          <div *ngIf="hasPrimarySampleImage(currentModalItemIndex)" class="d-flex align-items-center border rounded p-3 bg-light">
-            <div class="position-relative me-3">
-              <img [src]="getPrimarySampleImageUrl(currentModalItemIndex)"
-                   class="img-thumbnail border-primary"
-                   style="width: 150px; height: 150px; object-fit: contain; cursor: pointer; background: white; border-width: 3px !important;"
-                   [alt]="getPrimarySampleImage(currentModalItemIndex)?.label || 'Primary sample image'"
-                   (click)="previewSampleImage(currentModalItemIndex)"
-                   (error)="onSampleImageError(currentModalItemIndex)"
-                   (load)="onSampleImageLoad(currentModalItemIndex)">
-              <span class="badge bg-primary position-absolute bottom-0 start-50 translate-middle-x mb-1">
-                Primary
-              </span>
-              <button type="button"
-                      class="btn btn-danger position-absolute top-0 end-0"
-                      style="transform: translate(50%, -50%); width: 24px; height: 24px; padding: 0; border-radius: 50%;"
-                      (click)="removePrimarySampleImage(currentModalItemIndex)">
-                <i class="mdi mdi-close" style="font-size: 0.8rem;"></i>
-              </button>
-            </div>
-            <div class="flex-grow-1">
-              <div class="d-flex align-items-start mb-2">
-                <i class="mdi mdi-target text-primary me-2 mt-1"></i>
-                <div>
-                  <strong>Match This Photo</strong>
-                  <p class="mb-0 text-muted small">Users will compare their captured photo against this image</p>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <div *ngIf="!hasPrimarySampleImage(currentModalItemIndex)" class="text-muted text-center py-4 border-2 border-dashed rounded bg-white" style="border: 2px dashed #dee2e6;">
-            <i class="mdi mdi-camera-outline text-primary mb-2" style="font-size: 2.5rem;"></i>
-            <p class="mb-0"><strong>No primary sample image</strong></p>
-            <p class="mb-0 small text-muted">Add the main reference photo users should replicate</p>
-          </div>
-        </div>
-
-        <hr *ngIf="!isCurrentModalNoMedia()">
-
-        <!-- Reference Images -->
-        <div class="mb-3">
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <div>
-              <label class="form-label mb-0 fw-bold">Reference Images</label>
-              <small class="d-block text-muted">Additional context images (max 5) - different angles, examples, diagrams</small>
-            </div>
-            <button type="button" class="btn btn-outline-secondary btn-sm" 
-                    (click)="openReferenceImageUpload(currentModalItemIndex)"
-                    [disabled]="uploadingImage || getReferenceImageCount(currentModalItemIndex) >= 5">
-              <span *ngIf="uploadingImage" class="spinner-border spinner-border-sm me-1" role="status"></span>
-              <i *ngIf="!uploadingImage" class="mdi mdi-plus"></i>
-              {{uploadingImage ? 'Uploading...' : 'Add Reference'}}
-              <span class="badge bg-secondary ms-1">{{getReferenceImageCount(currentModalItemIndex)}}/5</span>
-            </button>
-          </div>
-          
-          <!-- Reference Images Grid -->
-          <div *ngIf="getReferenceImages(currentModalItemIndex).length > 0" class="row g-2">
-            <div class="col-6 col-md-4" *ngFor="let refImage of getReferenceImages(currentModalItemIndex); let refIdx = index">
-              <div class="position-relative border rounded p-2 bg-white">
-                <img [src]="refImage.url"
-                     class="img-thumbnail w-100"
-                     style="height: 100px; object-fit: cover; cursor: pointer;"
-                     [alt]="refImage.label || 'Reference image'"
-                     (click)="previewReferenceImage(currentModalItemIndex, refIdx)">
-                <button type="button"
-                        class="btn btn-danger btn-sm position-absolute top-0 end-0"
-                        style="transform: translate(25%, -25%); width: 20px; height: 20px; padding: 0; border-radius: 50%;"
-                        (click)="removeReferenceImage(currentModalItemIndex, refIdx)">
-                  <i class="mdi mdi-close" style="font-size: 0.7rem;"></i>
-                </button>
-                <div class="mt-1">
-                  <input type="text" 
-                         class="form-control form-control-sm" 
-                         placeholder="Label (optional)"
-                         [(ngModel)]="refImage.label"
-                         [ngModelOptions]="{standalone: true}">
-                  <select class="form-select form-select-sm mt-1" 
-                          [(ngModel)]="refImage.image_type"
-                          [ngModelOptions]="{standalone: true}">
-                    <option value="reference">Reference</option>
-                    <option value="defect_example">Defect Example</option>
-                    <option value="diagram">Diagram</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <div *ngIf="getReferenceImages(currentModalItemIndex).length === 0" class="text-muted text-center py-3 border rounded bg-light">
-            <i class="mdi mdi-image-multiple-outline mb-2" style="font-size: 1.5rem;"></i>
-            <p class="mb-0 small">No reference images added</p>
-          </div>
-        </div>
-
-        <hr *ngIf="!isCurrentModalNoMedia()">
-
-        <!-- Photo Requirements -->
-        <div class="mb-3" *ngIf="currentModalItemIndex >= 0 && getItemFormGroup(currentModalItemIndex) && !isCurrentModalNoMedia()">
-          <h6 class="mb-3 fw-bold">
-            <i class="mdi mdi-cog me-1"></i>Photo Requirements
-          </h6>
-          
-          <div [formGroup]="getItemFormGroup(currentModalItemIndex)!">
-            <div formGroupName="photo_requirements">
-            <!-- Photo Capture Guidelines -->
-            <div class="row mb-3 p-3 bg-light rounded">
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Viewing Angle</label>
-                <select class="form-select form-select-sm" formControlName="angle">
-                  <option value="">Any Angle</option>
-                  <option value="front">Front View</option>
-                  <option value="back">Back View</option>
-                  <option value="side">Side View</option>
-                  <option value="top">Top View</option>
-                  <option value="bottom">Bottom View</option>
-                  <option value="diagonal">Diagonal View</option>
-                </select>
-                <small class="form-text text-muted">Required viewing angle</small>
-              </div>
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Capture Distance</label>
-                <select class="form-select form-select-sm" formControlName="distance">
-                  <option value="">Any Distance</option>
-                  <option value="close">Close-up</option>
-                  <option value="medium">Medium</option>
-                  <option value="far">Wide View</option>
-                </select>
-                <small class="form-text text-muted">Required distance</small>
-              </div>
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Lighting</label>
-                <select class="form-select form-select-sm" formControlName="lighting">
-                  <option value="">Any Lighting</option>
-                  <option value="bright">Bright</option>
-                  <option value="normal">Normal</option>
-                  <option value="dim">Dim</option>
-                </select>
-                <small class="form-text text-muted">Lighting conditions</small>
-              </div>
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Focus Area</label>
-                <input type="text" class="form-control form-control-sm" formControlName="focus" placeholder="e.g., connector pins">
-                <small class="form-text text-muted">Specific focus area</small>
-              </div>
-            </div>
-
-            <!-- Photo Count Requirements -->
-            <div class="row mb-3">
-              <div class="col-md-6">
-                <label class="form-label">Minimum Photos</label>
-                <input type="number" class="form-control form-control-sm" formControlName="min_photos" min="0" max="10" placeholder="0">
-                <small class="form-text text-muted">Minimum required (0 = optional)</small>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Maximum Photos</label>
-                <input type="number" class="form-control form-control-sm" formControlName="max_photos" min="1" max="10" placeholder="10">
-                <small class="form-text text-muted">Maximum allowed per item</small>
-              </div>
-            </div>
-
-            <!-- Photo Required Toggle -->
-            <div class="p-3 bg-light rounded">
-              <div class="form-check form-switch">
-                <input class="form-check-input" type="checkbox" formControlName="picture_required" [id]="'modal-picture-required-' + currentModalItemIndex">
-                <label class="form-check-label" [for]="'modal-picture-required-' + currentModalItemIndex">
-                  <strong>Picture Required</strong>
-                </label>
-              </div>
-              <small class="form-text text-muted d-block mt-2">
-                <i class="mdi mdi-lightbulb-on-outline"></i>
-                When <strong>ON</strong>: Users must take a photo. When <strong>OFF</strong>: Users can confirm without capturing.
-              </small>
-            </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-primary" (click)="modal.close()">
-          <i class="mdi mdi-check me-1"></i>Done
-        </button>
-      </div>
-    </ng-template>
-
-    <!-- Sample Video Management Modal -->
-    <ng-template #sampleVideoModalTemplate let-modal>
-      <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title">
-          <i class="mdi mdi-video me-2"></i>
-          Manage Sample Video
-        </h5>
-        <button type="button" class="btn-close btn-close-white" (click)="modal.dismiss()"></button>
-      </div>
-      <div class="modal-body">
-        <p class="text-muted mb-4">
-          <i class="mdi mdi-information-outline me-1"></i>
-          Optional short video demonstrating the required capture (mp4/webm)
-        </p>
-
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <label class="form-label mb-0 fw-bold">Sample Video</label>
-          <div>
-            <button type="button" class="btn btn-outline-primary btn-sm me-2" (click)="openSampleVideoUpload(currentModalItemIndex)" [disabled]="uploadingVideo">
-              <span *ngIf="uploadingVideo" class="spinner-border spinner-border-sm me-1"></span>
-              <i *ngIf="!uploadingVideo" class="mdi mdi-video-plus"></i>
-              {{ uploadingVideo ? 'Uploading...' : (hasSampleVideo(currentModalItemIndex) ? 'Replace Video' : 'Add Video') }}
-            </button>
-            <button *ngIf="hasSampleVideo(currentModalItemIndex)" type="button" class="btn btn-outline-secondary btn-sm" (click)="previewSampleVideo(currentModalItemIndex)">
-              <i class="mdi mdi-play-circle me-1"></i>Preview
-            </button>
-            <button *ngIf="hasSampleVideo(currentModalItemIndex)" type="button" class="btn btn-danger btn-sm ms-2" (click)="removeSampleVideo(currentModalItemIndex)">
-              <i class="mdi mdi-delete"></i>
-            </button>
-          </div>
-        </div>
-
-        <div *ngIf="hasSampleVideo(currentModalItemIndex)" class="border rounded p-3 bg-light text-center">
-          <video [src]="getPrimarySampleVideoUrl(currentModalItemIndex)" controls style="max-height:300px; max-width:100%; object-fit:contain;"></video>
-        </div>
-        
-        <div *ngIf="!hasSampleVideo(currentModalItemIndex)" class="text-muted text-center py-5 border-2 border-dashed rounded bg-white" style="border: 2px dashed #dee2e6;">
-          <i class="mdi mdi-video-outline text-primary mb-2" style="font-size: 3rem;"></i>
-          <p class="mb-0"><strong>No sample video</strong></p>
-          <p class="mb-0 small text-muted">Add a short video demonstration</p>
-        </div>
-
-        <hr>
-
-        <!-- Video Requirements -->
-        <div class="mb-3" *ngIf="currentModalItemIndex >= 0 && getItemFormGroup(currentModalItemIndex)">
-          <h6 class="mb-3 fw-bold">
-            <i class="mdi mdi-cog me-1"></i>Video Requirements
-          </h6>
-          
-          <div [formGroup]="getItemFormGroup(currentModalItemIndex)!">
-            <div class="row">
-              <div class="col-md-6" formGroupName="photo_requirements">
-                <label class="form-label">Max Video Duration</label>
-                <input type="number" class="form-control form-control-sm" formControlName="max_video_duration_seconds" min="1" max="600">
-                <small class="form-text text-muted">Maximum video length in seconds</small>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Submission Time Limit</label>
-                <input type="number" class="form-control form-control-sm" formControlName="submission_time_seconds" min="0" placeholder="0 for no limit">
-                <small class="form-text text-muted">Time allowed to submit (seconds)</small>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-primary" (click)="modal.close()">
-          <i class="mdi mdi-check me-1"></i>Done
-        </button>
-      </div>
-    </ng-template>
-
-    <!-- Links Management Modal -->
-    <ng-template #linksModalTemplate let-modal>
-      <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title">
-          <i class="mdi mdi-link-variant me-2"></i>
-          Manage Links
-        </h5>
-        <button type="button" class="btn-close btn-close-white" (click)="modal.dismiss()"></button>
-      </div>
-      <div class="modal-body" *ngIf="currentLinksItemIndex >= 0 && getItemFormGroup(currentLinksItemIndex)">
-        <p class="text-muted mb-3">
-          <i class="mdi mdi-information-outline me-1"></i>
-          Add reference links for this checklist item (specs, drawings, videos, etc.).
-        </p>
-
-        <div [formGroup]="getItemFormGroup(currentLinksItemIndex)!">
-          <div formArrayName="links">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <label class="form-label mb-0">
-                Links
-              </label>
-              <button type="button" class="btn btn-outline-primary btn-sm" (click)="addLink(currentLinksItemIndex)">
-                <i class="mdi mdi-plus me-1"></i>Add Link
-              </button>
-            </div>
-
-            <div *ngIf="getLinksFormArray(currentLinksItemIndex).length === 0" class="text-muted small border rounded bg-light p-2">
-              No links added.
-            </div>
-
-            <div class="d-flex flex-column gap-2" *ngIf="getLinksFormArray(currentLinksItemIndex).length > 0">
-              <div *ngFor="let link of getLinksFormArray(currentLinksItemIndex).controls; let linkIndex = index" [formGroupName]="linkIndex" class="border rounded p-2">
-                <div class="row g-2 align-items-end">
-                  <div class="col-md-4">
-                    <label class="form-label mb-1">Title <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control" formControlName="title" placeholder="Link title"
-                           [ngClass]="{ 'is-invalid': link.get('title')?.invalid && link.get('title')?.touched }">
-                    <div class="invalid-feedback" *ngIf="link.get('title')?.invalid && link.get('title')?.touched">
-                      Title is required
-                    </div>
-                  </div>
-                  <div class="col-md-4">
-                    <label class="form-label mb-1">URL <span class="text-danger">*</span></label>
-                    <input type="url" class="form-control" formControlName="url" placeholder="https://example.com"
-                           [ngClass]="{ 'is-invalid': link.get('url')?.invalid && link.get('url')?.touched }">
-                    <div class="invalid-feedback" *ngIf="link.get('url')?.invalid && link.get('url')?.touched">
-                      URL is required
-                    </div>
-                  </div>
-                  <div class="col-md-3">
-                    <label class="form-label mb-1">Description</label>
-                    <input type="text" class="form-control" formControlName="description" placeholder="Optional description">
-                  </div>
-                  <div class="col-md-1">
-                    <button type="button" class="btn btn-outline-danger btn-sm w-100" (click)="removeLink(currentLinksItemIndex, linkIndex)" title="Remove link">
-                      <i class="mdi mdi-delete"></i>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-primary" (click)="modal.close()">
-          <i class="mdi mdi-check me-1"></i>Done
-        </button>
-      </div>
-    </ng-template>
-
-    <!-- Preview Modal -->
-    <ng-template #previewModal let-modal>
-      <div class="modal-header bg-light">
-        <h5 class="modal-title">
-          <i class="mdi mdi-eye me-2"></i>Checklist Preview
-          <span class="badge bg-info ms-2">{{templateForm.get('name')?.value || 'Untitled Template'}}</span>
-        </h5>
-        <button type="button" class="btn-close" (click)="modal.dismiss()"></button>
-      </div>
-      <div class="modal-body p-0" style="max-height: calc(100vh - 140px); overflow: hidden;">
-        <div class="row g-0 h-100">
-          <!-- Main Content Area -->
-          <div class="col-md-9 pe-3" style="max-height: calc(100vh - 140px); overflow-y: auto; padding: 1rem;" #previewContent>
-            <!-- Template Info Banner -->
-            <div class="alert alert-info mb-4">
-              <div class="row">
-                <div class="col-md-6">
-                  <strong>Category:</strong> {{templateForm.get('category')?.value | titlecase}}<br>
-                  <strong>Part Number:</strong> {{templateForm.get('part_number')?.value || 'N/A'}}
-                </div>
-                <div class="col-md-6">
-                  <strong>Product Type:</strong> {{templateForm.get('product_type')?.value || 'N/A'}}<br>
-                  <strong>Total Items:</strong> {{items.length}}
-                </div>
-              </div>
-              
-              <!-- Quick Stats -->
-              <div class="border-top mt-3 pt-3">
-                <div class="row small">
-                  <div class="col-6 col-md-3">
-                    <i class="mdi mdi-checkbox-marked-circle text-danger me-1"></i>
-                    <strong>{{getRequiredItemsCount()}}</strong> Required
-                  </div>
-                  <div class="col-6 col-md-3">
-                    <i class="mdi mdi-camera text-primary me-1"></i>
-                    <strong>{{getPhotoItemsCount()}}</strong> Photo
-                  </div>
-                  <div class="col-6 col-md-3">
-                    <i class="mdi mdi-video text-success me-1"></i>
-                    <strong>{{getVideoItemsCount()}}</strong> Video
-                  </div>
-                  <div class="col-6 col-md-3">
-                    <i class="mdi mdi-image-multiple text-info me-1"></i>
-                    <strong>{{getItemsWithMediaCount()}}</strong> With Media
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Checklist Items Preview -->
-            <div *ngFor="let item of items.controls; let i = index" class="mb-3" [id]="'preview-item-' + i">
-              <div class="card border" 
-               [class.border-primary]="item.get('level')?.value === 0"
-               [class.border-secondary]="item.get('level')?.value > 0"
-               [style.margin-left.rem]="(item.get('level')?.value || 0) * 1.5">
-            <div class="card-body p-3">
-              <!-- Item Header -->
-              <div class="d-flex align-items-start mb-2">
-                <span class="badge bg-secondary me-2" style="min-width: 50px; font-size: 0.9rem;">
-                  {{getOutlineNumber(i)}}
-                </span>
-                <div class="flex-grow-1">
-                  <h6 class="mb-1" [class.fw-bold]="item.get('level')?.value === 0">
-                    {{item.get('title')?.value}}
-                    <span *ngIf="item.get('is_required')?.value" class="badge bg-danger ms-2">Required</span>
-                  </h6>
-                  
-                  <!-- Description (plain text, no rich editor) -->
-                  <div *ngIf="item.get('description')?.value" 
-                       class="text-muted small mb-2"
-                       [innerHTML]="item.get('description')?.value">
-                  </div>
-
-                  <!-- Links Preview -->
-                  <div *ngIf="getLinksFormArray(i).length > 0" class="mb-2">
-                    <small class="text-muted d-block mb-1">
-                      <i class="mdi mdi-link-variant me-1"></i>Links
-                    </small>
-                    <div class="list-group list-group-flush">
-                      <a *ngFor="let link of getLinksFormArray(i).value"
-                         class="list-group-item list-group-item-action px-0 py-1"
-                         [href]="link.url"
-                         target="_blank"
-                         rel="noopener noreferrer">
-                        <div class="fw-semibold text-truncate">{{ link.title || link.url }}</div>
-                        <div class="small text-muted" *ngIf="link.description">{{ link.description }}</div>
-                      </a>
-                    </div>
-                  </div>
-
-                  <!-- Submission Type Badge -->
-                  <div class="mb-2">
-                    <span class="badge" [ngSwitch]="item.get('submission_type')?.value">
-                      <span *ngSwitchCase="'photo'" class="badge bg-primary">
-                        <i class="mdi mdi-camera me-1"></i>Photo
-                      </span>
-                      <span *ngSwitchCase="'video'" class="badge bg-success">
-                        <i class="mdi mdi-video me-1"></i>Video
-                      </span>
-                      <span *ngSwitchCase="'audio'" class="badge bg-warning text-dark">
-                        <i class="mdi mdi-microphone me-1"></i>Audio
-                      </span>
-                      <span *ngSwitchCase="'either'" class="badge bg-info">
-                        <i class="mdi mdi-file-multiple me-1"></i>Photo/Video
-                      </span>
-                      <span *ngSwitchCase="'none'" class="badge bg-secondary">
-                        <i class="mdi mdi-cancel me-1"></i>No Media
-                      </span>
-                    </span>
-                  </div>
-
-                  <!-- Sample Images Preview (improved layout) -->
-                  <div *ngIf="(item.get('submission_type')?.value === 'photo' || item.get('submission_type')?.value === 'either' || item.get('submission_type')?.value === 'none') && getSampleImagesArray(i).length > 0">
-                    <!-- Primary Sample Image - Large, floated right -->
-                    <div *ngFor="let img of getSampleImagesArray(i)">
-                      <div *ngIf="img.is_primary" class="float-end ms-3 mb-2">
-                        <div class="text-center">
-                          <img [src]="img.url" 
-                               class="rounded border border-primary shadow-sm" 
-                               loading="lazy"
-                               style="width: 200px; height: 200px; object-fit: cover; cursor: pointer;"
-                               [title]="img.label || 'Primary Sample Image'"
-                               (click)="openImagePreview(img.url)">
-                          <div class="small text-muted mt-1">
-                            <i class="mdi mdi-star text-warning me-1"></i>Primary Sample
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <!-- Reference Images - Small thumbnails -->
-                    <div class="mb-2">
-                      <small class="text-muted d-block mb-2">
-                        <i class="mdi mdi-image-multiple me-1"></i>Reference Images:
-                      </small>
-                      <div class="d-flex flex-wrap gap-2">
-                        <div *ngFor="let img of getSampleImagesArray(i)" class="text-center">
-                          <img *ngIf="!img.is_primary"
-                               [src]="img.url" 
-                               class="rounded border" 
-                               loading="lazy"
-                               style="width: 60px; height: 60px; object-fit: cover; cursor: pointer;"
-                               [title]="img.label || 'Reference Image'"
-                               (click)="openImagePreview(img.url)">
-                          <div *ngIf="!img.is_primary" class="small text-muted" style="font-size: 0.7rem; max-width: 60px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                            {{img.label || 'Reference'}}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div class="clearfix"></div>
-                    
-                    <!-- Photo Requirements -->
-                    <div class="small text-muted mt-2">
-                      <i class="mdi mdi-cog me-1"></i>
-                      Min: {{item.get('photo_requirements.min_photos')?.value || 1}}, 
-                      Max: {{item.get('photo_requirements.max_photos')?.value || 5}}
-                      <span *ngIf="item.get('photo_requirements.angle')?.value">
-                        | Angle: {{item.get('photo_requirements.angle')?.value}}
-                      </span>
-                      <span *ngIf="item.get('photo_requirements.distance')?.value">
-                        | Distance: {{item.get('photo_requirements.distance')?.value}}
-                      </span>
-                    </div>
-                  </div>
-
-                  <!-- Sample Videos Preview -->
-                  <div *ngIf="(item.get('submission_type')?.value === 'video' || item.get('submission_type')?.value === 'either') && getSampleVideosArray(i).length > 0">
-                    <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
-                      <small class="text-muted me-2">
-                        <i class="mdi mdi-video me-1"></i>Sample Videos:
-                      </small>
-                      <video *ngFor="let vid of getSampleVideosArray(i)" 
-                             [src]="vid.url" 
-                             class="rounded border" 
-                             preload="none"
-                             style="width: 80px; height: 50px; object-fit: cover;">
-                      </video>
-                    </div>
-                    
-                    <!-- Video Requirements -->
-                    <div class="small text-muted" *ngIf="item.get('photo_requirements.max_video_duration_seconds')?.value">
-                      <i class="mdi mdi-clock-outline me-1"></i>
-                      Max Duration: {{item.get('photo_requirements.max_video_duration_seconds')?.value}}s
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-            <!-- Empty State -->
-            <div *ngIf="items.length === 0" class="text-center text-muted py-5">
-              <i class="mdi mdi-clipboard-text-outline" style="font-size: 4rem;"></i>
-              <p class="mt-3">No items to preview</p>
-            </div>
-          </div>
-
-          <!-- Navigation Sidebar -->
-          <div class="col-md-3 border-start bg-light" style="max-height: calc(100vh - 140px); overflow-y: auto;">
-            <div class="p-2">
-              <app-checklist-navigation
-                [items]="editorNavItems"
-                [mode]="'readonly'"
-                [disableVirtualScroll]="true"
-                [showMediaContext]="showNavMediaContext"
-                [showSearch]="false"
-                [showExpandCollapse]="false"
-                [height]="previewNavHeight"
-                (itemSelected)="scrollToPreviewItem($event.index)">
-              </app-checklist-navigation>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" (click)="modal.dismiss()">
-          <i class="mdi mdi-close me-1"></i>Close
-        </button>
-        <button type="button" class="btn btn-primary" (click)="modal.dismiss(); saveTemplate()">
-          <i class="mdi mdi-content-save me-1"></i>Save Template
-        </button>
-      </div>
-    </ng-template>
-
-    <!-- Sample Image Upload Modal (keeping existing modal for now) -->
-    <!-- Add your existing modal templates here -->
-
-      </div>
-
-    <!-- Print-Only Professional PDF Layout -->
-    <div class="print-only">
-      <div class="print-header d-flex justify-content-between align-items-end">
-        <div>
-          <div class="title">Checklist Template</div>
-          <div class="print-muted">{{ templateForm.get('name')?.value || 'Untitled Template' }}</div>
-        </div>
-        <div class="text-end print-meta">
-          <div>Version: {{ editingTemplate?.version || 'New' }}</div>
-          <div>Date: {{ today | date:'mediumDate' }}</div>
-        </div>
-      </div>
-
-      <div class="print-section-title">Template Details</div>
-      <div class="row g-2 print-meta">
-        <div class="col-6">Category: {{ templateForm.get('category')?.value | titlecase }}</div>
-        <div class="col-6">Product Type: {{ templateForm.get('product_type')?.value || 'N/A' }}</div>
-        <div class="col-6">Part Number: {{ templateForm.get('part_number')?.value || 'N/A' }}</div>
-        <div class="col-6">Customer Name: {{ templateForm.get('customer_name')?.value || 'N/A' }}</div>
-        <div class="col-6" *ngIf="editingTemplate?.quality_document_metadata">
-          Doc: {{ editingTemplate?.quality_document_metadata?.document_number }} Rev {{ editingTemplate?.quality_document_metadata?.revision_number }}
-        </div>
-      </div>
-
-      <div class="print-section-title">Template Items</div>
-      <table class="print-table">
-        <thead>
-          <tr>
-            <th style="width: 18%">Item</th>
-            <th>Description</th>
-            <th style="width: 10%">Type</th>
-            <th style="width: 10%">Required</th>
-            <th style="width: 20%">Notes</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let item of items.controls; let i = index">
-            <td>
-              <div><strong>{{ getOutlineNumber(i) }}.</strong></div>
-              <div>{{ item.get('title')?.value || 'Untitled' }}</div>
-            </td>
-            <td [innerHTML]="item.get('description')?.value"></td>
-            <td>{{ item.get('submission_type')?.value | titlecase }}</td>
-            <td>{{ item.get('is_required')?.value ? 'Yes' : 'No' }}</td>
-            <td>
-              <div class="print-field-line"></div>
-              <div class="print-field-line"></div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    </div>
-  `,
-  styles: [`
-    .print-only {
-      display: none;
-    }
-
-    .print-header {
-      border-bottom: 2px solid #1e3a8a;
-      padding-bottom: 8px;
-      margin-bottom: 16px;
-    }
-
-    .print-header .title {
-      font-size: 20px;
-      font-weight: 700;
-      color: #1e3a8a;
-    }
-
-    .print-meta {
-      font-size: 12px;
-      color: #4b5563;
-    }
-
-    .print-section-title {
-      font-size: 12px;
-      font-weight: 700;
-      text-transform: uppercase;
-      color: #1f2937;
-      border-bottom: 1px solid #d1d5db;
-      padding-bottom: 4px;
-      margin: 14px 0 8px;
-    }
-
-    .print-field-line {
-      border-bottom: 1px solid #9ca3af;
-      height: 18px;
-    }
-
-    .print-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 12px;
-    }
-
-    .print-table th,
-    .print-table td {
-      border: 1px solid #d1d5db;
-      padding: 6px 8px;
-      vertical-align: top;
-    }
-
-    .print-table th {
-      background: #f3f4f6;
-      font-weight: 700;
-    }
-
-    .print-checkbox {
-      width: 12px;
-      height: 12px;
-      border: 1px solid #6b7280;
-      display: inline-block;
-      margin-right: 6px;
-    }
-
-    .print-muted {
-      color: #6b7280;
-      font-size: 11px;
-    }
-
-    .editor-loading-overlay {
-      position: fixed;
-      inset: 0;
-      z-index: 2000;
-      background: rgba(255, 255, 255, 0.82);
-      backdrop-filter: blur(1px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .editor-loading-card {
-      min-width: 280px;
-      max-width: 420px;
-      text-align: center;
-      background: #fff;
-      border: 1px solid rgba(0, 0, 0, 0.08);
-      border-radius: 12px;
-      padding: 1.25rem 1.5rem;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-    }
-
-    @media print {
-      .print-hide {
-        display: none !important;
-      }
-
-      .print-only {
-        display: block !important;
-      }
-
-      @page {
-        margin: 0.5in;
-      }
-    }
-
-    /* Sticky Footer for Template Editor */
-    .template-editor-card {
-      display: flex;
-      flex-direction: column;
-      max-height: calc(100vh - 180px);
-    }
-    
-    .template-editor-body {
-      overflow-y: auto;
-      flex: 1;
-      padding-bottom: 20px;
-    }
-    
-    .template-editor-footer {
-      position: sticky !important;
-      bottom: 0;
-      z-index: 1040;
-      box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-      flex-shrink: 0;
-    }
-
-    .item-card {
-      border: 1px solid #dfe3ea;
-      box-shadow: none;
-      transition: border-color 0.15s ease, box-shadow 0.15s ease;
-    }
-
-    .item-card:focus-within {
-      border-color: #86b7fe;
-      box-shadow: 0 0 0 0.15rem rgba(13, 110, 253, 0.12);
-    }
-
-    .item-card-header {
-      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-    }
-
-    .item-card.item-card-child {
-      background: linear-gradient(90deg, rgba(13, 110, 253, 0.06) 0, rgba(13, 110, 253, 0.06) 6px, #fff 6px);
-    }
-    
-    .drag-handle {
-      cursor: move;
-      cursor: grab;
-      opacity: 0.65;
-      transition: transform 0.2s, opacity 0.2s;
-    }
-    
-    .drag-handle:active {
-      cursor: grabbing;
-    }
-    
-    .drag-handle:hover {
-      opacity: 1;
-      transform: scale(1.1);
-    }
-    
-    .drag-preview {
-      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-      border: 2px solid #0d6efd;
-      background: white;
-      padding: 10px;
-      border-radius: 4px;
-      opacity: 0.9;
-    }
-    
-    .cdk-drag-animating {
-      transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
-    }
-    
-    .cdk-drop-list-dragging .cdk-drag:not(.cdk-drag-placeholder) {
-      transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
-    }
-    
-    .cdk-drag-placeholder {
-      opacity: 1;
-      min-height: 0 !important;
-      height: 0 !important;
-      margin: 0 0 0.8rem 0;
-      border-top: 3px solid #0d6efd;
-      background: transparent;
-      position: relative;
-    }
-
-    .cdk-drag-placeholder::after {
-      content: 'Drop block here';
-      position: absolute;
-      top: -1.1rem;
-      right: 0;
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: #0d6efd;
-      background: #fff;
-      padding: 0 0.25rem;
-      border-radius: 0.25rem;
-    }
-
-    .reorder-live-hint {
-      position: sticky;
-      top: 0.35rem;
-      z-index: 10;
-    }
-
-    .reorder-feedback-toast {
-      position: fixed;
-      right: 1rem;
-      bottom: 1rem;
-      z-index: 1085;
-      max-width: min(620px, calc(100vw - 2rem));
-    }
-
-    @media (max-width: 576px) {
-      .reorder-feedback-toast {
-        right: 0.5rem;
-        left: 0.5rem;
-        bottom: 0.5rem;
-        max-width: none;
-      }
-    }
-    
-    /* Visual feedback for hierarchy */
-    .item-card[class*="border-primary"] {
-      border-left-color: #0d6efd !important;
-      background: rgba(13, 110, 253, 0.015);
-    }
-    
-    .item-card[class*="ms-4"] {
-      transition: margin-left 0.3s ease, background-color 0.3s ease;
-    }
-    
-    /* Drag and drop visual hints */
-    .cdk-drop-list-dragging .item-card[class*="ms-4"] {
-      /* Highlight child items during drag to show they can be re-parented */
-      background: rgba(13, 110, 253, 0.05);
-    }
-    
-    .cdk-drop-list-dragging .item-card:not([class*="ms-4"]) {
-      /* Highlight parent items as valid drop zones */
-      background: rgba(25, 135, 84, 0.05);
-    }
-    
-    /* Visual indicator for drag over parent */
-    .cdk-drag-placeholder + .item-card:not([class*="ms-4"]) {
-      border-top: 3px solid #198754;
-    }
-    
-    /* Hide 3-dot menu by default, show on hover */
-    .nav-item-actions {
-      opacity: 0;
-      transition: opacity 0.15s ease-in-out;
-    }
-    
-    .list-group-item:hover .nav-item-actions {
-      opacity: 1;
-    }
-    
-    /* Hide NgBootstrap dropdown caret */
-    .nav-item-actions [ngbDropdownToggle]::after {
-      display: none !important;
-    }
-
-    /* Navigation: fit to viewport (sticky top is ~66px) */
-    .nav-scroll-container {
-      max-height: calc(100vh - 253px);
-      overflow-y: auto;
-    }
-
-    /* Navigation search highlighting */
-    .list-group-item.nav-item-match {
-      background-color: rgba(255, 193, 7, 0.12);
-    }
-
-    .list-group-item.nav-item-match:hover {
-      background-color: rgba(255, 193, 7, 0.18);
-    }
-
-    .list-group-item.nav-item-invalid {
-      border-left: 3px solid #dc3545 !important;
-      background-color: rgba(220, 53, 69, 0.18) !important;
-    }
-
-    .list-group-item.nav-item-invalid:hover,
-    .list-group-item.nav-item-invalid:focus,
-    .list-group-item.nav-item-invalid:active,
-    .list-group-item.nav-item-invalid.bg-body-secondary {
-      background-color: rgba(220, 53, 69, 0.18) !important;
-    }
-
-    /* Main editor: sticky parent banner while scrolling through children */
-    .sticky-parent-banner {
-      position: sticky;
-      top: 66px;
-      z-index: 5;
-      background: rgba(248, 249, 250, 0.98);
-      backdrop-filter: blur(4px);
-      border: 1px solid rgba(0, 0, 0, 0.08);
-      border-radius: 0.5rem;
-      padding: 0.5rem 0.75rem;
-      margin: 0.25rem 0 0.75rem;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
-    }
-
-    /* Quill auto-height editors */
-    :host ::ng-deep .quill-auto-height .ql-container {
-      height: auto;
-    }
-
-    :host ::ng-deep .quill-auto-height .ql-editor {
-      overflow: visible;
-    }
-
-    :host ::ng-deep .quill-template .ql-editor {
-      min-height: 120px;
-    }
-
-    :host ::ng-deep .quill-item .ql-editor {
-      min-height: 200px;
-    }
-
-    /* Item title truncation */
-    .item-header-title {
-      display: inline-flex;
-      align-items: center;
-      min-width: 0;
-      max-width: 100%;
-      overflow: hidden;
-    }
-
-    .item-header-title .text-truncate {
-      min-width: 0;
-    }
-
-    .locked-media-clickable {
-      pointer-events: auto !important;
-    }
-
-    .readonly-form :is(input, select, textarea, button, .btn, .form-check-input, .form-select, .form-control, .ql-toolbar, .ql-editor) {
-      pointer-events: none !important;
-    }
-
-    .readonly-form .locked-media-clickable {
-      pointer-events: auto !important;
-    }
-  `]
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, NgbModule, QualityDocumentSelectorComponent, RouterModule, QuillModule, ChecklistNavigationComponent],
+  templateUrl: './checklist-template-editor.component.html',
+  styleUrls: ['./checklist-template-editor.component.scss']
 })
 export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('importModal') importModalRef!: TemplateRef<any>;
@@ -2123,30 +119,33 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   // Navigation view mode
   navViewMode: 'all' | 'groups' | 'items' = 'all';
 
+  // Active panel in the master-detail layout
+  activePanel: 'template-info' | 'item' = 'template-info';
+
+  // Transient flag: hides the item panel (visibility:hidden) while Quill is being destroyed/recreated
+  selectingItem = false;
+
   // Selected item for focused editing (null means show all)
   selectedFormItemIndex: number | null = null;
 
   // Focused edit mode toggle - when true, clicking items shows only that item; when false, just scrolls
   focusedEditMode: boolean = false;
 
-  // Navigation media indicators toggle in editor/preview nav (default ON)
-  showNavMediaContext: boolean = true;
+  // Navigation media indicators toggle in editor/preview nav (default OFF)
+  showNavMediaContext: boolean = false;
 
   // Active item tracking for scroll highlighting
   activeNavItemIndex: number = -1;
   stickyParentIndex: number | null = null;
 
-  // Drag/reorder live guidance
-  isReorderDragging = false;
-  draggedItemIndex = -1;
-  draggedSubtreeLength = 1;
-  dragSummaryLabel = '';
-  dropHintText = '';
+  // Reorder state
   reorderFeedbackMessage = '';
+  publishValidationErrors: string[] = [];
   private hasReorderMutations = false;
 
   private lastReorderUndoState: ReorderUndoState | null = null;
   private reorderFeedbackTimeout: ReturnType<typeof setTimeout> | null = null;
+  private readonly navMediaPreferenceStorageKey = 'checklist-template-editor.show-nav-media-context';
 
   // Navigation panel heights (customizable per view)
   editorNavHeight = 'calc(100vh - 190px)';
@@ -2190,6 +189,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   private templateFormChangesSub?: Subscription;
   private navItemsSub?: Subscription;
   private requestedNavItemIndex: number | null = null;
+  private pendingUrlItemRestore = false;
   private restoreNavSelectionTimeout: ReturnType<typeof setTimeout> | null = null;
   editorNavItems: ChecklistNavItem[] = [];
 
@@ -2333,13 +333,17 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
     try {
       const Link = (Quill as any).import('formats/link');
-      if (Link?.PROTOCOL_WHITELIST && Array.isArray(Link.PROTOCOL_WHITELIST)) {
-        if (!Link.PROTOCOL_WHITELIST.includes('file')) {
-          Link.PROTOCOL_WHITELIST.push('file');
-          (Quill as any).register(Link, true);
-        }
-        ChecklistTemplateEditorComponent.quillFileProtocolEnabled = true;
+      const whitelist = Link?.PROTOCOL_WHITELIST;
+      if (!Array.isArray(whitelist)) {
+        return;
       }
+
+      if (!whitelist.includes('file')) {
+        whitelist.push('file');
+        (Quill as any).register(Link, true);
+      }
+
+      ChecklistTemplateEditorComponent.quillFileProtocolEnabled = true;
     } catch {
       // If Quill internals change or aren't available, just skip the whitelist patch.
     }
@@ -2438,6 +442,9 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   }
 
   ngOnInit(): void {
+    document.body.classList.add('tce-page-active');
+    this.loadNavDisplayPreferences();
+
     // Rebuild navigation sidebar whenever form items change (debounced to avoid rebuilding on every keystroke).
     this.navItemsSub = this.items.valueChanges.pipe(debounceTime(150)).subscribe(() => {
       this.rebuildEditorNavItems();
@@ -2510,12 +517,13 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       const nextRequested = Number.isInteger(parsed) && parsed >= 0 ? parsed : null;
 
       this.requestedNavItemIndex = nextRequested;
+      this.pendingUrlItemRestore = nextRequested !== null;
 
       if (nextRequested === null) {
         return;
       }
 
-      this.scheduleRestoreRequestedNavItemSelection(0);
+      this.scheduleRestoreRequestedNavItemSelection();
     });
   }
   isPublishedLocked(): boolean {
@@ -2708,7 +716,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     this.checkActiveItem();
     // In large templates, initial DOM paint can lag behind data load.
     // Retry URL-based restore after the first view is initialized.
-    this.scheduleRestoreRequestedNavItemSelection(0);
+    this.scheduleRestoreRequestedNavItemSelection();
   }
 
   createTemplateForm(): FormGroup {
@@ -2762,6 +770,19 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     return this.templateForm.get('items') as FormArray;
   }
 
+  readonly trackByIndex = (index: number): number => index;
+  private toBoolFlag(value: unknown): boolean {
+    return value === true || value === 1 || value === '1';
+  }
+
+  private normalizeTemplateFlags<T extends Record<string, any>>(template: T): T & { is_active: boolean; is_draft: boolean } {
+    return {
+      ...template,
+      is_active: this.toBoolFlag(template?.['is_active']),
+      is_draft: this.toBoolFlag(template?.['is_draft'])
+    };
+  }
+
   getItemFormGroup(index: number): FormGroup | null {
     if (index < 0 || index >= this.items.length) {
       return null;
@@ -2776,21 +797,14 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
         if (!template) {
           console.error('Template not found');
           alert('Template not found. Redirecting to template manager.');
-          this.router.navigate(['/quality/template-manager']);
+          this.router.navigate(['/inspection-checklist/template-manager']);
           this.loading = false;
           return;
         }
 
         // Normalize backend values (often 0/1 or '0'/'1') to real booleans.
         // Important: string '0' is truthy in JS/Angular templates and will incorrectly display as Active.
-        const rawIsActive: any = (template as any)?.is_active;
-        const rawIsDraft: any = (template as any)?.is_draft;
-
-        const normalizedTemplate: any = {
-          ...template,
-          is_active: rawIsActive === true || rawIsActive === 1 || rawIsActive === '1',
-          is_draft: rawIsDraft === true || rawIsDraft === 1 || rawIsDraft === '1'
-        };
+        const normalizedTemplate: any = this.normalizeTemplateFlags(template as any);
 
         this.editingTemplate = normalizedTemplate as ChecklistTemplate;
         this.draftParentVersion = null;
@@ -2814,17 +828,17 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
         // Expand all parent items by default in navigation
         this.initializeNavExpansion();
         this.rebuildEditorNavItems();
-        this.scheduleRestoreRequestedNavItemSelection(0);
+        this.loading = false;
+
+        this.scheduleRestoreRequestedNavItemSelection();
 
         this.loadDraftParentVersion(this.editingTemplate);
-
-        this.loading = false;
       },
       error: (error) => {
         console.error('Error loading template:', error);
         this.loading = false;
         alert('Error loading template: ' + (error.message || 'Unknown error'));
-        this.router.navigate(['/quality/template-manager']);
+        this.router.navigate(['/inspection-checklist/template-manager']);
       }
     });
   }
@@ -2923,17 +937,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
           // Update the form control with all images
           const itemFormGroup = this.items.at(index) as FormGroup;
           if (itemFormGroup) {
-            itemFormGroup.patchValue({
-              sample_image_url: item.sample_image_url || loadedImages.find(img => img.is_primary)?.url || loadedImages[0]?.url,
-              sample_images: loadedImages,
-              sample_videos: (item.sample_videos && Array.isArray(item.sample_videos)) ? item.sample_videos : [],
-              photo_requirements: {
-                ...(itemFormGroup.get('photo_requirements')?.value || {}),
-                submission_type: (item as any)?.photo_requirements?.submission_type || 'photo',
-                max_video_duration_seconds: (item as any)?.photo_requirements?.max_video_duration_seconds || (item as any)?.video_requirements?.max_duration_seconds || 30
-              },
-              submission_time_seconds: (item as any)?.submission_time_seconds || null
-            });
+            this.patchLoadedItemMedia(itemFormGroup, item, loadedImages);
           }
 
         } else if (item.sample_image_url) {
@@ -2953,17 +957,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
           // Update the form control with the loaded sample image URL
           const itemFormGroup = this.items.at(index) as FormGroup;
           if (itemFormGroup) {
-            itemFormGroup.patchValue({
-              sample_image_url: item.sample_image_url,
-              sample_images: [this.sampleImages[index] as SampleImage],
-              sample_videos: (item.sample_videos && Array.isArray(item.sample_videos)) ? item.sample_videos : [],
-              photo_requirements: {
-                ...(itemFormGroup.get('photo_requirements')?.value || {}),
-                submission_type: (item as any)?.photo_requirements?.submission_type || 'photo',
-                max_video_duration_seconds: (item as any)?.photo_requirements?.max_video_duration_seconds || (item as any)?.video_requirements?.max_duration_seconds || 30
-              },
-              submission_time_seconds: (item as any)?.submission_time_seconds || null
-            });
+            this.patchLoadedItemMedia(itemFormGroup, item, [this.sampleImages[index] as SampleImage]);
           }
 
         }
@@ -3018,6 +1012,63 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     return result;
   }
 
+  private getItemSubmissionType(item: any): string {
+    return String(item?.submission_type || 'photo');
+  }
+
+  private getItemMaxVideoDuration(item: any): number {
+    return Number(item?.photo_requirements?.max_video_duration_seconds || item?.video_requirements?.max_duration_seconds || 30);
+  }
+
+  private getItemSubmissionTimeSeconds(item: any): number | null {
+    return item?.submission_time_seconds || null;
+  }
+
+  private getItemSampleVideos(item: any): any[] {
+    return Array.isArray(item?.sample_videos) ? item.sample_videos : [];
+  }
+
+  private buildPhotoRequirementsValue(
+    item: any,
+    options: { defaultMinPhotos: number | null; defaultMaxPhotos: number | null; defaultPictureRequired: boolean }
+  ): {
+    angle: string;
+    distance: string;
+    lighting: string;
+    focus: string;
+    min_photos: number | null;
+    max_photos: number | null;
+    picture_required: boolean;
+    max_video_duration_seconds: number;
+  } {
+    return {
+      angle: item?.photo_requirements?.angle || '',
+      distance: item?.photo_requirements?.distance || '',
+      lighting: item?.photo_requirements?.lighting || '',
+      focus: item?.photo_requirements?.focus || '',
+      min_photos: item?.photo_requirements?.min_photos ?? options.defaultMinPhotos,
+      max_photos: item?.photo_requirements?.max_photos ?? options.defaultMaxPhotos,
+      picture_required: item?.photo_requirements?.picture_required !== undefined
+        ? Boolean(item.photo_requirements.picture_required)
+        : options.defaultPictureRequired,
+      max_video_duration_seconds: this.getItemMaxVideoDuration(item)
+    };
+  }
+
+  private patchLoadedItemMedia(itemFormGroup: FormGroup, item: any, sampleImages: SampleImage[]): void {
+    itemFormGroup.patchValue({
+      sample_image_url: item.sample_image_url || sampleImages.find(img => img.is_primary)?.url || sampleImages[0]?.url || null,
+      sample_images: sampleImages,
+      sample_videos: this.getItemSampleVideos(item),
+      photo_requirements: {
+        ...(itemFormGroup.get('photo_requirements')?.value || {}),
+        submission_type: item?.photo_requirements?.submission_type || 'photo',
+        max_video_duration_seconds: this.getItemMaxVideoDuration(item)
+      },
+      submission_time_seconds: this.getItemSubmissionTimeSeconds(item)
+    });
+  }
+
   createItemFormGroup(item?: ChecklistItem): FormGroup {
     return this.fb.group({
       id: [item?.id || null], // Include ID for change detection
@@ -3026,23 +1077,18 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       is_required: [item?.is_required !== undefined ? item.is_required : true],
       order_index: [item?.order_index || this.items.length + 1],
       // TOP-LEVEL: submission_type is a separate ENUM column in database (photo, video, either)
-      submission_type: [(item as any)?.submission_type || 'photo'],
+      submission_type: [this.getItemSubmissionType(item)],
       links: this.buildLinksFormArray((item as any)?.links || []),
-      photo_requirements: this.fb.group({
-        angle: [(item as any)?.photo_requirements?.angle || ''],
-        distance: [(item as any)?.photo_requirements?.distance || ''],
-        lighting: [(item as any)?.photo_requirements?.lighting || ''],
-        focus: [(item as any)?.photo_requirements?.focus || ''],
-        min_photos: [(item as any)?.photo_requirements?.min_photos || null],
-        max_photos: [(item as any)?.photo_requirements?.max_photos || null],
-        picture_required: [(item as any)?.photo_requirements?.picture_required !== undefined ? (item as any)?.photo_requirements?.picture_required : true], // Default to true
-        max_video_duration_seconds: [(item as any)?.photo_requirements?.max_video_duration_seconds || (item as any)?.video_requirements?.max_duration_seconds || 30]
-      }),
+      photo_requirements: this.fb.group(this.buildPhotoRequirementsValue(item, {
+        defaultMinPhotos: null,
+        defaultMaxPhotos: null,
+        defaultPictureRequired: true
+      })),
       // TOP-LEVEL: per-item submission time limit (in seconds). Stored in video_requirements JSON. Null or 0 = no limit
-      submission_time_seconds: [(item as any)?.submission_time_seconds || null],
+      submission_time_seconds: [this.getItemSubmissionTimeSeconds(item)],
       sample_image_url: [item?.sample_image_url || item?.sample_images?.[0]?.url || null], // Use sample_image_url or first sample_images URL
       sample_images: [item?.sample_images || null], // NEW: Array of all sample/reference images
-      sample_videos: [(item as any)?.sample_videos && Array.isArray((item as any)?.sample_videos) ? (item as any).sample_videos : []], // NEW: Array of sample videos (init as empty array)
+      sample_videos: [this.getItemSampleVideos(item)], // NEW: Array of sample videos (init as empty array)
       level: [item?.level || 0], // 0 = parent, 1 = child
       parent_id: [item?.parent_id || null] // Reference to parent item
     });
@@ -3087,21 +1133,16 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       description: item.description || '',
       order_index: item.order_index,
       is_required: item.is_required !== undefined ? item.is_required : true,
-      submission_type: (item as any)?.submission_type || 'photo', // TOP-LEVEL: Separate ENUM column
+      submission_type: this.getItemSubmissionType(item), // TOP-LEVEL: Separate ENUM column
       sample_image_url: sampleImageUrl,
       level: item.level || 0,
       parent_id: parentId || item.parent_id || null,
-      photo_requirements: {
-        angle: item.photo_requirements?.angle || '',
-        distance: item.photo_requirements?.distance || '',
-        lighting: item.photo_requirements?.lighting || '',
-        focus: item.photo_requirements?.focus || '',
-        min_photos: item.photo_requirements?.min_photos || 1,
-        max_photos: item.photo_requirements?.max_photos || 5,
-        picture_required: hasImages, // Set to false if no images, true if images exist
-        max_video_duration_seconds: (item as any)?.photo_requirements?.max_video_duration_seconds || (item as any)?.video_requirements?.max_duration_seconds || 30
-      },
-      submission_time_seconds: (item as any)?.submission_time_seconds || null,
+      photo_requirements: this.buildPhotoRequirementsValue(item, {
+        defaultMinPhotos: 1,
+        defaultMaxPhotos: 5,
+        defaultPictureRequired: hasImages
+      }),
+      submission_time_seconds: this.getItemSubmissionTimeSeconds(item),
       sample_videos: (item as any)?.sample_videos || null
     });
 
@@ -3555,63 +1596,18 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     this.scheduleActiveItemTrackingRefresh();
   }
 
-  dropItem(event: CdkDragDrop<string[]>): void {
-    const previousIndex = event.previousIndex;
-    const currentIndex = event.currentIndex;
-
-    if (previousIndex === currentIndex) {
-      return; // No change
-    }
-
-    this.performDrop(previousIndex, currentIndex);
-  }
-
-  onItemDragStarted(index: number): void {
-    if (this.isPublishedLocked() || index < 0 || index >= this.items.length) {
-      return;
-    }
-
-    this.isReorderDragging = true;
-    this.draggedItemIndex = index;
-    this.draggedSubtreeLength = this.getSubtreeEndExclusive(index) - index;
-    this.dragSummaryLabel = this.draggedSubtreeLength > 1
-      ? `Moving 1 parent + ${this.draggedSubtreeLength - 1} child${this.draggedSubtreeLength - 1 === 1 ? '' : 'ren'}`
-      : 'Moving 1 item';
-
-    this.updateDragDropHint(index, index);
-  }
-
-  onItemDragSorted(event: CdkDragSortEvent<string[]>): void {
-    if (!this.isReorderDragging) {
-      return;
-    }
-
-    this.updateDragDropHint(this.draggedItemIndex, event.currentIndex);
-  }
-
-  onItemDragEnded(): void {
-    this.isReorderDragging = false;
-    this.draggedItemIndex = -1;
-    this.draggedSubtreeLength = 1;
-    this.dragSummaryLabel = '';
-    this.dropHintText = '';
-  }
-
   /**
    * Handle drop in navigation (needs to map visible indices to actual indices)
    */
-  dropNavItem(event: CdkDragDrop<any[]> | { orderedIndices: number[] } | { sourceIndex: number; targetIndex: number; dropPosition: 'before' | 'inside' | 'after' }): void {
-    console.log('🎯 dropNavItem called', event);
+  dropNavItem(event: { orderedIndices: number[] } | { sourceIndex: number; targetIndex: number; dropPosition: 'before' | 'inside' | 'after' }): void {
 
     if (this.isPublishedLocked() && !this.canReorderPublishedTemplateInPlace()) {
-      console.log('❌ Blocked: published locked');
-      return;
+            return;
     }
 
     const orderedIndices = (event as any)?.orderedIndices;
     if (Array.isArray(orderedIndices) && orderedIndices.length === this.items.length) {
-      console.log('✅ Using absolute order path');
-      this.applyAbsoluteOrder(orderedIndices);
+            this.applyAbsoluteOrder(orderedIndices);
       return;
     }
 
@@ -3626,8 +1622,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       const dropPosition = intentDrop.dropPosition as 'before' | 'inside' | 'after';
 
       if (sourceIndex < 0 || sourceIndex >= this.items.length || targetIndex < 0 || targetIndex >= this.items.length) {
-        console.log('❌ Blocked: invalid source/target in intent drop', { sourceIndex, targetIndex, dropPosition });
-        return;
+                return;
       }
 
       const currentIndexForPerformDrop = dropPosition === 'before'
@@ -3636,80 +1631,9 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
           ? this.getSubtreeEndExclusive(targetIndex)
           : targetIndex;
 
-      console.log('🧭 Intent drop mapping:', { sourceIndex, targetIndex, dropPosition, currentIndexForPerformDrop });
-      this.performDrop(sourceIndex, currentIndexForPerformDrop, { useAnchorIndex: true, dropPosition, targetIndex });
+            this.performDrop(sourceIndex, currentIndexForPerformDrop, { useAnchorIndex: true, dropPosition, targetIndex });
       return;
     }
-
-    const cdkEvent = event as CdkDragDrop<any[]>;
-
-    // Get the form index of the dragged item.
-    const actualPrevIndex = Number(cdkEvent.item?.data);
-    if (!Number.isInteger(actualPrevIndex) || actualPrevIndex < 0 || actualPrevIndex >= this.items.length) {
-      console.log('❌ Blocked: invalid dragged item index');
-      return;
-    }
-
-    // Get visible navigation indices from the nav component.
-    const navVisibleEntries = Array.isArray(cdkEvent.container?.data) ? cdkEvent.container.data : [];
-    const navVisibleIndices = navVisibleEntries
-      .map((entry: any) => Number(entry?.originalIndex))
-      .filter((idx: number) => Number.isInteger(idx) && idx >= 0 && idx < this.items.length);
-
-    console.log('📋 navVisibleIndices:', navVisibleIndices);
-    console.log(`📍 CDK positions: previousIndex=${cdkEvent.previousIndex}, currentIndex=${cdkEvent.currentIndex}`);
-
-    const previousNavIndex = navVisibleIndices.indexOf(actualPrevIndex);
-    if (previousNavIndex < 0) {
-      console.log('❌ Blocked: dragged item not found in visible nav list');
-      return;
-    }
-
-    // In virtual scroll mode CDK indices can include viewport offsets.
-    // Normalize them back to indices within navVisibleIndices.
-    const cdkOffset = cdkEvent.previousIndex - previousNavIndex;
-    const normalizedCurrentIndex = cdkEvent.currentIndex - cdkOffset;
-    console.log('📍 Normalized nav indices:', {
-      previousNavIndex,
-      rawPreviousIndex: cdkEvent.previousIndex,
-      rawCurrentIndex: cdkEvent.currentIndex,
-      cdkOffset,
-      normalizedCurrentIndex
-    });
-
-    const subtreeEnd = this.getSubtreeEndExclusive(actualPrevIndex);
-    const subtreeLength = subtreeEnd - actualPrevIndex;
-
-    // Build the visible list after removing the dragged subtree.
-    const navVisibleAfterRemoval = navVisibleIndices.filter((idx) => idx < actualPrevIndex || idx >= subtreeEnd);
-
-    // Determine desired insertion start in the post-removal array.
-    let desiredTargetStart: number;
-    if (normalizedCurrentIndex <= 0) {
-      desiredTargetStart = 0;
-    } else if (normalizedCurrentIndex >= navVisibleAfterRemoval.length) {
-      desiredTargetStart = this.items.length - subtreeLength;
-    } else {
-      const anchorOriginalIndex = navVisibleAfterRemoval[normalizedCurrentIndex];
-      desiredTargetStart = anchorOriginalIndex < actualPrevIndex
-        ? anchorOriginalIndex
-        : anchorOriginalIndex - subtreeLength;
-    }
-
-    // Convert desired targetStart back to performDrop's anchor currentIndex semantics.
-    const currentIndexForPerformDrop = desiredTargetStart <= actualPrevIndex
-      ? desiredTargetStart
-      : desiredTargetStart + subtreeLength;
-
-    console.log('🔄 Reorder mapping:', {
-      actualPrevIndex,
-      subtreeEnd,
-      subtreeLength,
-      desiredTargetStart,
-      currentIndexForPerformDrop
-    });
-
-    this.performDrop(actualPrevIndex, currentIndexForPerformDrop, { useAnchorIndex: true });
   }
 
   private applyAbsoluteOrder(orderedIndices: number[]): void {
@@ -3805,19 +1729,13 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
    * Perform the actual drop operation (shared by main form and navigation)
    */
   private performDrop(previousIndex: number, currentIndex: number, options?: { useAnchorIndex?: boolean; dropPosition?: 'before' | 'inside' | 'after'; targetIndex?: number }): void {
-    console.log('🔧 performDrop called:', { previousIndex, currentIndex, options });
-
-    const placement = this.calculateDropPlacement(previousIndex, currentIndex, options);
-    console.log('📐 Placement result:', placement);
-
-    if (!placement) {
-      console.log('❌ performDrop blocked: placement is null');
-      return;
+        const placement = this.calculateDropPlacement(previousIndex, currentIndex, options);
+        if (!placement) {
+            return;
     }
 
     if (placement.isNoOp) {
-      console.log('❌ performDrop blocked: isNoOp');
-      return;
+            return;
     }
 
     const subtreeEnd = placement.subtreeEnd;
@@ -3833,9 +1751,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       ? this.findNearestAncestorIndexByLevel(previousIndex, movedLevel - 1)
       : -1;
 
-    console.log('🎯 Moving:', { movedItemTitle, movedLevel, previousIndex, targetStart });
-
-    const explicitDropPosition = options?.dropPosition;
+        const explicitDropPosition = options?.dropPosition;
     const explicitInsideDrop = explicitDropPosition === 'inside';
     const hasExplicitIntent = !!explicitDropPosition && Number.isInteger(options?.targetIndex);
     const explicitTargetIndex = hasExplicitIntent ? Number(options?.targetIndex) : -1;
@@ -3860,14 +1776,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
         levelAdjustment = anchorLevel - movedLevel;
       }
 
-      console.log('🧭 Explicit intent hierarchy:', {
-        explicitDropPosition,
-        explicitTargetIndex,
-        anchorLevel,
-        targetStart,
-        levelAdjustment
-      });
-    }
+          }
 
     // If dropping inside a top-level folder row, treat it as
     // "move into folder" (append at end of that folder's subtree).
@@ -3890,13 +1799,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
         const targetLevel = anchorLevel + 1;
         levelAdjustment = targetLevel - movedLevel;
-        console.log('📁 Drop-into-group mode:', {
-          anchorIndex: currentIndex,
-          anchorSubtreeEnd,
-          targetStart,
-          levelAdjustment
-        });
-      }
+              }
     }
 
     // Drag reorder should not implicitly create invalid hierarchy. When we are
@@ -3907,35 +1810,28 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
         ? Number(this.items.at(targetStart)?.get('level')?.value || 0)
         : 0;
 
-      console.log('🔍 Level-0 move:', { targetLevel, targetInsideMovedSubtree });
-
-      // If the provisional target lies inside the moved subtree's original range,
+            // If the provisional target lies inside the moved subtree's original range,
       // do not re-anchor using current tree rows. Re-anchoring there can snap the
       // item back to its source when dragging down then back up.
       if (targetLevel > 0 && !targetInsideMovedSubtree && levelAdjustment === 0) {
         // If hovering over a child row, treat this as dropping relative to that
         // top-level section (folder), but keep the move at top-level only.
         const topLevelAnchor = this.findNearestAncestorOrSelfByLevel(targetStart, 0);
-        console.log('🔍 Found topLevelAnchor:', topLevelAnchor);
-        if (topLevelAnchor >= 0) {
+                if (topLevelAnchor >= 0) {
           // Detect drag direction from calculated target position (before/after folder)
           const movingToBeforeFolder = targetStart <= topLevelAnchor;
-          console.log('🔍 movingToBeforeFolder:', movingToBeforeFolder);
-          const desiredOriginalInsertIndex = movingToBeforeFolder
+                    const desiredOriginalInsertIndex = movingToBeforeFolder
             ? topLevelAnchor
             : this.getSubtreeEndExclusive(topLevelAnchor);
-          console.log('🔍 desiredOriginalInsertIndex:', desiredOriginalInsertIndex);
-          targetStart = desiredOriginalInsertIndex;
+                    targetStart = desiredOriginalInsertIndex;
           if (previousIndex < desiredOriginalInsertIndex) {
             targetStart = desiredOriginalInsertIndex - subtreeLength;
           }
 
           const maxStart = this.items.length - subtreeLength;
           targetStart = Math.max(0, Math.min(targetStart, maxStart));
-          console.log('🔍 Adjusted targetStart:', targetStart);
-        } else {
-          console.log('❌ Blocked: Top-level items can only be reordered with other top-level items');
-          this.showReorderNotice('Top-level items can only be reordered with other top-level items.');
+                  } else {
+                    this.showReorderNotice('Top-level items can only be reordered with other top-level items.');
           return;
         }
       }
@@ -3947,18 +1843,13 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
         ? Number(this.items.at(targetStart)?.get('level')?.value || 0)
         : movedLevel;
 
-      console.log('🔍 Level>0 move:', { targetParentAnchor, targetLevel, originalParentAnchor });
-
-      if (targetLevel > movedLevel || targetParentAnchor !== originalParentAnchor) {
-        console.log('❌ Blocked: Hierarchy constraint');
-        this.showReorderNotice('Reorder stays within the same group. Use Promote/Demote to change hierarchy.');
+            if (targetLevel > movedLevel || targetParentAnchor !== originalParentAnchor) {
+                this.showReorderNotice('Reorder stays within the same group. Use Promote/Demote to change hierarchy.');
         return;
       }
     }
 
-    console.log('✅ Executing reorder to targetStart:', targetStart);
-
-    const undoSnapshot: ReorderUndoState = {
+        const undoSnapshot: ReorderUndoState = {
       controls: [...this.items.controls],
       sampleImages: { ...this.sampleImages },
       sampleVideos: { ...this.sampleVideos },
@@ -4170,23 +2061,6 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
   private shouldIgnoreReorderShortcutTarget(target: HTMLElement): boolean {
     return !!target.closest('input, textarea, select, button, a, [contenteditable="true"], .ql-editor, .ql-toolbar');
-  }
-
-  private updateDragDropHint(previousIndex: number, currentIndex: number): void {
-    const placement = this.calculateDropPlacement(previousIndex, currentIndex);
-    if (!placement) {
-      this.dropHintText = '';
-      return;
-    }
-
-    if (placement.isNoOp) {
-      this.dropHintText = 'Drop to keep in the current position';
-      return;
-    }
-
-    const targetTitle = this.getItemTitle(placement.targetStart);
-    const targetOutline = this.getOutlineNumber(placement.targetStart);
-    this.dropHintText = `Drop to move before ${targetOutline} ${targetTitle}`;
   }
 
   private calculateDropPlacement(previousIndex: number, currentIndex: number, options?: { useAnchorIndex?: boolean }): {
@@ -4974,6 +2848,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
     if (itemIndex !== this.activeNavItemIndex) {
       this.activeNavItemIndex = itemIndex;
+      this.updateSelectedItemQueryParam(itemIndex);
       this.updateStickyParentFromActive(itemIndex);
       this.expandParentsOfItem(itemIndex);
       this.cdr.detectChanges();
@@ -5003,7 +2878,20 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     this.scrollToItem(itemIndex, { fromNavigation: true });
   }
 
-  private updateSelectedItemQueryParam(itemIndex: number | null): void {
+  selectItem(index: number): void {
+    // Hide panel first (visibility:hidden — no layout shift), null the index to force Quill destroy/recreate,
+    // then restore. This prevents Quill from keeping stale content when formGroupName changes.
+    this.selectingItem = true;
+    this.selectedFormItemIndex = null;
+    this.activePanel = 'item';
+    setTimeout(() => {
+      this.selectedFormItemIndex = index;
+      this.updateSelectedItemQueryParam(index);
+      this.selectingItem = false;
+    }, 0);
+  }
+
+  updateSelectedItemQueryParam(itemIndex: number | null): void {
     const currentRaw = this.route.snapshot.queryParamMap.get('item');
     const currentValue = currentRaw !== null ? Number(currentRaw) : NaN;
     const nextValue = itemIndex;
@@ -5027,13 +2915,16 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
     const index = this.requestedNavItemIndex;
     if (index < 0 || index >= this.items.length) {
+      this.pendingUrlItemRestore = false;
       return;
     }
 
+    this.pendingUrlItemRestore = false;
+    this.selectItem(index);
     this.scrollToItem(index, { fromNavigation: true });
   }
 
-  private scheduleRestoreRequestedNavItemSelection(attempt: number): void {
+  private scheduleRestoreRequestedNavItemSelection(): void {
     if (this.restoreNavSelectionTimeout) {
       clearTimeout(this.restoreNavSelectionTimeout);
       this.restoreNavSelectionTimeout = null;
@@ -5045,25 +2936,22 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
     const index = this.requestedNavItemIndex;
     if (index < 0 || index >= this.items.length) {
+      this.pendingUrlItemRestore = false;
       return;
     }
 
-    const element = document.getElementById(`edit-item-${index}`);
-    const isVisible = !!element && element.getClientRects().length > 0;
+    // Root-cause fix: restore should be data-driven, not gated on edit-item DOM availability.
+    // In focused panel mode the target DOM may not exist until selection happens,
+    // so waiting for visibility can deadlock the restore path.
+    this.restoreRequestedNavItemSelection();
+  }
 
-    if (isVisible) {
-      this.restoreRequestedNavItemSelection();
+  private syncTrackedItemToQueryParam(itemIndex: number | null): void {
+    if (this.pendingUrlItemRestore) {
       return;
     }
 
-    if (attempt >= 80) {
-      return;
-    }
-
-    this.restoreNavSelectionTimeout = setTimeout(() => {
-      this.restoreNavSelectionTimeout = null;
-      this.scheduleRestoreRequestedNavItemSelection(attempt + 1);
-    }, 75);
+    this.updateSelectedItemQueryParam(itemIndex);
   }
 
   private scrollElementToCenterImmediately(element: HTMLElement): void {
@@ -5331,6 +3219,50 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     return touched && (invalidControls || missingSample);
   }
 
+  onShowNavMediaContextChange(value: boolean): void {
+    this.showNavMediaContext = value;
+
+    try {
+      localStorage.setItem(this.navMediaPreferenceStorageKey, String(value));
+    } catch {
+      // Ignore storage failures and keep the in-memory preference.
+    }
+  }
+
+  private loadNavDisplayPreferences(): void {
+    try {
+      const storedValue = localStorage.getItem(this.navMediaPreferenceStorageKey);
+      if (storedValue === null) {
+        this.showNavMediaContext = false;
+        return;
+      }
+
+      this.showNavMediaContext = storedValue === 'true';
+    } catch {
+      this.showNavMediaContext = false;
+    }
+  }
+
+  shouldShowNavItemStatus(itemIndex: number): boolean {
+    const item = this.items.at(itemIndex) as FormGroup | undefined;
+    if (!item) {
+      return false;
+    }
+
+    if (this.isNavItemInvalid(itemIndex)) {
+      return true;
+    }
+
+    const title = String(item.get('title')?.value ?? '').trim();
+    return title.length > 0;
+  }
+
+  getNavItemStatusTitle(itemIndex: number): string {
+    return this.isNavItemInvalid(itemIndex)
+      ? 'Required fields or required sample setup missing'
+      : 'Item setup looks good';
+  }
+
   handleNavAction(event: { action: string; index: number }): void {
     if (this.isPublishedLocked() && !this.canExecuteLockedNavAction(event.action)) {
       return;
@@ -5408,8 +3340,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   }
 
   rebuildEditorNavItems(): void {
-    console.log('🔨 rebuildEditorNavItems called, items.length:', this.items.length);
-    this.editorNavItems = this.items.controls.map((control, index) => {
+        this.editorNavItems = this.items.controls.map((control, index) => {
       const item = control as FormGroup;
       const id = this.getStableNavItemId(item);
       const primaryImageUrl = this.hasPrimarySampleImage(index) ? this.getPrimarySampleImageUrl(index) : null;
@@ -5715,19 +3646,6 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   /**
    * Set the navigation view mode
    */
-  setNavViewMode(mode: 'all' | 'groups' | 'items'): void {
-    this.navViewMode = mode;
-    this.selectedFormItemIndex = null; // Clear item selection when changing view mode
-
-    // Auto-expand based on mode
-    if (mode === 'groups') {
-      // Expand all groups to show their children
-      this.expandAllNav();
-    }
-
-    this.cdr.detectChanges();
-  }
-
   private normalizeNavSearchTerm(term: string): string {
     return (term || '').trim().toLowerCase();
   }
@@ -5885,6 +3803,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
         const nextActive = this.pickBestActiveIndexFromVisibleEntries();
         if (nextActive !== -1 && nextActive !== this.activeNavItemIndex) {
           this.activeNavItemIndex = nextActive;
+          this.syncTrackedItemToQueryParam(nextActive);
           this.updateStickyParentFromActive(nextActive);
           this.expandParentsOfItem(nextActive);
           this.cdr.detectChanges();
@@ -6031,6 +3950,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
     if (closestItem !== this.activeNavItemIndex) {
       this.activeNavItemIndex = closestItem;
+      this.syncTrackedItemToQueryParam(closestItem >= 0 ? closestItem : null);
       this.updateStickyParentFromActive(closestItem);
 
       // Auto-expand parent folders to show active item
@@ -6094,6 +4014,8 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   }
 
   ngOnDestroy(): void {
+    document.body.classList.remove('tce-page-active');
+
     this.teardownIntersectionObserver();
     this.teardownScrollListener();
 
@@ -6442,29 +4364,51 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       return;
     }
 
+    // --- Publish validation ---
+    this.templateForm.markAllAsTouched();
+    this.items.controls.forEach(item => item.markAllAsTouched());
+
+    const errors: string[] = [];
+
+    // Template-level: name required
+    if (this.templateForm.get('name')?.invalid) {
+      errors.push('Template name is required.');
+    }
+
+    // Item-level validation
+    let firstInvalidItemIndex: number | null = null;
+    this.items.controls.forEach((item, i) => {
+      const outline = this.getOutlineNumber(i);
+      if (item.get('title')?.invalid) {
+        errors.push(`Item ${outline}: Title is required.`);
+        if (firstInvalidItemIndex === null) firstInvalidItemIndex = i;
+      }
+    });
+
+    // Media validation
     const missingSampleImageIndex = this.getFirstMissingSampleImageIndex();
     const missingSampleVideoIndex = this.getFirstMissingSampleVideoIndex();
     const missingEitherMediaIndex = this.getFirstMissingEitherMediaIndex();
+    const missingSampleIndex = missingSampleImageIndex ?? missingSampleVideoIndex ?? missingEitherMediaIndex;
+    if (missingSampleIndex !== null) {
+      const outline = this.getOutlineNumber(missingSampleIndex);
+      const type = missingSampleImageIndex !== null ? 'photo' : missingSampleVideoIndex !== null ? 'video' : 'photo or video';
+      errors.push(`Item ${outline}: A sample ${type} is required.`);
+      if (firstInvalidItemIndex === null) firstInvalidItemIndex = missingSampleIndex;
+    }
 
-    const missingSampleIndex =
-      missingSampleImageIndex ??
-      missingSampleVideoIndex ??
-      missingEitherMediaIndex;
-
-    if (this.templateForm.invalid || missingSampleIndex !== null) {
-      this.templateForm.markAllAsTouched();
-      // Mark all items as touched too
-      this.items.controls.forEach(item => {
-        item.markAllAsTouched();
-      });
-
-      if (missingSampleIndex !== null) {
-        this.scrollToItem(missingSampleIndex);
+    if (errors.length > 0) {
+      this.publishValidationErrors = errors;
+      // Navigate to first invalid item so user sees it highlighted
+      if (firstInvalidItemIndex !== null) {
+        this.selectItem(firstInvalidItemIndex);
       } else {
-        this.scrollToFirstInvalidField();
+        this.activePanel = 'template-info';
       }
       return;
     }
+
+    this.publishValidationErrors = [];
 
     this.saving = true;
 
@@ -6627,13 +4571,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
             rawTemplate.id = responseTemplateId;
           }
 
-          const rawIsActive: any = rawTemplate?.is_active;
-          const rawIsDraft: any = rawTemplate?.is_draft;
-          const normalizedTemplate: any = {
-            ...rawTemplate,
-            is_active: rawIsActive === true || rawIsActive === 1 || rawIsActive === '1',
-            is_draft: rawIsDraft === true || rawIsDraft === 1 || rawIsDraft === '1'
-          };
+          const normalizedTemplate: any = this.normalizeTemplateFlags(rawTemplate);
 
           this.editingTemplate = normalizedTemplate as ChecklistTemplate;
           this.populateForm(this.editingTemplate);
@@ -6689,12 +4627,12 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       }
 
       // Only consider published templates when choosing the next minor.
-      const isDraft = t.is_draft === true || t.is_draft === 1 || t.is_draft === '1';
+      const isDraft = this.toBoolFlag(t.is_draft);
       if (isDraft) {
         continue;
       }
 
-      const isDeleted = t.is_deleted === true || t.is_deleted === 1 || t.is_deleted === '1';
+      const isDeleted = this.toBoolFlag(t.is_deleted);
       if (isDeleted) {
         continue;
       }
@@ -6715,7 +4653,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     return `${safeMajor}.${maxMinor + 1}`;
   }
 
-  discardCurrentDraft(): void {
+  async discardCurrentDraft(): Promise<void> {
     if (this.saving || !this.editingTemplate?.is_draft) {
       return;
     }
@@ -6731,29 +4669,27 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
     this.saving = true;
 
-    this.configService.discardDraft(this.editingTemplate.id).subscribe({
-      next: (response) => {
-        this.saving = false;
+    try {
+      const response = await firstValueFrom(this.configService.discardDraft(this.editingTemplate.id));
+      this.saving = false;
 
-        if (response?.success) {
-          this.router.navigate(['/quality/checklist/template-manager']);
-          return;
-        }
-
-        const backendError = response?.error || response?.message || 'Unable to discard draft.';
-        if (response?.instance_count && response.instance_count > 0) {
-          alert(`${backendError} This draft has ${response.instance_count} instance(s).`);
-          return;
-        }
-
-        alert(backendError);
-      },
-      error: (error) => {
-        console.error('Error discarding current draft:', error);
-        this.saving = false;
-        alert(error?.error?.error || error?.message || 'An error occurred while discarding the draft.');
+      if (response?.success) {
+        this.router.navigate(['/quality/checklist/template-manager']);
+        return;
       }
-    });
+
+      const backendError = response?.error || response?.message || 'Unable to discard draft.';
+      if (response?.instance_count && response.instance_count > 0) {
+        alert(`${backendError} This draft has ${response.instance_count} instance(s).`);
+        return;
+      }
+
+      alert(backendError);
+    } catch (error: any) {
+      console.error('Error discarding current draft:', error);
+      this.saving = false;
+      alert(error?.error?.error || error?.message || 'An error occurred while discarding the draft.');
+    }
   }
 
   private buildTemplatePayload(): any {
@@ -6769,17 +4705,10 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
     // DEBUG: Log sample_images from form before save
     //
-    console.log('� Checking form data before save:');
-    templateData.items.forEach((item: any, index: number) => {
+        templateData.items.forEach((item: any, index: number) => {
       if (item.sample_images && Array.isArray(item.sample_images)) {
-        console.log(`  Item ${index}: ${item.sample_images.length} images in form`, item.sample_images.map((img: any) => ({
-          label: img.label,
-          image_type: img.image_type,
-          is_primary: img.is_primary
-        })));
-      } else {
-        console.log(`  Item ${index}: NO sample_images array in form (${typeof item.sample_images})`);
-      }
+              } else {
+              }
     });
 
     // Ensure is_active is a proper boolean (convert from checkbox value if needed)
@@ -7339,14 +5268,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
     // DEBUG: Simplified logging
     const subItemCount = templateData.items?.filter((i: any) => i.level === 1).length || 0;
-    console.log('🚀 API PAYLOAD:', {
-      total: templateData.items?.length || 0,
-      parents: (templateData.items?.length || 0) - subItemCount,
-      subItems: subItemCount,
-      hasSubItems: subItemCount > 0
-    });
-
-    // Add timeout wrapper
+        // Add timeout wrapper
     const timeoutId = setTimeout(() => {
       console.error('Save operation timed out after 30 seconds');
       this.saving = false;
@@ -7363,7 +5285,8 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
           return;
         }
 
-        console.log('Template saved successfully:', response);
+                // Clear publish validation errors on successful save
+        this.publishValidationErrors = [];
 
         // Clear unsaved-change prompts after a confirmed successful save.
         this.savedSeq = Math.max(this.savedSeq, this.changeSeq, startedSeq);
@@ -7380,8 +5303,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
         // Update component data with returned template (includes permanent image URLs)
         if (response.template) {
-          console.log('📦 Updating component with returned template data (permanent URLs)', response.template);
-          this.updateComponentWithSavedTemplate(response.template);
+                    this.updateComponentWithSavedTemplate(response.template);
         } else {
           console.warn('⚠️ Backend did not return template data in response');
         }
@@ -7499,8 +5421,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
     this.configService.createChecklistDocument(documentData).subscribe({
       next: (result) => {
-        console.log('Document created:', result);
-        this.saving = false;
+                this.saving = false;
         alert(`✓ Document created: ${result.document_number}, Rev ${result.revision_number}\n\n${result.message}`);
         this.router.navigate(['/quality/checklist/template-manager']);
       },
@@ -7540,8 +5461,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
     this.configService.createChecklistRevision(revisionData).subscribe({
       next: (result) => {
-        console.log('Revision created:', result);
-        this.saving = false;
+                this.saving = false;
         alert(`✓ Revision created: ${result.document_number}, Rev ${result.revision_number}\n\n${result.message}`);
         this.router.navigate(['/quality/checklist/template-manager']);
       },
@@ -7581,7 +5501,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   }
 
   cancel(): void {
-    this.router.navigate(['/quality/checklist/template-manager']);
+    this.router.navigate(['/inspection-checklist/template-manager']);
   }
 
   // Import functionality
@@ -7611,14 +5531,11 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       let parsedTemplate;
 
       if (file.name.toLowerCase().endsWith('.docx') || file.name.toLowerCase().endsWith('.doc')) {
-        console.log('📄 Importing from Word document...');
-        parsedTemplate = await this.wordParser.parseWordToTemplate(file);
+                parsedTemplate = await this.wordParser.parseWordToTemplate(file);
       } else if (file.name.toLowerCase().endsWith('.pdf')) {
-        console.log('📕 Importing from PDF...');
-        parsedTemplate = await this.pdfParser.parsePdfToTemplate(file);
+                parsedTemplate = await this.pdfParser.parsePdfToTemplate(file);
       } else if (file.name.toLowerCase().endsWith('.csv')) {
-        console.log('📊 Importing from CSV...');
-        parsedTemplate = await this.pdfParser.parseCsvToTemplate(file);
+                parsedTemplate = await this.pdfParser.parseCsvToTemplate(file);
       } else {
         throw new Error('Unsupported file format. Please upload a Word (.docx), PDF, or CSV file.');
       }
@@ -7676,10 +5593,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       return;
     }
 
-    console.log('Auto-saving imported template...');
-    console.log('📤 Processing imported images...');
-
-    // First, upload any data URL images to the server
+            // First, upload any data URL images to the server
     const uploadPromises: Promise<void>[] = [];
 
     this.items.controls.forEach((control, index) => {
@@ -7688,18 +5602,15 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
       // Check if this is a data URL (from Word import)
       if (sampleImageUrl && sampleImageUrl.startsWith('data:')) {
-        console.log(`   Item ${index + 1}: Converting data URL to uploaded image...`);
-        uploadPromises.push(this.convertDataUrlToUpload(index, sampleImageUrl));
+                uploadPromises.push(this.convertDataUrlToUpload(index, sampleImageUrl));
       }
     });
 
     // Wait for all uploads to complete
     if (uploadPromises.length > 0) {
-      console.log(`⏳ Uploading ${uploadPromises.length} image(s)...`);
-      try {
+            try {
         await Promise.all(uploadPromises);
-        console.log('✅ All images uploaded successfully');
-      } catch (error) {
+              } catch (error) {
         console.error('❌ Some images failed to upload:', error);
         alert('Some images could not be uploaded. The template will be saved without those images.');
       }
@@ -7708,28 +5619,13 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     const templateData = this.templateForm.value;
 
     // DEBUG: Log first 5 items to see their parent_id and level values
-    console.log('🔍 FIRST 5 ITEMS IN TEMPLATEDATA:');
-    templateData.items.slice(0, 5).forEach((item: any, idx: number) => {
-      console.log(`  [${idx}] title="${item.title}" order=${item.order_index} parent_id=${item.parent_id} level=${item.level}`);
-    });
+        templateData.items.slice(0, 5).forEach((item: any, idx: number) => {
+          });
 
     // DEBUG: Verify sub-items are in the data being auto-saved
-    console.log('🔍 AUTO-SAVE CHECK:', {
-      totalItemsInForm: this.items.length,
-      totalItemsInData: templateData.items.length,
-      subItemsInData: templateData.items.filter((i: any) => i.level === 1).length
-    });
-
-    // Log summary instead of full data to avoid console spam
+        // Log summary instead of full data to avoid console spam
     const itemsWithImages = templateData.items.filter((item: any) => item.sample_image_url).length;
-    console.log('📤 Sending template to backend:', {
-      name: templateData.name,
-      totalItems: templateData.items.length,
-      itemsWithImages,
-      category: templateData.category
-    });
-
-    // Check for potentially truncated data URLs
+        // Check for potentially truncated data URLs
     templateData.items.forEach((item: any, idx: number) => {
       if (item.sample_image_url && item.sample_image_url.startsWith('data:')) {
         const urlLength = item.sample_image_url.length;
@@ -7745,13 +5641,9 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     }
     this.configService.createTemplate(templateData).subscribe({
       next: (response) => {
-        console.log('✓ Imported template auto-saved successfully:', response);
-
-        // Update the URL to reflect that we're now editing an existing template
+                // Update the URL to reflect that we're now editing an existing template
         if (response && response.template_id) {
-          console.log('✓ Template ID:', response.template_id);
-
-          // Reload the template from the server to get the full data
+                    // Reload the template from the server to get the full data
           this.loadTemplate(response.template_id);
 
           // Update the URL without reloading the page
@@ -7819,8 +5711,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       }
     });
 
-    console.log('✅ Updated component with permanent image URLs');
-  }
+      }
 
   /**
    * Schedule an auto-save after user stops editing (debounced)
@@ -7849,9 +5740,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       return;
     }
 
-    console.log('📝 Auto-saving template changes...');
-
-    const startedSeq = this.changeSeq;
+        const startedSeq = this.changeSeq;
 
     const templateData = this.templateForm.value;
 
@@ -7860,16 +5749,11 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
     // Always autosave as draft to avoid modifying published templates with active instances.
     (templateData as any).is_draft = 1;
-
-    templateData.items = templateData.items.map((item: any) => item);
-
-    // Update existing template
+// Update existing template
     this.configService.updateTemplate(this.editingTemplate.id, templateData).subscribe({
       next: (response) => {
         this.lastSavedAt = new Date();
-        console.log('✓ Auto-save successful at', this.lastSavedAt.toLocaleTimeString());
-
-        // Auto-save should also clear unsaved-change prompts.
+                // Auto-save should also clear unsaved-change prompts.
         this.savedSeq = Math.max(this.savedSeq, this.changeSeq, startedSeq);
 
         // Backend may have created a new draft template; switch editor to that draft.
@@ -8191,21 +6075,52 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     }
   }
 
-  private populateFormFromImport(parsedTemplate: any): void {
-    console.log('🔍 populateFormFromImport called with:', parsedTemplate);
-    console.log('   - Template name:', parsedTemplate.name);
-    console.log('   - Items to import:', parsedTemplate.items?.length || 0);
+  /**
+   * Returns top-level group items (level=0) that are valid move-into targets for the given index.
+   * Excludes the item itself and any items inside its own subtree.
+   */
+  getAvailableParentGroups(index: number): { index: number; label: string }[] {
+    const subtreeEnd = this.getSubtreeEndExclusive(index);
+    const result: { index: number; label: string }[] = [];
+    this.items.controls.forEach((ctrl, i) => {
+      const level = Number(ctrl.get('level')?.value || 0);
+      // Only top-level items can be group targets, skip items in the moved subtree
+      if (level !== 0) return;
+      if (i >= index && i < subtreeEnd) return; // inside moved subtree
+      const outline = this.getOutlineNumber(i);
+      const title = ctrl.get('title')?.value || 'Untitled';
+      result.push({ index: i, label: `${outline} ${title}` });
+    });
+    return result;
+  }
 
-    // Log the structure of items array
+  /**
+   * Move item at `sourceIndex` as the last child of the group at `targetGroupIndex`.
+   */
+  moveItemIntoGroup(sourceIndex: number, targetGroupIndex: number): void {
+    this.performDrop(sourceIndex, targetGroupIndex, {
+      useAnchorIndex: true,
+      dropPosition: 'inside',
+      targetIndex: targetGroupIndex
+    });
+  }
+
+  canMoveItemUnder(sourceIndex: number): boolean {
+    return this.getMoveUnderCandidates(sourceIndex).length > 0;
+  }
+
+  moveItemUnderFromDropdown(sourceIndex: number): void {
+    void this.openMoveUnderPicker(sourceIndex);
+  }
+
+  private populateFormFromImport(parsedTemplate: any): void {
+                // Log the structure of items array
     if (parsedTemplate.items && Array.isArray(parsedTemplate.items)) {
       const parentCount = parsedTemplate.items.filter((i: any) => i.level === 0).length;
       const childCount = parsedTemplate.items.filter((i: any) => i.level === 1).length;
-      console.log(`   - Parent items: ${parentCount}, Sub-items: ${childCount}`);
-
-      parsedTemplate.items.forEach((item: any, idx: number) => {
+            parsedTemplate.items.forEach((item: any, idx: number) => {
         if (item.level === 1) {
-          console.log(`   [${idx}] 🔗 Sub-item: order=${item.order_index}, parent_id=${item.parent_id}, level=${item.level}`);
-        }
+                  }
       });
     }
 
@@ -8214,9 +6129,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       this.items.removeAt(0);
     }
     this.sampleImages = {};
-    console.log('✓ Cleared existing items and sampleImages');
-
-    // Populate basic info
+        // Populate basic info
     this.templateForm.patchValue({
       name: parsedTemplate.name || 'Imported Template',
       category: 'inspection',
@@ -8230,16 +6143,11 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       is_active: true
     });
 
-    console.log('✓ Basic template info populated');
-    console.log('   - Form items array length BEFORE adding:', this.items.length);
-
-    // Add all items (already flattened by parser - no need to process children)
+            // Add all items (already flattened by parser - no need to process children)
     if (parsedTemplate.items && Array.isArray(parsedTemplate.items)) {
-      console.log(`📝 Processing ${parsedTemplate.items.length} items (including sub-items)...`);
-      parsedTemplate.items.forEach((item: any, index: number) => {
+            parsedTemplate.items.forEach((item: any, index: number) => {
         const levelLabel = item.level === 1 ? ` (sub-item, parent_id: ${item.parent_id})` : '';
-        console.log(`   Adding item ${index + 1}: ${item.title}${levelLabel}`);
-        this.addItemToForm(item, index);
+                this.addItemToForm(item, index);
       });
     } else {
       console.warn('⚠️ No items array found in parsedTemplate!');
@@ -8252,4 +6160,5 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     this.cdr.detectChanges();
   }
 }
+
 

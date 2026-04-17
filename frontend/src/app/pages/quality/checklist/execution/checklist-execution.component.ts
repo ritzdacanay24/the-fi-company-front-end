@@ -8,15 +8,105 @@ import { PhotoChecklistConfigService, ChecklistTemplate, ChecklistInstance } fro
 import { SharedModule } from '@app/shared/shared.module';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import { DOCUMENT } from '@angular/common';
+import { AgGridModule } from 'ag-grid-angular';
+import { ColDef } from 'ag-grid-community';
+import { NgbNavModule } from '@ng-bootstrap/ng-bootstrap';
 
 @Component({
   standalone:true, 
-  imports:[SharedModule],
+  imports:[SharedModule, AgGridModule, NgbNavModule],
   selector: 'app-checklist-execution',
   templateUrl: './checklist-execution.component.html',
   styleUrls: ['./checklist-execution.component.scss']
 })
 export class ChecklistExecutionComponent implements OnInit, OnDestroy {
+
+  readonly defaultColDef: ColDef = {
+    sortable: true,
+    filter: true,
+    floatingFilter: true,
+    resizable: true,
+    flex: 1,
+    minWidth: 130
+  };
+
+  // Grid column definitions
+  columnDefs: ColDef[] = [
+    {
+      field: 'id',
+      headerName: '',
+      minWidth: 80,
+      maxWidth: 80,
+      sortable: false,
+      filter: false,
+      cellRenderer: () => `<button class="btn btn-primary btn-sm">View</button>`
+    },
+    {
+      field: 'work_order_number',
+      headerName: 'Work Order #',
+      minWidth: 130,
+      cellRenderer: (params: any) => `<a href="javascript:void(0)" class="text-primary fw-medium">${params.value || ''}</a>`
+    },
+    {
+      field: 'serial_number',
+      headerName: 'Serial Number',
+      minWidth: 130,
+      cellRenderer: (params: any) => `<code class="bg-light px-2 py-1 rounded">${params.value || 'N/A'}</code>`
+    },
+    {
+      field: 'part_number',
+      headerName: 'Part Number',
+      minWidth: 120
+    },
+    {
+      field: 'template_name',
+      headerName: 'Template',
+      minWidth: 150
+    },
+    {
+      field: 'operator_name',
+      headerName: 'Operator',
+      minWidth: 120
+    },
+    {
+      field: 'status',
+      headerName: 'Status',
+      minWidth: 110,
+      cellRenderer: (params: any) => {
+        const status = params.value || '';
+        const badgeClass = status === 'completed' ? 'bg-success' : 
+                          status === 'in_progress' ? 'bg-warning' : 
+                          status === 'submitted' ? 'bg-info' : 'bg-secondary';
+        return `<span class="badge ${badgeClass}">${status.charAt(0).toUpperCase() + status.slice(1)}</span>`;
+      }
+    },
+    {
+      field: 'progress_percentage',
+      headerName: 'Progress',
+      minWidth: 140,
+      cellRenderer: (params: any) => {
+        const progress = params.value || 0;
+        const color = progress >= 100 ? '#65c368' : progress >= 50 ? 'orange' : progress >= 25 ? 'yellow' : '#F40009';
+        return `
+          <div style="display:flex;flex-direction:column;justify-content:center;height:100%;gap:2px;">
+            <div class="progress" style="height:2px;overflow:visible;flex-shrink:0;">
+              <div class="progress-bar" style="width:${progress}%;background-color:${color};overflow:visible;"></div>
+            </div>
+            <span style="text-align:center;font-size:11px;line-height:1;">${Number(progress).toFixed(0)}%</span>
+          </div>`;
+      }
+    },
+    {
+      field: 'created_at',
+      headerName: 'Created Date',
+      minWidth: 140,
+      cellRenderer: (params: any) => {
+        const date = new Date(params.value);
+        return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      }
+    }
+  ];
+
 
   // Updated to use dynamic data instead of hardcoded
   checklistTemplates: ChecklistTemplate[] = [];
@@ -24,11 +114,17 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
   filteredChecklists: ChecklistInstance[] = [];
   loading: boolean;
 
-  // Filter properties
-  selectedStatus: string = '';
-  selectedTemplate: string = '';
-  selectedOperator: string = ''; // Filter by operator
+  // Tab navigation
+  activeTab = 'my_assignments';
+  navOptions = [
+    { name: 'My Assignments', value: 'my_assignments', icon: 'mdi mdi-account-check-outline me-1 align-bottom', count: 0, countStyle: 'primary' },
+    { name: 'In Progress',    value: 'in_progress',    icon: 'mdi mdi-progress-clock me-1 align-bottom',        count: 0, countStyle: 'warning' },
+    { name: 'Completed',      value: 'completed',      icon: 'mdi mdi-check-circle-outline me-1 align-bottom',  count: 0, countStyle: 'success' },
+    { name: 'Submitted',      value: 'submitted',      icon: 'mdi mdi-send-check-outline me-1 align-bottom',    count: 0, countStyle: 'info'    },
+    { name: 'All',            value: 'all',            icon: 'mdi mdi-format-list-bulleted me-1 align-bottom',  count: 0, countStyle: 'secondary' },
+  ];
   currentUser: any = null;
+  quickSearch = '';
   isStandaloneMode = false;
   private readonly standaloneBodyClass = 'standalone-checklist-execution';
 
@@ -103,10 +199,10 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.photoChecklistConfigService.getInstances().pipe(first()).subscribe(data => {
       this.loading = false;
-      // Load ALL checklists including completed and submitted
+      // Load all checklists and let ag-grid handle filtering/sorting in-grid.
       this.openChecklists = data || [];
-      this.applyDefaultOperatorFilter();
-      this.applyFilters(); // Apply filters after loading data
+      this.updateTabCounts();
+      this.applyTabFilter();
     }, () => this.loading = false);
   }
 
@@ -115,91 +211,64 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
     this.getOpenChecklists();
   }
 
-  // Filter methods
-  filterChecklists() {
-    this.applyFilters();
+  onTabChange(tabValue: string): void {
+    this.activeTab = tabValue;
+    this.applyTabFilter();
   }
 
-  private applyFilters() {
-    this.filteredChecklists = this.openChecklists.filter(checklist => {
-      let matches = true;
+  private updateTabCounts(): void {
+    const currentUserId = this.authService.currentUser()?.id?.toString();
+    const currentUserName = (() => {
+      const u = this.authService.currentUser();
+      return `${u?.firstName || u?.first_name || ''} ${u?.lastName || u?.last_name || ''}`.trim().toLowerCase();
+    })();
 
-      // Filter by work order number
-      if (this.woNumber && this.woNumber.trim()) {
-        matches = matches && checklist.work_order_number?.toLowerCase().includes(this.woNumber.toLowerCase());
+    for (const tab of this.navOptions) {
+      if (tab.value === 'my_assignments') {
+        tab.count = this.openChecklists.filter(c =>
+          c.operator_id?.toString() === currentUserId ||
+          c.operator_name?.toLowerCase() === currentUserName
+        ).length;
+      } else if (tab.value === 'all') {
+        tab.count = this.openChecklists.length;
+      } else {
+        tab.count = this.openChecklists.filter(c => c.status === tab.value).length;
       }
-
-      // Filter by serial number
-      if (this.serialNumber && this.serialNumber.trim()) {
-        matches = matches && checklist.serial_number?.toLowerCase().includes(this.serialNumber.toLowerCase());
-      }
-
-      // Filter by status
-      if (this.selectedStatus) {
-        matches = matches && checklist.status === this.selectedStatus;
-      }
-
-      // Filter by template
-      if (this.selectedTemplate) {
-        matches = matches && checklist.template_id?.toString() === this.selectedTemplate;
-      }
-
-      // Filter by operator
-      if (this.selectedOperator) {
-        matches = matches && checklist.operator_id?.toString() === this.selectedOperator;
-      }
-
-      return matches;
-    });
+    }
   }
 
-  // Check if any filters are active
-  hasActiveFilters(): boolean {
-    return !!(this.woNumber || this.serialNumber || this.selectedStatus || this.selectedTemplate || this.selectedOperator);
+  private applyTabFilter(): void {
+    const currentUserId = this.authService.currentUser()?.id?.toString();
+    const currentUserName = (() => {
+      const u = this.authService.currentUser();
+      return `${u?.firstName || u?.first_name || ''} ${u?.lastName || u?.last_name || ''}`.trim().toLowerCase();
+    })();
+
+    if (this.activeTab === 'all') {
+      this.filteredChecklists = [...this.openChecklists];
+    } else if (this.activeTab === 'my_assignments') {
+      this.filteredChecklists = this.openChecklists.filter(c =>
+        c.operator_id?.toString() === currentUserId ||
+        c.operator_name?.toLowerCase() === currentUserName
+      );
+    } else {
+      this.filteredChecklists = this.openChecklists.filter(c => c.status === this.activeTab);
+    }
+
+    if (this.quickSearch?.trim()) {
+      const term = this.quickSearch.trim().toLowerCase();
+      this.filteredChecklists = this.filteredChecklists.filter(c =>
+        c.work_order_number?.toLowerCase().includes(term) ||
+        c.serial_number?.toLowerCase().includes(term) ||
+        c.part_number?.toLowerCase().includes(term) ||
+        c.template_name?.toLowerCase().includes(term) ||
+        c.operator_name?.toLowerCase().includes(term)
+      );
+    }
   }
 
-  // Clear individual filters
-  clearWorkOrderFilter() {
-    this.woNumber = '';
-    this.applyFilters();
-  }
-
-  clearSerialFilter() {
-    this.serialNumber = '';
-    this.applyFilters();
-  }
-
-  clearStatusFilter() {
-    this.selectedStatus = '';
-    this.applyFilters();
-  }
-
-  clearTemplateFilter() {
-    this.selectedTemplate = '';
-    this.applyFilters();
-  }
-
-  clearOperatorFilter() {
-    this.selectedOperator = '';
-    this.applyFilters();
-  }
-
-  // Get template name by ID
-  getTemplateName(templateId: string): string {
-    const template = this.checklistTemplates.find(t => t.id?.toString() === templateId);
-    return template?.name || 'Unknown Template';
-  }
-
-  // Get unique operators for dropdown
-  getUniqueOperators(): ChecklistInstance[] {
-    const seen = new Set();
-    return this.openChecklists.filter(checklist => {
-      if (!checklist.operator_id || seen.has(checklist.operator_id)) {
-        return false;
-      }
-      seen.add(checklist.operator_id);
-      return true;
-    });
+  onQuickSearch(term: string): void {
+    this.applyTabFilter();
   }
 
   private normalizeText(value: unknown): string {
@@ -228,42 +297,6 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
     return Array.from(new Set(candidates));
   }
 
-  private applyDefaultOperatorFilter() {
-    const currentUser = this.authService.currentUser();
-    if (!currentUser) {
-      this.selectedOperator = '';
-      return;
-    }
-
-    const operators = this.getUniqueOperators();
-    const idCandidates = this.getCurrentUserIdCandidates(currentUser);
-
-    if (idCandidates.length > 0) {
-      const idMatch = operators.find(operator =>
-        idCandidates.includes(operator.operator_id?.toString() || '')
-      );
-
-      if (idMatch?.operator_id) {
-        this.selectedOperator = idMatch.operator_id.toString();
-        return;
-      }
-    }
-
-    const currentUserName = this.getCurrentUserName(currentUser);
-    if (currentUserName) {
-      const nameMatch = operators.find(operator =>
-        this.normalizeText(operator.operator_name) === currentUserName
-      );
-
-      if (nameMatch?.operator_id) {
-        this.selectedOperator = nameMatch.operator_id.toString();
-        return;
-      }
-    }
-
-    this.selectedOperator = '';
-  }
-
   results = [];
   openPhotos(action?: string, instanceId?: number) {
     if (instanceId) {
@@ -282,11 +315,24 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
 
   openChecklistInstance(instanceId: number) {
     // Navigate to the checklist instance page with query parameters
-    this.router.navigate(['/standalone/checklist/instance'], { queryParams: { id: instanceId } });
+    this.router.navigate(['/inspection-checklist/instance'], {
+      queryParams: { id: instanceId, returnTo: 'execution' }
+    });
+  }
+
+  onGridCellClicked(event: any): void {
+    const instanceId = Number(event?.data?.id || 0);
+    if (instanceId <= 0) {
+      return;
+    }
+
+    if (event?.colDef?.field === 'work_order_number' || event?.colDef?.field === 'id') {
+      this.openChecklistInstance(instanceId);
+    }
   }
 
   ngOnInit(): void {
-    this.isStandaloneMode = this.router.url?.includes('/standalone/checklist/execution');
+    this.isStandaloneMode = this.router.url?.includes('/inspection-checklist/execution');
     if (this.isStandaloneMode) {
       this.renderer.addClass(this.document.body, this.standaloneBodyClass);
     }

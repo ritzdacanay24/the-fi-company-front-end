@@ -35,7 +35,7 @@ export class ChecklistAppInstallComponent implements OnInit, OnDestroy {
   }
 
   openWorkflow(): void {
-    this.router.navigate(['/standalone/checklist']);
+    this.router.navigate(['/inspection-checklist']);
   }
 
   private swapManifest(href: string): void {

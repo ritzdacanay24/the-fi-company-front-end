@@ -8,7 +8,8 @@ import { AgGridModule } from 'ag-grid-angular';
 import { ColDef, GridOptions } from 'ag-grid-community';
 import { ContinuityModalService } from '@app/pages/operations/labels/continuity-test-modal/continuity-test-modal.component';
 import { PlacardModalService } from '@app/shared/components/placard-modal/placard-modal.component';
-import { PhotoChecklistConfigService, ChecklistTemplate, ChecklistInstance, ChecklistItem } from '@app/core/api/photo-checklist-config/photo-checklist-config.service';
+import { ChecklistTemplate, ChecklistInstance, ChecklistItem } from '@app/core/api/photo-checklist-config/photo-checklist-config.service';
+import { PhotoChecklistV2Service } from '@app/core/api/photo-checklist-config/photo-checklist-v2.service';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
 import { ChecklistNavigationComponent } from '@app/shared/components/checklist-navigation/checklist-navigation.component';
@@ -39,6 +40,8 @@ export class ChecklistComponent implements OnInit {
 
     // Tab management
     activeTab = 'templates';
+    templateSearch = '';
+    private allTemplateGridRows: Array<ChecklistTemplate & { familyLabel: string; major: number; customerLabel: string }> = [];
 
     // Modal management
     showCreateInstanceModal = false;
@@ -55,71 +58,14 @@ export class ChecklistComponent implements OnInit {
 
     templateColumnDefs: ColDef[] = [
         {
-            headerName: 'Version',
-            field: 'version',
-            width: 120,
-            cellRenderer: (params: any) => `<span class="badge bg-secondary" style="white-space: nowrap;">v${params.value || '-'}</span>`
-        },
-        {
-            headerName: 'Family',
-            field: 'familyLabel',
-            minWidth: 220,
-            flex: 1
-        },
-        {
-            headerName: 'Major',
-            field: 'major',
-            width: 130,
-            valueFormatter: (params: any) => `v${params.value || 0}`
-        },
-        {
-            headerName: 'Customer',
-            field: 'customerLabel',
-            minWidth: 180,
-            valueFormatter: (params: any) => params.value || '-'
-        },
-        {
-            headerName: 'Template Name',
-            field: 'name',
-            minWidth: 220,
-            flex: 1.2
-        },
-        {
-            headerName: 'Category',
-            field: 'category',
-            width: 140,
-            cellRenderer: (params: any) => `<span class="badge bg-primary">${String(params.value || '').replace(/^./, (c: string) => c.toUpperCase()) || '-'}</span>`
-        },
-        {
-            headerName: 'Part Number',
-            field: 'part_number',
-            minWidth: 170,
-            cellRenderer: (params: any) => params.value ? `<code>${params.value}</code>` : '<span class="text-muted">-</span>'
-        },
-        {
-            headerName: 'Product Type',
-            field: 'product_type',
-            minWidth: 150,
-            valueFormatter: (params: any) => params.value || '-'
-        },
-        {
-            headerName: 'Items',
-            field: 'item_count',
-            width: 110
-        },
-        {
-            headerName: 'Active Instances',
-            field: 'active_instances',
-            width: 150
-        },
-        {
-            headerName: 'Actions',
+            headerName: '',
             field: 'actions',
-            width: 130,
+            width: 90,
+            maxWidth: 90,
             sortable: false,
             filter: false,
             floatingFilter: false,
-            pinned: 'right',
+            pinned: 'left',
             cellRenderer: ChecklistActionsCellRendererComponent,
             cellRendererParams: {
                 mode: 'template',
@@ -132,7 +78,43 @@ export class ChecklistComponent implements OnInit {
                     void this.openCreateInstanceModal(data);
                 }
             }
-        }
+        },
+        {
+            headerName: 'Template Name',
+            field: 'name',
+            minWidth: 220,
+            flex: 2
+        },
+        {
+            headerName: 'Family',
+            field: 'familyLabel',
+            minWidth: 200,
+            flex: 1.5
+        },
+        {
+            headerName: 'Customer',
+            field: 'customerLabel',
+            minWidth: 150,
+            flex: 1,
+            valueFormatter: (params: any) => params.value || '-'
+        },
+        {
+            headerName: 'Part Number',
+            field: 'part_number',
+            minWidth: 150,
+            cellRenderer: (params: any) => params.value ? `<code>${params.value}</code>` : '<span class="text-muted">-</span>'
+        },
+        {
+            headerName: 'Items',
+            field: 'item_count',
+            width: 100
+        },
+        {
+            headerName: 'Version',
+            field: 'version',
+            width: 110,
+            cellRenderer: (params: any) => `<span class="badge bg-secondary">v${params.value || '-'}</span>`
+        },
     ];
 
     instanceColumnDefs: ColDef[] = [
@@ -404,7 +386,7 @@ export class ChecklistComponent implements OnInit {
         public router: Router,
         private continuityModalService: ContinuityModalService,
         private placardModalService: PlacardModalService,
-        private photoChecklistService: PhotoChecklistConfigService,
+        private photoChecklistService: PhotoChecklistV2Service,
         private authService: AuthenticationService,
         private modalService: NgbModal
     ) {
@@ -425,7 +407,8 @@ export class ChecklistComponent implements OnInit {
             next: (templates) => {
                 // Operators should only see published templates
                 this.templates = (templates || []).filter(t => t.is_active && !t.is_draft && !!t.published_at);
-                this.templateGridRows = this.buildTemplateGridRows();
+                this.allTemplateGridRows = this.buildTemplateGridRows();
+                this.templateGridRows = [...this.allTemplateGridRows];
                 this.loading = false;
             },
             error: (error) => {
@@ -453,10 +436,28 @@ export class ChecklistComponent implements OnInit {
 
     switchTab(tab: string): void {
         this.activeTab = tab;
-        // Load instances when switching to instances tab
         if (tab === 'instances' && this.instances.length === 0) {
             this.loadInstances();
         }
+    }
+
+    onTemplateSearch(term: string): void {
+        if (!term?.trim()) {
+            this.templateGridRows = [...this.allTemplateGridRows];
+            return;
+        }
+        const q = term.trim().toLowerCase();
+        this.templateGridRows = this.allTemplateGridRows.filter(t =>
+            t.name?.toLowerCase().includes(q) ||
+            t.category?.toLowerCase().includes(q) ||
+            t.familyLabel?.toLowerCase().includes(q) ||
+            t.version?.toLowerCase().includes(q)
+        );
+    }
+
+    loadData(): void {
+        this.loadTemplates();
+        this.loadInstances();
     }
 
     // ==============================================
@@ -659,7 +660,7 @@ export class ChecklistComponent implements OnInit {
         this.photoChecklistService.createInstance(instanceData).subscribe({
             next: (response) => {
                 // API returns { success: boolean, instance_id: number }
-                this.router.navigate(['/standalone/checklist/instance'], {
+                this.router.navigate(['/inspection-checklist/instance'], {
                     queryParams: { id: response.instance_id }
                 });
                 // Reset form and close modal
@@ -682,7 +683,7 @@ export class ChecklistComponent implements OnInit {
     }
 
     openChecklistInstance(instance: ChecklistInstance): void {
-        this.router.navigate(['/standalone/checklist/instance'], {
+        this.router.navigate(['/inspection-checklist/instance'], {
             queryParams: { id: instance.id }
         });
     }

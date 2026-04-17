@@ -25,6 +25,7 @@ import { OrgChartTokenModule } from './modules/org-chart-token/org-chart-token.m
 import { OrgChartModule } from './modules/org-chart/org-chart.module';
 import { PlacardModule } from './modules/placard/placard.module';
 import { PermitChecklistsModule } from './modules/permit-checklists/permit-checklists.module';
+import { PhotoChecklistModule } from './modules/photo-checklist/photo-checklist.module';
 import { QadModule } from './modules/qad';
 import { QirModule } from './modules/qir/qir.module';
 import { QirResponseModule } from './modules/qir-response/qir-response.module';
@@ -79,6 +80,7 @@ import { EmailModule } from '../shared/email/email.module';
     OrgChartTokenModule,
     PlacardModule,
     PermitChecklistsModule,
+    PhotoChecklistModule,
     QadModule,
     QirModule,
     QirResponseModule,
