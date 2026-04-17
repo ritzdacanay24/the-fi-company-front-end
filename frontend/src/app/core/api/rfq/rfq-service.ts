@@ -2,8 +2,9 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { DataService } from '../DataService';
 import { Observable, firstValueFrom } from 'rxjs';
+import { queryString } from 'src/assets/js/util/queryString';
 
-let url = 'rfq';
+const url = 'apiV2/rfq';
 
 @Injectable({
     providedIn: 'root'
@@ -14,17 +15,48 @@ export class RfqService extends DataService<any> {
         super(url, http);
     }
 
-    getList = async (selectedViewType: string, dateFrom: string, dateTo: string, isAll = false) =>
-        await firstValueFrom(this.http.get<any[]>(`${url}/getList?selectedViewType=${selectedViewType}&dateFrom=${dateFrom}&dateTo=${dateTo}&isAll=${isAll}`));
+    getList = async (selectedViewType: string, dateFrom: string, dateTo: string, isAll = false) => {
+        const result = queryString({ selectedViewType, dateFrom, dateTo, isAll });
+        return await firstValueFrom(this.http.get<any[]>(`${url}/getList${result}`));
+    };
+
+    override find = async (params: any): Promise<any[]> => {
+        const result = queryString(params);
+        return await firstValueFrom(this.http.get<any[]>(`${url}/find${result}`));
+    };
+
+    override getAll = async (): Promise<any[]> =>
+        await firstValueFrom(this.http.get<any[]>(`${url}/getAll`));
+
+    override getById = async (id: number): Promise<any> =>
+        await firstValueFrom(this.http.get<any>(`${url}/getById/${id}`));
+
+    override create = async (params: any): Promise<{ message: string; insertId?: number }> => {
+        const response = await firstValueFrom(this.http.post<{ insertId?: number }>(`${url}/create`, params));
+        return {
+            message: 'RFQ created successfully',
+            insertId: response?.insertId,
+        };
+    };
+
+    override update = async (id: number | string, params: any): Promise<{ message: string }> => {
+        await firstValueFrom(this.http.put<{ rowCount?: number }>(`${url}/updateById/${id}`, params));
+        return { message: 'RFQ updated successfully' };
+    };
+
+    override delete = async (id: number): Promise<{ message: string }> => {
+        await firstValueFrom(this.http.delete<{ rowCount?: number }>(`${url}/deleteById/${id}`));
+        return { message: 'RFQ deleted successfully' };
+    };
 
 
     searchBySoAndSoLine(soNumber: string, lineNumber: string): Observable<any> {
-        return this.http.get<any>(`/Rfq/rfq?so=${soNumber}&line=${lineNumber}`);
+        return this.http.get<any>(`${url}/read?so=${encodeURIComponent(soNumber)}&line=${encodeURIComponent(lineNumber)}`);
     }
 
     async sendEmail(id, params) {
         params.SendFormEmail = 1;
-        return await firstValueFrom(this.http.post(`/Rfq/send_email?id=${id}`, params));
+        return await firstValueFrom(this.http.post(`${url}/send_email?id=${id}`, params));
     }
 
 }

@@ -26,6 +26,7 @@ import { QirModule } from './modules/qir/qir.module';
 import { QirResponseModule } from './modules/qir-response/qir-response.module';
 import { QirSettingsModule } from './modules/qir-settings/qir-settings.module';
 import { QualityOverviewModule } from './modules/quality-overview/quality-overview.module';
+import { RfqModule } from './modules/rfq/rfq.module';
 import { RmaModule } from './modules/rma/rma.module';
 import { SafetyIncidentModule } from './modules/safety-incident';
 import { ShortagesModule } from './modules/shortages/shortages.module';
@@ -75,6 +76,7 @@ import { EmailModule } from '../shared/email/email.module';
     QirResponseModule,
     QirSettingsModule,
     QualityOverviewModule,
+    RfqModule,
     RmaModule,
     SafetyIncidentModule,
     ShortagesModule,
