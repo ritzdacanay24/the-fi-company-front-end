@@ -4,7 +4,7 @@ import { DataService } from '../../DataService';
 import { firstValueFrom } from 'rxjs';
 import { queryString } from 'src/assets/js/util/queryString';
 
-let url = 'shortages';
+const url = 'apiV2/shortages';
 
 @Injectable({
   providedIn: 'root'
@@ -20,15 +20,42 @@ export class ShortagesService extends DataService<any> {
     return await firstValueFrom(this.http.get<any[]>(`${url}/getList${result}`));
   }
 
+  override find = async (params: any): Promise<any[]> => {
+    const result = queryString(params);
+    return await firstValueFrom(this.http.get<any[]>(`${url}/find${result}`));
+  };
+
+  override getAll = async (): Promise<any[]> =>
+    await firstValueFrom(this.http.get<any[]>(`${url}/getAll`));
+
+  override getById = async (id: number): Promise<any> =>
+    await firstValueFrom(this.http.get<any>(`${url}/getById?id=${id}`));
+
+  override create = async (params: any): Promise<{ message: string; insertId?: number }> => {
+    const response = await firstValueFrom(this.http.post<{ insertId?: number }>(`${url}/create`, params));
+    return {
+      message: 'Shortage created successfully',
+      insertId: response?.insertId,
+    };
+  };
+
+  override update = async (id: number | string, params: any): Promise<{ message: string }> => {
+    await firstValueFrom(this.http.put<{ rowCount?: number }>(`${url}/updateById/${id}`, params));
+    return { message: 'Shortage updated successfully' };
+  };
+
+  override delete = async (id: number): Promise<{ message: string }> => {
+    await firstValueFrom(this.http.delete<{ rowCount?: number }>(`${url}/deleteById/${id}`));
+    return { message: 'Shortage deleted successfully' };
+  };
 
   createShortages(params) {
-    params.createShortages = 1;
-    return firstValueFrom(this.http.post<any>(`/Shortages/index`, params))
+    return firstValueFrom(this.http.post<any>(`${url}/createShortages`, params));
   }
 
 
   updateById(params: any) {
-    return firstValueFrom(this.http.post<any>(`/Shortages/index`, params))
+    return firstValueFrom(this.http.post<any>(`${url}/update`, params));
   }
 
 }
