@@ -5,6 +5,8 @@ import { Observable, firstValueFrom } from "rxjs";
 import { queryString } from "src/assets/js/util/queryString";
 
 let url = "FieldServiceMobile/user";
+const orgChartUrl = 'apiV2/org-chart';
+const orgChartTokenUrl = 'apiV2/org-chart-token';
 
 @Injectable({
   providedIn: "root",
@@ -52,33 +54,63 @@ export class UserService extends DataService<any> {
 
   public async getOrgchart(params) {
     const result = queryString(params);
-    return await firstValueFrom(this.http.get(`${url}/orgchart.php${result}`));
+    const rows = await firstValueFrom(this.http.get<any[]>(`${orgChartUrl}/orgchart${result}`));
+    return normalizeOrgChartRows(rows);
   }
   public async hasSubordinates(id) {
-    return await firstValueFrom(this.http.get(`${url}/hasSubordinates.php?id=${id}`));
+    return await firstValueFrom(this.http.get(`${orgChartUrl}/hasSubordinates?id=${id}`));
   }
 
   // Org Chart Token Methods
   public generateOrgChartToken(params: { password?: string; expiryHours?: number; userId?: number }): Observable<any> {
-    return this.http.post('org-chart-token/index.php?mode=generate', params);
+    return this.http.post(`${orgChartTokenUrl}/generate`, params);
   }
 
   public validateOrgChartToken(token: string, password?: string): Observable<any> {
     const safeToken = encodeURIComponent(token);
     const safePassword = password != null ? encodeURIComponent(password) : null;
     const params = safePassword ? `mode=validate&token=${safeToken}&password=${safePassword}` : `mode=validate&token=${safeToken}`;
-    return this.http.get(`org-chart-token/index.php?${params}`);
+    return this.http.get(`${orgChartTokenUrl}/validate?${safePassword ? `token=${safeToken}&password=${safePassword}` : `token=${safeToken}`}`);
   }
 
   public revokeOrgChartToken(tokenId: number): Observable<any> {
-    return this.http.post('org-chart-token/index.php?mode=revoke', { tokenId });
+    return this.http.post(`${orgChartTokenUrl}/revoke`, { tokenId });
   }
 
   public listOrgChartTokens(): Observable<any> {
-    return this.http.get('org-chart-token/index.php?mode=list');
+    return this.http.get(`${orgChartTokenUrl}/list`);
   }
 
   
+}
+
+function normalizeOrgChartRows(rows: any[]): any[] {
+  if (!Array.isArray(rows)) {
+    return [];
+  }
+
+  return rows.map((row) => {
+    const rawId = row?.id ?? row?.ID;
+    const rawParentId = row?.parentId ?? row?.parentID ?? row?.parent_id ?? null;
+
+    const id = toNullableNumber(rawId);
+    const parentId = toNullableNumber(rawParentId);
+
+    return {
+      ...row,
+      id,
+      parentId,
+    };
+  });
+}
+
+function toNullableNumber(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
 function formatData(data) {

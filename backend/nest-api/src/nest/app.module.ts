@@ -21,6 +21,8 @@ import { MrbModule } from './modules/mrb/mrb.module';
 import { MaterialRequestDetailModule } from './modules/material-request-detail/material-request-detail.module';
 import { MaterialRequestModule } from './modules/material-request/material-request.module';
 import { NcrModule } from './modules/ncr/ncr.module';
+import { OrgChartTokenModule } from './modules/org-chart-token/org-chart-token.module';
+import { OrgChartModule } from './modules/org-chart/org-chart.module';
 import { PlacardModule } from './modules/placard/placard.module';
 import { PermitChecklistsModule } from './modules/permit-checklists/permit-checklists.module';
 import { QadModule } from './modules/qad';
@@ -73,6 +75,8 @@ import { EmailModule } from '../shared/email/email.module';
     MaterialRequestDetailModule,
     MrbModule,
     NcrModule,
+    OrgChartModule,
+    OrgChartTokenModule,
     PlacardModule,
     PermitChecklistsModule,
     QadModule,
