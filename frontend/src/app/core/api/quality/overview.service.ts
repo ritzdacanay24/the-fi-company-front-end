@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { DataService } from '../DataService';
 import { firstValueFrom } from 'rxjs';
 
-let url = 'Quality/overview';
+const url = 'apiV2/quality-overview';
 
 @Injectable({
   providedIn: 'root'

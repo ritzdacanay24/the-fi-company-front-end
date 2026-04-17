@@ -20,6 +20,10 @@ import { MrbModule } from './modules/mrb/mrb.module';
 import { NcrModule } from './modules/ncr/ncr.module';
 import { PermitChecklistsModule } from './modules/permit-checklists/permit-checklists.module';
 import { QadModule } from './modules/qad';
+import { QirModule } from './modules/qir/qir.module';
+import { QirResponseModule } from './modules/qir-response/qir-response.module';
+import { QirSettingsModule } from './modules/qir-settings/qir-settings.module';
+import { QualityOverviewModule } from './modules/quality-overview/quality-overview.module';
 import { SafetyIncidentModule } from './modules/safety-incident';
 import { SgAssetModule } from './modules/sg-asset';
 import { TrainingModule } from './modules/training';
@@ -60,6 +64,10 @@ import { EmailModule } from '../shared/email/email.module';
     NcrModule,
     PermitChecklistsModule,
     QadModule,
+    QirModule,
+    QirResponseModule,
+    QirSettingsModule,
+    QualityOverviewModule,
     SafetyIncidentModule,
     SerialAssignmentsModule,
     SgAssetModule,

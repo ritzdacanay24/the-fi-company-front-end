@@ -4,13 +4,11 @@ import { DataService } from '../DataService';
 import { firstValueFrom } from 'rxjs';
 import { queryString } from 'src/assets/js/util/queryString';
 
-let url = 'api/quality/qir-settings';
+const url = 'apiV2/qir-settings';
 
 @Injectable({
   providedIn: 'root'
 })
-
-//https://dashboard.eye-fi.com/tasks/quality/qir-settings/find.php?active=1
 
 export class QirSettingsService extends DataService<any> {
 
@@ -21,9 +19,37 @@ export class QirSettingsService extends DataService<any> {
   getList = async (selectedViewType: string, dateFrom: string, dateTo: string, isAll = false) =>
     await firstValueFrom(this.http.get<any[]>(`${url}/getList?selectedViewType=${selectedViewType}&dateFrom=${dateFrom}&dateTo=${dateTo}&isAll=${isAll}`));
 
-  async getFormSettings(params) {
+  override find = async (params: any): Promise<any[]> => {
     const result = queryString(params);
-    return await firstValueFrom(this.http.get<any[]>(`${url}/find.php${result}`));
+    return await firstValueFrom(this.http.get<any[]>(`${url}/find${result}`));
+  };
+
+  override getAll = async (): Promise<any[]> =>
+    await firstValueFrom(this.http.get<any[]>(`${url}/getAll`));
+
+  override getById = async (id: number): Promise<any> =>
+    await firstValueFrom(this.http.get<any>(`${url}/getById?id=${id}`));
+
+  override create = async (params: any): Promise<{ message: string; insertId?: number }> => {
+    const response = await firstValueFrom(this.http.post<{ insertId?: number }>(`${url}/create`, params));
+    return {
+      message: 'QIR setting created successfully',
+      insertId: response?.insertId,
+    };
+  };
+
+  override update = async (id: number | string, params: any): Promise<{ message: string }> => {
+    await firstValueFrom(this.http.put<{ rowCount?: number }>(`${url}/updateById/${id}`, params));
+    return { message: 'QIR setting updated successfully' };
+  };
+
+  override delete = async (id: number): Promise<{ message: string }> => {
+    await firstValueFrom(this.http.delete<{ rowCount?: number }>(`${url}/deleteById/${id}`));
+    return { message: 'QIR setting deleted successfully' };
+  };
+
+  async getFormSettings(params: any) {
+    return this.find(params);
   }
 
 }
