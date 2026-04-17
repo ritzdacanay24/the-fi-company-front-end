@@ -1,6 +1,5 @@
 import { Component, OnInit } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
-import { DateRangeComponent } from "@app/shared/components/date-range/date-range.component";
 import { SharedModule } from "@app/shared/shared.module";
 import { highlightRowView, autoSizeColumns } from "src/assets/js/util";
 import {
@@ -9,7 +8,6 @@ import {
 } from "src/assets/js/util/jslzString";
 import { AgGridModule } from "ag-grid-angular";
 import { ColDef, ColGroupDef, GridApi, GridOptions } from "ag-grid-community";
-import moment from "moment";
 import { GraphicsBomService } from "@app/core/api/operations/graphics/graphics-bom.service";
 import { NAVIGATION_ROUTE } from "../graphics-bom-constant";
 import { ImageRendererComponent } from "@app/shared/ag-grid/cell-renderers/image-renderer/image-renderer.component";
@@ -22,7 +20,6 @@ import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link
   imports: [
     SharedModule,
     AgGridModule,
-    DateRangeComponent,
     GridSettingsComponent,
     GridFiltersComponent,
   ],
@@ -39,9 +36,6 @@ export class GraphicsBomListComponent implements OnInit {
 
   ngOnInit(): void {
     this.activatedRoute.queryParams.subscribe((params) => {
-      this.dateFrom = params["dateFrom"] || this.dateFrom;
-      this.dateTo = params["dateTo"] || this.dateTo;
-      this.dateRange = [this.dateFrom, this.dateTo];
       this.id = params["id"];
     });
 
@@ -53,19 +47,6 @@ export class GraphicsBomListComponent implements OnInit {
   pageId = "graphics-bom-list";
 
   title = "Graphics BOM List";
-
-  dateFrom = moment()
-    .subtract(0, "months")
-    .startOf("month")
-    .format("YYYY-MM-DD");
-  dateTo = moment().endOf("month").format("YYYY-MM-DD");
-  dateRange = [this.dateFrom, this.dateTo];
-
-  onChangeDate($event) {
-    this.dateFrom = $event["dateFrom"];
-    this.dateTo = $event["dateTo"];
-    this.getData();
-  }
 
   gridApi: GridApi;
 
@@ -362,15 +343,7 @@ export class GraphicsBomListComponent implements OnInit {
   async getData() {
     try {
       this.gridApi?.showLoadingOverlay();
-      this.data = await this.api.getList(this.dateFrom, this.dateTo);
-      this.router.navigate(["."], {
-        queryParams: {
-          dateFrom: this.dateFrom,
-          dateTo: this.dateTo,
-        },
-        relativeTo: this.activatedRoute,
-        queryParamsHandling: "merge",
-      });
+      this.data = await this.api.getList();
 
       this.gridApi?.hideOverlay();
     } catch (err) {

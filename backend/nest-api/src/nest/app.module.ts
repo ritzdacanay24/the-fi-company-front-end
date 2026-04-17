@@ -11,6 +11,7 @@ import { LoggingInterceptor } from './interceptors/logging.interceptor';
 import { RequestContextMiddleware } from './middlewares/request-context.middleware';
 import { AttachmentsModule } from './modules/attachments/attachments.module';
 import { ForkliftInspectionModule } from './modules/forklift-inspection';
+import { GraphicsBomModule } from './modules/graphics-bom/graphics-bom.module';
 import { HealthModule } from './modules/health';
 import { IgtSerialNumbersModule } from './modules/igt-serial-numbers';
 import { SerialAssignmentsModule } from './modules/serial-assignments';
@@ -60,6 +61,7 @@ import { EmailModule } from '../shared/email/email.module';
     SerialAvailabilityModule,
     DataScrubModule,
     ForkliftInspectionModule,
+    GraphicsBomModule,
     HealthModule,
     IgtSerialNumbersModule,
     IgtTransferModule,
