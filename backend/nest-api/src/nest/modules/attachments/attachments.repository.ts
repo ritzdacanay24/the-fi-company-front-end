@@ -1,9 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { ResultSetHeader, RowDataPacket } from 'mysql2';
+import { RowDataPacket } from 'mysql2/promise';
 import { MysqlService } from '@/shared/database/mysql.service';
+import { BaseRepository } from '@/shared/repositories';
 
 @Injectable()
-export class AttachmentsRepository {
+export class AttachmentsRepository extends BaseRepository<RowDataPacket> {
   private static readonly ALLOWED_FILTER_COLUMNS = new Set<string>([
     'id',
     'fileName',
@@ -29,7 +30,9 @@ export class AttachmentsRepository {
     'type_of_work_completed',
   ]);
 
-  constructor(@Inject(MysqlService) private readonly mysqlService: MysqlService) {}
+  constructor(@Inject(MysqlService) mysqlService: MysqlService) {
+    super('attachments', mysqlService);
+  }
 
   async find(filters: Record<string, string>): Promise<RowDataPacket[]> {
     const params: unknown[] = [];
@@ -51,12 +54,10 @@ export class AttachmentsRepository {
 
     sql += ` ORDER BY CASE WHEN date_of_service IS NOT NULL THEN date_of_service ELSE id END DESC`;
 
-    return this.mysqlService.query<RowDataPacket[]>(sql, params);
+    return this.rawQuery<RowDataPacket>(sql, params);
   }
 
   async deleteById(id: number): Promise<number> {
-    const sql = `DELETE FROM attachments WHERE id = ?`;
-    const result = await this.mysqlService.execute<ResultSetHeader>(sql, [id]);
-    return result.affectedRows;
+    return super.deleteById(id);
   }
 }

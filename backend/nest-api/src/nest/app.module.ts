@@ -16,6 +16,7 @@ import { IgtSerialNumbersModule } from './modules/igt-serial-numbers';
 import { SerialAssignmentsModule } from './modules/serial-assignments';
 import { IgtTransferModule } from './modules/igt-transfer/igt-transfer.module';
 import { InventoryByProdLineModule } from './modules/inventory-by-prod-line';
+import { MrbModule } from './modules/mrb/mrb.module';
 import { NcrModule } from './modules/ncr/ncr.module';
 import { QadModule } from './modules/qad';
 import { SafetyIncidentModule } from './modules/safety-incident';
@@ -54,6 +55,7 @@ import { EmailModule } from '../shared/email/email.module';
     IgtSerialNumbersModule,
     IgtTransferModule,
     InventoryByProdLineModule,
+    MrbModule,
     NcrModule,
     QadModule,
     SafetyIncidentModule,

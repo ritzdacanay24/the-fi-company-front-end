@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { ResultSetHeader, RowDataPacket } from 'mysql2';
+import { RowDataPacket } from 'mysql2/promise';
 import { MysqlService } from '@/shared/database/mysql.service';
+import { BaseRepository } from '@/shared/repositories';
 
 interface NcrSummaryRow extends RowDataPacket {
   department: string;
@@ -29,7 +30,7 @@ interface NcrComplaintCodeRow extends RowDataPacket {
 }
 
 @Injectable()
-export class NcrRepository {
+export class NcrRepository extends BaseRepository<RowDataPacket> {
   private static readonly NCR_MUTABLE_COLUMNS = [
     'source',
     'po_nbr',
@@ -91,7 +92,9 @@ export class NcrRepository {
     'ca_email_sent_to',
   ] as const;
 
-  constructor(@Inject(MysqlService) private readonly mysqlService: MysqlService) {}
+  constructor(@Inject(MysqlService) mysqlService: MysqlService) {
+    super('ncr', mysqlService);
+  }
 
   async getList(params: {
     selectedViewType?: string;
@@ -122,7 +125,7 @@ export class NcrRepository {
 
     sql += ` ORDER BY a.created_date DESC`;
 
-    return this.mysqlService.query<RowDataPacket[]>(sql, queryParams);
+    return this.rawQuery<RowDataPacket>(sql, queryParams);
   }
 
   async getOpenSummary(): Promise<{
@@ -157,7 +160,7 @@ export class NcrRepository {
       ) a
     `;
 
-    const data = await this.mysqlService.query<NcrSummaryRow[]>(sql);
+    const data = await this.rawQuery<NcrSummaryRow>(sql);
 
     let totalOpen = 0;
     let totalOpenCA = 0;
@@ -196,7 +199,7 @@ export class NcrRepository {
         AND active = 1
     `;
 
-    const rows = await this.mysqlService.query<NcrChartRow[]>(sql);
+    const rows = await this.rawQuery<NcrChartRow>(sql);
     const row = rows[0];
 
     return {
@@ -206,9 +209,7 @@ export class NcrRepository {
   }
 
   async getById(id: number): Promise<RowDataPacket | null> {
-    const sql = `SELECT * FROM ncr WHERE id = ? LIMIT 1`;
-    const rows = await this.mysqlService.query<RowDataPacket[]>(sql, [id]);
-    return rows[0] || null;
+    return this.findOne({ id });
   }
 
   async create(payload: Record<string, unknown>): Promise<number> {
@@ -217,13 +218,7 @@ export class NcrRepository {
       throw new Error('No valid NCR fields provided for create');
     }
 
-    const columns = entries.map(([key]) => `\`${key}\``).join(', ');
-    const placeholders = entries.map(() => '?').join(', ');
-    const values = entries.map(([, value]) => value);
-
-    const sql = `INSERT INTO ncr (${columns}) VALUES (${placeholders})`;
-    const result = await this.mysqlService.execute<ResultSetHeader>(sql, values);
-    return result.insertId;
+    return super.create(Object.fromEntries(entries));
   }
 
   async updateById(id: number, payload: Record<string, unknown>): Promise<number> {
@@ -232,12 +227,7 @@ export class NcrRepository {
       return 0;
     }
 
-    const setClause = entries.map(([key]) => `\`${key}\` = ?`).join(', ');
-    const values = entries.map(([, value]) => value);
-
-    const sql = `UPDATE ncr SET ${setClause} WHERE id = ?`;
-    const result = await this.mysqlService.execute<ResultSetHeader>(sql, [...values, id]);
-    return result.affectedRows;
+    return super.updateById(id, Object.fromEntries(entries));
   }
 
   async getNotificationRecipients(notificationKey: string): Promise<string[]> {
@@ -250,13 +240,13 @@ export class NcrRepository {
         AND TRIM(email) <> ''
     `;
 
-    const rows = await this.mysqlService.query<NotificationRecipientRow[]>(sql, [notificationKey]);
+    const rows = await this.rawQuery<NotificationRecipientRow>(sql, [notificationKey]);
     return rows.map((row) => row.email.trim()).filter(Boolean);
   }
 
   async getComplaintCodes(): Promise<NcrComplaintCodeRow[]> {
     const sql = `SELECT * FROM ncr_complaint_codes`;
-    return this.mysqlService.query<NcrComplaintCodeRow[]>(sql);
+    return this.rawQuery<NcrComplaintCodeRow>(sql);
   }
 
   private filterMutableColumns(payload: Record<string, unknown>): Array<[string, unknown]> {
