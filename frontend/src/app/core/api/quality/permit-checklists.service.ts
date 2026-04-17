@@ -14,7 +14,7 @@ interface PermitChecklistBootstrapResponse {
   };
 }
 
-const url = "Quality/permit-checklists/index.php";
+const url = "apiV2/permit-checklists";
 
 @Injectable({
   providedIn: "root",
@@ -25,20 +25,20 @@ export class PermitChecklistsService extends DataService<any> {
   }
 
   bootstrap = async (): Promise<PermitChecklistBootstrapResponse> =>
-    await firstValueFrom(this.http.get<PermitChecklistBootstrapResponse>(`${url}?action=bootstrap`));
+    await firstValueFrom(this.http.get<PermitChecklistBootstrapResponse>(`${url}/bootstrap`));
 
   upsertTicket = async (ticket: any): Promise<any> =>
-    await firstValueFrom(this.http.post(`${url}?action=upsert-ticket`, { ticket }));
+    await firstValueFrom(this.http.post(`${url}/upsert-ticket`, { ticket }));
 
   deleteTicket = async (ticketId: string): Promise<any> =>
-    await firstValueFrom(this.http.post(`${url}?action=delete-ticket`, { ticketId }));
+    await firstValueFrom(this.http.post(`${url}/delete-ticket`, { ticketId }));
 
   hardDeleteTicket = async (ticketId: string, currentUserId: string): Promise<any> =>
-    await firstValueFrom(this.http.post(`${url}?action=hard-delete`, { ticketId, currentUserId }));
+    await firstValueFrom(this.http.post(`${url}/hard-delete`, { ticketId, currentUserId }));
 
   syncDirectories = async (customers: any[], architects: any[]): Promise<any> =>
     await firstValueFrom(
-      this.http.post(`${url}?action=sync-directories`, {
+      this.http.post(`${url}/sync-directories`, {
         customers,
         architects,
       })
@@ -46,11 +46,11 @@ export class PermitChecklistsService extends DataService<any> {
 
   syncBillingDefaults = async (customerBillingDefaultsByType: Record<string, any[]>): Promise<any> =>
     await firstValueFrom(
-      this.http.post(`${url}?action=sync-billing-defaults`, {
+      this.http.post(`${url}/sync-billing-defaults`, {
         customerBillingDefaultsByType,
       })
     );
 
   syncTransactions = async (transactions: any[]): Promise<any> =>
-    await firstValueFrom(this.http.post(`${url}?action=sync-transactions`, { transactions }));
+    await firstValueFrom(this.http.post(`${url}/sync-transactions`, { transactions }));
 }

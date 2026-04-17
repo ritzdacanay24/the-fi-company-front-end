@@ -18,6 +18,7 @@ import { IgtTransferModule } from './modules/igt-transfer/igt-transfer.module';
 import { InventoryByProdLineModule } from './modules/inventory-by-prod-line';
 import { MrbModule } from './modules/mrb/mrb.module';
 import { NcrModule } from './modules/ncr/ncr.module';
+import { PermitChecklistsModule } from './modules/permit-checklists/permit-checklists.module';
 import { QadModule } from './modules/qad';
 import { SafetyIncidentModule } from './modules/safety-incident';
 import { SgAssetModule } from './modules/sg-asset';
@@ -57,6 +58,7 @@ import { EmailModule } from '../shared/email/email.module';
     InventoryByProdLineModule,
     MrbModule,
     NcrModule,
+    PermitChecklistsModule,
     QadModule,
     SafetyIncidentModule,
     SerialAssignmentsModule,
