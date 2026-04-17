@@ -27,6 +27,7 @@ import { QualityOverviewModule } from './modules/quality-overview/quality-overvi
 import { RmaModule } from './modules/rma/rma.module';
 import { SafetyIncidentModule } from './modules/safety-incident';
 import { ShortagesModule } from './modules/shortages/shortages.module';
+import { ShippingRequestModule } from './modules/shipping-request/shipping-request.module';
 import { SgAssetModule } from './modules/sg-asset';
 import { TrainingModule } from './modules/training';
 import { UniqueLabelsModule } from './modules/unique-labels';
@@ -73,6 +74,7 @@ import { EmailModule } from '../shared/email/email.module';
     RmaModule,
     SafetyIncidentModule,
     ShortagesModule,
+    ShippingRequestModule,
     SerialAssignmentsModule,
     SgAssetModule,
     TrainingModule,
