@@ -52,7 +52,7 @@
                 </span>
               </div>
             </div>
-            <!-- Top-right: import (create mode) or Â·Â·Â· menu -->
+            <!-- Top-right: import (create mode) or overflow menu -->
             <div class="flex-shrink-0 d-flex gap-1">
               <button type="button" class="btn btn-sm btn-outline-primary" (click)="openImportModal()" *ngIf="!editingTemplate" title="Import from PDF or CSV">
                 <i class="mdi mdi-file-import"></i>
@@ -82,12 +82,11 @@
           </div>
         </div>
 
-        <!-- Template Info entry (pinned, always first) -->
-        <div class="px-1 pt-2">
+        <!-- Template Info entry (shown only when not already on Template Info panel) -->
+        <div class="px-1 pt-2" *ngIf="shouldShowTemplateInfoEntry()">
           <button
             type="button"
             class="list-group-item list-group-item-action d-flex align-items-center gap-2 rounded tce-info-entry"
-            [class.active]="activePanel === 'template-info'"
             (click)="activePanel = 'template-info'">
             <i class="mdi mdi-information-outline fs-5"></i>
             <span class="fw-medium">Template Info</span>
@@ -96,7 +95,7 @@
         </div>
 
         <!-- Items section header -->
-        <div class="d-flex align-items-center px-2 pt-3 pb-1">
+        <div class="d-flex align-items-center px-2 pb-1 tce-items-header" [class.pt-3]="activePanel !== 'template-info'" [class.pt-2]="activePanel === 'template-info'">
           <span class="text-muted small text-uppercase fw-semibold flex-grow-1">Items ({{ items.length }})</span>
           <button type="button" class="btn btn-sm btn-soft-primary" (click)="addItem()" [disabled]="isPublishedLocked()" title="Add item">
             <i class="mdi mdi-plus align-bottom"></i> Add
@@ -104,7 +103,23 @@
         </div>
 
         <!-- Items navigation list -->
-        <div class="tce-items-list" [formGroup]="templateForm">
+           <div class="tce-items-list"
+             #sidebarNavList
+             [formGroup]="templateForm"
+             tabindex="0"
+             aria-label="Checklist items navigation"
+             (keydown)="onSidebarNavKeydown($event)">
+
+          <div class="tce-nav-sticky-parent" *ngIf="enableStickyNavParent && stickyNavAncestorIndices.length > 0">
+            <button
+              type="button"
+              class="tce-nav-sticky-row"
+              *ngFor="let ancestorIndex of stickyNavAncestorIndices; trackBy: trackByIndex"
+              (click)="onStickyNavAncestorSelected(ancestorIndex)">
+              <span class="badge bg-secondary me-2">{{ getOutlineNumber(ancestorIndex) }}</span>
+              <span class="text-truncate">{{ getItemTitle(ancestorIndex) }}</span>
+            </button>
+          </div>
 
           <!-- Empty state -->
           <div *ngIf="items.length === 0" class="text-center py-5 px-3">
@@ -121,6 +136,7 @@
 
             <ng-container *ngFor="let item of items.controls; let i = index; trackBy: trackByIndex">
             <div *ngIf="isNavItemVisible(i)"
+                [id]="'nav-item-' + i"
                  [formGroupName]="i"
                  class="tce-nav-item"
                  [class.active]="activePanel === 'item' && selectedFormItemIndex === i"
@@ -239,6 +255,28 @@
 
             </div>
             </ng-container>
+          </div>
+        </div>
+
+        <div class="tce-nav-footer" *ngIf="items.length > 0">
+          <div class="d-flex align-items-center justify-content-between">
+            <span class="small text-uppercase fw-semibold text-muted">Validation</span>
+            <span class="badge" [ngClass]="getItemsPendingReviewCount() > 0 ? 'bg-danger' : 'bg-success'">
+              {{ getItemsPendingReviewCount() > 0 ? 'Needs Review' : 'Ready' }}
+            </span>
+          </div>
+
+          <div class="small fw-medium mt-1" [ngClass]="getItemsPendingReviewCount() > 0 ? 'text-danger' : 'text-success'">
+            <ng-container *ngIf="getItemsPendingReviewCount() > 0; else allReviewedLabel">
+              {{ getItemsPendingReviewCount() }} item{{ getItemsPendingReviewCount() === 1 ? '' : 's' }} still need{{ getItemsPendingReviewCount() === 1 ? 's' : '' }} review
+            </ng-container>
+            <ng-template #allReviewedLabel>
+              All items are reviewed.
+            </ng-template>
+          </div>
+
+          <div class="small text-muted mt-1">
+            {{ getItemsReviewedCount() }} / {{ items.length }} reviewed
           </div>
         </div>
 
@@ -491,21 +529,23 @@
                       <!-- Drag preview (hidden, needed for CDK) -->
                       <input type="hidden" formControlName="order_index">
 
-                      <!-- Required toggle -->
-                      <div class="d-flex justify-content-end align-items-center gap-2 mb-3">
-                        <span class="small text-muted">Counts toward progress</span>
-                        <div class="form-check form-switch mb-0">
-                          <input class="form-check-input" type="checkbox" formControlName="is_required" [id]="'required-' + selectedFormItemIndex">
-                          <label class="form-check-label" [for]="'required-' + selectedFormItemIndex">Required</label>
+                      <div class="row g-3 mb-3 align-items-start">
+                        <div class="col-12 col-xl-7">
+                          <label class="form-label">Title <span class="text-danger">*</span></label>
+                          <input #itemTitleInput type="text" class="form-control" formControlName="title" placeholder="Enter item title"
+                                 [ngClass]="{ 'is-invalid': items.at(selectedFormItemIndex!)?.get('title')?.invalid && items.at(selectedFormItemIndex!)?.get('title')?.touched }">
+                          <div class="invalid-feedback">Title is required</div>
                         </div>
-                      </div>
-
-                      <!-- Title -->
-                      <div class="mb-3">
-                        <label class="form-label">Title <span class="text-danger">*</span></label>
-                        <input #itemTitleInput type="text" class="form-control" formControlName="title" placeholder="Enter item title"
-                               [ngClass]="{ 'is-invalid': items.at(selectedFormItemIndex!)?.get('title')?.invalid && items.at(selectedFormItemIndex!)?.get('title')?.touched }">
-                        <div class="invalid-feedback">Title is required</div>
+                        <div class="col-12 col-xl-5">
+                          <label class="form-label"><i class="mdi mdi-checkbox-multiple-marked-circle text-info me-2"></i>Submission Type</label>
+                          <select class="form-select" formControlName="submission_type">
+                            <option value="photo">Photo Only</option>
+                            <option value="video">Video Only</option>
+                            <option value="audio">Audio Only</option>
+                            <option value="either">Photo OR Video</option>
+                            <option value="none">No Media Required</option>
+                          </select>
+                        </div>
                       </div>
 
                       <!-- Description -->
@@ -520,106 +560,132 @@
                         </div>
                       </div>
 
-                      <!-- Links -->
-                      <div class="mb-3">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                          <label class="form-label mb-0"><i class="mdi mdi-link-variant me-1"></i>Links</label>
-                          <button type="button" class="btn btn-outline-primary btn-sm" (click)="openLinksModal(selectedFormItemIndex!)">
-                            <i class="mdi mdi-link-variant-plus me-1"></i>Manage Links
-                            <span class="badge bg-primary ms-1">{{ getLinksFormArray(selectedFormItemIndex!).length }}</span>
-                          </button>
-                        </div>
-                        <div *ngIf="getLinksFormArray(selectedFormItemIndex!).length === 0" class="text-muted small border rounded bg-light p-2">No links added.</div>
-                        <div *ngIf="getLinksFormArray(selectedFormItemIndex!).length > 0" class="mt-1 d-flex flex-column gap-1">
-                          <a *ngFor="let link of getLinksFormArray(selectedFormItemIndex!).value"
-                             class="small text-decoration-none text-primary text-truncate"
-                             [href]="link.url" target="_blank" rel="noopener noreferrer" [title]="link.title || link.url">
-                            <i class="mdi mdi-link-variant me-1"></i>{{ link.title || link.url }}
-                          </a>
-                        </div>
-                      </div>
-
-                      <!-- Submission Type -->
-                      <div class="mb-3">
-                        <label class="form-label"><i class="mdi mdi-checkbox-multiple-marked-circle text-info me-2"></i>Submission Type</label>
-                        <select class="form-select" formControlName="submission_type">
-                          <option value="photo">ðŸ“· Photo Only</option>
-                          <option value="video">ðŸŽ¥ Video Only</option>
-                          <option value="audio">ðŸŽ™ï¸ Audio Only</option>
-                          <option value="either">ðŸ“ Photo OR Video</option>
-                          <option value="none">ðŸš« No Media Required</option>
-                        </select>
-                      </div>
-
-                      <!-- Sample Images -->
-                      <div *ngIf="items.at(selectedFormItemIndex!)?.get('submission_type')?.value === 'photo' ||
-                                  items.at(selectedFormItemIndex!)?.get('submission_type')?.value === 'either' ||
-                                  items.at(selectedFormItemIndex!)?.get('submission_type')?.value === 'none'"
-                           class="mb-3"
-                           [ngClass]="{ 'border border-danger border-2 rounded p-2':
-                             (items.at(selectedFormItemIndex!)?.get('submission_type')?.value === 'photo' && items.at(selectedFormItemIndex!)?.get('photo_requirements')?.value?.picture_required && !hasPrimarySampleImage(selectedFormItemIndex!) && getReferenceImageCount(selectedFormItemIndex!) === 0) ||
-                             (items.at(selectedFormItemIndex!)?.get('submission_type')?.value === 'either' && !hasPrimarySampleImage(selectedFormItemIndex!) && getReferenceImageCount(selectedFormItemIndex!) === 0 && !hasSampleVideo(selectedFormItemIndex!)) }">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                          <label class="form-label mb-0">
-                            <i class="mdi mdi-image-multiple me-1"></i>
-                            {{ items.at(selectedFormItemIndex!)?.get('submission_type')?.value === 'none' ? 'Reference Images' : 'Sample Images' }}
-                          </label>
-                          <button type="button" class="btn btn-outline-primary btn-sm" (click)="openSampleImagesModal(selectedFormItemIndex!)">
-                            <i class="mdi mdi-cog me-1"></i>Manage Images
-                            <span class="badge bg-primary ms-1">{{ getTotalSampleImagesCount(selectedFormItemIndex!) }}</span>
-                          </button>
-                        </div>
-                        <div *ngIf="hasPrimarySampleImage(selectedFormItemIndex!) || getReferenceImageCount(selectedFormItemIndex!) > 0" class="border rounded p-2 bg-light">
-                          <div class="d-flex gap-2 flex-wrap">
-                            <div *ngIf="hasPrimarySampleImage(selectedFormItemIndex!)" class="position-relative">
-                              <img [src]="getPrimarySampleImageUrl(selectedFormItemIndex!)" class="img-thumbnail" [class.locked-media-clickable]="isPublishedLocked()" loading="lazy"
-                                   style="width:60px;height:60px;object-fit:cover;cursor:pointer;" (click)="previewSampleImage(selectedFormItemIndex!)">
-                              <span class="badge bg-primary position-absolute top-0 start-0" style="font-size:0.6rem;">Primary</span>
+                      <div class="row g-3 tce-item-media-grid">
+                        <div class="col-12 col-lg-5 tce-item-media-left">
+                          <!-- Links -->
+                          <div class="mb-3 mb-lg-0">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                              <label class="form-label mb-0"><i class="mdi mdi-link-variant me-1"></i>Links</label>
+                              <button type="button" class="btn btn-outline-primary btn-sm" (click)="openLinksModal(selectedFormItemIndex!)">
+                                <i class="mdi mdi-link-variant-plus me-1"></i>Manage Links
+                                <span class="badge bg-primary ms-1">{{ getLinksFormArray(selectedFormItemIndex!).length }}</span>
+                              </button>
                             </div>
-                            <div *ngFor="let refImage of getReferenceImages(selectedFormItemIndex!); let refIdx = index" class="position-relative">
-                              <img [src]="getReferenceImageUrl(refImage)" class="img-thumbnail" [class.locked-media-clickable]="isPublishedLocked()" loading="lazy"
-                                   style="width:60px;height:60px;object-fit:cover;cursor:pointer;" (click)="previewReferenceImage(selectedFormItemIndex!, refIdx)">
-                              <span class="badge bg-secondary position-absolute top-0 start-0" style="font-size:0.6rem;">Ref</span>
+                            <div *ngIf="getLinksFormArray(selectedFormItemIndex!).length === 0" class="text-muted small border rounded bg-light p-2">No links added.</div>
+                            <div *ngIf="getLinksFormArray(selectedFormItemIndex!).length > 0" class="mt-1 d-flex flex-wrap gap-2">
+                              <a *ngFor="let link of getLinksFormArray(selectedFormItemIndex!).value"
+                                class="tce-link-pill d-inline-flex align-items-center gap-1 rounded-pill"
+                                [href]="link.url" target="_blank" rel="noopener noreferrer" [title]="link.title || link.url">
+                                <i class="mdi mdi-link-variant"></i>
+                                <span class="tce-link-pill-label">{{ link.title || link.url }}</span>
+                              </a>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+                              <span class="small text-muted">Counts toward progress</span>
+                              <div class="form-check form-switch mb-0">
+                                <input class="form-check-input" type="checkbox" formControlName="is_required" [id]="'required-' + selectedFormItemIndex">
+                                <label class="form-check-label" [for]="'required-' + selectedFormItemIndex">Required</label>
+                              </div>
                             </div>
                           </div>
                         </div>
-                        <div *ngIf="!hasPrimarySampleImage(selectedFormItemIndex!) && getReferenceImageCount(selectedFormItemIndex!) === 0" class="text-muted text-center py-2 border rounded bg-white">
-                          <i class="mdi mdi-image-off-outline"></i><small class="d-block">No sample images</small>
-                        </div>
-                        <div class="text-danger small mt-2"
-                             *ngIf="items.at(selectedFormItemIndex!)?.get('submission_type')?.value === 'photo' && items.at(selectedFormItemIndex!)?.get('photo_requirements')?.value?.picture_required && !hasPrimarySampleImage(selectedFormItemIndex!) && getReferenceImageCount(selectedFormItemIndex!) === 0">
-                          Sample photo required for Photo submission type.
-                        </div>
-                        <div class="text-danger small mt-2"
-                             *ngIf="items.at(selectedFormItemIndex!)?.get('submission_type')?.value === 'either' && !hasPrimarySampleImage(selectedFormItemIndex!) && getReferenceImageCount(selectedFormItemIndex!) === 0 && !hasSampleVideo(selectedFormItemIndex!)">
-                          Add a sample image or sample video.
-                        </div>
-                      </div>
 
-                      <!-- Sample Video -->
-                      <div *ngIf="items.at(selectedFormItemIndex!)?.get('submission_type')?.value === 'video' ||
-                                  items.at(selectedFormItemIndex!)?.get('submission_type')?.value === 'either'"
-                           class="mb-3"
-                           [ngClass]="{ 'border border-danger border-2 rounded p-2':
-                             (items.at(selectedFormItemIndex!)?.get('submission_type')?.value === 'video' && !hasSampleVideo(selectedFormItemIndex!)) ||
-                             (items.at(selectedFormItemIndex!)?.get('submission_type')?.value === 'either' && !hasSampleVideo(selectedFormItemIndex!) && !hasPrimarySampleImage(selectedFormItemIndex!) && getReferenceImageCount(selectedFormItemIndex!) === 0) }">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                          <label class="form-label mb-0"><i class="mdi mdi-video me-1"></i>Sample Video</label>
-                          <button type="button" class="btn btn-outline-primary btn-sm" (click)="openSampleVideoModal(selectedFormItemIndex!)">
-                            <i class="mdi mdi-cog me-1"></i>Manage Video
-                          </button>
-                        </div>
-                        <div *ngIf="hasSampleVideo(selectedFormItemIndex!)" class="border rounded p-2 bg-light text-center">
-                          <video [src]="getPrimarySampleVideoUrl(selectedFormItemIndex!)" [class.locked-media-clickable]="isPublishedLocked()" preload="none"
-                                 style="max-height:80px;max-width:140px;object-fit:cover;cursor:pointer;" (click)="previewSampleVideo(selectedFormItemIndex!)"></video>
-                          <div class="mt-1"><small class="text-muted"><i class="mdi mdi-information-outline"></i> Click to preview</small></div>
-                        </div>
-                        <div *ngIf="!hasSampleVideo(selectedFormItemIndex!)" class="text-muted text-center py-2 border rounded bg-white">
-                          <i class="mdi mdi-video-off-outline"></i><small class="d-block">No sample video</small>
-                        </div>
-                        <div class="text-danger small mt-2"
-                             *ngIf="items.at(selectedFormItemIndex!)?.get('submission_type')?.value === 'video' && !hasSampleVideo(selectedFormItemIndex!)">
-                          Sample video required for Video submission type.
+                        <div class="col-12 col-lg-7 tce-item-media-right">
+                          <!-- Sample Images -->
+                          <div *ngIf="items.at(selectedFormItemIndex!)?.get('submission_type')?.value === 'photo' ||
+                                      items.at(selectedFormItemIndex!)?.get('submission_type')?.value === 'either' ||
+                                      items.at(selectedFormItemIndex!)?.get('submission_type')?.value === 'none'"
+                              class="mb-3"
+                              [ngClass]="{ 'border border-danger border-2 rounded p-2':
+                                (items.at(selectedFormItemIndex!)?.get('submission_type')?.value === 'photo' && items.at(selectedFormItemIndex!)?.get('photo_requirements')?.value?.picture_required && !hasPrimarySampleImage(selectedFormItemIndex!) && getReferenceImageCount(selectedFormItemIndex!) === 0) ||
+                                (items.at(selectedFormItemIndex!)?.get('submission_type')?.value === 'either' && !hasPrimarySampleImage(selectedFormItemIndex!) && getReferenceImageCount(selectedFormItemIndex!) === 0 && !hasSampleVideo(selectedFormItemIndex!)) }">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                              <label class="form-label mb-0">
+                                <i class="mdi mdi-image-multiple me-1"></i>
+                                {{ items.at(selectedFormItemIndex!)?.get('submission_type')?.value === 'none' ? 'Reference Images' : 'Sample Images' }}
+                              </label>
+                              <button type="button" class="btn btn-outline-primary btn-sm" (click)="openSampleImagesModal(selectedFormItemIndex!)">
+                                <i class="mdi mdi-cog me-1"></i>Manage Images
+                                <span class="badge bg-primary ms-1">{{ getTotalSampleImagesCount(selectedFormItemIndex!) }}</span>
+                              </button>
+                            </div>
+                            <div *ngIf="getCarouselImages(selectedFormItemIndex!).length > 0" class="border rounded p-2 bg-light">
+                              <ngb-carousel
+                                class="tce-image-carousel"
+                                [interval]="0"
+                                [keyboard]="true"
+                                [pauseOnHover]="true"
+                                [showNavigationArrows]="getCarouselImages(selectedFormItemIndex!).length > 1"
+                                [showNavigationIndicators]="getCarouselImages(selectedFormItemIndex!).length > 1"
+                                [activeId]="getActiveCarouselSlideId(selectedFormItemIndex!)"
+                                (slide)="onCarouselSlide(selectedFormItemIndex!, $event)">
+                                <ng-template ngbSlide [id]="media.id" *ngFor="let media of getCarouselImages(selectedFormItemIndex!); trackBy: trackByCarouselImageId">
+                                  <div class="position-relative text-center">
+                                    <img [src]="media.url" class="img-thumbnail tce-sample-image-primary tce-sample-image-carousel-main" [class.locked-media-clickable]="isPublishedLocked()" loading="lazy"
+                                         (click)="previewActiveCarouselImage(selectedFormItemIndex!)">
+                                    <span class="badge position-absolute top-0 start-0"
+                                      [class.bg-primary]="media.isPrimary"
+                                      [class.bg-secondary]="!media.isPrimary"
+                                      style="font-size:0.6rem;">
+                                      {{ media.isPrimary ? 'Primary' : 'Ref' }}
+                                    </span>
+                                  </div>
+                                </ng-template>
+                              </ngb-carousel>
+
+                              <div class="tce-image-carousel-thumbs mt-2" *ngIf="getCarouselImages(selectedFormItemIndex!).length > 1">
+                                <button
+                                  type="button"
+                                  class="tce-image-thumb"
+                                  *ngFor="let media of getCarouselImages(selectedFormItemIndex!); trackBy: trackByCarouselImageId"
+                                  [class.active]="isCarouselSlideActive(selectedFormItemIndex!, media.id)"
+                                  (click)="setActiveCarouselSlideId(selectedFormItemIndex!, media.id)">
+                                  <img [src]="media.url" class="img-thumbnail tce-sample-image-ref" loading="lazy">
+                                </button>
+                              </div>
+
+                              <small class="text-muted d-block mt-2">Click image to open full preview.</small>
+                            </div>
+                            <div *ngIf="!hasPrimarySampleImage(selectedFormItemIndex!) && getReferenceImageCount(selectedFormItemIndex!) === 0" class="text-muted text-center py-2 border rounded bg-white">
+                              <i class="mdi mdi-image-off-outline"></i><small class="d-block">No sample images</small>
+                            </div>
+                            <div class="text-danger small mt-2"
+                                *ngIf="items.at(selectedFormItemIndex!)?.get('submission_type')?.value === 'photo' && items.at(selectedFormItemIndex!)?.get('photo_requirements')?.value?.picture_required && !hasPrimarySampleImage(selectedFormItemIndex!) && getReferenceImageCount(selectedFormItemIndex!) === 0">
+                              Sample photo required for Photo submission type.
+                            </div>
+                            <div class="text-danger small mt-2"
+                                *ngIf="items.at(selectedFormItemIndex!)?.get('submission_type')?.value === 'either' && !hasPrimarySampleImage(selectedFormItemIndex!) && getReferenceImageCount(selectedFormItemIndex!) === 0 && !hasSampleVideo(selectedFormItemIndex!)">
+                              Add a sample image or sample video.
+                            </div>
+                          </div>
+
+                          <!-- Sample Video -->
+                          <div *ngIf="items.at(selectedFormItemIndex!)?.get('submission_type')?.value === 'video' ||
+                                      items.at(selectedFormItemIndex!)?.get('submission_type')?.value === 'either'"
+                              class="mb-3"
+                              [ngClass]="{ 'border border-danger border-2 rounded p-2':
+                                (items.at(selectedFormItemIndex!)?.get('submission_type')?.value === 'video' && !hasSampleVideo(selectedFormItemIndex!)) ||
+                                (items.at(selectedFormItemIndex!)?.get('submission_type')?.value === 'either' && !hasSampleVideo(selectedFormItemIndex!) && !hasPrimarySampleImage(selectedFormItemIndex!) && getReferenceImageCount(selectedFormItemIndex!) === 0) }">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                              <label class="form-label mb-0"><i class="mdi mdi-video me-1"></i>Sample Video</label>
+                              <button type="button" class="btn btn-outline-primary btn-sm" (click)="openSampleVideoModal(selectedFormItemIndex!)">
+                                <i class="mdi mdi-cog me-1"></i>Manage Video
+                              </button>
+                            </div>
+                            <div *ngIf="hasSampleVideo(selectedFormItemIndex!)" class="border rounded p-2 bg-light text-center">
+                              <video [src]="getPrimarySampleVideoUrl(selectedFormItemIndex!)" [class.locked-media-clickable]="isPublishedLocked()" preload="none"
+                                    style="max-height:80px;max-width:140px;object-fit:cover;cursor:pointer;" (click)="previewSampleVideo(selectedFormItemIndex!)"></video>
+                              <div class="mt-1"><small class="text-muted"><i class="mdi mdi-information-outline"></i> Click to preview</small></div>
+                            </div>
+                            <div *ngIf="!hasSampleVideo(selectedFormItemIndex!)" class="text-muted text-center py-2 border rounded bg-white">
+                              <i class="mdi mdi-video-off-outline"></i><small class="d-block">No sample video</small>
+                            </div>
+                            <div class="text-danger small mt-2"
+                                *ngIf="items.at(selectedFormItemIndex!)?.get('submission_type')?.value === 'video' && !hasSampleVideo(selectedFormItemIndex!)">
+                              Sample video required for Video submission type.
+                            </div>
+                          </div>
                         </div>
                       </div>
 
@@ -716,7 +782,7 @@
         </div>
 
         <div class="text-center my-3">
-          <small class="text-muted">â€” OR â€”</small>
+          <small class="text-muted">- OR -</small>
         </div>
 
         <!-- Manual Entry Section -->

@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, AfterViewInit, ViewChild, ViewChildren, TemplateRef, ChangeDetectorRef, ElementRef, QueryList, HostListener } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, ViewChild, ViewChildren, TemplateRef, ChangeDetectorRef, ElementRef, QueryList, HostListener, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators, AbstractControl } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -54,6 +54,13 @@ interface ItemLink {
   description?: string;
 }
 
+interface CarouselImageItem {
+  id: string;
+  url: SafeUrl | string;
+  isPrimary: boolean;
+  refIndex: number | null;
+}
+
 interface ReorderUndoState {
   controls: AbstractControl[];
   sampleImages: { [itemIndex: number]: SampleImage | SampleImage[] | null };
@@ -76,6 +83,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   @ViewChild('videoPreviewModal') videoPreviewModalRef!: TemplateRef<any>;
   @ViewChild('previewModal') previewModalRef!: TemplateRef<any>;
   @ViewChild('linksModalTemplate') linksModalTemplate: any;
+  @ViewChild('sidebarNavList') sidebarNavListRef?: ElementRef<HTMLElement>;
   @ViewChildren('itemTitleInput') itemTitleInputs!: QueryList<ElementRef<HTMLInputElement>>;
 
   templateForm: FormGroup;
@@ -101,6 +109,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   // Sample image management - single image per item
   sampleImages: { [itemIndex: number]: SampleImage | SampleImage[] | null } = {};
   sampleVideos: { [itemIndex: number]: SampleVideo | SampleVideo[] | null } = {};
+  carouselActiveSlideByItem: { [itemIndex: number]: string } = {};
   currentModalItemIndex: number = -1;
   currentModalSubmissionType: 'photo' | 'video' | 'audio' | 'either' | 'none' = 'photo';
   currentLinksItemIndex: number = -1;
@@ -137,6 +146,13 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   // Active item tracking for scroll highlighting
   activeNavItemIndex: number = -1;
   stickyParentIndex: number | null = null;
+  enableStickyNavParent = true;
+  stickyNavAncestorIndices: number[] = [];
+  private sidebarStickyRafPending = false;
+  private lastSidebarStickyUpdateAt = 0;
+  private readonly sidebarStickyThrottleMs = 110;
+  private lastTopVisibleSidebarNavIndex: number | null = null;
+  private lastStickyAncestorSignature = '';
 
   // Reorder state
   reorderFeedbackMessage = '';
@@ -152,6 +168,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   previewNavHeight = 'calc(100vh - 230px)';
   private scrollCheckTimeout: any = null;
   private boundScrollHandler: (() => void) | null = null;
+  private sidebarNavScrollHandler: (() => void) | null = null;
   private activeItemObserver: IntersectionObserver | null = null;
   private visibleItemEntries: Map<number, IntersectionObserverEntry> = new Map();
   private scheduledFallbackCheck = false;
@@ -218,6 +235,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     private uploadService: UploadService,
     private photoUploadService: PhotoChecklistUploadService,
     private cdr: ChangeDetectorRef,
+    private ngZone: NgZone,
     private pdfParser: PdfParserService,
     private wordParser: WordParserService,
     private sanitizer: DomSanitizer
@@ -516,6 +534,17 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       const parsed = raw !== null ? Number(raw) : NaN;
       const nextRequested = Number.isInteger(parsed) && parsed >= 0 ? parsed : null;
 
+      const isAlreadySelectedInItemPanel =
+        nextRequested !== null &&
+        this.activePanel === 'item' &&
+        this.selectedFormItemIndex === nextRequested;
+
+      if (isAlreadySelectedInItemPanel) {
+        this.requestedNavItemIndex = nextRequested;
+        this.pendingUrlItemRestore = false;
+        return;
+      }
+
       this.requestedNavItemIndex = nextRequested;
       this.pendingUrlItemRestore = nextRequested !== null;
 
@@ -712,11 +741,13 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
   ngAfterViewInit(): void {
     this.refreshActiveItemTracking();
+    this.setupSidebarNavScrollListener();
     // Ensure initial highlight is correct
     this.checkActiveItem();
     // In large templates, initial DOM paint can lag behind data load.
     // Retry URL-based restore after the first view is initialized.
     this.scheduleRestoreRequestedNavItemSelection();
+    setTimeout(() => this.updateSidebarStickyAncestors(), 0);
   }
 
   createTemplateForm(): FormGroup {
@@ -2000,6 +2031,35 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     }
   }
 
+  shouldShowTemplateInfoEntry(): boolean {
+    return this.activePanel !== 'template-info';
+  }
+
+  shouldShowStickyNavParent(): boolean {
+    return this.enableStickyNavParent && this.getStickyNavParentIndex() !== null;
+  }
+
+  getStickyNavParentIndex(): number | null {
+    if (!this.enableStickyNavParent) {
+      return null;
+    }
+
+    const baseIndex = this.selectedFormItemIndex !== null
+      ? this.selectedFormItemIndex
+      : (this.activeNavItemIndex >= 0 ? this.activeNavItemIndex : null);
+
+    if (baseIndex === null) {
+      return null;
+    }
+
+    const parentIndex = this.computeStickyParentIndex(baseIndex);
+    if (parentIndex === null || !this.isNavItemVisible(parentIndex)) {
+      return null;
+    }
+
+    return parentIndex;
+  }
+
   private showReorderFeedback(movedTitle: string, targetStart: number): void {
     const destinationOutline = this.getOutlineNumber(targetStart);
     this.reorderFeedbackMessage = `Moved "${movedTitle}" to ${destinationOutline}.`;
@@ -2755,6 +2815,93 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     return primaryCount + referenceCount;
   }
 
+  getCarouselImages(itemIndex: number): CarouselImageItem[] {
+    const images: CarouselImageItem[] = [];
+
+    const primaryUrl = this.getPrimarySampleImageUrl(itemIndex);
+    if (primaryUrl) {
+      images.push({
+        id: `primary-${itemIndex}`,
+        url: primaryUrl,
+        isPrimary: true,
+        refIndex: null
+      });
+    }
+
+    const refs = this.getReferenceImages(itemIndex);
+    refs.forEach((refImage, index) => {
+      const refUrl = this.getReferenceImageUrl(refImage);
+      if (!refUrl) {
+        return;
+      }
+
+      images.push({
+        id: `ref-${itemIndex}-${index}`,
+        url: refUrl,
+        isPrimary: false,
+        refIndex: index
+      });
+    });
+
+    return images;
+  }
+
+  getActiveCarouselSlideId(itemIndex: number): string {
+    const images = this.getCarouselImages(itemIndex);
+    if (!images.length) {
+      return '';
+    }
+
+    const current = this.carouselActiveSlideByItem[itemIndex];
+    if (current && images.some(img => img.id === current)) {
+      return current;
+    }
+
+    const defaultId = images[0].id;
+    this.carouselActiveSlideByItem[itemIndex] = defaultId;
+    return defaultId;
+  }
+
+  setActiveCarouselSlideId(itemIndex: number, slideId: string): void {
+    this.carouselActiveSlideByItem[itemIndex] = slideId;
+  }
+
+  isCarouselSlideActive(itemIndex: number, slideId: string): boolean {
+    return this.getActiveCarouselSlideId(itemIndex) === slideId;
+  }
+
+  onCarouselSlide(itemIndex: number, event: any): void {
+    const slideId = event?.current;
+    if (!slideId) {
+      return;
+    }
+
+    this.carouselActiveSlideByItem[itemIndex] = slideId;
+  }
+
+  previewActiveCarouselImage(itemIndex: number): void {
+    const images = this.getCarouselImages(itemIndex);
+    if (!images.length) {
+      return;
+    }
+
+    const activeId = this.getActiveCarouselSlideId(itemIndex);
+    const activeImage = images.find(img => img.id === activeId) || images[0];
+
+    if (activeImage.isPrimary) {
+      this.previewSampleImage(itemIndex);
+      return;
+    }
+
+    if (activeImage.refIndex !== null) {
+      this.previewReferenceImage(itemIndex, activeImage.refIndex);
+    }
+  }
+
+  trackByCarouselImageId(_index: number, image: CarouselImageItem): string {
+    return image.id;
+  }
+
   /**
    * Helper method to check if value is an array (for template usage)
    */
@@ -2879,6 +3026,15 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   }
 
   selectItem(index: number): void {
+    if (this.activePanel === 'item' && this.selectedFormItemIndex === index && !this.selectingItem) {
+      this.updateStickyParentFromActive(index);
+      this.updateSelectedItemQueryParam(index);
+      this.updateSidebarStickyAncestors();
+      return;
+    }
+
+    this.updateStickyParentFromActive(index);
+
     // Hide panel first (visibility:hidden — no layout shift), null the index to force Quill destroy/recreate,
     // then restore. This prevents Quill from keeping stale content when formGroupName changes.
     this.selectingItem = true;
@@ -2888,6 +3044,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       this.selectedFormItemIndex = index;
       this.updateSelectedItemQueryParam(index);
       this.selectingItem = false;
+      this.updateSidebarStickyAncestors();
     }, 0);
   }
 
@@ -2919,9 +3076,18 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       return;
     }
 
+    if (this.activePanel === 'item' && this.selectedFormItemIndex === index) {
+      this.pendingUrlItemRestore = false;
+      this.scrollNavItemIntoViewSoon(index);
+      return;
+    }
+
     this.pendingUrlItemRestore = false;
     this.selectItem(index);
     this.scrollToItem(index, { fromNavigation: true });
+    this.expandParentsOfItem(index);
+    this.cdr.detectChanges();
+    this.scrollNavItemIntoViewSoon(index);
   }
 
   private scheduleRestoreRequestedNavItemSelection(): void {
@@ -3514,6 +3680,22 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     return this.items.controls.filter(item => item.get('is_required')?.value).length;
   }
 
+  getItemsPendingReviewCount(): number {
+    let pending = 0;
+
+    for (let i = 0; i < this.items.length; i++) {
+      if (this.isNavItemInvalid(i)) {
+        pending++;
+      }
+    }
+
+    return pending;
+  }
+
+  getItemsReviewedCount(): number {
+    return Math.max(0, this.items.length - this.getItemsPendingReviewCount());
+  }
+
   /**
    * Get count of photo items
    */
@@ -3560,6 +3742,8 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     } else {
       this.expandedItems.add(itemIndex);
     }
+
+    setTimeout(() => this.updateSidebarStickyAncestors(), 0);
   }
 
   /**
@@ -3607,6 +3791,75 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     return this.normalizeNavSearchTerm(this.navSearchTerm).length > 0;
   }
 
+  onSidebarNavKeydown = (event: KeyboardEvent): void => {
+    const key = event.key;
+    const isDirectionalKey = key === 'Home' || key === 'End';
+    if (!isDirectionalKey) {
+      return;
+    }
+
+    const target = event.target as HTMLElement | null;
+    const tagName = (target?.tagName || '').toLowerCase();
+    const isTextInput = tagName === 'input' || tagName === 'textarea' || tagName === 'select';
+    const isButton = tagName === 'button';
+    const isEditable = !!target?.closest('.ql-editor,[contenteditable="true"]');
+    if (isTextInput || isButton || isEditable) {
+      return;
+    }
+
+    const visibleIndices = this.getVisibleNavItemIndices();
+    if (!visibleIndices.length) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const currentIndex = this.getCurrentKeyboardNavIndex(visibleIndices);
+    let nextIndex = currentIndex;
+
+    if (key === 'Home') {
+      nextIndex = visibleIndices[0];
+    } else if (key === 'End') {
+      nextIndex = visibleIndices[visibleIndices.length - 1];
+    }
+
+    if (nextIndex === null || nextIndex < 0) {
+      return;
+    }
+
+    this.selectItem(nextIndex);
+
+    // Keep keyboard-driven selection visible in the nav pane.
+    setTimeout(() => {
+      document.getElementById(`nav-item-${nextIndex}`)?.scrollIntoView({ block: 'nearest' });
+    }, 0);
+  }
+
+  private getVisibleNavItemIndices(): number[] {
+    const visibleIndices: number[] = [];
+
+    for (let i = 0; i < this.items.length; i++) {
+      if (this.isNavItemVisible(i)) {
+        visibleIndices.push(i);
+      }
+    }
+
+    return visibleIndices;
+  }
+
+  private getCurrentKeyboardNavIndex(visibleIndices: number[]): number | null {
+    if (this.selectedFormItemIndex !== null && visibleIndices.includes(this.selectedFormItemIndex)) {
+      return this.selectedFormItemIndex;
+    }
+
+    if (this.activeNavItemIndex >= 0 && visibleIndices.includes(this.activeNavItemIndex)) {
+      return this.activeNavItemIndex;
+    }
+
+    return null;
+  }
+
   isNavItemMatch(itemIndex: number): boolean {
     return this.isNavSearchActive() && this.navSearchMatchedIndices.has(itemIndex);
   }
@@ -3636,6 +3889,203 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     }
 
     this.cdr.detectChanges();
+    setTimeout(() => this.updateSidebarStickyAncestors(), 0);
+  }
+
+  onSidebarNavScroll(): void {
+    if (this.sidebarStickyRafPending) {
+      return;
+    }
+
+    this.sidebarStickyRafPending = true;
+    requestAnimationFrame(() => {
+      this.sidebarStickyRafPending = false;
+
+      const now = performance.now();
+      if (now - this.lastSidebarStickyUpdateAt < this.sidebarStickyThrottleMs) {
+        return;
+      }
+
+      this.lastSidebarStickyUpdateAt = now;
+      this.updateSidebarStickyAncestors();
+    });
+  }
+
+  private setupSidebarNavScrollListener(attempt: number = 0): void {
+    if (this.sidebarNavScrollHandler) {
+      return;
+    }
+
+    const container = this.sidebarNavListRef?.nativeElement;
+    if (!container) {
+      if (attempt < 10) {
+        setTimeout(() => this.setupSidebarNavScrollListener(attempt + 1), 60);
+      }
+      return;
+    }
+
+    this.sidebarNavScrollHandler = () => {
+      this.onSidebarNavScroll();
+    };
+
+    this.ngZone.runOutsideAngular(() => {
+      container.addEventListener('scroll', this.sidebarNavScrollHandler as EventListener, { passive: true });
+    });
+  }
+
+  private teardownSidebarNavScrollListener(): void {
+    const container = this.sidebarNavListRef?.nativeElement;
+    if (container && this.sidebarNavScrollHandler) {
+      container.removeEventListener('scroll', this.sidebarNavScrollHandler as EventListener);
+    }
+    this.sidebarNavScrollHandler = null;
+  }
+
+  onStickyNavAncestorSelected(index: number): void {
+    this.selectItem(index);
+    setTimeout(() => this.scrollNavItemIntoView(index), 0);
+  }
+
+  private updateSidebarStickyAncestors(): void {
+    if (!this.enableStickyNavParent || !this.items.length) {
+      this.lastTopVisibleSidebarNavIndex = null;
+      this.setStickyNavAncestors([]);
+      return;
+    }
+
+    const topVisibleIndex = this.getTopVisibleSidebarNavIndex();
+    if (topVisibleIndex === null) {
+      this.lastTopVisibleSidebarNavIndex = null;
+      this.setStickyNavAncestors([]);
+      return;
+    }
+
+    // Avoid expensive ancestor recompute while scrolling unless the top visible row changed.
+    if (topVisibleIndex === this.lastTopVisibleSidebarNavIndex) {
+      return;
+    }
+
+    this.lastTopVisibleSidebarNavIndex = topVisibleIndex;
+    this.setStickyNavAncestors(this.getVisibleAncestorChain(topVisibleIndex));
+  }
+
+  private setStickyNavAncestors(next: number[]): void {
+    const signature = next.join(',');
+    if (signature === this.lastStickyAncestorSignature) {
+      return;
+    }
+
+    const applyUpdate = () => {
+      this.lastStickyAncestorSignature = signature;
+      this.stickyNavAncestorIndices = next;
+    };
+
+    if (NgZone.isInAngularZone()) {
+      applyUpdate();
+      return;
+    }
+
+    this.ngZone.run(applyUpdate);
+  }
+
+  private getTopVisibleSidebarNavIndex(): number | null {
+    const container = this.sidebarNavListRef?.nativeElement;
+    if (!container) {
+      return null;
+    }
+
+    const containerRect = container.getBoundingClientRect();
+    if (containerRect.height <= 0 || containerRect.width <= 0) {
+      return null;
+    }
+
+    const stickyContainer = container.querySelector<HTMLElement>('.tce-nav-sticky-parent');
+    const stickyBottom = stickyContainer ? stickyContainer.getBoundingClientRect().bottom : containerRect.top;
+    const probeStartY = Math.max(containerRect.top + 6, stickyBottom + 4);
+
+    // Fast path: probe a few points below sticky context near the left area.
+    const probeX = Math.min(containerRect.right - 8, Math.max(containerRect.left + 16, containerRect.left + containerRect.width * 0.35));
+    const probeOffsets = [0, 20, 40, 60];
+    for (const offset of probeOffsets) {
+      const probeY = probeStartY + offset;
+      if (probeY >= containerRect.bottom) {
+        break;
+      }
+
+      const hit = document.elementFromPoint(probeX, probeY) as HTMLElement | null;
+      const navItem = hit?.closest('.tce-nav-item[id^="nav-item-"]') as HTMLElement | null;
+      const parsed = navItem ? this.parseNavItemIndexFromId(navItem.id) : null;
+      if (parsed !== null) {
+        return parsed;
+      }
+    }
+
+    // Fallback: scan rows when probe path misses (e.g., overlays or sticky row overlap).
+    const items = Array.from(container.querySelectorAll<HTMLElement>('.tce-nav-item[id^="nav-item-"]'));
+    if (!items.length) {
+      return null;
+    }
+
+    const visibleTop = containerRect.top + 4;
+
+    for (const item of items) {
+      const rect = item.getBoundingClientRect();
+      if (rect.bottom <= visibleTop) {
+        continue;
+      }
+
+      const parsed = this.parseNavItemIndexFromId(item.id);
+      if (parsed !== null) {
+        return parsed;
+      }
+    }
+
+    return null;
+  }
+
+  private parseNavItemIndexFromId(id: string): number | null {
+    const parsed = Number((id || '').replace('nav-item-', ''));
+    return Number.isInteger(parsed) ? parsed : null;
+  }
+
+  private getVisibleAncestorChain(targetIndex: number): number[] {
+    const targetLevel = Number(this.items.at(targetIndex)?.get('level')?.value || 0);
+    if (targetLevel <= 0) {
+      return [];
+    }
+
+    const ancestors: number[] = [];
+    let expectedParentLevel = targetLevel - 1;
+
+    // Walk backward and capture direct parent chain only (O(n) without recursive visibility checks).
+    for (let index = targetIndex - 1; index >= 0 && expectedParentLevel >= 0; index--) {
+      const level = Number(this.items.at(index)?.get('level')?.value || 0);
+      if (level === expectedParentLevel) {
+        ancestors.unshift(index);
+        expectedParentLevel -= 1;
+      }
+    }
+
+    return ancestors;
+  }
+
+  private scrollNavItemIntoView(index: number): void {
+    document.getElementById(`nav-item-${index}`)?.scrollIntoView({ block: 'nearest' });
+  }
+
+  private scrollNavItemIntoViewSoon(index: number, attempt: number = 0): void {
+    const navItem = document.getElementById(`nav-item-${index}`);
+    if (navItem) {
+      navItem.scrollIntoView({ block: 'nearest' });
+      return;
+    }
+
+    const maxAttempts = 8;
+    if (attempt >= maxAttempts) {
+      return;
+    }
+
+    setTimeout(() => this.scrollNavItemIntoViewSoon(index, attempt + 1), 60);
   }
 
   clearNavSearch(): void {
@@ -4018,6 +4468,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
     this.teardownIntersectionObserver();
     this.teardownScrollListener();
+    this.teardownSidebarNavScrollListener();
 
     this.routeParamSub?.unsubscribe();
     this.routeQueryParamSub?.unsubscribe();
@@ -5589,7 +6040,6 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
    */
   private async saveImportedTemplate(): Promise<void> {
     if (this.templateForm.invalid) {
-      console.warn('Template form is invalid, cannot auto-save');
       return;
     }
 
@@ -5618,22 +6068,18 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
     const templateData = this.templateForm.value;
 
-    // DEBUG: Log first 5 items to see their parent_id and level values
-        templateData.items.slice(0, 5).forEach((item: any, idx: number) => {
-          });
-
-    // DEBUG: Verify sub-items are in the data being auto-saved
-        // Log summary instead of full data to avoid console spam
-    const itemsWithImages = templateData.items.filter((item: any) => item.sample_image_url).length;
-        // Check for potentially truncated data URLs
-    templateData.items.forEach((item: any, idx: number) => {
-      if (item.sample_image_url && item.sample_image_url.startsWith('data:')) {
-        const urlLength = item.sample_image_url.length;
-        if (urlLength < 1000) {
-          console.warn(`⚠️ Item ${idx + 1} has suspiciously short data URL (${urlLength} chars) - may be truncated!`);
-        }
+    // Check for potentially truncated data URLs; summarize once to avoid console spam.
+    const suspiciousDataUrlCount = templateData.items.reduce((count: number, item: any) => {
+      const sampleImageUrl = item?.sample_image_url;
+      if (sampleImageUrl && sampleImageUrl.startsWith('data:') && sampleImageUrl.length < 1000) {
+        return count + 1;
       }
-    });
+      return count;
+    }, 0);
+
+    if (suspiciousDataUrlCount > 0) {
+      console.warn(`Detected ${suspiciousDataUrlCount} potentially truncated data URL image(s) during import auto-save.`);
+    }
 
     // Save to server
     if (!templateData.created_by) {
