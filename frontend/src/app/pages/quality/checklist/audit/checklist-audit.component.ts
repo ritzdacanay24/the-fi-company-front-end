@@ -6,19 +6,13 @@ import { PhotoChecklistConfigService, ChecklistInstance } from '@app/core/api/ph
 import { ShareReportModalComponent } from '../instance/components/share-report/share-report-modal.component';
 
 interface AuditSearchCriteria {
-  partNumber: string;
   serialNumber: string;
-  workOrderNumber: string;
-  templateName: string;
-  dateFrom: string;
-  dateTo: string;
-  status: string;
-  operator: string;
 }
 
 interface AuditResult {
   instance: ChecklistInstance;
   photos: AuditPhoto[];
+  detailsLoaded: boolean;
   templateInfo: {
     name: string;
     description: string;
@@ -50,14 +44,7 @@ interface AuditPhoto {
 export class ChecklistAuditComponent implements OnInit {
   // Search criteria
   searchCriteria: AuditSearchCriteria = {
-    partNumber: '',
-    serialNumber: '',
-    workOrderNumber: '',
-    templateName: '',
-    dateFrom: '',
-    dateTo: '',
-    status: '',
-    operator: ''
+    serialNumber: ''
   };
 
   // Results
@@ -105,12 +92,7 @@ export class ChecklistAuditComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    // Set default date range to last 30 days
-    const today = new Date();
-    const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
-    
-    this.searchCriteria.dateTo = today.toISOString().split('T')[0];
-    this.searchCriteria.dateFrom = thirtyDaysAgo.toISOString().split('T')[0];
+    // Intentionally empty - no default filters for serial-only search.
   }
 
   // ==============================================
@@ -119,7 +101,7 @@ export class ChecklistAuditComponent implements OnInit {
 
   async performSearch() {
     if (!this.isSearchValid()) {
-      alert('Please provide at least one search criteria (Part Number, Serial Number, or Work Order).');
+      alert('Please enter a serial number to search.');
       return;
     }
 
@@ -137,6 +119,7 @@ export class ChecklistAuditComponent implements OnInit {
       this.auditResults = instances.map(instance => ({
         instance: instance,
         photos: [], // Will be loaded on demand when viewing details
+        detailsLoaded: false,
         templateInfo: {
           name: instance.template_name || 'Unknown Template',
           description: instance.template_description || '',
@@ -154,11 +137,7 @@ export class ChecklistAuditComponent implements OnInit {
   }
 
   private isSearchValid(): boolean {
-    return !!(
-      this.searchCriteria.partNumber || 
-      this.searchCriteria.serialNumber || 
-      this.searchCriteria.workOrderNumber
-    );
+    return !!this.searchCriteria.serialNumber?.trim();
   }
 
   private async searchInstances(): Promise<ChecklistInstance[]> {
@@ -179,6 +158,7 @@ export class ChecklistAuditComponent implements OnInit {
         const auditResult: AuditResult = {
           instance: detailedInstance,
           photos: this.extractPhotosForAudit(detailedInstance),
+          detailsLoaded: true,
           templateInfo: {
             name: detailedInstance.template_name || 'Unknown Template',
             description: detailedInstance.template_description || '',
@@ -247,7 +227,61 @@ export class ChecklistAuditComponent implements OnInit {
       });
     }
 
-    return photos;
+    if (photos.length > 0) {
+      return photos;
+    }
+
+    return this.extractPhotosFromItemCompletion(instance);
+  }
+
+  private extractPhotosFromItemCompletion(instance: any): AuditPhoto[] {
+    const completionRaw = instance?.item_completion;
+    const completionEntries: any[] = Array.isArray(completionRaw)
+      ? completionRaw
+      : (completionRaw && typeof completionRaw === 'object' ? Object.values(completionRaw) : []);
+
+    if (!completionEntries.length) {
+      return [];
+    }
+
+    const parsedPhotos = completionEntries
+      .map((entry: any, index: number): AuditPhoto | null => {
+        const photoMeta = entry?.photoMeta || entry?.photo_meta || {};
+        const photoMetaUrls = photoMeta && typeof photoMeta === 'object'
+          ? Object.keys(photoMeta).filter((url) => !!url)
+          : [];
+
+        const explicitPhotoUrls = Array.isArray(entry?.photoUrls)
+          ? entry.photoUrls.filter((url: string) => !!url)
+          : [];
+
+        const photoUrls = [...photoMetaUrls, ...explicitPhotoUrls].filter((url, idx, arr) => arr.indexOf(url) === idx);
+
+        if (!photoUrls.length) {
+          return null;
+        }
+
+        const rawItemId = String(entry?.itemId || entry?.item_id || '');
+        const idSegments = rawItemId.split('_');
+        const trailingSegment = idSegments[idSegments.length - 1];
+        const numericItemId = Number(trailingSegment);
+
+        return {
+          itemId: Number.isFinite(numericItemId) ? numericItemId : index + 1,
+          itemTitle: rawItemId ? `Item ${trailingSegment}` : `Item ${index + 1}`,
+          itemDescription: '',
+          photoUrls,
+          sampleImageUrl: '',
+          sampleImages: [],
+          notes: entry?.notes || '',
+          completedAt: entry?.completedAt || entry?.lastModifiedAt || '',
+          photoRequirements: {},
+          isRequired: false
+        };
+      })
+      .filter((entry): entry is AuditPhoto => !!entry);
+
+    return parsedPhotos;
   }
 
   // ==============================================
@@ -256,14 +290,7 @@ export class ChecklistAuditComponent implements OnInit {
 
   clearSearch() {
     this.searchCriteria = {
-      partNumber: '',
-      serialNumber: '',
-      workOrderNumber: '',
-      templateName: '',
-      dateFrom: this.searchCriteria.dateFrom,
-      dateTo: this.searchCriteria.dateTo,
-      status: '',
-      operator: ''
+      serialNumber: ''
     };
     this.auditResults = [];
     this.searchPerformed = false;
@@ -274,17 +301,20 @@ export class ChecklistAuditComponent implements OnInit {
     this.viewMode = 'gallery';
     
     // Load detailed data for all results if not already loaded
-    const resultsNeedingDetails = this.auditResults.filter(result => result.photos.length === 0);
+    const resultsNeedingDetails = this.auditResults.filter(result => !result.detailsLoaded);
     
     if (resultsNeedingDetails.length > 0) {
       this.loading = true;
       try {
         for (const result of resultsNeedingDetails) {
-          const detailedInstance = await this.photoChecklistService.getInstance(result.instance.id).toPromise();
-          result.photos = this.extractPhotosForAudit(detailedInstance);
-          
-          // Update instance with detailed data
-          result.instance = detailedInstance;
+          try {
+            const detailedInstance = await this.photoChecklistService.getInstance(result.instance.id).toPromise();
+            result.photos = this.extractPhotosForAudit(detailedInstance);
+            result.instance = detailedInstance;
+          } finally {
+            // Mark complete even when no photos exist, so UI does not stay in loading state.
+            result.detailsLoaded = true;
+          }
         }
       } catch (error) {
         console.error('Error loading detailed data for gallery view:', error);
@@ -305,6 +335,7 @@ export class ChecklistAuditComponent implements OnInit {
       this.selectedResult = {
         instance: detailedInstance,
         photos: this.extractPhotosForAudit(detailedInstance),
+        detailsLoaded: true,
         templateInfo: {
           name: detailedInstance.template_name || 'Unknown Template',
           description: detailedInstance.template_description || '',

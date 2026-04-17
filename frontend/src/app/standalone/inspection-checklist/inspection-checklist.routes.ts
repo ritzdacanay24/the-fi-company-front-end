@@ -36,6 +36,14 @@ export const INSPECTION_CHECKLIST_STANDALONE_ROUTES: Routes = [
           ),
       },
       {
+        path: 'reports',
+        title: 'Checklist Reports',
+        loadComponent: () =>
+          import('../../pages/quality/checklist/reports/checklist-reports.component').then(
+            (c) => c.ChecklistReportsComponent,
+          ),
+      },
+      {
         path: 'template-manager',
         title: 'Checklist Template Manager',
         loadComponent: () =>

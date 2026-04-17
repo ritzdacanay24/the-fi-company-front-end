@@ -41,6 +41,9 @@
                 [(ngModel)]="templateSearch" (ngModelChange)="onTemplateSearch($event)">
               <i class="ri-search-2-line"></i>
             </div>
+            <button class="btn btn-outline-primary" [routerLink]="['../reports']" [relativeTo]="route" title="Open checklist reports">
+              <i class="mdi mdi-chart-bar me-1"></i>Reports
+            </button>
             <button class="btn btn-outline-secondary" (click)="loadData()" title="Refresh">
               <i class="mdi mdi-refresh"></i>
             </button>

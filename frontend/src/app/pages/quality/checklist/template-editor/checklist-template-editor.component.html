@@ -550,7 +550,6 @@
 
                       <!-- Description -->
                       <div class="mb-3">
-                        <label class="form-label">Description <span class="text-muted fw-normal">(optional)</span></label>
                         <div class="border rounded">
                           <quill-editor formControlName="description" [modules]="quillConfig"
                             (onContentChanged)="onQuillContentChanged($event)"
@@ -587,6 +586,16 @@
                                 <input class="form-check-input" type="checkbox" formControlName="is_required" [id]="'required-' + selectedFormItemIndex">
                                 <label class="form-check-label" [for]="'required-' + selectedFormItemIndex">Required</label>
                               </div>
+                            </div>
+
+                            <div class="d-flex align-items-center gap-2 mt-2">
+                              <div class="form-check form-switch mb-0">
+                                <input class="form-check-input" type="checkbox" formControlName="needs_media_upload" [id]="'needs-media-' + selectedFormItemIndex">
+                              </div>
+                              <label class="small text-muted mb-0" [for]="'needs-media-' + selectedFormItemIndex">Needs media follow-up</label>
+                            </div>
+                            <div class="small text-muted mt-1">
+                              Mark this if sample photo/video is not ready yet and you need to return later.
                             </div>
                           </div>
                         </div>

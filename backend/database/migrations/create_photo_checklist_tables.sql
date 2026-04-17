@@ -36,6 +36,10 @@ CREATE TABLE IF NOT EXISTS checklist_items (
     description TEXT,
     photo_requirements JSON,
     sample_image_url VARCHAR(500),
+    sample_videos JSON,
+    sample_video_url TEXT,
+    submission_type ENUM('photo', 'video', 'audio', 'either', 'none') DEFAULT 'photo',
+    needs_media_upload BOOLEAN DEFAULT FALSE,
     is_required BOOLEAN DEFAULT TRUE,
     validation_rules JSON,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -43,7 +47,9 @@ CREATE TABLE IF NOT EXISTS checklist_items (
     
     FOREIGN KEY (template_id) REFERENCES checklist_templates(id) ON DELETE CASCADE,
     INDEX idx_template_order (template_id, order_index),
-    INDEX idx_required (is_required)
+    INDEX idx_required (is_required),
+    INDEX idx_submission_type (submission_type),
+    INDEX idx_needs_media_upload (needs_media_upload)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ==============================================

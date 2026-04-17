@@ -56,9 +56,14 @@ CREATE TABLE IF NOT EXISTS checklist_items (
     level TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Hierarchy level: 0=parent/root, 1=child/sub-item',
     title VARCHAR(500) NOT NULL COMMENT 'Item title/name',
     description TEXT COMMENT 'Detailed instructions for this inspection item',
+    submission_type ENUM('photo', 'video', 'audio', 'either', 'none') DEFAULT 'photo' COMMENT 'Required submission mode for this item',
     photo_requirements JSON COMMENT 'JSON object defining photo capture requirements',
     sample_image_url VARCHAR(500) COMMENT 'Single primary sample image URL (preferred format)',
     sample_images JSON COMMENT 'Array of sample images (legacy/extended support)',
+    video_requirements JSON COMMENT 'JSON object defining video capture requirements',
+    sample_video_url TEXT COMMENT 'Single primary sample video URL',
+    sample_videos JSON COMMENT 'Array of sample/reference videos',
+    needs_media_upload BOOLEAN DEFAULT FALSE COMMENT 'Flag indicating required sample media is still missing',
     is_required BOOLEAN DEFAULT TRUE COMMENT 'Whether this item must be completed',
     validation_rules JSON COMMENT 'Additional validation rules (JSON)',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -68,7 +73,9 @@ CREATE TABLE IF NOT EXISTS checklist_items (
     INDEX idx_template_order (template_id, order_index),
     INDEX idx_parent (parent_id),
     INDEX idx_level (level),
-    INDEX idx_required (is_required)
+    INDEX idx_required (is_required),
+    INDEX idx_submission_type (submission_type),
+    INDEX idx_needs_media_upload (needs_media_upload)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Individual inspection items with hierarchical support';
 

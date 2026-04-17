@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { randomBytes } from 'crypto';
 import { RowDataPacket } from 'mysql2/promise';
 import { PhotoChecklistRepository } from './photo-checklist.repository';
 
@@ -22,12 +23,12 @@ type ChecklistItemNode = Record<string, unknown> & {
 export class PhotoChecklistService {
   constructor(private readonly repository: PhotoChecklistRepository) {}
 
-  async getTemplates() {
-    return this.repository.getTemplates();
+  async getTemplates(options?: { includeInactive?: boolean; includeDeleted?: boolean }) {
+    return this.repository.getTemplates(options);
   }
 
-  async getTemplateById(id: number) {
-    const template = await this.repository.getTemplateById(id);
+  async getTemplateById(id: number, options?: { includeInactive?: boolean; includeDeleted?: boolean }) {
+    const template = await this.repository.getTemplateById(id, options);
     if (!template) {
       throw new NotFoundException({
         code: 'RC_CHECKLIST_TEMPLATE_NOT_FOUND',
@@ -59,6 +60,265 @@ export class PhotoChecklistService {
     return {
       success: true,
       instance_id: insertId,
+    };
+  }
+
+  async createTemplate(payload: Record<string, unknown>) {
+    const templateId = await this.repository.createTemplate(payload);
+    const template = await this.getTemplateById(templateId, { includeInactive: true });
+    return { success: true, template_id: templateId, template };
+  }
+
+  async updateTemplate(id: number, payload: Record<string, unknown>) {
+    await this.repository.updateTemplate(id, payload);
+    const template = await this.getTemplateById(id, { includeInactive: true });
+    return { success: true, template_id: id, template };
+  }
+
+  async deleteTemplate(id: number) {
+    const result = await this.repository.deleteTemplate(id);
+    if (result.activeInstances > 0) {
+      return {
+        success: false,
+        error: 'ACTIVE_INSTANCES_EXIST',
+        instance_count: result.activeInstances,
+        message: 'Template has active checklist instances',
+      };
+    }
+
+    return { success: true };
+  }
+
+  async hardDeleteTemplate(id: number) {
+    await this.repository.hardDeleteTemplate(id);
+    return { success: true };
+  }
+
+  async discardDraft(id: number) {
+    await this.repository.discardDraft(id);
+    return { success: true, template_id: id };
+  }
+
+  async restoreTemplate(id: number) {
+    await this.repository.restoreTemplate(id);
+    return { success: true, template_id: id };
+  }
+
+  async createParentVersion(sourceTemplateId: number) {
+    const newTemplateId = await this.repository.createParentVersion(sourceTemplateId);
+    if (!newTemplateId) {
+      throw new NotFoundException({
+        code: 'RC_CHECKLIST_TEMPLATE_NOT_FOUND',
+        message: `Checklist template with id ${sourceTemplateId} not found`,
+      });
+    }
+
+    const template = await this.getTemplateById(newTemplateId, { includeInactive: true });
+    return { success: true, template_id: newTemplateId, template };
+  }
+
+  async getTemplateHistory(options: { groupId?: number; templateId?: number }) {
+    return this.repository.getTemplateHistory(options);
+  }
+
+  async compareTemplates(sourceId: number, targetId: number) {
+    return this.repository.compareTemplates(sourceId, targetId);
+  }
+
+  async searchInstances(criteria: {
+    partNumber?: string;
+    serialNumber?: string;
+    workOrderNumber?: string;
+    templateName?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    status?: string;
+    operator?: string;
+  }) {
+    return this.repository.searchInstances(criteria);
+  }
+
+  async getInstanceById(id: number) {
+    const instance = await this.repository.getInstanceById(id);
+    if (!instance) {
+      throw new NotFoundException({
+        code: 'RC_CHECKLIST_INSTANCE_NOT_FOUND',
+        message: `Checklist instance with id ${id} not found`,
+      });
+    }
+
+    return instance;
+  }
+
+  async updateInstance(id: number, payload: Record<string, unknown>) {
+    await this.repository.updateInstance(id, payload);
+    return { success: true };
+  }
+
+  async updateInstanceItemCompletion(instanceId: number, itemId: number, payload: Record<string, unknown>) {
+    await this.repository.updateInstanceItemCompletion(instanceId, itemId, payload);
+    return { success: true, instance_id: instanceId, item_id: itemId };
+  }
+
+  async deleteInstance(id: number) {
+    await this.repository.deleteInstance(id);
+    return { success: true };
+  }
+
+  async listShareTokens(instanceId: number) {
+    const tokens = await this.repository.getShareTokensByInstanceId(instanceId);
+    return { success: true, tokens };
+  }
+
+  async createShareToken(payload: {
+    instance_id: number;
+    visible_item_ids?: number[] | null;
+    label?: string | null;
+    expires_at?: string | null;
+    created_by?: number | null;
+    created_by_name?: string | null;
+  }) {
+    const instanceId = Number(payload.instance_id || 0);
+    if (!instanceId) {
+      throw new NotFoundException({
+        code: 'RC_CHECKLIST_INSTANCE_NOT_FOUND',
+        message: 'Checklist instance not found',
+      });
+    }
+
+    const instance = await this.repository.getInstanceById(instanceId);
+    if (!instance) {
+      throw new NotFoundException({
+        code: 'RC_CHECKLIST_INSTANCE_NOT_FOUND',
+        message: `Checklist instance with id ${instanceId} not found`,
+      });
+    }
+
+    const token = randomBytes(24).toString('hex');
+    const visibleItemIds = Array.isArray(payload.visible_item_ids) && payload.visible_item_ids.length
+      ? payload.visible_item_ids.map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0)
+      : null;
+
+    await this.repository.createShareToken({
+      token,
+      instanceId,
+      visibleItemIds,
+      label: payload.label || null,
+      expiresAt: payload.expires_at || null,
+      createdBy: payload.created_by ?? null,
+      createdByName: payload.created_by_name ?? null,
+    });
+
+    return {
+      success: true,
+      token,
+      expires_at: payload.expires_at || null,
+      label: payload.label || '',
+    };
+  }
+
+  async deleteShareToken(id: number) {
+    await this.repository.deleteShareToken(id);
+    return { success: true };
+  }
+
+  async getPublicReport(token: string) {
+    const row = await this.repository.getActiveShareToken(token);
+    if (!row) {
+      throw new NotFoundException({
+        code: 'RC_REPORT_NOT_FOUND',
+        message: 'Report not found or link has expired.',
+      });
+    }
+
+    await this.repository.incrementShareTokenAccess(token);
+
+    const instanceId = Number(row.instance_id);
+    const templateId = Number(row.template_id);
+    const visibleItemIds = this.safeParseJson<number[] | null>(row.visible_item_ids, null);
+
+    let items = await this.repository.getChecklistItemsByTemplateId(templateId);
+    if (Array.isArray(visibleItemIds) && visibleItemIds.length) {
+      const visibleSet = new Set(visibleItemIds.map((id) => Number(id)));
+      items = items.filter((item) => visibleSet.has(Number(item.id)));
+    }
+
+    const mediaRows = await this.repository.getPhotoSubmissionsByInstanceId(instanceId);
+    const mediaByItemId = new Map<number, RowDataPacket[]>();
+    for (const media of mediaRows) {
+      const itemId = Number(media.item_id || 0);
+      if (!mediaByItemId.has(itemId)) {
+        mediaByItemId.set(itemId, []);
+      }
+      mediaByItemId.get(itemId)?.push(media);
+    }
+
+    const itemCompletionEntries = this.safeParseJson<any[]>(row.item_completion, []);
+    const itemCompletionById = new Map<number, any>();
+    for (const entry of itemCompletionEntries) {
+      const baseItemId = this.extractBaseItemId(entry?.itemId);
+      if (baseItemId > 0) {
+        itemCompletionById.set(baseItemId, entry);
+      }
+    }
+
+    const instanceDone = ['completed', 'submitted'].includes(String(row.status || ''));
+    const mergedItems = items.map((item) => {
+      const itemId = Number(item.id || 0);
+      const media = mediaByItemId.get(itemId) || [];
+      const photos = media.filter((entry) => String(entry.file_type || '') !== 'video');
+      const videos = media.filter((entry) => String(entry.file_type || '') === 'video');
+      const completion = itemCompletionById.get(itemId) || null;
+      const hasMedia = photos.length > 0 || videos.length > 0;
+      const isCompleted = completion && Object.prototype.hasOwnProperty.call(completion, 'completed')
+        ? !!completion.completed || (instanceDone && hasMedia)
+        : hasMedia || instanceDone;
+
+      return {
+        ...item,
+        photo_requirements: this.safeParseJson(item.photo_requirements, null),
+        links: this.safeParseJson(item.links, []),
+        submission_type: item.submission_type || null,
+        photos: photos.map((photo) => {
+          const meta = this.safeParseJson<Record<string, unknown> | null>(photo.photo_metadata, null);
+          return {
+            url: photo.file_url,
+            source: meta && typeof meta === 'object' ? (meta['capture_source'] as string | null) : null,
+          };
+        }),
+        videos: videos.map((video) => video.file_url),
+        notes: completion?.notes || '',
+        completed: isCompleted,
+        completed_at: completion?.completedAt || null,
+        completed_by: completion?.completedByName || null,
+        last_modified_at: completion?.lastModifiedAt || null,
+        last_modified_by: completion?.lastModifiedByName || null,
+      };
+    });
+
+    return {
+      success: true,
+      token,
+      label: row.label || null,
+      expires_at: row.expires_at || null,
+      instance: {
+        id: instanceId,
+        work_order_number: row.work_order_number,
+        part_number: row.part_number,
+        serial_number: row.serial_number,
+        operator_name: row.operator_name,
+        status: row.status,
+        progress_percentage: row.progress_percentage,
+        template_name: row.template_name,
+        template_description: row.template_description,
+        template_version: row.template_version,
+        customer_name: row.customer_name,
+        submitted_at: row.submitted_at,
+        completed_at: row.completed_at,
+        created_at: row.instance_created_at,
+      },
+      items: mergedItems,
+      total_items: mergedItems.length,
     };
   }
 
@@ -119,5 +379,14 @@ export class PhotoChecklistService {
     } catch {
       return fallback;
     }
+  }
+
+  private extractBaseItemId(rawItemId: unknown): number {
+    if (typeof rawItemId === 'string' && rawItemId.includes('_')) {
+      const parts = rawItemId.split('_');
+      return Number(parts[parts.length - 1] || 0);
+    }
+
+    return Number(rawItemId || 0);
   }
 }

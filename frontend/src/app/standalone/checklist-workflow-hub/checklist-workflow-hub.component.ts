@@ -28,6 +28,14 @@ export class ChecklistWorkflowHubComponent {
       tone: 'success'
     },
     {
+      title: 'Reports',
+      description: 'Visual dashboard for status distribution, progress trends, and operator/template performance.',
+      link: '/inspection-checklist/reports',
+      icon: 'mdi-chart-areaspline',
+      button: 'Open Reports',
+      tone: 'primary'
+    },
+    {
       title: 'Template Manager',
       description: 'Maintain published templates and start revisions for controlled updates.',
       link: '/inspection-checklist/template-manager',

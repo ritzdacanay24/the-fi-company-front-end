@@ -5,13 +5,6 @@
       <!-- Page Header with Context -->
       <div class="mb-4">
         <div class="d-flex align-items-center mb-3">
-          <button 
-            type="button" 
-            class="btn btn-outline-secondary me-3"
-            [routerLink]="['/quality/checklist']"
-            title="Back to Checklists">
-            <i class="mdi mdi-arrow-left me-2"></i>Back to Checklists
-          </button>
           <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
             <i class="mdi mdi-database-search text-white fs-4"></i>
           </div>
@@ -21,18 +14,6 @@
           </div>
         </div>
         
-        <div class="alert alert-primary border-primary border-opacity-25 bg-primary bg-opacity-10" role="alert">
-          <div class="d-flex align-items-start">
-            <i class="mdi mdi-information text-primary me-3 mt-1 fs-5"></i>
-            <div>
-              <h6 class="alert-heading text-primary mb-2">Audit Search System</h6>
-              <p class="mb-0">
-                Search checklist instances by <strong>part number</strong>, <strong>serial number</strong>, or <strong>work order</strong>
-                to generate comprehensive quality reports and customer documentation.
-              </p>
-            </div>
-          </div>
-        </div>
       </div>
 
       <div class="card shadow-sm border-0">
@@ -49,21 +30,9 @@
             </div>
           </div>
 
-          <!-- Primary Search Fields -->
+          <!-- Serial Search Field -->
           <div class="row g-3 align-items-end">
-            <div class="col-md-4">
-              <label class="form-label fw-semibold text-muted small">Part Number</label>
-              <div class="form-icon">
-                <input type="text" 
-                       class="form-control form-control-icon custom-select"
-                       [(ngModel)]="searchCriteria.partNumber"
-                       placeholder="e.g., VWL-03513-210">
-                <i class="mdi mdi-cube-outline"></i>
-              </div>
-              <small class="text-muted">Search by exact or partial part number</small>
-            </div>
-            
-            <div class="col-md-4">
+            <div class="col-md-6 col-lg-5">
               <label class="form-label fw-semibold text-muted small">Serial Number</label>
               <div class="form-icon">
                 <input type="text" 
@@ -73,63 +42,6 @@
                 <i class="mdi mdi-barcode"></i>
               </div>
               <small class="text-muted">Search by exact or partial serial number</small>
-            </div>
-            
-            <div class="col-md-4">
-              <label class="form-label fw-semibold text-muted small">Work Order</label>
-              <div class="form-icon">
-                <input type="text" 
-                       class="form-control form-control-icon custom-select"
-                       [(ngModel)]="searchCriteria.workOrderNumber"
-                       placeholder="e.g., WO-2024-001">
-                <i class="mdi mdi-file-document-outline"></i>
-              </div>
-              <small class="text-muted">Search by work order number</small>
-            </div>
-          </div>
-
-          <!-- Additional Filters -->
-          <div class="row g-3 align-items-end mt-3">
-            <div class="col-md-3">
-              <label class="form-label fw-semibold text-muted small">Template Name</label>
-              <input type="text" 
-                     class="form-control custom-select"
-                     [(ngModel)]="searchCriteria.templateName"
-                     placeholder="Template name...">
-            </div>
-            
-            <div class="col-md-2">
-              <label class="form-label fw-semibold text-muted small">Status</label>
-              <select class="form-select custom-select" 
-                      [(ngModel)]="searchCriteria.status">
-                <option value="">All Status</option>
-                <option value="draft">Draft</option>
-                <option value="in_progress">In Progress</option>
-                <option value="completed">Completed</option>
-                <option value="submitted">Submitted</option>
-              </select>
-            </div>
-            
-            <div class="col-md-2">
-              <label class="form-label fw-semibold text-muted small">Date From</label>
-              <input type="date" 
-                     class="form-control custom-select"
-                     [(ngModel)]="searchCriteria.dateFrom">
-            </div>
-            
-            <div class="col-md-2">
-              <label class="form-label fw-semibold text-muted small">Date To</label>
-              <input type="date" 
-                     class="form-control custom-select"
-                     [(ngModel)]="searchCriteria.dateTo">
-            </div>
-            
-            <div class="col-md-3">
-              <label class="form-label fw-semibold text-muted small">Operator</label>
-              <input type="text" 
-                     class="form-control custom-select"
-                     [(ngModel)]="searchCriteria.operator"
-                     placeholder="Operator name...">
             </div>
           </div>
 
@@ -148,7 +60,7 @@
             <div class="text-muted">
               <small>
                 <i class="mdi mdi-information-outline me-1"></i>
-                Search requires at least one primary field (Part Number, Serial Number, or Work Order)
+                Search requires a serial number
               </small>
             </div>
           </div>
@@ -322,12 +234,17 @@
               </div>
               
               <!-- Photos content -->
-              <div *ngIf="result.photos.length === 0 && !loading" class="text-center py-4">
+              <div *ngIf="!result.detailsLoaded" class="text-center py-4">
                 <i class="mdi mdi-loading mdi-spin text-primary mb-2" style="font-size: 2rem;"></i>
                 <p class="text-muted">Loading photo details...</p>
               </div>
+
+              <div *ngIf="result.detailsLoaded && result.photos.length === 0" class="text-center py-4">
+                <i class="mdi mdi-camera-off-outline text-muted mb-2" style="font-size: 2rem;"></i>
+                <p class="text-muted mb-0">No photo details found for this checklist.</p>
+              </div>
               
-              <div *ngIf="result.photos.length > 0">
+              <div *ngIf="result.detailsLoaded && result.photos.length > 0">
                 <div *ngFor="let photo of result.photos" class="border-bottom pb-3 mb-3" [hidden]="!hasPhotos(photo)">
                   <div class="row">
                     <div class="col-md-3" *ngIf="getPrimarySampleImage(photo) as sampleImage">
@@ -571,10 +488,9 @@
                   Search Tips
                 </h6>
                 <ul class="mb-0 text-start">
-                  <li>Use <strong>Part Number</strong> to find all instances for a specific product</li>
                   <li>Use <strong>Serial Number</strong> to track a specific unit's quality history</li>
-                  <li>Use <strong>Work Order</strong> to review all checklists for a manufacturing run</li>
-                  <li>Combine criteria for more specific results</li>
+                  <li>Use partial serial text if you are not sure about the full value</li>
+                  <li>Switch between Summary and Gallery to review results faster</li>
                 </ul>
               </div>
             </div>

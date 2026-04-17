@@ -1,6 +1,6 @@
 import {
   Component, OnInit, AfterViewInit, Input, Output, EventEmitter,
-  ChangeDetectorRef, ViewChild, TemplateRef
+  ChangeDetectorRef, ViewChild, TemplateRef, OnChanges, SimpleChanges
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -27,7 +27,7 @@ export interface ShareReportToken {
   templateUrl: './share-report-modal.component.html',
   styleUrls: ['./share-report-modal.component.scss']
 })
-export class ShareReportModalComponent implements OnInit, AfterViewInit {
+export class ShareReportModalComponent implements OnInit, OnChanges, AfterViewInit {
   @ViewChild('shareReportModal') modalTemplate!: TemplateRef<any>;
   @Input() instanceId!: number;
   @Input() items: any[] = [];      // ChecklistItemProgress[] from parent
@@ -38,11 +38,14 @@ export class ShareReportModalComponent implements OnInit, AfterViewInit {
   step: 'select' | 'generating' | 'done' | 'list' = 'select';
 
   // Item selection
+  workingItems: any[] = [];
   selectedItemIds: Set<number> = new Set();
   itemSearch = '';
   activePreviewItemId: number | null = null;
   activePreviewMediaUrl: string | null = null;
   activePreviewMediaType: 'image' | 'video' | null = null;
+  private photoUrlCache = new Map<number, string[]>();
+  private videoUrlCache = new Map<number, string[]>();
 
   // Options
   label = '';
@@ -62,7 +65,7 @@ export class ShareReportModalComponent implements OnInit, AfterViewInit {
   // Error
   errorMsg: string | null = null;
 
-  private readonly apiUrl = '/photo-checklist/inspection-report.php';
+  private readonly apiUrl = 'apiv2/inspection-checklist';
 
   constructor(
     private http: HttpClient,
@@ -72,16 +75,17 @@ export class ShareReportModalComponent implements OnInit, AfterViewInit {
   ) {}
 
   ngOnInit(): void {
-    // Default: all items selected
-    this.items.forEach(p => {
-      const baseId = this.getBaseId(p);
-      if (baseId) this.selectedItemIds.add(Number(baseId));
-    });
-    const firstItem = this.selectableItemsWithMediaFirst[0];
-    if (firstItem) {
-      this.setActivePreviewItem(firstItem);
-    }
+    this.syncSelectableItems(true);
     this.loadExistingTokens();
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['items'] || changes['instance']) {
+      this.syncSelectableItems();
+    }
+    if (changes['instanceId'] && !changes['instanceId'].firstChange) {
+      this.loadExistingTokens();
+    }
   }
 
   ngAfterViewInit(): void {
@@ -104,7 +108,7 @@ export class ShareReportModalComponent implements OnInit, AfterViewInit {
 
   get selectableItems(): any[] {
     // Include all flattened checklist items (top-level + nested)
-    return this.items || [];
+    return this.workingItems || [];
   }
 
   get selectableItemsWithMediaFirst(): any[] {
@@ -206,11 +210,22 @@ export class ShareReportModalComponent implements OnInit, AfterViewInit {
   }
 
   getPhotoUrls(progress: any): string[] {
+    const baseId = this.getBaseId(progress);
+    if (baseId && this.photoUrlCache.has(baseId)) {
+      return this.photoUrlCache.get(baseId) || [];
+    }
+
     const progressPhotos = Array.isArray(progress?.photos) ? progress.photos : [];
     const itemPhotos = Array.isArray(progress?.item?.photos) ? progress.item.photos : [];
-    const merged = [...progressPhotos, ...itemPhotos];
+    const progressPhotoMeta = progress?.photoMeta && typeof progress.photoMeta === 'object'
+      ? Object.keys(progress.photoMeta)
+      : [];
+    const itemPhotoMeta = progress?.item?.photoMeta && typeof progress.item.photoMeta === 'object'
+      ? Object.keys(progress.item.photoMeta)
+      : [];
+    const merged = [...progressPhotos, ...itemPhotos, ...progressPhotoMeta, ...itemPhotoMeta];
 
-    return merged
+    const normalized = merged
       .map((entry: any) => {
         if (typeof entry === 'string') return entry;
         return entry?.url || entry?.file_url || entry?.file_path || null;
@@ -218,14 +233,25 @@ export class ShareReportModalComponent implements OnInit, AfterViewInit {
       .map((url: string | null) => this.resolveMediaUrl(url || ''))
       .filter((url: string) => !!url)
       .filter((url: string, index: number, arr: string[]) => arr.indexOf(url) === index);
+
+    if (baseId) {
+      this.photoUrlCache.set(baseId, normalized);
+    }
+
+    return normalized;
   }
 
   getVideoUrls(progress: any): string[] {
+    const baseId = this.getBaseId(progress);
+    if (baseId && this.videoUrlCache.has(baseId)) {
+      return this.videoUrlCache.get(baseId) || [];
+    }
+
     const progressVideos = Array.isArray(progress?.videos) ? progress.videos : [];
     const itemVideos = Array.isArray(progress?.item?.videos) ? progress.item.videos : [];
     const merged = [...progressVideos, ...itemVideos];
 
-    return merged
+    const normalized = merged
       .map((entry: any) => {
         if (typeof entry === 'string') return entry;
         return entry?.url || entry?.file_url || entry?.file_path || null;
@@ -233,6 +259,17 @@ export class ShareReportModalComponent implements OnInit, AfterViewInit {
       .map((url: string | null) => this.resolveMediaUrl(url || ''))
       .filter((url: string) => !!url)
       .filter((url: string, index: number, arr: string[]) => arr.indexOf(url) === index);
+
+    if (baseId) {
+      this.videoUrlCache.set(baseId, normalized);
+    }
+
+    return normalized;
+  }
+
+  getPrimaryPhotoUrl(progress: any): string | null {
+    const photos = this.getPhotoUrls(progress);
+    return photos.length > 0 ? photos[0] : null;
   }
 
   private resolveMediaUrl(url: string): string {
@@ -273,7 +310,7 @@ export class ShareReportModalComponent implements OnInit, AfterViewInit {
   }
 
   selectAll(): void {
-    this.items.forEach(p => {
+    this.selectableItems.forEach(p => {
       const baseId = this.getBaseId(p);
       if (baseId) this.selectedItemIds.add(Number(baseId));
     });
@@ -316,11 +353,11 @@ export class ShareReportModalComponent implements OnInit, AfterViewInit {
     this.step = 'generating';
 
     // Use null (show all) only if ALL items are selected; otherwise pass array
-    const allBaseIds = this.items.map(p => this.getBaseId(p)).filter(Boolean);
+    const allBaseIds = this.selectableItems.map(p => this.getBaseId(p)).filter(Boolean);
     const selectedArr = Array.from(this.selectedItemIds);
     const visibleItemIds = selectedArr.length === allBaseIds.length ? null : selectedArr;
 
-    this.http.post<any>(`${this.apiUrl}?request=create_share_token`, {
+    this.http.post<any>(`${this.apiUrl}/share-tokens`, {
       instance_id: this.instanceId,
       visible_item_ids: visibleItemIds,
       label: this.label.trim() || null,
@@ -419,7 +456,7 @@ export class ShareReportModalComponent implements OnInit, AfterViewInit {
 
   loadExistingTokens(): void {
     this.loadingTokens = true;
-    this.http.get<any>(`${this.apiUrl}?request=list_tokens&instance_id=${this.instanceId}`).subscribe({
+    this.http.get<any>(`${this.apiUrl}/share-tokens?instance_id=${this.instanceId}`).subscribe({
       next: (res) => {
         this.existingTokens = res?.tokens || [];
         this.loadingTokens = false;
@@ -434,7 +471,7 @@ export class ShareReportModalComponent implements OnInit, AfterViewInit {
 
   revokeToken(token: ShareReportToken): void {
     if (!confirm(`Revoke link "${token.label || token.token.slice(0, 12) + '...'}"? The customer will no longer be able to access it.`)) return;
-    this.http.delete<any>(`${this.apiUrl}?request=delete_token`, { body: { id: token.id } }).subscribe({
+    this.http.delete<any>(`${this.apiUrl}/share-tokens/${token.id}`).subscribe({
       next: () => { this.loadExistingTokens(); },
       error: () => { alert('Failed to revoke link.'); }
     });
@@ -496,5 +533,190 @@ export class ShareReportModalComponent implements OnInit, AfterViewInit {
   close(): void {
     this.modalRef?.close();
     this.closed.emit();
+  }
+
+  private syncSelectableItems(selectAllWhenEmpty = false): void {
+    this.photoUrlCache.clear();
+    this.videoUrlCache.clear();
+
+    const preparedItems = this.buildSelectableItems();
+    this.workingItems = preparedItems;
+
+    const validBaseIds = new Set<number>(preparedItems.map((progress) => this.getBaseId(progress)).filter(Boolean));
+    const nextSelected = new Set<number>();
+
+    // Keep only still-valid selections.
+    this.selectedItemIds.forEach((id) => {
+      if (validBaseIds.has(id)) {
+        nextSelected.add(id);
+      }
+    });
+
+    // First load (or when selection became invalid): default to all selected.
+    if ((selectAllWhenEmpty || this.selectedItemIds.size > 0) && nextSelected.size === 0 && validBaseIds.size > 0) {
+      validBaseIds.forEach((id) => nextSelected.add(id));
+    }
+
+    this.selectedItemIds = nextSelected;
+
+    if (!this.activePreviewItemId || !validBaseIds.has(this.activePreviewItemId)) {
+      const firstItem = this.selectableItemsWithMediaFirst[0];
+      if (firstItem) {
+        this.setActivePreviewItem(firstItem);
+      } else {
+        this.activePreviewItemId = null;
+        this.activePreviewMediaUrl = null;
+        this.activePreviewMediaType = null;
+      }
+    }
+  }
+
+  private buildSelectableItems(): any[] {
+    const directItems = Array.isArray(this.items) ? this.items.filter(Boolean) : [];
+    if (directItems.length > 0) {
+      return directItems;
+    }
+
+    const fallbackItems = this.buildItemsFromInstanceData();
+    return fallbackItems;
+  }
+
+  private buildItemsFromInstanceData(): any[] {
+    const instanceItems = Array.isArray(this.instance?.items) ? this.instance.items : [];
+    const completionRaw = this.instance?.item_completion;
+
+    let completionEntries: any[] = [];
+    if (Array.isArray(completionRaw)) {
+      completionEntries = completionRaw;
+    } else if (typeof completionRaw === 'string' && completionRaw.trim()) {
+      try {
+        const parsed = JSON.parse(completionRaw);
+        if (Array.isArray(parsed)) {
+          completionEntries = parsed;
+        } else if (parsed && typeof parsed === 'object') {
+          completionEntries = Object.values(parsed);
+        }
+      } catch {
+        completionEntries = [];
+      }
+    } else if (completionRaw && typeof completionRaw === 'object') {
+      completionEntries = Object.values(completionRaw);
+    }
+
+    const completionByBaseId = new Map<number, any>();
+    completionEntries.forEach((entry: any) => {
+      const baseId = this.extractBaseItemId(entry?.itemId ?? entry?.item_id ?? entry?.id);
+      if (baseId > 0) {
+        completionByBaseId.set(baseId, entry);
+      }
+    });
+
+    const instanceItemsByBaseId = new Map<number, any>();
+    instanceItems.forEach((item: any) => {
+      const baseId = this.extractBaseItemId(item?.baseItemId ?? item?.id);
+      if (baseId > 0) {
+        instanceItemsByBaseId.set(baseId, item);
+      }
+    });
+
+    const baseIds = new Set<number>([
+      ...Array.from(instanceItemsByBaseId.keys()),
+      ...Array.from(completionByBaseId.keys())
+    ]);
+
+    const rows = Array.from(baseIds)
+      .sort((a, b) => a - b)
+      .map((baseId) => {
+        const completion = completionByBaseId.get(baseId) || {};
+        const item = instanceItemsByBaseId.get(baseId) || {};
+
+        const completionPhotos = this.collectUrlsFromAny(
+          Object.keys(completion?.photoMeta || completion?.photo_meta || {}),
+          completion?.photoUrls,
+          completion?.photos
+        );
+        const completionVideos = this.collectUrlsFromAny(
+          Object.keys(completion?.videoMeta || completion?.video_meta || {}),
+          completion?.videoUrls,
+          completion?.videos
+        );
+
+        const itemPhotos = this.collectUrlsFromAny(item?.photos);
+        const itemVideos = this.collectUrlsFromAny(item?.videos);
+
+        const photos = [...completionPhotos, ...itemPhotos]
+          .map((url) => this.resolveMediaUrl(url))
+          .filter((url, idx, arr) => !!url && arr.indexOf(url) === idx);
+
+        const videos = [...completionVideos, ...itemVideos]
+          .map((url) => this.resolveMediaUrl(url))
+          .filter((url, idx, arr) => !!url && arr.indexOf(url) === idx);
+
+        const itemId = item?.id ?? completion?.itemId ?? completion?.item_id ?? baseId;
+        const level = Number(item?.level || 0) || 0;
+
+        return {
+          item: {
+            ...item,
+            id: itemId,
+            baseItemId: baseId,
+            title: item?.title || `Item ${baseId}`,
+            description: item?.description || item?.details || '',
+            level
+          },
+          completed: !!completion?.completed,
+          notes: completion?.notes || '',
+          photos,
+          videos,
+          photoMeta: completion?.photoMeta || completion?.photo_meta || {},
+          videoMeta: completion?.videoMeta || completion?.video_meta || {},
+          completedAt: completion?.completedAt || completion?.completed_at || null,
+          completedByName: completion?.completedByName || completion?.completed_by_name || null,
+          lastModifiedAt: completion?.lastModifiedAt || completion?.last_modified_at || null,
+          lastModifiedByName: completion?.lastModifiedByName || completion?.last_modified_by_name || null
+        };
+      });
+
+    return rows;
+  }
+
+  private extractBaseItemId(rawItemId: unknown): number {
+    const raw = String(rawItemId ?? '').trim();
+    if (!raw) {
+      return 0;
+    }
+    if (raw.includes('_')) {
+      const parts = raw.split('_');
+      return Number(parts[parts.length - 1] || 0);
+    }
+    return Number(raw || 0);
+  }
+
+  private collectUrlsFromAny(...sources: any[]): string[] {
+    const out: string[] = [];
+
+    const pushUrl = (value: any) => {
+      if (!value) return;
+      if (typeof value === 'string') {
+        out.push(value);
+        return;
+      }
+      if (typeof value === 'object') {
+        const url = value.url || value.file_url || value.file_path || value.path;
+        if (url) {
+          out.push(String(url));
+        }
+      }
+    };
+
+    for (const source of sources) {
+      if (Array.isArray(source)) {
+        source.forEach(pushUrl);
+        continue;
+      }
+      pushUrl(source);
+    }
+
+    return out.filter((url, index, arr) => !!url && arr.indexOf(url) === index);
   }
 }

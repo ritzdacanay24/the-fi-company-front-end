@@ -1,0 +1,291 @@
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a routerLink="/inspection-checklist/execution">Inspection Checklist</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Reports</li>
+  </ol>
+</nav>
+
+<div class="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-3">
+  <div>
+    <h2 class="h3 mb-1 text-primary">Inspection Checklist Reports</h2>
+    <p class="text-muted mb-0">Insights from the same inspection stream used by View and Continue Active Inspection Checklists.</p>
+  </div>
+  <div class="d-flex flex-wrap align-items-center gap-2">
+    <label class="small text-muted mb-0">From</label>
+    <input class="form-control" style="width: 160px;" type="date" [(ngModel)]="dateFrom" (change)="applyFilters()" />
+    <label class="small text-muted mb-0">To</label>
+    <input class="form-control" style="width: 160px;" type="date" [(ngModel)]="dateTo" (change)="applyFilters()" />
+    <button class="btn btn-outline-primary" (click)="loadInstances()" [disabled]="loading">
+      <i class="mdi mdi-refresh me-1"></i>Refresh
+    </button>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-body py-2 d-flex flex-wrap align-items-center gap-2">
+    <div class="btn-group" role="group" aria-label="Scope filter">
+      <button class="btn btn-sm" [class.btn-primary]="scope === 'all'" [class.btn-outline-primary]="scope !== 'all'" (click)="onScopeChange('all')">
+        All
+        <span class="ms-1 badge bg-light text-dark">{{ getScopeCount('all') }}</span>
+      </button>
+      <button class="btn btn-sm" [class.btn-primary]="scope === 'active'" [class.btn-outline-primary]="scope !== 'active'" (click)="onScopeChange('active')">
+        Active
+        <span class="ms-1 badge bg-light text-dark">{{ getScopeCount('active') }}</span>
+      </button>
+      <button class="btn btn-sm" [class.btn-primary]="scope === 'mine'" [class.btn-outline-primary]="scope !== 'mine'" (click)="onScopeChange('mine')">
+        My Assignments
+        <span class="ms-1 badge bg-light text-dark">{{ getScopeCount('mine') }}</span>
+      </button>
+    </div>
+
+    <div class="ms-auto form-icon" style="width: 320px; max-width: 100%;">
+      <input
+        type="search"
+        class="form-control form-control-icon"
+        placeholder="Search work order, serial, part, template, operator"
+        [(ngModel)]="quickSearch"
+        (ngModelChange)="applyFilters()"
+      />
+      <i class="ri-search-2-line"></i>
+    </div>
+  </div>
+</div>
+
+@if (filteredInstances.length === 0 && !loading) {
+  <div class="alert alert-info border-0 shadow-sm mb-3">
+    <i class="mdi mdi-information-outline me-1"></i>
+    No inspections matched the selected filters.
+  </div>
+}
+
+<div class="row g-3 mb-3">
+  <div class="col-xl-3 col-md-6">
+    <div class="card border-0 bg-light-subtle h-100 mb-0">
+      <div class="card-body py-3">
+        <div class="d-flex align-items-center">
+          <div class="flex-shrink-0">
+            <div class="bg-primary bg-opacity-10 rounded-3 p-3">
+              <i class="las la-clipboard-list text-primary fs-3"></i>
+            </div>
+          </div>
+          <div class="flex-grow-1 ms-3">
+            <h3 class="fs-2 fw-bold mb-1 text-dark">{{ totalInspections }}</h3>
+            <p class="mb-0 text-muted">Inspections in Scope</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6">
+    <div class="card border-0 bg-light-subtle h-100 mb-0">
+      <div class="card-body py-3">
+        <div class="d-flex align-items-center">
+          <div class="flex-shrink-0">
+            <div class="bg-warning bg-opacity-10 rounded-3 p-3">
+              <i class="las la-tasks text-warning fs-3"></i>
+            </div>
+          </div>
+          <div class="flex-grow-1 ms-3">
+            <h3 class="fs-2 fw-bold mb-1 text-dark">{{ activeInspections }}</h3>
+            <p class="mb-0 text-muted">Active Inspections</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6">
+    <div class="card border-0 bg-light-subtle h-100 mb-0">
+      <div class="card-body py-3">
+        <div class="d-flex align-items-center">
+          <div class="flex-shrink-0">
+            <div class="bg-success bg-opacity-10 rounded-3 p-3">
+              <i class="las la-check-circle text-success fs-3"></i>
+            </div>
+          </div>
+          <div class="flex-grow-1 ms-3">
+            <h3 class="fs-2 fw-bold mb-1 text-dark">{{ completionRate | number: '1.0-1' }}%</h3>
+            <p class="mb-0 text-muted">Completion + Submission Rate</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6">
+    <div class="card border-0 bg-light-subtle h-100 mb-0">
+      <div class="card-body py-3">
+        <div class="d-flex align-items-center">
+          <div class="flex-shrink-0">
+            <div class="bg-info bg-opacity-10 rounded-3 p-3">
+              <i class="las la-camera text-info fs-3"></i>
+            </div>
+          </div>
+          <div class="flex-grow-1 ms-3">
+            <h3 class="fs-2 fw-bold mb-1 text-dark">{{ evidenceCoverage | number: '1.0-1' }}%</h3>
+            <p class="mb-0 text-muted">With Photo Evidence</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white"><h4 class="h6 mb-0">Status Distribution</h4></div>
+      <div class="card-body">
+        <apx-chart
+          [series]="statusDonutChart.series"
+          [chart]="statusDonutChart.chart"
+          [labels]="statusDonutChart.labels"
+          [dataLabels]="statusDonutChart.dataLabels"
+          [legend]="statusDonutChart.legend"
+          [tooltip]="statusDonutChart.tooltip"
+          [plotOptions]="statusDonutChart.plotOptions"
+          [colors]="statusDonutChart.colors"
+        ></apx-chart>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white"><h4 class="h6 mb-0">Progress Buckets</h4></div>
+      <div class="card-body">
+        <apx-chart
+          [series]="progressBucketChart.series"
+          [chart]="progressBucketChart.chart"
+          [xaxis]="progressBucketChart.xaxis"
+          [yaxis]="progressBucketChart.yaxis"
+          [dataLabels]="progressBucketChart.dataLabels"
+          [grid]="progressBucketChart.grid"
+          [stroke]="progressBucketChart.stroke"
+          [legend]="progressBucketChart.legend"
+          [tooltip]="progressBucketChart.tooltip"
+          [plotOptions]="progressBucketChart.plotOptions"
+          [colors]="progressBucketChart.colors"
+        ></apx-chart>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white"><h4 class="h6 mb-0">Top Operators by Load</h4></div>
+      <div class="card-body">
+        <apx-chart
+          [series]="operatorChart.series"
+          [chart]="operatorChart.chart"
+          [xaxis]="operatorChart.xaxis"
+          [yaxis]="operatorChart.yaxis"
+          [dataLabels]="operatorChart.dataLabels"
+          [grid]="operatorChart.grid"
+          [stroke]="operatorChart.stroke"
+          [legend]="operatorChart.legend"
+          [tooltip]="operatorChart.tooltip"
+          [plotOptions]="operatorChart.plotOptions"
+          [colors]="operatorChart.colors"
+        ></apx-chart>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-xl-7">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white">
+        <h4 class="h6 mb-0">14-Day Inspection Flow</h4>
+      </div>
+      <div class="card-body">
+        <apx-chart
+          [series]="trendChart.series"
+          [chart]="trendChart.chart"
+          [xaxis]="trendChart.xaxis"
+          [yaxis]="trendChart.yaxis"
+          [dataLabels]="trendChart.dataLabels"
+          [grid]="trendChart.grid"
+          [stroke]="trendChart.stroke"
+          [legend]="trendChart.legend"
+          [tooltip]="trendChart.tooltip"
+          [plotOptions]="trendChart.plotOptions"
+          [colors]="trendChart.colors"
+        ></apx-chart>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-5">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white">
+        <h4 class="h6 mb-0">Template Performance (Avg Progress)</h4>
+      </div>
+      <div class="card-body">
+        <apx-chart
+          [series]="templatePerformanceChart.series"
+          [chart]="templatePerformanceChart.chart"
+          [xaxis]="templatePerformanceChart.xaxis"
+          [yaxis]="templatePerformanceChart.yaxis"
+          [dataLabels]="templatePerformanceChart.dataLabels"
+          [grid]="templatePerformanceChart.grid"
+          [stroke]="templatePerformanceChart.stroke"
+          [legend]="templatePerformanceChart.legend"
+          [tooltip]="templatePerformanceChart.tooltip"
+          [plotOptions]="templatePerformanceChart.plotOptions"
+          [colors]="templatePerformanceChart.colors"
+        ></apx-chart>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mt-1">
+  <div class="col-xl-6">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white">
+        <h4 class="h6 mb-0">Most Used Templates</h4>
+      </div>
+      <div class="card-body">
+        <apx-chart
+          [series]="templateUsageChart.series"
+          [chart]="templateUsageChart.chart"
+          [xaxis]="templateUsageChart.xaxis"
+          [yaxis]="templateUsageChart.yaxis"
+          [dataLabels]="templateUsageChart.dataLabels"
+          [grid]="templateUsageChart.grid"
+          [stroke]="templateUsageChart.stroke"
+          [legend]="templateUsageChart.legend"
+          [tooltip]="templateUsageChart.tooltip"
+          [plotOptions]="templateUsageChart.plotOptions"
+          [colors]="templateUsageChart.colors"
+        ></apx-chart>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-6">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white">
+        <h4 class="h6 mb-0">Average Time to Complete by Template</h4>
+      </div>
+      <div class="card-body">
+        <apx-chart
+          [series]="templateAvgTimeChart.series"
+          [chart]="templateAvgTimeChart.chart"
+          [xaxis]="templateAvgTimeChart.xaxis"
+          [yaxis]="templateAvgTimeChart.yaxis"
+          [dataLabels]="templateAvgTimeChart.dataLabels"
+          [grid]="templateAvgTimeChart.grid"
+          [stroke]="templateAvgTimeChart.stroke"
+          [legend]="templateAvgTimeChart.legend"
+          [tooltip]="templateAvgTimeChart.tooltip"
+          [plotOptions]="templateAvgTimeChart.plotOptions"
+          [colors]="templateAvgTimeChart.colors"
+        ></apx-chart>
+      </div>
+    </div>
+  </div>
+</div>

@@ -30,7 +30,7 @@ export class InspectionReportComponent implements OnInit {
   lightboxTotalCount = 0;        // total media count for the open item
   private lightboxMedia: { url: string; type: 'image' | 'video' | 'audio'; source?: string | null; item: any }[] = [];
 
-  private readonly apiUrl = '/photo-checklist/inspection-report.php';
+  private readonly apiUrl = 'apiv2/inspection-checklist';
 
   constructor(
     private route: ActivatedRoute,
@@ -54,7 +54,7 @@ export class InspectionReportComponent implements OnInit {
     this.loading = true;
     this.error = null;
 
-    this.http.get<any>(`${this.apiUrl}?request=get_report&token=${encodeURIComponent(token)}`).subscribe({
+    this.http.get<any>(`${this.apiUrl}/share-report/${encodeURIComponent(token)}`).subscribe({
       next: (data) => {
         if (!data?.success) {
           this.error = data?.error || 'Failed to load report.';

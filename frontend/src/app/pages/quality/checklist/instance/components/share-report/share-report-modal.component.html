@@ -170,8 +170,8 @@
                           class="selected-item-row"
                           [class.is-active]="isActivePreview(progress)"
                           (click)="setActivePreviewItem(progress)">
-                    @if (getPhotoUrls(progress).length > 0) {
-                      <img [src]="getPhotoUrls(progress)[0]" alt="Item preview">
+                    @if (getPrimaryPhotoUrl(progress); as primaryPhoto) {
+                      <img [src]="primaryPhoto" alt="Item preview" loading="lazy" decoding="async" fetchpriority="low">
                     } @else {
                       <span class="selected-item-media-fallback"><i class="mdi mdi-image-off-outline"></i></span>
                     }

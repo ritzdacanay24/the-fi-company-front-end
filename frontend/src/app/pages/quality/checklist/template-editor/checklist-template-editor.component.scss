@@ -3,6 +3,7 @@
     .tce-wrapper {
       height: calc(100vh - 50px);
       overflow: hidden;
+      background: #f5f8fc;
     }
 
     .tce-sidebar {
@@ -26,6 +27,12 @@
       flex: 1;
       overflow-y: auto;
       min-height: 0;
+      background-image:
+        radial-gradient(circle at 14% 26%, rgba(59, 130, 246, 0.08) 0 64px, transparent 66px),
+        radial-gradient(circle at 86% 74%, rgba(14, 165, 233, 0.07) 0 50px, transparent 52px),
+        radial-gradient(circle at 64% 18%, rgba(37, 99, 235, 0.06) 0 24px, transparent 25px),
+        linear-gradient(180deg, #f7faff 0%, #f1f6fd 100%);
+      background-repeat: no-repeat;
     }
 
     .tce-items-list {
@@ -259,6 +266,16 @@
       min-width: 0;
     }
 
+    .tce-item-media-left {
+      min-height: 100%;
+    }
+
+    .tce-item-media-left > .mb-3 {
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
     .tce-item-media-right .form-label {
       font-weight: 600;
     }
@@ -341,6 +358,7 @@
       .tce-item-media-grid {
         display: block;
       }
+
     }
 
     .tce-link-pill-label {

@@ -2269,8 +2269,8 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       const serverVideoMeta = this.extractMediaSourceMeta(existingVideos, instanceItem?.videos || []);
 
       const localExisting = currentLocalByItemId.get(String(itemId));
-      const mergedPhotos = this.mergeMediaUrlsForUi(existingPhotos, localExisting?.photos || []);
-      const mergedVideos = this.mergeMediaUrlsForUi(existingVideos, localExisting?.videos || []);
+      let mergedPhotos = this.mergeMediaUrlsForUi(existingPhotos, localExisting?.photos || []);
+      let mergedVideos = this.mergeMediaUrlsForUi(existingVideos, localExisting?.videos || []);
       
       // Get completion status from instance item
       const { isCompleted, completedAt } = this.instanceMatcher.getCompletionStatus(instanceItem);
@@ -2334,6 +2334,22 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         (localData as any)._hydratedLastModifiedByUserId = lastModifiedByUserId;
         (localData as any)._hydratedLastModifiedByName = lastModifiedByName;
       }
+
+      // Backfill media URLs from completion payload metadata keys when explicit
+      // photo/video arrays are absent (common in item_completion snapshots).
+      const completionPhotoUrls = [
+        ...this.extractMediaUrlsFromMeta(photoMeta),
+        ...((Array.isArray((dbData as any)?.photoUrls) ? (dbData as any).photoUrls : []) as string[]),
+        ...((Array.isArray((localData as any)?.photoUrls) ? (localData as any).photoUrls : []) as string[])
+      ];
+      const completionVideoUrls = [
+        ...this.extractMediaUrlsFromMeta(videoMeta),
+        ...((Array.isArray((dbData as any)?.videoUrls) ? (dbData as any).videoUrls : []) as string[]),
+        ...((Array.isArray((localData as any)?.videoUrls) ? (localData as any).videoUrls : []) as string[])
+      ];
+
+      mergedPhotos = this.mergeMediaUrlsForUi(mergedPhotos, completionPhotoUrls);
+      mergedVideos = this.mergeMediaUrlsForUi(mergedVideos, completionVideoUrls);
 
       photoMeta = this.mergeMediaSourceMeta(mergedPhotos, photoMeta, serverPhotoMeta);
       videoMeta = this.mergeMediaSourceMeta(mergedVideos, videoMeta, serverVideoMeta);
@@ -2475,6 +2491,18 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     (localUrls || []).forEach(addUrl);
 
     return merged;
+  }
+
+  private extractMediaUrlsFromMeta(
+    meta?: Record<string, { source?: 'in-app' | 'system' | 'library' }>
+  ): string[] {
+    if (!meta || typeof meta !== 'object') {
+      return [];
+    }
+
+    return Object.keys(meta)
+      .map((url) => String(url || '').trim())
+      .filter((url) => !!url);
   }
 
   private normalizeSourceValue(raw: any): 'in-app' | 'system' | 'library' | undefined {

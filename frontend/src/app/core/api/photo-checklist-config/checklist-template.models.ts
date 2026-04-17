@@ -44,6 +44,7 @@ export interface ChecklistItemResponse {
   title: string;
   description: string;
   is_required: boolean;
+  needs_media_upload?: boolean;
   submission_type: 'photo' | 'video' | 'audio' | 'either' | 'none';
   links?: ItemLink[];
   requirements: ItemRequirements;
@@ -138,6 +139,7 @@ export interface ChecklistItemDB {
   submission_type: 'photo' | 'video' | 'audio' | 'either' | 'none';
   sample_videos: string; // JSON string
   sample_video_url: string | null;
+  needs_media_upload?: 0 | 1;
   video_requirements: string; // JSON string
   min_photos: number;
   max_photos: number;

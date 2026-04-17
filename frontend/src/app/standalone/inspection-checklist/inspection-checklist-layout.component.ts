@@ -28,7 +28,7 @@ interface MainSectionItem {
   encapsulation: ViewEncapsulation.None,
 })
 export class InspectionChecklistLayoutComponent implements OnInit {
-  currentSectionLabel = 'Workflow Hub';
+  currentSectionLabel = 'Inspection Checklist';
   isSidebarOpen = false;
 
   readonly mainSections: MainSectionItem[] = [
@@ -56,12 +56,6 @@ export class InspectionChecklistLayoutComponent implements OnInit {
 
   readonly navItems: NavItem[] = [
     {
-      label: 'Workflow Hub',
-      route: '/inspection-checklist',
-      icon: 'las la-th-large',
-      subtitle: 'Entry point for inspection board, execution, and management tools.',
-    },
-    {
       label: 'Execution List',
       route: '/inspection-checklist/execution',
       icon: 'las la-list-ul',
@@ -72,6 +66,12 @@ export class InspectionChecklistLayoutComponent implements OnInit {
       route: '/inspection-checklist/management',
       icon: 'las la-clipboard-list',
       subtitle: 'Select an active checklist to begin your inspection.',
+    },
+    {
+      label: 'Reports',
+      route: '/inspection-checklist/reports',
+      icon: 'las la-chart-bar',
+      subtitle: 'Visual analytics for status mix, progress, operator load, and template performance.',
     },
     {
       label: 'Template Manager',
@@ -149,6 +149,6 @@ export class InspectionChecklistLayoutComponent implements OnInit {
 
   private updateSectionLabel(url: string): void {
     const matched = this.navItems.find((item) => url.startsWith(item.route));
-    this.currentSectionLabel = matched ? matched.label : 'Workflow Hub';
+    this.currentSectionLabel = matched ? matched.label : 'Inspection Checklist';
   }
 }

@@ -33,6 +33,7 @@ export interface ChecklistTemplate {
   published_at?: string | null;
   active_instances?: number;
   item_count?: number;
+  pending_media_items?: number;
   version_count?: number; // Number of versions in this template family
   items?: ChecklistItem[];
   created_at: string;
@@ -68,6 +69,7 @@ export interface ChecklistItem {
   sample_image_url?: string; // Single image URL field
   sample_videos?: SampleVideoData[]; // NEW: Array of sample reference videos
   video_requirements?: VideoRequirements; // NEW: Video configuration (stored as JSON in database)
+  needs_media_upload?: boolean; // True when required sample media is missing and needs follow-up
   submission_time_seconds?: number; // NEW: Per-item submission time limit in seconds (null/0 = no limit) - for backward compatibility
   is_required: boolean;
   max_photos?: number;
@@ -187,6 +189,7 @@ export interface ChecklistConfig {
 })
 export class PhotoChecklistConfigService {
   private readonly baseUrl = '/photo-checklist/photo-checklist-config.php';
+  private readonly nestPhotoChecklistBaseUrl = 'apiv2/inspection-checklist';
   
   // Reactive state management
   private templatesSubject = new BehaviorSubject<ChecklistTemplate[]>([]);
@@ -206,36 +209,36 @@ export class PhotoChecklistConfigService {
   // ==============================================
 
   getTemplates(): Observable<ChecklistTemplate[]> {
-    return this.http.get<ChecklistTemplate[]>(`${this.baseUrl}?request=templates`).pipe(
+    return this.http.get<ChecklistTemplate[]>(`${this.nestPhotoChecklistBaseUrl}/templates`).pipe(
       tap(templates => this.templatesSubject.next(templates))
     );
   }
 
   getTemplatesIncludingInactive(): Observable<ChecklistTemplate[]> {
-    return this.http.get<ChecklistTemplate[]>(`${this.baseUrl}?request=templates&include_inactive=1`).pipe(
+    return this.http.get<ChecklistTemplate[]>(`${this.nestPhotoChecklistBaseUrl}/templates?include_inactive=1`).pipe(
       tap(templates => this.templatesSubject.next(templates))
     );
   }
 
   getTemplatesIncludingDeleted(): Observable<ChecklistTemplate[]> {
-    return this.http.get<ChecklistTemplate[]>(`${this.baseUrl}?request=templates&include_deleted=1`);
+    return this.http.get<ChecklistTemplate[]>(`${this.nestPhotoChecklistBaseUrl}/templates?include_deleted=1`);
   }
 
   getTemplate(id: number): Observable<ChecklistTemplate> {
-    return this.http.get<ChecklistTemplate>(`${this.baseUrl}?request=template&id=${id}`);
+    return this.http.get<ChecklistTemplate>(`${this.nestPhotoChecklistBaseUrl}/templates/${id}`);
   }
 
   getTemplateIncludingInactive(id: number): Observable<ChecklistTemplate> {
-    return this.http.get<ChecklistTemplate>(`${this.baseUrl}?request=template&id=${id}&include_inactive=1`);
+    return this.http.get<ChecklistTemplate>(`${this.nestPhotoChecklistBaseUrl}/templates/${id}?include_inactive=1`);
   }
 
   getTemplateIncludingDeleted(id: number): Observable<ChecklistTemplate> {
-    return this.http.get<ChecklistTemplate>(`${this.baseUrl}?request=template&id=${id}&include_deleted=1`);
+    return this.http.get<ChecklistTemplate>(`${this.nestPhotoChecklistBaseUrl}/templates/${id}?include_deleted=1`);
   }
 
   createTemplate(template: Partial<ChecklistTemplate>): Observable<{success: boolean, template_id: number, template?: ChecklistTemplate, debug?: any}> {
     return this.http.post<{success: boolean, template_id: number, template?: ChecklistTemplate, debug?: any}>(
-      `${this.baseUrl}?request=templates`, 
+      `${this.nestPhotoChecklistBaseUrl}/templates`,
       template
     ).pipe(
       tap((response) => {
@@ -250,7 +253,7 @@ export class PhotoChecklistConfigService {
 
   updateTemplate(id: number, template: Partial<ChecklistTemplate>): Observable<{success: boolean, template_id?: number, template?: ChecklistTemplate}> {
     return this.http.put<{success: boolean, template_id?: number, template?: ChecklistTemplate}>(
-      `${this.baseUrl}?request=template&id=${id}`, 
+      `${this.nestPhotoChecklistBaseUrl}/templates/${id}`,
       template
     ).pipe(
       tap(() => this.getTemplates().subscribe()) // Refresh templates list
@@ -259,7 +262,7 @@ export class PhotoChecklistConfigService {
 
   deleteTemplate(id: number): Observable<{success: boolean; error?: string; instance_count?: number; message?: string}> {
     return this.http.delete<{success: boolean; error?: string; instance_count?: number; message?: string}>(
-      `${this.baseUrl}?request=template&id=${id}`
+      `${this.nestPhotoChecklistBaseUrl}/templates/${id}`
     ).pipe(
       tap(() => this.getTemplates().subscribe()) // Refresh templates list
     );
@@ -267,7 +270,7 @@ export class PhotoChecklistConfigService {
 
   hardDeleteTemplate(id: number): Observable<{success: boolean; error?: string; instance_count?: number; submission_count?: number; child_count?: number; message?: string}> {
     return this.http.post<{success: boolean; error?: string; instance_count?: number; submission_count?: number; child_count?: number; message?: string}>(
-      `${this.baseUrl}?request=hard_delete_template&id=${id}`,
+      `${this.nestPhotoChecklistBaseUrl}/templates/${id}/hard-delete`,
       {}
     ).pipe(
       tap(() => this.getTemplatesIncludingInactive().subscribe())
@@ -276,7 +279,7 @@ export class PhotoChecklistConfigService {
 
   discardDraft(id: number): Observable<{success: boolean; error?: string; instance_count?: number; message?: string; template_id?: number}> {
     return this.http.post<{success: boolean; error?: string; instance_count?: number; message?: string; template_id?: number}>(
-      `${this.baseUrl}?request=discard_draft&id=${id}`,
+      `${this.nestPhotoChecklistBaseUrl}/templates/${id}/discard-draft`,
       {}
     ).pipe(
       tap(() => this.getTemplates().subscribe())
@@ -285,7 +288,7 @@ export class PhotoChecklistConfigService {
 
   createParentVersion(sourceTemplateId: number): Observable<{success: boolean; template_id?: number; template?: ChecklistTemplate; error?: string; message?: string}> {
     return this.http.post<{success: boolean; template_id?: number; template?: ChecklistTemplate; error?: string; message?: string}>(
-      `${this.baseUrl}?request=create_parent_version&id=${sourceTemplateId}`,
+      `${this.nestPhotoChecklistBaseUrl}/templates/${sourceTemplateId}/create-parent-version`,
       {}
     ).pipe(
       tap(() => this.getTemplatesIncludingInactive().subscribe())
@@ -294,7 +297,7 @@ export class PhotoChecklistConfigService {
 
   restoreTemplate(id: number): Observable<{success: boolean; message?: string; template_id?: number}> {
     return this.http.post<{success: boolean; message?: string; template_id?: number}>(
-      `${this.baseUrl}?request=restore_template&id=${id}`,
+      `${this.nestPhotoChecklistBaseUrl}/templates/${id}/restore`,
       {}
     ).pipe(
       tap(() => this.getTemplates().subscribe())
@@ -304,21 +307,21 @@ export class PhotoChecklistConfigService {
   // Get version history for a template group
   getTemplateHistory(groupId: number): Observable<any[]> {
     return this.http.get<any[]>(
-      `${this.baseUrl}?request=template_history&group_id=${groupId}`
+      `${this.nestPhotoChecklistBaseUrl}/templates/history?group_id=${groupId}`
     );
   }
 
   // Get version changes for a specific template
   getTemplateVersionChanges(templateId: number): Observable<any[]> {
     return this.http.get<any[]>(
-      `${this.baseUrl}?request=template_history&template_id=${templateId}`
+      `${this.nestPhotoChecklistBaseUrl}/templates/history?template_id=${templateId}`
     );
   }
 
   // Compare two templates and get changes
   compareTemplates(sourceId: number, targetId: number): Observable<any> {
     return this.http.get<any>(
-      `${this.baseUrl}?request=compare_templates&source_id=${sourceId}&target_id=${targetId}`
+      `${this.nestPhotoChecklistBaseUrl}/templates/compare?source_id=${sourceId}&target_id=${targetId}`
     );
   }
 
@@ -410,13 +413,18 @@ export class PhotoChecklistConfigService {
   // ==============================================
 
   getInstances(filters?: {status?: string, work_order?: string}): Observable<ChecklistInstance[]> {
-    let url = `${this.baseUrl}?request=instances`;
+    let url = `${this.nestPhotoChecklistBaseUrl}/instances`;
     
+    const params: string[] = [];
     if (filters?.status) {
-      url += `&status=${filters.status}`;
+      params.push(`status=${encodeURIComponent(filters.status)}`);
     }
     if (filters?.work_order) {
-      url += `&work_order=${filters.work_order}`;
+      params.push(`work_order=${encodeURIComponent(filters.work_order)}`);
+    }
+
+    if (params.length > 0) {
+      url += `?${params.join('&')}`;
     }
     
     return this.http.get<ChecklistInstance[]>(url).pipe(
@@ -435,7 +443,7 @@ export class PhotoChecklistConfigService {
     status?: string;
     operator?: string;
   }): Observable<ChecklistInstance[]> {
-    let url = `${this.baseUrl}?request=search_instances`;
+    let url = `${this.nestPhotoChecklistBaseUrl}/instances/search`;
     const params: string[] = [];
     
     if (criteria.partNumber) {
@@ -464,19 +472,19 @@ export class PhotoChecklistConfigService {
     }
     
     if (params.length > 0) {
-      url += '&' + params.join('&');
+      url += '?' + params.join('&');
     }
     
     return this.http.get<ChecklistInstance[]>(url);
   }
 
   getInstance(id: number): Observable<ChecklistInstance> {
-    return this.http.get<ChecklistInstance>(`${this.baseUrl}?request=instance&id=${id}`);
+    return this.http.get<ChecklistInstance>(`${this.nestPhotoChecklistBaseUrl}/instances/${id}`);
   }
 
   createInstance(instance: Partial<ChecklistInstance>): Observable<{success: boolean, instance_id: number}> {
     return this.http.post<{success: boolean, instance_id: number}>(
-      `${this.baseUrl}?request=instances`, 
+      `${this.nestPhotoChecklistBaseUrl}/instances`,
       instance
     ).pipe(
       tap(() => this.getInstances().subscribe()) // Refresh instances list
@@ -485,7 +493,7 @@ export class PhotoChecklistConfigService {
 
   updateInstance(id: number, updates: Partial<ChecklistInstance>): Observable<{success: boolean}> {
     return this.http.put<{success: boolean}>(
-      `${this.baseUrl}?request=instance&id=${id}`, 
+      `${this.nestPhotoChecklistBaseUrl}/instances/${id}`,
       updates
     ).pipe(
       tap(() => this.getInstances().subscribe()) // Refresh instances list
@@ -505,7 +513,7 @@ export class PhotoChecklistConfigService {
     }
   ): Observable<{ success: boolean; instance_id?: number; item_id?: number; error?: string }> {
     return this.http.post<{ success: boolean; instance_id?: number; item_id?: number; error?: string }>(
-      `${this.baseUrl}?request=instance_item_completion&id=${instanceId}`,
+      `${this.nestPhotoChecklistBaseUrl}/instances/${instanceId}/item-completion`,
       {
         item_id: itemId,
         ...payload,
@@ -519,7 +527,7 @@ export class PhotoChecklistConfigService {
 
   deleteInstance(id: number): Observable<{success: boolean; message?: string; error?: string}> {
     return this.http.delete<{success: boolean; message?: string; error?: string}>(
-      `${this.baseUrl}?request=instance&id=${id}`
+      `${this.nestPhotoChecklistBaseUrl}/instances/${id}`
     ).pipe(
       tap(() => this.getInstances().subscribe())
     );
@@ -741,7 +749,7 @@ export class PhotoChecklistConfigService {
   // Share Report / Public Links
   // ==============================================
 
-  private readonly reportUrl = '/photo-checklist/inspection-report.php';
+  private readonly reportUrl = 'apiv2/inspection-checklist';
 
   createShareToken(payload: {
     instance_id: number;
@@ -749,18 +757,18 @@ export class PhotoChecklistConfigService {
     label?: string;
     expires_at?: string | null;
   }): Observable<{ success: boolean; token: string; expires_at: string | null; label: string }> {
-    return this.http.post<any>(`${this.reportUrl}?request=create_share_token`, payload);
+    return this.http.post<any>(`${this.reportUrl}/share-tokens`, payload);
   }
 
   listShareTokens(instanceId: number): Observable<{ success: boolean; tokens: any[] }> {
-    return this.http.get<any>(`${this.reportUrl}?request=list_tokens&instance_id=${instanceId}`);
+    return this.http.get<any>(`${this.reportUrl}/share-tokens?instance_id=${instanceId}`);
   }
 
   deleteShareToken(id: number): Observable<{ success: boolean }> {
-    return this.http.delete<any>(`${this.reportUrl}?request=delete_token`, { body: { id } });
+    return this.http.delete<any>(`${this.reportUrl}/share-tokens/${id}`);
   }
 
   getPublicReport(token: string): Observable<any> {
-    return this.http.get<any>(`${this.reportUrl}?request=get_report&token=${encodeURIComponent(token)}`);
+    return this.http.get<any>(`${this.reportUrl}/share-report/${encodeURIComponent(token)}`);
   }
 }

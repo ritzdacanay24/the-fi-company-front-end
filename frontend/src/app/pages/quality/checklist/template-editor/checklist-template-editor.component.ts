@@ -208,6 +208,8 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   private requestedNavItemIndex: number | null = null;
   private pendingUrlItemRestore = false;
   private restoreNavSelectionTimeout: ReturnType<typeof setTimeout> | null = null;
+  private pendingSelectedItemQueryParamTimeout: ReturnType<typeof setTimeout> | null = null;
+  private pendingStickyAncestorsRaf = false;
   editorNavItems: ChecklistNavItem[] = [];
 
   // Quill editor configuration
@@ -1106,6 +1108,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       title: [item?.title || '', Validators.required],
       description: [item?.description || ''],
       is_required: [item?.is_required !== undefined ? item.is_required : true],
+      needs_media_upload: [item?.needs_media_upload !== undefined ? !!item.needs_media_upload : false],
       order_index: [item?.order_index || this.items.length + 1],
       // TOP-LEVEL: submission_type is a separate ENUM column in database (photo, video, either)
       submission_type: [this.getItemSubmissionType(item)],
@@ -1164,6 +1167,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       description: item.description || '',
       order_index: item.order_index,
       is_required: item.is_required !== undefined ? item.is_required : true,
+      needs_media_upload: item.needs_media_upload !== undefined ? !!item.needs_media_upload : false,
       submission_type: this.getItemSubmissionType(item), // TOP-LEVEL: Separate ENUM column
       sample_image_url: sampleImageUrl,
       level: item.level || 0,
@@ -3028,24 +3032,44 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   selectItem(index: number): void {
     if (this.activePanel === 'item' && this.selectedFormItemIndex === index && !this.selectingItem) {
       this.updateStickyParentFromActive(index);
-      this.updateSelectedItemQueryParam(index);
-      this.updateSidebarStickyAncestors();
+      this.scheduleSelectedItemQueryParamUpdate(index);
+      this.scheduleSidebarStickyAncestorsUpdate();
       return;
     }
 
     this.updateStickyParentFromActive(index);
 
-    // Hide panel first (visibility:hidden — no layout shift), null the index to force Quill destroy/recreate,
-    // then restore. This prevents Quill from keeping stale content when formGroupName changes.
-    this.selectingItem = true;
-    this.selectedFormItemIndex = null;
+    // Fast path for INP: avoid forced destroy/recreate of the item panel on every click.
+    // Directly switch the selected form index so pointer interactions stay responsive.
     this.activePanel = 'item';
-    setTimeout(() => {
-      this.selectedFormItemIndex = index;
-      this.updateSelectedItemQueryParam(index);
-      this.selectingItem = false;
+    this.selectingItem = false;
+    this.selectedFormItemIndex = index;
+    this.scheduleSelectedItemQueryParamUpdate(index);
+    this.scheduleSidebarStickyAncestorsUpdate();
+  }
+
+  private scheduleSelectedItemQueryParamUpdate(itemIndex: number | null): void {
+    if (this.pendingSelectedItemQueryParamTimeout) {
+      clearTimeout(this.pendingSelectedItemQueryParamTimeout);
+      this.pendingSelectedItemQueryParamTimeout = null;
+    }
+
+    this.pendingSelectedItemQueryParamTimeout = setTimeout(() => {
+      this.pendingSelectedItemQueryParamTimeout = null;
+      this.updateSelectedItemQueryParam(itemIndex);
+    }, 90);
+  }
+
+  private scheduleSidebarStickyAncestorsUpdate(): void {
+    if (this.pendingStickyAncestorsRaf) {
+      return;
+    }
+
+    this.pendingStickyAncestorsRaf = true;
+    requestAnimationFrame(() => {
+      this.pendingStickyAncestorsRaf = false;
       this.updateSidebarStickyAncestors();
-    }, 0);
+    });
   }
 
   updateSelectedItemQueryParam(itemIndex: number | null): void {
@@ -4491,6 +4515,11 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     if (this.restoreNavSelectionTimeout) {
       clearTimeout(this.restoreNavSelectionTimeout);
       this.restoreNavSelectionTimeout = null;
+    }
+
+    if (this.pendingSelectedItemQueryParamTimeout) {
+      clearTimeout(this.pendingSelectedItemQueryParamTimeout);
+      this.pendingSelectedItemQueryParamTimeout = null;
     }
   }
 
