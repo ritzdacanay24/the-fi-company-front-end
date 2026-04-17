@@ -4,6 +4,7 @@ import PDFDocument from 'pdfkit';
 import { MysqlService } from '@/shared/database/mysql.service';
 import { QadOdbcService } from '@/shared/database/qad-odbc.service';
 import { EmailService } from '@/shared/email/email.service';
+import { IgtTransferEmailRecipientsService } from '../igt-transfer-email-recipients/igt-transfer-email-recipients.service';
 
 interface IgtTransferRow extends RowDataPacket {
   id: number;
@@ -67,6 +68,8 @@ export class IgtTransferService {
     private readonly qadOdbcService: QadOdbcService,
     @Inject(EmailService)
     private readonly emailService: EmailService,
+    @Inject(IgtTransferEmailRecipientsService)
+    private readonly igtTransferEmailRecipientsService: IgtTransferEmailRecipientsService,
   ) {}
 
   async getList(params: GetListParams): Promise<IgtTransferRow[]> {
@@ -163,7 +166,7 @@ export class IgtTransferService {
       throw new BadRequestException('Missing required transfer header fields');
     }
 
-    const recipients = this.resolveRecipients(main.to_location);
+    const recipients = await this.resolveRecipients(main.to_location);
     if (recipients.to.length === 0) {
       throw new BadRequestException(
         `No recipient email configured for to_location ${main.to_location}`,
@@ -216,23 +219,37 @@ export class IgtTransferService {
     return { ok: true };
   }
 
-  private resolveRecipients(toLocation: string): { to: string[]; cc: string[] } {
+  private async resolveRecipients(toLocation: string): Promise<{ to: string[]; cc: string[] }> {
+    const normalized = (toLocation || '').toUpperCase();
+    const toKey = this.getNoticeKeyForLocation(normalized);
+    if (!toKey) {
+      return { to: [], cc: [] };
+    }
+
+    const to = await this.igtTransferEmailRecipientsService.getRecipients(toKey);
+    const cc = await this.igtTransferEmailRecipientsService.getRecipients(`${toKey}_cc`);
+
+    // Keep legacy fallback for Z024 CC if no dedicated DB key exists.
+    const resolvedCc = cc.length > 0
+      ? cc
+      : normalized === 'Z024'
+        ? this.parseEmails('ritz.dacanay@the-fi-company.com')
+        : [];
+
+    return { to, cc: resolvedCc };
+  }
+
+  private getNoticeKeyForLocation(toLocation: string): string | null {
     const normalized = (toLocation || '').toUpperCase();
     if (normalized === 'R200') {
-      return {
-        to: this.parseEmails(process.env.IGT_TRANSFER_R200_TO || ''),
-        cc: [],
-      };
+      return 'igt_transfer_location_R200';
     }
 
     if (normalized === 'Z024') {
-      return {
-        to: this.parseEmails(process.env.IGT_TRANSFER_Z024_TO || ''),
-        cc: this.parseEmails(process.env.IGT_TRANSFER_Z024_CC || 'ritz.dacanay@the-fi-company.com'),
-      };
+      return 'igt_transfer_location_Z024';
     }
 
-    return { to: [], cc: [] };
+    return null;
   }
 
   private parseEmails(csv: string): string[] {

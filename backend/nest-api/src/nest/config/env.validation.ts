@@ -12,6 +12,7 @@ export const envValidationSchema = Joi.object({
   SMTP_SECURE: Joi.boolean().optional(),
   SMTP_USER: Joi.string().allow('').optional(),
   SMTP_PASSWORD: Joi.string().allow('').optional(),
+  DEV_EMAIL_REROUTE_TO: Joi.string().allow('').optional(),
   MAIL_FROM: Joi.string().allow('').optional(),
   IGT_TRANSFER_R200_TO: Joi.string().allow('').optional(),
   IGT_TRANSFER_Z024_TO: Joi.string().allow('').optional(),
