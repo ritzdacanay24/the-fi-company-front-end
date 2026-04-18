@@ -263,6 +263,11 @@ export class ShippingRequestListComponent implements OnInit {
     this.getData();
   }
 
+  onSearch($event: Event) {
+    const value = ($event.target as HTMLInputElement).value;
+    this.gridApi?.setGridOption('quickFilterText', value);
+  }
+
   gridOptions: GridOptions = {
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {

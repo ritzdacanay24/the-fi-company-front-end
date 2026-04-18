@@ -30,19 +30,14 @@
       <div class="card shadow-sm border-0">
         <div class="card-header">
           <div class="d-flex align-items-center flex-wrap gap-3">
-            <div class="form-icon">
-              <app-date-range (setDateRange)="onChangeDate($event)" [value]="dateRange" [disabled]="this.isAll || disable"
-                [displayOptions]="true"></app-date-range>
+            <div class="position-relative" style="width: 280px;">
+              <i class="las la-search position-absolute text-muted" style="top: 50%; left: 10px; transform: translateY(-50%);"></i>
+              <input type="text" class="form-control" style="padding-left: 32px;" placeholder="Search..." (input)="onSearch($event)">
             </div>
             <ng-select [dropdownPosition]="'bottom'" [searchable]="false" bindLabel="name" bindValue="name"
               [clearable]="false" [items]="selectedViewOptions" [(ngModel)]="selectedViewType"
               (change)="getData()" style="width:150px" [appendTo]="'body'">
             </ng-select>
-            <div class="form-check form-switch form-switch-md">
-              <input class="form-check-input" type="checkbox" id="flexSwitchCheckDefault" [(ngModel)]="isAll"
-                (change)="getData()" [disabled]="disable">
-              <label class="form-check-label" for="flexSwitchCheckDefault">Show All</label>
-            </div>
             <button class="btn btn-outline-secondary" (click)="getData()" title="Refresh data">
               <i class="las la-sync me-1"></i>Refresh
             </button>
