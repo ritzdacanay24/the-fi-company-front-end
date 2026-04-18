@@ -5,17 +5,18 @@ import { NgSelectModule } from "@ng-select/ng-select";
 import { AgGridModule } from "ag-grid-angular";
 
 import { ActivatedRoute, Router } from "@angular/router";
-import moment from "moment";
 import { MrbService } from "@app/core/api/quality/mrb-service";
 import { NAVIGATION_ROUTE } from "../mrb-constant";
-import { DateRangeComponent } from "@app/shared/components/date-range/date-range.component";
 import { SharedModule } from "@app/shared/shared.module";
 import { highlightRowView, autoSizeColumns } from "src/assets/js/util";
 import {
   _compressToEncodedURIComponent,
   _decompressFromEncodedURIComponent,
 } from "src/assets/js/util/jslzString";
-import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
+import { GridFiltersComponent } from "@app/shared/grid-filters/grid-filters.component";
+import { GridSettingsComponent } from "@app/shared/grid-settings/grid-settings.component";
+import { BreadcrumbComponent, BreadcrumbItem } from "@app/shared/components/breadcrumb/breadcrumb.component";
+import { MrbActionsCellRendererComponent } from "../mrb-actions-cell-renderer.component";
 
 @Component({
   standalone: true,
@@ -24,7 +25,10 @@ import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link
     ReactiveFormsModule,
     NgSelectModule,
     AgGridModule,
-    DateRangeComponent,
+    GridSettingsComponent,
+    GridFiltersComponent,
+    BreadcrumbComponent,
+    MrbActionsCellRendererComponent,
   ],
   selector: "app-mrb-list",
   templateUrl: "./mrb-list.component.html",
@@ -38,14 +42,7 @@ export class MrbListComponent implements OnInit {
 
   ngOnInit(): void {
     this.activatedRoute.queryParams.subscribe((params) => {
-      this.dateFrom = params["dateFrom"] || this.dateFrom;
-      this.dateTo = params["dateTo"] || this.dateTo;
-      this.dateRange = [this.dateFrom, this.dateTo];
-
       this.id = params["id"];
-      this.isAll = params["isAll"]
-        ? params["isAll"].toLocaleLowerCase() === "true"
-        : this.isAll;
       this.selectedViewType =
         params["selectedViewType"] || this.selectedViewType;
     });
@@ -55,43 +52,37 @@ export class MrbListComponent implements OnInit {
 
   columnDefs: ColDef[] = [
     {
-      field: "View",
-      headerName: "View",
-      filter: "agMultiColumnFilter",
+      field: "Actions",
+      headerName: "Actions",
+      filter: false,
+      sortable: false,
       pinned: "left",
-      cellRenderer: LinkRendererV2Component,
+      cellRenderer: MrbActionsCellRendererComponent,
       cellRendererParams: {
-        onClick: (e: any) => this.onEdit(e.rowData.id),
-        value: "SELECT",
+        onEdit: (data: any) => this.onEdit(data.id),
       },
-      maxWidth: 115,
-      minWidth: 115,
+      maxWidth: 100,
+      minWidth: 100,
     },
-    { field: "id", headerName: "ID", filter: "agMultiColumnFilter" },
+    { field: "id", headerName: "ID", filter: "agMultiColumnFilter", hide: true },
     {
-      field: "comments",
-      headerName: "Comments",
-      filter: "agMultiColumnFilter",
-      maxWidth: 200,
-    },
-    {
-      field: "componentType",
-      headerName: "Component Type",
+      field: "mrbNumber",
+      headerName: "MRB Number",
       filter: "agMultiColumnFilter",
     },
     {
-      field: "createdBy",
-      headerName: "Created By",
+      field: "partNumber",
+      headerName: "Part Number",
       filter: "agMultiColumnFilter",
     },
     {
-      field: "createdDate",
-      headerName: "Created Date",
+      field: "partDescription",
+      headerName: "Part Description",
       filter: "agMultiColumnFilter",
     },
     {
-      field: "dateReported",
-      headerName: "Date Reported",
+      field: "qtyRejected",
+      headerName: "Qty Rejected",
       filter: "agMultiColumnFilter",
     },
     {
@@ -105,53 +96,74 @@ export class MrbListComponent implements OnInit {
       filter: "agMultiColumnFilter",
     },
     {
+      field: "type",
+      headerName: "Type",
+      filter: "agMultiColumnFilter",
+    },
+    {
+      field: "wo_so",
+      headerName: "WO/SO",
+      filter: "agMultiColumnFilter",
+    },
+    {
+      field: "dateReported",
+      headerName: "Date Reported",
+      filter: "agMultiColumnFilter",
+    },
+    {
+      field: "createdDate",
+      headerName: "Created Date",
+      filter: "agMultiColumnFilter",
+    },
+    {
+      field: "comments",
+      headerName: "Comments",
+      filter: "agMultiColumnFilter",
+      maxWidth: 200,
+    },
+    {
+      field: "componentType",
+      headerName: "Component Type",
+      filter: "agMultiColumnFilter",
+      hide: true,
+    },
+    {
+      field: "createdBy",
+      headerName: "Created By",
+      filter: "agMultiColumnFilter",
+      hide: true,
+    },
+    {
       field: "firstApproval",
       headerName: "First Approval",
       filter: "agMultiColumnFilter",
+      hide: true,
+    },
+    {
+      field: "secondApproval",
+      headerName: "Second Approval",
+      filter: "agMultiColumnFilter",
+      hide: true,
     },
     {
       field: "itemCost",
       headerName: "Item Cost",
       filter: "agMultiColumnFilter",
+      hide: true,
     },
     {
       field: "lotNumber",
       headerName: "Lot Number",
       filter: "agMultiColumnFilter",
-    },
-    {
-      field: "mrbNumber",
-      headerName: "MRB Number",
-      filter: "agMultiColumnFilter",
-    },
-    {
-      field: "partDescription",
-      headerName: "Part Description",
-      filter: "agMultiColumnFilter",
-    },
-    {
-      field: "partNumber",
-      headerName: "Part Number",
-      filter: "agMultiColumnFilter",
+      hide: true,
     },
     {
       field: "qirNumber",
       headerName: "QIR Number",
       filter: "agMultiColumnFilter",
+      hide: true,
     },
-    {
-      field: "qtyRejected",
-      headerName: "Qty Rejected",
-      filter: "agMultiColumnFilter",
-    },
-    { field: "rma", headerName: "RMA", filter: "agMultiColumnFilter" },
-    {
-      field: "secondApproval",
-      headerName: "Second Approval",
-      filter: "agMultiColumnFilter",
-    },
-    { field: "type", headerName: "Type", filter: "agMultiColumnFilter" },
-    { field: "wo_so", headerName: "WO/SO", filter: "agMultiColumnFilter" },
+    { field: "rma", headerName: "RMA", filter: "agMultiColumnFilter", hide: true },
   ];
 
   @Input() selectedViewType = "Open";
@@ -175,6 +187,10 @@ export class MrbListComponent implements OnInit {
 
   title = "MRB List";
 
+  pageId = "/quality/mrb";
+
+  searchName = "";
+
   gridApi: GridApi;
 
   data: any[];
@@ -182,21 +198,6 @@ export class MrbListComponent implements OnInit {
   id = null;
 
   isAll = true;
-
-  changeIsAll() {}
-
-  dateFrom = moment()
-    .subtract(1, "months")
-    .startOf("month")
-    .format("YYYY-MM-DD");
-  dateTo = moment().endOf("month").format("YYYY-MM-DD");
-  dateRange = [this.dateFrom, this.dateTo];
-
-  onChangeDate($event) {
-    this.dateFrom = $event["dateFrom"];
-    this.dateTo = $event["dateTo"];
-    this.getData();
-  }
 
   gridOptions: GridOptions = {
     columnDefs: this.columnDefs,
@@ -250,17 +251,14 @@ export class MrbListComponent implements OnInit {
 
       this.data = await this.api.getList(
         this.selectedViewType,
-        this.dateFrom,
-        this.dateTo,
-        this.isAll
+        null,
+        null,
+        true
       );
 
       this.router.navigate(["."], {
         queryParams: {
           selectedViewType: this.selectedViewType,
-          isAll: this.isAll,
-          dateFrom: this.dateFrom,
-          dateTo: this.dateTo,
         },
         relativeTo: this.activatedRoute,
         queryParamsHandling: "merge",
@@ -270,5 +268,12 @@ export class MrbListComponent implements OnInit {
     } catch (err) {
       this.gridApi?.hideOverlay();
     }
+  }
+
+  breadcrumbItems(): BreadcrumbItem[] {
+    return [
+      { label: "Quality", link: "/dashboard/quality" },
+      { label: "MRB", active: true },
+    ];
   }
 }

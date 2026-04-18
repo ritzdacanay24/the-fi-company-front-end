@@ -5,8 +5,6 @@ import { ActivatedRoute, Router } from "@angular/router";
 import { NgSelectModule } from "@ng-select/ng-select";
 import { NAVIGATION_ROUTE } from "../ticket-constant";
 import { WorkOrderService } from "@app/core/api/field-service/work-order.service";
-import moment from "moment";
-import { DateRangeComponent } from "@app/shared/components/date-range/date-range.component";
 import { highlightRowView, autoSizeColumns } from "src/assets/js/util";
 import {
   _decompressFromEncodedURIComponent,
@@ -14,15 +12,28 @@ import {
 } from "src/assets/js/util/jslzString";
 import { TicketModalService } from "../ticket-modal/ticket-modal.component";
 import { ColDef, GridApi, GridOptions } from "ag-grid-community";
-import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
+import { GridFiltersComponent } from "@app/shared/grid-filters/grid-filters.component";
+import { GridSettingsComponent } from "@app/shared/grid-settings/grid-settings.component";
+import { BreadcrumbComponent, BreadcrumbItem } from "@app/shared/components/breadcrumb/breadcrumb.component";
+import { TicketActionsCellRendererComponent } from "../ticket-actions-cell-renderer.component";
 
 @Component({
   standalone: true,
-  imports: [SharedModule, AgGridModule, NgSelectModule, DateRangeComponent],
+  imports: [SharedModule, AgGridModule, NgSelectModule, GridSettingsComponent, GridFiltersComponent, BreadcrumbComponent],
   selector: "app-ticket-list",
   templateUrl: `./ticket-list.component.html`,
 })
 export class TicketListComponent implements OnInit {
+  pageId = "/field-service/list-tickets";
+  searchName = "";
+
+  breadcrumbItems(): BreadcrumbItem[] {
+    return [
+      { label: 'Field Service', link: '/dashboard/field-service' },
+      { label: 'Tickets' },
+    ];
+  }
+
   constructor(
     private api: WorkOrderService,
     public router: Router,
@@ -32,14 +43,7 @@ export class TicketListComponent implements OnInit {
 
   ngOnInit(): void {
     this.activatedRoute.queryParams.subscribe((params) => {
-      this.dateFrom = params["dateFrom"] || this.dateFrom;
-      this.dateTo = params["dateTo"] || this.dateTo;
-      this.dateRange = [this.dateFrom, this.dateTo];
-
       this.id = params["id"];
-      this.isAll = params["isAll"]
-        ? params["isAll"].toLocaleLowerCase() === "true"
-        : this.isAll;
       this.selectedViewType =
         params["selectedViewType"] || this.selectedViewType;
     });
@@ -48,27 +52,24 @@ export class TicketListComponent implements OnInit {
 
   columnDefs: ColDef[] = [
     {
-      field: "",
-      headerName: "View",
-      filter: "agNumberColumnFilter",
-      cellRenderer: LinkRendererV2Component,
-      cellRendererParams: {
-        onClick: (e) => {
-          this.openWorkOrder(e.rowData.fs_scheduler_id);
-        },
-        value: "View",
-      },
+      field: "actions",
+      headerName: "Actions",
+      filter: false,
+      sortable: false,
       pinned: "left",
+      cellRenderer: TicketActionsCellRendererComponent,
+      cellRendererParams: {
+        onEdit: (data: any) => this.openWorkOrder(data.fs_scheduler_id),
+      },
       maxWidth: 115,
       minWidth: 115,
-      suppressHeaderMenuButton: true,
-      floatingFilter: false,
     },
-    { field: "id", headerName: "Ticket ID", filter: "agMultiColumnFilter" },
+    { field: "id", headerName: "Ticket ID", filter: "agMultiColumnFilter", hide: true },
     {
       field: "fs_scheduler_id",
       headerName: "FSID",
       filter: "agMultiColumnFilter",
+      hide: true,
     },
     {
       field: "request_date",
@@ -79,6 +80,7 @@ export class TicketListComponent implements OnInit {
       field: "createdDate",
       headerName: "Ticket Created Date",
       filter: "agMultiColumnFilter",
+      hide: true,
     },
     {
       field: "customerName1",
@@ -89,6 +91,7 @@ export class TicketListComponent implements OnInit {
       field: "dateSubmitted",
       headerName: "Date Submitted",
       filter: "agMultiColumnFilter",
+      hide: true,
     },
     {
       field: "workCompleted",
@@ -100,7 +103,6 @@ export class TicketListComponent implements OnInit {
       field: "workCompletedComment",
       headerName: "Comments",
       filter: "agMultiColumnFilter",
-      maxWidth: 300,
     },
   ];
 
@@ -138,10 +140,6 @@ export class TicketListComponent implements OnInit {
     },
   };
 
-  searchName = "";
-
-  isAll = true;
-
   selectedViewType = "Open";
 
   selectedViewOptions = [
@@ -169,54 +167,19 @@ export class TicketListComponent implements OnInit {
 
   title = "Ticket List";
 
-  dateFrom = moment().startOf("month").format("YYYY-MM-DD");
-  dateTo = moment().endOf("month").format("YYYY-MM-DD");
-  dateRange = [this.dateFrom, this.dateTo];
-
-  onChangeDate($event) {
-    this.dateFrom = $event["dateFrom"];
-    this.dateTo = $event["dateTo"];
-    this.getData();
-  }
-
-  changeIsAll() {
-    this.router.navigate(["."], {
-      relativeTo: this.activatedRoute,
-      queryParams: {
-        isAll: this.isAll,
-      },
-      queryParamsHandling: "merge",
-    });
-    this.getData();
-  }
-
   async getData() {
     try {
       this.gridApi?.showLoadingOverlay();
 
-      let params: any = {};
-      if (this.selectedViewType != "All") {
-        let status = this.selectedViewOptions.find(
-          (person) => person.name == this.selectedViewType
-        );
-        params = { active: status.value };
-      }
-
-      if (this.selectedViewType == "Open") {
-        this.isAll = true;
-      }
-
       this.data = await this.api.getAllRequests(
         this.selectedViewType,
-        this.dateFrom,
-        this.dateTo,
-        this.isAll
+        null,
+        null,
+        true
       );
 
       this.router.navigate(["."], {
         queryParams: {
-          dateFrom: this.dateFrom,
-          dateTo: this.dateTo,
           selectedViewType: this.selectedViewType,
         },
         relativeTo: this.activatedRoute,
@@ -238,15 +201,5 @@ export class TicketListComponent implements OnInit {
         gridParams,
       },
     });
-
-    // this.ticketModalService.open(id)
-    // let gridParams = _compressToEncodedURIComponent(this.gridApi);
-    // this.router.navigate([NAVIGATION_ROUTE.OVERVIEW], {
-    //   queryParamsHandling: 'merge',
-    //   queryParams: {
-    //     id: id,
-    //     gridParams
-    //   }
-    // });
   }
 }

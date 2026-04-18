@@ -1,37 +1,48 @@
-<div class="row">
-  <div class="col-lg-12">
-    <div class="card">
-      <div class="card-header">
-        <div class="d-flex align-items-center">
-          <div class="form-icon me-3">
-            <input type="search" class="form-control form-control-icon" style="width:250px"
-              (ngModelChange)="this.gridApi?.setGridOption('quickFilterText', $event);" [(ngModel)]="searchName"
-              placeholder="Search">
-            <i class="ri-search-2-line"></i>
-          </div>
+<div class="container-fluid">
+  <app-breadcrumb [items]="breadcrumbItems()"></app-breadcrumb>
 
-          <div class="me-3">
-            <app-date-range (setDateRange)="onChangeDate($event)" [value]="dateRange" [displayOptions]="true"
-              [disabled]="this.isAll"></app-date-range>
-          </div>
-          <ng-select [dropdownPosition]="'bottom'" [searchable]="false" bindLabel="name" bindValue="name"
-            [clearable]="false" [items]="selectedViewOptions" [appendTo]="'body'" [(ngModel)]="selectedViewType"
-            (change)="getData()" style="width:150px" class="me-3">
-          </ng-select>
-          <div class="form-check form-switch form-switch-md">
-            <input class="form-check-input" type="checkbox" id="flexSwitchCheckDefault" [(ngModel)]="isAll"
-              (change)="changeIsAll()">
-            <label class="form-check-label" for="flexSwitchCheckDefault">Show All</label>
-          </div>
-          <div class="ms-auto">
-            <h4 class="card-title mb-0 flex-grow-1"> {{title}} </h4>
+  <div class="row justify-content-center">
+    <div class="col-12">
+      <div class="mb-4">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div class="d-flex align-items-center">
+            <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+              <i class="mdi mdi-ticket-confirmation text-white fs-4"></i>
+            </div>
+            <div>
+              <h2 class="mb-1 text-primary">Work Order Tickets</h2>
+              <p class="text-muted mb-0">Manage and track field service work order tickets</p>
+            </div>
           </div>
         </div>
       </div>
-      <div class="card-body p-0">
-        <ag-grid-angular [gridOptions]="gridOptions" class="ag-theme-quartz no-border"
-          style="height: calc(100vh - 170px);" [rowData]="data" [columnDefs]="columnDefs">
-        </ag-grid-angular>
+
+      <div class="card shadow-sm border-0">
+        <div class="card-header">
+          <div class="d-flex align-items-center flex-wrap gap-3">
+            <div class="form-icon" style="width: 280px;">
+              <input type="search" class="form-control form-control-icon" placeholder="Search..."
+                (ngModelChange)="this.gridApi?.setGridOption('quickFilterText', $event);" [(ngModel)]="searchName">
+              <i class="ri-search-2-line"></i>
+            </div>
+            <ng-select [dropdownPosition]="'bottom'" [searchable]="false" bindLabel="name" bindValue="name"
+              [clearable]="false" [items]="selectedViewOptions" [appendTo]="'body'" [(ngModel)]="selectedViewType"
+              (change)="getData()" style="width:150px">
+            </ng-select>
+            <button class="btn btn-outline-secondary" (click)="getData()" title="Refresh data">
+              <i class="mdi mdi-refresh me-1"></i>Refresh
+            </button>
+            <div class="ms-auto d-flex gap-2">
+              <app-grid-settings [gridApi]="gridApi" [pageId]="pageId"></app-grid-settings>
+              <app-grid-filters [gridApi]="gridApi" [pageId]="pageId"></app-grid-filters>
+            </div>
+          </div>
+        </div>
+        <div class="card-body p-0">
+          <ag-grid-angular [gridOptions]="gridOptions" class="ag-theme-quartz no-border"
+            style="width: 100%; height: calc(100vh - 300px);" [rowData]="data" [columnDefs]="columnDefs">
+          </ag-grid-angular>
+        </div>
       </div>
     </div>
   </div>

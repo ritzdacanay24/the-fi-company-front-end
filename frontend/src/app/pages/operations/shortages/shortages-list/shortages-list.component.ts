@@ -5,7 +5,6 @@ import { NgSelectModule } from "@ng-select/ng-select";
 import { AgGridModule } from "ag-grid-angular";
 
 import { ActivatedRoute, Router } from "@angular/router";
-import moment from "moment";
 import { NAVIGATION_ROUTE } from "../shortages-constant";
 import { ShortagesService } from "@app/core/api/operations/shortages/shortages.service";
 import { CommentsModalService } from "@app/shared/components/comments/comments-modal.service";
@@ -27,6 +26,8 @@ import { LateReasonCodeModalService } from "@app/shared/components/last-reason-c
 import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
 import { CommentsRendererV2Component } from "@app/shared/ag-grid/comments-renderer-v2/comments-renderer-v2.component";
 import { LateReasonCodeRendererV2Component } from "@app/shared/ag-grid/cell-renderers/late-reason-code-renderer-v2/late-reason-code-renderer-v2.component";
+import { BreadcrumbComponent, BreadcrumbItem } from "@app/shared/components/breadcrumb/breadcrumb.component";
+import { ShortagesActionsCellRendererComponent } from "../shortages-actions-cell-renderer.component";
 
 @Component({
   standalone: true,
@@ -37,6 +38,8 @@ import { LateReasonCodeRendererV2Component } from "@app/shared/ag-grid/cell-rend
     AgGridModule,
     GridSettingsComponent,
     GridFiltersComponent,
+    BreadcrumbComponent,
+    ShortagesActionsCellRendererComponent,
   ],
   selector: "app-shortages-list",
   templateUrl: "./shortages-list.component.html",
@@ -56,14 +59,7 @@ export class ShortagesListComponent implements OnInit {
 
   ngOnInit(): void {
     this.activatedRoute.queryParams.subscribe((params) => {
-      this.dateFrom = params["dateFrom"] || this.dateFrom;
-      this.dateTo = params["dateTo"] || this.dateTo;
-      this.dateRange = [this.dateFrom, this.dateTo];
-
       this.id = params["id"];
-      this.isAll = params["isAll"]
-        ? params["isAll"].toLocaleLowerCase() === "true"
-        : false;
       this.selectedViewType =
         params["selectedViewType"] || this.selectedViewType;
       this.comment = params["comment"];
@@ -134,39 +130,20 @@ export class ShortagesListComponent implements OnInit {
 
   columnDefs: ColDef[] = [
     {
-      field: "View",
-      headerName: "View",
-      filter: "agMultiColumnFilter",
+      field: "Actions",
+      headerName: "Actions",
+      filter: false,
+      sortable: false,
       pinned: "left",
-      cellRenderer: LinkRendererV2Component,
+      cellRenderer: ShortagesActionsCellRendererComponent,
       cellRendererParams: {
-        onClick: (e: any) => this.onEdit(e.rowData.id),
-        value: "SELECT",
+        onView: (data: any) => this.onEdit(data.id),
+        onComment: (data: any) => this.viewComment(data.id),
       },
-      maxWidth: 115,
-      minWidth: 115,
+      maxWidth: 100,
+      minWidth: 100,
     },
-    {
-      field: "Comments",
-      headerName: "Comments",
-      filter: "agMultiColumnFilter",
-      cellRenderer: CommentsRendererV2Component,
-      cellRendererParams: {
-        onClick: (e: any) => this.viewComment(e.rowData.id),
-      },
-      valueGetter: function (params) {
-        if (params.data)
-          if (params.data.recent_comments?.bg_class_name == "bg-info") {
-            return "Has Comments";
-          }
-        if (params.data.recent_comments?.bg_class_name == "bg-success") {
-          return "New Comments";
-        } else {
-          return "No Comments";
-        }
-      },
-    },
-    { field: "id", headerName: "ID", filter: "agNumberColumnFilter" },
+    { field: "id", headerName: "ID", filter: "agNumberColumnFilter", hide: true },
     {
       field: "partNumber",
       headerName: "Short Item",
@@ -206,75 +183,6 @@ export class ShortagesListComponent implements OnInit {
       filter: "agMultiColumnFilter",
     },
     {
-      field: "deliveredCompleted",
-      headerName: "Delivered Completed",
-      filter: "agDateColumnFilter",
-      filterParams: agGridDateFilter,
-    },
-    {
-      field: "deliveredCompletedBy",
-      headerName: "Delivered Completed By",
-      filter: "agMultiColumnFilter",
-    },
-    {
-      field: "jobNumber",
-      headerName: "Job Number",
-      filter: "agMultiColumnFilter",
-    },
-    { field: "mrfId", headerName: "MRF ID", filter: "agNumberColumnFilter" },
-    {
-      field: "mrf_line",
-      headerName: "MRF Line",
-      filter: "agNumberColumnFilter",
-    },
-    {
-      field: "poNumber",
-      headerName: "PO Number",
-      filter: "agMultiColumnFilter",
-    },
-    {
-      field: "productionIssuedBy",
-      headerName: "Production Issued By",
-      filter: "agMultiColumnFilter",
-    },
-    {
-      field: "productionIssuedDate",
-      headerName: "Production Issued Date",
-      filter: "agMultiColumnFilter",
-    },
-    {
-      field: "lineNumber",
-      headerName: "Line Number",
-      filter: "agMultiColumnFilter",
-    },
-    {
-      field: "reasonPartNeeded",
-      headerName: "Reason Part Needed",
-      filter: "agMultiColumnFilter",
-    },
-    {
-      field: "receivingCompleted",
-      headerName: "Receiving Completed",
-      filter: "agDateColumnFilter",
-      filterParams: agGridDateFilter,
-    },
-    {
-      field: "receivingCompletedBy",
-      headerName: "Receiving Completed By",
-      filter: "agMultiColumnFilter",
-    },
-    {
-      field: "supplyCompleted",
-      headerName: "Supply Completed",
-      filter: "agDateColumnFilter",
-      filterParams: agGridDateFilter,
-    },
-    {
-      field: "supplyCompletedBy",
-      headerName: "Supply Completed By",
-      filter: "agMultiColumnFilter",
-    },
-    {
       field: "woNumber",
       headerName: "WO Number",
       filter: "agMultiColumnFilter",
@@ -284,12 +192,17 @@ export class ShortagesListComponent implements OnInit {
         isLink: true,
       },
     },
-    { field: "active", headerName: "Active", filter: "agMultiColumnFilter" },
     {
-      field: "active_line",
-      headerName: "Active Line",
+      field: "jobNumber",
+      headerName: "Job Number",
       filter: "agMultiColumnFilter",
     },
+    {
+      field: "poNumber",
+      headerName: "PO Number",
+      filter: "agMultiColumnFilter",
+    },
+    { field: "active", headerName: "Active", filter: "agMultiColumnFilter" },
     {
       field: "createdBy",
       headerName: "Created By",
@@ -316,6 +229,82 @@ export class ShortagesListComponent implements OnInit {
           );
         },
       },
+    },
+    {
+      field: "deliveredCompleted",
+      headerName: "Delivered Completed",
+      filter: "agDateColumnFilter",
+      filterParams: agGridDateFilter,
+      hide: true,
+    },
+    {
+      field: "deliveredCompletedBy",
+      headerName: "Delivered Completed By",
+      filter: "agMultiColumnFilter",
+      hide: true,
+    },
+    { field: "mrfId", headerName: "MRF ID", filter: "agNumberColumnFilter", hide: true },
+    {
+      field: "mrf_line",
+      headerName: "MRF Line",
+      filter: "agNumberColumnFilter",
+      hide: true,
+    },
+    {
+      field: "productionIssuedBy",
+      headerName: "Production Issued By",
+      filter: "agMultiColumnFilter",
+      hide: true,
+    },
+    {
+      field: "productionIssuedDate",
+      headerName: "Production Issued Date",
+      filter: "agMultiColumnFilter",
+      hide: true,
+    },
+    {
+      field: "lineNumber",
+      headerName: "Line Number",
+      filter: "agMultiColumnFilter",
+      hide: true,
+    },
+    {
+      field: "reasonPartNeeded",
+      headerName: "Reason Part Needed",
+      filter: "agMultiColumnFilter",
+      hide: true,
+    },
+    {
+      field: "receivingCompleted",
+      headerName: "Receiving Completed",
+      filter: "agDateColumnFilter",
+      filterParams: agGridDateFilter,
+      hide: true,
+    },
+    {
+      field: "receivingCompletedBy",
+      headerName: "Receiving Completed By",
+      filter: "agMultiColumnFilter",
+      hide: true,
+    },
+    {
+      field: "supplyCompleted",
+      headerName: "Supply Completed",
+      filter: "agDateColumnFilter",
+      filterParams: agGridDateFilter,
+      hide: true,
+    },
+    {
+      field: "supplyCompletedBy",
+      headerName: "Supply Completed By",
+      filter: "agMultiColumnFilter",
+      hide: true,
+    },
+    {
+      field: "active_line",
+      headerName: "Active Line",
+      filter: "agMultiColumnFilter",
+      hide: true,
     },
   ];
 
@@ -350,28 +339,18 @@ export class ShortagesListComponent implements OnInit {
 
   title = "Shortage List";
 
+  breadcrumbItems(): BreadcrumbItem[] {
+    return [
+      { label: "Operations", link: "/dashboard/operations" },
+      { label: "Shortages", active: true },
+    ];
+  }
+
   gridApi: GridApi;
 
   data: any[];
 
   id = null;
-
-  isAll = false;
-
-  changeIsAll() {}
-
-  dateFrom = moment()
-    .subtract(1, "months")
-    .startOf("month")
-    .format("YYYY-MM-DD");
-  dateTo = moment().endOf("month").format("YYYY-MM-DD");
-  dateRange = [this.dateFrom, this.dateTo];
-
-  onChangeDate($event) {
-    this.dateFrom = $event["dateFrom"];
-    this.dateTo = $event["dateTo"];
-    this.getData();
-  }
 
   copiedData;
   gridOptions: GridOptions = {
@@ -432,9 +411,6 @@ export class ShortagesListComponent implements OnInit {
       this.router.navigate(["."], {
         queryParams: {
           selectedViewType: this.selectedViewType,
-          isAll: this.isAll,
-          dateFrom: this.dateFrom,
-          dateTo: this.dateTo,
         },
         relativeTo: this.activatedRoute,
         queryParamsHandling: "merge",

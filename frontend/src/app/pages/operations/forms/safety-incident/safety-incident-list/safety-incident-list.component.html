@@ -1,14 +1,8 @@
 <div class="container-fluid">
+  <app-breadcrumb [items]="breadcrumbItems()"></app-breadcrumb>
+
   <div class="row justify-content-center">
     <div class="col-12">
-      <!-- Breadcrumb -->
-      <nav aria-label="breadcrumb" class="mb-3">
-        <ol class="breadcrumb mb-0">
-          <li class="breadcrumb-item"><a routerLink="/dashboard/operations">Operations</a></li>
-          <li class="breadcrumb-item"><a routerLink="/operations/forms">Forms</a></li>
-          <li class="breadcrumb-item active" aria-current="page">Safety Incidents</li>
-        </ol>
-      </nav>
 
       <!-- Page Header with Context -->
       <div class="mb-4">
@@ -42,6 +36,10 @@
               [clearable]="false" [items]="selectedViewOptions" [(ngModel)]="selectedViewType" (change)="getData()"
               style="width:150px" [appendTo]="'body'">
             </ng-select>
+
+            <button class="btn btn-outline-secondary" (click)="getData()" title="Refresh data">
+              <i class="las la-sync me-1"></i>Refresh
+            </button>
 
             <div class="ms-auto d-flex gap-2">
               <app-grid-settings [gridApi]="gridApi" [pageId]="pageId"></app-grid-settings>

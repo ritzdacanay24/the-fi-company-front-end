@@ -2,13 +2,11 @@ import { Component, Input, OnInit } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
 import { AgGridModule } from "ag-grid-angular";
 import { ColDef, GridApi, GridOptions } from "ag-grid-community";
-import moment from "moment";
 import { NAVIGATION_ROUTE } from "../job-constant";
 import { NAVIGATION_ROUTE as TICKET_NAVIGATION_ROUTE } from "../../ticket/ticket-constant";
 import { NAVIGATION_ROUTE as REQUEST_NAVIGATION_ROUTE } from "../../request/request-constant";
 import { NgSelectModule } from "@ng-select/ng-select";
 import { JobService } from "@app/core/api/field-service/job.service";
-import { DateRangeComponent } from "@app/shared/components/date-range/date-range.component";
 import { SharedModule } from "@app/shared/shared.module";
 import {
   currencyFormatter,
@@ -22,6 +20,8 @@ import {
 import { GridFiltersComponent } from "@app/shared/grid-filters/grid-filters.component";
 import { GridSettingsComponent } from "@app/shared/grid-settings/grid-settings.component";
 import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
+import { BreadcrumbComponent, BreadcrumbItem } from "@app/shared/components/breadcrumb/breadcrumb.component";
+import { JobActionsCellRendererComponent } from "../job-actions-cell-renderer.component";
 
 @Component({
   standalone: true,
@@ -29,15 +29,23 @@ import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link
     SharedModule,
     AgGridModule,
     NgSelectModule,
-    DateRangeComponent,
     GridSettingsComponent,
     GridFiltersComponent,
+    BreadcrumbComponent,
   ],
   selector: "app-job-list",
   templateUrl: "./job-list.component.html",
 })
 export class JobListComponent implements OnInit {
   pageId = "/field-service/list-jobs";
+  searchName = "";
+
+  breadcrumbItems(): BreadcrumbItem[] {
+    return [
+      { label: 'Field Service', link: '/dashboard/field-service' },
+      { label: 'Jobs' },
+    ];
+  }
 
   constructor(
     public router: Router,
@@ -47,22 +55,13 @@ export class JobListComponent implements OnInit {
 
   ngOnInit(): void {
     this.activatedRoute.queryParams.subscribe((params) => {
-      this.dateFrom = params["dateFrom"] || this.dateFrom;
-      this.dateTo = params["dateTo"] || this.dateTo;
-      this.dateRange = [this.dateFrom, this.dateTo];
-
       this.id = params["id"];
-      this.isAll = params["isAll"]
-        ? params["isAll"].toLocaleLowerCase() === "true"
-        : this.isAll;
       this.selectedViewType =
         params["selectedViewType"] || this.selectedViewType;
     });
 
     this.getData();
   }
-
-  isAll = true;
 
   previous_fsid;
 
@@ -73,16 +72,6 @@ export class JobListComponent implements OnInit {
   id = null;
 
   title = "Jobs";
-
-  dateFrom = moment().startOf("month").format("YYYY-MM-DD");
-  dateTo = moment().endOf("month").format("YYYY-MM-DD");
-  dateRange = [this.dateFrom, this.dateTo];
-
-  onChangeDate($event) {
-    this.dateFrom = $event["dateFrom"];
-    this.dateTo = $event["dateTo"];
-    this.getData();
-  }
 
   @Input() selectedViewType = "Open";
 
@@ -104,17 +93,6 @@ export class JobListComponent implements OnInit {
     },
   ];
 
-  changeIsAll() {
-    this.router.navigate(["."], {
-      relativeTo: this.activatedRoute,
-      queryParams: {
-        isAll: this.isAll,
-      },
-      queryParamsHandling: "merge",
-    });
-    this.getData();
-  }
-
   view(fsid) {
     let gridParams = _compressToEncodedURIComponent(this.gridApi);
     this.router.navigate([NAVIGATION_ROUTE.EDIT], {
@@ -122,8 +100,6 @@ export class JobListComponent implements OnInit {
       queryParams: {
         id: fsid,
         gridParams,
-        dateFrom: this.dateFrom,
-        dateTo: this.dateTo,
         goBackUrl: NAVIGATION_ROUTE.LIST,
       },
     });
@@ -136,8 +112,6 @@ export class JobListComponent implements OnInit {
       queryParams: {
         id: id,
         gridParams,
-        dateFrom: this.dateFrom,
-        dateTo: this.dateTo,
         goBackUrl: NAVIGATION_ROUTE.LIST,
       },
     });
@@ -150,8 +124,6 @@ export class JobListComponent implements OnInit {
       queryParams: {
         id: id,
         gridParams,
-        dateFrom: this.dateFrom,
-        dateTo: this.dateTo,
         goBackUrl: NAVIGATION_ROUTE.LIST,
       },
     });
@@ -165,8 +137,6 @@ export class JobListComponent implements OnInit {
         id: id,
         request_id: request_id,
         gridParams,
-        dateFrom: this.dateFrom,
-        dateTo: this.dateTo,
         goBackUrl: NAVIGATION_ROUTE.LIST,
       },
     });
@@ -176,14 +146,14 @@ export class JobListComponent implements OnInit {
 
   columnDefs: ColDef[] = [
     {
-      field: "View",
-      headerName: "View",
-      filter: "agMultiColumnFilter",
+      field: "actions",
+      headerName: "Actions",
+      filter: false,
+      sortable: false,
       pinned: "left",
-      cellRenderer: LinkRendererV2Component,
+      cellRenderer: JobActionsCellRendererComponent,
       cellRendererParams: {
-        onClick: (e: any) => this.view(e.rowData.id),
-        value: "SELECT",
+        onEdit: (data: any) => this.view(data.id),
       },
       maxWidth: 115,
       minWidth: 115,
@@ -193,7 +163,7 @@ export class JobListComponent implements OnInit {
       headerName: "Customer",
       filter: "agMultiColumnFilter",
     },
-    { field: "id", headerName: "FSID", filter: "agMultiColumnFilter" },
+    { field: "id", headerName: "FSID", filter: "agMultiColumnFilter", hide: true },
     {
       field: "request_id",
       headerName: "Request ID",
@@ -236,8 +206,8 @@ export class JobListComponent implements OnInit {
       filter: "agMultiColumnFilter",
     },
     { field: "state", headerName: "State", filter: "agMultiColumnFilter" },
-    { field: "fs_lat", headerName: "Latitude", filter: "agMultiColumnFilter" },
-    { field: "fs_lon", headerName: "Longitude", filter: "agMultiColumnFilter" },
+    { field: "fs_lat", headerName: "Latitude", filter: "agMultiColumnFilter", hide: true },
+    { field: "fs_lon", headerName: "Longitude", filter: "agMultiColumnFilter", hide: true },
     { field: "status", headerName: "Status", filter: "agSetColumnFilter" },
     {
       field: "request_date",
@@ -266,11 +236,12 @@ export class JobListComponent implements OnInit {
       pinned: "right",
       valueFormatter: currencyFormatter,
     },
-    { field: "active", headerName: "Active", filter: "agSetColumnFilter" },
+    { field: "active", headerName: "Active", filter: "agSetColumnFilter", hide: true },
     {
       field: "notice_email_date",
       headerName: "Notice Email Date",
       filter: "agSetColumnFilter",
+      hide: true,
     },
     {
       field: "service_type",
@@ -296,21 +267,25 @@ export class JobListComponent implements OnInit {
       field: "out_of_state",
       headerName: "Out Of State",
       filter: "agSetColumnFilter",
+      hide: true,
     },
     {
       field: "createdByUserName",
       headerName: "Job Created By",
       filter: "agSetColumnFilter",
+      hide: true,
     },
     {
       field: "created_date",
       headerName: "Job Created Date",
       filter: "agSetColumnFilter",
+      hide: true,
     },
     {
       field: "cancellation_comments",
       headerName: "Cancelled Comments",
       filter: "agSetColumnFilter",
+      hide: true,
     },
   ];
 
@@ -345,23 +320,17 @@ export class JobListComponent implements OnInit {
   data: any = [];
   async getData() {
     try {
-      if (this.selectedViewType == "Open") {
-        this.isAll = true;
-      }
-
       this.gridApi?.showLoadingOverlay();
       this.data = await this.jobService.getAllRequests(
-        this.dateFrom,
-        this.dateTo,
+        null,
+        null,
         this.selectedViewType,
-        this.isAll
+        true
       );
       this.gridApi?.hideOverlay();
       this.router.navigate(["."], {
         relativeTo: this.activatedRoute,
         queryParams: {
-          dateFrom: this.dateFrom,
-          dateTo: this.dateTo,
           selectedViewType: this.selectedViewType,
         },
         queryParamsHandling: "merge",

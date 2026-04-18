@@ -15,6 +15,7 @@ import { NAVIGATION_ROUTE } from "../safety-incident-constant";
 import { SafetyIncidentService } from "@app/core/api/operations/safety-incident/safety-incident.service";
 import { GridFiltersComponent } from "@app/shared/grid-filters/grid-filters.component";
 import { GridSettingsComponent } from "@app/shared/grid-settings/grid-settings.component";
+import { BreadcrumbComponent, BreadcrumbItem } from "@app/shared/components/breadcrumb/breadcrumb.component";
 import { SafetyIncidentActionsCellRendererComponent } from "../safety-incident-actions-cell-renderer.component";
 
 @Component({
@@ -26,12 +27,21 @@ import { SafetyIncidentActionsCellRendererComponent } from "../safety-incident-a
     AgGridModule,
     GridSettingsComponent,
     GridFiltersComponent,
+    BreadcrumbComponent,
   ],
   selector: "app-safety-incident-list",
   templateUrl: "./safety-incident-list.component.html",
 })
 export class SafetyIncidentListComponent implements OnInit {
   pageId = "/safety-incident/list";
+
+  breadcrumbItems(): BreadcrumbItem[] {
+    return [
+      { label: 'Operations', link: '/dashboard/operations' },
+      { label: 'Forms', link: '/operations/forms' },
+      { label: 'Safety Incidents' },
+    ];
+  }
 
   constructor(
     public api: SafetyIncidentService,
@@ -64,7 +74,7 @@ export class SafetyIncidentListComponent implements OnInit {
       maxWidth: 120,
       minWidth: 120,
     },
-    { field: "id", headerName: "ID", filter: "agMultiColumnFilter" },
+    { field: "id", headerName: "ID", filter: "agMultiColumnFilter", hide: true },
     {
       field: "date_of_incident",
       headerName: "Date of Incident",
@@ -91,26 +101,6 @@ export class SafetyIncidentListComponent implements OnInit {
       filter: "agMultiColumnFilter",
     },
     {
-      field: "created_date",
-      headerName: "Created Date",
-      filter: "agMultiColumnFilter",
-    },
-    {
-      field: "created_by",
-      headerName: "Created By",
-      filter: "agMultiColumnFilter",
-    },
-    {
-      field: "proposed_corrective_action_completion_date",
-      headerName: "Proposed Correction Action Completion Date",
-      filter: "agMultiColumnFilter",
-    },
-    {
-      field: "confirmed_corrective_action_completion_date",
-      headerName: "Confirmed Correction Action Completion Date",
-      filter: "agMultiColumnFilter",
-    },
-    {
       field: "status",
       headerName: "Status",
       filter: "agMultiColumnFilter",
@@ -119,6 +109,29 @@ export class SafetyIncidentListComponent implements OnInit {
       field: "corrective_action_owner",
       headerName: "Corrective Action Owner",
       filter: "agMultiColumnFilter",
+    },
+    {
+      field: "created_date",
+      headerName: "Created Date",
+      filter: "agMultiColumnFilter",
+    },
+    {
+      field: "created_by",
+      headerName: "Created By",
+      filter: "agMultiColumnFilter",
+      hide: true,
+    },
+    {
+      field: "proposed_corrective_action_completion_date",
+      headerName: "Proposed Correction Action Completion Date",
+      filter: "agMultiColumnFilter",
+      hide: true,
+    },
+    {
+      field: "confirmed_corrective_action_completion_date",
+      headerName: "Confirmed Correction Action Completion Date",
+      filter: "agMultiColumnFilter",
+      hide: true,
     },
   ];
 

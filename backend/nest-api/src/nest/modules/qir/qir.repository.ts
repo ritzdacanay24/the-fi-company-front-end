@@ -84,7 +84,28 @@ export class QirRepository extends BaseRepository<RowDataPacket> {
 
     let sql = `
       SELECT
-        a.*, 
+        a.id,
+        a.status,
+        a.qir,
+        a.type,
+        a.type1,
+        a.active,
+        a.priority,
+        a.stakeholder,
+        a.supplierName,
+        a.customerName,
+        a.customerReportedDate,
+        a.CustomerPartNumber,
+        a.eyefiPartNumber,
+        a.eyefiSerialNumber,
+        a.failureType,
+        a.platformType,
+        a.componentType,
+        a.purchaseOrder,
+        a.qtyAffected,
+        a.qtyAffected1,
+        a.createdDate,
+        a.ncr_id,
         CASE WHEN b.id THEN 'Yes' END AS qir_response_id,
         CASE WHEN a.createdBy <> 0 THEN CONCAT(c.first, ' ', c.last) ELSE a.email END AS createdBy
       FROM qa_capaRequest a

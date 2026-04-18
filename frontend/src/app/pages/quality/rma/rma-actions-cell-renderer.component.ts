@@ -3,8 +3,7 @@ import { ICellRendererAngularComp } from 'ag-grid-angular';
 import { ICellRendererParams } from 'ag-grid-community';
 import { CommonModule } from '@angular/common';
 
-export interface SafetyIncidentActionsCellRendererParams extends ICellRendererParams {
-  onView: (data: any) => void;
+export interface RmaActionsCellRendererParams extends ICellRendererParams {
   onEdit: (data: any) => void;
 }
 
@@ -13,35 +12,24 @@ export interface SafetyIncidentActionsCellRendererParams extends ICellRendererPa
   imports: [CommonModule],
   template: `
     <div class="d-flex align-items-center justify-content-center gap-1 h-100">
-      <button 
-        class="btn btn-sm btn-outline-primary" 
-        title="Edit Safety Incident"
+      <button
+        class="btn btn-sm btn-outline-primary"
+        title="Select RMA"
         (click)="onEditClick($event)">
         SELECT
       </button>
     </div>
-  `,
-  styles: [`
-    .btn-sm {
-      padding: 0.25rem 0.5rem;
-      font-size: 0.75rem;
-    }
-  `]
+  `
 })
-export class SafetyIncidentActionsCellRendererComponent implements ICellRendererAngularComp {
-  private params!: SafetyIncidentActionsCellRendererParams;
+export class RmaActionsCellRendererComponent implements ICellRendererAngularComp {
+  private params!: RmaActionsCellRendererParams;
 
-  agInit(params: SafetyIncidentActionsCellRendererParams): void {
+  agInit(params: RmaActionsCellRendererParams): void {
     this.params = params;
   }
 
   refresh(): boolean {
     return false;
-  }
-
-  onViewClick(event: Event): void {
-    event.stopPropagation();
-    this.params.onView(this.params.data);
   }
 
   onEditClick(event: Event): void {

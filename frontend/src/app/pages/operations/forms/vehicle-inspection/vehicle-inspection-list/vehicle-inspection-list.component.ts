@@ -11,12 +11,13 @@ import {
 } from "src/assets/js/util/jslzString";
 import { ActivatedRoute, Router } from "@angular/router";
 import { highlightRowView, autoSizeColumns } from "src/assets/js/util";
-import moment from "moment";
 import { VehicleInspectionService } from "@app/core/api/operations/vehicle-inspection/vehicle-inspection.service";
 import { NAVIGATION_ROUTE } from "../vehicle-inspection-constant";
-import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
 import { GridFiltersComponent } from "@app/shared/grid-filters/grid-filters.component";
 import { GridSettingsComponent } from "@app/shared/grid-settings/grid-settings.component";
+import { BreadcrumbComponent, BreadcrumbItem } from "@app/shared/components/breadcrumb/breadcrumb.component";
+import { VehicleInspectionActionsCellRendererComponent } from "../vehicle-inspection-actions-cell-renderer.component";
+import { VehicleInspectionProgressRendererComponent } from "../vehicle-inspection-progress-renderer.component";
 
 @Component({
   standalone: true,
@@ -27,6 +28,9 @@ import { GridSettingsComponent } from "@app/shared/grid-settings/grid-settings.c
     AgGridModule,
     GridSettingsComponent,
     GridFiltersComponent,
+    BreadcrumbComponent,
+    VehicleInspectionActionsCellRendererComponent,
+    VehicleInspectionProgressRendererComponent,
   ],
   selector: "app-vehicle-inspection-list",
   templateUrl: "./vehicle-inspection-list.component.html",
@@ -43,14 +47,7 @@ export class VehicleInspectionListComponent implements OnInit {
 
   ngOnInit(): void {
     this.activatedRoute.queryParams.subscribe((params) => {
-      this.dateFrom = params["dateFrom"] || this.dateFrom;
-      this.dateTo = params["dateTo"] || this.dateTo;
-      this.dateRange = [this.dateFrom, this.dateTo];
-
       this.id = params["id"];
-      this.isAll = params["isAll"]
-        ? params["isAll"].toLocaleLowerCase() === "true"
-        : false;
       this.selectedViewType =
         params["selectedViewType"] || this.selectedViewType;
       this.showPendingOnly = params["showPending"]
@@ -62,25 +59,24 @@ export class VehicleInspectionListComponent implements OnInit {
 
     if (this.selectedViewType == "Open") {
       this.disable = true;
-      this.isAll = true;
     }
   }
 
   columnDefs: ColDef[] = [
     {
-      field: "View",
-      headerName: "View",
-      filter: "agMultiColumnFilter",
+      field: "Actions",
+      headerName: "Actions",
+      filter: false,
+      sortable: false,
       pinned: "left",
-      cellRenderer: LinkRendererV2Component,
+      cellRenderer: VehicleInspectionActionsCellRendererComponent,
       cellRendererParams: {
-        onClick: (e: any) => this.onEdit(e.rowData.id),
-        value: "SELECT",
+        onEdit: (data: any) => this.onEdit(data.id),
       },
-      maxWidth: 115,
-      minWidth: 115,
+      maxWidth: 100,
+      minWidth: 100,
     },
-    { field: "id", headerName: "ID", filter: "agMultiColumnFilter" },
+    { field: "id", headerName: "ID", filter: "agMultiColumnFilter", hide: true },
     {
       field: "date_created",
       headerName: "Created Date",
@@ -97,39 +93,12 @@ export class VehicleInspectionListComponent implements OnInit {
       filter: "agMultiColumnFilter",
     },
     {
+      headerName: "Pass / Fail",
       field: "passed_count",
-      headerName: "Passed",
-      filter: "agMultiColumnFilter",
-    },
-    {
-      field: "failed_count",
-      headerName: "Failed",
-      filter: "agMultiColumnFilter",
-    },
-    {
-      field: "total_count",
-      headerName: "Total Inspection Points",
-      filter: "agMultiColumnFilter",
-    },
-    {
-      field: "not_used",
-      headerName: "Not Used",
-      filter: "agMultiColumnFilter",
-    },
-    {
-      field: "percent",
-      headerName: "Percent",
-      filter: "agMultiColumnFilter",
-      cellClass: (params: any) => {
-        if (params.value < 100) {
-          return ["bg-danger-subtle bg-opacity-75 text-danger"];
-        } else if (params.value == "Yes") {
-          return ["bg-success-subtle bg-opacity-75 text-success"];
-        } else {
-          return [];
-        }
-      },
-      cellRenderer: (params: any) => (params.value ? params.value + "%" : ""),
+      filter: false,
+      sortable: false,
+      cellRenderer: VehicleInspectionProgressRendererComponent,
+      minWidth: 220,
     },
     {
       headerName: "Pending Resolved Count",
@@ -171,6 +140,8 @@ export class VehicleInspectionListComponent implements OnInit {
 
   title = "Vehicle Inspection Report";
 
+  searchName = "";
+
   gridApi: GridApi;
 
   data: any[];
@@ -182,23 +153,6 @@ export class VehicleInspectionListComponent implements OnInit {
   pendingCount = 0;
 
   id = null;
-
-  isAll = false;
-
-  changeIsAll() {}
-
-  dateFrom = moment()
-    .subtract(1, "months")
-    .startOf("month")
-    .format("YYYY-MM-DD");
-  dateTo = moment().endOf("month").format("YYYY-MM-DD");
-  dateRange = [this.dateFrom, this.dateTo];
-
-  onChangeDate($event) {
-    this.dateFrom = $event["dateFrom"];
-    this.dateTo = $event["dateTo"];
-    this.getData();
-  }
 
   gridOptions: GridOptions = {
     columnDefs: this.columnDefs,
@@ -242,7 +196,6 @@ export class VehicleInspectionListComponent implements OnInit {
   async getData() {
     if (this.selectedViewType == "Open") {
       this.disable = true;
-      this.isAll = true;
     } else {
       this.disable = false;
     }
@@ -275,9 +228,6 @@ export class VehicleInspectionListComponent implements OnInit {
       this.router.navigate(["."], {
         queryParams: {
           selectedViewType: this.selectedViewType,
-          isAll: this.isAll,
-          dateFrom: this.dateFrom,
-          dateTo: this.dateTo,
           showPending: this.showPendingOnly,
         },
         relativeTo: this.activatedRoute,
@@ -306,5 +256,13 @@ export class VehicleInspectionListComponent implements OnInit {
       relativeTo: this.activatedRoute,
       queryParamsHandling: "merge",
     });
+  }
+
+  breadcrumbItems(): BreadcrumbItem[] {
+    return [
+      { label: "Operations", link: "/dashboard/operations" },
+      { label: "Forms", link: "/operations/forms" },
+      { label: "Vehicle Inspections", active: true },
+    ];
   }
 }

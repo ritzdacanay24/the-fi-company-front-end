@@ -1,11 +1,5 @@
 <div class="container-fluid">
-  <!-- Breadcrumb -->
-  <nav aria-label="breadcrumb" class="mb-3">
-    <ol class="breadcrumb mb-0">
-      <li class="breadcrumb-item"><a routerLink="/dashboard/quality">Quality</a></li>
-      <li class="breadcrumb-item active" aria-current="page">Quality Issues</li>
-    </ol>
-  </nav>
+  <app-breadcrumb [items]="breadcrumbItems()"></app-breadcrumb>
 
   <div class="row justify-content-center">
     <div class="col-12">
@@ -48,43 +42,27 @@
       </div>
 
       <div class="card shadow-sm border-0 qir-list-card">
-        <div class="card-body p-0">
-          <div class="p-3 border-bottom">
-            <div class="qir-toolbar d-flex flex-column flex-lg-row align-items-stretch align-items-lg-center gap-3">
-              <div class="qir-status-select-wrap">
-                <select 
-                  class="form-select custom-select"
-                  [(ngModel)]="selectedViewType"
-                  (change)="getData()">
-                  <option *ngFor="let option of selectedViewOptions" [value]="option.name">
-                    {{option.name}}
-                  </option>
-                </select>
-              </div>
-
-              <div class="qir-search-wrap d-flex justify-content-lg-start">
-                <div class="input-group qir-search-input qir-search-input-limited">
-                  <span class="input-group-text bg-light border-end-0">
-                    <i class="mdi mdi-magnify"></i>
-                  </span>
-                  <input
-                    type="text"
-                    class="form-control border-start-0"
-                    [(ngModel)]="quickSearchTerm"
-                    (input)="onQuickSearchChange()"
-                    placeholder="Search quality issues...">
-                  <button
-                    *ngIf="quickSearchTerm"
-                    type="button"
-                    class="btn btn-outline-secondary"
-                    (click)="clearQuickSearch()"
-                    title="Clear search">
-                    <i class="mdi mdi-close"></i>
-                  </button>
-                </div>
-              </div>
+        <div class="card-header">
+          <div class="d-flex align-items-center flex-wrap gap-3">
+            <div class="form-icon" style="width: 280px;">
+              <input type="search" class="form-control form-control-icon" placeholder="Search..."
+                [(ngModel)]="quickSearchTerm" (ngModelChange)="onQuickSearchChange()">
+              <i class="ri-search-2-line"></i>
+            </div>
+            <ng-select [dropdownPosition]="'bottom'" [searchable]="false" bindLabel="name" bindValue="name"
+              [clearable]="false" [items]="selectedViewOptions" [(ngModel)]="selectedViewType"
+              (change)="getData()" style="width:150px" [appendTo]="'body'">
+            </ng-select>
+            <button class="btn btn-outline-secondary" (click)="getData()" title="Refresh data">
+              <i class="mdi mdi-refresh me-1"></i>Refresh
+            </button>
+            <div class="ms-auto d-flex gap-2">
+              <app-grid-settings [gridApi]="gridApi" [pageId]="pageId"></app-grid-settings>
+              <app-grid-filters [gridApi]="gridApi" [pageId]="pageId"></app-grid-filters>
             </div>
           </div>
+        </div>
+        <div class="card-body p-0">
 
           <ng-container *ngIf="filteredData?.length; else noRecords">
             <ag-grid-angular [gridOptions]="gridOptions" class="ag-theme-quartz no-border"

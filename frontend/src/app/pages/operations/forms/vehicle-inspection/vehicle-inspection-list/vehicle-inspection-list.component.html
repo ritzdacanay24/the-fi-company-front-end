@@ -1,16 +1,10 @@
 <div class="container-fluid">
+    <app-breadcrumb [items]="breadcrumbItems()"></app-breadcrumb>
+
     <div class="row justify-content-center">
         <div class="col-12">
-            <!-- Breadcrumb -->
-            <nav aria-label="breadcrumb" class="mb-3">
-                <ol class="breadcrumb mb-0">
-                    <li class="breadcrumb-item"><a routerLink="/dashboard/operations">Operations</a></li>
-                    <li class="breadcrumb-item"><a routerLink="/operations/forms">Forms</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Vehicle Inspections</li>
-                </ol>
-            </nav>
 
-            <!-- Page Header with Context -->
+            <!-- Page Header -->
             <div class="mb-4">
                 <div class="d-flex align-items-center justify-content-between mb-3">
                     <div class="d-flex align-items-center">
@@ -40,15 +34,20 @@
 
             <div class="card shadow-sm border-0">
                 <div class="card-header">
-                    <div class="d-flex align-items-center">
-                        <div class="ms-3">
+                    <div class="d-flex align-items-center flex-wrap gap-3">
+                        <div class="form-icon" style="width: 280px;">
+                            <input type="search" class="form-control form-control-icon" placeholder="Search..."
+                                (ngModelChange)="this.gridApi?.setGridOption('quickFilterText', $event);" [(ngModel)]="searchName">
+                            <i class="ri-search-2-line"></i>
+                        </div>
+
+                        <button class="btn btn-outline-secondary" (click)="getData()" title="Refresh data">
+                            <i class="las la-sync me-1"></i>Refresh
+                        </button>
+
+                        <div class="ms-auto d-flex gap-2">
                             <app-grid-settings [gridApi]="gridApi" [pageId]="pageId"></app-grid-settings>
-                        </div>
-                        <div class="ms-3">
                             <app-grid-filters [gridApi]="gridApi" [pageId]="pageId"></app-grid-filters>
-                        </div>
-                        <div class="ms-auto">
-                            <h4 class="card-title mb-0 flex-grow-1"> {{title}} </h4>
                         </div>
                     </div>
                 </div>

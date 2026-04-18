@@ -1,16 +1,9 @@
 <div class="container-fluid">
-  <!-- Breadcrumb -->
-  <nav aria-label="breadcrumb" class="mb-3">
-    <ol class="breadcrumb mb-0">
-      <li class="breadcrumb-item"><a routerLink="/dashboard/quality">Quality</a></li>
-      <li class="breadcrumb-item"><a routerLink="/quality/mrb">MRB</a></li>
-      <li class="breadcrumb-item active" aria-current="page">MRB List</li>
-    </ol>
-  </nav>
+  <app-breadcrumb [items]="breadcrumbItems()"></app-breadcrumb>
 
   <div class="row justify-content-center">
     <div class="col-12">
-      <!-- Page Header with Context -->
+      <!-- Page Header -->
       <div class="mb-4">
         <div class="d-flex align-items-center justify-content-between mb-3">
           <div class="d-flex align-items-center">
@@ -37,22 +30,22 @@
       <div class="card shadow-sm border-0">
         <div class="card-header">
           <div class="d-flex align-items-center flex-wrap gap-3">
-            <div class="form-icon">
-              <app-date-range (setDateRange)="onChangeDate($event)" [value]="dateRange" [disabled]="this.isAll"
-                [displayOptions]="true"></app-date-range>
+            <div class="form-icon" style="width: 280px;">
+              <input type="search" class="form-control form-control-icon" placeholder="Search..."
+                (ngModelChange)="this.gridApi?.setGridOption('quickFilterText', $event);" [(ngModel)]="searchName">
+              <i class="ri-search-2-line"></i>
             </div>
             <ng-select [dropdownPosition]="'bottom'" [searchable]="false" bindLabel="name" bindValue="name"
               [clearable]="false" [items]="selectedViewOptions" [(ngModel)]="selectedViewType"
               (change)="getData()" style="width:150px" [appendTo]="'body'">
             </ng-select>
-            <div class="form-check form-switch form-switch-md">
-              <input class="form-check-input" type="checkbox" id="flexSwitchCheckDefault" [(ngModel)]="isAll"
-                (change)="getData()">
-              <label class="form-check-label" for="flexSwitchCheckDefault">Show All</label>
-            </div>
             <button class="btn btn-outline-secondary" (click)="getData()" title="Refresh data">
               <i class="mdi mdi-refresh me-1"></i>Refresh
             </button>
+            <div class="ms-auto d-flex gap-2">
+              <app-grid-settings [gridApi]="gridApi" [pageId]="pageId"></app-grid-settings>
+              <app-grid-filters [gridApi]="gridApi" [pageId]="pageId"></app-grid-filters>
+            </div>
           </div>
         </div>
         <div class="card-body p-0">

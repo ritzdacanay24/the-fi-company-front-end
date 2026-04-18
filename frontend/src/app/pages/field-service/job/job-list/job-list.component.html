@@ -1,20 +1,8 @@
 <div class="container-fluid">
+  <app-breadcrumb [items]="breadcrumbItems()"></app-breadcrumb>
+
   <div class="row justify-content-center">
     <div class="col-12">
-      
-      <!-- Breadcrumb -->
-      <nav aria-label="breadcrumb" class="mb-3">
-        <ol class="breadcrumb mb-0">
-          <li class="breadcrumb-item">
-            <a href="#" class="text-decoration-none" (click)="$event.preventDefault()">
-              <i class="mdi mdi-home-outline me-1"></i>Field Service
-            </a>
-          </li>
-          <li class="breadcrumb-item active" aria-current="page">
-            Jobs
-          </li>
-        </ol>
-      </nav>
       
       <!-- Page Header with Context -->
       <div class="mb-4">
@@ -43,16 +31,11 @@
       <div class="card shadow-sm border-0">
         <div class="card-header">
           <div class="d-flex align-items-center flex-wrap gap-3">
-            <div class="form-icon">
-              <input type="search" class="form-control form-control-icon" style="width:250px"
-                (ngModelChange)="this.gridApi.setGridOption('quickFilterText', $event)" [(ngModel)]="query"
+            <div class="form-icon" style="width: 280px;">
+              <input type="search" class="form-control form-control-icon"
+                (ngModelChange)="this.gridApi?.setGridOption('quickFilterText', $event)" [(ngModel)]="searchName"
                 placeholder="Search jobs...">
               <i class="ri-search-2-line"></i>
-            </div>
-            
-            <div class="form-icon">
-              <app-date-range (setDateRange)="onChangeDate($event)" [value]="dateRange" [disabled]="this.isAll"
-                [displayOptions]="true"></app-date-range>
             </div>
             
             <ng-select [dropdownPosition]="'bottom'" [searchable]="false" bindLabel="name" bindValue="name"
@@ -60,22 +43,13 @@
               style="width:150px" [appendTo]="'body'">
             </ng-select>
             
-            <div class="form-check form-switch form-switch-md">
-              <input class="form-check-input" type="checkbox" id="flexSwitchCheckDefault" [(ngModel)]="isAll"
-                (change)="changeIsAll()">
-              <label class="form-check-label" for="flexSwitchCheckDefault">Show All</label>
-            </div>
-            
             <button class="btn btn-outline-secondary" (click)="getData()" title="Refresh data">
-              <i class="mdi mdi-refresh me-1"></i>
+              <i class="mdi mdi-refresh me-1"></i>Refresh
             </button>
             
-            <div class="ms-auto">
-              <div class="d-flex align-items-center gap-3">
-                <app-grid-settings [gridApi]="gridApi" [pageId]="pageId"></app-grid-settings>
-                <app-grid-filters [gridApi]="gridApi" [pageId]="pageId"></app-grid-filters>
-                
-              </div>
+            <div class="ms-auto d-flex gap-2">
+              <app-grid-settings [gridApi]="gridApi" [pageId]="pageId"></app-grid-settings>
+              <app-grid-filters [gridApi]="gridApi" [pageId]="pageId"></app-grid-filters>
             </div>
           </div>
         </div>

@@ -4,11 +4,14 @@ import express, { NextFunction, Request, Response } from 'express';
 import { Logger, RequestMethod, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { join } from 'path';
+import compression from 'compression';
 import { AppModule } from './nest/app.module';
 import { GlobalHttpExceptionFilter } from './nest/filters/http-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  app.use(compression());
 
   // Keep compatibility with legacy proxy prefixes that still forward to /api.
   // This intentionally complements the frontend interceptor's /apiV2 normalization.

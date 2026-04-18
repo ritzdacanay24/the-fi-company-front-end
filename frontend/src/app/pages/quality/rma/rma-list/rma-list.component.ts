@@ -7,15 +7,16 @@ import { AgGridModule } from "ag-grid-angular";
 import { ActivatedRoute, Router } from "@angular/router";
 import { NAVIGATION_ROUTE } from "../rma-constant";
 import { RmaService } from "@app/core/api/quality/rma.service";
-import moment from "moment";
-import { DateRangeComponent } from "@app/shared/components/date-range/date-range.component";
 import { SharedModule } from "@app/shared/shared.module";
 import { highlightRowView, autoSizeColumns } from "src/assets/js/util";
 import {
   _compressToEncodedURIComponent,
   _decompressFromEncodedURIComponent,
 } from "src/assets/js/util/jslzString";
-import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
+import { GridSettingsComponent } from "@app/shared/grid-settings/grid-settings.component";
+import { GridFiltersComponent } from "@app/shared/grid-filters/grid-filters.component";
+import { BreadcrumbComponent, BreadcrumbItem } from "@app/shared/components/breadcrumb/breadcrumb.component";
+import { RmaActionsCellRendererComponent } from "../rma-actions-cell-renderer.component";
 
 @Component({
   standalone: true,
@@ -24,12 +25,24 @@ import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link
     ReactiveFormsModule,
     NgSelectModule,
     AgGridModule,
-    DateRangeComponent,
+    GridSettingsComponent,
+    GridFiltersComponent,
+    BreadcrumbComponent,
   ],
   selector: "app-rma-list",
   templateUrl: "./rma-list.component.html",
 })
 export class RmaListComponent implements OnInit {
+  pageId: string = '/quality/rma';
+  searchName = "";
+
+  breadcrumbItems(): BreadcrumbItem[] {
+    return [
+      { label: 'Quality', link: '/dashboard/quality' },
+      { label: 'RMA List' },
+    ];
+  }
+
   constructor(
     public api: RmaService,
     public router: Router,
@@ -38,14 +51,7 @@ export class RmaListComponent implements OnInit {
 
   ngOnInit(): void {
     this.activatedRoute.queryParams.subscribe((params) => {
-      this.dateFrom = params["dateFrom"] || this.dateFrom;
-      this.dateTo = params["dateTo"] || this.dateTo;
-      this.dateRange = [this.dateFrom, this.dateTo];
-
       this.id = params["id"];
-      this.isAll = params["isAll"]
-        ? params["isAll"].toLocaleLowerCase() === "true"
-        : this.isAll;
       this.selectedViewType =
         params["selectedViewType"] || this.selectedViewType;
     });
@@ -55,28 +61,30 @@ export class RmaListComponent implements OnInit {
 
   columnDefs: ColDef[] = [
     {
-      field: "View",
-      headerName: "View",
-      filter: "agMultiColumnFilter",
+      field: "actions",
+      headerName: "Actions",
+      filter: false,
+      sortable: false,
       pinned: "left",
-      cellRenderer: LinkRendererV2Component,
+      cellRenderer: RmaActionsCellRendererComponent,
       cellRendererParams: {
-        onClick: (e: any) => this.onEdit(e.rowData.id),
-        value: "SELECT",
+        onEdit: (data: any) => this.onEdit(data.id),
       },
       maxWidth: 115,
       minWidth: 115,
     },
-    { field: "id", headerName: "ID", filter: "agMultiColumnFilter" },
+    { field: "id", headerName: "ID", filter: "agMultiColumnFilter", hide: true },
     {
       field: "createdBy",
       headerName: "Created By",
       filter: "agMultiColumnFilter",
+      hide: true,
     },
     {
       field: "createdDate",
       headerName: "Created Date",
       filter: "agMultiColumnFilter",
+      hide: true,
     },
     {
       field: "customer",
@@ -87,7 +95,7 @@ export class RmaListComponent implements OnInit {
       field: "customerComment",
       headerName: "Customer Comment",
       filter: "agMultiColumnFilter",
-      maxWidth: 200,
+      hide: true,
     },
     {
       field: "dateIssued",
@@ -103,12 +111,13 @@ export class RmaListComponent implements OnInit {
       field: "failureCode",
       headerName: "Failure Code",
       filter: "agMultiColumnFilter",
+      hide: true,
     },
     {
       field: "notes",
       headerName: "Notes",
       filter: "agMultiColumnFilter",
-      maxWidth: 200,
+      hide: true,
     },
     {
       field: "orderNumber",
@@ -129,6 +138,7 @@ export class RmaListComponent implements OnInit {
       field: "qirNumber",
       headerName: "QIR Number",
       filter: "agMultiColumnFilter",
+      hide: true,
     },
     { field: "qty", headerName: "Qty", filter: "agMultiColumnFilter" },
     {
@@ -151,9 +161,10 @@ export class RmaListComponent implements OnInit {
       field: "tag_qn_number",
       headerName: "Tag QN Number",
       filter: "agMultiColumnFilter",
+      hide: true,
     },
     { field: "type", headerName: "Type", filter: "agMultiColumnFilter" },
-    { field: "active", headerName: "Active", filter: "agMultiColumnFilter" },
+    { field: "active", headerName: "Active", filter: "agMultiColumnFilter", hide: true },
   ];
 
   @Input() selectedViewType = "Open";
@@ -179,29 +190,9 @@ export class RmaListComponent implements OnInit {
 
   gridApi: GridApi;
 
-  // Identifier used by grid settings/filters components
-  pageId: string = 'rma-list';
-
   data: any[];
 
   id = null;
-
-  isAll = true;
-
-  changeIsAll() {}
-
-  dateFrom = moment()
-    .subtract(1, "months")
-    .startOf("month")
-    .format("YYYY-MM-DD");
-  dateTo = moment().endOf("month").format("YYYY-MM-DD");
-  dateRange = [this.dateFrom, this.dateTo];
-
-  onChangeDate($event) {
-    this.dateFrom = $event["dateFrom"];
-    this.dateTo = $event["dateTo"];
-    this.getData();
-  }
 
   gridOptions: GridOptions = {
     columnDefs: this.columnDefs,
@@ -263,17 +254,14 @@ export class RmaListComponent implements OnInit {
 
       this.data = await this.api.getList(
         this.selectedViewType,
-        this.dateFrom,
-        this.dateTo,
-        this.isAll
+        null,
+        null,
+        true
       );
 
       this.router.navigate(["."], {
         queryParams: {
           selectedViewType: this.selectedViewType,
-          isAll: this.isAll,
-          dateFrom: this.dateFrom,
-          dateTo: this.dateTo,
         },
         relativeTo: this.activatedRoute,
         queryParamsHandling: "merge",

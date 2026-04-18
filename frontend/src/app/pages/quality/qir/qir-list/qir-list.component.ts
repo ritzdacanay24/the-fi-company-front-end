@@ -5,7 +5,6 @@ import { NgSelectModule } from "@ng-select/ng-select";
 import { AgGridModule } from "ag-grid-angular";
 
 import { ActivatedRoute, Router } from "@angular/router";
-import moment from "moment";
 import { NAVIGATION_ROUTE } from "../qir-constant";
 import { QirService } from "@app/core/api/quality/qir.service";
 import { SharedModule } from "@app/shared/shared.module";
@@ -15,7 +14,8 @@ import {
   _compressToEncodedURIComponent,
 } from "src/assets/js/util/jslzString";
 import { GridSettingsComponent } from "@app/shared/grid-settings/grid-settings.component";
-import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
+import { GridFiltersComponent } from "@app/shared/grid-filters/grid-filters.component";
+import { BreadcrumbComponent, BreadcrumbItem } from "@app/shared/components/breadcrumb/breadcrumb.component";
 import { QirActionsCellRendererComponent } from './qir-actions-cell-renderer.component';
 
 @Component({
@@ -26,6 +26,8 @@ import { QirActionsCellRendererComponent } from './qir-actions-cell-renderer.com
     NgSelectModule,
     AgGridModule,
     GridSettingsComponent,
+    GridFiltersComponent,
+    BreadcrumbComponent,
   ],
   selector: "app-qir-list",
   templateUrl: "./qir-list.component.html",
@@ -47,12 +49,18 @@ export class QirListComponent implements OnInit {
     });
   }
 
+  breadcrumbItems(): BreadcrumbItem[] {
+    return [
+      { label: 'Quality', link: '/dashboard/quality' },
+      { label: 'Quality Issues' },
+    ];
+  }
+
   ngOnInit(): void {
     this.activatedRoute.queryParams.subscribe((params) => {
       this.id = params["id"];
       this.selectedViewType =
         params["selectedViewType"] || this.selectedViewType;
-      this.isAll = true;
     });
 
     this.getData();
@@ -73,7 +81,7 @@ export class QirListComponent implements OnInit {
       maxWidth: 150,
       minWidth: 150,
     },
-    { field: "id", headerName: "ID", filter: "agMultiColumnFilter" },
+    { field: "id", headerName: "ID", filter: "agMultiColumnFilter", hide: true },
     { field: "status", headerName: "Status", filter: "agMultiColumnFilter" },
     {
       field: "qir_response_id",
@@ -94,6 +102,7 @@ export class QirListComponent implements OnInit {
       field: "createdBy",
       headerName: "Created By",
       filter: "agTextColumnFilter",
+      hide: true,
     },
     {
       field: "createdDate",
@@ -131,11 +140,6 @@ export class QirListComponent implements OnInit {
       filter: "agTextColumnFilter",
     },
     { field: "ncr_id", headerName: "CAR ID", filter: "agTextColumnFilter" },
-    {
-      field: "platformType",
-      headerName: "Platform Type",
-      filter: "agTextColumnFilter",
-    },
     { field: "priority", headerName: "Priority", filter: "agTextColumnFilter" },
     {
       field: "purchaseOrder",
@@ -152,6 +156,7 @@ export class QirListComponent implements OnInit {
       field: "qtyAffected1",
       headerName: "Qty Affected 1",
       filter: "agTextColumnFilter",
+      hide: true,
     },
     {
       field: "stakeholder",
@@ -164,8 +169,8 @@ export class QirListComponent implements OnInit {
       filter: "agTextColumnFilter",
     },
     { field: "type", headerName: "Type", filter: "agTextColumnFilter" },
-    { field: "type1", headerName: "Type 1", filter: "agTextColumnFilter" },
-    { field: "active", headerName: "Active", filter: "agTextColumnFilter" },
+    { field: "type1", headerName: "Type 1", filter: "agTextColumnFilter", hide: true },
+    { field: "active", headerName: "Active", filter: "agTextColumnFilter", hide: true },
   ];
 
   @Input() selectedViewType = "Open";
@@ -196,23 +201,6 @@ export class QirListComponent implements OnInit {
   data: any[];
 
   id = null;
-
-  isAll = true;
-
-  changeIsAll() { }
-
-  dateFrom = moment()
-    .subtract(1, "months")
-    .startOf("month")
-    .format("YYYY-MM-DD");
-  dateTo = moment().endOf("month").format("YYYY-MM-DD");
-  dateRange = [this.dateFrom, this.dateTo];
-
-  onChangeDate($event) {
-    this.dateFrom = $event["dateFrom"];
-    this.dateTo = $event["dateTo"];
-    this.getData();
-  }
 
   gridOptions: GridOptions = {
     columnDefs: this.columnDefs,
@@ -293,8 +281,8 @@ export class QirListComponent implements OnInit {
 
       this.data = await this.api.getList(
         this.selectedViewType,
-        this.dateFrom,
-        this.dateTo,
+        null,
+        null,
         true
       );
 
@@ -304,10 +292,6 @@ export class QirListComponent implements OnInit {
       this.router.navigate(["."], {
         queryParams: {
           selectedViewType: this.selectedViewType,
-          selectedType1: null,
-          isAll: null,
-          dateFrom: null,
-          dateTo: null,
         },
         relativeTo: this.activatedRoute,
         queryParamsHandling: "merge",
@@ -322,7 +306,6 @@ export class QirListComponent implements OnInit {
   clearFilters(): void {
     this.selectedViewType = 'Open';
     this.quickSearchTerm = '';
-    this.isAll = true;
     this.getData();
   }
 

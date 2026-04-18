@@ -12,19 +12,12 @@ export interface QirActionsCellRendererParams extends ICellRendererParams {
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="btn-group btn-group-sm" role="group">
-      <button 
-        class="btn btn-outline-info" 
-        title="View QIR"
-        (click)="onViewClick($event)">
-        <i class="mdi mdi-eye"></i> View
-      </button>
-      <button 
-        class="btn btn-outline-primary" 
-        title="Edit QIR"
-        [disabled]="isQirClosed"
+    <div class="d-flex align-items-center justify-content-center gap-1 h-100">
+      <button
+        class="btn btn-sm btn-outline-primary"
+        title="Select QIR"
         (click)="onEditClick($event)">
-        <i class="mdi mdi-pencil"></i> Edit
+        SELECT
       </button>
     </div>
   `
