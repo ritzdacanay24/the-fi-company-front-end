@@ -4,9 +4,9 @@
 <div class="card shadow-sm border-0">
   <div class="card-header">
     <div class="d-flex align-items-center">
-      <div class="me-3">
-        <app-date-range (setDateRange)="onChangeDate($event)" [value]="dateRange" [displayOptions]="true">
-        </app-date-range>
+      <div class="position-relative me-3" style="width: 280px;">
+        <i class="mdi mdi-magnify position-absolute text-muted" style="top: 50%; left: 10px; transform: translateY(-50%);"></i>
+        <input type="text" class="form-control" style="padding-left: 32px;" placeholder="Search..." (input)="onSearch($event)">
       </div>
       <select class="form-select me-3" style="width:150px" [ngModel]="selectedViewType"
         (ngModelChange)="selectedViewType = $event; getData()">

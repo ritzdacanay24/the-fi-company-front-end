@@ -189,6 +189,11 @@ export class MaterialRequestValidateListComponent implements OnInit {
     this.getData();
   }
 
+  onSearch($event: Event) {
+    const value = ($event.target as HTMLInputElement).value;
+    this.gridApi?.setGridOption('quickFilterText', value);
+  }
+
   gridOptions: GridOptions = {
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
@@ -250,15 +255,14 @@ export class MaterialRequestValidateListComponent implements OnInit {
     try {
       this.gridApi?.showLoadingOverlay();
 
-      let params: any = {};
-      if (this.selectedViewType != "All") {
-        let status = this.selectedViewOptions.find(
-          (person) => person.name == this.selectedViewType
-        );
-        params = { active: status.value };
-      }
+      const allData = await this.api.getValidation();
 
-      this.data = await this.api.getValidation();
+      if (this.selectedViewType && this.selectedViewType !== 'All') {
+        const status = this.selectedViewOptions.find(o => o.name === this.selectedViewType);
+        this.data = status != null ? allData.filter((r: any) => r.active == status.value) : allData;
+      } else {
+        this.data = allData;
+      }
 
       this.router.navigate(["."], {
         queryParams: {
