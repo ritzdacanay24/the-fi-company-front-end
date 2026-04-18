@@ -15,8 +15,8 @@ export class PlacardService extends DataService<any> {
     super(url, http);
   }
 
-  getList = async (selectedViewType: string, dateFrom: string, dateTo: string, isAll = false) => {
-    const result = queryString({ selectedViewType, dateFrom, dateTo, isAll });
+  getList = async (selectedViewType: string) => {
+    const result = queryString({ selectedViewType });
     return await firstValueFrom(this.http.get<any[]>(`${url}/getList${result}`));
   };
 

@@ -17,6 +17,7 @@ import { DateRangeComponent } from "@app/shared/components/date-range/date-range
 import { PlacardService } from "@app/core/api/operations/placard/placard.service";
 import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
 import { PlacardActionsCellRendererComponent } from "../placard-actions-cell-renderer/placard-actions-cell-renderer.component";
+import { BreadcrumbItem, BreadcrumbComponent } from "@app/shared/components/breadcrumb/breadcrumb.component";
 
 @Component({
   standalone: true,
@@ -27,6 +28,7 @@ import { PlacardActionsCellRendererComponent } from "../placard-actions-cell-ren
     NgSelectModule,
     AgGridModule,
     DateRangeComponent,
+    BreadcrumbComponent,
   ],
   selector: "app-placard-list",
   templateUrl: "./placard-list.component.html",
@@ -70,96 +72,74 @@ export class PlacardListComponent implements OnInit {
       maxWidth: 120,
       minWidth: 120,
     },
-    { field: "id", headerName: "ID", filter: "agMultiColumnFilter" },
+    {
+      field: "eyefi_wo_number",
+      headerName: "WO Number",
+      filter: "agMultiColumnFilter",
+      minWidth: 130,
+    },
+    {
+      field: "eyefi_so_number",
+      headerName: "SO Number",
+      filter: "agMultiColumnFilter",
+      minWidth: 130,
+    },
     {
       field: "eyefi_part_number",
-      headerName: "Eyefi Part Number",
+      headerName: "Part Number",
       filter: "agMultiColumnFilter",
+      minWidth: 150,
     },
     {
       field: "description",
       headerName: "Description",
       filter: "agMultiColumnFilter",
+      flex: 1,
+      minWidth: 180,
     },
     {
       field: "eyefi_serial_tag",
-      headerName: "Eyefi Serial Tag",
+      headerName: "Serial Tag",
       filter: "agMultiColumnFilter",
       cellDataType: "text",
+      minWidth: 130,
     },
     {
-      field: "eyefi_so_number",
-      headerName: "Eyefi SO Number",
+      field: "customer_name",
+      headerName: "Customer",
       filter: "agMultiColumnFilter",
-    },
-    {
-      field: "eyefi_wo_number",
-      headerName: "Eyefi WO Number",
-      filter: "agMultiColumnFilter",
-    },
-    {
-      field: "line_number",
-      headerName: "Line Number",
-      filter: "agMultiColumnFilter",
-    },
-    {
-      field: "location",
-      headerName: "Location",
-      filter: "agMultiColumnFilter",
-    },
-    {
-      field: "po_number",
-      headerName: "PO Number",
-      filter: "agMultiColumnFilter",
-      cellDataType: "text",
+      minWidth: 160,
     },
     {
       field: "qty",
       headerName: "Qty",
       filter: "agMultiColumnFilter",
       cellDataType: "text",
+      maxWidth: 90,
     },
     {
-      field: "customer_co_por_so",
-      headerName: "Customer CP/POR/SO",
+      field: "active",
+      headerName: "Status",
       filter: "agMultiColumnFilter",
-    },
-    {
-      field: "customer_name",
-      headerName: "Customer Name",
-      filter: "agMultiColumnFilter",
-    },
-    {
-      field: "customer_part_number",
-      headerName: "Customer Part Number",
-      filter: "agMultiColumnFilter",
-    },
-    {
-      field: "customer_serial_tag",
-      headerName: "Customer Serial Tag",
-      filter: "agMultiColumnFilter",
-    },
-    {
-      field: "label_count",
-      headerName: "Label Count",
-      filter: "agMultiColumnFilter",
-    },
-    {
-      field: "total_label_count",
-      headerName: "Total Label Count",
-      filter: "agMultiColumnFilter",
-    },
-    { field: "active", headerName: "Active", filter: "agMultiColumnFilter" },
-    {
-      field: "created_by",
-      headerName: "Created By",
-      filter: "agMultiColumnFilter",
+      maxWidth: 100,
     },
     {
       field: "created_date",
       headerName: "Created Date",
       filter: "agMultiColumnFilter",
+      minWidth: 130,
     },
+    // Hidden columns — available via column chooser
+    { field: "id", headerName: "ID", filter: "agMultiColumnFilter", hide: true },
+    { field: "line_number", headerName: "Line Number", filter: "agMultiColumnFilter", hide: true },
+    { field: "location", headerName: "Location", filter: "agMultiColumnFilter", hide: true },
+    { field: "po_number", headerName: "PO Number", filter: "agMultiColumnFilter", cellDataType: "text", hide: true },
+    { field: "customer_co_por_so", headerName: "Customer CP/POR/SO", filter: "agMultiColumnFilter", hide: true },
+    { field: "customer_part_number", headerName: "Customer Part Number", filter: "agMultiColumnFilter", hide: true },
+    { field: "customer_serial_tag", headerName: "Customer Serial Tag", filter: "agMultiColumnFilter", hide: true },
+    { field: "label_count", headerName: "Label Count", filter: "agMultiColumnFilter", hide: true },
+    { field: "total_label_count", headerName: "Total Label Count", filter: "agMultiColumnFilter", hide: true },
+    { field: "created_by", headerName: "Created By", filter: "agMultiColumnFilter", hide: true },
   ];
 
   @Input() selectedViewType = "Active";
@@ -271,18 +251,12 @@ export class PlacardListComponent implements OnInit {
       }
 
       this.data = await this.api.getList(
-        this.selectedViewType,
-        this.dateFrom,
-        this.dateTo,
-        this.isAll
+        this.selectedViewType
       );
 
       this.router.navigate(["."], {
         queryParams: {
           selectedViewType: this.selectedViewType,
-          isAll: this.isAll,
-          dateFrom: this.dateFrom,
-          dateTo: this.dateTo,
         },
         relativeTo: this.activatedRoute,
         queryParamsHandling: "merge",
@@ -306,5 +280,13 @@ export class PlacardListComponent implements OnInit {
     return this.data.filter(item => 
       (!item.status || item.status.toLowerCase() === 'pending' || item.status.toLowerCase() === 'open' || item.status.toLowerCase() === 'in progress')
     ).length;
+  }
+
+  breadcrumbItems(): BreadcrumbItem[] {
+    return [
+      { label: "Operations", link: "/dashboard/operations" },
+      { label: "Forms", link: "/operations/forms" },
+      { label: "Work Order Placards", active: true },
+    ];
   }
 }

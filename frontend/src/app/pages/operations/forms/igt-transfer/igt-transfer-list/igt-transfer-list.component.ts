@@ -11,10 +11,8 @@ import {
 } from "src/assets/js/util/jslzString";
 import { ActivatedRoute, Router } from "@angular/router";
 import { highlightRowView, autoSizeColumns } from "src/assets/js/util";
-import moment from "moment";
 import { NAVIGATION_ROUTE } from "../igt-transfer-constant";
-import { DateRangeComponent } from "@app/shared/components/date-range/date-range.component";
-import { BreadcrumbItem } from "@app/shared/components/breadcrumb/breadcrumb.component";
+import { BreadcrumbItem, BreadcrumbComponent } from "@app/shared/components/breadcrumb/breadcrumb.component";
 import { IgtTransferService } from "@app/core/api/operations/igt-transfer/igt-transfer.service";
 import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
 
@@ -26,7 +24,6 @@ import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link
     FormsModule,
     NgSelectModule,
     AgGridModule,
-    DateRangeComponent,
   ],
   selector: "app-igt-transfer-list",
   templateUrl: "./igt-transfer-list.component.html",
@@ -40,14 +37,7 @@ export class IgtTransferListComponent implements OnInit {
 
   ngOnInit(): void {
     this.activatedRoute.queryParams.subscribe((params) => {
-      this.dateFrom = params["dateFrom"] || this.dateFrom;
-      this.dateTo = params["dateTo"] || this.dateTo;
-      this.dateRange = [this.dateFrom, this.dateTo];
-
       this.id = params["id"];
-      this.isAll = params["isAll"]
-        ? params["isAll"].toLocaleLowerCase() === "true"
-        : false;
       this.selectedViewType =
         params["selectedViewType"] || this.selectedViewType;
     });
@@ -69,43 +59,47 @@ export class IgtTransferListComponent implements OnInit {
       maxWidth: 115,
       minWidth: 115,
     },
-    { field: "id", headerName: "ID", filter: "agMultiColumnFilter" },
     {
       field: "so_number",
       headerName: "SO Number",
       filter: "agMultiColumnFilter",
+      minWidth: 130,
     },
     {
       field: "transfer_reference",
       headerName: "Transfer Reference",
       filter: "agMultiColumnFilter",
+      minWidth: 160,
     },
     {
       field: "transfer_reference_description",
-      headerName: "Transfer Reference Description",
+      headerName: "Description",
       filter: "agMultiColumnFilter",
+      flex: 1,
+      minWidth: 200,
     },
-    { field: "date", headerName: "Date", filter: "agMultiColumnFilter" },
     {
       field: "from_location",
       headerName: "From Location",
       filter: "agMultiColumnFilter",
+      minWidth: 140,
     },
     {
       field: "to_location",
       headerName: "To Location",
       filter: "agMultiColumnFilter",
+      minWidth: 140,
     },
-    {
-      field: "created_by",
-      headerName: "Created By",
-      filter: "agMultiColumnFilter",
-    },
+    { field: "date", headerName: "Date", filter: "agMultiColumnFilter", minWidth: 120 },
     {
       field: "created_date",
       headerName: "Created Date",
       filter: "agMultiColumnFilter",
+      minWidth: 130,
     },
+    // Hidden columns
+    { field: "id", headerName: "ID", filter: "agMultiColumnFilter", hide: true },
+    { field: "created_by", headerName: "Created By", filter: "agMultiColumnFilter", hide: true },
   ];
 
   @Input() selectedViewType = "Active";
@@ -136,23 +130,6 @@ export class IgtTransferListComponent implements OnInit {
   data: any[];
 
   id = null;
-
-  isAll = false;
-
-  changeIsAll() {}
-
-  dateFrom = moment()
-    .subtract(1, "months")
-    .startOf("month")
-    .format("YYYY-MM-DD");
-  dateTo = moment().endOf("month").format("YYYY-MM-DD");
-  dateRange = [this.dateFrom, this.dateTo];
-
-  onChangeDate($event) {
-    this.dateFrom = $event["dateFrom"];
-    this.dateTo = $event["dateTo"];
-    this.getData();
-  }
 
   gridOptions: GridOptions = {
     columnDefs: this.columnDefs,
@@ -206,18 +183,12 @@ export class IgtTransferListComponent implements OnInit {
       }
 
       this.data = await this.api.getList(
-        this.selectedViewType,
-        this.dateFrom,
-        this.dateTo,
-        this.isAll
+        this.selectedViewType
       );
 
       this.router.navigate(["."], {
         queryParams: {
           selectedViewType: this.selectedViewType,
-          isAll: this.isAll,
-          dateFrom: this.dateFrom,
-          dateTo: this.dateTo,
         },
         relativeTo: this.activatedRoute,
         queryParamsHandling: "merge",

@@ -15,8 +15,8 @@ export class IgtTransferService extends DataService<any> {
     super(url, http);
   }
 
-  getList = async (selectedViewType: string, dateFrom: string, dateTo: string, isAll = false) =>
-    await firstValueFrom(this.http.get<any[]>(`${igtTransferApiV2Url}/getList?selectedViewType=${selectedViewType}&dateFrom=${dateFrom}&dateTo=${dateTo}&isAll=${isAll}`));
+  getList = async (selectedViewType: string) =>
+    await firstValueFrom(this.http.get<any[]>(`${igtTransferApiV2Url}/getList?selectedViewType=${selectedViewType}`));
 
   getHeader = async (id) =>
     await firstValueFrom(this.http.get<any[]>(`${igtTransferApiV2Url}/getHeader?id=${id}`));

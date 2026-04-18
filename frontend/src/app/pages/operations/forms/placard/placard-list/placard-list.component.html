@@ -1,4 +1,6 @@
 <div class="container-fluid">
+  <app-breadcrumb [items]="breadcrumbItems()"></app-breadcrumb>
+
   <div class="row justify-content-center">
     <div class="col-12">
       
@@ -42,19 +44,10 @@
                 placeholder="Search placards by work order, job, part...">
               <i class="mdi mdi-magnify"></i>
             </div>
-            <div class="me-3">
-              <app-date-range (setDateRange)="onChangeDate($event)" [value]="dateRange" [disabled]="this.isAll"
-                [displayOptions]="true"></app-date-range>
-            </div>
             <ng-select [dropdownPosition]="'bottom'" [searchable]="false" bindLabel="name" bindValue="name"
               [clearable]="false" [items]="selectedViewOptions" [(ngModel)]="selectedViewType" (change)="getData()"
               style="width:150px" class="me-3" [appendTo]="'body'">
             </ng-select>
-            <div class="form-check form-switch form-switch-md me-3">
-              <input class="form-check-input" type="checkbox" id="flexSwitchCheckDefault" [(ngModel)]="isAll"
-                (change)="getData()">
-              <label class="form-check-label" for="flexSwitchCheckDefault">Show All</label>
-            </div>
             <button class="btn btn-outline-secondary me-3" (click)="getData()" title="Refresh data">
               <i class="mdi mdi-refresh me-1"></i>Refresh
             </button>
@@ -82,7 +75,7 @@
         <div class="card-body p-0">
           <ng-container *ngIf="data?.length; else noRecords">
             <ag-grid-angular class="ag-theme-quartz no-border" [rowData]="data" [columnDefs]="columnDefs"
-              [gridOptions]="gridOptions" style="width: 100%;height: calc(100vh - 254px);">
+              [gridOptions]="gridOptions" style="width: 100%;height: calc(100vh - 294px);">
             </ag-grid-angular>
           </ng-container>
           <ng-template #noRecords>
