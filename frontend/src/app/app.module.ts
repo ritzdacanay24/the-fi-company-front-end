@@ -84,7 +84,6 @@ export function createTranslateLoader(http: HttpClient): any {
     DragulaModule.forRoot(),
     FormsModule,
     TranslateModule.forRoot({
-      defaultLanguage: "en",
       loader: {
         provide: TranslateLoader,
         useFactory: createTranslateLoader,

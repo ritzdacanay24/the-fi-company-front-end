@@ -25,19 +25,7 @@ export class TrackingService {
       });
   }
 
-  trackPage(url: string) {
-    // Send tracking data to your backend
-    if(this.authenticationService.currentUserValue)
-    this.http
-      .post("/track.php", {
-        path: url,
-        userId: this.authenticationService.currentUserValue.full_name,
-        createdDate: time_now(),
-        userAgent: navigator.userAgent,
-        browserName: navigator.appName,
-        browserVersion: navigator.appVersion,
-        browserPlatform: navigator.platform,
-      })
-      .subscribe();
+  trackPage(_url: string) {
+    // tracking disabled
   }
 }

@@ -6,8 +6,6 @@ import { DragDropModule } from '@angular/cdk/drag-drop';
 
 import { NgbDropdownModule, NgbNavModule, NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
 import { SimplebarAngularModule } from 'simplebar-angular';
-import { LanguageService } from '../core/services/language.service';
-import { TranslateModule } from '@ngx-translate/core';
 import { NgbCollapseModule } from '@ng-bootstrap/ng-bootstrap';
 
 // Component pages
@@ -48,7 +46,6 @@ import { AppSwitcherComponent } from '@app/components/app-switcher/app-switcher.
     NgbCollapseModule,
     NgbTooltipModule,
     SimplebarAngularModule,
-    TranslateModule,
     FormsModule,
     ReactiveFormsModule,
     DragDropModule,
@@ -58,7 +55,6 @@ import { AppSwitcherComponent } from '@app/components/app-switcher/app-switcher.
     DragDropModule,
     GridLayoutComponent
   ],
-  providers: [LanguageService],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class LayoutsModule { }

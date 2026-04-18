@@ -12,6 +12,8 @@ import { RequestContextMiddleware } from './middlewares/request-context.middlewa
 import { AttachmentsModule } from './modules/attachments/attachments.module';
 import { ForkliftInspectionModule } from './modules/forklift-inspection';
 import { GraphicsBomModule } from './modules/graphics-bom/graphics-bom.module';
+import { GraphicsProductionModule } from './modules/graphics-production/graphics-production.module';
+import { GraphicsScheduleModule } from './modules/graphics-schedule/graphics-schedule.module';
 import { HealthModule } from './modules/health';
 import { IgtSerialNumbersModule } from './modules/igt-serial-numbers';
 import { SerialAssignmentsModule } from './modules/serial-assignments';
@@ -68,6 +70,8 @@ import { EmailModule } from '../shared/email/email.module';
     DataScrubModule,
     ForkliftInspectionModule,
     GraphicsBomModule,
+    GraphicsProductionModule,
+    GraphicsScheduleModule,
     HealthModule,
     IgtSerialNumbersModule,
     IgtTransferModule,

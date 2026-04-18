@@ -34,6 +34,7 @@ export class SafetyIncidentViewComponent {
     data: any = {};
     isLoading = false;
     attachments: any = [];
+    selectedAction = "";
 
     goBack = () => {
         this.router.navigate([NAVIGATION_ROUTE.LIST], {
@@ -46,6 +47,13 @@ export class SafetyIncidentViewComponent {
             queryParams: { id: this.id },
         });
     };
+
+    onActionSelect(action: string): void {
+        if (action === "edit") {
+            this.goToEdit();
+        }
+        this.selectedAction = "";
+    }
 
     async getData() {
         try {

@@ -47,6 +47,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   loading = true;
   saving = false;
   refreshingInstance = false;
+  isLoadingInstance = false;
   instanceId: number = 0;
 
   // Start-from-template (fullscreen modal) state
@@ -1636,6 +1637,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
             this.instance = null;
             this.template = null;
             this.loading = true;
+            this.isLoadingInstance = false;
           }
 
           // Update instance ID
@@ -1652,7 +1654,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
             this.pendingSelectedIndex = null;
           }
 
-          if (!isSameInstance || !hasInstanceLoaded) {
+          if (!isSameInstance || (!hasInstanceLoaded && !this.isLoadingInstance)) {
             this.loadInstance();
           } else {
             this.applySelectionFromQuery();
@@ -2070,11 +2072,14 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   }
 
   loadInstance(): void {
+    if (this.isLoadingInstance) return;
+    this.isLoadingInstance = true;
     this.loading = true;
     this.photoChecklistService.getInstance(this.instanceId).subscribe({
       next: (instance) => {
         if (!instance) {
           this.loading = false;
+          this.isLoadingInstance = false;
           alert(`Error: Checklist instance #${this.instanceId} not found. It may have been deleted.`);
           this.router.navigate(['/quality/checklist/list']);
           return;
@@ -2084,6 +2089,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         const canViewChecklist = this.checkPermission(instance);
         if (!canViewChecklist) {
           this.loading = false;
+          this.isLoadingInstance = false;
           alert(`Access Denied: This checklist belongs to ${instance.operator_name}. You can only modify your own checklists.`);
           this.router.navigate([this.getExecutionRoute()]);
           return;
@@ -2094,6 +2100,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         
         if (!instance.template_id) {
           this.loading = false;
+          this.isLoadingInstance = false;
           alert('Error: Checklist instance has no associated template.');
           return;
         }
@@ -2104,6 +2111,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       error: (error) => {
         console.error('Error loading instance:', error);
         this.loading = false;
+        this.isLoadingInstance = false;
         alert(`Error loading checklist instance #${this.instanceId}. It may have been deleted or you don't have permission to access it.`);
         this.router.navigate(['/quality/checklist/list']);
       }
@@ -2136,6 +2144,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       next: (template) => {
         if (!template) {
           this.loading = false;
+          this.isLoadingInstance = false;
           alert('Error: Template not found. Please try again.');
           return;
         }
@@ -2143,10 +2152,12 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         this.template = template;
         this.initializeProgress();
         this.loading = false;
+        this.isLoadingInstance = false;
       },
       error: (error) => {
         console.error('Error loading template:', error);
         this.loading = false;
+        this.isLoadingInstance = false;
         alert('Error loading template. Please try again.');
       }
     });

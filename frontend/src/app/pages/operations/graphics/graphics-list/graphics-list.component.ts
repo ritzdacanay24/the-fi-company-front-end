@@ -1,7 +1,6 @@
 import { Component, OnInit } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
 import { GraphicsService } from "@app/core/api/operations/graphics/graphics.service";
-import { DateRangeComponent } from "@app/shared/components/date-range/date-range.component";
 import { SharedModule } from "@app/shared/shared.module";
 import {
   _compressToEncodedURIComponent,
@@ -9,7 +8,6 @@ import {
 } from "src/assets/js/util/jslzString";
 import { AgGridModule } from "ag-grid-angular";
 import { ColDef, GridApi, GridOptions } from "ag-grid-community";
-import moment from "moment";
 import { NAVIGATION_ROUTE } from "../graphics-constant";
 import {
   agGridDateFilterdateFilter,
@@ -20,7 +18,7 @@ import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link
 
 @Component({
   standalone: true,
-  imports: [SharedModule, AgGridModule, DateRangeComponent],
+  imports: [SharedModule, AgGridModule],
   selector: "app-graphics-list",
   templateUrl: "./graphics-list.component.html",
   styleUrls: [],
@@ -34,36 +32,24 @@ export class GraphicsListComponent implements OnInit {
 
   ngOnInit(): void {
     this.activatedRoute.queryParams.subscribe((params) => {
-      this.dateFrom = params["dateFrom"] || this.dateFrom;
-      this.dateTo = params["dateTo"] || this.dateTo;
-      this.dateRange = [this.dateFrom, this.dateTo];
       this.id = params["id"];
+      this.selectedViewType = params["selectedViewType"] || this.selectedViewType;
     });
     this.getData();
   }
 
   query: any;
 
+  selectedViewType: "Open" | "All" = "Open";
+
   setFilter = (q: string) => this.gridApi.setGridOption("quickFilterText", q);
 
   title = "Graphics List";
 
-  dateFrom = moment()
-    .subtract(0, "months")
-    .startOf("month")
-    .format("YYYY-MM-DD");
-  dateTo = moment().endOf("month").format("YYYY-MM-DD");
-  dateRange = [this.dateFrom, this.dateTo];
-
-  onChangeDate($event) {
-    this.dateFrom = $event["dateFrom"];
-    this.dateTo = $event["dateTo"];
-    this.getData();
-  }
-
   gridApi: GridApi;
 
   data: any[];
+  allData: any[];
 
   id = null;
 
@@ -80,6 +66,34 @@ export class GraphicsListComponent implements OnInit {
 
   getTotalCount(): number {
     return this.data?.length || 0;
+  }
+
+  onViewTypeChange(): void {
+    this.applyViewFilter();
+    this.router.navigate(["."], {
+      queryParams: {
+        selectedViewType: this.selectedViewType,
+      },
+      relativeTo: this.activatedRoute,
+      queryParamsHandling: "merge",
+    });
+  }
+
+  private applyViewFilter(): void {
+    if (this.selectedViewType === "All") {
+      this.data = [...(this.allData || [])];
+      return;
+    }
+
+    this.data = (this.allData || []).filter((row: any) => {
+      const openQty = Number(row?.openQty ?? 0);
+      if (!Number.isNaN(openQty)) {
+        return openQty > 0;
+      }
+
+      const statusText = String(row?.statusText || "").toLowerCase();
+      return statusText.includes("open");
+    });
   }
 
   columnDefs: ColDef[] = [
@@ -169,11 +183,13 @@ export class GraphicsListComponent implements OnInit {
   async getData() {
     try {
       this.gridApi?.showLoadingOverlay();
-      this.data = await this.api.getGraphicsList(this.dateFrom, this.dateTo);
+      this.allData = await this.api.getGraphicsList();
+      this.applyViewFilter();
       this.router.navigate(["."], {
         queryParams: {
-          dateFrom: this.dateFrom,
-          dateTo: this.dateTo,
+          dateFrom: null,
+          dateTo: null,
+          selectedViewType: this.selectedViewType,
         },
         relativeTo: this.activatedRoute,
         queryParamsHandling: "merge",

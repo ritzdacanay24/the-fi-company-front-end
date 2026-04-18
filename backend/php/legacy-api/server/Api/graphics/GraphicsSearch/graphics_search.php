@@ -14,7 +14,9 @@ $db = $db_connect->getConnection();
 $data = new GraphicsSearch($db);
 
 if(ISSET($_GET['ReadAll'])){
-	$dataInfo = $data->ReadAll($_GET['dateFrom'], $_GET['dateTo']);
+	$dateFrom = isset($_GET['dateFrom']) ? $_GET['dateFrom'] : null;
+	$dateTo = isset($_GET['dateTo']) ? $_GET['dateTo'] : null;
+	$dataInfo = $data->ReadAll($dateFrom, $dateTo);
 }
 
 if(ISSET($_GET['coSearch'])){

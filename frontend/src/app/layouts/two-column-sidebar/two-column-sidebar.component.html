@@ -45,12 +45,12 @@
                         @if(hasItems(item)){
                         <a href="javascript:void(0);" [attr.subitems]="item.collapseid" class="nav-icon" (click)="toggleItem($event)">
                           <i class="{{ item.icon }}" class=""></i>
-                          <span data-key="t-dashboards" class="d-none">{{item.label | translate}}</span>
+                          <span data-key="t-dashboards" class="d-none">{{item.label}}</span>
                         </a>
                       }@else{
                         <a [routerLink]="item.link" [attr.subitems]="item.collapseid" class="nav-icon" (click)="toggleParentItem($event)">
                           <i class="{{ item.icon }}" class=""></i>
-                          <span data-key="t-widget" class="d-none">{{item.label | translate}}</span>
+                          <span data-key="t-widget" class="d-none">{{item.label}}</span>
                         </a>
                       }
                       </li>
@@ -77,7 +77,7 @@
                   @for(item of menuItems; track $index){
                   <li class="nav-item">
                     <ng-container>
-                      <div class="collapse menu-dropdown" id="{{item.collapseid}}" [attr.data-name]="item.label | translate" aria-expanded="true">
+                      <div class="collapse menu-dropdown" id="{{item.collapseid}}" [attr.data-name]="item.label" aria-expanded="true">
                         @if(hasItems(item)){
                         <ul class="nav nav-sm flex-column" aria-expanded="false">
                           @for(subitem of item.subItems; track $index){
@@ -85,9 +85,8 @@
                             @if(hasItems(subitem)){
 
                             <a class="nav-link ecomm" data-bs-toggle="collapse" [attr.aria-expanded]="!subitem.isCollapsed" href="javascript:void(0);" [attr.data-parent]="subitem.parentId" (click)="toggleSubItem(subitem)">
-                              {{ subitem.label | translate}}
-                              @if(subitem.badge){<span class="badge badge-pill {{subitem.badge.variant}}">{{subitem.badge.text
-                                | translate}}</span>}
+                              {{ subitem.label}}
+                              @if(subitem.badge){<span class="badge badge-pill {{subitem.badge.variant}}">{{subitem.badge.text}}</span>}
                             </a>
 
                             <div class="collapse menu-dropdown sub-menu" id="{{item.collapseid}}" #collapse="ngbCollapse" [(ngbCollapse)]="subitem.isCollapsed">
@@ -97,9 +96,8 @@
                                   @if(hasItems(subSubitem)){
 
                                   <a class="nav-link ecomm" data-bs-toggle="collapse" href="javascript:void(0);" [attr.data-parent]="subSubitem.parentId" [attr.aria-expanded]="!subSubitem.isCollapsed" (click)="toggleSubItem(subSubitem)">
-                                    {{ subSubitem.label | translate}} 
-                                    @if(subSubitem.badge){<span class="badge badge-pill {{subSubitem.badge.variant}}">{{subSubitem.badge.text
-                                      | translate}}</span>}
+                                    {{ subSubitem.label}} 
+                                    @if(subSubitem.badge){<span class="badge badge-pill {{subSubitem.badge.variant}}">{{subSubitem.badge.text}}</span>}
                                   </a>
 
                                   <div class="collapse menu-dropdown extra-sub-menu" id="{{item.collapseid}}" #collapse="ngbCollapse" [(ngbCollapse)]="subSubitem.isCollapsed">
@@ -107,7 +105,7 @@
                                       @for(subSubitem1 of subSubitem.subItems; track $index){
                                       <li class="nav-item">
                                         <a [attr.data-parent]="subSubitem1.parentId" [routerLink]="subSubitem1.link" class="nav-link" (click)="updateActive($event)">
-                                          {{ subSubitem1.label | translate }}
+                                          {{ subSubitem1.label }}
                                         </a>
                                       </li>
                                     }
@@ -115,9 +113,8 @@
                                   </div>
                                 }@else{
                                   <a [attr.data-parent]="subSubitem.parentId" [routerLink]="subSubitem.link" class="nav-link" (click)="updateActive($event)">
-                                    {{ subSubitem.label | translate }}
-                                    @if(subSubitem.badge){<span class="badge badge-pill {{subSubitem.badge.variant}}">{{subSubitem.badge.text
-                                      | translate}}</span>}
+                                    {{ subSubitem.label }}
+                                    @if(subSubitem.badge){<span class="badge badge-pill {{subSubitem.badge.variant}}">{{subSubitem.badge.text}}</span>}
                                   </a>
                                 }
                                 </li>
@@ -126,9 +123,8 @@
                             </div>
                           }@else{
                             <a [routerLink]="subitem.link" class="nav-link" [attr.data-parent]="subitem.parentId" (click)="updateActive($event)">
-                              {{ subitem.label | translate}}
-                              @if(subitem.badge){<span class="badge badge-pill {{subitem.badge.variant}}">{{subitem.badge.text
-                                | translate}}</span>}
+                              {{ subitem.label}}
+                              @if(subitem.badge){<span class="badge badge-pill {{subitem.badge.variant}}">{{subitem.badge.text}}</span>}
                             </a>
                           }
                           </li>

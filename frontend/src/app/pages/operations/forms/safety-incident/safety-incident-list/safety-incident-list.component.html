@@ -1,6 +1,33 @@
 <div class="container-fluid">
   <div class="row justify-content-center">
     <div class="col-12">
+      <!-- Breadcrumb -->
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0">
+          <li class="breadcrumb-item"><a routerLink="/dashboard/operations">Operations</a></li>
+          <li class="breadcrumb-item"><a routerLink="/operations/forms">Forms</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Safety Incidents</li>
+        </ol>
+      </nav>
+
+      <!-- Page Header with Context -->
+      <div class="mb-4">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div class="d-flex align-items-center">
+            <div class="bg-warning bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+              <i class="mdi mdi-shield-alert text-white fs-4"></i>
+            </div>
+            <div>
+              <h2 class="mb-1 text-warning">Safety Incidents</h2>
+              <p class="text-muted mb-0">Track open incidents, review statuses, and manage follow-ups</p>
+            </div>
+          </div>
+          <button class="btn btn-primary" routerLink="/operations/forms/safety-incident/create">
+            <i class="mdi mdi-plus me-1"></i>New Incident
+          </button>
+        </div>
+      </div>
+
       <div class="card shadow-sm border-0">
         <div class="card-header">
           <div class="d-flex align-items-center flex-wrap gap-3">
@@ -25,7 +52,7 @@
         <div class="card-body p-0">
           <ng-container *ngIf="data?.length; else noRecords">
             <ag-grid-angular class="ag-theme-quartz no-border" [rowData]="data" [columnDefs]="columnDefs"
-              [gridOptions]="gridOptions" style="width: 100%;height: calc(100vh - 220px);">
+              [gridOptions]="gridOptions" style="width: 100%;height: calc(100vh - 294px);">
             </ag-grid-angular>
           </ng-container>
 
@@ -44,7 +71,7 @@
                 <button 
                   type="button" 
                   class="btn btn-warning"
-                  [routerLink]="['/safety-incidents/create']">
+                  [routerLink]="['/operations/forms/safety-incident/create']">
                   <i class="mdi mdi-plus me-2"></i>Report Incident
                 </button>
               </div>

@@ -32,15 +32,14 @@
             <ul class="navbar-nav" id="navbar-nav">
                 @for(item of menuItems; track $index){
                 @if(item.isTitle){
-                    <li class="menu-title"><span data-key="t-menu">{{ item.label | translate }}</span></li>
+                    <li class="menu-title"><span data-key="t-menu">{{ item.label }}</span></li>
                 }@else {
                     <li class="nav-item">
                     @if(hasItems(item)){
                         <a href="javascript:void(0);" class="is-parent nav-link menu-link" [ngClass]="{'has-arrow': !item.badge, 'has-dropdown': item.badge}" data-bs-toggle="collapse" aria-expanded="false" (click)="toggleItem($event)">
                             <i class="{{ item.icon }} icon nav-icon" class=""></i>
-                            <span class=""> {{ item.label | translate }}</span>
-                            @if(item.badge){<span class="badge badge-pill {{item.badge.variant}}">{{item.badge.text
-                                | translate}}</span>}
+                            <span class=""> {{ item.label }}</span>
+                            @if(item.badge){<span class="badge badge-pill {{item.badge.variant}}">{{item.badge.text}}</span>}
                         </a>
 
                         <div class="collapse menu-dropdown" [ngClass]="{'mega-dropdown-menu':item.label === 'MENUITEMS.BASEUI.TEXT'}" id="sidebarDashboards" >
@@ -51,7 +50,7 @@
                                         <li class="nav-item">
                                             @if(hasItems(subitem)){
                                             <a class="nav-link" href="javascript:void(0);" [attr.data-parent]="subitem.parentId" data-bs-toggle="collapse" aria-expanded="false" (click)="toggleSubItem($event)">
-                                                @if(subitem.icon){<i class="{{ subitem.icon }} icon nav-icon" class=""></i>}{{ subitem.label | translate}}
+                                                @if(subitem.icon){<i class="{{ subitem.icon }} icon nav-icon" class=""></i>}{{ subitem.label}}
                                             </a>
                                             <div class="collapse menu-dropdown">
                                                 <ul class="nav nav-sm flex-column" aria-expanded="false">
@@ -59,7 +58,7 @@
                                                     <li class="nav-item">
                                                         @if(subSubitem.childItem){
                                                         <a [attr.data-parent]="subSubitem.parentId" [routerLink]="subSubitem.link" data-bs-toggle="collapse" aria-expanded="false" class="nav-link" (click)="updateActive($event)">
-                                                            {{ subSubitem.label | translate }}
+                                                            {{ subSubitem.label }}
                                                         </a>
 
                                                         <div class="collapse menu-dropdown">
@@ -67,7 +66,7 @@
                                                                 @for(subChilditem of subSubitem.childItem; track $index){
                                                                 <li class="nav-item">
                                                                     <a [attr.data-parent]="subSubitem.parentId" [routerLink]="subChilditem.link" class="nav-link" (click)="updateActive($event)">
-                                                                        {{ subChilditem.label | translate }}
+                                                                        {{ subChilditem.label }}
                                                                     </a>
                                                                 </li>
                                                                 }
@@ -75,7 +74,7 @@
                                                         </div>
                                                     }@else{
                                                         <a [attr.data-parent]="subSubitem.parentId" [routerLink]="subSubitem.link" class="nav-link" (click)="updateActive($event)">
-                                                            {{ subSubitem.label | translate }}
+                                                            {{ subSubitem.label }}
                                                         </a>
                                                     }
                                                     </li>
@@ -84,7 +83,7 @@
                                             </div>
                                         }@else{
                                             <a [routerLink]="subitem.link" class="nav-link" [attr.data-parent]="subitem.parentId" (click)="updateActive($event)">
-                                                @if(subitem.icon){ <i class="{{ subitem.icon }} icon nav-icon" class=""></i> } {{ subitem.label | translate}}
+                                                @if(subitem.icon){ <i class="{{ subitem.icon }} icon nav-icon" class=""></i> } {{ subitem.label}}
                                             </a>
                                         }
                                         </li>
@@ -96,9 +95,8 @@
                     }@else{
                         <a [routerLink]="item.link" class="side-nav-link-ref nav-link menu-link">
                             @if(item.icon){<i class="{{ item.icon }} icon nav-icon" class=""></i>}
-                            <span class=""> {{ item.label | translate }}</span>
-                            @if(item.badge){<span class="badge {{item.badge.variant}} float-end">{{item.badge.text |
-                                translate}}</span>}
+                            <span class=""> {{ item.label }}</span>
+                            @if(item.badge){<span class="badge {{item.badge.variant}} float-end">{{item.badge.text}}</span>}
                         </a>
                     }
                     </li>

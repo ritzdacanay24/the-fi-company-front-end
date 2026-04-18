@@ -199,10 +199,12 @@ export class SafetyIncidentFormComponent {
   });
 
   onPrint = (language = "en") => {
+    const previousLanguage = this.translate.currentLang || this.translate.defaultLang || "en";
     this.translate.use(language);
 
     setTimeout(() => {
       var printContents = document.getElementById("print").innerHTML;
+      this.translate.use(previousLanguage);
       var popupWin = window.open("", "_blank", "width=1000,height=600");
       popupWin.document.open();
 

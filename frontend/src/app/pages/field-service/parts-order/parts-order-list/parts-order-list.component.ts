@@ -13,7 +13,6 @@ import {
 import { PartsOrderService } from "@app/core/api/field-service/parts-order/parts-order.service";
 import { NAVIGATION_ROUTE } from "../parts-order-constant";
 import { CommentsModalService } from "@app/shared/components/comments/comments-modal.service";
-import { GridFiltersComponent } from "@app/shared/grid-filters/grid-filters.component";
 import { GridSettingsComponent } from "@app/shared/grid-settings/grid-settings.component";
 import { SalesOrderInfoModalService } from "@app/shared/components/sales-order-info-modal/sales-order-info-modal.component";
 import { ColDef, GridApi, GridOptions } from "ag-grid-community";
@@ -26,7 +25,6 @@ import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link
     AgGridModule,
     NgSelectModule,
     GridSettingsComponent,
-    GridFiltersComponent,
   ],
   selector: "app-parts-order-list",
   templateUrl: `./parts-order-list.component.html`,

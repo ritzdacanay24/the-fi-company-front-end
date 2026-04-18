@@ -11,7 +11,6 @@ import {
   TemplateRef,
 } from "@angular/core";
 import { NavigationEnd, Router } from "@angular/router";
-import { TranslateService } from "@ngx-translate/core";
 import { CdkDragDrop, moveItemInArray } from "@angular/cdk/drag-drop";
 import { NgbModal, NgbModalRef } from "@ng-bootstrap/ng-bootstrap";
 
@@ -74,7 +73,6 @@ export class SidebarComponent implements OnInit {
   );
   constructor(
     private router: Router,
-    public translate: TranslateService,
     private favoriteService: FavoriteService,
     public pageAccessService: PageAccessService,
     public menuService: MenuService,
@@ -84,7 +82,6 @@ export class SidebarComponent implements OnInit {
   ) {
     this.getMenu();
     
-    translate.setDefaultLang("en");
     this.favoriteService.getData$.subscribe(() => {
       this.favs = this.favoriteService.getFavorites();
     });

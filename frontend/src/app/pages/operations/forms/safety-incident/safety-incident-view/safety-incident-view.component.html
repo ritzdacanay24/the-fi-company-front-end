@@ -22,6 +22,16 @@
   <div class="row justify-content-center">
     <div class="col-12 col-lg-11 col-xl-10 col-xxl-8">
 
+      <!-- Breadcrumb -->
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0">
+          <li class="breadcrumb-item"><a routerLink="/dashboard/operations">Operations</a></li>
+          <li class="breadcrumb-item"><a routerLink="/operations/forms">Forms</a></li>
+          <li class="breadcrumb-item"><a routerLink="/operations/forms/safety-incident/list">Safety Incidents</a></li>
+          <li class="breadcrumb-item active" aria-current="page">View</li>
+        </ol>
+      </nav>
+
       <!-- Page Header with Context -->
       <div class="mb-4">
         <div class="d-flex align-items-center justify-content-between mb-3">
@@ -40,16 +50,17 @@
             </div>
           </div>
           
-          <!-- Action Buttons - Top Right -->
-          <div class="d-flex gap-2" *ngIf="processedData && processedData.id">
-            <button type="button" class="btn btn-outline-info" [disabled]="isLoading" (click)="false" 
-              title="Print Safety Report" *ngIf="false">
-              <i class="mdi mdi-printer me-1"></i>Print
-            </button>
-            <button type="button" class="btn btn-warning" (click)="goToEdit()" 
-              title="Edit Safety Incident">
-              <i class="mdi mdi-pencil me-1"></i>Edit
-            </button>
+          <!-- Actions Select -->
+          <div *ngIf="processedData && processedData.id" style="min-width: 220px;">
+            <select
+              class="form-select"
+              [(ngModel)]="selectedAction"
+              (ngModelChange)="onActionSelect($event)"
+              aria-label="Safety incident actions"
+            >
+              <option value="">Select action</option>
+              <option value="edit">Edit Safety Incident</option>
+            </select>
           </div>
         </div>
 

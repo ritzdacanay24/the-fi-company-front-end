@@ -46,7 +46,7 @@ export class MenuComponent implements OnInit {
         },
         {
           name: "Safety Incident Form",
-          link: "/safety-incidents/create",
+          link: "/operations/forms/safety-incident/create",
         },
         {
           name: "FS App",

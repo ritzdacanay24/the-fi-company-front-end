@@ -168,7 +168,7 @@ export class PublicFormsMenuComponent implements OnInit, OnDestroy {
         this.router.navigate(['/standalone/serial-generator']);
         break;
       case 'safety-incident':
-        this.router.navigate(['/safety-incidents/create']);
+        this.router.navigate(['/operations/forms/safety-incident/create']);
         break;
       case 'quality-checklist':
         this.router.navigate(['/inspection-checklist']);
