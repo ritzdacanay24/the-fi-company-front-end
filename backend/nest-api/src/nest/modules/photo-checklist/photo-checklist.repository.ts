@@ -725,4 +725,19 @@ export class PhotoChecklistRepository {
       return fallback;
     }
   }
+
+  async getConfig(): Promise<RowDataPacket[]> {
+    return this.mysqlService.query<RowDataPacket[]>(
+      'SELECT config_key, config_value, description, config_type FROM checklist_config ORDER BY config_key',
+    );
+  }
+
+  async updateConfig(updates: Record<string, string>): Promise<void> {
+    for (const [key, value] of Object.entries(updates)) {
+      await this.mysqlService.query(
+        'UPDATE checklist_config SET config_value = ?, updated_at = CURRENT_TIMESTAMP WHERE config_key = ?',
+        [String(value), key],
+      );
+    }
+  }
 }

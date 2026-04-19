@@ -169,4 +169,14 @@ export class InspectionChecklistController {
   async deleteInstance(@Param('id', ParseIntPipe) id: number) {
     return this.service.deleteInstance(id);
   }
+
+  @Get('config')
+  async getConfig() {
+    return this.service.getConfig();
+  }
+
+  @Post('config')
+  async updateConfig(@Body() updates: Record<string, string>) {
+    return this.service.updateConfig(updates);
+  }
 }

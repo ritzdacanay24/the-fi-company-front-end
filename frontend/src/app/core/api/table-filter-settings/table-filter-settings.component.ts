@@ -1,40 +1,58 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { DataService } from '../DataService';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
-import { queryString } from 'src/assets/js/util/queryString';
 import { AuthenticationService } from '@app/core/services/auth.service';
 
-let url = 'tableFilterSettings';
+const BASE_URL = 'apiv2/table-filter-settings';
 
 @Injectable({
   providedIn: 'root'
 })
-export class TableFilterSettingsService extends DataService<any> {
+export class TableFilterSettingsService {
 
-  constructor(http: HttpClient, private authenticationService: AuthenticationService) {
-    super(url, http);
+  constructor(private http: HttpClient, private authenticationService: AuthenticationService) {}
+
+  find = async (params: Record<string, any>): Promise<any[]> => {
+    let httpParams = new HttpParams();
+    Object.entries(params).forEach(([key, val]) => {
+      if (val != null) httpParams = httpParams.set(key, String(val));
+    });
+    return firstValueFrom(this.http.get<any[]>(`${BASE_URL}/find`, { params: httpParams }));
   }
 
-  async saveTableSettings(id, params) {
-    return await firstValueFrom(this.http.put(`${url}/updateById?id=${id}`, params))
+  findOne = async (params: Record<string, any>): Promise<any> => {
+    let httpParams = new HttpParams();
+    Object.entries(params).forEach(([key, val]) => {
+      if (val != null) httpParams = httpParams.set(key, String(val));
+    });
+    return firstValueFrom(this.http.get<any>(`${BASE_URL}/find-one`, { params: httpParams }));
   }
 
-  /**
-   *
-   * @param params
-   * @returns
-   */
-  getTableByUserId = async (params): Promise<any> => {
-    const result = queryString(params);
-    let data = await firstValueFrom(this.http.get<any[] | any>(`${url}/find.php${result}&userId=${this.authenticationService.currentUserValue.id}`));
+  getAll = async (): Promise<any[]> => firstValueFrom(this.http.get<any[]>(BASE_URL));
 
-    var currentView: any = data.filter((pilot) => pilot.table_default === 1)
-    
+  getById = async (id: number): Promise<any> => firstValueFrom(this.http.get<any>(`${BASE_URL}/${id}`));
+
+  create = async (params: Record<string, any>): Promise<{ message: string; insertId?: number }> =>
+    firstValueFrom(this.http.post<{ message: string; insertId?: number }>(BASE_URL, params));
+
+  saveTableSettings = async (id: number | string, params: Record<string, any>): Promise<any> =>
+    firstValueFrom(this.http.put<any>(`${BASE_URL}/${id}`, params));
+
+  delete = async (id: number): Promise<any> => firstValueFrom(this.http.delete<any>(`${BASE_URL}/${id}`));
+
+  getTableByUserId = async (params: Record<string, any>): Promise<any> => {
+    let httpParams = new HttpParams();
+    Object.entries(params).forEach(([key, val]) => {
+      if (val != null) httpParams = httpParams.set(key, String(val));
+    });
+    httpParams = httpParams.set('userId', String(this.authenticationService.currentUserValue.id));
+
+    const data = await firstValueFrom(this.http.get<any[]>(`${BASE_URL}/find`, { params: httpParams }));
+    const currentView: any = data.filter((row) => row.table_default === 1);
+
     return {
-      currentView: currentView?.length ? { ...currentView[0], data: JSON.parse(currentView[0].data) } : false,
+      currentView: currentView?.length ? { ...currentView[0], data: typeof currentView[0].data === 'string' ? JSON.parse(currentView[0].data) : currentView[0].data } : false,
       data
-    }
+    };
   }
-
 }

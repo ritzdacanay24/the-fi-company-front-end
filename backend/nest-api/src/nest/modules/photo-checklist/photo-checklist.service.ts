@@ -389,4 +389,13 @@ export class PhotoChecklistService {
 
     return Number(rawItemId || 0);
   }
+
+  async getConfig() {
+    return this.repository.getConfig();
+  }
+
+  async updateConfig(updates: Record<string, string>) {
+    await this.repository.updateConfig(updates);
+    return { success: true };
+  }
 }

@@ -135,7 +135,7 @@ export class GridFiltersToolPanel implements IToolPanelAngularComp {
   }
 
   selectTable(row) {
-    let e = this.isJsonString(row.data) ? JSON.parse(row.data) : row.data;
+    let e = typeof row.data === 'object' && row.data !== null ? row.data : (this.isJsonString(row.data) ? JSON.parse(row.data) : row.data);
     try {
       this.gridApi.setFilterModel(e);
       this.value = row.id;
@@ -202,7 +202,7 @@ export class GridFiltersToolPanel implements IToolPanelAngularComp {
       this.currentView = this.current;
 
       if (this.gridApi) {
-        this.gridApi!.setFilterModel(JSON.parse(this.current.data));
+        this.gridApi!.setFilterModel(typeof this.current.data === 'string' ? JSON.parse(this.current.data) : this.current.data);
       }
     }
   };

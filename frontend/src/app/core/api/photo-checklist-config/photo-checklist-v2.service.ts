@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { ChecklistInstance, ChecklistTemplate } from './photo-checklist-config.service';
+import { ChecklistInstance, ChecklistTemplate, ChecklistConfig } from './photo-checklist-config.service';
 
 @Injectable({
   providedIn: 'root',
@@ -34,5 +34,13 @@ export class PhotoChecklistV2Service {
 
   createInstance(instance: Partial<ChecklistInstance>): Observable<{ success: boolean; instance_id: number }> {
     return this.http.post<{ success: boolean; instance_id: number }>(`${this.baseUrl}/instances`, instance);
+  }
+
+  getConfig(): Observable<ChecklistConfig[]> {
+    return this.http.get<ChecklistConfig[]>(`${this.baseUrl}/config`);
+  }
+
+  updateConfig(updates: Record<string, string>): Observable<{ success: boolean }> {
+    return this.http.post<{ success: boolean }>(`${this.baseUrl}/config`, updates);
   }
 }

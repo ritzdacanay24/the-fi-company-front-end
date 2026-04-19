@@ -597,7 +597,7 @@ export class PhotoChecklistConfigService {
   // ==============================================
 
   private loadConfig(): void {
-    this.http.get<ChecklistConfig[]>(`${this.baseUrl}?request=config`).subscribe(
+    this.http.get<ChecklistConfig[]>(`${this.nestPhotoChecklistBaseUrl}/config`).subscribe(
       configArray => {
         const config: {[key: string]: any} = {};
         configArray.forEach(item => {
@@ -637,7 +637,7 @@ export class PhotoChecklistConfigService {
 
   updateConfig(updates: {[key: string]: any}): Observable<{success: boolean}> {
     return this.http.post<{success: boolean}>(
-      `${this.baseUrl}?request=config`, 
+      `${this.nestPhotoChecklistBaseUrl}/config`,
       updates
     ).pipe(
       tap(() => this.loadConfig()) // Refresh config

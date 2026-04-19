@@ -33,6 +33,9 @@ import { QirModule } from './modules/qir/qir.module';
 import { QirResponseModule } from './modules/qir-response/qir-response.module';
 import { QirSettingsModule } from './modules/qir-settings/qir-settings.module';
 import { QualityOverviewModule } from './modules/quality-overview/quality-overview.module';
+import { QualityVersionControlModule } from './modules/quality-version-control/quality-version-control.module';
+import { TableFilterSettingsModule } from './modules/table-filter-settings/table-filter-settings.module';
+import { TableSettingsModule } from './modules/table-settings/table-settings.module';
 import { RfqModule } from './modules/rfq/rfq.module';
 import { RmaModule } from './modules/rma/rma.module';
 import { SafetyIncidentModule } from './modules/safety-incident';
@@ -90,6 +93,9 @@ import { EmailModule } from '../shared/email/email.module';
     QirResponseModule,
     QirSettingsModule,
     QualityOverviewModule,
+    QualityVersionControlModule,
+    TableFilterSettingsModule,
+    TableSettingsModule,
     RfqModule,
     RmaModule,
     SafetyIncidentModule,

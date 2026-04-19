@@ -35,7 +35,8 @@ export class GridFiltersComponent implements OnInit {
   }
 
   checkFiltersApplied(data) {
-    return Object.keys(JSON.parse(data)).length;
+    const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+    return Object.keys(parsed).length;
   }
 
   @Output() emitFilter = new EventEmitter<string>();
@@ -81,7 +82,7 @@ export class GridFiltersComponent implements OnInit {
       this.value = this.current.id;
       this.currentView = this.current;
 
-      this.gridApi.setFilterModel(JSON.parse(this.current.data));
+      this.gridApi.setFilterModel(typeof this.current.data === 'string' ? JSON.parse(this.current.data) : this.current.data);
     }
   };
 
@@ -108,7 +109,7 @@ export class GridFiltersComponent implements OnInit {
     if (this.current) {
       this.value = this.current?.id;
       this.currentView = this.current;
-      this.gridApi.setFilterModel(JSON.parse(this.current.data));
+      this.gridApi.setFilterModel(typeof this.current.data === 'string' ? JSON.parse(this.current.data) : this.current.data);
     }
   }
 
@@ -164,7 +165,7 @@ export class GridFiltersComponent implements OnInit {
   }
 
   selectTable(row) {
-    let e = this.isJsonString(row.data) ? JSON.parse(row.data) : row.data;
+    let e = typeof row.data === 'object' && row.data !== null ? row.data : (this.isJsonString(row.data) ? JSON.parse(row.data) : row.data);
     try {
       this.gridApi.setFilterModel(e);
       this.value = row.id;

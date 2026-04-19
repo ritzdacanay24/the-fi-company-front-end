@@ -87,7 +87,7 @@ export interface CreateRevisionRequest {
   providedIn: 'root'
 })
 export class QualityVersionControlService {
-  private baseUrl = 'Quality/quality-version-control.php';
+  private readonly baseUrl = 'apiv2/quality-version-control';
   private documentsSubject = new BehaviorSubject<QualityDocument[]>([]);
   
   public documents$ = this.documentsSubject.asObservable();
@@ -102,38 +102,26 @@ export class QualityVersionControlService {
     status?: string;
     search?: string;
   }): Observable<QualityDocument[]> {
-    let httpParams = new HttpParams().set('request', 'getDocuments');
-    
+    let httpParams = new HttpParams();
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
-        if (value) {
-          httpParams = httpParams.set(key, value);
-        }
+        if (value) httpParams = httpParams.set(key, value);
       });
     }
-
-    return this.http.get<QualityDocument[]>(`${this.baseUrl}`, { params: httpParams })
-      .pipe(
-        tap(documents => this.documentsSubject.next(documents))
-      );
+    return this.http.get<QualityDocument[]>(`${this.baseUrl}/documents`, { params: httpParams })
+      .pipe(tap(documents => this.documentsSubject.next(documents)));
   }
 
   getDocument(id: number): Observable<QualityDocument> {
-    const params = new HttpParams()
-      .set('request', 'getDocument')
-      .set('id', id.toString());
-
-    return this.http.get<QualityDocument>(`${this.baseUrl}`, { params });
+    return this.http.get<QualityDocument>(`${this.baseUrl}/documents/${id}`);
   }
 
   createDocument(request: CreateDocumentRequest): Observable<QualityDocument> {
-    const params = new HttpParams().set('request', 'createDocument');
-    return this.http.post<{success: boolean, message: string, document_id: number, document_number: string}>(`${this.baseUrl}`, request, { params })
+    return this.http.post<{success: boolean, message: string, document_id: number, document_number: string, document: QualityDocument}>(`${this.baseUrl}/documents`, request)
       .pipe(
         map(response => {
           if (response.success) {
-            // Return a basic document object with the created info
-            return {
+            return response.document || {
               id: response.document_id,
               document_number: response.document_number,
               title: request.title,
@@ -143,7 +131,7 @@ export class QualityVersionControlService {
               current_revision: 1,
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
-              created_by: '1' // Default for now
+              created_by: '1'
             } as QualityDocument;
           }
           throw new Error(response.message || 'Failed to create document');
@@ -153,16 +141,10 @@ export class QualityVersionControlService {
   }
 
   updateDocument(id: number, updates: Partial<QualityDocument>): Observable<QualityDocument> {
-    const params = new HttpParams()
-      .set('request', 'updateDocument')
-      .set('id', id.toString());
-    
-    return this.http.post<{success: boolean, message: string}>(`${this.baseUrl}`, updates, { params })
+    return this.http.put<{success: boolean, message: string}>(`${this.baseUrl}/documents/${id}`, updates)
       .pipe(
         map(response => {
-          if (response.success) {
-            return { id, ...updates } as QualityDocument;
-          }
+          if (response.success) return { id, ...updates } as QualityDocument;
           throw new Error(response.message || 'Failed to update document');
         }),
         tap(() => this.refreshDocuments())
@@ -170,16 +152,10 @@ export class QualityVersionControlService {
   }
 
   deleteDocument(id: number): Observable<void> {
-    const params = new HttpParams()
-      .set('request', 'deleteDocument')
-      .set('id', id.toString());
-    
-    return this.http.post<{success: boolean, message: string}>(`${this.baseUrl}`, {}, { params })
+    return this.http.delete<{success: boolean, message: string}>(`${this.baseUrl}/documents/${id}`)
       .pipe(
         map(response => {
-          if (!response.success) {
-            throw new Error(response.message || 'Failed to delete document');
-          }
+          if (!response.success) throw new Error(response.message || 'Failed to delete document');
         }),
         tap(() => this.refreshDocuments())
       );
@@ -187,30 +163,24 @@ export class QualityVersionControlService {
 
   // Revision Management
   getRevisions(documentId: number): Observable<QualityRevision[]> {
-    const params = new HttpParams()
-      .set('request', 'getRevisions')
-      .set('document_id', documentId.toString());
-
-    return this.http.get<QualityRevision[]>(`${this.baseUrl}`, { params });
+    return this.http.get<QualityRevision[]>(`${this.baseUrl}/documents/${documentId}/revisions`);
   }
 
   createRevision(request: CreateRevisionRequest): Observable<QualityRevision> {
-    const params = new HttpParams().set('request', 'createRevision');
-    return this.http.post<{success: boolean, message: string, revision_number: number}>(`${this.baseUrl}`, request, { params })
+    return this.http.post<{success: boolean, message: string, revision_number: number, revision_id: number}>(`${this.baseUrl}/revisions`, request)
       .pipe(
         map(response => {
           if (response.success) {
-            // Return a basic revision object
             return {
-              id: 0, // Will be set by server
+              id: response.revision_id || 0,
               document_id: request.document_id,
               revision_number: response.revision_number,
-              version_string: '', // Will be calculated
+              version_string: '',
               title: request.title,
               description: request.description || '',
               change_description: request.change_description,
               effective_date: request.effective_date,
-              created_by: 1, // Default for now
+              created_by: 1,
               created_at: new Date().toISOString(),
               status: 'draft' as const,
               is_current: true,
@@ -223,52 +193,25 @@ export class QualityVersionControlService {
   }
 
   approveRevision(revisionId: number): Observable<boolean> {
-    const params = new HttpParams()
-      .set('request', 'approveRevision')
-      .set('revision_id', revisionId.toString());
-    
-    return this.http.post<{success: boolean, message: string}>(`${this.baseUrl}`, { approved_by: 1 }, { params })
-      .pipe(
-        map(response => response.success)
-      );
+    return this.http.post<{success: boolean, message: string}>(`${this.baseUrl}/revisions/${revisionId}/approve`, { approved_by: 'user' })
+      .pipe(map(response => response.success));
   }
 
   rejectRevision(revisionId: number, reason: string = ''): Observable<boolean> {
-    const params = new HttpParams()
-      .set('request', 'rejectRevision')
-      .set('revision_id', revisionId.toString());
-    
-    return this.http.post<{success: boolean, message: string}>(`${this.baseUrl}`, { 
-      rejected_by: 1, 
-      reason 
-    }, { params })
-      .pipe(
-        map(response => response.success)
-      );
+    return this.http.post<{success: boolean, message: string}>(`${this.baseUrl}/revisions/${revisionId}/reject`, { rejected_by: 'user', reason })
+      .pipe(map(response => response.success));
   }
 
   getCurrentRevision(documentId: number): Observable<QualityRevision> {
-    const params = new HttpParams()
-      .set('request', 'getRevisions')
-      .set('document_id', documentId.toString());
-
-    return this.http.get<QualityRevision[]>(`${this.baseUrl}`, { params })
-      .pipe(
-        map(revisions => revisions.find(r => r.is_current) || revisions[0])
-      );
+    return this.getRevisions(documentId)
+      .pipe(map(revisions => revisions.find(r => r.is_current) || revisions[0]));
   }
 
   updateRevision(id: number, updates: Partial<QualityRevision>): Observable<QualityRevision> {
-    const params = new HttpParams()
-      .set('request', 'updateRevision')
-      .set('id', id.toString());
-    
-    return this.http.post<{success: boolean, message: string}>(`${this.baseUrl}`, updates, { params })
+    return this.http.put<{success: boolean, message: string}>(`${this.baseUrl}/revisions/${id}`, updates)
       .pipe(
         map(response => {
-          if (response.success) {
-            return { id, ...updates } as QualityRevision;
-          }
+          if (response.success) return { id, ...updates } as QualityRevision;
           throw new Error(response.message || 'Failed to update revision');
         }),
         tap(() => this.refreshDocuments())
@@ -277,26 +220,17 @@ export class QualityVersionControlService {
 
   // Document Number Generation and Statistics
   generateDocumentNumber(type: string, department?: string): Observable<string> {
-    let params = new HttpParams()
-      .set('request', 'generateDocumentNumber')
-      .set('document_type', type);
-    
-    if (department) {
-      params = params.set('department', department);
-    }
-
-    return this.http.get<{document_number: string, formatted: string}>(`${this.baseUrl}`, { params })
-      .pipe(
-        map(response => response.document_number)
-      );
+    let params = new HttpParams().set('document_type', type);
+    if (department) params = params.set('department', department);
+    return this.http.get<{document_number: string, formatted: string}>(`${this.baseUrl}/generate-document-number`, { params })
+      .pipe(map(response => response.document_number));
   }
 
   getStats(): Observable<VersionControlStats> {
-    const params = new HttpParams().set('request', 'getStats');
-    return this.http.get<any>(`${this.baseUrl}`, { params })
+    return this.http.get<any>(`${this.baseUrl}/stats`)
       .pipe(
         map(data => ({
-          total_documents: data.by_status?.reduce((sum: number, item: any) => sum + item.count, 0) || 0,
+          total_documents: data.by_status?.reduce((sum: number, item: any) => sum + Number(item.count), 0) || 0,
           active_documents: data.by_status?.find((item: any) => item.status === 'approved')?.count || 0,
           pending_approvals: data.pending_approvals || 0,
           documents_by_type: data.by_type?.reduce((acc: any, item: any) => {
@@ -309,37 +243,23 @@ export class QualityVersionControlService {
   }
 
   getDepartments(): Observable<string[]> {
-    const params = new HttpParams().set('request', 'getDepartments');
-    return this.http.get<string[]>(`${this.baseUrl}`, { params });
+    return this.http.get<string[]>(`${this.baseUrl}/departments`);
   }
 
   // Search functionality
   searchDocuments(query: string, filters?: {status?: string, department?: string}): Observable<QualityDocument[]> {
-    let params = new HttpParams()
-      .set('request', 'searchDocuments')
-      .set('q', query);
-    
-    if (filters?.status) {
-      params = params.set('status', filters.status);
-    }
-    if (filters?.department) {
-      params = params.set('department', filters.department);
-    }
-
-    return this.http.get<QualityDocument[]>(`${this.baseUrl}`, { params });
+    let params = new HttpParams().set('q', query);
+    if (filters?.status) params = params.set('status', filters.status);
+    if (filters?.department) params = params.set('department', filters.department);
+    return this.http.get<QualityDocument[]>(`${this.baseUrl}/documents/search`, { params });
   }
 
   // Export functionality
   exportDocument(documentId: number, format: 'pdf' | 'json' | 'excel' = 'pdf'): Observable<Blob> {
     const params = new HttpParams()
-      .set('request', 'exportDocument')
       .set('document_id', documentId.toString())
       .set('format', format);
-
-    return this.http.get(`${this.baseUrl}`, { 
-      params, 
-      responseType: 'blob' 
-    });
+    return this.http.get(`${this.baseUrl}/documents/${documentId}/export`, { params, responseType: 'blob' });
   }
 
   // Utility Methods

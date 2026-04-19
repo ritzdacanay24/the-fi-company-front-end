@@ -93,7 +93,7 @@ export class GridSettingsComponent implements OnInit {
 
       setTimeout(() => {
         this.gridApi!.applyColumnState({
-          state: JSON.parse(current.data),
+          state: typeof current.data === 'string' ? JSON.parse(current.data) : current.data,
           applyOrder: true,
         });
       }, 200);
@@ -149,7 +149,7 @@ export class GridSettingsComponent implements OnInit {
     this.gridApi?.showLoadingOverlay();
     setTimeout(() => {
       this.gridApi!.applyColumnState({
-        state: JSON.parse(row.data),
+        state: typeof row.data === 'string' ? JSON.parse(row.data) : row.data,
         applyOrder: true,
       });
       this.gridApi?.hideOverlay();

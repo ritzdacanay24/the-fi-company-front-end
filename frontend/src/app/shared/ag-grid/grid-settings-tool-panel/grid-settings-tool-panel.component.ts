@@ -112,7 +112,7 @@ export class GridSettingsToolPanel implements IToolPanelAngularComp {
     this.gridApi?.showLoadingOverlay();
     setTimeout(() => {
       this.gridApi!.applyColumnState({
-        state: JSON.parse(row.data),
+        state: typeof row.data === 'string' ? JSON.parse(row.data) : row.data,
         applyOrder: true,
       });
       this.gridApi?.hideOverlay();
@@ -177,7 +177,7 @@ export class GridSettingsToolPanel implements IToolPanelAngularComp {
 
       if (this.gridApi) {
         this.gridApi!.applyColumnState({
-          state: JSON.parse(current.data),
+          state: typeof current.data === 'string' ? JSON.parse(current.data) : current.data,
           applyOrder: true,
         });
       }
