@@ -89,34 +89,31 @@ export class ForkliftInspectionListComponent implements OnInit {
       filter: "agMultiColumnFilter",
     },
     {
+      headerName: "Pass / Fail",
       field: "passed_count",
-      headerName: "Passed",
-      filter: "agMultiColumnFilter",
-    },
-    {
-      field: "failed_count",
-      headerName: "Failed",
-      filter: "agMultiColumnFilter",
-    },
-    {
-      field: "total_count",
-      headerName: "Total Inspection Points",
-      filter: "agMultiColumnFilter",
-    },
-    {
-      field: "percent",
-      headerName: "Percent",
-      filter: "agMultiColumnFilter",
-      cellClass: (params: any) => {
-        if (params.value < 100) {
-          return ["bg-danger-subtle bg-opacity-75 text-danger"];
-        } else if (params.value == "Yes") {
-          return ["bg-success-subtle bg-opacity-75 text-success"];
-        } else {
-          return [];
-        }
+      filter: false,
+      sortable: false,
+      cellRenderer: (params: any) => {
+        const passed = Number(params?.data?.passed_count ?? 0);
+        const failed = Number(params?.data?.failed_count ?? 0);
+        const total = Number(params?.data?.total_count ?? 0);
+        const passedPct = total > 0 ? Math.round((passed / total) * 100) : 0;
+        const failedPct = total > 0 ? Math.round((failed / total) * 100) : 0;
+        const statusClass = failedPct > 0 ? "text-danger" : "text-success";
+
+        return `
+          <div class="d-flex align-items-center gap-2 h-100" style="min-width: 180px;">
+            <div class="flex-grow-1">
+              <div class="progress" style="height: 10px; border-radius: 5px;">
+                <div class="progress-bar bg-success" role="progressbar" style="width: ${passedPct}%;" title="${passed} passed"></div>
+                <div class="progress-bar bg-danger" role="progressbar" style="width: ${failedPct}%;" title="${failed} failed"></div>
+              </div>
+            </div>
+            <span class="small text-nowrap ${statusClass}">${passed}/${total}</span>
+          </div>
+        `;
       },
-      cellRenderer: (params: any) => params.value + "%",
+      minWidth: 220,
     },
   ];
 

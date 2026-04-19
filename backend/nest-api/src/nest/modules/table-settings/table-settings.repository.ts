@@ -57,9 +57,16 @@ export class TableSettingsRepository {
     return rows[0] ?? null;
   }
 
+  private serialize(value: any): any {
+    if (value !== null && typeof value === 'object') {
+      return JSON.stringify(value);
+    }
+    return value;
+  }
+
   async create(data: Record<string, any>): Promise<{ insertId: number }> {
     const keys = Object.keys(data);
-    const values = Object.values(data);
+    const values = Object.values(data).map((v) => this.serialize(v));
     const sql = `INSERT INTO tableSettings (${keys.join(', ')}) VALUES (${keys.map(() => '?').join(', ')})`;
     const result: any = await this.mysqlService.query(sql, values);
     return { insertId: result.insertId };
@@ -69,7 +76,7 @@ export class TableSettingsRepository {
     const entries = Object.entries(data);
     if (entries.length === 0) return;
     const sql = `UPDATE tableSettings SET ${entries.map(([key]) => `${key} = ?`).join(', ')} WHERE id = ?`;
-    await this.mysqlService.query(sql, [...entries.map(([, v]) => v), id]);
+    await this.mysqlService.query(sql, [...entries.map(([, v]) => this.serialize(v)), id]);
   }
 
   async delete(id: number): Promise<void> {

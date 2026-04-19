@@ -116,16 +116,41 @@ export class VehicleInspectionEditComponent {
       let data = await this.api._searchById(this.id);
       await this.getVehicleInfo(data.main?.truck_license_plate);
 
+      const checklist = (data?.details || []).map((group: any) => {
+        const details = (group?.details || []).map((item: any) => {
+          const normalizedStatus =
+            item?.status === null || item?.status === undefined || item?.status === ""
+              ? undefined
+              : Number(item.status);
+
+          return {
+            ...item,
+            status: normalizedStatus,
+            needMaint: normalizedStatus === 0,
+            error: false,
+          };
+        });
+
+        return {
+          ...group,
+          status: details.length > 0 && details.every((d: any) => d.status === 1),
+          needMaint: details.some((d: any) => d.status === 0),
+          details,
+        };
+      });
+
       this.attachments = data?.attachments;
+      this.data = data;
       this.form.patchValue({
         ...data.main,
-        details: data?.details,
+        details: checklist,
       });
 
       this.formValues = {
-        checklist: data?.details,
+        checklist,
       };
       this.form.disable();
+      this.isLoading = false;
     } catch (err) {
       this.isLoading = false;
     }

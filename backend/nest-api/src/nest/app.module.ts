@@ -51,6 +51,7 @@ import { WipModule } from './modules/wip';
 import { UsersModule } from './modules/users';
 import { MenuModule } from './modules/menu';
 import { PageAccessModule } from './modules/page-access';
+import { EmailNotificationModule } from './modules/email-notification';
 import { MysqlModule } from '../shared/database/mysql.module';
 import { EmailModule } from '../shared/email/email.module';
 
@@ -115,6 +116,7 @@ import { EmailModule } from '../shared/email/email.module';
     UsersModule,
     MenuModule,
     PageAccessModule,
+    EmailNotificationModule,
   ],
   providers: [
     {
