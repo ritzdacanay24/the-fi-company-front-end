@@ -7,36 +7,61 @@
   padding: 0;
 }
 
-// ── Topbar ───────────────────────────────────────────────────────────────────
-.pm-topbar {
+.pm-panel {
+  background: #fff;
+  border: 1px solid #dde3ea;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.pm-content-header {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #fff;
+  border: 0;
+  padding: 12px 14px 10px;
+}
+
+.pm-content-header-top {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  background: #fff;
-  border-bottom: 1px solid #dde3ea;
-  padding: 10px 20px;
-  min-height: 52px;
-  flex-shrink: 0;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
-.pm-topbar-left {
+.pm-content-header-left {
   display: flex;
-  align-items: flex-start;
-  gap: 6px;
+  flex-direction: column;
+  gap: 4px;
   min-width: 0;
 }
 
-.pm-topbar-right {
+.pm-content-heading-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pm-content-subtitle {
+  font-size: 0.82rem;
+  color: #5f7087;
+}
+
+.pm-content-header-actions {
   display: flex;
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
-.pm-topbar-context {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+.pm-header-btn {
+  font-size: 0.76rem;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .pm-title {
@@ -89,6 +114,7 @@
   display: flex;
   align-items: center;
   background: #fff;
+  border-top: 1px solid #dde3ea;
   border-bottom: 1px solid #dde3ea;
   padding: 6px 16px;
   gap: 8px;
@@ -114,7 +140,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin-right: 6px;
+  margin-right: 2px;
 }
 
 .pm-gate-filter-label {
@@ -283,23 +309,24 @@
 // ── Grid ───────────────────────────────────────────────────────────────────────
 .pm-grid-wrap {
   flex: 1;
-  padding: 0 16px 16px;
+  padding: 0;
 }
 
 .pm-grid {
   width: 100%;
-  height: calc(100vh - 165px);
+  height: calc(100vh - 370px);
   min-height: 400px;
 }
 
 @media (max-width: 992px) {
-  .pm-topbar {
+  .pm-content-header-top {
+    width: 100%;
     flex-direction: column;
+    align-items: stretch;
     gap: 10px;
   }
 
-  .pm-topbar-right {
-    width: 100%;
+  .pm-content-header-actions {
     flex-wrap: wrap;
     justify-content: flex-start;
   }

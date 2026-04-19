@@ -145,7 +145,7 @@ export class ProjectManagerTasksComponent implements OnInit {
       headerName: '',
       colId: 'dragHandle',
       width: 34,
-      pinned: 'left',
+      pinned: 'right',
       rowDrag: params => !!params.data && (params.data.rowType === 'group' || params.data.rowType === 'subgroup' || params.data.rowType === 'task'),
       sortable: false,
       filter: false,
@@ -157,7 +157,7 @@ export class ProjectManagerTasksComponent implements OnInit {
       headerName: '',
       colId: 'addAction',
       width: 36,
-      pinned: 'left',
+      pinned: 'right',
       sortable: false,
       filter: false,
       resizable: false,
@@ -179,7 +179,7 @@ export class ProjectManagerTasksComponent implements OnInit {
       headerName: '',
       colId: 'complete',
       width: 36,
-      pinned: 'left',
+      pinned: 'right',
       sortable: false,
       filter: false,
       resizable: false,
@@ -203,7 +203,7 @@ export class ProjectManagerTasksComponent implements OnInit {
         this.toggleTaskComplete(params.data.taskId);
       }
     },
-    { field: 'taskId', headerName: '#', width: 70, pinned: 'left', valueFormatter: params => params.value ?? '' },
+    { field: 'taskId', headerName: '#', width: 70, valueFormatter: params => params.value ?? '' },
     {
       field: 'gate',
       headerName: 'Gate',
@@ -212,7 +212,7 @@ export class ProjectManagerTasksComponent implements OnInit {
       cellEditor: 'agSelectCellEditor',
       cellEditorParams: { values: this.gateOptions }
     },
-    { field: 'taskName', headerName: 'Task Name', minWidth: 320, flex: 2, filter: 'agTextColumnFilter', editable: params => params.data?.rowType === 'task' },
+    { field: 'taskName', headerName: 'Task Name', minWidth: 320, flex: 2, pinned: 'left', filter: 'agTextColumnFilter', editable: params => params.data?.rowType === 'task' },
     { field: 'project', headerName: 'Project', minWidth: 180, filter: 'agTextColumnFilter', editable: params => params.data?.rowType === 'task' },
     { field: 'assignedTo', headerName: 'Assigned To', minWidth: 170, filter: 'agTextColumnFilter',
       editable: params => params.data?.rowType === 'task',

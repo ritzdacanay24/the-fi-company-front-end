@@ -525,54 +525,13 @@ export const MENU_DATA: MenuItem[] = [
     },
     {
         id: 36,
-        label: "Serial Numbers",
+        label: "Serial Management",
         icon: "las la-barcode",
-        isCollapsed: true,
+        link: "/serial-management",
+        description: "Serial inventory, usage, and assignment management",
+        activatedRoutes: "/serial-management/*",
+        openInNewTab: true,
         hideCheckBox: true,
-        subItems: [
-            {
-                label: "IGT Serial Control",
-                link: "/quality/igt",
-                description: "View and manage IGT serial numbers",
-                activatedRoutes: "/quality/igt/*"
-            },
-            {
-                label: "AGS Serial Control",
-                link: "/quality/ags-serial",
-                activatedRoutes: "/quality/ags-serial/*"
-            },
-            {
-                label: "SG Asset Control",
-                link: "/quality/sg-asset/list",
-                activatedRoutes: "/quality/sg-asset/*"
-            },
-            {
-                label: "UL Labels",
-                link: "/ul-management/labels-report",
-                accessRequired: false,
-                activatedRoutes: "/ul-management/*"
-            },
-            {
-                label: "EyeFi Serials",
-                link: "/eyefi-serial-number-management/list",
-                description: "Manage EyeFi device serial numbers",
-                icon: "las la-microchip",
-                accessRequired: false,
-                activatedRoutes: "/eyefi-serial-number-management/*"
-            },
-            {
-                label: "Serial Assignments",
-                link: "/serial-assignments",
-                description: "View and manage all serial number assignments",
-                icon: "las la-clipboard-list",
-                accessRequired: false,
-                activatedRoutes: "/serial-assignments/*",
-                badge: {
-                    variant: "badge bg-success",
-                    text: "New",
-                },
-            },
-        ],
     },
 ];
 

@@ -16,6 +16,8 @@ export interface MenuItem {
   hideCheckBox?: boolean;
   activatedRoutes?: string | string[];
   
+  openInNewTab?: boolean;
+
   // Configuration properties
   visible?: boolean;
   order?: number;

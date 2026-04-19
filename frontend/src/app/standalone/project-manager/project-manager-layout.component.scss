@@ -2,6 +2,19 @@
 
 @include standaloneShell.shell('pm', $content-offset-mode: 'margin');
 
+.pm-topbar-brand .h6 {
+  color: #1f3b73;
+  font-weight: 700;
+}
+
+.pm-topbar-brand {
+  line-height: 1.2;
+}
+
+.pm-topbar-brand .text-muted {
+  color: #5a6c85 !important;
+}
+
 .breadcrumb-custom {
   font-size: 0.82rem;
 }
