@@ -112,6 +112,10 @@ html[data-bs-theme="light"] {
   --vz-vertical-menu-sub-item-active-color: #ffffff !important;
   --vz-vertical-menu-title-color: #b8cfe7 !important;
   --vz-vertical-menu-box-shadow: none !important;
+  
+  /* Apply navy blue to breadcrumb/title area */
+  --vz-breadcrumb-item-color: #1a3a6f !important;
+  --vz-primary: #1a3a6f !important;
 }
 
 /* Use a darker navy blue sidebar when sidebar is in light mode. */
@@ -127,6 +131,15 @@ html[data-bs-theme="light"] {
   --vz-vertical-menu-sub-item-active-color: #ffffff !important;
   --vz-vertical-menu-title-color: #b8cfe7 !important;
   --vz-vertical-menu-box-shadow: none !important;
+}
+
+/* Style breadcrumb items with navy blue */
+html[data-bs-theme="light"] .breadcrumb-item > a {
+  color: #1a3a6f !important;
+}
+
+html[data-bs-theme="light"] .breadcrumb-item.active {
+  color: #1a3a6f !important;
 }
 
 #landingnft {

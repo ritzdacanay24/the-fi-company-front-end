@@ -12,9 +12,9 @@
   </div>
   <div class="d-flex flex-wrap align-items-center gap-2">
     <label class="small text-muted mb-0">From</label>
-    <input class="form-control" style="width: 160px;" type="date" [(ngModel)]="dateFrom" (change)="applyFilters()" />
+    <input class="form-control w-auto" type="date" [(ngModel)]="dateFrom" (change)="applyFilters()" />
     <label class="small text-muted mb-0">To</label>
-    <input class="form-control" style="width: 160px;" type="date" [(ngModel)]="dateTo" (change)="applyFilters()" />
+    <input class="form-control w-auto" type="date" [(ngModel)]="dateTo" (change)="applyFilters()" />
     <button class="btn btn-outline-primary" (click)="loadInstances()" [disabled]="loading">
       <i class="mdi mdi-refresh me-1"></i>Refresh
     </button>
@@ -26,27 +26,16 @@
     <div class="btn-group" role="group" aria-label="Scope filter">
       <button class="btn btn-sm" [class.btn-primary]="scope === 'all'" [class.btn-outline-primary]="scope !== 'all'" (click)="onScopeChange('all')">
         All
-        <span class="ms-1 badge bg-light text-dark">{{ getScopeCount('all') }}</span>
+        <span class="ms-1 badge-secondary text-body-emphasis">{{ getScopeCount('all') }}</span>
       </button>
       <button class="btn btn-sm" [class.btn-primary]="scope === 'active'" [class.btn-outline-primary]="scope !== 'active'" (click)="onScopeChange('active')">
         Active
-        <span class="ms-1 badge bg-light text-dark">{{ getScopeCount('active') }}</span>
+        <span class="ms-1 badge-secondary text-body-emphasis">{{ getScopeCount('active') }}</span>
       </button>
       <button class="btn btn-sm" [class.btn-primary]="scope === 'mine'" [class.btn-outline-primary]="scope !== 'mine'" (click)="onScopeChange('mine')">
         My Assignments
-        <span class="ms-1 badge bg-light text-dark">{{ getScopeCount('mine') }}</span>
+        <span class="ms-1 badge-secondary text-body-emphasis">{{ getScopeCount('mine') }}</span>
       </button>
-    </div>
-
-    <div class="ms-auto form-icon" style="width: 320px; max-width: 100%;">
-      <input
-        type="search"
-        class="form-control form-control-icon"
-        placeholder="Search work order, serial, part, template, operator"
-        [(ngModel)]="quickSearch"
-        (ngModelChange)="applyFilters()"
-      />
-      <i class="ri-search-2-line"></i>
     </div>
   </div>
 </div>
@@ -60,16 +49,16 @@
 
 <div class="row g-3 mb-3">
   <div class="col-xl-3 col-md-6">
-    <div class="card border-0 bg-light-subtle h-100 mb-0">
+    <div class="card border-0  h-100 mb-0">
       <div class="card-body py-3">
         <div class="d-flex align-items-center">
           <div class="flex-shrink-0">
-            <div class="bg-primary bg-opacity-10 rounded-3 p-3">
-              <i class="las la-clipboard-list text-primary fs-3"></i>
+            <div class="bg-primary-subtle text-primary rounded-3 p-3">
+              <i class="las la-clipboard-list fs-3"></i>
             </div>
           </div>
           <div class="flex-grow-1 ms-3">
-            <h3 class="fs-2 fw-bold mb-1 text-dark">{{ totalInspections }}</h3>
+            <h3 class="fs-2 fw-bold mb-1 text-body-emphasis">{{ totalInspections }}</h3>
             <p class="mb-0 text-muted">Inspections in Scope</p>
           </div>
         </div>
@@ -78,16 +67,16 @@
   </div>
 
   <div class="col-xl-3 col-md-6">
-    <div class="card border-0 bg-light-subtle h-100 mb-0">
+    <div class="card border-0  h-100 mb-0">
       <div class="card-body py-3">
         <div class="d-flex align-items-center">
           <div class="flex-shrink-0">
-            <div class="bg-warning bg-opacity-10 rounded-3 p-3">
-              <i class="las la-tasks text-warning fs-3"></i>
+            <div class="bg-warning-subtle text-warning rounded-3 p-3">
+              <i class="las la-tasks fs-3"></i>
             </div>
           </div>
           <div class="flex-grow-1 ms-3">
-            <h3 class="fs-2 fw-bold mb-1 text-dark">{{ activeInspections }}</h3>
+            <h3 class="fs-2 fw-bold mb-1 text-body-emphasis">{{ activeInspections }}</h3>
             <p class="mb-0 text-muted">Active Inspections</p>
           </div>
         </div>
@@ -96,16 +85,16 @@
   </div>
 
   <div class="col-xl-3 col-md-6">
-    <div class="card border-0 bg-light-subtle h-100 mb-0">
+    <div class="card border-0  h-100 mb-0">
       <div class="card-body py-3">
         <div class="d-flex align-items-center">
           <div class="flex-shrink-0">
-            <div class="bg-success bg-opacity-10 rounded-3 p-3">
-              <i class="las la-check-circle text-success fs-3"></i>
+            <div class="bg-success-subtle text-success rounded-3 p-3">
+              <i class="las la-check-circle fs-3"></i>
             </div>
           </div>
           <div class="flex-grow-1 ms-3">
-            <h3 class="fs-2 fw-bold mb-1 text-dark">{{ completionRate | number: '1.0-1' }}%</h3>
+            <h3 class="fs-2 fw-bold mb-1 text-body-emphasis">{{ completionRate | number: '1.0-1' }}%</h3>
             <p class="mb-0 text-muted">Completion + Submission Rate</p>
           </div>
         </div>
@@ -114,16 +103,16 @@
   </div>
 
   <div class="col-xl-3 col-md-6">
-    <div class="card border-0 bg-light-subtle h-100 mb-0">
+    <div class="card border-0  h-100 mb-0">
       <div class="card-body py-3">
         <div class="d-flex align-items-center">
           <div class="flex-shrink-0">
-            <div class="bg-info bg-opacity-10 rounded-3 p-3">
-              <i class="las la-camera text-info fs-3"></i>
+            <div class="bg-info-subtle text-info rounded-3 p-3">
+              <i class="las la-camera fs-3"></i>
             </div>
           </div>
           <div class="flex-grow-1 ms-3">
-            <h3 class="fs-2 fw-bold mb-1 text-dark">{{ evidenceCoverage | number: '1.0-1' }}%</h3>
+            <h3 class="fs-2 fw-bold mb-1 text-body-emphasis">{{ evidenceCoverage | number: '1.0-1' }}%</h3>
             <p class="mb-0 text-muted">With Photo Evidence</p>
           </div>
         </div>
@@ -135,7 +124,7 @@
 <div class="row g-3 mb-3">
   <div class="col-lg-4">
     <div class="card border-0 shadow-sm h-100">
-      <div class="card-header bg-white"><h4 class="h6 mb-0">Status Distribution</h4></div>
+      <div class="card-header"><h4 class="h6 mb-0">Status Distribution</h4></div>
       <div class="card-body">
         <apx-chart
           [series]="statusDonutChart.series"
@@ -153,7 +142,7 @@
 
   <div class="col-lg-4">
     <div class="card border-0 shadow-sm h-100">
-      <div class="card-header bg-white"><h4 class="h6 mb-0">Progress Buckets</h4></div>
+      <div class="card-header"><h4 class="h6 mb-0">Progress Buckets</h4></div>
       <div class="card-body">
         <apx-chart
           [series]="progressBucketChart.series"
@@ -174,7 +163,7 @@
 
   <div class="col-lg-4">
     <div class="card border-0 shadow-sm h-100">
-      <div class="card-header bg-white"><h4 class="h6 mb-0">Top Operators by Load</h4></div>
+      <div class="card-header"><h4 class="h6 mb-0">Top Operators by Load</h4></div>
       <div class="card-body">
         <apx-chart
           [series]="operatorChart.series"
@@ -197,7 +186,7 @@
 <div class="row g-3">
   <div class="col-xl-7">
     <div class="card border-0 shadow-sm h-100">
-      <div class="card-header bg-white">
+      <div class="card-header">
         <h4 class="h6 mb-0">14-Day Inspection Flow</h4>
       </div>
       <div class="card-body">
@@ -220,7 +209,7 @@
 
   <div class="col-xl-5">
     <div class="card border-0 shadow-sm h-100">
-      <div class="card-header bg-white">
+      <div class="card-header">
         <h4 class="h6 mb-0">Template Performance (Avg Progress)</h4>
       </div>
       <div class="card-body">
@@ -245,7 +234,7 @@
 <div class="row g-3 mt-1">
   <div class="col-xl-6">
     <div class="card border-0 shadow-sm h-100">
-      <div class="card-header bg-white">
+      <div class="card-header">
         <h4 class="h6 mb-0">Most Used Templates</h4>
       </div>
       <div class="card-body">
@@ -268,7 +257,7 @@
 
   <div class="col-xl-6">
     <div class="card border-0 shadow-sm h-100">
-      <div class="card-header bg-white">
+      <div class="card-header">
         <h4 class="h6 mb-0">Average Time to Complete by Template</h4>
       </div>
       <div class="card-body">

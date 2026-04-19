@@ -9,7 +9,13 @@ import { AppModule } from './nest/app.module';
 import { GlobalHttpExceptionFilter } from './nest/filters/http-exception.filter';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { bodyParser: false });
+
+  const requestBodyLimit = process.env.REQUEST_BODY_LIMIT || '25mb';
+
+  // Use explicit body parser limits for large checklist/template payloads.
+  app.use(express.json({ limit: requestBodyLimit }));
+  app.use(express.urlencoded({ limit: requestBodyLimit, extended: true }));
 
   app.use(compression());
 

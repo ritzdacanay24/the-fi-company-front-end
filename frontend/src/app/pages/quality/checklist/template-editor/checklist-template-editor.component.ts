@@ -1228,12 +1228,16 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   addItem(): void {
     const newIndex = this.items.length;
     this.items.push(this.createItemFormGroup());
-    this.recalculateOrderIndices(); // Auto-calculate order after adding
+    this.recalculateOrderIndices();
     this.updateNavSearchSets();
-
     this.rebuildEditorNavItems();
     this.cdr.detectChanges();
     this.scheduleActiveItemTrackingRefresh();
+    setTimeout(() => {
+      this.selectItem(newIndex);
+      this.scrollToItem(newIndex, { fromNavigation: true });
+      this.scrollNavItemIntoViewSoon(newIndex);
+    }, 0);
   }
 
   /**
@@ -1340,19 +1344,14 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     this.recalculateOrderIndices(); // Auto-calculate order after adding sub-item
 
     this.rebuildEditorNavItems();
-
-    // Trigger change detection to ensure UI updates
     this.cdr.detectChanges();
-
     this.updateNavSearchSets();
     setTimeout(() => {
       this.scheduleActiveItemTrackingRefresh(0);
-      const input = this.itemTitleInputs?.toArray?.()[insertIndex];
-      if (input?.nativeElement) {
-        input.nativeElement.focus();
-        input.nativeElement.select();
-      }
-    });
+      this.selectItem(insertIndex);
+      this.scrollToItem(insertIndex, { fromNavigation: true });
+      this.scrollNavItemIntoViewSoon(insertIndex);
+    }, 0);
   }
 
   /**
@@ -3039,13 +3038,20 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
     this.updateStickyParentFromActive(index);
 
-    // Fast path for INP: avoid forced destroy/recreate of the item panel on every click.
-    // Directly switch the selected form index so pointer interactions stay responsive.
     this.activePanel = 'item';
     this.selectingItem = false;
-    this.selectedFormItemIndex = index;
-    this.scheduleSelectedItemQueryParamUpdate(index);
-    this.scheduleSidebarStickyAncestorsUpdate();
+
+    // Force destroy+recreate of the item panel so child components (e.g. rich text editor)
+    // re-initialize with the new form group values. Split across two tasks to avoid
+    // forced synchronous reflow violations in the click handler.
+    this.selectedFormItemIndex = null;
+    this.cdr.detectChanges();
+    setTimeout(() => {
+      this.selectedFormItemIndex = index;
+      this.scheduleSelectedItemQueryParamUpdate(index);
+      this.scheduleSidebarStickyAncestorsUpdate();
+      this.cdr.detectChanges();
+    }, 0);
   }
 
   private scheduleSelectedItemQueryParamUpdate(itemIndex: number | null): void {
@@ -4231,11 +4237,13 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       this.scheduledFallbackCheck = true;
       requestAnimationFrame(() => {
         this.scheduledFallbackCheck = false;
-        this.checkActiveItem();
+        this.ngZone.run(() => this.checkActiveItem());
       });
     };
 
-    window.addEventListener('scroll', this.boundScrollHandler, { passive: true });
+    this.ngZone.runOutsideAngular(() => {
+      window.addEventListener('scroll', this.boundScrollHandler!, { passive: true });
+    });
   }
 
   private teardownScrollListener(): void {
@@ -4255,49 +4263,51 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
     this.visibleItemEntries.clear();
 
-    this.activeItemObserver = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          const el = entry.target as HTMLElement;
-          const match = /^edit-item-(\d+)$/.exec(el.id || '');
-          if (!match) continue;
-          const index = parseInt(match[1], 10);
+    this.ngZone.runOutsideAngular(() => {
+      this.activeItemObserver = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            const el = entry.target as HTMLElement;
+            const match = /^edit-item-(\d+)$/.exec(el.id || '');
+            if (!match) continue;
+            const index = parseInt(match[1], 10);
 
-          if (entry.isIntersecting) {
-            this.visibleItemEntries.set(index, entry);
-          } else {
-            this.visibleItemEntries.delete(index);
+            if (entry.isIntersecting) {
+              this.visibleItemEntries.set(index, entry);
+            } else {
+              this.visibleItemEntries.delete(index);
+            }
           }
-        }
 
-        if (this.isProgrammaticScrollLocked()) {
-          return;
-        }
+          if (this.isProgrammaticScrollLocked()) {
+            return;
+          }
 
-        const nextActive = this.pickBestActiveIndexFromVisibleEntries();
-        if (nextActive !== -1 && nextActive !== this.activeNavItemIndex) {
-          this.activeNavItemIndex = nextActive;
-          this.syncTrackedItemToQueryParam(nextActive);
-          this.updateStickyParentFromActive(nextActive);
-          this.expandParentsOfItem(nextActive);
-          this.cdr.detectChanges();
+          const nextActive = this.pickBestActiveIndexFromVisibleEntries();
+          if (nextActive !== -1 && nextActive !== this.activeNavItemIndex) {
+            this.ngZone.run(() => {
+              this.activeNavItemIndex = nextActive;
+              this.syncTrackedItemToQueryParam(nextActive);
+              this.updateStickyParentFromActive(nextActive);
+              this.expandParentsOfItem(nextActive);
+              this.cdr.detectChanges();
+            });
+          }
+        },
+        {
+          root: null,
+          rootMargin: '-120px 0px -65% 0px',
+          threshold: [0, 0.1, 0.25, 0.5, 0.75, 1]
         }
-      },
-      {
-        root: null,
-        // Bias toward whichever item is near the top of the viewport
-        rootMargin: '-120px 0px -65% 0px',
-        threshold: [0, 0.1, 0.25, 0.5, 0.75, 1]
+      );
+
+      for (let i = 0; i < this.items.length; i++) {
+        const el = document.getElementById(`edit-item-${i}`);
+        if (el) {
+          this.activeItemObserver!.observe(el);
+        }
       }
-    );
-
-    // Observe all rendered edit-item elements
-    for (let i = 0; i < this.items.length; i++) {
-      const el = document.getElementById(`edit-item-${i}`);
-      if (el) {
-        this.activeItemObserver.observe(el);
-      }
-    }
+    });
   }
 
   private teardownIntersectionObserver(): void {
@@ -6567,6 +6577,10 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       result.push({ index: i, label: `${outline} ${title}` });
     });
     return result;
+  }
+
+  trackByParentGroupIndex(_idx: number, grp: { index: number; label: string }): number {
+    return grp.index;
   }
 
   /**
