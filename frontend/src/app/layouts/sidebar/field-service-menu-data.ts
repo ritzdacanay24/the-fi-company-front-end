@@ -25,15 +25,6 @@ export const FIELD_SERVICE_MENU_DATA: MenuItem[] = [
         hideCheckBox: true,
     },
     {
-        id: 9,
-        label: "Parts Inventory",
-        icon: "las la-box",
-        link: "/field-service/parts-order/list",
-        description: "Parts ordering system",
-        hideCheckBox: true,
-        activatedRoutes: "/field-service/parts-order/*",
-    },
-    {
         id: 4,
         label: "Schedule",
         icon: "las la-calendar",
