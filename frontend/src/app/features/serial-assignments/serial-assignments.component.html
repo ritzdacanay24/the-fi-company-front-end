@@ -40,34 +40,24 @@
 
       <div class="card shadow-sm border-0">
         <div class="card-header">
-          <div class="d-flex align-items-center gap-2">
-            <div class="input-group" style="max-width: 440px;">
-              <span class="input-group-text">
-                <i class="mdi mdi-magnify"></i>
-              </span>
+          <div class="d-flex align-items-center flex-wrap gap-3">
+            <div class="form-icon" style="width: 350px;">
               <input
-                type="text"
-                class="form-control"
+                type="search"
+                class="form-control form-control-icon"
                 placeholder="Search assignments..."
                 [(ngModel)]="searchTerm"
                 (ngModelChange)="onSearch($event)">
-              <button
-                *ngIf="searchTerm"
-                type="button"
-                class="btn btn-outline-secondary"
-                (click)="clearSearch()"
-                title="Clear search">
-                <i class="mdi mdi-close"></i>
-              </button>
-              <button
-                type="button"
-                class="btn btn-outline-secondary"
-                (click)="refresh()"
-                [disabled]="loading"
-                title="Refresh data">
-                <i class="mdi mdi-refresh"></i>
-              </button>
+              <i class="mdi mdi-magnify"></i>
             </div>
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              (click)="refresh()"
+              [disabled]="loading"
+              title="Refresh data">
+              <i class="mdi mdi-refresh me-1"></i>Refresh
+            </button>
           </div>
         </div>
         

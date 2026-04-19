@@ -118,10 +118,6 @@ export class SerialAssignmentsService {
     return firstValueFrom(this.http.get(this.API_URL, { params }));
   }
 
-  async getConsumedSerialsSummary(): Promise<any> {
-    return firstValueFrom(this.http.get(`${this.API_URL}/consumed-summary`));
-  }
-
   async getDailyConsumptionTrend(): Promise<any> {
     return firstValueFrom(this.http.get(`${this.API_URL}/consumption-trend`));
   }

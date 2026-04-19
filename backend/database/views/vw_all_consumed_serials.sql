@@ -159,7 +159,7 @@ SELECT
     CAST(ags.poNumber AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as po_number,
     CAST(ul.category AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as ul_category
 FROM eyefidb.agsSerialGenerator ags
-LEFT JOIN db.users u ON ags.created_by = u.id
+LEFT JOIN db.users u ON BINARY ags.created_by = BINARY u.id
 LEFT JOIN eyefidb.ul_label_usages ulu ON BINARY ags.serialNumber = BINARY ulu.eyefi_serial_number
 LEFT JOIN eyefidb.ul_labels ul ON ulu.ul_label_id = ul.id
 WHERE ags.active = 1 
@@ -208,7 +208,7 @@ SELECT
     CAST(sg.poNumber AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as po_number,
     CAST(ul.category AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as ul_category
 FROM eyefidb.sgAssetGenerator sg
-LEFT JOIN db.users u ON sg.created_by = u.id
+LEFT JOIN db.users u ON BINARY sg.created_by = BINARY u.id
 LEFT JOIN eyefidb.ul_label_usages ulu ON BINARY sg.serialNumber = BINARY ulu.eyefi_serial_number
 LEFT JOIN eyefidb.ul_labels ul ON ulu.ul_label_id = ul.id
 WHERE sg.active = 1 

@@ -47,16 +47,6 @@ export class SerialAssignmentsController {
     }
   }
 
-  // GET /serial-assignments/consumed-summary
-  @Get('consumed-summary')
-  async getConsumedSummary() {
-    try {
-      return await this.service.getConsumedSummary();
-    } catch (err) {
-      throw new HttpException((err as Error).message, HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-  }
-
   // GET /serial-assignments/consumption-trend
   @Get('consumption-trend')
   async getConsumptionTrend() {

@@ -58,16 +58,10 @@ export class SerialAssignmentsRepository extends BaseRepository<RowDataPacket> {
 
     const where = conditions.join(' AND ');
     const page = Math.max(1, Math.floor(filters.page ?? 1));
-    const limit = Math.min(500, Math.max(1, Math.floor(filters.limit ?? 50)));
-    const offset = (page - 1) * limit;
-
-    const [countRows] = await Promise.all([
-      this.rawQuery<RowDataPacket>(
-        `SELECT COUNT(*) AS total FROM ${VIEW} v WHERE ${where}`,
-        params,
-      ),
-    ]);
-    const total = (countRows[0] as RowDataPacket)['total'] as number;
+    const requestedLimit = filters.limit != null ? Math.floor(filters.limit) : undefined;
+    const hasLimit = requestedLimit != null && requestedLimit > 0;
+    const limit = hasLimit ? Math.min(500, Math.max(1, requestedLimit)) : undefined;
+    const offset = hasLimit && limit != null ? (page - 1) * limit : 0;
 
     const data = await this.rawQuery<RowDataPacket>(
       `SELECT
@@ -84,11 +78,19 @@ export class SerialAssignmentsRepository extends BaseRepository<RowDataPacket> {
        FROM ${VIEW} v
        WHERE ${where}
        ORDER BY v.used_date DESC, v.unique_id DESC
-       LIMIT ${limit} OFFSET ${offset}`,
+       ${hasLimit && limit != null ? `LIMIT ${limit} OFFSET ${offset}` : ''}`,
       params,
     );
 
-    return { data, total, page, limit, total_pages: Math.ceil(total / limit) };
+    const total = data.length;
+
+    return {
+      data,
+      total,
+      page: hasLimit ? page : 1,
+      limit: hasLimit && limit != null ? limit : total,
+      total_pages: hasLimit && limit != null ? Math.ceil(total / limit) : 1,
+    };
   }
 
   async findById(id: number): Promise<RowDataPacket | null> {
@@ -289,15 +291,6 @@ export class SerialAssignmentsRepository extends BaseRepository<RowDataPacket> {
     }
 
     return { voided, errors };
-  }
-
-  async getConsumedSummary(): Promise<RowDataPacket[]> {
-    return this.rawQuery<RowDataPacket>(
-      `SELECT source_type, COUNT(*) AS count, MAX(used_date) AS last_used
-       FROM ${VIEW}
-       GROUP BY source_type
-       ORDER BY count DESC`,
-    );
   }
 
   async getDailyConsumptionTrend(): Promise<RowDataPacket[]> {

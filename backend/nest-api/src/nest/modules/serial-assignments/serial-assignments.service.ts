@@ -57,11 +57,6 @@ export class SerialAssignmentsService {
     return { success: true, ...result };
   }
 
-  async getConsumedSummary() {
-    const data = await this.repository.getConsumedSummary();
-    return { success: true, data };
-  }
-
   async getDailyConsumptionTrend() {
     const data = await this.repository.getDailyConsumptionTrend();
     return { success: true, data };

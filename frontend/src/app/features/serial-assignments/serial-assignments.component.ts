@@ -179,7 +179,6 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
 
   // Pagination - removed, showing all records
   currentPage: number = 1;
-  itemsPerPage: number = 999999; // Large number to get all records
   totalItems: number = 0;
   totalPages: number = 1;
 
@@ -190,23 +189,6 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
 
   // View mode
   viewMode: 'table' | 'cards' = 'table';
-
-  // Statistics
-  stats = {
-    total: 0,
-    eyefi: 0,
-    ul: 0,
-    igt: 0,
-    ags: 0,
-    sg: 0,
-    today: 0,
-    thisWeek: 0,
-    serialAssignments: 0,
-    ulLabelUsages: 0,
-    agsSerialGenerator: 0,
-    sgAssetGenerator: 0,
-    igtSerialNumbers: 0
-  };
 
   // Selection
   selectedAssignments: Set<number> = new Set();
@@ -239,7 +221,6 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadAssignments();
-    this.loadStatistics();
   }
 
   ngOnDestroy(): void {
@@ -428,17 +409,14 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
     params.api.sizeColumnsToFit();
   }
 
-  async loadAssignments(page: number = 1): Promise<void> {
+  async loadAssignments(): Promise<void> {
     this.loading = true;
     this.error = null;
-    this.currentPage = page;
 
     try {
       // Load ALL records without pagination
       const response = await this.serialAssignmentsService.getAllConsumedSerials({
         ...this.filters,
-        page: 1,
-        limit: this.itemsPerPage // Very large limit to get all records
       });
 
       if (response.success) {
@@ -454,73 +432,6 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
       console.error('Error loading assignments:', error);
     } finally {
       this.loading = false;
-    }
-  }
-
-  async loadStatistics(): Promise<void> {
-    try {
-      // Load summary from the comprehensive view
-      const response = await this.serialAssignmentsService.getConsumedSerialsSummary();
-
-      if (response.success && response.data) {
-        // Initialize stats
-        let total = 0;
-        let eyefi = 0;
-        let ul = 0;
-        let igt = 0;
-        let ags = 0;
-        let sg = 0;
-        let today = 0;
-        let thisWeek = 0;
-        let serialAssignments = 0;
-        let ulLabelUsages = 0;
-        let agsSerialGenerator = 0;
-        let sgAssetGenerator = 0;
-        let igtSerialNumbers = 0;
-
-        // Aggregate data from all sources
-        response.data.forEach((source: any) => {
-          total += source.total_consumed || 0;
-          eyefi += source.unique_eyefi_serials || 0;
-          ul += source.unique_ul_labels || 0;
-          igt += source.unique_igt_serials || 0;
-          ags += source.unique_ags_serials || 0;
-          sg += source.unique_sg_assets || 0;
-          today += source.consumed_today || 0;
-          thisWeek += source.consumed_this_week || 0;
-
-          // Track by source table
-          if (source.source_table === 'serial_assignments') {
-            serialAssignments = source.total_consumed || 0;
-          } else if (source.source_table === 'ul_label_usages') {
-            ulLabelUsages = source.total_consumed || 0;
-          } else if (source.source_table === 'agsSerialGenerator') {
-            agsSerialGenerator = source.total_consumed || 0;
-          } else if (source.source_table === 'sgAssetGenerator') {
-            sgAssetGenerator = source.total_consumed || 0;
-          } else if (source.source_table === 'igt_serial_numbers') {
-            igtSerialNumbers = source.total_consumed || 0;
-          }
-        });
-
-        this.stats = {
-          total,
-          eyefi,
-          ul,
-          igt,
-          ags,
-          sg,
-          today,
-          thisWeek,
-          serialAssignments,
-          ulLabelUsages,
-          agsSerialGenerator,
-          sgAssetGenerator,
-          igtSerialNumbers
-        };
-      }
-    } catch (error) {
-      console.error('Error loading statistics:', error);
     }
   }
 
@@ -870,7 +781,6 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
   refresh(): void {
     this.selectedAssignments.clear();
     this.loadAssignments(); // Load all records
-    this.loadStatistics();
   }
 
   onSearch(term: string): void {
@@ -1432,10 +1342,7 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
   async printBatchAssignments(batchId: string, sampleAssignment: any): Promise<void> {
     try {
       // Fetch all assignments with this batch_id from the view
-      const batchResponse = await this.serialAssignmentsService.getAssignments({
-        page: 1,
-        limit: 9999 // Get all assignments in batch
-      });
+      const batchResponse = await this.serialAssignmentsService.getAssignments();
 
       const allAssignments = batchResponse?.data || [];
       

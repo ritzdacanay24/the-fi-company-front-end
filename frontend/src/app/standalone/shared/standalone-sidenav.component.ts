@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { RouterModule } from '@angular/router';
+import { AfterViewInit, Component, ElementRef, EventEmitter, Input, OnDestroy, Output, ViewChild } from '@angular/core';
+import { NavigationEnd, Router, RouterModule } from '@angular/router';
+import { Subscription } from 'rxjs';
 
 export interface StandaloneSidenavItem {
   label: string;
@@ -27,7 +28,7 @@ export interface StandaloneSidenavGroup {
         </a>
       </div>
 
-      <div class="standalone-sidebar-scroll h-100 d-flex flex-column">
+      <div #scrollContainer class="standalone-sidebar-scroll h-100 d-flex flex-column">
 
         <!-- Multi-group mode -->
         <ng-container *ngIf="navGroups; else flatMode">
@@ -83,7 +84,7 @@ export interface StandaloneSidenavGroup {
     </aside>
   `,
 })
-export class StandaloneSidenavComponent {
+export class StandaloneSidenavComponent implements AfterViewInit, OnDestroy {
   @Input({ required: true }) prefix!: string;
   @Input({ required: true }) isOpen!: boolean;
   @Input({ required: true }) brandRoute!: string;
@@ -98,6 +99,39 @@ export class StandaloneSidenavComponent {
   @Input() footerLogoAlt = 'EyeFi';
 
   @Output() navItemClick = new EventEmitter<void>();
+
+  @ViewChild('scrollContainer') private scrollContainer?: ElementRef<HTMLElement>;
+  private readonly routerEventsSub: Subscription;
+
+  constructor(private readonly router: Router) {
+    this.routerEventsSub = this.router.events.subscribe((event) => {
+      if (event instanceof NavigationEnd) {
+        this.scrollToActiveItem();
+      }
+    });
+  }
+
+  ngAfterViewInit(): void {
+    this.scrollToActiveItem();
+  }
+
+  ngOnDestroy(): void {
+    this.routerEventsSub.unsubscribe();
+  }
+
+  private scrollToActiveItem(): void {
+    setTimeout(() => {
+      const container = this.scrollContainer?.nativeElement;
+      if (!container) {
+        return;
+      }
+
+      const activeItem = container.querySelector('.nav-link.active') as HTMLElement | null;
+      if (activeItem) {
+        activeItem.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      }
+    });
+  }
 
   onNavItemClick(): void {
     this.navItemClick.emit();
