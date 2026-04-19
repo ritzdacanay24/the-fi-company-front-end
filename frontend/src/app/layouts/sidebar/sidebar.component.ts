@@ -19,10 +19,11 @@ import { environment } from "src/environments/environment";
 import { FavoriteService } from "@app/core/api/favorites/favorites.service";
 import { PageAccessService } from "@app/core/api/page-access/page-access.service";
 import { MenuService } from "@app/core/api/menu/menu.service";
-import { AppSwitcherService } from "@app/services/app-switcher.service";
+import { AppSwitcherService, AppType } from "@app/services/app-switcher.service";
 import { PathUtilsService } from "@app/core/services/path-utils.service";
 import { FIELD_SERVICE_MENU } from "./field-service-menu-data";
 import { ADMIN_MENU } from "./admin-menu-data";
+import { SERIAL_MANAGEMENT_MENU } from "./serial-management-menu-data";
 
 @Component({
   selector: "app-sidebar",
@@ -60,6 +61,15 @@ export class SidebarComponent implements OnInit {
   configMenuItems = signal([]);
   originalMenuItems: MenuItem[] = []; // Store original items
   currentMenuType: string = 'main'; // Track current menu type
+
+  get appRailItems() {
+    return this.appSwitcherService.getApps();
+  }
+
+  switchRailApp(appId: AppType): void {
+    // Sidebar rail changes menu context only; route navigation happens when user picks a menu item.
+    this.appSwitcherService.setAppContext(appId);
+  }
   
   // Computed properties for modal display
   visibleConfigItems = computed(() => 
@@ -192,6 +202,10 @@ export class SidebarComponent implements OnInit {
       this.currentMenuType = 'admin';
       this.originalMenuItems = [...ADMIN_MENU];
       this.menuItems = [...ADMIN_MENU];
+    } else if (this.appSwitcherService.isSerialManagementApp()) {
+      this.currentMenuType = 'serial-management';
+      this.originalMenuItems = [...SERIAL_MANAGEMENT_MENU];
+      this.menuItems = [...SERIAL_MANAGEMENT_MENU];
     } else {
       this.currentMenuType = 'main';
       const menuData = await this.menuService.getMenu();

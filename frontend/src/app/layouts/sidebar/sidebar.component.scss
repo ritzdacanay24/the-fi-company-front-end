@@ -1,5 +1,97 @@
 /* Override sidebar text colors to be whiter */
 :host {
+	// App context switcher inline with menu (left-aligned)
+	.sidebar-menu-layout {
+		display: flex;
+		align-items: stretch;
+		height: calc(100vh - 113px);
+		min-height: calc(100vh - 113px);
+	}
+
+	.sidebar-app-rail-inline {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.55rem;
+		flex: 0 0 52px;
+		width: 52px;
+		height: 100%;
+		padding: 0.75rem 6px 0;
+		border-right: 1px solid rgba(255, 255, 255, 0.08);
+		background: rgba(0, 0, 0, 0.18);
+
+		.rail-inline-btn {
+			position: relative;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			width: 40px;
+			height: 40px;
+			border: none;
+			border-radius: 10px;
+			background: transparent;
+			color: rgba(255, 255, 255, 0.82);
+			padding: 0;
+			cursor: pointer;
+			transition: all 0.15s ease;
+
+			i {
+				font-size: 1.2rem;
+				color: rgba(255, 255, 255, 0.9) !important;
+			}
+
+			.rail-inline-tooltip {
+				position: absolute;
+				left: calc(100% + 10px);
+				top: 50%;
+				transform: translateY(-50%);
+				background: #1a3a6e;
+				color: #fff;
+				font-size: 0.75rem;
+				font-weight: 500;
+				white-space: nowrap;
+				padding: 4px 10px;
+				border-radius: 6px;
+				pointer-events: none;
+				opacity: 0;
+				transition: opacity 0.15s ease;
+				z-index: 1100;
+				box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+
+				&::before {
+					content: '';
+					position: absolute;
+					right: 100%;
+					top: 50%;
+					transform: translateY(-50%);
+					border: 5px solid transparent;
+					border-right-color: #1a3a6e;
+				}
+			}
+
+			&:hover {
+				background: rgba(255, 255, 255, 0.14);
+				color: #fff;
+
+				.rail-inline-tooltip {
+					opacity: 1;
+				}
+			}
+
+			&.active {
+				background: rgba(255, 255, 255, 0.22);
+				color: #fff;
+			}
+		}
+	}
+
+	.sidebar-menu-scroll-with-rail {
+		flex: 1 1 auto;
+		min-width: 0;
+		height: 100%;
+		max-height: 100% !important;
+	}
+
 	--vz-vertical-menu-item-color: rgba(255, 255, 255, 0.95);
 	--vz-vertical-menu-sub-item-color: rgba(255, 255, 255, 0.9);
 	--vz-vertical-menu-title-color: rgba(255, 255, 255, 0.8);

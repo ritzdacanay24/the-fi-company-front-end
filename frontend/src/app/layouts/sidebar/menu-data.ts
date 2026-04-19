@@ -530,7 +530,6 @@ export const MENU_DATA: MenuItem[] = [
         link: "/serial-management",
         description: "Serial inventory, usage, and assignment management",
         activatedRoutes: "/serial-management/*",
-        openInNewTab: true,
         hideCheckBox: true,
     },
 ];

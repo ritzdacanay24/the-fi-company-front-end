@@ -315,12 +315,19 @@ const routes: Routes = [
   // Serial Numbers unified hub
   {
     path: "serial-management",
+    component: LayoutComponent,
     canActivate: [AuthGuard],
-    loadChildren: () =>
-      import("./standalone/serial-management/serial-management.routes").then(
-        (m) => m.SERIAL_MANAGEMENT_ROUTES,
-      ),
-    title: "Serial Numbers",
+    runGuardsAndResolvers: "always",
+    children: [
+      {
+        title: "Serial Management",
+        path: "",
+        loadChildren: () =>
+          import("./standalone/serial-management/serial-management.routes").then(
+            (m) => m.SERIAL_MANAGEMENT_ROUTES,
+          ),
+      },
+    ],
   },
   // EyeFi Serial Number Management routes
   {

@@ -60,7 +60,20 @@
         </div>
       </div>
 
-      <ngx-simplebar class="sidebar-menu-scroll" style="max-height: calc(100vh - 113px)">
+      <div class="sidebar-menu-layout">
+        <nav class="sidebar-app-rail-inline" aria-label="Switch application">
+          <button
+            *ngFor="let app of appRailItems"
+            class="rail-inline-btn"
+            [class.active]="app.id === currentMenuType"
+            [title]="app.name"
+            (click)="switchRailApp(app.id)">
+            <i [class]="app.icon"></i>
+            <span class="rail-inline-tooltip">{{ app.name }}</span>
+          </button>
+        </nav>
+
+        <ngx-simplebar class="sidebar-menu-scroll sidebar-menu-scroll-with-rail">
         <ul class="metismenu list-unstyled navbar-nav" id="navbar-nav1">
           <!-- <li class="nav-item pointer">
             <a class="is-parent nav-link menu-link" [routerLink]="'/'">
@@ -300,7 +313,8 @@
           }
           }
         </ul> -->
-      </ngx-simplebar>
+        </ngx-simplebar>
+      </div>
     </div>
     <!-- Sidebar -->
   </div>

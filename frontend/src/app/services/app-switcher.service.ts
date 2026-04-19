@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
-import { Router } from '@angular/router';
+import { BehaviorSubject } from 'rxjs';
+import { NavigationEnd, Router } from '@angular/router';
+import { filter } from 'rxjs/operators';
 
-export type AppType = 'main' | 'field-service' | 'admin';
+export type AppType = 'main' | 'field-service' | 'admin' | 'serial-management';
 
 export interface AppInfo {
   id: AppType;
@@ -44,25 +45,46 @@ export class AppSwitcherService {
       icon: 'las la-user-shield',
       baseRoute: '/admin',
       isActive: false
+    },
+    {
+      id: 'serial-management',
+      name: 'Serial Management',
+      description: 'Serial inventory, usage tracking, and assignment management',
+      icon: 'las la-barcode',
+      baseRoute: '/serial-management',
+      isActive: false
     }
   ];
 
   constructor(private router: Router) {
-    // Determine current app based on route
+    // Determine current app based on route on init
     this.detectCurrentApp();
+    // Re-detect on every navigation so sidebar context switches automatically
+    this.router.events.pipe(
+      filter(e => e instanceof NavigationEnd)
+    ).subscribe((e: NavigationEnd) => {
+      this.detectCurrentAppFromUrl(e.urlAfterRedirects || e.url);
+    });
   }
 
   private detectCurrentApp(): void {
-    const currentUrl = this.router.url;
-    if (currentUrl.startsWith('/field-service')) {
-      this.currentAppSubject.next('field-service');
-      this.updateActiveApp('field-service');
-    } else if (currentUrl.startsWith('/admin') || currentUrl.startsWith('/maintenance')) {
-      this.currentAppSubject.next('admin');
-      this.updateActiveApp('admin');
+    this.detectCurrentAppFromUrl(this.router.url);
+  }
+
+  private detectCurrentAppFromUrl(url: string): void {
+    let next: AppType;
+    if (url.startsWith('/field-service')) {
+      next = 'field-service';
+    } else if (url.startsWith('/admin') || url.startsWith('/maintenance')) {
+      next = 'admin';
+    } else if (url.startsWith('/serial-management') || url.startsWith('/serial-assignments')) {
+      next = 'serial-management';
     } else {
-      this.currentAppSubject.next('main');
-      this.updateActiveApp('main');
+      next = 'main';
+    }
+    if (this.currentAppSubject.value !== next) {
+      this.currentAppSubject.next(next);
+      this.updateActiveApp(next);
     }
   }
 
@@ -84,11 +106,21 @@ export class AppSwitcherService {
     return this.apps.find(app => app.isActive);
   }
 
+  setAppContext(appId: AppType): void {
+    const targetApp = this.apps.find(app => app.id === appId);
+    if (!targetApp) {
+      return;
+    }
+    if (this.currentAppSubject.value !== appId) {
+      this.currentAppSubject.next(appId);
+      this.updateActiveApp(appId);
+    }
+  }
+
   switchToApp(appId: AppType): void {
     const targetApp = this.apps.find(app => app.id === appId);
     if (targetApp) {
-      this.currentAppSubject.next(appId);
-      this.updateActiveApp(appId);
+      this.setAppContext(appId);
       
       // Navigate to the base route of the target app
       this.router.navigate([targetApp.baseRoute]);
@@ -105,6 +137,10 @@ export class AppSwitcherService {
 
   isAdminApp(): boolean {
     return this.getCurrentApp() === 'admin';
+  }
+
+  isSerialManagementApp(): boolean {
+    return this.getCurrentApp() === 'serial-management';
   }
 
   getAppTitle(): string {
