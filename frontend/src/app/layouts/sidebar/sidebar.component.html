@@ -35,42 +35,31 @@
       <div id="two-column-menu">
       </div>
 
-      <!-- Search Input -->
-      <div *ngIf="showSearch && !isSidebarSmall()" class="menu-search-container px-3 pb-2 pt-2">
-        <div class="d-flex align-items-center gap-2">
-          <div class="position-relative flex-grow-1">
-            <input
-              type="text"
-              class="form-control form-control-sm menu-search-input"
-              placeholder="Search menu... (includes hidden items)"
-              [value]="searchTerm()"
-              (input)="onSearchChange($event)"
-              (keydown.escape)="clearSearch()"
-              #searchInput>
-            <i class="bx bx-search search-icon"></i>
-            <i *ngIf="searchTerm()" class="bx bx-x clear-icon" (click)="clearSearch()" title="Clear search"></i>
-          </div>
-          <button type="button" 
-                  class="btn btn-sm btn-warning d-flex align-items-center justify-content-center p-1" 
-                  (click)="openConfigModal()" 
-                  title="Configure Menu"
-                  style="width: 28px; height: 28px;">
-            <i class="bx bx-cog"></i>
-          </button>
-        </div>
+      <div *ngIf="!isSidebarSmall()" class="menu-section-header px-3 pb-2 pt-2">
+        <small class="menu-section-kicker">Current Section</small>
+        <div class="menu-section-name">{{ currentSectionName }}</div>
       </div>
 
       <div class="sidebar-menu-layout">
-        <nav class="sidebar-app-rail-inline" aria-label="Switch application">
+        <nav *ngIf="!isSidebarSmall()" class="sidebar-app-rail-inline" aria-label="Switch application">
+          <button
+            class="rail-inline-btn rail-config-btn"
+            aria-label="Configure Menu"
+            (click)="openConfigModal()">
+            <i class="bx bx-cog"></i>
+            <span class="rail-inline-tooltip">Configure Menu</span>
+          </button>
+
           <button
             *ngFor="let app of appRailItems"
             class="rail-inline-btn"
             [class.active]="app.id === currentMenuType"
-            [title]="app.name"
+            [attr.aria-label]="app.name"
             (click)="switchRailApp(app.id)">
             <i [class]="app.icon"></i>
             <span class="rail-inline-tooltip">{{ app.name }}</span>
           </button>
+
         </nav>
 
         <ngx-simplebar class="sidebar-menu-scroll sidebar-menu-scroll-with-rail">

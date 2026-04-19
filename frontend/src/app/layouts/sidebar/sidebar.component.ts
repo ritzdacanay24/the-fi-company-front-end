@@ -66,9 +66,20 @@ export class SidebarComponent implements OnInit {
     return this.appSwitcherService.getApps();
   }
 
+  get currentSectionName(): string {
+    return this.appSwitcherService.getActiveApp()?.name ?? 'Operations Dashboard';
+  }
+
   switchRailApp(appId: AppType): void {
     // Sidebar rail changes menu context only; route navigation happens when user picks a menu item.
     this.appSwitcherService.setAppContext(appId);
+  }
+
+  favoriteInitial(label: string): string {
+    if (!label) {
+      return "*";
+    }
+    return label.trim().charAt(0).toUpperCase();
   }
   
   // Computed properties for modal display

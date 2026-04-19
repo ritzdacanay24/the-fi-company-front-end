@@ -64,7 +64,10 @@ export class TopbarComponent implements OnInit {
   menuItems;
 
   @HostListener("window:keydown.control.k", ["$event"])
-  bigFont(e: KeyboardEvent) {
+  bigFont(e: Event) {
+    if (!(e instanceof KeyboardEvent)) {
+      return;
+    }
     e.preventDefault();
     if (e.key === "k") {
       this.openSearch();
@@ -72,6 +75,13 @@ export class TopbarComponent implements OnInit {
   }
 
   version = environment.VERSION;
+
+  get showTopbarAppSwitcher(): boolean {
+    const sidebarSize = document.documentElement.getAttribute("data-sidebar-size");
+    const isSidebarSmall = sidebarSize === "sm" || sidebarSize === "sm-hover";
+    const isMobileViewport = window.innerWidth < 992;
+    return isSidebarSmall || isMobileViewport;
+  }
 
   refresh() {
     window.location.reload();

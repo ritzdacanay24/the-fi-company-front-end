@@ -23,8 +23,8 @@
                     </a>
                 </div>
 
-                <!-- App Switcher - Better UX position -->
-                <div class="ms-3 header-item d-flex align-items-center">
+                <!-- App Switcher: show only when sidebar is collapsed/small or on mobile -->
+                <div *ngIf="showTopbarAppSwitcher" class="ms-3 header-item d-flex align-items-center">
                     <app-switcher></app-switcher>
                 </div>
 
