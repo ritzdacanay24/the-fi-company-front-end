@@ -3,7 +3,7 @@ import { BehaviorSubject } from 'rxjs';
 import { NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs/operators';
 
-export type AppType = 'main' | 'field-service' | 'admin' | 'serial-management';
+export type AppType = 'main' | 'field-service' | 'admin' | 'serial-management' | 'training' | 'inspection' | 'project-manager';
 
 export interface AppInfo {
   id: AppType;
@@ -53,6 +53,30 @@ export class AppSwitcherService {
       icon: 'las la-barcode',
       baseRoute: '/serial-management',
       isActive: false
+    },
+    {
+      id: 'training',
+      name: 'Training Management',
+      description: 'Training sessions, setup, and completion workflows',
+      icon: 'las la-graduation-cap',
+      baseRoute: '/training/live',
+      isActive: false
+    },
+    {
+      id: 'inspection',
+      name: 'Inspection Checklist',
+      description: 'Inspection workflows, execution, templates, and reporting',
+      icon: 'las la-clipboard-check',
+      baseRoute: '/inspection-checklist',
+      isActive: false
+    },
+    {
+      id: 'project-manager',
+      name: 'Project Manager',
+      description: 'Projects, tasks, intake, and delivery tracking',
+      icon: 'las la-briefcase',
+      baseRoute: '/project-manager/dashboard',
+      isActive: false
     }
   ];
 
@@ -79,6 +103,12 @@ export class AppSwitcherService {
       next = 'admin';
     } else if (url.startsWith('/serial-management') || url.startsWith('/serial-assignments')) {
       next = 'serial-management';
+    } else if (url.startsWith('/training')) {
+      next = 'training';
+    } else if (url.startsWith('/inspection-checklist') || url.startsWith('/inspection')) {
+      next = 'inspection';
+    } else if (url.startsWith('/project-manager')) {
+      next = 'project-manager';
     } else {
       next = 'main';
     }
@@ -141,6 +171,18 @@ export class AppSwitcherService {
 
   isSerialManagementApp(): boolean {
     return this.getCurrentApp() === 'serial-management';
+  }
+
+  isTrainingApp(): boolean {
+    return this.getCurrentApp() === 'training';
+  }
+
+  isInspectionApp(): boolean {
+    return this.getCurrentApp() === 'inspection';
+  }
+
+  isProjectManagerApp(): boolean {
+    return this.getCurrentApp() === 'project-manager';
   }
 
   getAppTitle(): string {

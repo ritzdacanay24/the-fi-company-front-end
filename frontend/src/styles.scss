@@ -99,6 +99,36 @@ $color-muted: #596066; // neutral text
   }
 }
 
+/* Force darker navy blue sidebar when layout is in light mode */
+html[data-bs-theme="light"] {
+  --vz-vertical-menu-bg: #1a3a6f !important;
+  --vz-vertical-menu-border: rgba(26, 58, 111, 0.3) !important;
+  --vz-vertical-menu-item-color: #e8f1f9 !important;
+  --vz-vertical-menu-item-hover-color: #ffffff !important;
+  --vz-vertical-menu-item-active-color: #ffffff !important;
+  --vz-vertical-menu-item-active-bg: rgba(255, 255, 255, 0.2) !important;
+  --vz-vertical-menu-sub-item-color: #d8e7f5 !important;
+  --vz-vertical-menu-sub-item-hover-color: #ffffff !important;
+  --vz-vertical-menu-sub-item-active-color: #ffffff !important;
+  --vz-vertical-menu-title-color: #b8cfe7 !important;
+  --vz-vertical-menu-box-shadow: none !important;
+}
+
+/* Use a darker navy blue sidebar when sidebar is in light mode. */
+:root[data-sidebar="light"] {
+  --vz-vertical-menu-bg: #1a3a6f !important;
+  --vz-vertical-menu-border: rgba(26, 58, 111, 0.3) !important;
+  --vz-vertical-menu-item-color: #e8f1f9 !important;
+  --vz-vertical-menu-item-hover-color: #ffffff !important;
+  --vz-vertical-menu-item-active-color: #ffffff !important;
+  --vz-vertical-menu-item-active-bg: rgba(255, 255, 255, 0.2) !important;
+  --vz-vertical-menu-sub-item-color: #d8e7f5 !important;
+  --vz-vertical-menu-sub-item-hover-color: #ffffff !important;
+  --vz-vertical-menu-sub-item-active-color: #ffffff !important;
+  --vz-vertical-menu-title-color: #b8cfe7 !important;
+  --vz-vertical-menu-box-shadow: none !important;
+}
+
 #landingnft {
   .slick-dots {
     bottom: -36px;

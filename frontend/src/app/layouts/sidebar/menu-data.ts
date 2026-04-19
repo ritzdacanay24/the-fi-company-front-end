@@ -115,18 +115,6 @@ export const MENU_DATA: MenuItem[] = [
         icon: "las la-check-circle",
         hideCheckBox: true,
     },
-    {
-        id: 121,
-        label: "Sales Order Coverage",
-        link: "/operations/allocation-management",
-        description: "Check if Work Orders cover Sales Order demand",
-        icon: "las la-exchange-alt",
-        hideCheckBox: true,
-        badge: {
-            variant: "badge bg-primary",
-            text: "New",
-        },
-    },
     // {
     //     id: 13,
     //     label: "Cable Production",
@@ -365,66 +353,10 @@ export const MENU_DATA: MenuItem[] = [
         activatedRoutes: "/operations/reports/*"
     },
     {
-        id: 311,
-        label: "Project Manager",
-        icon: "las la-briefcase",
-        isCollapsed: true,
-        hideCheckBox: true,
-        accessRequired: false,
-        activatedRoutes: "/project-manager/*",
-        subItems: [
-            {
-                label: "Dashboard",
-                link: "/project-manager/dashboard",
-                description: "Portfolio health and gate progress overview",
-                accessRequired: false,
-            },
-            {
-                label: "New Project",
-                link: "/project-manager/new-project",
-                description: "Create and manage project intake forms",
-                accessRequired: false,
-            }
-        ]
-    },
-    {
         id: 32,
         label: "Quality & Compliance",
         isTitle: true,
         hideCheckBox: true,
-    },
-    {
-        id: 33,
-        label: "Training Management",
-        icon: "las la-graduation-cap",
-        isCollapsed: true,
-        hideCheckBox: true,
-        subItems: [
-            {
-                label: "Live Sessions",
-                link: "/training/live",
-                description: "Join Training & Badge Sign-Off",
-                icon: "las la-broadcast-tower",
-                accessRequired: false,
-                activatedRoutes: "/training/*"
-            },
-            {
-                label: "Manage Sessions",
-                link: "/training/setup",
-                description: "Create & Edit Training Sessions",
-                icon: "las la-cog",
-                accessRequired: false,
-                activatedRoutes: "/training/*"
-            },
-            {
-                label: "All Sessions",
-                link: "/training/manage",
-                description: "View & Manage All Training Sessions",
-                icon: "las la-list",
-                accessRequired: false,
-                activatedRoutes: "/training/*"
-            }
-        ],
     },
     {
         id: 34,
@@ -501,13 +433,6 @@ export const MENU_DATA: MenuItem[] = [
                 activatedRoutes: "/quality/qir/*"
             },
             {
-                label: "Inspection Checklist",
-                link: "/inspection-checklist",
-                description: "Standalone inspection checklist workflows",
-                icon: "las la-clipboard-list",
-                activatedRoutes: "/inspection-checklist/*"
-            },
-            {
                 label: "Permit Checklists",
                 link: "/quality/permit-checklists",
                 description: "DCA and Seismic document workflow forms",
@@ -522,15 +447,6 @@ export const MENU_DATA: MenuItem[] = [
             //     activatedRoutes: "/inspection/*"
             // },
         ],
-    },
-    {
-        id: 36,
-        label: "Serial Management",
-        icon: "las la-barcode",
-        link: "/serial-management",
-        description: "Serial inventory, usage, and assignment management",
-        activatedRoutes: "/serial-management/*",
-        hideCheckBox: true,
     },
 ];
 

@@ -74,11 +74,19 @@ const routes: Routes = [
   },
   {
     path: 'inspection-checklist',
+    component: LayoutComponent,
     canActivate: [AuthGuard],
-    loadChildren: () =>
-      import('./standalone/inspection-checklist/inspection-checklist.routes').then(
-        (m) => m.INSPECTION_CHECKLIST_STANDALONE_ROUTES,
-      ),
+    runGuardsAndResolvers: 'always',
+    children: [
+      {
+        title: 'Quality Inspection',
+        path: '',
+        loadChildren: () =>
+          import('./standalone/inspection-checklist/inspection-checklist.routes').then(
+            (m) => m.INSPECTION_CHECKLIST_STANDALONE_ROUTES,
+          ),
+      },
+    ],
   },
   { 
     path: "standalone/org-chart",
@@ -120,21 +128,35 @@ const routes: Routes = [
   },
   {
     path: "project-manager",
+    component: LayoutComponent,
     canActivate: [AuthGuard],
-    loadChildren: () =>
-      import("./standalone/project-manager/project-manager.routes").then(
-        (m) => m.PROJECT_MANAGER_ROUTES,
-      ),
-    title: "Project Manager",
+    runGuardsAndResolvers: "always",
+    children: [
+      {
+        title: "Project Manager",
+        path: "",
+        loadChildren: () =>
+          import("./standalone/project-manager/project-manager.routes").then(
+            (m) => m.PROJECT_MANAGER_ROUTES,
+          ),
+      },
+    ],
   },
   {
     path: "training-management",
+    component: LayoutComponent,
     canActivate: [AuthGuard],
-    loadChildren: () =>
-      import("./standalone/training-management/training-management.routes").then(
-        (m) => m.TRAINING_MANAGEMENT_ROUTES,
-      ),
-    title: "Training Management",
+    runGuardsAndResolvers: "always",
+    children: [
+      {
+        title: "Training Management",
+        path: "",
+        loadChildren: () =>
+          import("./standalone/training-management/training-management.routes").then(
+            (m) => m.TRAINING_MANAGEMENT_ROUTES,
+          ),
+      },
+    ],
   },
   {
     path: "standalone/ul-management",
@@ -143,7 +165,7 @@ const routes: Routes = [
   },
   {
     path: "standalone/training-management",
-    redirectTo: "training-management",
+    redirectTo: "training/live",
     pathMatch: "full",
   },
   { 
@@ -344,12 +366,19 @@ const routes: Routes = [
   // Training Management routes
   {
     path: "training",
+    component: LayoutComponent,
     canActivate: [AuthGuard],
-    loadChildren: () =>
-      import("./standalone/training-management/training-management.routes").then(
-        (m) => m.TRAINING_MANAGEMENT_ROUTES,
-      ),
-    title: "Training Management",
+    runGuardsAndResolvers: "always",
+    children: [
+      {
+        title: "Training Management",
+        path: "",
+        loadChildren: () =>
+          import("./standalone/training-management/training-management.routes").then(
+            (m) => m.TRAINING_MANAGEMENT_ROUTES,
+          ),
+      },
+    ],
   },
   {
     path: "safety-incidents",

@@ -24,6 +24,9 @@ import { PathUtilsService } from "@app/core/services/path-utils.service";
 import { FIELD_SERVICE_MENU } from "./field-service-menu-data";
 import { ADMIN_MENU } from "./admin-menu-data";
 import { SERIAL_MANAGEMENT_MENU } from "./serial-management-menu-data";
+import { TRAINING_MENU } from "./training-menu-data";
+import { INSPECTION_MENU } from "./inspection-menu-data";
+import { PROJECT_MANAGER_MENU } from "./project-manager-menu-data";
 
 @Component({
   selector: "app-sidebar",
@@ -44,7 +47,9 @@ export class SidebarComponent implements OnInit {
   isCollapsed: boolean = true; // Favorites section collapsed state
   sidebarPreferences = {
     favoritesExpanded: false,
-    sidebarSize: 'normal' // 'normal' or 'small'
+    sidebarSize: 'normal', // 'normal' or 'small'
+    expandAllItems: true,
+    collapseOthersOnExpand: false
   };
 
   version = environment.VERSION;
@@ -178,16 +183,32 @@ export class SidebarComponent implements OnInit {
     this.saveUserPreferences();
   }
 
+  onExpandAllItemsChange(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    this.sidebarPreferences.expandAllItems = target.checked;
+    this.applyExpandPreferenceToMenu();
+    this.saveUserPreferences();
+  }
+
+  onCollapseOthersOnExpandChange(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    this.sidebarPreferences.collapseOthersOnExpand = target.checked;
+    this.saveUserPreferences();
+  }
+
   // Reset all preferences to defaults
   resetUserPreferences(): void {
     this.sidebarPreferences = {
       favoritesExpanded: false,
-      sidebarSize: 'normal'
+      sidebarSize: 'normal',
+      expandAllItems: true,
+      collapseOthersOnExpand: false
     };
     
     // Apply the reset preferences
     this.isCollapsed = !this.sidebarPreferences.favoritesExpanded;
     this.applySidebarSize();
+    this.applyExpandPreferenceToMenu();
     this.saveUserPreferences();
   }
 
@@ -217,6 +238,18 @@ export class SidebarComponent implements OnInit {
       this.currentMenuType = 'serial-management';
       this.originalMenuItems = [...SERIAL_MANAGEMENT_MENU];
       this.menuItems = [...SERIAL_MANAGEMENT_MENU];
+    } else if (this.appSwitcherService.isTrainingApp()) {
+      this.currentMenuType = 'training';
+      this.originalMenuItems = [...TRAINING_MENU];
+      this.menuItems = [...TRAINING_MENU];
+    } else if (this.appSwitcherService.isInspectionApp()) {
+      this.currentMenuType = 'inspection';
+      this.originalMenuItems = [...INSPECTION_MENU];
+      this.menuItems = [...INSPECTION_MENU];
+    } else if (this.appSwitcherService.isProjectManagerApp()) {
+      this.currentMenuType = 'project-manager';
+      this.originalMenuItems = [...PROJECT_MANAGER_MENU];
+      this.menuItems = [...PROJECT_MANAGER_MENU];
     } else {
       this.currentMenuType = 'main';
       const menuData = await this.menuService.getMenu();
@@ -226,6 +259,7 @@ export class SidebarComponent implements OnInit {
     
     // Apply user configuration after loading menu
     this.applyMenuConfiguration();
+    this.applyExpandPreferenceToMenu();
     
     setTimeout(() => {
       this.initActiveMenu();
@@ -379,6 +413,15 @@ export class SidebarComponent implements OnInit {
   }
 
   toggleItem(item: any) {
+    if (!item) {
+      return;
+    }
+
+    if (!this.sidebarPreferences.collapseOthersOnExpand) {
+      item.isCollapsed = !item.isCollapsed;
+      return;
+    }
+
     this.menuItems.forEach((menuItem: any) => {
       if (menuItem == item) {
         menuItem.isCollapsed = !menuItem.isCollapsed;
@@ -581,7 +624,9 @@ export class SidebarComponent implements OnInit {
     }
 
     const active = this.findMenuItem(pathName, this.menuItems);
-    this.toggleItem(active);
+    if (!this.sidebarPreferences.expandAllItems) {
+      this.toggleItem(active);
+    }
     const ul = document.getElementById("navbar-nav");
     if (ul) {
       const items = Array.from(ul.querySelectorAll("a.nav-link"));
@@ -1079,6 +1124,25 @@ export class SidebarComponent implements OnInit {
     
     // Update the displayed menu items (this affects the actual sidebar display)
     this.menuItems = processedItems;
+    this.applyExpandPreferenceToMenu();
+  }
+
+  private applyExpandPreferenceToMenu(): void {
+    if (!this.menuItems || this.menuItems.length === 0) {
+      return;
+    }
+
+    const shouldCollapse = !this.sidebarPreferences.expandAllItems;
+    this.setCollapsedStateRecursively(this.menuItems, shouldCollapse);
+  }
+
+  private setCollapsedStateRecursively(items: MenuItem[], collapsed: boolean): void {
+    items.forEach((menuItem: MenuItem) => {
+      if (menuItem.subItems && menuItem.subItems.length > 0) {
+        menuItem.isCollapsed = collapsed;
+        this.setCollapsedStateRecursively(menuItem.subItems as MenuItem[], collapsed);
+      }
+    });
   }
 
   /**
