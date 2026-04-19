@@ -194,43 +194,6 @@ export class SnListComponent implements OnInit {
         return params.value ? moment(params.value).format('MM/DD/YYYY') : '—';
       }
     },
-    {
-      headerName: 'Actions',
-      width: 100,
-      pinned: 'right',
-      cellStyle: { 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center',
-        padding: '4px'
-      },
-      cellRenderer: (params: any) => {
-        const status = params.data.status;
-        const isConsumed = status !== 'available';
-        
-        if (isConsumed) {
-          return `
-            <button class="btn btn-sm btn-warning" data-action="void" title="Void & Free Serial">
-              <i class="mdi mdi-cancel"></i>
-            </button>
-          `;
-        } else {
-          return `<span class="text-muted small">Available</span>`;
-        }
-      },
-      onCellClicked: (params: any) => {
-        const target = params.event.target as HTMLElement;
-        const button = target.closest('button');
-        
-        if (button) {
-          const action = button.getAttribute('data-action');
-          
-          if (action === 'void') {
-            this.voidSerial(params.data);
-          }
-        }
-      }
-    }
   ];
 
   defaultColDef: ColDef = {
@@ -263,25 +226,6 @@ export class SnListComponent implements OnInit {
   onGridReady(params: GridReadyEvent): void {
     this.gridApi = params.api;
     this.onQuickSearchChange();
-
-    // Handle action button clicks
-    const eGridDiv = document.querySelector('#serial-number-grid');
-    if (eGridDiv) {
-      eGridDiv.addEventListener('click', (e: Event) => {
-        const target = e.target as HTMLElement;
-        const button = target.closest('[data-action]') as HTMLElement;
-
-        if (button) {
-          const action = button.getAttribute('data-action');
-          const serial = button.getAttribute('data-serial');
-
-          if (action === 'menu' && serial) {
-            // Handle dropdown menu
-            e.stopPropagation();
-          }
-        }
-      });
-    }
   }
 
   onQuickSearchChange(): void {

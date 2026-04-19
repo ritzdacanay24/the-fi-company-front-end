@@ -13,9 +13,7 @@ import { ActivatedRoute, Router } from "@angular/router";
 import { highlightRowView, autoSizeColumns } from "src/assets/js/util";
 import moment from "moment";
 import { NAVIGATION_ROUTE } from "../placard-constant";
-import { DateRangeComponent } from "@app/shared/components/date-range/date-range.component";
 import { PlacardService } from "@app/core/api/operations/placard/placard.service";
-import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
 import { PlacardActionsCellRendererComponent } from "../placard-actions-cell-renderer/placard-actions-cell-renderer.component";
 import { BreadcrumbItem, BreadcrumbComponent } from "@app/shared/components/breadcrumb/breadcrumb.component";
 
@@ -27,7 +25,6 @@ import { BreadcrumbItem, BreadcrumbComponent } from "@app/shared/components/brea
     FormsModule,
     NgSelectModule,
     AgGridModule,
-    DateRangeComponent,
     BreadcrumbComponent,
   ],
   selector: "app-placard-list",
@@ -59,18 +56,17 @@ export class PlacardListComponent implements OnInit {
 
   columnDefs: ColDef[] = [
     {
-      field: "Actions",
+      field: "actions",
       headerName: "Actions",
       filter: false,
       sortable: false,
       pinned: "left",
       cellRenderer: PlacardActionsCellRendererComponent,
       cellRendererParams: {
-        onView: (id: any) => this.onView(id),
         onEdit: (id: any) => this.onEdit(id),
       },
-      maxWidth: 120,
-      minWidth: 120,
+      maxWidth: 115,
+      minWidth: 115,
     },
     {
       field: "eyefi_wo_number",
@@ -219,17 +215,6 @@ export class PlacardListComponent implements OnInit {
   onEdit(id) {
     let gridParams = _compressToEncodedURIComponent(this.gridApi);
     this.router.navigate([NAVIGATION_ROUTE.EDIT], {
-      queryParamsHandling: "merge",
-      queryParams: {
-        id: id,
-        gridParams,
-      },
-    });
-  }
-
-  onView(id) {
-    let gridParams = _compressToEncodedURIComponent(this.gridApi);
-    this.router.navigate([NAVIGATION_ROUTE.SUMMARY], {
       queryParamsHandling: "merge",
       queryParams: {
         id: id,

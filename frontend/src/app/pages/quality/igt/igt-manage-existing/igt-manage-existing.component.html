@@ -49,25 +49,22 @@
                 <!-- Statistics Header Section -->
                 <!-- Filters and Controls Header -->
                 <div class="card-header">
-                    <div class="d-flex align-items-center">
-                        <div class="form-icon me-3">
-                            <input type="search" class="form-control form-control-icon" style="width:350px"
+                    <div class="d-flex align-items-center flex-wrap gap-3">
+                        <div class="form-icon" style="width:350px">
+                            <input type="search" class="form-control form-control-icon"
                                 [(ngModel)]="searchTerm" (ngModelChange)="onSearchChange()"
                                 placeholder="Search serial numbers, manufacturer, model...">
                             <i class="mdi mdi-magnify"></i>
                         </div>
 
-                        <!-- Filter Controls -->
+                        <button class="btn btn-outline-secondary" (click)="refreshData()" title="Refresh data">
+                            <i class="mdi mdi-refresh me-1"></i>Refresh
+                        </button>
 
                         <div class="ms-auto d-flex gap-2 align-items-center">
                             <span class="badge bg-light text-dark border px-2 py-1" *ngIf="hasActiveFilters()">
                                 <i class="mdi mdi-filter me-1 text-primary"></i>
                                 <strong>{{getFilteredCount()}} Filtered</strong>
-                            </span>
-                            <span class="badge bg-primary-subtle text-dark px-2 py-1"
-                                *ngIf="selectedSerials.length > 0">
-                                <i class="mdi mdi-check-box-outline me-1"></i>
-                                <strong>{{selectedSerials.length}} Selected</strong>
                             </span>
                         </div>
                     </div>
@@ -88,10 +85,9 @@
 
                         <ag-grid-angular class="ag-theme-quartz no-border"
                             style="width: 100%;height: calc(100vh - 319px);" [rowData]="rowData"
-                            [columnDefs]="columnDefs" [defaultColDef]="defaultColDef" [rowSelection]="'multiple'"
-                            [suppressRowClickSelection]="true" [animateRows]="true" [enableRangeSelection]="true"
+                            [columnDefs]="columnDefs" [defaultColDef]="defaultColDef" [animateRows]="true" [enableRangeSelection]="true"
                             [suppressMenuHide]="true" [suppressColumnVirtualisation]="true" [getRowId]="getRowId"
-                            (gridReady)="onGridReady($event)" (selectionChanged)="onSelectionChanged($event)">
+                            (gridReady)="onGridReady($event)">
                         </ag-grid-angular>
                     </div>
                 </div>

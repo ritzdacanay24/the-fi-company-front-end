@@ -26,20 +26,23 @@
       </div>
 
       <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white d-flex justify-content-between align-items-center gap-2 flex-wrap">
-          <h3 class="h6 mb-0">Batch Lifecycle Management</h3>
-    <div class="d-flex align-items-center gap-2 flex-wrap">
-      <input class="form-control" style="width: 160px;" type="text" [(ngModel)]="actorName" placeholder="Actor name" />
-      <input class="form-control" style="width: 240px;" type="text" [(ngModel)]="searchTerm" placeholder="Search batches..." />
-      <select class="form-select" style="width: 160px;" [(ngModel)]="lifecycleStatus" (change)="loadBatches()">
-        <option value="active">Active</option>
-        <option value="archived">Archived</option>
-        <option value="deleted">Deleted</option>
-        <option value="all">All</option>
-      </select>
-      <button class="btn btn-outline-secondary" (click)="loadBatches()" [disabled]="isLoadingBatches">Refresh</button>
-    </div>
-  </div>
+        <div class="card-header">
+          <div class="d-flex align-items-center flex-wrap gap-3">
+            <div class="form-icon" style="width: 280px;">
+              <input type="search" class="form-control form-control-icon" [(ngModel)]="searchTerm" placeholder="Search batches...">
+              <i class="mdi mdi-magnify"></i>
+            </div>
+            <select class="form-select" style="width: 160px;" [(ngModel)]="lifecycleStatus" (change)="loadBatches()">
+              <option value="active">Active</option>
+              <option value="archived">Archived</option>
+              <option value="deleted">Deleted</option>
+              <option value="all">All</option>
+            </select>
+            <button class="btn btn-outline-secondary" (click)="loadBatches()" [disabled]="isLoadingBatches">
+              <i class="mdi mdi-refresh me-1"></i>Refresh
+            </button>
+          </div>
+        </div>
   <div class="card-body p-0">
     <ag-grid-angular
       class="ag-theme-quartz no-border"

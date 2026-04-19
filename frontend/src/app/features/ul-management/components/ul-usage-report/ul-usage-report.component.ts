@@ -222,39 +222,6 @@ export class ULUsageReportComponent implements OnInit {
       },
       hide: true
     },
-    {
-      headerName: 'Actions',
-      width: 120,
-      pinned: 'right',
-      cellStyle: { display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px' },
-      cellRenderer: (params: any) => {
-        const isVoided = params.data.is_voided == 1 || params.data.is_voided === true;
-        
-        if (isVoided) {
-          return `
-            <div class="d-flex gap-1">
-              <button class="btn btn-outline-success btn-sm action-btn" data-action="restore" data-id="${params.data.id}" title="Restore">
-                <i class="mdi mdi-restore"></i>
-              </button>
-              <button class="btn btn-outline-danger btn-sm action-btn" data-action="delete" data-id="${params.data.id}" title="Delete">
-                <i class="mdi mdi-delete"></i>
-              </button>
-            </div>
-          `;
-        }
-        
-        return `
-          <div class="d-flex gap-1">
-            <button class="btn btn-outline-warning btn-sm action-btn" data-action="void" data-id="${params.data.id}" title="Void">
-              <i class="mdi mdi-cancel"></i>
-            </button>
-            <button class="btn btn-outline-danger btn-sm action-btn" data-action="delete" data-id="${params.data.id}" title="Delete">
-              <i class="mdi mdi-delete"></i>
-            </button>
-          </div>
-        `;
-      }
-    }
   ];
 
   defaultColDef: ColDef = {
@@ -298,38 +265,6 @@ export class ULUsageReportComponent implements OnInit {
 
   onGridReady(params: GridReadyEvent): void {
     this.gridApi = params.api;
-
-    // Handle action button clicks
-    const eGridDiv = document.querySelector('#ul-usage-grid');
-    if (eGridDiv) {
-      eGridDiv.addEventListener('click', (e: Event) => {
-        const target = e.target as HTMLElement;
-        const button = target.closest('.action-btn') as HTMLElement;
-        
-        if (button) {
-          const action = button.getAttribute('data-action');
-          const id = button.getAttribute('data-id');
-
-          if (action && id) {
-            const usageId = parseInt(id);
-            switch (action) {
-              case 'void':
-                this.openVoidModal(usageId);
-                break;
-              case 'delete':
-                this.openDeleteModal(usageId);
-                break;
-              case 'restore':
-                this.restoreUsage(usageId);
-                break;
-              case 'edit':
-                this.editUsage(usageId);
-                break;
-            }
-          }
-        }
-      });
-    }
   }
 
   loadUsageData(): void {

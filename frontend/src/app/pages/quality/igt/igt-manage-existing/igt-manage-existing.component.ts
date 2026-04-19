@@ -55,6 +55,7 @@ export class IgtManageExistingComponent implements OnInit {
     minWidth: 100,
     sortable: true,
     filter: true,
+    floatingFilter: true,
     resizable: true
   };
 
@@ -118,7 +119,7 @@ export class IgtManageExistingComponent implements OnInit {
     // Build API parameters to get ALL records (no pagination)
     const apiParams = {
       includeInactive: true,
-      search: this.searchTerm,
+      search: '',
       status: this.statusFilter,
       category: this.categoryFilter,
       is_active: this.isActiveFilter
@@ -167,18 +168,6 @@ export class IgtManageExistingComponent implements OnInit {
 
   private setupColumnDefs(): void {
     this.columnDefs = [
-      {
-        headerName: '',
-        field: 'select',
-        headerCheckboxSelection: true,
-        checkboxSelection: true,
-        width: 50,
-        pinned: 'left',
-        lockPosition: true,
-        suppressHeaderMenuButton: true,
-        sortable: false,
-        filter: false
-      },
       {
         headerName: 'Serial Number',
         field: 'serial_number',
@@ -278,39 +267,13 @@ export class IgtManageExistingComponent implements OnInit {
         cellRenderer: (params: any) => {
           return params.value ? new Date(params.value).toLocaleDateString() : '-';
         }
-      },
-      {
-        headerName: 'Actions',
-        field: 'actions',
-        width: 120,
-        pinned: 'right',
-        sortable: false,
-        filter: false,
-        cellRenderer: (params: any) => {
-          return `
-            <div class="d-flex gap-1 mt-1">
-              <button class="btn btn-sm btn-outline-primary edit-btn" title="Edit">
-                <i class="mdi mdi-pencil"></i>
-              </button>
-              <button class="btn btn-sm btn-outline-danger delete-btn" title="Delete">
-                <i class="mdi mdi-delete"></i>
-              </button>
-            </div>
-          `;
-        },
-        onCellClicked: (params: any) => {
-          if (params.event.target.closest('.edit-btn')) {
-            this.editSerial(params.data);
-          } else if (params.event.target.closest('.delete-btn')) {
-            this.deleteSerial(params.data);
-          }
-        }
       }
     ];
   }
 
   onGridReady(params: GridReadyEvent): void {
     this.gridApi = params.api;
+    this.onSearchChange();
   }
 
   onSelectionChanged(event: SelectionChangedEvent): void {
@@ -347,7 +310,7 @@ export class IgtManageExistingComponent implements OnInit {
   }
 
   onSearchChange(): void {
-    this.loadAllData();
+    this.gridApi?.setGridOption('quickFilterText', this.searchTerm?.trim() || '');
   }
 
   onIsActiveFilterChange(): void {

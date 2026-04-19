@@ -36,38 +36,20 @@
 
       <div class="card shadow-sm border-0">
         <div class="card-header">
-          <div class="d-flex align-items-center">
-            <div class="form-icon me-3">
-              <input type="search" class="form-control form-control-icon" style="width:300px"
+          <div class="d-flex align-items-center flex-wrap gap-3">
+            <div class="form-icon" style="width:300px">
+              <input type="search" class="form-control form-control-icon"
                 (ngModelChange)="this.gridApi?.setGridOption('quickFilterText', $event);" [value]="searchName" [(ngModel)]="searchName"
                 placeholder="Search transfers by SO, reference, location...">
               <i class="mdi mdi-magnify"></i>
             </div>
             <ng-select [dropdownPosition]="'bottom'" [searchable]="false" bindLabel="name" bindValue="name"
               [clearable]="false" [items]="selectedViewOptions" [(ngModel)]="selectedViewType" (change)="getData()"
-              style="width:150px" class="me-3" [appendTo]="'body'">
+              style="width:150px" [appendTo]="'body'">
             </ng-select>
-            <button class="btn btn-outline-secondary me-3" (click)="getData()" title="Refresh data">
+            <button class="btn btn-outline-secondary" (click)="getData()" title="Refresh data">
               <i class="mdi mdi-refresh me-1"></i>Refresh
             </button>
-            <div class="ms-auto">
-              <div class="d-flex align-items-center">
-                <div class="me-4 d-flex gap-4 small text-muted">
-                  <span>
-                    <i class="mdi mdi-swap-horizontal text-info me-1"></i>
-                    <strong>{{data?.length || 0}}</strong> Total
-                  </span>
-                  <span>
-                    <i class="mdi mdi-clock-outline text-warning me-1"></i>
-                    <strong>{{getActiveCount()}}</strong> Active
-                  </span>
-                  <span>
-                    <i class="mdi mdi-check-circle text-success me-1"></i>
-                    <strong>{{getCompletedCount()}}</strong> Completed
-                  </span>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
         

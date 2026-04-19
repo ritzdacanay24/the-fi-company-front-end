@@ -1,6 +1,7 @@
 import { ColDef, GridApi, GridOptions } from "ag-grid-community";
 import { Component, OnInit } from "@angular/core";
 import { ReactiveFormsModule } from "@angular/forms";
+import { NgSelectModule } from "@ng-select/ng-select";
 import { AgGridModule } from "ag-grid-angular";
 
 import { ActivatedRoute, Router } from "@angular/router";
@@ -18,6 +19,7 @@ import {
   imports: [
     SharedModule,
     ReactiveFormsModule,
+    NgSelectModule,
     AgGridModule,
   ],
   selector: "app-ags-serial-list",
@@ -33,6 +35,8 @@ export class AgsSerialListComponent implements OnInit {
   ngOnInit(): void {
     this.activatedRoute.queryParams.subscribe((params) => {
       this.id = params["id"];
+      this.selectedViewType =
+        params["selectedViewType"] || this.selectedViewType;
     });
 
     this.getData();
@@ -40,30 +44,25 @@ export class AgsSerialListComponent implements OnInit {
 
   columnDefs: ColDef[] = [
     {
-      field: "Actions",
-      headerName: "",
+      field: "actions",
+      headerName: "Actions",
       filter: false,
       sortable: false,
       pinned: "left",
-      maxWidth: 90,
-      minWidth: 90,
-      cellRenderer: (params: any) => {
+      maxWidth: 115,
+      minWidth: 115,
+      cellRenderer: () => {
         return `
-          <div class="d-flex gap-1 align-items-center justify-content-center h-100">
-            <button class="btn btn-sm btn-outline-primary view-btn" title="View Details">
-              <i class="mdi mdi-eye"></i>
-            </button>
-            <button class="btn btn-sm btn-outline-secondary edit-btn" title="Edit">
-              <i class="mdi mdi-pencil"></i>
+          <div class="d-flex align-items-center justify-content-center h-100">
+            <button class="btn btn-sm btn-outline-primary select-btn" title="Select Record">
+              SELECT
             </button>
           </div>
         `;
       },
       onCellClicked: (params: any) => {
         const target = params.event.target;
-        if (target.closest('.view-btn')) {
-          this.onView(params.data.id);
-        } else if (target.closest('.edit-btn')) {
+        if (target.closest('.select-btn')) {
           this.onEdit(params.data.id);
         }
       },
@@ -137,6 +136,25 @@ export class AgsSerialListComponent implements OnInit {
 
   title = "AGS List";
 
+  selectedViewType = "All";
+
+  selectedViewOptions = [
+    {
+      name: "Active",
+      value: 1,
+      selected: false,
+    },
+    {
+      name: "Inactive",
+      value: 0,
+      selected: false,
+    },
+    {
+      name: "All",
+      selected: false,
+    },
+  ];
+
   gridApi: GridApi;
 
   data: any[];
@@ -187,17 +205,6 @@ export class AgsSerialListComponent implements OnInit {
     });
   };
 
-  onView(id) {
-    let gridParams = _compressToEncodedURIComponent(this.gridApi);
-    this.router.navigate([NAVIGATION_ROUTE.VIEW], {
-      queryParamsHandling: "merge",
-      queryParams: {
-        gridParams,
-        id: id,
-      },
-    });
-  }
-
   onEdit(id) {
     let gridParams = _compressToEncodedURIComponent(this.gridApi);
     this.router.navigate([NAVIGATION_ROUTE.EDIT], {
@@ -212,9 +219,18 @@ export class AgsSerialListComponent implements OnInit {
   async getData() {
     try {
       this.gridApi?.showLoadingOverlay();
-      this.allData = await this.api.getList('All', '', '', true);
+      this.allData = await this.api.getList(this.selectedViewType, "", "", true);
       this.data = this.allData;
       this.searchTerm = '';
+
+      this.router.navigate(["."], {
+        queryParams: {
+          selectedViewType: this.selectedViewType,
+        },
+        relativeTo: this.activatedRoute,
+        queryParamsHandling: "merge",
+      });
+
       this.gridApi?.hideOverlay();
     } catch (err) {
       this.gridApi?.hideOverlay();

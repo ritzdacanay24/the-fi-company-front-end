@@ -14,7 +14,7 @@ import { highlightRowView, autoSizeColumns } from "src/assets/js/util";
 import { NAVIGATION_ROUTE } from "../igt-transfer-constant";
 import { BreadcrumbItem, BreadcrumbComponent } from "@app/shared/components/breadcrumb/breadcrumb.component";
 import { IgtTransferService } from "@app/core/api/operations/igt-transfer/igt-transfer.service";
-import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
+import { IgtTransferActionsCellRendererComponent } from "../igt-transfer-actions-cell-renderer.component";
 
 @Component({
   standalone: true,
@@ -47,14 +47,14 @@ export class IgtTransferListComponent implements OnInit {
 
   columnDefs: ColDef[] = [
     {
-      field: "View",
-      headerName: "View",
-      filter: "agMultiColumnFilter",
+      field: "actions",
+      headerName: "Actions",
+      filter: false,
+      sortable: false,
       pinned: "left",
-      cellRenderer: LinkRendererV2Component,
+      cellRenderer: IgtTransferActionsCellRendererComponent,
       cellRendererParams: {
-        onClick: (e: any) => this.onEdit(e.rowData.id),
-        value: "SELECT",
+        onEdit: (data: any) => this.onEdit(data.id),
       },
       maxWidth: 115,
       minWidth: 115,

@@ -53,12 +53,6 @@
       <div class="card shadow-sm border-0">
         <div class="card-header">
           <div class="d-flex align-items-center flex-wrap gap-3">
-            <div class="form-icon">
-              <button class="btn btn-outline-secondary" (click)="refreshData()" title="Refresh data">
-                Refresh
-              </button>
-            </div>
-
             <div class="flex-grow-1" style="min-width: 280px; max-width: 420px;">
               <div class="input-group">
                 <span class="input-group-text bg-light border-end-0">
@@ -82,6 +76,10 @@
                 </button>
               </div>
             </div>
+
+            <button class="btn btn-outline-secondary" (click)="refreshData()" title="Refresh data">
+              <i class="mdi mdi-refresh me-1"></i>Refresh
+            </button>
 
             <div class="ms-auto"></div>
           </div>

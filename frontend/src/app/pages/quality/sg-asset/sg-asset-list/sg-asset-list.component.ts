@@ -5,9 +5,8 @@ import { NgSelectModule } from '@ng-select/ng-select'
 import { AgGridModule } from 'ag-grid-angular'
 
 import { ActivatedRoute, Router } from '@angular/router'
-import moment from 'moment'
 import { SgAssetService } from '@app/core/api/quality/sg-asset.service'
-import { NAVIGATION_ROUTE, NAVIGATION_ROUTE_ID_TEMPLATE } from '../sg-asset-constant'
+import { NAVIGATION_ROUTE } from '../sg-asset-constant'
 import { SharedModule } from '@app/shared/shared.module'
 import { highlightRowView, autoSizeColumns } from 'src/assets/js/util'
 import { _decompressFromEncodedURIComponent, _compressToEncodedURIComponent } from 'src/assets/js/util/jslzString'
@@ -36,12 +35,7 @@ export class SgAssetListComponent implements OnInit {
   ngOnInit(): void {
 
     this.activatedRoute.queryParams.subscribe(params => {
-      this.dateFrom = params['dateFrom'] || this.dateFrom;
-      this.dateTo = params['dateTo'] || this.dateTo;
-      this.dateRange = [this.dateFrom, this.dateTo];
-
       this.id = params['id'];
-      this.isAll = params['isAll'] ? params['isAll'].toLocaleLowerCase() === 'true' : false;
       this.selectedViewType = params['selectedViewType'] || this.selectedViewType;
     });
 
@@ -55,15 +49,12 @@ export class SgAssetListComponent implements OnInit {
       lockPosition: 'left',
       cellRenderer: SgAssetActionDropdownRendererComponent,
       cellRendererParams: {
-        onView: (id: string) => {
-          this.onView(id);
-        },
         onEdit: (id: string) => {
           this.onEdit(id);
         }
       },
-      maxWidth: 90,
-      minWidth: 90,
+      maxWidth: 115,
+      minWidth: 115,
       sortable: false,
       filter: false,
       suppressHeaderMenuButton: true
@@ -128,23 +119,9 @@ export class SgAssetListComponent implements OnInit {
 
   id = null;
 
-  isAll = false
-
   quickFilter = '';
 
   searchTerm = '';
-
-  changeIsAll() { }
-
-  dateFrom = moment().subtract(1, 'months').startOf('month').format('YYYY-MM-DD')
-  dateTo = moment().endOf('month').format('YYYY-MM-DD')
-  dateRange = [this.dateFrom, this.dateTo];
-
-  onChangeDate($event) {
-    this.dateFrom = $event['dateFrom']
-    this.dateTo = $event['dateTo']
-    this.getData()
-  }
 
   onQuickFilterChange(filter: string) {
     this.gridApi?.setGridOption('quickFilterText', filter);
@@ -193,28 +170,15 @@ export class SgAssetListComponent implements OnInit {
     });
   }
 
-  onView(id) {
-    let gridParams = _compressToEncodedURIComponent(this.gridApi);
-    this.router.navigate([NAVIGATION_ROUTE.VIEW, id], {
-      queryParamsHandling: 'merge',
-      queryParams: {
-        gridParams
-      }
-    });
-  }
-
   async getData() {
     try {
       this.gridApi?.showLoadingOverlay()
 
-      this.data = await this.api.getList(this.selectedViewType, this.dateFrom, this.dateTo, this.isAll);
+      this.data = await this.api.getList(this.selectedViewType, null, null, true);
 
       this.router.navigate(['.'], {
         queryParams: {
-          selectedViewType: this.selectedViewType,
-          isAll: this.isAll,
-          dateFrom: this.dateFrom,
-          dateTo: this.dateTo
+          selectedViewType: this.selectedViewType
         },
         relativeTo: this.activatedRoute
         , queryParamsHandling: 'merge'
@@ -231,8 +195,7 @@ export class SgAssetListComponent implements OnInit {
   // Filter Helper Methods
   hasActiveFilters(): boolean {
     return this.selectedViewType !== 'All' ||
-      !!this.searchTerm ||
-      !!(this.dateFrom && this.dateTo);
+      !!this.searchTerm;
   }
 
   clearStatusFilter() {
@@ -243,19 +206,6 @@ export class SgAssetListComponent implements OnInit {
   clearSearchFilter() {
     this.searchTerm = '';
     this.getData();
-  }
-
-  clearDateFilter() {
-    this.dateFrom = null;
-    this.dateTo = null;
-    this.getData();
-  }
-
-  getDateRangeDisplay(): string {
-    if (this.dateFrom && this.dateTo) {
-      return `${moment(this.dateFrom).format('MM/DD/YYYY')} - ${moment(this.dateTo).format('MM/DD/YYYY')}`;
-    }
-    return '';
   }
 
 }

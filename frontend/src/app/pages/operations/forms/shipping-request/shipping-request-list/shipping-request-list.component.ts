@@ -11,12 +11,12 @@ import {
 } from "src/assets/js/util/jslzString";
 import { ActivatedRoute, Router } from "@angular/router";
 import { highlightRowView, autoSizeColumns } from "src/assets/js/util";
-import moment from "moment";
 import { NAVIGATION_ROUTE } from "../shipping-request-constant";
-import { DateRangeComponent } from "@app/shared/components/date-range/date-range.component";
 import { BreadcrumbItem } from "@app/shared/components/breadcrumb/breadcrumb.component";
 import { ShippingRequestService } from "@app/core/api/operations/shippging-request/shipping-request.service";
-import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
+import { GridSettingsComponent } from "@app/shared/grid-settings/grid-settings.component";
+import { GridFiltersComponent } from "@app/shared/grid-filters/grid-filters.component";
+import { ShippingRequestActionsCellRendererComponent } from "../shipping-request-actions-cell-renderer.component";
 
 @Component({
   standalone: true,
@@ -25,71 +25,45 @@ import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link
     ReactiveFormsModule,
     NgSelectModule,
     AgGridModule,
-    DateRangeComponent,
+    GridSettingsComponent,
+    GridFiltersComponent,
   ],
   selector: "app-shipping-request-list",
   templateUrl: "./shipping-request-list.component.html",
 })
 export class ShippingRequestListComponent implements OnInit {
+  pageId = "/operations/forms/shipping-request/list";
+  searchName = "";
+
   constructor(
     public api: ShippingRequestService,
     public router: Router,
     private activatedRoute: ActivatedRoute
   ) {}
 
-  disable = false;
-
   ngOnInit(): void {
     this.activatedRoute.queryParams.subscribe((params) => {
-      this.dateFrom = params["dateFrom"] || this.dateFrom;
-      this.dateTo = params["dateTo"] || this.dateTo;
-      this.dateRange = [this.dateFrom, this.dateTo];
-
       this.id = params["id"];
-      this.isAll = params["isAll"]
-        ? params["isAll"].toLocaleLowerCase() === "true"
-        : false;
       this.selectedViewType =
         params["selectedViewType"] || this.selectedViewType;
     });
 
     this.getData();
-
-    if (this.selectedViewType == "Open") {
-      this.disable = true;
-      this.isAll = true;
-    }
   }
 
   columnDefs: (ColDef | ColGroupDef)[] = [
     {
-      field: "Actions",
+      field: "actions",
       headerName: "Actions",
       filter: false,
       sortable: false,
       pinned: "left",
-      cellRenderer: (params: any) => {
-        return `
-          <div class="d-flex justify-content-center align-items-center gap-2 h-100">
-            <button class="btn btn-sm btn-outline-primary view-btn" title="View Details">
-              <i class="mdi mdi-eye"></i>
-            </button>
-            <button class="btn btn-sm btn-outline-secondary edit-btn" title="Edit">
-              <i class="mdi mdi-pencil"></i>
-            </button>
-          </div>
-        `;
+      cellRenderer: ShippingRequestActionsCellRendererComponent,
+      cellRendererParams: {
+        onEdit: (data: any) => this.onEdit(data.id),
       },
-      onCellClicked: (params: any) => {
-        const target = params.event.target;
-        if (target.closest('.view-btn')) {
-          this.onView(params.data.id);
-        } else if (target.closest('.edit-btn')) {
-          this.onEdit(params.data.id);
-        }
-      },
-      maxWidth: 120,
-      minWidth: 120,
+      maxWidth: 115,
+      minWidth: 115,
     },
     { field: "id", headerName: "ID", filter: "agMultiColumnFilter" },
     {
@@ -246,28 +220,6 @@ export class ShippingRequestListComponent implements OnInit {
 
   id = null;
 
-  isAll = false;
-
-  changeIsAll() {}
-
-  dateFrom = moment()
-    .subtract(1, "months")
-    .startOf("month")
-    .format("YYYY-MM-DD");
-  dateTo = moment().endOf("month").format("YYYY-MM-DD");
-  dateRange = [this.dateFrom, this.dateTo];
-
-  onChangeDate($event) {
-    this.dateFrom = $event["dateFrom"];
-    this.dateTo = $event["dateTo"];
-    this.getData();
-  }
-
-  onSearch($event: Event) {
-    const value = ($event.target as HTMLInputElement).value;
-    this.gridApi?.setGridOption('quickFilterText', value);
-  }
-
   gridOptions: GridOptions = {
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
@@ -296,20 +248,9 @@ export class ShippingRequestListComponent implements OnInit {
     });
   };
 
-  onView(id) {
-    let gridParams = _compressToEncodedURIComponent(this.gridApi);
-    this.router.navigate([NAVIGATION_ROUTE.VIEW], {
-      queryParamsHandling: "merge",
-      queryParams: {
-        gridParams,
-        id: id,
-      },
-    });
-  }
-
   onEdit(id) {
     let gridParams = _compressToEncodedURIComponent(this.gridApi);
-    this.router.navigate([NAVIGATION_ROUTE.EDIT], {
+    this.router.navigate([NAVIGATION_ROUTE.VIEW], {
       queryParamsHandling: "merge",
       queryParams: {
         id: id,
@@ -319,37 +260,19 @@ export class ShippingRequestListComponent implements OnInit {
   }
 
   async getData() {
-    if (this.selectedViewType == "Open") {
-      this.disable = true;
-      this.isAll = true;
-    } else {
-      this.disable = false;
-    }
-
     try {
       this.gridApi?.showLoadingOverlay();
 
-      let params: any = {};
-      if (this.selectedViewType != "All") {
-        let status = this.selectedViewOptions.find(
-          (person) => person.name == this.selectedViewType
-        );
-        params = { active: status.value };
-      }
-
       this.data = await this.api.getList(
         this.selectedViewType,
-        this.dateFrom,
-        this.dateTo,
-        this.isAll
+        null,
+        null,
+        true
       );
 
       this.router.navigate(["."], {
         queryParams: {
           selectedViewType: this.selectedViewType,
-          isAll: this.isAll,
-          dateFrom: this.dateFrom,
-          dateTo: this.dateTo,
         },
         relativeTo: this.activatedRoute,
         queryParamsHandling: "merge",
