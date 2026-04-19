@@ -59,7 +59,7 @@ export class UserPasswordComponent implements OnInit {
       return;
     }
 
-    this.userService.resetPassword(this.form.value);
+    this.userService.resetPassword(this.form.getRawValue());
 
     this.form.reset(this.form.getRawValue());
     this.toastrService.success("Password successfully updated");

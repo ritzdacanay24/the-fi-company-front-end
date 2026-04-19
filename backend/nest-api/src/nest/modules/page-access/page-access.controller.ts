@@ -1,0 +1,30 @@
+import { Body, Controller, Get, Inject, ParseIntPipe, Post, Query } from '@nestjs/common';
+import { PageAccessService } from './page-access.service';
+
+@Controller('page-access')
+export class PageAccessController {
+  constructor(
+    @Inject(PageAccessService)
+    private readonly pageAccessService: PageAccessService,
+  ) {}
+
+  @Get('getByUserId')
+  async getByUserId(@Query('user_id', ParseIntPipe) userId: number) {
+    return this.pageAccessService.getByUserId(userId);
+  }
+
+  /** Toggle access (create/activate/delete) — mirrors page-access/create.php */
+  @Post()
+  async toggle(@Body('user_id', ParseIntPipe) userId: number, @Body('menu_id', ParseIntPipe) menuId: number) {
+    return this.pageAccessService.toggle(userId, menuId);
+  }
+
+  /** Request access (active=0 record) — mirrors page-access/request-access.php */
+  @Post('requestAccess')
+  async requestAccess(
+    @Query('user_id', ParseIntPipe) userId: number,
+    @Query('menu_id', ParseIntPipe) menuId: number,
+  ) {
+    return this.pageAccessService.requestAccess(userId, menuId);
+  }
+}

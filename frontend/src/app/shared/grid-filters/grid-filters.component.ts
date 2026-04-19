@@ -87,7 +87,6 @@ export class GridFiltersComponent implements OnInit {
   };
 
   async openUp() {
-    await this.getOtherGridByUsers();
     setTimeout(() => {
       let el = document.getElementById("test-" + this.value);
       if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });

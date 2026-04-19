@@ -6,6 +6,7 @@ import { firstValueFrom } from "rxjs";
 import { MENU } from "../../../layouts/sidebar/menu";
 
 let url = "menu";
+const menuV2Url = 'apiV2/menu';
 
 @Injectable({
   providedIn: "root",
@@ -18,13 +19,13 @@ export class MenuService extends DataService<any> {
   checkUserPermission = async (user_id, link) =>
     await firstValueFrom(
       this.http.get<any>(
-        `${url}/checkUserPermission?user_id=${user_id}&link=${link}`
+        `${menuV2Url}/checkUserPermission?user_id=${user_id}&link=${link}`
       )
     );
 
   menuAndByUserId = async (id) => {
     let data = await firstValueFrom(
-      this.http.get<any>(`${url}/menuAndByUserId?id=${id}`)
+      this.http.get<any>(`${menuV2Url}/menuAndByUserId?id=${id}`)
     );
     return formatData(data);
   };
@@ -46,7 +47,9 @@ function formatData(data) {
     obj.isCollapsed = obj.isCollapsed == 1;
     obj.accessRequired = obj.accessRequired == 1;
     obj.isTitle = obj.isTitle == 1;
-    obj.badge = obj.badge ? JSON.parse(obj.badge) : null;
+    obj.badge = obj.badge
+      ? (typeof obj.badge === 'string' ? JSON.parse(obj.badge) : obj.badge)
+      : null;
     // get childs and further retrieve its childs with map recursively
     let subItems = data.filter((a) => a.parent_id == obj.id).map(addChild);
 

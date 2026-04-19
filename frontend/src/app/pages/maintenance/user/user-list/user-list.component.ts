@@ -158,15 +158,15 @@ export class UserListComponent implements OnInit {
       this.data = [];
       this.gridApi?.showLoadingOverlay();
 
-      let params: any = {};
-      if (this.selectedViewTypeUserList != "All") {
-        let status = this.selectedViewOptions.find(
+      let active: number | undefined;
+      if (this.selectedViewTypeUserList !== 'All') {
+        const status = this.selectedViewOptions.find(
           (person) => person.name == this.selectedViewTypeUserList
         );
-        params = { active: status.value };
+        active = status?.value;
       }
 
-      this.data = await this.api.find({ active: 1 });
+      this.data = await this.api.getList(active);
 
       this.router.navigate(["."], {
         queryParams: {

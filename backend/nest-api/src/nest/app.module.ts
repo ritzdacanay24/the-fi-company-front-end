@@ -48,6 +48,9 @@ import { UlLabelsModule } from './modules/ul-labels';
 import { VehicleInspectionModule } from './modules/vehicle-inspection';
 import { VehicleModule } from './modules/vehicle';
 import { WipModule } from './modules/wip';
+import { UsersModule } from './modules/users';
+import { MenuModule } from './modules/menu';
+import { PageAccessModule } from './modules/page-access';
 import { MysqlModule } from '../shared/database/mysql.module';
 import { EmailModule } from '../shared/email/email.module';
 
@@ -109,6 +112,9 @@ import { EmailModule } from '../shared/email/email.module';
     VehicleInspectionModule,
     VehicleModule,
     WipModule,
+    UsersModule,
+    MenuModule,
+    PageAccessModule,
   ],
   providers: [
     {

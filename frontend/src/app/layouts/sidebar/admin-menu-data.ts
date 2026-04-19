@@ -72,28 +72,4 @@ export const ADMIN_MENU: MenuItem[] = [
         accessRequired: true,
         activatedRoutes: "/maintenance/email-notification/*"
     },
-    {
-        id: 9,
-        label: "System Overview",
-        isTitle: true,
-        hideCheckBox: true,
-    },
-    {
-        id: 10,
-        label: "Dashboard",
-        link: "/admin/dashboard",
-        description: "Administrative Dashboard",
-        icon: "las la-tachometer-alt",
-        hideCheckBox: true,
-        accessRequired: true,
-    },
-    {
-        id: 11,
-        label: "System Settings",
-        link: "/admin/settings",
-        description: "System Configuration",
-        icon: "las la-cogs",
-        hideCheckBox: true,
-        accessRequired: true,
-    },
 ];

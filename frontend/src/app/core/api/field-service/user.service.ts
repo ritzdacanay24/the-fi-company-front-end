@@ -5,6 +5,7 @@ import { Observable, firstValueFrom } from "rxjs";
 import { queryString } from "src/assets/js/util/queryString";
 
 let url = "FieldServiceMobile/user";
+const usersV2Url = 'apiV2/users';
 const orgChartUrl = 'apiV2/org-chart';
 const orgChartTokenUrl = 'apiV2/org-chart-token';
 
@@ -15,6 +16,14 @@ export class UserService extends DataService<any> {
   constructor(http: HttpClient) {
     super(url, http);
   }
+
+  getList(active?: number) {
+    const params = active !== undefined ? `?active=${active}` : '';
+    return firstValueFrom(this.http.get<any[]>(`${usersV2Url}/getList${params}`));
+  }
+
+  override getById = async (id: number) =>
+    firstValueFrom(this.http.get<any>(`${usersV2Url}/${id}`));
 
   getUserWithTechRate() {
     return firstValueFrom(this.http.get(`${url}/getUserWithTechRate.php`));
@@ -35,9 +44,12 @@ export class UserService extends DataService<any> {
     return this.http.get(apiURL);
   }
 
-  public resetPassword(params) {
+  public resetPassword(params: { email: string; password: string }) {
     return firstValueFrom(
-      this.http.post(`/Auth/ResetPassword/resetPassword`, params)
+      this.http.post(`${usersV2Url}/reset-password`, {
+        email: params.email,
+        newPassword: params.password,
+      })
     );
   }
 

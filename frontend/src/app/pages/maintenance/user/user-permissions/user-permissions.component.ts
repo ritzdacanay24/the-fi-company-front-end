@@ -144,8 +144,6 @@ export class UserPermissionsComponent implements OnInit {
         if (event.data.link)
           await this.pageAccessService.create({
             user_id: this.id,
-            page_name: event.data.link,
-            checked: event.node.isSelected,
             menu_id: event.data.id,
           });
       }
