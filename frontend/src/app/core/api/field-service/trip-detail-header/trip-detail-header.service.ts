@@ -3,21 +3,42 @@ import { HttpClient } from "@angular/common/http";
 import { DataService } from "../../DataService";
 import { firstValueFrom } from "rxjs";
 
-let url = "FieldServiceMobile/trip-detail-header";
+const tripDetailHeaderV2Url = 'apiV2/trip-detail-header';
 
 @Injectable({
   providedIn: "root",
 })
 export class TripDetailHeaderService extends DataService<any> {
   constructor(http: HttpClient) {
-    super(url, http);
+    super(tripDetailHeaderV2Url, http);
   }
 
+  override find = async (params: Partial<any>): Promise<any[]> => {
+    const query = new URLSearchParams(params as Record<string, string>).toString();
+    const url = query ? `${tripDetailHeaderV2Url}/find?${query}` : `${tripDetailHeaderV2Url}/find`;
+    return firstValueFrom(this.http.get<any[]>(url));
+  };
+
+  override getAll = async (): Promise<any[]> =>
+    firstValueFrom(this.http.get<any[]>(`${tripDetailHeaderV2Url}`));
+
+  override getById = async (id: number): Promise<any> =>
+    firstValueFrom(this.http.get<any>(`${tripDetailHeaderV2Url}/${id}`));
+
+  override create = async (params: Partial<any>): Promise<any> =>
+    firstValueFrom(this.http.post<any>(`${tripDetailHeaderV2Url}`, params));
+
+  override update = async (id: string | number, params: Partial<any>): Promise<any> =>
+    firstValueFrom(this.http.put<any>(`${tripDetailHeaderV2Url}/${id}`, params));
+
+  override delete = async (id: number): Promise<any> =>
+    firstValueFrom(this.http.delete<any>(`${tripDetailHeaderV2Url}/${id}`));
+
   getByGroup() {
-    return firstValueFrom(this.http.get(`${url}/getByGroup.php`));
+    return firstValueFrom(this.http.get(`${tripDetailHeaderV2Url}/getByGroup`));
   }
 
   multipleGroups(id) {
-    return firstValueFrom(this.http.get(`${url}/multipleGroups.php?id=${id}`));
+    return firstValueFrom(this.http.get(`${tripDetailHeaderV2Url}/multipleGroups?id=${id}`));
   }
 }

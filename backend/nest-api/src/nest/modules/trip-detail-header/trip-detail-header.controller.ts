@@ -1,9 +1,9 @@
 import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query } from '@nestjs/common';
-import { TripDetailService } from './trip-detail.service';
+import { TripDetailHeaderService } from './trip-detail-header.service';
 
-@Controller('trip-detail')
-export class TripDetailController {
-  constructor(private readonly service: TripDetailService) {}
+@Controller('trip-detail-header')
+export class TripDetailHeaderController {
+  constructor(private readonly service: TripDetailHeaderService) {}
 
   @Get()
   async getAll() {
@@ -35,21 +35,13 @@ export class TripDetailController {
     return this.service.delete(id);
   }
 
-  @Get('findByFsId')
-  async findByFsId(@Query('id', ParseIntPipe) id: number) {
-    return this.service.findByFsId(id);
+  @Get('getByGroup')
+  async getByGroup() {
+    return this.service.getByGroup();
   }
 
-  @Get('findByGroupFsId')
-  async findByGroupFsId(@Query('id', ParseIntPipe) id: number) {
-    return this.service.findByGroupFsId(id);
-  }
-
-  @Put('emailTripDetails')
-  async emailTripDetails(
-    @Query('fsId', ParseIntPipe) fsId: number,
-    @Body() payload?: Record<string, unknown>,
-  ) {
-    return this.service.emailTripDetails(fsId, payload);
+  @Get('multipleGroups')
+  async multipleGroups(@Query('id', ParseIntPipe) id: number) {
+    return this.service.multipleGroups(id);
   }
 }

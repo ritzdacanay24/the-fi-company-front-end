@@ -61,6 +61,7 @@ import { JobConnectionModule } from './modules/job-connection';
 import { StatusCategoryModule } from './modules/status-category';
 import { NonBillableCodeModule } from './modules/non-billable-code';
 import { TripDetailModule } from './modules/trip-detail';
+import { TripDetailHeaderModule } from './modules/trip-detail-header';
 import { MysqlModule } from '../shared/database/mysql.module';
 import { EmailModule } from '../shared/email/email.module';
 
@@ -135,6 +136,7 @@ import { EmailModule } from '../shared/email/email.module';
     StatusCategoryModule,
     NonBillableCodeModule,
     TripDetailModule,
+    TripDetailHeaderModule,
   ],
   providers: [
     {

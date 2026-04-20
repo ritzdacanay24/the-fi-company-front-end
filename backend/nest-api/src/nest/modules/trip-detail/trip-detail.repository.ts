@@ -1,10 +1,61 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { RowDataPacket } from 'mysql2/promise';
+import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
+import { BaseRepository } from '@/shared/repositories/base.repository';
 import { MysqlService } from '@/shared/database/mysql.service';
 
 @Injectable()
-export class TripDetailRepository {
-  constructor(@Inject(MysqlService) private readonly mysqlService: MysqlService) {}
+export class TripDetailRepository extends BaseRepository<RowDataPacket> {
+  private readonly allowedColumns = new Set([
+    'fsId',
+    'fs_travel_header_id',
+    'type_of_travel',
+    'address_name',
+    'address',
+    'address1',
+    'city',
+    'state',
+    'zip_code',
+    'start_datetime_name',
+    'end_datetime_name',
+    'start_datetime',
+    'end_datetime',
+    'confirmation',
+    'location_name',
+    'flight_out',
+    'flight_in',
+    'rental_car_driver',
+    'notes',
+    'flight_number',
+    'email_sent',
+  ]);
+
+  constructor(@Inject(MysqlService) mysqlService: MysqlService) {
+    super('eyefidb.fs_travel_det', mysqlService);
+  }
+
+  sanitizePayload(payload: Record<string, unknown>): Record<string, unknown> {
+    return Object.fromEntries(
+      Object.entries(payload).filter(
+        ([key, value]) => this.allowedColumns.has(key) && value !== undefined,
+      ),
+    );
+  }
+
+  async getAll(): Promise<RowDataPacket[]> {
+    return this.find();
+  }
+
+  async getById(id: number): Promise<RowDataPacket | null> {
+    return this.findOne({ id });
+  }
+
+  async update(id: number, payload: Record<string, unknown>): Promise<number> {
+    return this.updateById(id, payload);
+  }
+
+  async delete(id: number): Promise<number> {
+    return this.deleteById(id);
+  }
 
   async findByFsId(id: number): Promise<RowDataPacket[]> {
     const idAsString = String(id);
@@ -56,5 +107,89 @@ export class TripDetailRepository {
       ...detail,
       attachments: attachments.filter((att) => Number(att.mainId) === Number(detail.id)),
     })) as RowDataPacket[];
+  }
+
+  async getEmailJobs(fsId: number): Promise<RowDataPacket[]> {
+    return this.mysqlService.query<RowDataPacket[]>(
+      `SELECT b.customer,
+              b.request_date,
+              b.start_time,
+              b.address1 AS job_address_1,
+              b.address2 AS job_address_2,
+              b.city AS job_city,
+              b.state AS job_state,
+              b.zip_code AS job_zip_code,
+              b.sign_theme,
+              b.service_type,
+              b.id AS fsId,
+              b.property
+       FROM eyefidb.fs_travel_det a
+       LEFT JOIN eyefidb.fs_scheduler b ON b.id = a.fsId
+       WHERE a.fs_travel_header_id = ?
+       GROUP BY b.customer,
+                b.request_date,
+                b.start_time,
+                b.address1,
+                b.address2,
+                b.city,
+                b.state,
+                b.zip_code,
+                b.sign_theme,
+                b.service_type,
+                b.id,
+                b.property`,
+      [fsId],
+    );
+  }
+
+  async getEmailTripDetails(fsId: number): Promise<RowDataPacket[]> {
+    return this.mysqlService.query<RowDataPacket[]>(
+      `SELECT a.*,
+              b.customer,
+              b.request_date,
+              b.start_time,
+              b.address1 AS job_address_1,
+              b.address2 AS job_address_2,
+              b.city AS job_city,
+              b.state AS job_state,
+              b.zip_code AS job_zip_code,
+              b.sign_theme,
+              b.service_type,
+              DATE_FORMAT(a.start_datetime,'%m/%d/%Y %H:%i') AS start_datetime,
+              DATE_FORMAT(a.end_datetime,'%m/%d/%Y %H:%i') AS end_datetime
+       FROM eyefidb.fs_travel_det a
+       LEFT JOIN eyefidb.fs_scheduler b ON b.id = a.fsId
+       WHERE a.fs_travel_header_id = ?
+       ORDER BY DATE_FORMAT(a.start_datetime,'%m/%d/%Y %H:%i') ASC`,
+      [fsId],
+    );
+  }
+
+  async getEmailRecipients(fsId: number): Promise<RowDataPacket | null> {
+    const results = await this.mysqlService.query<RowDataPacket[]>(
+      `SELECT GROUP_CONCAT(DISTINCT b.email) AS emails,
+              GROUP_CONCAT(DISTINCT CONCAT(b.first, ' ', b.last)) AS names
+       FROM eyefidb.fs_team a
+       LEFT JOIN db.users b ON b.id = a.user_id
+       WHERE a.fs_det_id IN (
+         SELECT DISTINCT fsId
+         FROM eyefidb.fs_travel_det
+         WHERE fs_travel_header_id = ?
+       )`,
+      [fsId],
+    );
+
+    return results[0] ?? null;
+  }
+
+  async markEmailSent(fsId: number): Promise<number> {
+    const result = await this.mysqlService.execute<ResultSetHeader>(
+      `UPDATE eyefidb.fs_travel_det
+       SET email_sent = NOW()
+       WHERE fs_travel_header_id = ?`,
+      [fsId],
+    );
+
+    return Number(result.affectedRows || 0);
   }
 }
