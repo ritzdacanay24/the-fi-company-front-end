@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { RowDataPacket } from 'mysql2/promise';
+import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { MysqlService } from '@/shared/database/mysql.service';
 
 export interface TripExpenseRecord extends RowDataPacket {
@@ -13,7 +13,38 @@ export interface TripExpenseRecord extends RowDataPacket {
 
 @Injectable()
 export class TripExpenseRepository {
+  private readonly tableName = 'eyefidb.fs_workOrderTrip';
+
+  private readonly allowedColumns = new Set([
+    'name',
+    'cost',
+    'workOrderId',
+    'fs_scheduler_id',
+    'vendor_name',
+    'fileName',
+    'locale',
+    'date',
+    'time',
+    'transaction_id',
+    'created_by',
+    'split',
+    'to_spit',
+    'jobs',
+    'fromId',
+    'copiedFromTicketId',
+    'fileCopied',
+    'originalFileLink',
+  ]);
+
   constructor(@Inject(MysqlService) private readonly mysqlService: MysqlService) {}
+
+  sanitizePayload(payload: Record<string, unknown>): Record<string, unknown> {
+    return Object.fromEntries(
+      Object.entries(payload).filter(
+        ([key, value]) => this.allowedColumns.has(key) && value !== undefined,
+      ),
+    );
+  }
 
   async getByWorkOrderId(workOrderId: number): Promise<TripExpenseRecord[]> {
     return this.mysqlService.query<TripExpenseRecord[]>(
@@ -42,5 +73,47 @@ export class TripExpenseRepository {
       `,
       [fsSchedulerId, fsSchedulerId],
     );
+  }
+
+  async getById(id: number): Promise<TripExpenseRecord | null> {
+    const rows = await this.mysqlService.query<TripExpenseRecord[]>(
+      `
+        SELECT a.*, CONCAT('https://dashboard.eye-fi.com/attachments/fieldService/', a.fileName) AS link,
+               CONCAT(b.first, ' ', b.last) AS created_by_name
+        FROM fs_workOrderTrip a
+        LEFT JOIN db.users b ON b.id = a.created_by
+        WHERE a.id = ?
+        LIMIT 1
+      `,
+      [id],
+    );
+
+    return rows[0] ?? null;
+  }
+
+  async create(payload: Record<string, unknown>): Promise<number> {
+    const keys = Object.keys(payload);
+    const values = Object.values(payload);
+
+    const placeholders = keys.map(() => '?').join(', ');
+    const sql = `INSERT INTO ${this.tableName} (${keys.join(', ')}) VALUES (${placeholders})`;
+    const result = await this.mysqlService.execute<ResultSetHeader>(sql, values);
+    return result.insertId;
+  }
+
+  async updateById(id: number, payload: Record<string, unknown>): Promise<number> {
+    const keys = Object.keys(payload);
+    const values = Object.values(payload);
+
+    const setClause = keys.map((key) => `${key} = ?`).join(', ');
+    const sql = `UPDATE ${this.tableName} SET ${setClause} WHERE id = ?`;
+    const result = await this.mysqlService.execute<ResultSetHeader>(sql, [...values, id]);
+    return result.affectedRows;
+  }
+
+  async deleteById(id: number): Promise<number> {
+    const sql = `DELETE FROM ${this.tableName} WHERE id = ?`;
+    const result = await this.mysqlService.execute<ResultSetHeader>(sql, [id]);
+    return result.affectedRows;
   }
 }

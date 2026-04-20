@@ -25,6 +25,11 @@ export class UserService extends DataService<any> {
   override getById = async (id: number) =>
     firstValueFrom(this.http.get<any>(`${usersV2Url}/${id}`));
 
+  override find = async (params: Partial<any>): Promise<any[]> => {
+    const result = queryString(params);
+    return firstValueFrom(this.http.get<any[]>(`${usersV2Url}/find${result}`));
+  };
+
   getUserWithTechRate() {
     return firstValueFrom(this.http.get(`${usersV2Url}/getUserWithTechRate`));
   }
@@ -60,7 +65,7 @@ export class UserService extends DataService<any> {
   }
 
   public async getUserTree() {
-    let data = await firstValueFrom(this.http.get(`${url}/find.php?active=1`));
+    let data = await firstValueFrom(this.http.get(`${usersV2Url}/find?active=1`));
     return formatData(data);
   }
 

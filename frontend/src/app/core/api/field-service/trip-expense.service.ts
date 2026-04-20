@@ -66,25 +66,23 @@ export class TripExpenseService {
     );
   }
   getById(id) {
-    return firstValueFrom(this.http.get(`${url}/getById.php?id=${id}`));
+    return firstValueFrom(this.http.get(`${tripExpenseV2Url}/${id}`));
   }
 
   updateById(id, params) {
-    return firstValueFrom(
-      this.http.post(`${url}/updateById.php?id=${id}`, params)
-    );
+    return firstValueFrom(this.http.put(`${tripExpenseV2Url}/${id}`, params));
   }
 
   update(id, params) {
-    return firstValueFrom(this.http.post(`${url}/update.php?id=${id}`, params));
+    return firstValueFrom(this.http.put(`${tripExpenseV2Url}/${id}`, params));
   }
 
   deleteById(id) {
-    return firstValueFrom(this.http.delete(`${url}/deleteById.php?id=${id}`));
+    return firstValueFrom(this.http.delete(`${tripExpenseV2Url}/${id}`));
   }
 
   create(params) {
-    return firstValueFrom(this.http.post(`${url}/create.php`, params));
+    return firstValueFrom(this.http.post(`${tripExpenseV2Url}`, params));
   }
 
   getPredictApi(id) {
