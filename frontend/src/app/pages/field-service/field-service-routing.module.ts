@@ -1,7 +1,6 @@
 import { Routes, RouterModule, ActivatedRouteSnapshot } from "@angular/router";
 import { NgModule } from "@angular/core";
 import { SharedModule } from "src/app/shared/shared.module";
-import { MapComponent } from "./map/map.component";
 import { AccessGuard } from "@app/core/guards/access.guard";
 import { UserLocationMapComponent } from "./user-location-map/user-location-map.component";
 
@@ -18,12 +17,6 @@ const routes: Routes = [
       import("./overview/overview-routing.module").then(
         (m) => m.OverviewRoutingModule
       ),
-    runGuardsAndResolvers: "always",
-  },
-  {
-    title: "Field Service Map",
-    path: "map",
-    component: MapComponent,
     runGuardsAndResolvers: "always",
   },
   {

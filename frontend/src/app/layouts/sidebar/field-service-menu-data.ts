@@ -45,18 +45,6 @@ export const FIELD_SERVICE_MENU_DATA: MenuItem[] = [
         ],
     },
     {
-        id: 3,
-        label: "Map Dashboard",
-        icon: "las la-map",
-        link: "/field-service/map",
-        description: "Geographic job locations",
-        hideCheckBox: true,
-        activatedRoutes: [
-            "/field-service/map",
-            "/field-service/map"
-        ],
-    },
-    {
         id: 10,
         label: "Service Requests",
         icon: "las la-clipboard-list",

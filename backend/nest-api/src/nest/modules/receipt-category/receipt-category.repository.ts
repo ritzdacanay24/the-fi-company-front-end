@@ -1,0 +1,44 @@
+import { Inject, Injectable } from '@nestjs/common';
+import { RowDataPacket } from 'mysql2/promise';
+import { BaseRepository } from '@/shared/repositories/base.repository';
+import { MysqlService } from '@/shared/database/mysql.service';
+
+@Injectable()
+export class ReceiptCategoryRepository extends BaseRepository<RowDataPacket> {
+  private readonly allowedColumns = new Set([
+    'category',
+    'description',
+    'accounting_code',
+    'active',
+    'icon',
+    'background_color',
+  ]);
+
+  constructor(@Inject(MysqlService) mysqlService: MysqlService) {
+    super('eyefidb.fs_trip_settings', mysqlService);
+  }
+
+  sanitizePayload(payload: Record<string, unknown>): Record<string, unknown> {
+    return Object.fromEntries(
+      Object.entries(payload).filter(
+        ([key, value]) => this.allowedColumns.has(key) && value !== undefined,
+      ),
+    );
+  }
+
+  async getAll(selectedViewType?: string): Promise<RowDataPacket[]> {
+    if (selectedViewType === 'Active') {
+      return this.rawQuery<RowDataPacket>(
+        `SELECT * FROM eyefidb.fs_trip_settings WHERE active = 1`,
+      );
+    }
+
+    if (selectedViewType === 'Inactive') {
+      return this.rawQuery<RowDataPacket>(
+        `SELECT * FROM eyefidb.fs_trip_settings WHERE active = 0 OR active IS NULL`,
+      );
+    }
+
+    return this.find();
+  }
+}

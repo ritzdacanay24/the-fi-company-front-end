@@ -68,6 +68,9 @@ import { PartsOrderModule } from './modules/parts-order';
 import { GeoLocationTrackerModule } from './modules/geo-location-tracker';
 import { ServiceTypeModule } from './modules/service-type';
 import { SettingModule } from './modules/setting';
+import { PlatformModule } from './modules/platform';
+import { ReceiptCategoryModule } from './modules/receipt-category';
+import { VendorModule } from './modules/vendor';
 import { MysqlModule } from '../shared/database/mysql.module';
 import { EmailModule } from '../shared/email/email.module';
 
@@ -149,6 +152,9 @@ import { EmailModule } from '../shared/email/email.module';
     GeoLocationTrackerModule,
     ServiceTypeModule,
     SettingModule,
+    PlatformModule,
+    ReceiptCategoryModule,
+    VendorModule,
   ],
   providers: [
     {
