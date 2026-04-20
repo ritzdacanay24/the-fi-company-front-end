@@ -16,7 +16,7 @@ export class AttachmentService extends DataService<any> {
 
   getByWorkOrderId(workOrderId) {
     return firstValueFrom(
-      this.http.get(`${url}/getByWorkOrderId.php?workOrderId=${workOrderId}`)
+      this.http.get(`${attachmentsV2Url}/getByWorkOrderId?workOrderId=${workOrderId}`)
     );
   }
 
@@ -26,17 +26,22 @@ export class AttachmentService extends DataService<any> {
 
   updateById(id, params) {
     return firstValueFrom(
-      this.http.put(`${url}/updateById.php?id=${id}`, params)
+      this.http.put(`${attachmentsV2Url}/updateById?id=${id}`, params)
     );
   }
 
   deleteById(id) {
-    return firstValueFrom(this.http.delete(`${url}/deleteById.php?id=${id}`));
+    return firstValueFrom(this.http.delete(`${attachmentsV2Url}/deleteById?id=${id}`));
   }
 
   // create(params) {
   //   return firstValueFrom(this.http.post(`${url}/create.php`, params));
   // }
+
+  override create = async (params: any): Promise<{ message: string; insertId?: number }> =>
+    await firstValueFrom(
+      this.http.post<{ message: string; insertId?: number }>(`${attachmentsV2Url}`, params)
+    );
 
   getAllRelatedAttachments(id) {
     return firstValueFrom(

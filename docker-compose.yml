@@ -23,6 +23,7 @@ services:
     volumes:
       - ./backend/nest-api/src:/app/src
       - ./backend/nest-api/tsconfig.json:/app/tsconfig.json:ro
+      - ./backend/nest-api/uploads:/app/uploads
       - ./backend/qad-driver/Connect64_for_ODBC_71:/opt1/Progress/DataDirect/Connect64_for_ODBC_71:ro
 
   mysql:

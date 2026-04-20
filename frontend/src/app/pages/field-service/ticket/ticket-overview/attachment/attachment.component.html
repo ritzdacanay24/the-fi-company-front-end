@@ -69,8 +69,8 @@
             <!-- File Thumbnail -->
             <div class="flex-shrink-0 me-3">
               <a [href]="row?.link" target="_blank" (click)="$event.stopPropagation()" class="d-block">
-                <img [errorImage]="'assets/images/no-photo.PNG'" 
-                  [defaultImage]="'assets/images/loading.PNG'"
+                <img [errorImage]="'assets/images/file.png'" 
+                  [defaultImage]="'assets/images/default-user.png'"
                   [lazyLoad]="row?.link" 
                   class="rounded border border-primary border-opacity-25"
                   style="width:60px;height:60px;object-fit:cover;">
@@ -117,8 +117,8 @@
               
               <div class="offcanvas-body p-4">
                 <div class="text-center mb-4">
-                  <img [errorImage]="'assets/images/no-photo.PNG'" 
-                    [defaultImage]="'assets/images/loading.PNG'"
+                  <img [errorImage]="'assets/images/file.png'" 
+                    [defaultImage]="'assets/images/default-user.png'"
                     [lazyLoad]="row?.link" 
                     class="img-fluid rounded border shadow-sm"
                     style="max-width: 100%; max-height: 400px;">
