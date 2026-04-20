@@ -4,7 +4,7 @@ import { CrashKitService } from '@app/core/api/field-service/crash-kit.service';
 import { NgbDatepickerModule, NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { SharedModule } from '@app/shared/shared.module';
 import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
-import * as moment from 'moment';
+import moment from 'moment';
 
 let list: any = [
   {
@@ -170,8 +170,40 @@ export class CrashKitComponent implements OnInit {
   }
 
   detectChang = (e) => {
-    this.editInfo.part_number = e.pt_part
+    this.editInfo.part_number = e?.pt_part || e?.PT_PART || e || ''
     this.searchPart()
+  }
+
+  private normalizePartSearchItem(item: any) {
+    if (!item || typeof item !== 'object') {
+      return null;
+    }
+
+    const partNumber = item.pt_part || item.PT_PART || '';
+    const description = item.FULLDESC || item.fullDesc || item.fulldesc || item.DESCRIPTION || item.description || '';
+    const price = Number(item.PT_PRICE ?? item.pt_price ?? item.PART_PRICE ?? item.part_price ?? 0) || 0;
+
+    return {
+      ...item,
+      pt_part: partNumber,
+      PT_PART: partNumber,
+      FULLDESC: description,
+      DESCRIPTION: description,
+      PT_PRICE: price,
+      pt_price: price,
+    };
+  }
+
+  private pickPartSearchItem(result: any) {
+    const rows = Array.isArray(result) ? result : (result ? [result] : []);
+    if (!rows.length) {
+      return null;
+    }
+
+    const target = String(this.editInfo.part_number || '').trim().toLowerCase();
+    const exact = rows.find((row: any) => String(row?.pt_part || row?.PT_PART || '').trim().toLowerCase() === target);
+
+    return this.normalizePartSearchItem(exact || rows[0]);
   }
 
   list = list
@@ -197,7 +229,8 @@ export class CrashKitComponent implements OnInit {
   searchPart = async () => {
     try {
       SweetAlert.loading('Please wait while we validate this part number...')
-      this.partSearch = await this.api.getByPartNumber(this.editInfo.part_number);
+      const rawResult = await this.api.getByPartNumber(this.editInfo.part_number);
+      this.partSearch = this.pickPartSearchItem(rawResult);
       if (!this.partSearch) {
         alert('This part number does not exist in QAD. Please enter valid part number');
         this.partSearch = "";

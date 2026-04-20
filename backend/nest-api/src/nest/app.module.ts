@@ -87,6 +87,7 @@ import { JobModule } from './modules/job';
 import { SerialModule } from './modules/serial';
 import { FieldServiceOverviewModule } from './modules/field-service-overview/field-service-overview.module';
 import { TripExpenseModule } from './modules/trip-expense/trip-expense.module';
+import { TripExpenseTransactionsModule } from './modules/trip-expense-transactions/trip-expense-transactions.module';
 import { MysqlModule } from '../shared/database/mysql.module';
 import { EmailModule } from '../shared/email/email.module';
 
@@ -187,6 +188,7 @@ import { EmailModule } from '../shared/email/email.module';
     SerialModule,
     FieldServiceOverviewModule,
     TripExpenseModule,
+    TripExpenseTransactionsModule,
   ],
   providers: [
     {
