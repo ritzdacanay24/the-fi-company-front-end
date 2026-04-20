@@ -17,7 +17,7 @@
       <p class="fw-bold">{{'SAFETY_INCIDENT_FORM.TYPE_OF_INCIDENT' | translate}}:</p>
       <ul style="list-style-type: none;" class="ms-3">
         <li>
-          <div class="form-check mb-3" *ngFor="let row of 'SAFETY_INCIDENT_FORM.TYPE_OF_INCIDENT_OPTIONS' | translate; let i = index">
+          <div class="form-check mb-3" *ngFor="let row of type_of_incident_options; let i = index">
             <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault1">
             <label class="form-check-label" for="flexRadioDefault1">
               {{row.name}} <span *ngIf="row.showLine">_______________________________________</span>
@@ -32,7 +32,7 @@
       <p class="fw-bold">{{'SAFETY_INCIDENT_FORM.TYPE_OF_INCIDENT' | translate}}:</p>
       <ul style="list-style-type: none;" class="ms-3">
         <li>
-          <div class="form-check mb-3" *ngFor="let row of 'SAFETY_INCIDENT_FORM.LOCATION_OF_INCIDENT_OPTIONS' | translate; let i = index">
+          <div class="form-check mb-3" *ngFor="let row of location_of_incident_options; let i = index">
             <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault1">
             <label class="form-check-label" for="flexRadioDefault1">
               {{row.name}} <span *ngIf="row.showLine">_______________________________________</span>

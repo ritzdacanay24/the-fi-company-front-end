@@ -16,6 +16,13 @@ import { SoSearchComponent } from "@app/shared/components/so-search/so-search.co
 import { UserSearchComponent } from "@app/shared/components/user-search/user-search.component";
 import { TranslateModule, TranslateService } from "@ngx-translate/core";
 
+interface SafetyIncidentOption {
+  id: number;
+  name: string;
+  showLine?: boolean;
+  options?: SafetyIncidentOption[];
+}
+
 @Component({
   standalone: true,
   imports: [
@@ -79,7 +86,7 @@ export class SafetyIncidentFormComponent {
     "Other"
   ]
 
-  type_of_incident_options = [
+  type_of_incident_options: SafetyIncidentOption[] = [
     {
       id: 1,
       name: "Serious Personnel Injury (Paramedics called)",
@@ -114,7 +121,7 @@ export class SafetyIncidentFormComponent {
     },
   ];
 
-  lasVegasFacilityOptions = [
+  lasVegasFacilityOptions: SafetyIncidentOption[] = [
     {
       id: 1,
       name: "Production",
@@ -145,7 +152,7 @@ export class SafetyIncidentFormComponent {
     },
   ];
 
-  location_of_incident_options = [
+  location_of_incident_options: SafetyIncidentOption[] = [
     {
       id: 1,
       name: "Las Vegas Facility",

@@ -8,6 +8,8 @@ import { AttachmentsService } from "@app/core/api/attachments/attachments.servic
 import { SafetyIncidentService } from "@app/core/api/operations/safety-incident/safety-incident.service";
 import { SafetyIncidentFormComponent } from "../safety-incident-form/safety-incident-form.component";
 import { FILE, NAVIGATION_ROUTE } from "../safety-incident-constant";
+import { UploadService } from "@app/core/api/upload/upload.service";
+import { firstValueFrom } from "rxjs";
 
 @Component({
   standalone: true,
@@ -21,7 +23,8 @@ export class SafetyIncidentEditComponent {
     private activatedRoute: ActivatedRoute,
     private api: SafetyIncidentService,
     private toastrService: ToastrService,
-    private attachmentsService: AttachmentsService
+    private attachmentsService: AttachmentsService,
+    private uploadService: UploadService
   ) {}
 
   setFormEmitter($event) {
@@ -113,6 +116,14 @@ export class SafetyIncidentEditComponent {
     window.open(row.directory + "/safetyIncident/" + row.fileName, "_blank");
   }
 
+  getAttachmentUrl(attachment: any): string {
+    if (attachment?.link) {
+      return attachment.link;
+    }
+
+    return `https://dashboard.eye-fi.com/attachments/safetyIncident/${attachment?.fileName || ''}`;
+  }
+
   async onSubmit() {
     this.submitted = true;
 
@@ -156,9 +167,10 @@ export class SafetyIncidentEditComponent {
         formData.append("field", FILE.FIELD);
         formData.append("uniqueData", `${this.id}`);
         formData.append("folderName", FILE.FOLDER);
+        formData.append("subFolder", FILE.FOLDER);
         
         try {
-          await this.attachmentsService.uploadfile(formData);
+          await firstValueFrom(this.uploadService.uploadAttachmentV2(formData));
           totalAttachments++;
         } catch (err) {
           failedAttachments++;

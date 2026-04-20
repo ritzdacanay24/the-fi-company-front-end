@@ -16,7 +16,7 @@ import { SafetyIncidentFormComponent } from "../safety-incident-form/safety-inci
 import { FILE, NAVIGATION_ROUTE } from "../safety-incident-constant";
 import { SafetyIncidentService } from "@app/core/api/operations/safety-incident/safety-incident.service";
 import { UploadService } from "@app/core/api/upload/upload.service";
-import { first } from "rxjs";
+import { firstValueFrom } from "rxjs";
 
 @Component({
   standalone: true,
@@ -89,17 +89,15 @@ export class SafetyIncidentCreateComponent {
       this.isLoading = true;
       let { insertId } = await this.api.create(this.form.value);
 
-      const formData = new FormData();
-
       for (var i = 0; i < this.myFiles.length; i++) {
+        const formData = new FormData();
         formData.append("file", this.myFiles[i]);
         formData.append("field", FILE.FIELD);
         formData.append("uniqueData", insertId.toString());
         formData.append("folderName", FILE.FOLDER);
-        this.uploadService
-          .upload(formData)
-          .pipe(first())
-          .subscribe((data) => {});
+        formData.append("subFolder", FILE.FOLDER);
+
+        await firstValueFrom(this.uploadService.uploadAttachmentV2(formData));
       }
 
       this.isLoading = false;

@@ -97,7 +97,12 @@ import { EmailModule } from '../shared/email/email.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: [`.env.${process.env.NODE_ENV || 'development'}`, '.env'],
+      envFilePath: [
+        `../.env.${process.env.NODE_ENV || 'development'}`,
+        '../.env',
+        `.env.${process.env.NODE_ENV || 'development'}`,
+        '.env',
+      ],
       validationSchema: envValidationSchema,
       validationOptions: {
         allowUnknown: true,

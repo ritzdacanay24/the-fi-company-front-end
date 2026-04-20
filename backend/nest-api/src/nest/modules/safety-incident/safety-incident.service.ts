@@ -1,10 +1,21 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { CreateSafetyIncidentDto, UpdateSafetyIncidentDto } from './dto';
 import { SafetyIncidentRecord, SafetyIncidentRepository } from './safety-incident.repository';
+import { EmailService } from '@/shared/email/email.service';
+import { EmailTemplateService } from '@/shared/email/email-template.service';
+import { UrlBuilder } from '@/shared/url/url-builder';
 
 @Injectable()
 export class SafetyIncidentService {
-  constructor(private readonly safetyIncidentRepository: SafetyIncidentRepository) {}
+  private readonly logger = new Logger(SafetyIncidentService.name);
+
+  constructor(
+    private readonly safetyIncidentRepository: SafetyIncidentRepository,
+    private readonly emailService: EmailService,
+    private readonly emailTemplateService: EmailTemplateService,
+    private readonly configService: ConfigService,
+  ) {}
 
   async getList(params: {
     selectedViewType?: string;
@@ -53,6 +64,9 @@ export class SafetyIncidentService {
     const insertId = await this.safetyIncidentRepository.createIncident(
       dto as Record<string, unknown>,
     );
+
+    await this.sendCreateNotification(insertId);
+
     const created = await this.safetyIncidentRepository.getById(insertId);
 
     if (!created) {
@@ -63,6 +77,33 @@ export class SafetyIncidentService {
     }
 
     return created;
+  }
+
+  private async sendCreateNotification(insertId: number): Promise<void> {
+    try {
+      const recipients = await this.safetyIncidentRepository.getCreateNotificationRecipients();
+      if (recipients.length === 0) {
+        this.logger.warn('No active safety incident recipients configured in safety_incident_config');
+        return;
+      }
+
+      const baseUrl = this.configService.getOrThrow<string>('DASHBOARD_WEB_BASE_URL');
+      const link = UrlBuilder.operations.safetyIncidentEdit(baseUrl, insertId);
+      const html = this.emailTemplateService.render('safety-incident-created', {
+        insertId,
+        link,
+      });
+
+      await this.emailService.sendMail({
+        to: recipients,
+        subject: `Safety Incident - ${insertId}`,
+        html,
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Safety incident notification email failed for id ${insertId}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
   }
 
   async updateById(id: number, dto: UpdateSafetyIncidentDto): Promise<SafetyIncidentRecord> {

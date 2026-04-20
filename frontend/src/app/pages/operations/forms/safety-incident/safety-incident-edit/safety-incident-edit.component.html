@@ -76,7 +76,7 @@
                   <small class="text-muted">{{attachment.fileSizeConv}}</small>
                 </div>
                 <div class="btn-group">
-                  <a [href]="'https://dashboard.eye-fi.com/attachments/safetyIncident/' + attachment.fileName" 
+                  <a [href]="getAttachmentUrl(attachment)" 
                      target="_blank" 
                      class="btn btn-sm btn-outline-info"
                      title="Download attachment">
