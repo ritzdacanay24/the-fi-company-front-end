@@ -315,14 +315,153 @@ export class SchedulerRepository extends BaseRepository<SchedulerRecord> {
     );
   }
 
-  async getTechSchedule(dateFrom: string, dateTo: string): Promise<any[]> {
-    return this.rawQuery(
-      `SELECT * FROM eyefidb.fs_scheduler 
-       WHERE DATE(request_date) BETWEEN ? AND ? 
-       AND active = 1
-       ORDER BY request_date ASC`,
+  async getTechSchedule(dateFrom: string, dateTo: string): Promise<Record<string, unknown>> {
+    const events = await this.rawQuery(
+      `SELECT
+        CONCAT(a.request_date, ' ', a.start_time) AS start,
+        DATE_ADD(CONCAT(a.request_date, ' ', a.start_time), INTERVAL 3 HOUR) AS end,
+        a.id,
+        CONCAT(IFNULL(CONCAT(a.customer, ' ', a.property), 'No title'), '-', IFNULL(a.service_type, 'No service')) AS title,
+        'JOB' AS type_of_event,
+        CASE WHEN a.published = 0 OR a.published IS NULL THEN '#E8E8E8' ELSE f.statusColor END AS color,
+        'green' AS borderColor,
+        CASE WHEN a.published = 0 OR a.published IS NULL THEN '#E8E8E8' ELSE f.statusColor END AS backgroundColor,
+        CASE WHEN a.published = 0 OR a.published IS NULL THEN 'text-dark' ELSE '' END AS cssClass,
+        CASE
+          WHEN a.published = 0 OR a.published IS NULL THEN '#000'
+          WHEN f.color IS NULL THEN '#000'
+          ELSE f.color
+        END AS textColor,
+        a.id AS fs_scheduler_id,
+        a.active,
+        a.property,
+        a.customer,
+        a.status,
+        b.id AS ticket_id,
+        CASE WHEN d.id IS NOT NULL THEN d.id ELSE c.user END AS resource,
+        CASE WHEN d.id IS NOT NULL THEN d.id ELSE c.user END AS slots,
+        cc.techs,
+        cc.total_techs,
+        a.out_of_state,
+        a.platform,
+        a.service_type,
+        b.dateSubmitted,
+        a.acc_status
+      FROM eyefidb.fs_scheduler a
+      LEFT JOIN eyefidb.fs_scheduler_settings f
+        ON f.value = a.status
+       AND f.type = 'status'
+      LEFT JOIN eyefidb.fs_workOrder b
+        ON b.fs_scheduler_id = a.id
+      LEFT JOIN eyefidb.fs_team c
+        ON c.fs_det_id = a.id
+      LEFT JOIN (
+        SELECT
+          GROUP_CONCAT(user SEPARATOR ', ') AS techs,
+          fs_det_id,
+          COUNT(id) AS total_techs
+        FROM eyefidb.fs_team
+        GROUP BY fs_det_id
+      ) cc
+        ON cc.fs_det_id = a.id
+      LEFT JOIN (
+        SELECT
+          id,
+          CASE WHEN title = 'Vendor' THEN first ELSE CONCAT(first, ' ', last) END AS user
+        FROM db.users
+      ) d
+        ON d.user = c.user
+      WHERE DATE(a.request_date) BETWEEN ? AND ?
+        AND (a.schedule_later IS NULL OR a.schedule_later = 0)
+        AND a.active = 1`,
       [dateFrom, dateTo],
     );
+
+    const calendarEvents = await this.rawQuery(
+      `SELECT
+        a.start AS start,
+        IFNULL(a.end, a.start) AS end,
+        a.id,
+        CASE WHEN a.techRelated THEN a.type ELSE a.title END AS title,
+        'EVENT' AS type_of_event,
+        a.backgroundColor AS color,
+        a.backgroundColor AS borderColor,
+        IFNULL(a.text_color, 'text-white') AS cssClass,
+        a.textColor,
+        CASE
+          WHEN a.techRelated AND a.resource_id IS NOT NULL THEN CAST(a.resource_id AS CHAR)
+          ELSE a.title
+        END AS resource,
+        a.techRelated,
+        a.allDay
+      FROM eyefidb.companyHoliday a
+      WHERE (DATE(a.start) BETWEEN ? AND ? OR DATE(IFNULL(a.end, a.start)) BETWEEN ? AND ?)
+        AND a.active = 1`,
+      [dateFrom, dateTo, dateFrom, dateTo],
+    );
+
+    const unassigned = await this.rawQuery(
+      `SELECT
+        a.id,
+        b.request_id,
+        a.dateAndTime AS start,
+        a.dateAndTime AS end,
+        'Unassigned' AS resource,
+        'REQUEST' AS type_of_event,
+        'purple' AS color,
+        '#fff' AS borderColor,
+        '#fff' AS textColor,
+        'Pending Request' AS title,
+        a.type_of_service,
+        a.requested_by,
+        a.customer,
+        a.property
+      FROM eyefidb.fs_request a
+      LEFT JOIN eyefidb.fs_scheduler b
+        ON b.request_id = a.id
+      WHERE a.active = 1
+        AND b.request_id IS NULL`,
+    );
+
+    const users = await this.rawQuery(
+      `SELECT
+        a.id,
+        CASE WHEN a.title = 'Vendor' THEN a.first ELSE CONCAT(a.first, ' ', a.last) END AS name,
+        CASE WHEN a.title = 'Vendor' THEN a.first ELSE CONCAT(a.first, ' ', LEFT(a.last, 1), '.') END AS short_name,
+        a.title,
+        a.id AS resource_id,
+        a.leadInstaller AS lead_tech,
+        a.active,
+        a.access,
+        a.image
+      FROM db.users a
+      WHERE a.area = 'Field Service' OR a.title = 'Vendor'
+      ORDER BY CASE WHEN a.title = 'Vendor' THEN a.first ELSE CONCAT(a.first, ' ', a.last) END ASC`,
+    );
+
+    const allUsers = users.map((user: any) => user.id);
+    const eventsResource = calendarEvents.map((event: any) => {
+      if (!event.resource) {
+        return { ...event, resource: allUsers };
+      }
+
+      if (typeof event.resource === 'string' && event.resource.includes(',')) {
+        return { ...event, resource: event.resource.split(',') };
+      }
+
+      return event;
+    });
+
+    const info = [...events, ...eventsResource, ...unassigned];
+
+    return {
+      info,
+      eventsResource,
+      info1: users,
+      allUsers,
+      results: info,
+      events1: calendarEvents,
+    };
   }
 
   async getMap(dateFrom: string, dateTo: string): Promise<any[]> {

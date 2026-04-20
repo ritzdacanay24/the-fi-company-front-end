@@ -53,7 +53,7 @@ export class SchedulerService {
     return this.repository.getCalendar(dateFrom, dateTo);
   }
 
-  async getTechSchedule(dateFrom: string, dateTo: string): Promise<any[]> {
+  async getTechSchedule(dateFrom: string, dateTo: string): Promise<Record<string, unknown>> {
     return this.repository.getTechSchedule(dateFrom, dateTo);
   }
 

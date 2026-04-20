@@ -1,9 +1,17 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query } from '@nestjs/common';
 import { TripDetailService } from './trip-detail.service';
 
 @Controller('trip-detail')
 export class TripDetailController {
   constructor(private readonly service: TripDetailService) {}
+
+  private parseNumberQuery(value: unknown, fieldName: string): number {
+    const numericValue = typeof value === 'number' ? value : Number(value);
+    if (!Number.isInteger(numericValue)) {
+      throw new BadRequestException(`${fieldName} must be a valid integer`);
+    }
+    return numericValue;
+  }
 
   @Get()
   async getAll() {
@@ -13,11 +21,6 @@ export class TripDetailController {
   @Get('find')
   async find(@Query() query: Record<string, unknown>) {
     return this.service.find(query);
-  }
-
-  @Get(':id')
-  async getById(@Param('id', ParseIntPipe) id: number) {
-    return this.service.getById(id);
   }
 
   @Post()
@@ -36,20 +39,25 @@ export class TripDetailController {
   }
 
   @Get('findByFsId')
-  async findByFsId(@Query('id', ParseIntPipe) id: number) {
-    return this.service.findByFsId(id);
+  async findByFsId(@Query('id') id: string | number) {
+    return this.service.findByFsId(this.parseNumberQuery(id, 'id'));
   }
 
   @Get('findByGroupFsId')
-  async findByGroupFsId(@Query('id', ParseIntPipe) id: number) {
-    return this.service.findByGroupFsId(id);
+  async findByGroupFsId(@Query('id') id: string | number) {
+    return this.service.findByGroupFsId(this.parseNumberQuery(id, 'id'));
+  }
+
+  @Get(':id')
+  async getById(@Param('id', ParseIntPipe) id: number) {
+    return this.service.getById(id);
   }
 
   @Put('emailTripDetails')
   async emailTripDetails(
-    @Query('fsId', ParseIntPipe) fsId: number,
+    @Query('fsId') fsId: string | number,
     @Body() payload?: Record<string, unknown>,
   ) {
-    return this.service.emailTripDetails(fsId, payload);
+    return this.service.emailTripDetails(this.parseNumberQuery(fsId, 'fsId'), payload);
   }
 }

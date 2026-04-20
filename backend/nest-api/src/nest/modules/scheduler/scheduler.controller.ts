@@ -82,7 +82,7 @@ export class SchedulerController {
   async getTechSchedule(
     @Query('dateFrom') dateFrom: string,
     @Query('dateTo') dateTo: string,
-  ): Promise<any[]> {
+  ): Promise<Record<string, unknown>> {
     return this.schedulerService.getTechSchedule(dateFrom, dateTo);
   }
 
