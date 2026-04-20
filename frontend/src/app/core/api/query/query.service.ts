@@ -7,11 +7,13 @@ import { HttpClient } from '@angular/common/http';
 })
 export class QueryService {
   constructor(private http: HttpClient) { }
+  private readonly queryV2Url = 'apiV2/qad-tables';
 
   getData(query: string): Observable<any> {
-    return this.http.post<any>(`/qad_tables/qad_tables`, {query: query});
+    return this.http.post<any>(`${this.queryV2Url}`, {query: query});
   }
+
   getQuery(): Observable<any> {
-    return this.http.get<any>(`/qad_tables/qad_tables?test1=1`);
+    return this.http.get<any>(`${this.queryV2Url}?test1=1`);
   }
 }

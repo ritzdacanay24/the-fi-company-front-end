@@ -29,6 +29,7 @@ import { PlacardModule } from './modules/placard/placard.module';
 import { PermitChecklistsModule } from './modules/permit-checklists/permit-checklists.module';
 import { PhotoChecklistModule } from './modules/photo-checklist/photo-checklist.module';
 import { QadModule } from './modules/qad';
+import { QadTablesModule } from './modules/qad-tables/qad-tables.module';
 import { QirModule } from './modules/qir/qir.module';
 import { QirResponseModule } from './modules/qir-response/qir-response.module';
 import { QirSettingsModule } from './modules/qir-settings/qir-settings.module';
@@ -130,6 +131,7 @@ import { EmailModule } from '../shared/email/email.module';
     PermitChecklistsModule,
     PhotoChecklistModule,
     QadModule,
+    QadTablesModule,
     QirModule,
     QirResponseModule,
     QirSettingsModule,
