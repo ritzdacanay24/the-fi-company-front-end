@@ -67,6 +67,17 @@ export class ForkliftInspectionRepository {
     return this.mysqlService.query<RowDataPacket[]>(sql, [id]);
   }
 
+  async getAttachmentsByChecklistId(id: number): Promise<RowDataPacket[]> {
+    const sql = `
+      SELECT *
+      FROM eyefidb.attachments
+      WHERE field = 'Vehicle Inspection'
+        AND uniqueId = ?
+    `;
+
+    return this.mysqlService.query<RowDataPacket[]>(sql, [id]);
+  }
+
   async createHeader(payload: {
     date_created: string;
     department: string;

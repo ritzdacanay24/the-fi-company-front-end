@@ -10,7 +10,7 @@ import { ForkliftInspectionFormComponent } from "../forklift-inspection-form/for
 import { AuthenticationService } from "@app/core/services/auth.service";
 import { resetVehicleInspectionFormValues } from "../forklift-inspection-form/formData";
 import { UploadService } from "@app/core/api/upload/upload.service";
-import { first } from "rxjs";
+import { firstValueFrom } from "rxjs";
 
 @Component({
   standalone: true,
@@ -89,17 +89,15 @@ export class ForkliftInspectionCreateComponent {
       let { insertId } = await this.api._create(this.form.value);
       const uniqueData = String(insertId ?? "");
 
-      const formData = new FormData();
-
       for (var i = 0; i < this.myFiles.length; i++) {
+        const formData = new FormData();
         formData.append("file", this.myFiles[i]);
         formData.append("field", "Vehicle Inspection");
         formData.append("uniqueData", uniqueData);
         formData.append("folderName", "vehicleInformation");
-        this.uploadService
-          .upload(formData)
-          .pipe(first())
-          .subscribe((data) => {});
+        formData.append("subFolder", "vehicleInformation");
+
+        await firstValueFrom(this.uploadService.uploadAttachmentV2(formData));
       }
 
       this.isLoading = false;

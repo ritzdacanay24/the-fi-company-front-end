@@ -7,6 +7,7 @@ import { NAVIGATION_ROUTE } from "../forklift-inspection-constant";
 import { ForkliftInspectionFormComponent } from "../forklift-inspection-form/forklift-inspection-form.component";
 import { ForkliftInspectionService } from "@app/core/api/operations/forklift-inspection/forklift-inspection.service";
 import { formValues as formData } from "./../forklift-inspection-form/formData";
+import { environment } from "src/environments/environment";
 
 @Component({
   standalone: true,
@@ -48,7 +49,47 @@ export class ForkliftInspectionEditComponent {
 
   data;
 
-  viewImage(row) {}
+  viewImage(row: any) {
+    const url = this.getAttachmentUrl(row);
+    if (!url) {
+      this.toastrService.warning("Attachment URL not available");
+      return;
+    }
+
+    window.open(url, "_blank");
+  }
+
+  getAttachmentUrl(attachment: any): string {
+    if (attachment?.link) {
+      const rawLink = String(attachment.link).trim();
+      if (!rawLink) {
+        return "";
+      }
+
+      if (/^https?:\/\//i.test(rawLink)) {
+        return rawLink;
+      }
+
+      if (rawLink.startsWith("/")) {
+        const apiBaseUrl = String(environment.apiV2BaseUrl || "").replace(/\/+$/, "");
+        return `${apiBaseUrl}${rawLink}`;
+      }
+
+      return rawLink;
+    }
+
+    const fileName = attachment?.fileName || attachment?.filename || attachment?.name || "";
+    if (!fileName) {
+      return "";
+    }
+
+    if (attachment?.directory) {
+      const normalizedDirectory = String(attachment.directory).replace(/\/+$/, "");
+      return `${normalizedDirectory}/${fileName}`;
+    }
+
+    return `https://dashboard.eye-fi.com/attachments/vehicleInformation/${fileName}`;
+  }
 
   compare(a, b) {
     if (a.name > b.name) {

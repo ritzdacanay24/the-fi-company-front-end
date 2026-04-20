@@ -40,11 +40,13 @@ export class ForkliftInspectionService {
     }
 
     const rows = await this.repository.getDetailsByChecklistId(id);
+    const attachments = await this.repository.getAttachmentsByChecklistId(id);
     const grouped = this.groupDetails(rows);
 
     return {
       main,
       details: grouped,
+      attachments,
     };
   }
 
