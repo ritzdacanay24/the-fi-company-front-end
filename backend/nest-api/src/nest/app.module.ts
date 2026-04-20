@@ -73,6 +73,7 @@ import { ReceiptCategoryModule } from './modules/receipt-category';
 import { VendorModule } from './modules/vendor';
 import { CustomerModule } from './modules/customer';
 import { CompanyModule } from './modules/company';
+import { PropertyModule } from './modules/property';
 import { MysqlModule } from '../shared/database/mysql.module';
 import { EmailModule } from '../shared/email/email.module';
 
@@ -159,6 +160,7 @@ import { EmailModule } from '../shared/email/email.module';
     VendorModule,
     CustomerModule,
     CompanyModule,
+    PropertyModule,
   ],
   providers: [
     {
