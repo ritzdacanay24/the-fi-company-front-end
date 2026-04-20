@@ -75,6 +75,7 @@ import { CustomerModule } from './modules/customer';
 import { CompanyModule } from './modules/company';
 import { PropertyModule } from './modules/property';
 import { LicenseModule } from './modules/license';
+import { TeamModule } from './modules/team';
 import { MysqlModule } from '../shared/database/mysql.module';
 import { EmailModule } from '../shared/email/email.module';
 
@@ -163,6 +164,7 @@ import { EmailModule } from '../shared/email/email.module';
     CompanyModule,
     PropertyModule,
     LicenseModule,
+    TeamModule,
   ],
   providers: [
     {
