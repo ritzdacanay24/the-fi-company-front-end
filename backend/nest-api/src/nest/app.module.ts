@@ -64,6 +64,7 @@ import { TripDetailModule } from './modules/trip-detail';
 import { TripDetailHeaderModule } from './modules/trip-detail-header';
 import { CustomerVisitModule } from './modules/customer-visit';
 import { CustomerVisitDetailModule } from './modules/customer-visit-detail';
+import { PartsOrderModule } from './modules/parts-order';
 import { MysqlModule } from '../shared/database/mysql.module';
 import { EmailModule } from '../shared/email/email.module';
 
@@ -141,6 +142,7 @@ import { EmailModule } from '../shared/email/email.module';
     TripDetailHeaderModule,
     CustomerVisitModule,
     CustomerVisitDetailModule,
+    PartsOrderModule,
   ],
   providers: [
     {
