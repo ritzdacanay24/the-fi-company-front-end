@@ -3,7 +3,6 @@ import { firstValueFrom } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { queryString } from 'src/assets/js/util/queryString';
 
-let url = 'FieldServiceMobile/trip-expense-transactions';
 const tripExpenseTransactionsV2Url = 'apiV2/trip-expense-transactions';
 
 @Injectable({
@@ -38,14 +37,14 @@ export class TripExpenseTransactionsService {
   }
 
   emailMissingReceiptsToTechs(fsId, ticketNumber, data) {
-    return firstValueFrom(this.http.post(`${url}/emailMissingReceiptsToTechs.php?fsId=${fsId}&ticketNumber=${ticketNumber}`, data))
+    return firstValueFrom(this.http.post(`${tripExpenseTransactionsV2Url}/emailMissingReceiptsToTechs?fsId=${fsId}&ticketNumber=${ticketNumber}`, data))
   }
 
 
   async uploadCreditCardTransactions(fileToUpload: File, monthAndYear) {
     const formData: FormData = new FormData();
     formData.append('file', fileToUpload, fileToUpload.name);
-    return await firstValueFrom(this.http.post<{ message: string }>(`${url}/upload.php?monthAndYear=${monthAndYear}`, formData));
+    return await firstValueFrom(this.http.post<{ message: string }>(`${tripExpenseTransactionsV2Url}/upload?monthAndYear=${monthAndYear}`, formData));
   }
 
 
@@ -56,12 +55,12 @@ export class TripExpenseTransactionsService {
    */
   findByDateRange = async (fieldName, params: any): Promise<any> => {
     const result = queryString(params);
-    return await firstValueFrom(this.http.get<any>(`${url}/findByDateRange${result}&fieldName=${fieldName}`));
+    return await firstValueFrom(this.http.get<any>(`${tripExpenseTransactionsV2Url}/findByDateRange${result}&fieldName=${fieldName}`));
   }
 
 
   getChart = async (dateFrom, dateTo, displayCustomers, typeOfView) =>
-    await firstValueFrom(this.http.get<any>(`${url}/getChart?dateFrom=${dateFrom}&dateTo=${dateTo}&displayCustomers=${encodeURIComponent(displayCustomers)}&typeOfView=${typeOfView}`))
+    await firstValueFrom(this.http.get<any>(`${tripExpenseTransactionsV2Url}/getChart?dateFrom=${dateFrom}&dateTo=${dateTo}&displayCustomers=${encodeURIComponent(displayCustomers)}&typeOfView=${typeOfView}`))
 
 
 
