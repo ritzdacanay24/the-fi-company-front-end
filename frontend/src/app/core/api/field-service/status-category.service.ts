@@ -23,4 +23,13 @@ export class StatusCategoryService extends DataService<any> {
   override getAll = async (): Promise<any[]> =>
     firstValueFrom(this.http.get<any[]>(`${statusCategoryV2Url}`));
 
+  override getById = async (id: number): Promise<any> =>
+    firstValueFrom(this.http.get<any>(`${statusCategoryV2Url}/${id}`));
+
+  override create = async (params: Partial<any>): Promise<{ message: string; insertId?: number }> =>
+    firstValueFrom(this.http.post<{ message: string; insertId?: number }>(`${statusCategoryV2Url}`, params));
+
+  override update = async (id: string | number, params: Partial<any>): Promise<{ message: string }> =>
+    firstValueFrom(this.http.put<{ message: string }>(`${statusCategoryV2Url}/${id}`, params));
+
 }
