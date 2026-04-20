@@ -76,6 +76,7 @@ import { CompanyModule } from './modules/company';
 import { PropertyModule } from './modules/property';
 import { LicenseModule } from './modules/license';
 import { TeamModule } from './modules/team';
+import { JobCommentsModule } from './modules/job-comments';
 import { MysqlModule } from '../shared/database/mysql.module';
 import { EmailModule } from '../shared/email/email.module';
 
@@ -165,6 +166,7 @@ import { EmailModule } from '../shared/email/email.module';
     PropertyModule,
     LicenseModule,
     TeamModule,
+    JobCommentsModule,
   ],
   providers: [
     {

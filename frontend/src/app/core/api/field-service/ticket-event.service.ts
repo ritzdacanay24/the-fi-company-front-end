@@ -17,6 +17,12 @@ export class TicketEventService extends DataService<any> {
   override getAll = async (): Promise<any[]> =>
     await firstValueFrom(this.http.get<any[]>(`${ticketEventV2Url}`));
 
+  override find = async (params: Partial<any>): Promise<any[]> => {
+    const query = new URLSearchParams(params as Record<string, string>).toString();
+    const url = query ? `${ticketEventV2Url}/find?${query}` : `${ticketEventV2Url}/find`;
+    return firstValueFrom(this.http.get<any[]>(url));
+  };
+
   override getById = async (id: number): Promise<any> =>
     await firstValueFrom(this.http.get<any>(`${ticketEventV2Url}/${id}`));
 

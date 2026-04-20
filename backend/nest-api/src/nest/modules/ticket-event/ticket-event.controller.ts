@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Param, Query, Body } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Query, Body, ParseIntPipe } from '@nestjs/common';
 import { TicketEventService } from './ticket-event.service';
 import { TicketEventRecord } from './ticket-event.repository';
 
@@ -21,6 +21,11 @@ export class TicketEventController {
     return this.ticketEventService.find(params);
   }
 
+  @Get('find.php')
+  async findPhp(@Query() params: Record<string, unknown>): Promise<TicketEventRecord[]> {
+    return this.ticketEventService.find(params);
+  }
+
   @Get('active')
   async getActive(): Promise<TicketEventRecord[]> {
     return this.ticketEventService.getActive();
@@ -32,7 +37,7 @@ export class TicketEventController {
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: number): Promise<TicketEventRecord | null> {
+  async findOne(@Param('id', ParseIntPipe) id: number): Promise<TicketEventRecord | null> {
     return this.ticketEventService.findOne(id);
   }
 
@@ -42,12 +47,15 @@ export class TicketEventController {
   }
 
   @Put(':id')
-  async update(@Param('id') id: number, @Body() payload: Record<string, unknown>): Promise<TicketEventRecord | null> {
+  async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() payload: Record<string, unknown>,
+  ): Promise<TicketEventRecord | null> {
     return this.ticketEventService.update(id, payload);
   }
 
   @Delete(':id')
-  async delete(@Param('id') id: number): Promise<boolean> {
+  async delete(@Param('id', ParseIntPipe) id: number): Promise<boolean> {
     return this.ticketEventService.delete(id);
   }
 }
