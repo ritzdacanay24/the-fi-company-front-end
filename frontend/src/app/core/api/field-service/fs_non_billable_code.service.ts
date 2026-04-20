@@ -20,4 +20,7 @@ export class NonBillableCodeService extends DataService<any> {
   override getAll = async (): Promise<any[]> =>
     firstValueFrom(this.http.get<any[]>(`${nonBillableCodeV2Url}/getAll`));
 
+  override getById = async (id: number): Promise<any> =>
+    firstValueFrom(this.http.get<any>(`${nonBillableCodeV2Url}/${id}`));
+
 }

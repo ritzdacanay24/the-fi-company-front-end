@@ -12,4 +12,8 @@ export class NonBillableCodeService {
   async find(query: Record<string, unknown>) {
     return this.repository.find(query);
   }
+
+  async getById(id: number) {
+    return this.repository.findOne({ id });
+  }
 }
