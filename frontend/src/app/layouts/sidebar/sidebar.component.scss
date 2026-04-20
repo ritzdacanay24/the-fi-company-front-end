@@ -314,6 +314,11 @@ html[data-sidebar-size="sm-hover"] {
 	opacity: 1;
 }
 
+/* Add breathing room below the last menu item in the scroll area */
+#navbar-nav {
+	padding-bottom: 12px;
+}
+
 /* Menu Search Styles */
 .menu-search-container {
 	border-bottom: 1px solid rgba(255, 255, 255, 0.08);

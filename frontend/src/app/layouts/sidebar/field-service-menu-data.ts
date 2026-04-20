@@ -117,7 +117,7 @@ export const FIELD_SERVICE_MENU_DATA: MenuItem[] = [
                 description: "Billing and invoices",
             },
             {
-                label: "Technician Performance",
+                label: "Technician Metrics",
                 link: "/field-service/reports/job-by-user-report",
                 description: "Individual tech metrics",
             },
