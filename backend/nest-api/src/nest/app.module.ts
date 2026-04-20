@@ -62,6 +62,8 @@ import { StatusCategoryModule } from './modules/status-category';
 import { NonBillableCodeModule } from './modules/non-billable-code';
 import { TripDetailModule } from './modules/trip-detail';
 import { TripDetailHeaderModule } from './modules/trip-detail-header';
+import { CustomerVisitModule } from './modules/customer-visit';
+import { CustomerVisitDetailModule } from './modules/customer-visit-detail';
 import { MysqlModule } from '../shared/database/mysql.module';
 import { EmailModule } from '../shared/email/email.module';
 
@@ -137,6 +139,8 @@ import { EmailModule } from '../shared/email/email.module';
     NonBillableCodeModule,
     TripDetailModule,
     TripDetailHeaderModule,
+    CustomerVisitModule,
+    CustomerVisitDetailModule,
   ],
   providers: [
     {
