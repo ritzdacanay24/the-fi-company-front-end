@@ -10,6 +10,11 @@ export class AttachmentsController {
     return this.service.find(query);
   }
 
+  @Get('getAllRelatedAttachments')
+  async getAllRelatedAttachments(@Query('id', ParseIntPipe) id: number) {
+    return this.service.getAllRelatedAttachments(id);
+  }
+
   @Delete('deleteById')
   async deleteById(@Query('id', ParseIntPipe) id: number) {
     return this.service.deleteById(id);

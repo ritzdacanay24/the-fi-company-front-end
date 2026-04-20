@@ -615,7 +615,20 @@ export class TechScheduleComponent implements OnInit {
   }
 
   onEventEventCreate(data) {
-    let modalRef = this.eventModalService.open(data.event.id)
+    if (data?.event?.id) {
+      let modalRef = this.eventModalService.open(data.event.id)
+      modalRef.result.then((result: Comment) => {
+        this.getData(data.inst._firstDay, data.inst._lastDay, false)
+      }, () => { });
+      return;
+    }
+
+    const modalRef = this.eventModalCreateService.open({
+      start: data?.event?.start,
+      end: data?.event?.start,
+      allDay: true,
+    });
+
     modalRef.result.then((result: Comment) => {
       this.getData(data.inst._firstDay, data.inst._lastDay, false)
     }, () => { });

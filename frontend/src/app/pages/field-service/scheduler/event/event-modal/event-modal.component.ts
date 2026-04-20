@@ -42,7 +42,7 @@ export class EventModalComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    if (this.id) this.getData()
+    // Wait for child form initialization before patching modal data.
   }
 
   @Input() id = null
@@ -52,6 +52,18 @@ export class EventModalComponent implements OnInit {
   icon = "mdi-calendar-text";
 
   form: FormGroup;
+  private hasLoadedData = false;
+
+  async onFormReady(form: FormGroup) {
+    this.form = form;
+
+    this.title = this.id ? 'Edit Event' : 'Create Event';
+
+    if (this.id && !this.hasLoadedData) {
+      this.hasLoadedData = true;
+      await this.getData();
+    }
+  }
 
   dismiss() {
     this.ngbActiveModal.dismiss()
@@ -78,7 +90,8 @@ export class EventModalComponent implements OnInit {
 
   async create() {
     try {
-      await this.schedulerEventService.create(this.form.value)
+      const payload = this.normalizePayload(this.form.value);
+      await this.schedulerEventService.create(payload)
       this.close()
     } catch (err) {
 
@@ -93,14 +106,8 @@ export class EventModalComponent implements OnInit {
         return
       }
 
-      let data = this.form.value;
-
-      if (data.techRelated == 1 && data['title'])
-        data['title'] = data['title'].toString();
-      if (data.techRelated == 1 && data['resource_id'])
-        data['resource_id'] = data['resource_id'].toString();
-
-      await this.schedulerEventService.update(this.id, this.form.value)
+      const payload = this.normalizePayload(this.form.value);
+      await this.schedulerEventService.update(this.id, payload)
       this.close()
     } catch (err) {
     }
@@ -118,7 +125,15 @@ export class EventModalComponent implements OnInit {
 
   async getData() {
     try {
-      let data = await this.schedulerEventService.getById(this.id);
+      const eventId = Number(this.id);
+      if (!eventId) {
+        return;
+      }
+
+      let data = await this.schedulerEventService.getById(eventId);
+      if (!data) {
+        return;
+      }
 
       if (data.techRelated == 1 && data['title'])
         data['title'] = data['title'].split(',');
@@ -127,8 +142,26 @@ export class EventModalComponent implements OnInit {
 
       this.form.patchValue(data)
     } catch (err) {
-
+      console.error('Failed to load event data', err);
     }
+  }
+
+  private normalizePayload(raw: Record<string, any>): Record<string, any> {
+    const payload = { ...raw };
+
+    if (payload['techRelated'] == 1 && payload['title']) {
+      payload['title'] = Array.isArray(payload['title'])
+        ? payload['title'].toString()
+        : payload['title'];
+    }
+
+    if (payload['techRelated'] == 1 && payload['resource_id']) {
+      payload['resource_id'] = Array.isArray(payload['resource_id'])
+        ? payload['resource_id'].toString()
+        : payload['resource_id'];
+    }
+
+    return payload;
   }
 
 }

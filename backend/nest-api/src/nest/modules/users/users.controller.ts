@@ -19,6 +19,16 @@ export class UsersController {
     return this.usersService.find(query);
   }
 
+  @Get('getUserWithTechRate')
+  async getUserWithTechRate() {
+    return this.usersService.getUserWithTechRate();
+  }
+
+  @Get('getUserWithTechRateById')
+  async getUserWithTechRateById(@Query('id', ParseIntPipe) id: number) {
+    return this.usersService.getUserWithTechRateById(id);
+  }
+
   @Get(':id')
   async getById(@Param('id', ParseIntPipe) id: number) {
     return this.usersService.getById(id);

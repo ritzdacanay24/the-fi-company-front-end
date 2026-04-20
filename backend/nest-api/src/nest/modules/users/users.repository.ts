@@ -93,6 +93,46 @@ export class UsersRepository extends BaseRepository<UserRecord> {
     return this.findOne({ id });
   }
 
+  async getUserWithTechRate(): Promise<RowDataPacket[]> {
+    return this.rawQuery<RowDataPacket>(
+      `SELECT
+        CASE WHEN a.title = 'Vendor' THEN a.first ELSE CONCAT(a.first, ' ', a.last) END AS user,
+        a.id,
+        false AS checked,
+        b.rate1 AS user_rate,
+        a.title
+      FROM db.users a
+      LEFT JOIN db.user_rates b ON a.id = b.userId
+      WHERE a.area = 'Field Service'
+        AND (a.active = 1 OR a.title = 'Vendor')
+        AND a.type = 0
+      ORDER BY CASE WHEN a.title = 'Vendor' THEN a.first ELSE CONCAT(a.first, ' ', a.last) END ASC`,
+    );
+  }
+
+  async getUserWithTechRateById(id: number): Promise<RowDataPacket | null> {
+    const rows = await this.rawQuery<RowDataPacket>(
+      `SELECT
+        CASE WHEN a.title = 'Vendor' THEN a.first ELSE CONCAT(a.first, ' ', a.last) END AS user,
+        a.id,
+        false AS checked,
+        b.rate1 AS user_rate,
+        a.title,
+        a.id AS user_id
+      FROM db.users a
+      LEFT JOIN db.user_rates b ON a.id = b.userId
+      WHERE a.area = 'Field Service'
+        AND a.active = 1
+        AND a.type = 0
+        AND a.id = ?
+        AND (a.access = 1 OR a.title = 'Vendor')
+      ORDER BY CASE WHEN a.title = 'Vendor' THEN a.first ELSE CONCAT(a.first, ' ', a.last) END ASC`,
+      [id],
+    );
+
+    return rows[0] ?? null;
+  }
+
   async resetPasswordByEmail(email: string, newPassword: string): Promise<boolean> {
     const hashed = createHash('sha256').update(newPassword).digest('hex');
     const result = await this.rawQuery<RowDataPacket>(

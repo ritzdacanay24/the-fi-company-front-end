@@ -60,4 +60,24 @@ export class AttachmentsRepository extends BaseRepository<RowDataPacket> {
   async deleteById(id: number): Promise<number> {
     return super.deleteById(id);
   }
+
+  async getAllRelatedAttachments(id: number): Promise<RowDataPacket[]> {
+    return this.rawQuery<RowDataPacket>(
+      `SELECT a.request_id, a.id, b.*, CONCAT('https://dashboard.eye-fi.com/attachments/fieldService/', fileName) AS link
+       FROM eyefidb.fs_scheduler a
+       JOIN eyefidb.attachments b ON b.uniqueId = a.request_id AND FIELD IN ('Field Service Request')
+       WHERE a.id = ?
+       UNION ALL
+       SELECT a.request_id, a.id, b.*, CONCAT('https://dashboard.eye-fi.com/attachments/fieldService/', fileName) AS link
+       FROM eyefidb.fs_scheduler a
+       JOIN eyefidb.attachments b ON b.uniqueId = a.id AND FIELD IN ('Field Service Scheduler')
+       WHERE a.id = ?
+       UNION ALL
+       SELECT a.request_id, a.id, b.*, CONCAT('https://dashboard.eye-fi.com/attachments/fieldService/', fileName) AS link
+       FROM eyefidb.fs_scheduler a
+       JOIN eyefidb.attachments b ON b.uniqueId = a.id AND FIELD IN ('Field Service Receipts')
+       WHERE a.id = ?`,
+      [id, id, id],
+    );
+  }
 }

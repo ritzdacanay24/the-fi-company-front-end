@@ -4,6 +4,7 @@ import { HttpClient } from "@angular/common/http";
 import { DataService } from "../DataService";
 
 let url = "FieldServiceMobile/attachment";
+const attachmentsV2Url = 'apiV2/attachments';
 
 @Injectable({
   providedIn: "root",
@@ -39,7 +40,7 @@ export class AttachmentService extends DataService<any> {
 
   getAllRelatedAttachments(id) {
     return firstValueFrom(
-      this.http.get(`${url}/getAllRelatedAttachments.php?id=${id}`)
+      this.http.get(`${attachmentsV2Url}/getAllRelatedAttachments?id=${id}`)
     );
   }
 }

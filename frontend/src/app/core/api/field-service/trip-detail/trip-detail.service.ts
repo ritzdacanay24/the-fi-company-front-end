@@ -4,6 +4,7 @@ import { DataService } from "../../DataService";
 import { firstValueFrom } from "rxjs";
 
 let url = "FieldServiceMobile/trip-detail";
+const tripDetailV2Url = 'apiV2/trip-detail';
 
 @Injectable({
   providedIn: "root",
@@ -20,11 +21,11 @@ export class TripDetailService extends DataService<any> {
   }
 
   findByGroupFsId(id) {
-    return firstValueFrom(this.http.get(`${url}/findByGroupFsId.php?id=${id}`));
+    return firstValueFrom(this.http.get(`${tripDetailV2Url}/findByGroupFsId?id=${id}`));
   }
 
   findByFsId(id) {
-    return firstValueFrom(this.http.get(`${url}/findByFsId.php?id=${id}`));
+    return firstValueFrom(this.http.get(`${tripDetailV2Url}/findByFsId?id=${id}`));
   }
 
   

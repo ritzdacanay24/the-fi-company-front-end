@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { UserRecord, UsersRepository } from './users.repository';
+import { RowDataPacket } from 'mysql2/promise';
 
 @Injectable()
 export class UsersService {
@@ -24,6 +25,21 @@ export class UsersService {
 
   async find(filters: Record<string, unknown>): Promise<UserRecord[]> {
     return this.usersRepository.find(filters);
+  }
+
+  async getUserWithTechRate(): Promise<RowDataPacket[]> {
+    return this.usersRepository.getUserWithTechRate();
+  }
+
+  async getUserWithTechRateById(id: number): Promise<RowDataPacket> {
+    const user = await this.usersRepository.getUserWithTechRateById(id);
+    if (!user) {
+      throw new NotFoundException({
+        code: 'RC_USER_NOT_FOUND',
+        message: `User with id ${id} not found`,
+      });
+    }
+    return user;
   }
 
   async create(payload: Record<string, unknown>): Promise<UserRecord> {

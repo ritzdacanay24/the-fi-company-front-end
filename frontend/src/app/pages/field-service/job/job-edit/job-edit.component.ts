@@ -43,8 +43,11 @@ export class JobEditComponent implements OnInit {
     this.activatedRoute.queryParams.subscribe((params) => {
       this.id = params["id"];
       this.goBackUrl = params["goBackUrl"];
+
+      if (this.id && this.form) {
+        this.getData();
+      }
     });
-    if (this.id) this.getData();
   }
 
   active = 1;
@@ -89,6 +92,16 @@ export class JobEditComponent implements OnInit {
   isLoading = false;
 
   form: FormGroup;
+  private hasLoadedData = false;
+
+  onFormReady(form: FormGroup) {
+    this.form = form;
+
+    if (this.id && !this.hasLoadedData) {
+      this.hasLoadedData = true;
+      this.getData();
+    }
+  }
 
   @Input() id = null;
 
@@ -125,6 +138,10 @@ export class JobEditComponent implements OnInit {
 
   ticketInfo;
   async getData() {
+    if (!this.form || !this.id) {
+      return;
+    }
+
     if (this.teams?.length) {
       this.teams = this.form.get("resource") as FormArray;
       while (0 !== this.teams.length) {
@@ -163,7 +180,9 @@ export class JobEditComponent implements OnInit {
         },
         { emitEvent: false }
       );
-    } catch (err) {}
+    } catch (err) {
+      console.error('Failed to load/patch job edit data', err);
+    }
   }
 
   viewTicket() {

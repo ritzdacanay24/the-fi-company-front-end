@@ -81,7 +81,7 @@
           </div>
         </div>
 
-        <app-job-form [ngStyle]="ngStyle" (setFormElements)="form = $event" [removeTech]="removeTech"
+        <app-job-form [ngStyle]="ngStyle" (setFormElements)="onFormReady($event)" [removeTech]="removeTech"
           [submitted]="submitted" [id]="id"></app-job-form>
       </div>
       <div class="card-footer bg-light d-flex justify-content-between align-items-center">

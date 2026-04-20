@@ -1,12 +1,12 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { catchError, defaultIfEmpty, firstValueFrom, of } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
 })
 export class JobConnectionService {
-  private readonly baseUrl = 'FieldServiceMobile/job-connection';
+  private readonly baseUrl = 'apiV2/job-connection';
 
   constructor(private http: HttpClient) {}
 
@@ -17,7 +17,10 @@ export class JobConnectionService {
    */
   getJobConnections(jobId: string | number) {
     return firstValueFrom(
-      this.http.get(`${this.baseUrl}/getJobConnections.php?job_id=${jobId}`)
+      this.http.get(`${this.baseUrl}/getJobConnections?job_id=${jobId}`).pipe(
+        defaultIfEmpty([]),
+        catchError(() => of([]))
+      )
     );
   }
 
@@ -34,7 +37,7 @@ export class JobConnectionService {
     created_by?: string;
   }) {
     return firstValueFrom(
-      this.http.post(`${this.baseUrl}/createJobConnection.php`, connectionData)
+      this.http.post(`${this.baseUrl}/createJobConnection`, connectionData)
     );
   }
 
@@ -61,7 +64,7 @@ export class JobConnectionService {
    */
   deleteJobConnection(connectionId: number) {
     return firstValueFrom(
-      this.http.delete(`${this.baseUrl}/deleteJobConnection.php?id=${connectionId}`)
+      this.http.delete(`${this.baseUrl}/deleteJobConnection/${connectionId}`)
     );
   }
 
@@ -86,7 +89,7 @@ export class JobConnectionService {
     notes?: string;
   }) {
     return firstValueFrom(
-      this.http.put(`${this.baseUrl}/updateJobConnection.php?id=${connectionId}`, updateData)
+      this.http.put(`${this.baseUrl}/updateJobConnection/${connectionId}`, updateData)
     );
   }
 
@@ -97,7 +100,7 @@ export class JobConnectionService {
    */
   getConnectionStats(jobId: string | number) {
     return firstValueFrom(
-      this.http.get(`${this.baseUrl}/getConnectionStats.php?job_id=${jobId}`)
+      this.http.get(`${this.baseUrl}/getConnectionStats?job_id=${jobId}`)
     );
   }
 
@@ -107,7 +110,7 @@ export class JobConnectionService {
    */
   getJobsWithConnections() {
     return firstValueFrom(
-      this.http.get(`${this.baseUrl}/getJobsWithConnections.php`)
+      this.http.get(`${this.baseUrl}/getJobsWithConnections`)
     );
   }
 
@@ -124,7 +127,7 @@ export class JobConnectionService {
     });
     
     return firstValueFrom(
-      this.http.get(`${this.baseUrl}/searchConnectableJobs.php?${params}`)
+      this.http.get(`${this.baseUrl}/searchConnectableJobs?${params}`)
     );
   }
 }

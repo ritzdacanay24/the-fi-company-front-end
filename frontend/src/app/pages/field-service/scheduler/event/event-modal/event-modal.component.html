@@ -3,7 +3,7 @@
 </div>
 
 <div class="modal-body">
-  <app-event-form (setFormEmitter)="form = $event" [submitted]="submitted"></app-event-form>
+  <app-event-form (setFormEmitter)="onFormReady($event)" [submitted]="submitted"></app-event-form>
 </div>
 
 <div class="modal-footer">

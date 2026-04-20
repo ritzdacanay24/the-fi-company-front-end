@@ -26,11 +26,11 @@ export class UserService extends DataService<any> {
     firstValueFrom(this.http.get<any>(`${usersV2Url}/${id}`));
 
   getUserWithTechRate() {
-    return firstValueFrom(this.http.get(`${url}/getUserWithTechRate.php`));
+    return firstValueFrom(this.http.get(`${usersV2Url}/getUserWithTechRate`));
   }
   getUserWithTechRateById(id) {
     return firstValueFrom(
-      this.http.get(`${url}/getUserWithTechRateById.php?id=${id}`)
+      this.http.get(`${usersV2Url}/getUserWithTechRateById?id=${id}`)
     );
   }
 

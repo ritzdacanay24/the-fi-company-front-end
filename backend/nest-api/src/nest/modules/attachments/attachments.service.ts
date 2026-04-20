@@ -9,6 +9,10 @@ export class AttachmentsService {
     return this.repository.find(filters);
   }
 
+  async getAllRelatedAttachments(id: number) {
+    return this.repository.getAllRelatedAttachments(id);
+  }
+
   async deleteById(id: number) {
     const rowCount = await this.repository.deleteById(id);
     return { rowCount };

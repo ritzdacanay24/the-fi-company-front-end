@@ -3,7 +3,7 @@ import { Observable, firstValueFrom } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { DataService } from '../DataService';
 
-let url = 'FieldServiceMobile/scheduler';
+const schedulerV2Url = 'apiV2/scheduler';
 
 @Injectable({
   providedIn: 'root'
@@ -11,83 +11,78 @@ let url = 'FieldServiceMobile/scheduler';
 export class SchedulerService extends DataService<any> {
 
   constructor(http: HttpClient) {
-    super(url, http);
+    super(schedulerV2Url, http);
   }
 
-  getConnectingJobsByTech(tech, dateFrom, dateTo) {
-    return firstValueFrom(this.http.get(`${url}/getConnectingJobsByTech.php?tech=${tech}&dateFrom=${dateFrom}&dateTo=${dateTo}`))
+  getConnectingJobsByTech(tech: string, dateFrom: string, dateTo: string) {
+    return firstValueFrom(this.http.get(`${schedulerV2Url}/connectingJobsByTech?tech=${tech}&dateFrom=${dateFrom}&dateTo=${dateTo}`))
   }
 
   /**events */
-  getConnectingJobs(group_id) {
-    return firstValueFrom(this.http.get(`${url}/getConnectingJobs.php?group_id=${group_id}`))
+  getConnectingJobs(group_id: number) {
+    return firstValueFrom(this.http.get(`${schedulerV2Url}/connectingJobs?group_id=${group_id}`))
   }
 
-  getByIdRaw(fsid) {
-    return firstValueFrom(this.http.get(`${url}/getByIdRaw.php?id=${fsid}`))
+  getByIdRaw(fsid: number) {
+    return firstValueFrom(this.http.get(`${schedulerV2Url}/${fsid}`))
   }
 
-  getGroupJobs(group_id) {
-    return firstValueFrom(this.http.get(`${url}/getGroupJobs.php?group_id=${group_id}`))
+  getGroupJobs(group_id: number) {
+    return firstValueFrom(this.http.get(`${schedulerV2Url}/groupJobs?group_id=${group_id}`))
   }
 
-  getJobByUser(user) {
-    return firstValueFrom(this.http.get(`${url}/getJobByUser.php?user=${user}`))
+  getJobByUser(user: string) {
+    return firstValueFrom(this.http.get(`${schedulerV2Url}/jobByUser?user=${user}`))
   }
 
-  getAssignments(user, dateFrom, dateTo) {
-    return firstValueFrom(this.http.get(`${url}/assignments.php?user=${user}&dateFrom=${dateFrom}&dateTo=${dateTo}`))
+  getAssignments(user: string, dateFrom: string, dateTo: string) {
+    return firstValueFrom(this.http.get(`${schedulerV2Url}/assignments?user=${user}&dateFrom=${dateFrom}&dateTo=${dateTo}`))
   }
 
-  override getAll = async (): Promise<any[]> => await firstValueFrom(this.http.get<any[]>(`${url}/getAll.php`));
+  override getAll = async (): Promise<any[]> => await firstValueFrom(this.http.get<any[]>(`${schedulerV2Url}`));
 
-  getByDateRange(dateFrom, dateTo) {
-    return firstValueFrom(this.http.get(`${url}/getByDateRange.php?dateFrom=${dateFrom}&dateTo=${dateTo}`))
+  getByDateRange(dateFrom: string, dateTo: string) {
+    return firstValueFrom(this.http.get(`${schedulerV2Url}/byDateRange?dateFrom=${dateFrom}&dateTo=${dateTo}`))
   }
 
-  techSchedule(dateFrom, dateTo) {
-    return firstValueFrom(this.http.get(`${url}/techSchedule.php?dateFrom=${dateFrom}&dateTo=${dateTo}`))
+  techSchedule(dateFrom: string, dateTo: string) {
+    return firstValueFrom(this.http.get(`${schedulerV2Url}/techSchedule?dateFrom=${dateFrom}&dateTo=${dateTo}`))
   }
 
-  customer_part_search
   getByDateRangeCalendar() {
     return firstValueFrom(this.http.get<any>(`https://dashboard.eye-fi.com/server/Api//FieldService/index?getTicketAssignmentsByTechs=1&techName=Ritz%20Dacanay&ticketStatus=Open`));
   }
 
-  getSchedulerByDateRange(dateFrom, dateTo) {
-    return firstValueFrom(this.http.get(`${url}/getSchedulerByDateRange.php?dateFrom=${dateFrom}&dateTo=${dateTo}`))
+  getSchedulerByDateRange(dateFrom: string, dateTo: string) {
+    return firstValueFrom(this.http.get(`${schedulerV2Url}/schedulerByDateRange?dateFrom=${dateFrom}&dateTo=${dateTo}`))
   }
 
-  getCalendar(dateFrom, dateTo) {
-    return firstValueFrom(this.http.get(`${url}/getCalendar.php?dateFrom=${dateFrom}&dateTo=${dateTo}`))
+  getCalendar(dateFrom: string, dateTo: string) {
+    return firstValueFrom(this.http.get(`${schedulerV2Url}/calendar?dateFrom=${dateFrom}&dateTo=${dateTo}`))
   }
 
-  //
-  fsCalendar(dateFrom, dateTo) {
-    return firstValueFrom(this.http.get(`${url}/fsCalendar.php?dateFrom=${dateFrom}&dateTo=${dateTo}`))
+  fsCalendar(dateFrom: string, dateTo: string) {
+    return firstValueFrom(this.http.get(`${schedulerV2Url}/calendar?dateFrom=${dateFrom}&dateTo=${dateTo}`))
   }
 
-  
-  fsCalendarMap(dateFrom, dateTo) {
-    return firstValueFrom(this.http.get(`${url}/fsCalendarMap.php?dateFrom=${dateFrom}&dateTo=${dateTo}`))
+  fsCalendarMap(dateFrom: string, dateTo: string) {
+    return firstValueFrom(this.http.get(`${schedulerV2Url}/map?dateFrom=${dateFrom}&dateTo=${dateTo}`))
   }
 
-  
-  fsTechCalendar(dateFrom, dateTo) {
-    return firstValueFrom(this.http.get(`${url}/fsTechCalendar.php?dateFrom=${dateFrom}&dateTo=${dateTo}`))
+  fsTechCalendar(dateFrom: string, dateTo: string) {
+    return firstValueFrom(this.http.get(`${schedulerV2Url}/techSchedule?dateFrom=${dateFrom}&dateTo=${dateTo}`))
   }
-
 
   getBillinReportByDate(date: string, woNumber: string) {
-    return this.http.get<any>(`${url}/getBillingByFsId?date=&fsId=${woNumber}`);
+    return this.http.get<any>(`${schedulerV2Url}/${woNumber}`);
   }
 
-  searchByQadPartNumber(q: string, currentCompanySelection): Observable<any> {
+  searchByQadPartNumber(q: string, currentCompanySelection: string): Observable<any> {
     let apiURL = `https://dashboard.eye-fi.com/tasks/fieldService/customer_item_search.php?q=${q}&currentCompanySelection=${currentCompanySelection}`;
     return this.http.get(apiURL)
   }
 
-  getMap(dateFrom, dateTo) {
-    return firstValueFrom(this.http.get<any>(`${url}/getMap?dateFrom=${dateFrom}&dateTo=${dateTo}`));
+  getMap(dateFrom: string, dateTo: string) {
+    return firstValueFrom(this.http.get<any>(`${schedulerV2Url}/map?dateFrom=${dateFrom}&dateTo=${dateTo}`));
   }
 }

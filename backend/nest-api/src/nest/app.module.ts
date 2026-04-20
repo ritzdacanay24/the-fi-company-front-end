@@ -52,6 +52,15 @@ import { UsersModule } from './modules/users';
 import { MenuModule } from './modules/menu';
 import { PageAccessModule } from './modules/page-access';
 import { EmailNotificationModule } from './modules/email-notification';
+import { SchedulerModule } from './modules/scheduler';
+import { SchedulerEventModule } from './modules/scheduler-event';
+import { CalendarEventModule } from './modules/calendar-event';
+import { EventModule } from './modules/event';
+import { TicketEventModule } from './modules/ticket-event';
+import { JobConnectionModule } from './modules/job-connection';
+import { StatusCategoryModule } from './modules/status-category';
+import { NonBillableCodeModule } from './modules/non-billable-code';
+import { TripDetailModule } from './modules/trip-detail';
 import { MysqlModule } from '../shared/database/mysql.module';
 import { EmailModule } from '../shared/email/email.module';
 
@@ -117,6 +126,15 @@ import { EmailModule } from '../shared/email/email.module';
     MenuModule,
     PageAccessModule,
     EmailNotificationModule,
+    SchedulerModule,
+    SchedulerEventModule,
+    CalendarEventModule,
+    EventModule,
+    TicketEventModule,
+    JobConnectionModule,
+    StatusCategoryModule,
+    NonBillableCodeModule,
+    TripDetailModule,
   ],
   providers: [
     {
