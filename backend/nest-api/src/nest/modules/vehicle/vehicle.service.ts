@@ -42,6 +42,16 @@ export class VehicleService {
     return (row as Record<string, unknown>) || null;
   }
 
+  async checkAnyFailures(license: string): Promise<Record<string, unknown>[]> {
+    const value = (license || '').trim();
+    if (!value) {
+      return [];
+    }
+
+    const rows = await this.vehicleRepository.checkAnyFailures(value);
+    return rows as Record<string, unknown>[];
+  }
+
   async create(payload: CreateVehicleDto): Promise<{ insertId: number }> {
     const payloadMap: Record<string, unknown> = { ...payload };
     const insertId = await this.vehicleRepository.createVehicle(payloadMap);

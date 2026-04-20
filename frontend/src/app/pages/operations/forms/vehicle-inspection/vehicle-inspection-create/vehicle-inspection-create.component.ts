@@ -256,8 +256,9 @@ export class VehicleInspectionCreateComponent {
           formData.append("title", resolvedTitle);
           formData.append("uniqueData", uniqueData);
           formData.append("folderName", "vehicleInformation");
+          formData.append("subFolder", "vehicleInformation");
           this.uploadService
-            .upload(formData)
+            .uploadAttachmentV2(formData)
             .pipe(first())
             .subscribe((data) => { });
         }
@@ -271,8 +272,9 @@ export class VehicleInspectionCreateComponent {
           formData.append("title", `Vehicle Additional Photo ${index + 1}`);
           formData.append("uniqueData", uniqueData);
           formData.append("folderName", "vehicleInformation");
+          formData.append("subFolder", "vehicleInformation");
           this.uploadService
-            .upload(formData)
+            .uploadAttachmentV2(formData)
             .pipe(first())
             .subscribe((data) => { });
         });

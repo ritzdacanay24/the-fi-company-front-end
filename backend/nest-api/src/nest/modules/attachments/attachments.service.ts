@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { extname } from 'node:path';
 import { AttachmentsMetadataService } from './attachments-metadata.service';
 import { AttachmentsStorageService } from './attachments-storage.service';
 
@@ -15,12 +16,10 @@ export class AttachmentsService {
   ) {
     const subFolder = this.resolveSubFolder(payload);
     const storedFileName = await this.storageService.storeUploadedFile(file, subFolder);
+    const normalizedPayload = this.normalizeCreatePayload(payload, storedFileName, file?.originalname);
 
     try {
-      const insertId = await this.metadataService.createAttachment({
-        ...payload,
-        fileName: storedFileName,
-      });
+      const insertId = await this.metadataService.createAttachment(normalizedPayload);
 
       return { message: 'Created successfully', insertId };
     } catch (error) {
@@ -63,5 +62,55 @@ export class AttachmentsService {
 
   async deleteById(id: number) {
     return this.metadataService.deleteById(id);
+  }
+
+  private normalizeCreatePayload(
+    payload: Record<string, unknown>,
+    storedFileName: string,
+    originalName?: string,
+  ): Record<string, unknown> {
+    const createdDate = this.normalizeCreatedDate(payload.createdDate);
+    const uniqueId = payload.uniqueId ?? payload.uniqueData;
+    const ext = this.normalizeExtension(payload.ext, originalName);
+    const subFolder = this.resolveSubFolder(payload);
+    const link = this.normalizeLink(payload.link, storedFileName, subFolder);
+
+    return {
+      ...payload,
+      fileName: storedFileName,
+      createdDate,
+      uniqueId,
+      link,
+      ext,
+    };
+  }
+
+  private normalizeCreatedDate(value: unknown): string {
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim();
+    }
+
+    return new Date().toISOString().slice(0, 19).replace('T', ' ');
+  }
+
+  private normalizeExtension(value: unknown, originalName?: string): string | undefined {
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim();
+    }
+
+    if (!originalName) {
+      return undefined;
+    }
+
+    const extension = extname(originalName).replace('.', '').trim();
+    return extension || undefined;
+  }
+
+  private normalizeLink(value: unknown, fileName: string, subFolder: string): string | undefined {
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim();
+    }
+
+    return this.storageService.resolveLink(fileName, subFolder) || undefined;
   }
 }

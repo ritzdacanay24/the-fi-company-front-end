@@ -41,6 +41,11 @@ export class VehicleController {
     return await this.vehicleService.findOne(query);
   }
 
+  @Get('checkAnyFailures')
+  async checkAnyFailures(@Query('license') license?: string) {
+    return await this.vehicleService.checkAnyFailures(license || '');
+  }
+
   @Post('create')
   async create(@Body() payload: CreateVehicleDto) {
     return await this.vehicleService.create(payload);

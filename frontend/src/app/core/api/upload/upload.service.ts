@@ -8,6 +8,10 @@ import { HttpClient } from '@angular/common/http';
 export class UploadService {
     constructor(private http: HttpClient) { }
 
+    uploadAttachmentV2(params): Observable<any> {
+        return this.http.post<any>(`apiV2/attachments`, params)
+    }
+
     upload(params): Observable<any> {
         params.upload = 1;
         return this.http.post<any>(`/Upload/index?`, params)

@@ -8,6 +8,14 @@ export interface VehicleRow extends RowDataPacket {
   active: number;
 }
 
+interface VehicleFailureRow extends RowDataPacket {
+  truck_license_plate: string;
+  id: number;
+  checklist_name: string;
+  date_created: string;
+  checklist_id: number;
+}
+
 @Injectable()
 export class VehicleRepository extends BaseRepository<VehicleRow> {
   private readonly allowedFilterColumns = new Set([
@@ -80,6 +88,29 @@ export class VehicleRepository extends BaseRepository<VehicleRow> {
 
   async deleteVehicleById(id: number): Promise<number> {
     return await this.deleteById(id);
+  }
+
+  async checkAnyFailures(license: string): Promise<VehicleFailureRow[]> {
+    return await this.rawQuery<VehicleFailureRow>(
+      `
+        SELECT a.truck_license_plate,
+               b.id,
+               b.checklist_name,
+               a.date_created,
+               a.id AS checklist_id
+        FROM forms.vehicle_inspection_header a
+        JOIN (
+          SELECT forklift_checklist_id,
+                 id,
+                 checklist_name
+          FROM forms.vehicle_inspection_details
+          WHERE status = 0
+            AND resolved_confirmed_date IS NULL
+        ) b ON b.forklift_checklist_id = a.id
+        WHERE a.truck_license_plate = ?
+      `,
+      [license],
+    );
   }
 
   private pickAllowedFilters(input: Record<string, unknown>): Record<string, unknown> {

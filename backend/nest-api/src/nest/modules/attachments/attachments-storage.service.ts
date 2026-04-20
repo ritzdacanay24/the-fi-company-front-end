@@ -9,7 +9,6 @@ export class AttachmentsStorageService {
   private readonly explicitPublicBaseUrl = this.resolveExplicitPublicBaseUrl();
   private readonly publicRootBaseUrl = this.resolvePublicRootBaseUrl();
   private readonly remoteBaseUrl = this.resolveRemoteBaseUrl();
-  private readonly isProduction = (process.env.NODE_ENV || 'development') === 'production';
 
   async storeUploadedFile(
     file?: { originalname?: string; buffer?: Buffer },
@@ -46,7 +45,6 @@ export class AttachmentsStorageService {
     }
 
     const publicBaseUrl = this.getPublicBaseUrl(subFolder);
-
     return `${publicBaseUrl}/${fileName}`;
   }
 
@@ -105,7 +103,6 @@ export class AttachmentsStorageService {
         const filePath = join(uploadDir, fileName);
         await writeFile(filePath, fileBuffer);
 
-        // Verify the file exists and has content before treating write as success.
         const fileStats = await stat(filePath);
         if (fileStats.size > 0) {
           writeSucceeded = true;
@@ -139,11 +136,7 @@ export class AttachmentsStorageService {
       return configuredRoots;
     }
 
-    if (!this.isProduction) {
-      return [join(process.cwd(), 'uploads')];
-    }
-
-    return ['/var/www/html/attachments'];
+    return [join(process.cwd(), 'uploads')];
   }
 
   private resolveExplicitPublicBaseUrl(): string {
@@ -161,12 +154,7 @@ export class AttachmentsStorageService {
       return configuredRoot.replace(/\/+$/, '');
     }
 
-    if (!this.isProduction) {
-      const port = process.env.ATTACHMENTS_FS_PUBLIC_PORT || '3002';
-      return `http://localhost:${port}/uploads`;
-    }
-
-    return 'https://dashboard.eye-fi.com/attachments';
+    return '/uploads';
   }
 
   private resolveRemoteBaseUrl(): string {
@@ -175,7 +163,7 @@ export class AttachmentsStorageService {
       return configured.replace(/\/+$/, '');
     }
 
-    return 'https://dashboard.eye-fi.com/attachments';
+    return '/uploads';
   }
 
   private getUploadTargetDirs(subFolder: string): string[] {
@@ -203,6 +191,10 @@ export class AttachmentsStorageService {
     const field = typeof row?.field === 'string' ? row.field.toLowerCase() : '';
     if (field.includes('field service')) {
       return 'fieldService';
+    }
+
+    if (field.includes('vehicle inspection')) {
+      return 'vehicleInformation';
     }
 
     return 'fieldService';

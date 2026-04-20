@@ -66,6 +66,6 @@ export class VehicleService extends DataService<any> {
 
   checkAnyFailures = async (license: string) =>
     await firstValueFrom(
-      this.http.get<any[]>(`${legacyUrl}/checkAnyFailures?license=${license}`)
+      this.http.get<any[]>(`${url}/checkAnyFailures?license=${encodeURIComponent(license)}`)
     );
 }
