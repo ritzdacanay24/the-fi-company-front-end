@@ -67,6 +67,7 @@ import { CustomerVisitDetailModule } from './modules/customer-visit-detail';
 import { PartsOrderModule } from './modules/parts-order';
 import { GeoLocationTrackerModule } from './modules/geo-location-tracker';
 import { ServiceTypeModule } from './modules/service-type';
+import { SettingModule } from './modules/setting';
 import { MysqlModule } from '../shared/database/mysql.module';
 import { EmailModule } from '../shared/email/email.module';
 
@@ -147,6 +148,7 @@ import { EmailModule } from '../shared/email/email.module';
     PartsOrderModule,
     GeoLocationTrackerModule,
     ServiceTypeModule,
+    SettingModule,
   ],
   providers: [
     {
