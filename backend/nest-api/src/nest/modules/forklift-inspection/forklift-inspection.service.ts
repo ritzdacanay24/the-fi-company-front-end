@@ -1,6 +1,9 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { ForkliftInspectionRepository } from './forklift-inspection.repository';
 import { EmailService } from '@/shared/email/email.service';
+import { EmailTemplateService } from '@/shared/email/email-template.service';
+import { UrlBuilder } from '@/shared/url/url-builder';
 
 interface ForkliftChecklistDetailGroup {
   name: string;
@@ -19,6 +22,8 @@ export class ForkliftInspectionService {
   constructor(
     private readonly repository: ForkliftInspectionRepository,
     private readonly emailService: EmailService,
+    private readonly emailTemplateService: EmailTemplateService,
+    private readonly configService: ConfigService,
   ) {}
 
   async getList() {
@@ -80,8 +85,14 @@ export class ForkliftInspectionService {
       }
     }
 
+    this.logger.log(
+      `[create] Forklift inspection ${insertId} processed with ${failedCount} failed item(s)`,
+    );
+
     if (failedItems.length > 0) {
       await this.sendIssueNotification(insertId, failedItems, payload);
+    } else {
+      this.logger.log(`[create] Forklift inspection ${insertId} has no failures; email not sent`);
     }
 
     return {
@@ -159,94 +170,41 @@ export class ForkliftInspectionService {
     headerData: Record<string, any>,
   ): Promise<void> {
     try {
-      const recipients = await this.repository.getNotificationRecipients('create_forklift_inspection');
+      let recipients = await this.repository.getNotificationRecipients('create_forklift_inspection');
       if (recipients.length === 0) {
-        this.logger.warn(`No active email recipients configured for create_forklift_inspection`);
-        return;
+        recipients = [this.configService.getOrThrow<string>('DEV_EMAIL_REROUTE_TO')];
+        this.logger.warn(
+          `[email] No active create_forklift_inspection recipients; using fallback recipient ${recipients[0]}`,
+        );
       }
 
+      const baseUrl = this.configService.getOrThrow<string>('DASHBOARD_WEB_BASE_URL');
+      const link = UrlBuilder.operations.forkliftInspectionEdit(baseUrl, inspectionId);
+      const html = this.emailTemplateService.render('forklift-inspection-failed', {
+        inspectionId,
+        link,
+        operator: headerData.operator || '',
+        department: headerData.department || '',
+        modelNumber: headerData.model_number || '',
+        shift: headerData.shift || '',
+        comments: headerData.comments || '',
+        failedItems,
+      });
+
       await this.emailService.sendMail({
-        from: process.env.MAIL_FROM || 'noreply@the-fi-company.com',
         to: recipients,
         subject: `Forklift Checklist Submission Id# ${inspectionId}`,
-        html: this.buildIssueEmailHtml(inspectionId, failedItems, headerData),
+        html,
       });
+
+      this.logger.log(
+        `[email] Forklift failure notification sent for inspection ${inspectionId} to ${recipients.join(', ')}`,
+      );
     } catch (error) {
       this.logger.error(
         `Failed to send forklift inspection issue notification for id ${inspectionId}`,
         error instanceof Error ? error.stack : undefined,
       );
     }
-  }
-
-  private buildIssueEmailHtml(
-    inspectionId: number,
-    failedItems: FailedForkliftChecklistItem[],
-    headerData: Record<string, any>,
-  ): string {
-    const link = `https://dashboard.eye-fi.com/dist/web/operations/forms/forklift-inspection/edit?id=${inspectionId}`;
-    const inspectionDetails: string[] = [];
-
-    if (headerData.operator) {
-      inspectionDetails.push(`<strong>Operator:</strong> ${this.escapeHtml(String(headerData.operator))}<br />`);
-    }
-    if (headerData.department) {
-      inspectionDetails.push(`<strong>Department:</strong> ${this.escapeHtml(String(headerData.department))}<br />`);
-    }
-    if (headerData.model_number) {
-      inspectionDetails.push(`<strong>Model Number:</strong> ${this.escapeHtml(String(headerData.model_number))}<br />`);
-    }
-    if (headerData.shift) {
-      inspectionDetails.push(`<strong>Shift:</strong> ${this.escapeHtml(String(headerData.shift))}<br />`);
-    }
-
-    const failedItemsHtml = failedItems
-      .map(
-        (item) =>
-          `<li><strong>${this.escapeHtml(item.group_name)}</strong>: ${this.escapeHtml(item.checklist_name)}</li>`,
-      )
-      .join('');
-
-    const commentsHtml = headerData.comments
-      ? `
-        <h3>Comments:</h3>
-        <p style="background-color: #f5f5f5; padding: 10px; border-left: 4px solid #ccc;">
-          ${this.escapeHtml(String(headerData.comments))}
-        </p>
-      `
-      : '';
-
-    return `
-      <html>
-        <body>
-          <p>Hello Team,</p>
-          <p>A new forklift checklist has been submitted and requires your immediate attention.</p>
-          ${inspectionDetails.length > 0 ? `<h3>Inspection Details:</h3><p>${inspectionDetails.join('')}</p>` : ''}
-          ${commentsHtml}
-          <h3>Items Requiring Attention:</h3>
-          <ul>${failedItemsHtml}</ul>
-          <p>You can review the complete submission by clicking <a href="${link}">this link</a>.</p>
-          <hr style="margin:30px 0;" />
-          <h3>Contact Information</h3>
-          <p>
-            <strong>William Masannat</strong><br />
-            Platinum Forklift Service<br />
-            Phone: <a href="tel:+17029717225">+1 (702) 971-7225</a><br />
-            Email: <a href="mailto:william@pfslv.com">william@pfslv.com</a><br />
-            5216 Sand Dollar Ave<br />
-            Las Vegas, NV 89141
-          </p>
-        </body>
-      </html>
-    `;
-  }
-
-  private escapeHtml(value: string): string {
-    return value
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
   }
 }

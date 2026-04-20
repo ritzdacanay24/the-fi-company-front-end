@@ -1,5 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { VehicleInspectionRepository } from './vehicle-inspection.repository';
+import { EmailService } from '@/shared/email/email.service';
+import { EmailTemplateService } from '@/shared/email/email-template.service';
+import { UrlBuilder } from '@/shared/url/url-builder';
 
 interface VehicleInspectionGroupedDetail {
   name: string;
@@ -12,9 +16,21 @@ interface VehicleInspectionGroupedDetail {
   }>;
 }
 
+interface FailedVehicleInspectionItem {
+  group_name: string;
+  checklist_name: string;
+}
+
 @Injectable()
 export class VehicleInspectionService {
-  constructor(private readonly repository: VehicleInspectionRepository) {}
+  private readonly logger = new Logger(VehicleInspectionService.name);
+
+  constructor(
+    private readonly repository: VehicleInspectionRepository,
+    private readonly emailService: EmailService,
+    private readonly emailTemplateService: EmailTemplateService,
+    private readonly configService: ConfigService,
+  ) {}
 
   async getList() {
     return this.repository.getList();
@@ -76,6 +92,7 @@ export class VehicleInspectionService {
     });
 
     let failedCount = 0;
+  const failedItems: FailedVehicleInspectionItem[] = [];
     const detailGroups = Array.isArray(payload.details) ? payload.details : [];
 
     if (!notUsed) {
@@ -87,6 +104,10 @@ export class VehicleInspectionService {
           const status = item?.status ?? '';
           if (String(status) === '0') {
             failedCount++;
+            failedItems.push({
+              group_name: groupName,
+              checklist_name: item?.name || '',
+            });
           }
 
           await this.repository.insertDetail({
@@ -97,6 +118,10 @@ export class VehicleInspectionService {
           });
         }
       }
+    }
+
+    if (failedItems.length > 0) {
+      await this.sendIssueNotification(insertId, failedItems, payload);
     }
 
     return {
@@ -135,5 +160,48 @@ export class VehicleInspectionService {
       return 1;
     }
     return 0;
+  }
+
+  private async sendIssueNotification(
+    inspectionId: number,
+    failedItems: FailedVehicleInspectionItem[],
+    headerData: Record<string, any>,
+  ): Promise<void> {
+    try {
+      let recipients = await this.repository.getNotificationRecipients('create_vehicle_inspection');
+      if (recipients.length === 0) {
+        recipients = [this.configService.getOrThrow<string>('DEV_EMAIL_REROUTE_TO')];
+        this.logger.warn(
+          `[email] No active create_vehicle_inspection recipients; using fallback recipient ${recipients[0]}`,
+        );
+      }
+
+      const baseUrl = this.configService.getOrThrow<string>('DASHBOARD_WEB_BASE_URL');
+      const link = UrlBuilder.operations.vehicleInspectionEdit(baseUrl, inspectionId);
+      const html = this.emailTemplateService.render('vehicle-inspection-failed', {
+        inspectionId,
+        link,
+        createdBy: headerData.created_by || '',
+        truckLicensePlate: headerData.truck_license_plate || '',
+        mileage: headerData.mileage ?? null,
+        comments: headerData.comments || '',
+        failedItems,
+      });
+
+      await this.emailService.sendMail({
+        to: recipients,
+        subject: `Vehicle Inspection Submission Id# ${inspectionId}`,
+        html,
+      });
+
+      this.logger.log(
+        `[email] Vehicle inspection failure notification sent for inspection ${inspectionId} to ${recipients.join(', ')}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to send vehicle inspection issue notification for id ${inspectionId}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+    }
   }
 }

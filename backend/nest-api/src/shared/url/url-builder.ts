@@ -3,6 +3,12 @@ export class UrlBuilder {
     safetyIncidentEdit(baseUrl: string, id: number): string {
       return UrlBuilder.withQuery(baseUrl, '/operations/forms/safety-incident/edit', { id });
     },
+    forkliftInspectionEdit(baseUrl: string, id: number): string {
+      return UrlBuilder.withQuery(baseUrl, '/operations/forms/forklift-inspection/edit', { id });
+    },
+    vehicleInspectionEdit(baseUrl: string, id: number): string {
+      return UrlBuilder.withQuery(baseUrl, '/operations/forms/vehicle-inspection/edit', { id });
+    },
   };
 
   private static withQuery(

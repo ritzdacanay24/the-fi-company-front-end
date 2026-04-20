@@ -62,8 +62,14 @@ export class ForkliftInspectionCreateComponent {
 
   details;
   setDetailsFormEmitter($event) {
-    $event?.checklist.sort();
-    this.details = $event?.checklist;
+    // The form emits different payload shapes during interactions.
+    // Keep the initialized checklist reference and ignore row-level emits.
+    if (!Array.isArray($event?.checklist)) {
+      return;
+    }
+
+    $event.checklist.sort();
+    this.details = $event.checklist;
   }
 
   myFiles: string[] | any = [];

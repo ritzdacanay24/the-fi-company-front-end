@@ -1,0 +1,55 @@
+<html>
+  <body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f4f6f8; color: #1f2933;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 620px; background-color: #ffffff; border: 1px solid #dde3ea; border-radius: 10px; overflow: hidden;">
+            {{> email-header}}
+            <tr>
+              <td style="padding: 20px 24px; background-color: #0b5cab; color: #ffffff;">
+                <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Vehicle Inspection Alert</h2>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 24px; font-size: 14px; line-height: 1.6;">
+                <p style="margin-top: 0;">A vehicle inspection was submitted with one or more failed items.</p>
+                <p style="margin: 0 0 16px 0;"><strong>Inspection ID:</strong> {{inspectionId}}</p>
+
+                {{#if createdBy}}
+                <p style="margin: 0 0 8px 0;"><strong>Created By:</strong> {{createdBy}}</p>
+                {{/if}}
+                {{#if truckLicensePlate}}
+                <p style="margin: 0 0 8px 0;"><strong>Truck License Plate:</strong> {{truckLicensePlate}}</p>
+                {{/if}}
+                {{#if mileage}}
+                <p style="margin: 0 0 16px 0;"><strong>Mileage:</strong> {{mileage}}</p>
+                {{/if}}
+
+                <p style="margin: 0 0 8px 0;"><strong>Items requiring attention:</strong></p>
+                <ul style="margin: 0 0 16px 20px; padding: 0;">
+                  {{#each failedItems}}
+                  <li><strong>{{group_name}}</strong>: {{checklist_name}}</li>
+                  {{/each}}
+                </ul>
+
+                {{#if comments}}
+                <p style="margin: 0 0 8px 0;"><strong>Comments:</strong></p>
+                <p style="margin: 0 0 20px 0; background-color: #f5f7fa; border-left: 4px solid #cfd8e3; padding: 10px;">{{comments}}</p>
+                {{/if}}
+
+                <p style="margin: 0 0 24px 0;">
+                  <a href="{{link}}" style="display: inline-block; padding: 10px 18px; border-radius: 6px; background-color: #0b5cab; color: #ffffff; text-decoration: none; font-weight: 600;">
+                    View Vehicle Inspection
+                  </a>
+                </p>
+
+                <p style="margin: 0; color: #5a6b7b; font-size: 12px;">This is an automated message from The Fi Company Dashboard.</p>
+              </td>
+            </tr>
+            {{> email-footer}}
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

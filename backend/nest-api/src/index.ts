@@ -7,8 +7,11 @@ import { join } from 'path';
 import compression from 'compression';
 import { AppModule } from './nest/app.module';
 import { GlobalHttpExceptionFilter } from './nest/filters/http-exception.filter';
+import { initializeFileLogging } from './shared/logging/file-logger.bootstrap';
 
 async function bootstrap() {
+  initializeFileLogging();
+
   const app = await NestFactory.create(AppModule, { bodyParser: false });
 
   const requestBodyLimit = process.env.REQUEST_BODY_LIMIT || '25mb';
