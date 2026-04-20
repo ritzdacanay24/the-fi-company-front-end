@@ -4,7 +4,31 @@ import { MysqlService } from '@/shared/database/mysql.service';
 
 @Injectable()
 export class TableFilterSettingsRepository {
+  private readonly allowedFilterColumns = new Set<string>([
+    'id',
+    'pageId',
+    'userId',
+    'tableNumber',
+    'table_name',
+    'table_description',
+    'table_default',
+    'tf_active',
+    'is_public',
+    'total_filters_applied',
+    'is_default',
+  ]);
+
+  private readonly filterKeyAliases: Record<string, string> = {
+    ft_active: 'tf_active',
+  };
+
   constructor(@Inject(MysqlService) private readonly mysqlService: MysqlService) {}
+
+  private normalizeFilterEntries(filters: Record<string, any>): Array<[string, any]> {
+    return Object.entries(filters)
+      .map(([key, value]) => [this.filterKeyAliases[key] ?? key, value] as [string, any])
+      .filter(([key]) => this.allowedFilterColumns.has(key));
+  }
 
   async find(filters: Record<string, any>): Promise<RowDataPacket[]> {
     let sql = `
@@ -13,7 +37,7 @@ export class TableFilterSettingsRepository {
       LEFT JOIN db.users b ON b.id = a.userId
     `;
     const params: any[] = [];
-    const conditions = Object.entries(filters);
+    const conditions = this.normalizeFilterEntries(filters);
     if (conditions.length > 0) {
       sql += ' WHERE ' + conditions.map(([key]) => `a.${key} = ?`).join(' AND ');
       conditions.forEach(([, val]) => params.push(val));
@@ -28,7 +52,7 @@ export class TableFilterSettingsRepository {
       LEFT JOIN db.users b ON b.id = a.userId
     `;
     const params: any[] = [];
-    const conditions = Object.entries(filters);
+    const conditions = this.normalizeFilterEntries(filters);
     if (conditions.length > 0) {
       sql += ' WHERE ' + conditions.map(([key]) => `a.${key} = ?`).join(' AND ');
       conditions.forEach(([, val]) => params.push(val));

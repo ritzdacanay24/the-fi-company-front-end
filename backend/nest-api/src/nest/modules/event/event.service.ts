@@ -13,6 +13,10 @@ export class EventService {
     return this.repository.find(params);
   }
 
+  async getEventViewByWorkOrderId(workOrderId: number) {
+    return this.repository.getEventViewByWorkOrderId(workOrderId);
+  }
+
   async findOne(id: number): Promise<EventRecord | null> {
     return this.repository.findOne({ id });
   }

@@ -80,6 +80,13 @@ import { JobCommentsModule } from './modules/job-comments';
 import { LicensedTechsModule } from './modules/licensed-techs';
 import { CrashKitModule } from './modules/crash-kit';
 import { RequestModule } from './modules/request';
+import { RequestCommentsModule } from './modules/request-comments';
+import { WorkOrderModule } from './modules/work-order';
+import { ReportsModule } from './modules/reports';
+import { JobModule } from './modules/job';
+import { SerialModule } from './modules/serial';
+import { FieldServiceOverviewModule } from './modules/field-service-overview/field-service-overview.module';
+import { TripExpenseModule } from './modules/trip-expense/trip-expense.module';
 import { MysqlModule } from '../shared/database/mysql.module';
 import { EmailModule } from '../shared/email/email.module';
 
@@ -173,6 +180,13 @@ import { EmailModule } from '../shared/email/email.module';
     LicensedTechsModule,
     CrashKitModule,
     RequestModule,
+    RequestCommentsModule,
+    WorkOrderModule,
+    ReportsModule,
+    JobModule,
+    SerialModule,
+    FieldServiceOverviewModule,
+    TripExpenseModule,
   ],
   providers: [
     {

@@ -41,6 +41,29 @@ export class SchedulerService extends DataService<any> {
 
   override getAll = async (): Promise<any[]> => await firstValueFrom(this.http.get<any[]>(`${schedulerV2Url}`));
 
+  override findOne = async (params: Partial<any>): Promise<any> => {
+    const cleanParams = Object.fromEntries(
+      Object.entries(params || {}).filter(([, value]) => value !== undefined && value !== null && value !== ''),
+    );
+
+    if (!Object.keys(cleanParams).length) {
+      return null;
+    }
+
+    const query = new URLSearchParams(cleanParams as Record<string, string>).toString();
+    const data = await firstValueFrom(this.http.get<any[]>(`${schedulerV2Url}/find?${query}`));
+    return data?.[0] ?? null;
+  };
+
+  override getById = async (id: string | number): Promise<any> => {
+    const normalized = Number(id);
+    if (!Number.isFinite(normalized)) {
+      return null;
+    }
+
+    return firstValueFrom(this.http.get<any>(`${schedulerV2Url}/${normalized}`));
+  };
+
   getByDateRange(dateFrom: string, dateTo: string) {
     return firstValueFrom(this.http.get(`${schedulerV2Url}/byDateRange?dateFrom=${dateFrom}&dateTo=${dateTo}`))
   }

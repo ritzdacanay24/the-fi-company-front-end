@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { DataService } from '../DataService';
 import { firstValueFrom } from 'rxjs';
 
-let url = 'FieldServiceMobile/overview';
+const url = 'apiV2/field-service-overview';
 
 @Injectable({
   providedIn: 'root'

@@ -5,6 +5,7 @@ import { MindeeService } from "../mindee/mindee.service";
 import { MindeeApiResponse, ExpenseReceiptPrediction, MindeeRequestOptions } from "../mindee/mindee-interfaces";
 
 let url = "FieldServiceMobile/trip-expense";
+const tripExpenseV2Url = 'apiV2/trip-expense';
 
 @Injectable({
   providedIn: "root",
@@ -55,13 +56,13 @@ export class TripExpenseService {
 
   getByWorkOrderId(workOrderId) {
     return firstValueFrom(
-      this.http.get(`${url}/getByWorkOrderId.php?workOrderId=${workOrderId}`)
+      this.http.get(`${tripExpenseV2Url}/getByWorkOrderId?workOrderId=${workOrderId}`)
     );
   }
 
   getByFsId(fs_scheduler_id) {
     return firstValueFrom(
-      this.http.get(`${url}/getByFsId.php?fs_scheduler_id=${fs_scheduler_id}`)
+      this.http.get(`${tripExpenseV2Url}/getByFsId?fs_scheduler_id=${fs_scheduler_id}`)
     );
   }
   getById(id) {

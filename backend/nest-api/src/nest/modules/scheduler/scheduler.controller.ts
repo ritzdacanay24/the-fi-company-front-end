@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Param, Query, Body } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Query, Body, ParseIntPipe } from '@nestjs/common';
 import { SchedulerService } from './scheduler.service';
 import { SchedulerRecord } from './scheduler.repository';
 
@@ -95,7 +95,7 @@ export class SchedulerController {
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: number): Promise<SchedulerRecord | null> {
+  async findOne(@Param('id', ParseIntPipe) id: number): Promise<SchedulerRecord | null> {
     return this.schedulerService.findOne(id);
   }
 
@@ -105,12 +105,12 @@ export class SchedulerController {
   }
 
   @Put(':id')
-  async update(@Param('id') id: number, @Body() payload: Record<string, unknown>): Promise<SchedulerRecord | null> {
+  async update(@Param('id', ParseIntPipe) id: number, @Body() payload: Record<string, unknown>): Promise<SchedulerRecord | null> {
     return this.schedulerService.update(id, payload);
   }
 
   @Delete(':id')
-  async delete(@Param('id') id: number): Promise<boolean> {
+  async delete(@Param('id', ParseIntPipe) id: number): Promise<boolean> {
     return this.schedulerService.delete(id);
   }
 }

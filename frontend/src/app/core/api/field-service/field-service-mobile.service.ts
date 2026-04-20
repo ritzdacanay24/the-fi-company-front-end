@@ -13,7 +13,7 @@ export class FieldServiceMobileService {
 
   /**events */
   getEventViewByWorkOrderId(workOrderId) {
-    return firstValueFrom(this.http.get(`${url}/event/getEventViewByWorkOrderId.php?workOrderId=${workOrderId}`))
+    return firstValueFrom(this.http.get(`apiV2/event/getEventViewByWorkOrderId?workOrderId=${workOrderId}`))
   }
 
   /**events */

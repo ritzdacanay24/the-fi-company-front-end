@@ -16,6 +16,16 @@ export class EventController {
     return this.eventService.find(params);
   }
 
+  @Get('getEventViewByWorkOrderId')
+  async getEventViewByWorkOrderId(@Query('workOrderId') workOrderIdRaw?: string) {
+    const workOrderId = Number(workOrderIdRaw);
+    if (!Number.isFinite(workOrderId)) {
+      return [];
+    }
+
+    return this.eventService.getEventViewByWorkOrderId(workOrderId);
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: number): Promise<EventRecord | null> {
     return this.eventService.findOne(id);

@@ -1,0 +1,55 @@
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query } from '@nestjs/common';
+import { WorkOrderService } from './work-order.service';
+
+@Controller('work-order')
+export class WorkOrderController {
+  constructor(private readonly service: WorkOrderService) {}
+
+  @Get('findOne')
+  async findOne(@Query() params: Record<string, unknown>) {
+    return this.service.findOne(params);
+  }
+
+  @Get('getAll')
+  async getAll(
+    @Query('selectedViewType') selectedViewType?: string,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+    @Query('isAll') isAll?: string,
+  ) {
+    return this.service.getAll(selectedViewType, dateFrom, dateTo, isAll);
+  }
+
+  @Get('getByWorkOrderId')
+  async getByWorkOrderId(@Query('workOrderId', ParseIntPipe) workOrderId: number) {
+    return this.service.getByWorkOrderId(workOrderId);
+  }
+
+  @Get(':id')
+  async getById(@Param('id', ParseIntPipe) id: number) {
+    return this.service.getById(id);
+  }
+
+  @Post()
+  async create(@Body() payload: Record<string, unknown>) {
+    return this.service.create(payload);
+  }
+
+  @Put(':id')
+  async updateById(@Param('id', ParseIntPipe) id: number, @Body() payload: Record<string, unknown>) {
+    return this.service.updateById(id, payload);
+  }
+
+  @Put('billing-review/:id')
+  async updateByIdBillingReview(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() payload: Record<string, unknown>,
+  ) {
+    return this.service.updateByIdBillingReview(id, payload);
+  }
+
+  @Delete(':id')
+  async deleteById(@Param('id', ParseIntPipe) id: number) {
+    return this.service.deleteById(id);
+  }
+}

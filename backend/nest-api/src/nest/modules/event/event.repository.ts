@@ -29,6 +29,14 @@ export interface EventRecord extends RowDataPacket {
   copiedFromTicketId: number | null;
 }
 
+export interface EventViewRecord extends RowDataPacket {
+  id: number;
+  workOrderId: number | null;
+  userId: number | null;
+  projectStart: Date | null;
+  username: string | null;
+}
+
 const ALLOWED_COLUMNS = new Set([
   'workOrderId',
   'proj_type',
@@ -69,5 +77,18 @@ export class EventRepository extends BaseRepository<EventRecord> {
 
   async getAll(): Promise<EventRecord[]> {
     return this.find();
+  }
+
+  async getEventViewByWorkOrderId(workOrderId: number): Promise<EventViewRecord[]> {
+    return this.rawQuery<EventViewRecord>(
+      `
+        SELECT a.*, CONCAT(b.first, ' ', b.last) AS username
+        FROM fs_labor_view a
+        LEFT JOIN db.users b ON b.id = a.userId
+        WHERE a.workOrderId = ?
+        ORDER BY projectStart ASC, id ASC
+      `,
+      [workOrderId],
+    );
   }
 }
