@@ -65,6 +65,7 @@ import { TripDetailHeaderModule } from './modules/trip-detail-header';
 import { CustomerVisitModule } from './modules/customer-visit';
 import { CustomerVisitDetailModule } from './modules/customer-visit-detail';
 import { PartsOrderModule } from './modules/parts-order';
+import { GeoLocationTrackerModule } from './modules/geo-location-tracker';
 import { MysqlModule } from '../shared/database/mysql.module';
 import { EmailModule } from '../shared/email/email.module';
 
@@ -143,6 +144,7 @@ import { EmailModule } from '../shared/email/email.module';
     CustomerVisitModule,
     CustomerVisitDetailModule,
     PartsOrderModule,
+    GeoLocationTrackerModule,
   ],
   providers: [
     {
