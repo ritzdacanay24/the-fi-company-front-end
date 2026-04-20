@@ -71,6 +71,7 @@ import { SettingModule } from './modules/setting';
 import { PlatformModule } from './modules/platform';
 import { ReceiptCategoryModule } from './modules/receipt-category';
 import { VendorModule } from './modules/vendor';
+import { CustomerModule } from './modules/customer';
 import { MysqlModule } from '../shared/database/mysql.module';
 import { EmailModule } from '../shared/email/email.module';
 
@@ -155,6 +156,7 @@ import { EmailModule } from '../shared/email/email.module';
     PlatformModule,
     ReceiptCategoryModule,
     VendorModule,
+    CustomerModule,
   ],
   providers: [
     {
