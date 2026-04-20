@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 
-let url = 'FieldServiceMobile/crash-kit';
+const url = 'apiV2/crash-kit';
 
 @Injectable({
   providedIn: 'root'
@@ -11,28 +11,28 @@ export class CrashKitService {
 
   constructor(private http: HttpClient) { }
 
-  getByPartNumber(partNumber) {
-    return firstValueFrom(this.http.get(`${url}/partSearch.php?partNumber=${partNumber}`))
+  getByPartNumber(partNumber: string) {
+    return firstValueFrom(this.http.get(`${url}/partSearch?partNumber=${partNumber}`));
   }
 
-  getByWorkOrderId(workOrderId) {
-    return firstValueFrom(this.http.get(`${url}/getByWorkOrderId.php?workOrderId=${workOrderId}`))
+  getByWorkOrderId(workOrderId: string | number) {
+    return firstValueFrom(this.http.get(`${url}/byWorkOrderId?workOrderId=${workOrderId}`));
   }
 
-  getById(id) {
-    return firstValueFrom(this.http.get(`${url}/getById.php?id=${id}`))
+  getById(id: string | number) {
+    return firstValueFrom(this.http.get(`${url}/${id}`));
   }
 
-  updateById(id, params) {
-    return firstValueFrom(this.http.put(`${url}/updateById.php?id=${id}`, params))
+  updateById(id: string | number, params: Record<string, unknown>) {
+    return firstValueFrom(this.http.put(`${url}/${id}`, params));
   }
 
-  deleteById(id) {
-    return firstValueFrom(this.http.delete(`${url}/deleteById.php?id=${id}`))
+  deleteById(id: string | number) {
+    return firstValueFrom(this.http.delete(`${url}/${id}`));
   }
 
-  create(params) {
-    return firstValueFrom(this.http.post(`${url}/create.php`, params))
+  create(params: Record<string, unknown>) {
+    return firstValueFrom(this.http.post(`${url}`, params));
   }
 
 }

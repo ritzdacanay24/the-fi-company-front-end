@@ -3,7 +3,7 @@ import { Observable, firstValueFrom } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { DataService } from '../DataService';
 
-let url = 'FieldServiceMobile/request';
+const requestV2Url = 'apiV2/request';
 
 @Injectable({
   providedIn: 'root'
@@ -11,8 +11,24 @@ let url = 'FieldServiceMobile/request';
 export class RequestService extends DataService<any> {
 
   constructor(http: HttpClient) {
-    super(url, http);
+    super(requestV2Url, http);
   }
+
+  override getById = async (id: string | number): Promise<any> =>
+    firstValueFrom(this.http.get<any>(`${requestV2Url}/${id}`));
+
+  override create = async (params: Partial<any>): Promise<{ message: string; insertId?: number }> => {
+    const response = await firstValueFrom(this.http.post<any>(`${requestV2Url}`, params));
+    return {
+      message: response?.message ?? 'Created',
+      insertId: response?.insertId ?? response?.id,
+    };
+  };
+
+  override update = async (id: string | number, params: Partial<any>): Promise<{ message: string }> => {
+    await firstValueFrom(this.http.put<any>(`${requestV2Url}/${id}`, params));
+    return { message: 'Updated' };
+  };
 
   createFieldServiceRequest(params, sendEmail = false) {
     return firstValueFrom(this.http.post<{ message: string, id?: number }>(`https://dashboard.eye-fi.com/tasks/createFsRequest.php?sendEmail=${sendEmail}`, params))
@@ -27,11 +43,11 @@ export class RequestService extends DataService<any> {
   }
 
   getAllRequests(selectedViewType?: string) {
-    return firstValueFrom(this.http.get(`${url}/getAllRequests.php?selectedViewType=${selectedViewType}`))
+    return firstValueFrom(this.http.get(`${requestV2Url}/getAllRequests?selectedViewType=${selectedViewType}`))
   }
 
   getChart = async (dateFrom, dateTo, displayCustomers, typeOfView) =>
-    await firstValueFrom(this.http.get<any>(`${url}/getChart?dateFrom=${dateFrom}&dateTo=${dateTo}&displayCustomers=${encodeURIComponent(displayCustomers)}&typeOfView=${typeOfView}`))
+    await firstValueFrom(this.http.get<any>(`${requestV2Url}/getChart?dateFrom=${dateFrom}&dateTo=${dateTo}&displayCustomers=${encodeURIComponent(displayCustomers)}&typeOfView=${typeOfView}`))
 
 
   onRequestChanges(params, sendEmail = false) {

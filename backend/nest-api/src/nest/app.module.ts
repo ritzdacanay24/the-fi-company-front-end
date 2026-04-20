@@ -78,6 +78,8 @@ import { LicenseModule } from './modules/license';
 import { TeamModule } from './modules/team';
 import { JobCommentsModule } from './modules/job-comments';
 import { LicensedTechsModule } from './modules/licensed-techs';
+import { CrashKitModule } from './modules/crash-kit';
+import { RequestModule } from './modules/request';
 import { MysqlModule } from '../shared/database/mysql.module';
 import { EmailModule } from '../shared/email/email.module';
 
@@ -169,6 +171,8 @@ import { EmailModule } from '../shared/email/email.module';
     TeamModule,
     JobCommentsModule,
     LicensedTechsModule,
+    CrashKitModule,
+    RequestModule,
   ],
   providers: [
     {
