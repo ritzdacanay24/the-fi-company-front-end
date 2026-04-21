@@ -134,4 +134,143 @@ export class GraphicsProductionRepository extends BaseRepository<RowDataPacket> 
     `;
     return this.rawQuery<RowDataPacket>(sql);
   }
+
+  async getGraphicsDemandByWo(woNumber: string): Promise<RowDataPacket | null> {
+    const sql = `
+      SELECT so
+        , line
+      FROM eyefidb.graphicsDemand
+      WHERE woNumber = ?
+      LIMIT 1
+    `;
+
+    const rows = await this.rawQuery<RowDataPacket>(sql, [woNumber]);
+    return rows[0] || null;
+  }
+
+  async getBomInformationTest(partNumber: string): Promise<RowDataPacket | null> {
+    if (!partNumber) {
+      return null;
+    }
+
+    const withRevisionSql = `
+      SELECT SKU_Number
+        , Product productName
+        , ID_Product
+        , Account_Vendor
+        , DD1_1
+        , DD1_5
+        , DD1_6
+        , DD2_8
+        , DD2_6
+        , DD3_2
+        , DD3_1
+        , DD3_3
+        , DD3_9
+        , DI_Product_SQL
+        , DD3_8
+        , DD2_1
+        , DD3_6
+        , Category
+        , Serial_Number
+        , DD2_2
+        , DD1_7
+        , DD2_9
+        , DD2_7
+        , DD1_2
+        , Image_Data
+        , v.revision
+      FROM eyefidb.graphicsInventory
+      JOIN eyefidb.graphicsInventoryView v ON v.part_number = eyefidb.graphicsInventory.SKU_Number
+      WHERE SKU_Number = ?
+      ORDER BY eyefidb.graphicsInventory.id DESC
+      LIMIT 1
+    `;
+
+    const withRevisionRows = await this.rawQuery<RowDataPacket>(withRevisionSql, [partNumber]);
+    const latestWithRevision = withRevisionRows[0];
+
+    if (latestWithRevision?.['SKU_Number'] && latestWithRevision?.['revision']) {
+      const revisionSql = `
+        SELECT SKU_Number
+          , Product productName
+          , ID_Product
+          , Account_Vendor
+          , DD1_1
+          , DD1_5
+          , DD1_6
+          , DD2_8
+          , DD2_6
+          , DD3_2
+          , DD3_1
+          , DD3_3
+          , DD3_9
+          , DI_Product_SQL
+          , DD3_8
+          , DD2_1
+          , DD3_6
+          , Category
+          , Serial_Number
+          , DD2_2
+          , DD1_7
+          , DD2_9
+          , DD2_7
+          , DD1_2
+          , Image_Data
+        FROM eyefidb.graphicsInventory
+        WHERE SKU_Number = ?
+          AND DD3_9 = ?
+        ORDER BY id DESC
+        LIMIT 1
+      `;
+
+      const revisionRows = await this.rawQuery<RowDataPacket>(revisionSql, [
+        String(latestWithRevision['SKU_Number']),
+        String(latestWithRevision['revision']),
+      ]);
+
+      if (revisionRows[0]) {
+        return revisionRows[0];
+      }
+    }
+
+    const fallbackSql = `
+      SELECT SKU_Number
+        , Product productName
+        , ID_Product
+        , Account_Vendor
+        , DD1_1
+        , DD1_5
+        , DD1_6
+        , DD2_8
+        , DD2_6
+        , DD3_2
+        , DD3_1
+        , DD3_3
+        , DD3_9
+        , DI_Product_SQL
+        , DD3_8
+        , DD2_1
+        , DD3_6
+        , Category
+        , Serial_Number
+        , DD2_2
+        , DD1_7
+        , DD2_9
+        , DD2_7
+        , DD1_2
+        , Image_Data
+      FROM eyefidb.graphicsInventory
+      WHERE (
+        ID_PRODUCT = ?
+        OR SKU_Number = ?
+      )
+        AND Status = 'Active'
+      ORDER BY id DESC
+      LIMIT 1
+    `;
+
+    const fallbackRows = await this.rawQuery<RowDataPacket>(fallbackSql, [partNumber, partNumber]);
+    return fallbackRows[0] || null;
+  }
 }

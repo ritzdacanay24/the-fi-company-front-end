@@ -13,6 +13,7 @@ import { RequestContextMiddleware } from './middlewares/request-context.middlewa
 import { AttachmentsModule } from './modules/attachments/attachments.module';
 import { ForkliftInspectionModule } from './modules/forklift-inspection';
 import { GraphicsBomModule } from './modules/graphics-bom/graphics-bom.module';
+import { GraphicsDemandModule } from './modules/graphics-demand/graphics-demand.module';
 import { GraphicsProductionModule } from './modules/graphics-production/graphics-production.module';
 import { GraphicsScheduleModule } from './modules/graphics-schedule/graphics-schedule.module';
 import { HealthModule } from './modules/health';
@@ -81,6 +82,7 @@ import { TeamModule } from './modules/team';
 import { JobCommentsModule } from './modules/job-comments';
 import { LicensedTechsModule } from './modules/licensed-techs';
 import { CrashKitModule } from './modules/crash-kit';
+import { CommentsModule } from './modules/comments/comments.module';
 import { RequestModule } from './modules/request';
 import { RequestCommentsModule } from './modules/request-comments';
 import { WorkOrderModule } from './modules/work-order';
@@ -124,6 +126,7 @@ import { EmailModule } from '../shared/email/email.module';
     DataScrubModule,
     ForkliftInspectionModule,
     GraphicsBomModule,
+    GraphicsDemandModule,
     GraphicsProductionModule,
     GraphicsScheduleModule,
     HealthModule,
@@ -192,6 +195,7 @@ import { EmailModule } from '../shared/email/email.module';
     JobCommentsModule,
     LicensedTechsModule,
     CrashKitModule,
+    CommentsModule,
     RequestModule,
     RequestCommentsModule,
     WorkOrderModule,

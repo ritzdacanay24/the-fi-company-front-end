@@ -93,4 +93,174 @@ export class GraphicsProductionService {
       queueNames: queues,
     };
   }
+
+  async getWorkOrderSearch(graphicsWoNumber?: string) {
+    const woNumber = String(graphicsWoNumber || '').trim();
+    if (!woNumber) {
+      return {
+        woInfo: null,
+        bomInfo: null,
+        woDetails: [],
+        graphicsDemandInfo: null,
+        salesOrderInfo: null,
+      };
+    }
+
+    const woInfo = await this.getWorkOrderInformation(woNumber);
+    if (!woInfo) {
+      return {
+        woInfo: null,
+        bomInfo: null,
+        woDetails: [],
+        graphicsDemandInfo: null,
+        salesOrderInfo: null,
+      };
+    }
+
+    const [woDetails, graphicsDemandInfo, bomInfo] = await Promise.all([
+      this.getWorkOrderDetails(woNumber),
+      this.repository.getGraphicsDemandByWo(woNumber),
+      this.repository.getBomInformationTest(String(woInfo['WO_PART'] || woInfo['wo_part'] || '')),
+    ]);
+
+    let salesOrderInfo: Record<string, unknown> | null = null;
+    if (graphicsDemandInfo?.so && graphicsDemandInfo?.line) {
+      salesOrderInfo = await this.getSalesOrderInfoBySalesLine(
+        String(graphicsDemandInfo.so),
+        String(graphicsDemandInfo.line),
+      );
+    }
+
+    return {
+      woInfo,
+      bomInfo,
+      woDetails,
+      graphicsDemandInfo,
+      salesOrderInfo,
+    };
+  }
+
+  private async getWorkOrderInformation(woNumber: string): Promise<Record<string, unknown> | null> {
+    const sql = `
+      SELECT a.wo_nbr
+        , a.wo_ord_date
+        , a.wo_rel_date
+        , a.wo_due_date
+        , a.wo_part
+        , a.wo_qty_ord
+        , a.wo_qty_comp
+        , a.wo_status
+        , a.wo_rmks
+        , a.wo_close_date
+        , b.wr_op
+        , b.wr_desc
+        , c.full_desc
+        , c.pt_part_type
+        , a.wo_so_job
+      FROM wr_route b
+      LEFT JOIN (
+        SELECT a.wo_nbr
+          , a.wo_ord_date
+          , a.wo_rel_date
+          , CASE
+              WHEN DAYOFWEEK(a.wo_due_date) IN (1) THEN a.wo_due_date - 2
+              WHEN DAYOFWEEK(a.wo_due_date) IN (2, 3) THEN a.wo_due_date - 4
+              WHEN DAYOFWEEK(a.wo_due_date) IN (4) THEN a.wo_due_date - 2
+              ELSE a.wo_due_date - 2
+            END wo_due_date
+          , a.wo_part
+          , a.wo_qty_ord
+          , a.wo_qty_comp
+          , a.wo_status
+          , a.wo_rmks
+          , a.wo_close_date
+          , a.wo_so_job
+        FROM wo_mstr a
+        WHERE wo_domain = 'EYE'
+      ) a ON a.wo_nbr = b.wr_nbr
+      LEFT JOIN (
+        SELECT pt_part
+          , MAX(pt_desc1 || ' ' || pt_desc2) full_desc
+          , MAX(pt_part_type) pt_part_type
+        FROM pt_mstr
+        WHERE pt_domain = 'EYE'
+        GROUP BY pt_part
+      ) c ON c.pt_part = b.wr_part
+      WHERE b.wr_op IN (040, 050, 060, 070)
+        AND wr_domain = 'EYE'
+        AND a.wo_nbr = ?
+      WITH (NOLOCK)
+    `;
+
+    const rows = await this.qadOdbcService.queryWithParams<Array<Record<string, unknown>>>(sql, [woNumber], {
+      keyCase: 'upper',
+    });
+
+    return rows[0] || null;
+  }
+
+  private async getWorkOrderDetails(woNumber: string): Promise<Array<Record<string, unknown>>> {
+    const sql = `
+      SELECT wod_nbr
+        , wod_iss_date
+        , wod_part
+        , wod_qty_req
+        , wod_qty_all
+        , wod_qty_iss
+        , wod_op
+        , ld_qty_oh
+      FROM wod_det
+      LEFT JOIN (
+        SELECT SUM(a.ld_qty_oh) ld_qty_oh
+          , ld_part
+        FROM ld_det a
+        WHERE ld_domain = 'EYE'
+        GROUP BY ld_part
+      ) b ON b.ld_part = wod_det.wod_part
+      WHERE wod_nbr = ?
+      WITH (NOLOCK)
+    `;
+
+    return this.qadOdbcService.queryWithParams<Array<Record<string, unknown>>>(sql, [woNumber], {
+      keyCase: 'upper',
+    });
+  }
+
+  private async getSalesOrderInfoBySalesLine(
+    salesOrder: string,
+    lineNumber: string,
+  ): Promise<Record<string, unknown> | null> {
+    const sql = `
+      SELECT a.sod_ship
+        , a.sod_nbr
+        , a.sod_line
+        , a.sod_contr_id
+        , c.so_ship
+        , a.sod_due_date
+        , c.so_cust
+      FROM sod_det a
+      LEFT JOIN (
+        SELECT so_nbr
+          , so_cust
+          , so_ord_date
+          , so_ship
+          , so_bol
+          , so_cmtindx
+          , so_cust
+        FROM so_mstr
+        WHERE so_domain = 'EYE'
+      ) c ON c.so_nbr = a.sod_nbr
+      WHERE a.sod_nbr = ?
+        AND a.sod_line = ?
+      WITH (NOLOCK)
+    `;
+
+    const rows = await this.qadOdbcService.queryWithParams<Array<Record<string, unknown>>>(
+      sql,
+      [salesOrder, lineNumber],
+      { keyCase: 'upper' },
+    );
+
+    return rows[0] || null;
+  }
 }

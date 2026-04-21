@@ -273,7 +273,7 @@ export class CommentsModalComponent implements OnInit {
       active: 0,
       id: id,
     };
-    this.commentsService.deleteComment(params).subscribe(
+    this.commentsService.deleteComment(params, this.type).subscribe(
       (data: any) => {
         //this.commentsWsService.sendMessage(saveParams, null, 'New comment added');
 

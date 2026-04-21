@@ -15,17 +15,40 @@ export class GraphicsService extends DataService<any> {
     }
 
     getGraphicsDemand = async () =>
-        await firstValueFrom(this.http.get<any[]>(`https://dashboard.eye-fi.com/server/Api/Graphics/graphicsDemand?getGraphicsDemandReport=1`));
+        await firstValueFrom(this.http.get<any[]>(`apiv2/graphics-demand/report`));
 
     getGraphicsProduction = async () =>
         await firstValueFrom(this.http.get<any>(`apiv2/graphics-production`));
 
     updateGraphics(params: any) {
-        return firstValueFrom(this.http.post(`/Graphics/index`, params));
+        const id = Number(params?.id);
+        if (!id) {
+            throw new Error('Graphics id is required');
+        }
+
+        const payload: any = {};
+
+        if (params?.status !== undefined && params?.status !== null) {
+            payload.status = params.status;
+        }
+
+        if (params?.qtyShipped !== undefined && params?.qtyShipped !== null) {
+            payload.qtyShipped = params.qtyShipped;
+        }
+
+        if (params?.shippedOn) {
+            payload.shippedOn = params.shippedOn;
+        }
+
+        if (params?.active !== undefined && params?.active !== null) {
+            payload.active = params.active;
+        }
+
+        return firstValueFrom(this.http.put<any>(`apiv2/graphics-schedule/updateById?id=${id}`, payload));
     }
 
     getWorkOrderNumber(orderNumber: number) {
-        return firstValueFrom(this.http.get<any>(`/Graphics/GraphicsWorkOrderSearch/index?graphicsWoNumber=${orderNumber}`));
+        return firstValueFrom(this.http.get<any>(`apiv2/graphics-production/work-order-search?graphicsWoNumber=${orderNumber}`));
     }
 
     getGraphicsList() {
@@ -39,7 +62,7 @@ export class GraphicsService extends DataService<any> {
         firstValueFrom(this.http.put<any>(`apiv2/graphics-schedule/updateById?id=${id}`, params));
 
     saveGraphicsDemand(params: any) {
-        return firstValueFrom(this.http.post(`/Graphics/graphicsDemand`, params));
+        return firstValueFrom(this.http.post(`apiv2/graphics-demand`, params));
     }
 
 
