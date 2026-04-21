@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, firstValueFrom } from 'rxjs';
+import { environment } from 'src/environments/environment';
 
 export interface ChecklistImageUploadResponse {
   success: boolean;
@@ -27,6 +28,14 @@ export class PhotoChecklistUploadService {
 
   constructor(private http: HttpClient) { }
 
+  private readonly legacyApiBaseUrl = environment.legacyApiBaseUrl.replace(/\/+$/, '');
+
+  private readonly uploadSampleImageUrl = `${this.legacyApiBaseUrl}/photo-checklist/upload-sample-image.php`;
+
+  private readonly uploadTempImageUrl = `${this.legacyApiBaseUrl}/photo-checklist/upload-temp-image.php`;
+
+  private readonly deleteImageUrl = `${this.legacyApiBaseUrl}/photo-checklist/delete-image.php`;
+
   /**
    * Upload a sample image for a checklist item
    * @param request Upload request with template_id, item_id, and file
@@ -41,7 +50,7 @@ export class PhotoChecklistUploadService {
     try {
       const response = await firstValueFrom(
         this.http.post<ChecklistImageUploadResponse>(
-          '/backend/api/photo-checklist/upload-sample-image.php',
+          this.uploadSampleImageUrl,
           formData
         )
       );
@@ -76,12 +85,12 @@ export class PhotoChecklistUploadService {
     formData.append('file', file);
     formData.append('temp_id', tempIdentifier);
 
-    console.log('FormData created, making HTTP request to:', '/backend/api/photo-checklist/upload-temp-image.php');
+    console.log('FormData created, making HTTP request to:', this.uploadTempImageUrl);
 
     try {
       const response = await firstValueFrom(
         this.http.post<ChecklistImageUploadResponse>(
-          'photo-checklist/upload-temp-image.php',
+          this.uploadTempImageUrl,
           formData
         )
       );
@@ -116,7 +125,7 @@ export class PhotoChecklistUploadService {
     try {
       const response = await firstValueFrom(
         this.http.delete<{success: boolean, message?: string, error?: string}>(
-          'photo-checklist/delete-image.php',
+          this.deleteImageUrl,
           {
             body: { image_url: imageUrl }
           }

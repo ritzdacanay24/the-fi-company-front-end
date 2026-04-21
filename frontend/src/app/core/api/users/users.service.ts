@@ -2,6 +2,7 @@ import { Injectable } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
 import { DataService } from "../DataService";
 import { firstValueFrom } from "rxjs";
+import { environment } from "src/environments/environment";
 
 let url = "user";
 const usersV2Url = "apiV2/users";
@@ -14,6 +15,8 @@ export class NewUserService extends DataService<any> {
     super(url, http);
   }
 
+  private readonly legacyApiBaseUrl = environment.legacyApiBaseUrl.replace(/\/+$/, '');
+
   override getById = async (id: number) =>
     firstValueFrom(this.http.get<any>(`${usersV2Url}/${id}`));
 
@@ -23,7 +26,7 @@ export class NewUserService extends DataService<any> {
   uploadfile(id, file: any) {
     return this.http
       .post(
-        `https://dashboard.eye-fi.com/server/Api/users/addPhoto.php?id=${id}`,
+        `${this.legacyApiBaseUrl}/users/addPhoto.php?id=${id}`,
         file
       )
       .toPromise();

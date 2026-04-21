@@ -1,14 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { mkdir, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
 import { RowDataPacket } from 'mysql2';
 import { GraphicsBomRepository } from './graphics-bom.repository';
+import { FileStorageService } from '../file-storage/file-storage.service';
 
 @Injectable()
 export class GraphicsBomService {
-  private readonly graphicsUploadDir = '/var/www/html/attachments_mount/Yellowfish';
-
-  constructor(private readonly repository: GraphicsBomRepository) {}
+  constructor(
+    private readonly repository: GraphicsBomRepository,
+    private readonly fileStorageService: FileStorageService,
+  ) {}
 
   async getList(): Promise<RowDataPacket[]> {
     return this.repository.getList();
@@ -55,10 +55,17 @@ export class GraphicsBomService {
       return { answer: 'No files' };
     }
 
-    await mkdir(this.graphicsUploadDir, { recursive: true });
-    const targetPath = join(this.graphicsUploadDir, file.originalname);
-    await writeFile(targetPath, file.buffer);
+    const bucket = (process.env.GRAPHICS_BOM_BUCKET || process.env.FILE_STORAGE_DEFAULT_BUCKET || 'graphics-bom').trim();
+    const stored = await this.fileStorageService.storeUploadedFileInBucket(file, {
+      bucket,
+      keyPrefix: 'Yellowfish',
+    });
 
-    return { answer: 'File transfer completed' };
+    return {
+      answer: 'File transfer completed',
+      bucket: stored.bucket,
+      key: stored.key,
+      url: stored.url,
+    };
   }
 }

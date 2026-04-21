@@ -515,6 +515,8 @@ export class PhotoChecklistService {
       return [];
     }
 
+    const rawNoQuery = raw.replace(/\?.*$/, '');
+
     let path = raw;
     if (/^https?:\/\//i.test(raw)) {
       try {
@@ -529,7 +531,10 @@ export class PhotoChecklistService {
     path = `/${path.replace(/^\/+/, '')}`;
     const trimmed = path.replace(/^\//, '');
 
-    const candidates = [path, trimmed, `/${trimmed}`].filter(Boolean);
+    const candidates = [raw, rawNoQuery, path, trimmed, `/${trimmed}`]
+      .map((value) => String(value || '').trim())
+      .filter(Boolean);
+
     return Array.from(new Set(candidates));
   }
 
