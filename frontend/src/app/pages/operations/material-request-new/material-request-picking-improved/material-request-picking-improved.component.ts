@@ -108,7 +108,7 @@ export class MaterialRequestPickingImprovedComponent implements OnInit {
       } else {
         // Load all picking requests for general view
         const data: any = await this.api.getPicking();
-        this.pickingRequests = data.result || [];
+        this.pickingRequests = Array.isArray(data) ? data : (data?.result || []);
         this.applyFiltersAndSort();
       }
     } catch (error) {

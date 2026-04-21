@@ -49,4 +49,6 @@ export const envValidationSchema = Joi.object({
   IGT_TRANSFER_Z024_TO: Joi.string().allow('').optional(),
   IGT_TRANSFER_Z024_CC: Joi.string().allow('').optional(),
   IGT_TRANSFER_LOGO_URL: Joi.string().uri().allow('').optional(),
+  MATERIAL_REQUEST_NOTIFY_TO: Joi.string().allow('').optional(),
+  MATERIAL_REQUEST_NOTIFY_CC: Joi.string().allow('').optional(),
 });

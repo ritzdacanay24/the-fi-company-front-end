@@ -81,14 +81,15 @@ export class MaterialRequestPickingComponent implements OnInit {
   data;
 
   updateClock = () => {
-    for (let i = 0; i < this.data.length; i++) {
-      if (this.data[i].printedDate) {
-        this.data[i].timeDiff = timeUntil(
-          this.data[i].printedDate,
-          this.data[i].timeDiff
+    const rows = Array.isArray(this.data) ? this.data : [];
+    for (let i = 0; i < rows.length; i++) {
+      if (rows[i]?.printedDate) {
+        rows[i].timeDiff = timeUntil(
+          rows[i].printedDate,
+          rows[i].timeDiff
         );
       } else {
-        this.data[i].timeDiff = "";
+        rows[i].timeDiff = "";
       }
     }
   };
@@ -153,7 +154,7 @@ export class MaterialRequestPickingComponent implements OnInit {
     try {
       this.isLoading = showLoading;
       let data: any = await this.api.getPicking();
-      this.data = data.result;
+      this.data = Array.isArray(data) ? data : (Array.isArray(data?.result) ? data.result : []);
 
       const source = interval(1000);
       this.subscription = source.subscribe((val) => this.updateClock());

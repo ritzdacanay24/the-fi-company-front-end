@@ -74,12 +74,20 @@ export class MaterialRequestService extends DataService<any> {
     return firstValueFrom(this.http.post(`${url}/sendBackToValidation`, params))
   }
 
-  onPrint = async (params: { data: any[] }) => {
-    return firstValueFrom(this.http.post(`${url}/onPrint`, params))
+  onPrint = async (params: { data?: any[]; details?: any[] }) => {
+    const data = Array.isArray(params?.data)
+      ? params.data
+      : (Array.isArray(params?.details) ? params.details : []);
+
+    return firstValueFrom(this.http.post(`${url}/onPrint`, { data }))
   }
 
-  clearPrint = async (params: { data: any[] }) => {
-    return firstValueFrom(this.http.post(`${url}/clearPrint`, params))
+  clearPrint = async (params: { data?: any[]; details?: any[] }) => {
+    const data = Array.isArray(params?.data)
+      ? params.data
+      : (Array.isArray(params?.details) ? params.details : []);
+
+    return firstValueFrom(this.http.post(`${url}/clearPrint`, { data }))
   }
 
   // Kanban board specific methods
@@ -96,12 +104,23 @@ export class MaterialRequestService extends DataService<any> {
     return this.http.get<any>(`${url}/getBulkRequestReviews?request_ids=${idsParam}`);
   }
 
-  completePicking = async (params: { id: number; data: any[]; pickedCompletedDate: string }) => {
-    return firstValueFrom(this.http.post(`${url}/completePicking`, params))
+  completePicking = async (params: { id: number; data?: any[]; details?: any[]; pickedCompletedDate: string }) => {
+    const data = Array.isArray(params?.data)
+      ? params.data
+      : (Array.isArray(params?.details) ? params.details : []);
+
+    return firstValueFrom(this.http.post(`${url}/completePicking`, {
+      id: params.id,
+      pickedCompletedDate: params.pickedCompletedDate,
+      data,
+    }))
   }
 
   searchByItem(itemNumber: any[]) {
-    return firstValueFrom(this.http.get<any[]>(`/Material/index?searchItemByQadPartNumber=${JSON.stringify(itemNumber)}`));
+    const payload = encodeURIComponent(JSON.stringify(itemNumber || []));
+    return firstValueFrom(
+      this.http.get<any[]>(`${url}/searchItemByQadPartNumber?searchItemByQadPartNumber=${payload}`)
+    );
   }
 
 }

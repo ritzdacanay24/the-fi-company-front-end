@@ -94,6 +94,13 @@ export class MaterialRequestController {
     return this.service.getPicking();
   }
 
+  @Get('searchItemByQadPartNumber')
+  async searchItemByQadPartNumber(
+    @Query('searchItemByQadPartNumber') rawItems?: string,
+  ) {
+    return this.service.searchItemByQadPartNumber(rawItems);
+  }
+
   @Post('sendBackToValidation')
   async sendBackToValidation(@Body() payload: { id: number }) {
     return this.service.sendBackToValidation(Number(payload.id));

@@ -12,6 +12,15 @@ export class UrlBuilder {
     shippingRequestEdit(baseUrl: string, id: number): string {
       return UrlBuilder.withQuery(baseUrl, '/operations/forms/shipping-request/edit', { id });
     },
+    materialRequestEdit(baseUrl: string, id: number): string {
+      return UrlBuilder.withQuery(baseUrl, '/operations/forms/material-request/edit', { id });
+    },
+    materialRequestValidation(baseUrl: string, id: number): string {
+      return UrlBuilder.withQuery(baseUrl, '/operations/material-request/validate-list', { id });
+    },
+    materialRequestView(baseUrl: string, id: number): string {
+      return UrlBuilder.withQuery(baseUrl, '/operations/material-request/view', { id });
+    },
   };
 
   private static withQuery(

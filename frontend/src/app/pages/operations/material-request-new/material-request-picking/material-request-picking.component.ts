@@ -77,14 +77,15 @@ export class MaterialRequestPickingComponent implements OnInit {
   data;
 
   updateClock = () => {
-    for (let i = 0; i < this.data.length; i++) {
-      if (this.data[i].printedDate) {
-        this.data[i].timeDiff = timeUntil(
-          this.data[i].printedDate,
-          this.data[i].timeDiff
+    const rows = Array.isArray(this.data) ? this.data : [];
+    for (let i = 0; i < rows.length; i++) {
+      if (rows[i]?.printedDate) {
+        rows[i].timeDiff = timeUntil(
+          rows[i].printedDate,
+          rows[i].timeDiff
         );
       } else {
-        this.data[i].timeDiff = "";
+        rows[i].timeDiff = "";
       }
     }
   };
@@ -207,11 +208,13 @@ export class MaterialRequestPickingComponent implements OnInit {
     try {
       this.isLoading = showLoading;
       let data: any = await this.api.getPicking();
+      const pickingRows = Array.isArray(data) ? data : (Array.isArray(data?.result) ? data.result : []);
       
       // Filter out rejected items and inactive items from picking queue
-      this.data = data.result.map(row => {
-        const originalItemCount = row.details.length;
-        const filteredDetails = row.details.filter(item => 
+      this.data = pickingRows.map(row => {
+        const details = Array.isArray(row?.details) ? row.details : [];
+        const originalItemCount = details.length;
+        const filteredDetails = details.filter(item => 
           item.active === 1 && 
           item.validation_status !== 'rejected'
         );

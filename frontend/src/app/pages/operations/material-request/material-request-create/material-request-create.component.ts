@@ -92,17 +92,10 @@ export class MaterialRequestCreateComponent {
       this.isLoading = false;
       this.toastrService.success('Successfully Created');
 
-      this.form.reset({
-        main: {
-          createdBy: this.authenticationService.currentUserValue.id,
-          requestor: this.authenticationService.currentUserValue.full_name,
-          active: 1,
-          priority: 'Low'
-        }
+      await this.router.navigate([NAVIGATION_ROUTE.VALIDATION], {
+        queryParams: { id: insertId },
       });
-      this.resetTags()
-      this.value = ""
-      this.submitted = false;
+      return;
 
     } catch (err) {
       this.isLoading = false;

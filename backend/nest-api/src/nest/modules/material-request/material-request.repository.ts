@@ -185,6 +185,24 @@ export class MaterialRequestRepository extends BaseRepository<RowDataPacket> {
     return rowCount;
   }
 
+  async getPrintValidationInfo(mrfId: number): Promise<RowDataPacket | null> {
+    const sql = `
+      SELECT
+        m.id,
+        m.active,
+        m.pickedCompletedDate,
+        MAX(d.printedBy) AS printedBy
+      FROM mrf m
+      LEFT JOIN mrf_det d ON d.mrf_id = m.id
+      WHERE m.id = ?
+      GROUP BY m.id, m.active, m.pickedCompletedDate
+      LIMIT 1
+    `;
+
+    const rows = await this.rawQuery<RowDataPacket>(sql, [mrfId]);
+    return rows[0] || null;
+  }
+
   async completePicking(id: number, details: Array<Record<string, unknown>>, pickedCompletedDate: string): Promise<number> {
     const mrfUpdate = await this.mysqlService.execute<ResultSetHeader>(
       'UPDATE mrf SET pickedCompletedDate = ? WHERE id = ?',
@@ -288,6 +306,26 @@ export class MaterialRequestRepository extends BaseRepository<RowDataPacket> {
     const params = [status, id];
     await this.mysqlService.execute<ResultSetHeader>(sql, params);
     return this.getById(id);
+  }
+
+  async getRequesterNotificationInfo(id: number): Promise<RowDataPacket | null> {
+    const sql = `
+      SELECT
+        m.id,
+        m.requestor,
+        m.createdBy,
+        m.queue_status,
+        m.pickedCompletedDate,
+        u.email AS requester_email,
+        CONCAT(COALESCE(u.first, ''), ' ', COALESCE(u.last, '')) AS requester_name
+      FROM mrf m
+      LEFT JOIN db.users u ON u.id = m.createdBy
+      WHERE m.id = ?
+      LIMIT 1
+    `;
+
+    const rows = await this.rawQuery<RowDataPacket>(sql, [id]);
+    return rows[0] || null;
   }
 
   async deleteLineItem(id: number): Promise<number> {
