@@ -288,7 +288,7 @@ export class UploadedReceiptComponent implements OnInit {
   getTripExenses(data) {
     this.tripExpenseTotal = 0;
     for (let i = 0; i < data.length; i++) {
-      this.tripExpenseTotal += data[i].cost;
+      this.tripExpenseTotal += this.toAmount(data[i]?.cost);
     }
   }
 
@@ -957,7 +957,7 @@ export class UploadedReceiptComponent implements OnInit {
     let groupArrays = Object.keys(groups).map((date) => {
       let total = 0;
       for (let i = 0; i < groups[date].length; i++) {
-        total += groups[date][i].cost;
+        total += this.toAmount(groups[date][i]?.cost);
       }
 
       return {
@@ -977,7 +977,7 @@ export class UploadedReceiptComponent implements OnInit {
       const key = r.name || 'Uncategorized';
       if (!map[key]) map[key] = { name: key, count: 0, total: 0 };
       map[key].count++;
-      map[key].total += r.cost || 0;
+      map[key].total += this.toAmount(r?.cost);
     });
     return Object.values(map);
   }
@@ -990,7 +990,7 @@ export class UploadedReceiptComponent implements OnInit {
     const currentMonth = moment().format('YYYY-MM');
     return this.data?.filter(receipt =>
       moment(receipt.created_date).format('YYYY-MM') === currentMonth
-    ).reduce((sum, receipt) => sum + (receipt.cost || 0), 0) || 0;
+    ).reduce((sum, receipt) => sum + this.toAmount(receipt?.cost), 0) || 0;
   }
 
   getMonthlyProgress(): number {
@@ -1006,7 +1006,25 @@ export class UploadedReceiptComponent implements OnInit {
 
   getLargestReceiptAmount(): number {
     if (!this.data?.length) return 0;
-    return Math.max(...this.data.map(receipt => receipt.cost || 0));
+    return Math.max(...this.data.map(receipt => this.toAmount(receipt?.cost)));
+  }
+
+  toAmount(value: unknown): number {
+    if (typeof value === 'number') {
+      return Number.isFinite(value) ? value : 0;
+    }
+
+    if (typeof value !== 'string') {
+      return 0;
+    }
+
+    const cleaned = value.trim().replace(/[^0-9.-]/g, '');
+    if (!cleaned) {
+      return 0;
+    }
+
+    const parsed = Number.parseFloat(cleaned);
+    return Number.isFinite(parsed) ? parsed : 0;
   }
 
   exportReceipts(): void {
@@ -1025,7 +1043,7 @@ export class UploadedReceiptComponent implements OnInit {
     const headers = ['Vendor', 'Amount', 'Date', 'Category', 'Created Date'];
     const rows = this.data?.map(receipt => [
       receipt.vendor_name || '',
-      receipt.cost || 0,
+      this.toAmount(receipt?.cost),
       receipt.date || '',
       receipt.name || '',
       receipt.created_date || ''

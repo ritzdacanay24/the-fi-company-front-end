@@ -55,17 +55,14 @@ export class GraphicsBomService {
       return { answer: 'No files' };
     }
 
-    const bucket = (process.env.GRAPHICS_BOM_BUCKET || process.env.FILE_STORAGE_DEFAULT_BUCKET || 'graphics-bom').trim();
-    const stored = await this.fileStorageService.storeUploadedFileInBucket(file, {
-      bucket,
-      keyPrefix: 'Yellowfish',
-    });
+    const subFolder = 'graphics';
+    const fileName = await this.fileStorageService.storeUploadedFile(file, subFolder);
+    const url = this.fileStorageService.resolveLink(fileName, subFolder) || `/attachments/${subFolder}/${encodeURIComponent(fileName)}`;
 
     return {
       answer: 'File transfer completed',
-      bucket: stored.bucket,
-      key: stored.key,
-      url: stored.url,
+      fileName,
+      url,
     };
   }
 }

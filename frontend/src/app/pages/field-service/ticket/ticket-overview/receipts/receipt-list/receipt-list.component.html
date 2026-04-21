@@ -158,7 +158,7 @@
             </div>
             <div class="flex-grow-1">
               <div class="fw-semibold text-truncate">{{receipt.vendor_name || 'Unknown Vendor'}}</div>
-              <div class="text-muted small">{{receipt.cost | currency}} • {{receipt.created_date | date:'short'}}</div>
+              <div class="text-muted small">{{toAmount(receipt.cost) | currency}} • {{receipt.created_date | date:'short'}}</div>
             </div>
           </div>
           
@@ -361,7 +361,7 @@
                 <span class="text-muted">{{rec.name || 'N/A'}}</span>
               </td>
               <td>
-                <span class="fw-bold text-success">{{rec.cost | currency}}</span>
+                <span class="fw-bold text-success">{{toAmount(rec.cost) | currency}}</span>
               </td>
               <td class="text-nowrap">{{rec.date | date:'short'}}</td>
               <td>

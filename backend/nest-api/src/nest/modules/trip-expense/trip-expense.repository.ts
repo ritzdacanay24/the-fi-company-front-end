@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { MysqlService } from '@/shared/database/mysql.service';
 
@@ -38,7 +38,11 @@ export class TripExpenseRepository {
 
   constructor(@Inject(MysqlService) private readonly mysqlService: MysqlService) {}
 
-  sanitizePayload(payload: Record<string, unknown>): Record<string, unknown> {
+  sanitizePayload(payload: Record<string, unknown> | null | undefined): Record<string, unknown> {
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+      return {};
+    }
+
     return Object.fromEntries(
       Object.entries(payload).filter(
         ([key, value]) => this.allowedColumns.has(key) && value !== undefined,
@@ -49,7 +53,8 @@ export class TripExpenseRepository {
   async getByWorkOrderId(workOrderId: number): Promise<TripExpenseRecord[]> {
     return this.mysqlService.query<TripExpenseRecord[]>(
       `
-        SELECT a.*, CONCAT('https://dashboard.eye-fi.com/attachments/fieldService/', a.fileName) AS link,
+        SELECT a.*, NULLIF(a.originalFileLink, '') AS link,
+               'legacy' AS storage_source,
                CONCAT(b.first, ' ', b.last) AS created_by_name
         FROM fs_workOrderTrip a
         LEFT JOIN db.users b ON b.id = a.created_by
@@ -63,7 +68,8 @@ export class TripExpenseRepository {
   async getByFsId(fsSchedulerId: number): Promise<TripExpenseRecord[]> {
     return this.mysqlService.query<TripExpenseRecord[]>(
       `
-        SELECT a.*, CONCAT('https://dashboard.eye-fi.com/attachments/fieldService/', a.fileName) AS link,
+        SELECT a.*, NULLIF(a.originalFileLink, '') AS link,
+               'legacy' AS storage_source,
                CONCAT(b.first, ' ', b.last) AS created_by_name,
                c.fs_scheduler_id
         FROM fs_workOrderTrip a
@@ -78,7 +84,8 @@ export class TripExpenseRepository {
   async getById(id: number): Promise<TripExpenseRecord | null> {
     const rows = await this.mysqlService.query<TripExpenseRecord[]>(
       `
-        SELECT a.*, CONCAT('https://dashboard.eye-fi.com/attachments/fieldService/', a.fileName) AS link,
+        SELECT a.*, NULLIF(a.originalFileLink, '') AS link,
+               'legacy' AS storage_source,
                CONCAT(b.first, ' ', b.last) AS created_by_name
         FROM fs_workOrderTrip a
         LEFT JOIN db.users b ON b.id = a.created_by
@@ -91,8 +98,16 @@ export class TripExpenseRepository {
     return rows[0] ?? null;
   }
 
-  async create(payload: Record<string, unknown>): Promise<number> {
+  async create(payload: Record<string, unknown> | null | undefined): Promise<number> {
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+      throw new BadRequestException('Payload is empty');
+    }
+
     const keys = Object.keys(payload);
+    if (keys.length === 0) {
+      throw new BadRequestException('Payload is empty');
+    }
+
     const values = Object.values(payload);
 
     const placeholders = keys.map(() => '?').join(', ');
@@ -101,8 +116,16 @@ export class TripExpenseRepository {
     return result.insertId;
   }
 
-  async updateById(id: number, payload: Record<string, unknown>): Promise<number> {
+  async updateById(id: number, payload: Record<string, unknown> | null | undefined): Promise<number> {
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+      throw new BadRequestException('Payload is empty');
+    }
+
     const keys = Object.keys(payload);
+    if (keys.length === 0) {
+      throw new BadRequestException('Payload is empty');
+    }
+
     const values = Object.values(payload);
 
     const setClause = keys.map((key) => `${key} = ?`).join(', ');

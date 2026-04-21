@@ -193,12 +193,16 @@ export class IgtTransferService {
     const signatureImageUrl =
       this.configService.get<string>('MAIL_SIGNATURE_IMAGE_URL') ||
       'https://dashboard.eye-fi.com/test/signatures/Picture1.png';
+    const dashboardBaseUrl =
+      this.configService.get<string>('DASHBOARD_WEB_BASE_URL') || 'http://localhost:4200';
+    const editUrl = `${dashboardBaseUrl.replace(/\/+$/, '')}/operations/forms/igt-transfer/edit?selectedViewType=Active&id=${id}`;
 
     const body = this.emailTemplateService.render('igt-transfer', {
       isReno: normalizedToLocation === 'R200',
       hasSoDueRows: soDueRows.length > 0,
       soDueRows,
       signatureImageUrl,
+      editUrl,
     });
     const pdfBuffer = await this.generateTransferPdfBuffer(main, details, data.printedName);
 

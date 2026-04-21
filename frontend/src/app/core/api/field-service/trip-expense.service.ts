@@ -1,5 +1,5 @@
 import { Injectable } from "@angular/core";
-import { firstValueFrom } from "rxjs";
+import { firstValueFrom, map } from "rxjs";
 import { HttpClient } from "@angular/common/http";
 import { MindeeService } from "../mindee/mindee.service";
 import { MindeeApiResponse, ExpenseReceiptPrediction, MindeeRequestOptions } from "../mindee/mindee-interfaces";
@@ -11,6 +11,8 @@ const tripExpenseV2Url = 'apiV2/trip-expense';
   providedIn: "root",
 })
 export class TripExpenseService {
+  private readonly productionAttachmentsBaseUrl = 'https://dashboard.eye-fi.com/attachments/fieldService';
+
   constructor(
     private http: HttpClient,
     private mindeeService: MindeeService
@@ -56,17 +58,26 @@ export class TripExpenseService {
 
   getByWorkOrderId(workOrderId) {
     return firstValueFrom(
-      this.http.get(`${tripExpenseV2Url}/getByWorkOrderId?workOrderId=${workOrderId}`)
+      this.http
+        .get<any[]>(`${tripExpenseV2Url}/getByWorkOrderId?workOrderId=${workOrderId}`)
+        .pipe(map((rows) => this.normalizeRows(rows)))
     );
   }
 
   getByFsId(fs_scheduler_id) {
     return firstValueFrom(
-      this.http.get(`${tripExpenseV2Url}/getByFsId?fs_scheduler_id=${fs_scheduler_id}`)
+      this.http
+        .get<any[]>(`${tripExpenseV2Url}/getByFsId?fs_scheduler_id=${fs_scheduler_id}`)
+        .pipe(map((rows) => this.normalizeRows(rows)))
     );
   }
+
   getById(id) {
-    return firstValueFrom(this.http.get(`${tripExpenseV2Url}/${id}`));
+    return firstValueFrom(
+      this.http
+        .get<any>(`${tripExpenseV2Url}/${id}`)
+        .pipe(map((row) => this.normalizeRow(row)))
+    );
   }
 
   updateById(id, params) {
@@ -103,4 +114,34 @@ export class TripExpenseService {
   // async getByWorkOrderId(workOrderId: string) {
   //   return this.http.get(`${this.url}/by-work-order/${workOrderId}`).toPromise();
   // }
+
+  private normalizeRows(rows: any[]): any[] {
+    if (!Array.isArray(rows)) {
+      return [];
+    }
+
+    return rows.map((row) => this.normalizeRow(row));
+  }
+
+  private normalizeRow(row: any): any {
+    if (!row || typeof row !== 'object') {
+      return row;
+    }
+
+    const fileName = typeof row.fileName === 'string' ? row.fileName.trim() : '';
+    const currentLink = typeof row.link === 'string' ? row.link.trim() : '';
+
+    if (currentLink.startsWith('https://dashboard.eye-fi.com/attachments/')) {
+      return row;
+    }
+
+    if (!fileName) {
+      return row;
+    }
+
+    return {
+      ...row,
+      link: `${this.productionAttachmentsBaseUrl}/${encodeURIComponent(fileName)}`,
+    };
+  }
 }

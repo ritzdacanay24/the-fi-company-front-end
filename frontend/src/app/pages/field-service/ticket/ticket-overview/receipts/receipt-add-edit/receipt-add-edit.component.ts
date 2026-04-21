@@ -14,7 +14,6 @@ import { SharedModule } from '@app/shared/shared.module';
 import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
 import { byteConverter } from 'src/assets/js/util/byteConverter';
 import { AuthenticationService } from '@app/core/services/auth.service';
-import { JobSearchComponent } from '@app/shared/components/job-search/job-search.component';
 import { JobService } from '@app/core/api/field-service/job.service';
 import { Observable, Subject, concat, of, filter, debounceTime, distinctUntilChanged, tap, switchMap, catchError } from 'rxjs';
 
@@ -23,8 +22,7 @@ import { Observable, Subject, concat, of, filter, debounceTime, distinctUntilCha
   imports: [
     SharedModule,
     NgSelectModule,
-    LazyLoadImageModule,
-    JobSearchComponent
+    LazyLoadImageModule
   ],
   selector: 'app-receipt-add-edit',
   templateUrl: './receipt-add-edit.component.html',
@@ -178,15 +176,25 @@ export class ReceiptAddEditComponent implements OnInit {
       this.getData();
     } else {
       this.form.patchValue({ fs_scheduler_id: this.fsId, workOrderId: this.workOrderId, created_by: this.authenticationService.currentUserValue.id });
-
-      if (this.typeOfClick == 'Front') {
-        let e = (<HTMLInputElement>document.getElementById("front"))
-        e.click();
-      } else if (this.typeOfClick == 'Folder') {
-        let e = (<HTMLInputElement>document.getElementById("folder"))
-        e.click();
-      }
+      this.tryAutoOpenFileInput();
     }
+  }
+
+  private tryAutoOpenFileInput(): void {
+    const preferredIds = this.typeOfClick === 'Folder'
+      ? ['folder', 'batch-folder']
+      : ['front', 'batch-camera'];
+
+    // Delay until view is painted so hidden inputs exist in the DOM.
+    setTimeout(() => {
+      for (const id of preferredIds) {
+        const input = document.getElementById(id) as HTMLInputElement | null;
+        if (input) {
+          input.click();
+          return;
+        }
+      }
+    });
   }
 
   dismiss() {

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, firstValueFrom } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
 import { environment } from 'src/environments/environment';
 
 export interface ChecklistImageUploadResponse {
@@ -28,13 +28,11 @@ export class PhotoChecklistUploadService {
 
   constructor(private http: HttpClient) { }
 
-  private readonly legacyApiBaseUrl = environment.legacyApiBaseUrl.replace(/\/+$/, '');
-
-  private readonly uploadSampleImageUrl = `${this.legacyApiBaseUrl}/photo-checklist/upload-sample-image.php`;
-
-  private readonly uploadTempImageUrl = `${this.legacyApiBaseUrl}/photo-checklist/upload-temp-image.php`;
-
-  private readonly deleteImageUrl = `${this.legacyApiBaseUrl}/photo-checklist/delete-image.php`;
+  private readonly uploadApiBaseUrl = environment.apiV2UploadBaseUrl.replace(/\/+$/, '');
+  private readonly fileStorageUploadUrl = `${this.uploadApiBaseUrl}/file-storage/upload`;
+  private readonly fileStorageDeleteUrl = `${this.uploadApiBaseUrl}/file-storage/delete`;
+  private readonly sampleImagesFolder = 'photoChecklist';
+  private readonly tempImagesFolder = 'photoChecklist/temp';
 
   /**
    * Upload a sample image for a checklist item
@@ -42,22 +40,14 @@ export class PhotoChecklistUploadService {
    * @returns Promise with upload response
    */
   async uploadSampleImage(request: ChecklistImageUploadRequest): Promise<ChecklistImageUploadResponse> {
-    const formData = new FormData();
-    formData.append('file', request.file);
-    formData.append('template_id', request.template_id.toString());
-    formData.append('item_id', request.item_id.toString());
-
     try {
-      const response = await firstValueFrom(
-        this.http.post<ChecklistImageUploadResponse>(
-          this.uploadSampleImageUrl,
-          formData
-        )
-      );
-      
-      return response;
+      const response = await this.uploadToFolder(request.file, this.sampleImagesFolder);
+      return {
+        ...response,
+        template_id: request.template_id,
+        item_id: request.item_id,
+      };
     } catch (error: any) {
-      // Handle HTTP errors and return a formatted response
       const errorResponse: ChecklistImageUploadResponse = {
         success: false,
         error: error.error?.error || error.message || 'Upload failed'
@@ -74,44 +64,14 @@ export class PhotoChecklistUploadService {
    * @returns Promise with upload response
    */
   async uploadTemporaryImage(file: File, tempIdentifier: string): Promise<ChecklistImageUploadResponse> {
-    console.log('PhotoChecklistUploadService.uploadTemporaryImage called with:', {
-      fileName: file.name,
-      fileSize: file.size,
-      fileType: file.type,
-      tempIdentifier: tempIdentifier
-    });
-
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('temp_id', tempIdentifier);
-
-    console.log('FormData created, making HTTP request to:', this.uploadTempImageUrl);
-
     try {
-      const response = await firstValueFrom(
-        this.http.post<ChecklistImageUploadResponse>(
-          this.uploadTempImageUrl,
-          formData
-        )
-      );
-      
-      console.log('HTTP response received:', response);
-      return response;
+      const folder = tempIdentifier ? this.tempImagesFolder : this.sampleImagesFolder;
+      return this.uploadToFolder(file, folder);
     } catch (error: any) {
-      console.error('HTTP request failed:', error);
-      console.error('Error details:', {
-        status: error.status,
-        statusText: error.statusText,
-        message: error.message,
-        error: error.error
-      });
-
       const errorResponse: ChecklistImageUploadResponse = {
         success: false,
         error: error.error?.error || error.error?.message || error.message || 'Upload failed'
       };
-      
-      console.error('Throwing error response:', errorResponse);
       throw errorResponse;
     }
   }
@@ -125,7 +85,7 @@ export class PhotoChecklistUploadService {
     try {
       const response = await firstValueFrom(
         this.http.delete<{success: boolean, message?: string, error?: string}>(
-          this.deleteImageUrl,
+          this.fileStorageDeleteUrl,
           {
             body: { image_url: imageUrl }
           }
@@ -136,9 +96,30 @@ export class PhotoChecklistUploadService {
     } catch (error: any) {
       return {
         success: false,
-        error: error.error?.error || error.message || 'Delete failed'
+        error: error.error?.error || error.error?.message || error.message || 'Delete failed'
       };
     }
+  }
+
+  private async uploadToFolder(file: File, folder: string): Promise<ChecklistImageUploadResponse> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('folder', folder);
+
+    const response = await firstValueFrom(
+      this.http.post<{ success: boolean; fileName?: string; url?: string }>(
+        this.fileStorageUploadUrl,
+        formData,
+      ),
+    );
+
+    return {
+      success: !!response?.success,
+      url: response?.url,
+      filename: response?.fileName,
+      message: response?.success ? 'Image uploaded successfully' : 'Upload failed',
+      error: response?.success ? undefined : 'Upload failed',
+    };
   }
 
   /**

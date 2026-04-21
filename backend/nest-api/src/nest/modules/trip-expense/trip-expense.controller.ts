@@ -1,4 +1,5 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { TripExpenseService } from './trip-expense.service';
 
 @Controller('trip-expense')
@@ -31,13 +32,22 @@ export class TripExpenseController {
   }
 
   @Post()
-  create(@Body() payload: Record<string, unknown>) {
-    return this.service.create(payload);
+  @UseInterceptors(FileInterceptor('file'))
+  create(
+    @Body() payload: Record<string, unknown> = {},
+    @UploadedFile() file?: { originalname?: string; buffer?: Buffer },
+  ) {
+    return this.service.create(payload, file);
   }
 
   @Put(':id')
-  update(@Param('id', ParseIntPipe) id: number, @Body() payload: Record<string, unknown>) {
-    return this.service.update(id, payload);
+  @UseInterceptors(FileInterceptor('file'))
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() payload: Record<string, unknown> = {},
+    @UploadedFile() file?: { originalname?: string; buffer?: Buffer },
+  ) {
+    return this.service.update(id, payload, file);
   }
 
   @Delete(':id')

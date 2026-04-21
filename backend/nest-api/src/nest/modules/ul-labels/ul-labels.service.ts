@@ -1,10 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { mkdir, writeFile } from 'fs/promises';
 import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
-import { extname, join } from 'path';
 import * as XLSX from 'xlsx';
 import { MysqlService } from '@/shared/database/mysql.service';
 import { EmailService } from '@/shared/email/email.service';
+import { FileStorageService } from '@/nest/modules/file-storage/file-storage.service';
 
 interface ApiResponse<T = unknown> {
   success: boolean;
@@ -27,6 +26,7 @@ export class UlLabelsService {
     private readonly mysqlService: MysqlService,
     @Inject(EmailService)
     private readonly emailService: EmailService,
+    private readonly fileStorageService: FileStorageService,
   ) {}
 
   async getLabels(filters: Record<string, string>): Promise<ApiResponse<RowDataPacket[]>> {
@@ -304,23 +304,10 @@ export class UlLabelsService {
         };
       }
 
-      const uploadsDir = join(process.cwd(), 'uploads', 'ul-labels');
-      await mkdir(uploadsDir, { recursive: true });
-
-      const originalExt = extname(file.originalname || '').toLowerCase();
-      const extFromMime: Record<string, string> = {
-        'image/jpeg': '.jpg',
-        'image/jpg': '.jpg',
-        'image/png': '.png',
-        'application/pdf': '.pdf',
-      };
-      const ext = originalExt || extFromMime[mime] || '.bin';
-      const timestamp = Date.now();
-      const fileName = `ul-${ulLabelId}-${timestamp}${ext}`;
-      const fullPath = join(uploadsDir, fileName);
-      const publicPath = `/uploads/ul-labels/${fileName}`;
-
-      await writeFile(fullPath, file.buffer);
+      const subFolder = 'ul-labels';
+      const fileName = await this.fileStorageService.storeUploadedFile(file, subFolder);
+      const publicPath = this.fileStorageService.resolveLink(fileName, subFolder)
+        || `/attachments/${subFolder}/${encodeURIComponent(fileName)}`;
 
       await this.mysqlService.execute(
         'UPDATE ul_labels SET label_image_url = ?, updated_at = NOW() WHERE id = ?',

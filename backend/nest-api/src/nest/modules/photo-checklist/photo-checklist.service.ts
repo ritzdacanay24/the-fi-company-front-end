@@ -170,14 +170,9 @@ export class PhotoChecklistService {
     file?: { originalname?: string; mimetype?: string; size?: number; buffer?: Buffer },
     options?: { captureSource?: string; userId?: string },
   ) {
-    const bucket = (process.env.CHECKLIST_MEDIA_BUCKET || process.env.FILE_STORAGE_DEFAULT_BUCKET || 'checklist-media').trim();
-    const stored = await this.fileStorageService.storeUploadedFileInBucket(file, {
-      bucket,
-      keyPrefix: `instances/${instanceId}/items/${itemId}`,
-    });
-
-    const fileName = stored.key;
-    const fileUrl = stored.url;
+    const subFolder = 'inspectionCheckList';
+    const fileName = await this.fileStorageService.storeUploadedFile(file, subFolder);
+    const fileUrl = this.fileStorageService.resolveLink(fileName, subFolder) || `/attachments/${subFolder}/${encodeURIComponent(fileName)}`;
     const fileType = String(file?.mimetype || '').toLowerCase().includes('video') ? 'video' : 'image';
     const captureSource = this.normalizeCaptureSource(options?.captureSource);
 
@@ -190,14 +185,7 @@ export class PhotoChecklistService {
       file_type: fileType,
       file_size: Number(file?.size || 0),
       mime_type: file?.mimetype || '',
-      photo_metadata: JSON.stringify({
-        capture_source: captureSource,
-        storage: {
-          provider: 'bucket',
-          bucket: stored.bucket,
-          key: stored.key,
-        },
-      }),
+      photo_metadata: JSON.stringify({ capture_source: captureSource }),
     };
 
     const insertId = await this.repository.createPhotoSubmission(uploadPayload);
@@ -236,7 +224,7 @@ export class PhotoChecklistService {
     } else {
       const fileName = String(media.file_name || '').trim();
       if (fileName) {
-        await this.fileStorageService.deleteStoredFile(fileName, 'photo-submissions');
+        await this.fileStorageService.deleteStoredFile(fileName, 'inspectionCheckList');
       }
     }
 

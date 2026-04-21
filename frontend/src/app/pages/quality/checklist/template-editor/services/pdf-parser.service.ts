@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import * as pdfjsLib from 'pdfjs-dist';
+import { environment } from 'src/environments/environment';
 
 // Polyfill for Promise.withResolvers (required for newer pdf.js versions)
 // This is a newer ES2024 feature not yet widely supported
@@ -62,6 +63,9 @@ interface ParsedTemplate {
   providedIn: 'root'
 })
 export class PdfParserService {
+  private readonly uploadApiBaseUrl = environment.apiV2UploadBaseUrl.replace(/\/+$/, '');
+  private readonly fileStorageUploadUrl = `${this.uploadApiBaseUrl}/file-storage/upload`;
+  private readonly checklistImagesFolder = 'checklist-images';
 
   constructor(private http: HttpClient) { }
 
@@ -86,65 +90,13 @@ export class PdfParserService {
   }
 
   /**
-   * Extract images using backend PHP API
+   * Image extraction is currently disabled in the frontend parser.
+   * Legacy PHP extraction endpoints were removed from this flow.
    */
   private async extractImagesViaBackend(file: File): Promise<{images: string[], groups: any[]}> {
-    try {
-      console.log('🖼️ Sending PDF to backend for image extraction...');
-      
-      const formData = new FormData();
-      formData.append('pdf', file);
-      
-      const response = await firstValueFrom(
-        this.http.post<{
-          success: boolean, 
-          images: any[], 
-          imageGroups?: any[],
-          count: number, 
-          groupCount?: number,
-          error?: string
-        }>(
-          'Quality/pdf-extract-images.php',
-          formData
-        )
-      );
-      
-      if (!response.success) {
-        console.warn('Backend image extraction failed:', response.error);
-        return {images: [], groups: []};
-      }
-      
-      console.log(`✅ Backend extracted ${response.count} images in ${response.groupCount || 0} groups`);
-      
-      // DEBUG: Log position data availability
-      if ((response as any).debug) {
-        console.log('🔍 DEBUG - Position data check:', (response as any).debug);
-      }
-      
-      // Convert base64 images to file URLs for consistency
-      const base64Images = response.images.map(img => img.url);
-      console.log(`📸 Converting ${base64Images.length} base64 images to file URLs...`);
-      const fileUrls = await this.saveImagesToFiles(base64Images);
-      
-      // Update groups with file URLs instead of base64
-      const updatedGroups = response.imageGroups?.map((group: any) => ({
-        ...group,
-        images: group.images?.map((img: any, idx: number) => ({
-          ...img,
-          url: fileUrls[response.images.findIndex((ri: any) => ri.url === img.url)] || img.url
-        }))
-      })) || [];
-      
-      // Return file URLs and updated groups
-      return {
-        images: fileUrls,
-        groups: updatedGroups
-      };
-      
-    } catch (error) {
-      console.error('❌ Error calling backend for image extraction:', error);
-      return {images: [], groups: []}; // Return empty arrays on error
-    }
+    console.log('ℹ️ PDF image extraction via legacy PHP endpoint has been removed from this flow.');
+    void file;
+    return { images: [], groups: [] };
   }
 
   /**
@@ -153,35 +105,53 @@ export class PdfParserService {
   private async saveImagesToFiles(base64Images: string[]): Promise<string[]> {
     try {
       console.log(`💾 Saving ${base64Images.length} images to file system...`);
-      
-      const response = await firstValueFrom(
-        this.http.post<{
-          success: boolean,
-          images: Array<{path: string, filename: string, size: number}>,
-          count: number,
-          error?: string
-        }>(
-          'Quality/save-checklist-image.php',
-          { images: base64Images }
-        )
+
+      const uploads = await Promise.all(
+        base64Images.map(async (imageData, index) => {
+          const file = this.dataUrlToFile(imageData, `checklist_img_${Date.now()}_${index}.png`);
+          if (!file) {
+            return imageData;
+          }
+
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('folder', this.checklistImagesFolder);
+
+          const response = await firstValueFrom(
+            this.http.post<{ success: boolean; url?: string }>(this.fileStorageUploadUrl, formData),
+          );
+
+          return response?.success && response?.url ? response.url : imageData;
+        }),
       );
-      
-      if (!response.success) {
-        console.warn('Failed to save images to files:', response.error);
-        // Fallback to base64 if file saving fails
-        return base64Images;
-      }
-      
-      console.log(`✅ Saved ${response.count} images to disk`);
-      
-      // Return file URLs (relative paths for frontend)
-      return response.images.map(img => `/${img.path}`);
+
+      const uploadedCount = uploads.filter((url, i) => url !== base64Images[i]).length;
+      console.log(`✅ Saved ${uploadedCount} images to disk`);
+      return uploads;
       
     } catch (error) {
       console.error('❌ Error saving images to files:', error);
       // Fallback to base64 on error
       return base64Images;
     }
+  }
+
+  private dataUrlToFile(dataUrl: string, fileName: string): File | null {
+    const parts = dataUrl.split(',');
+    if (parts.length !== 2) {
+      return null;
+    }
+
+    const match = parts[0].match(/data:(.*?);base64/);
+    const mimeType = match?.[1] || 'image/png';
+    const binary = atob(parts[1]);
+    const bytes = new Uint8Array(binary.length);
+
+    for (let i = 0; i < binary.length; i += 1) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+
+    return new File([bytes], fileName, { type: mimeType });
   }
 
   /**
