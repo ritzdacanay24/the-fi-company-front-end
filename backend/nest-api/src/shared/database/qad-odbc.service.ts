@@ -1,6 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import odbc from 'odbc';
 
+type QadResultKeyCase = 'preserve' | 'lower' | 'upper';
+
+type QadQueryOptions = {
+  keyCase?: QadResultKeyCase;
+};
+
 @Injectable()
 export class QadOdbcService {
   private connectionString(): string {
@@ -20,20 +26,42 @@ export class QadOdbcService {
     }
   }
 
-  async query<T = Record<string, unknown>[]>(sql: string): Promise<T> {
+  async query<T = Record<string, unknown>[]>(sql: string, options?: QadQueryOptions): Promise<T> {
     return this.withConnection(async (conn) => {
       const rows = (await conn.query(sql)) as T;
-      return rows;
+      return this.normalizeKeys(rows, options?.keyCase || 'preserve');
     });
   }
 
   async queryWithParams<T = Record<string, unknown>[]>(
     sql: string,
     params: readonly (string | number)[],
+    options?: QadQueryOptions,
   ): Promise<T> {
     return this.withConnection(async (conn) => {
       const rows = (await conn.query(sql, [...params])) as T;
-      return rows;
+      return this.normalizeKeys(rows, options?.keyCase || 'preserve');
     });
+  }
+
+  private normalizeKeys<T>(rows: T, keyCase: QadResultKeyCase): T {
+    if (keyCase === 'preserve' || !Array.isArray(rows)) {
+      return rows;
+    }
+
+    const normalized = rows.map((row) => {
+      if (!row || typeof row !== 'object' || Array.isArray(row)) {
+        return row;
+      }
+
+      const entries = Object.entries(row as Record<string, unknown>).map(([key, value]) => [
+        keyCase === 'upper' ? key.toUpperCase() : key.toLowerCase(),
+        value,
+      ]);
+
+      return Object.fromEntries(entries);
+    });
+
+    return normalized as T;
   }
 }

@@ -148,6 +148,7 @@ export class PartsOrderListComponent implements OnInit {
       field: "instructions",
       headerName: "Instructions",
       filter: "agMultiColumnFilter",
+      maxWidth: 320,
     },
     { field: "oem", headerName: "OEM", filter: "agMultiColumnFilter" },
     {

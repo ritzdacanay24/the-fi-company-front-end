@@ -11,7 +11,7 @@ import { Injectable } from "@angular/core";
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { PartsOrderFormComponent } from '../parts-order-form/parts-order-form-component';
 import { PartsOrderService } from '@app/core/api/field-service/parts-order/parts-order.service';
-import { Lightbox } from 'ngx-lightbox';
+import { FileViewerModalComponent } from '@app/shared/components/file-viewer-modal/file-viewer-modal.component';
 
 @Injectable({
     providedIn: 'root'
@@ -31,7 +31,7 @@ export class PartsOrderModalService {
 
 @Component({
     standalone: true,
-    imports: [SharedModule, PartsOrderModalComponent, NgbScrollSpyModule, PartsOrderFormComponent, NgbCarouselModule],
+    imports: [SharedModule, NgbScrollSpyModule, PartsOrderFormComponent, NgbCarouselModule],
     selector: 'app-parts-order-modal',
     templateUrl: './parts-order-modal.component.html',
     styleUrls: []
@@ -44,7 +44,7 @@ export class PartsOrderModalComponent implements OnInit {
         private ngbActiveModal: NgbActiveModal,
         private api: PartsOrderService,
         private attachmentsService: AttachmentsService,
-        private lightbox: Lightbox,
+        private modalService: NgbModal,
         private fb: FormBuilder,
     ) {
     }
@@ -68,9 +68,9 @@ export class PartsOrderModalComponent implements OnInit {
 
         for (let i = 0; i < this.attachments.length; i++) {
             let row = this.attachments[i]
-            const src = 'https://dashboard.eye-fi.com/attachments/fieldService/' + row?.fileName;
+            const src = this.getAttachmentUrl(row);
             const caption = 'Image ' + i + '- ' + row?.createdDate;
-            const thumb = 'https://dashboard.eye-fi.com/attachments/fieldService/' + row?.fileName;
+            const thumb = src;
             const item = {
                 src: src,
                 caption: caption,
@@ -122,8 +122,100 @@ export class PartsOrderModalComponent implements OnInit {
     }
 
     open(index: number): void {
-        // open lightbox
-        this.lightbox.open(this.images, index, {});
+        const items = (this.attachments || []).map((attachment) => ({
+            id: attachment?.id,
+            url: this.getAttachmentUrl(attachment),
+            fileName: attachment?.fileName || 'Attachment',
+        }));
+
+        if (!items[index]?.url && !items[index]?.id) {
+            return;
+        }
+
+        const modalRef = this.modalService.open(FileViewerModalComponent, {
+            size: 'xl',
+            centered: true,
+            scrollable: true,
+        });
+
+        modalRef.componentInstance.url = items[index].url;
+        modalRef.componentInstance.fileName = items[index].fileName;
+        modalRef.componentInstance.items = items;
+        modalRef.componentInstance.initialIndex = index;
+        modalRef.componentInstance.enableNavigation = true;
+        modalRef.componentInstance.resolveById = async (id: string | number) => {
+            try {
+                const resolved = await this.attachmentsService.getViewById(Number(id));
+                return {
+                    url: this.normalizeAttachmentUrl(resolved?.url || ''),
+                    fileName: resolved?.fileName,
+                };
+            } catch (error) {
+                return null;
+            }
+        };
+    }
+
+    async openAttachmentInNewTab(attachment: any, event?: Event): Promise<void> {
+        event?.preventDefault();
+
+        const resolvedUrl = await this.resolveAttachmentUrl(attachment);
+        if (!resolvedUrl) {
+            return;
+        }
+
+        window.open(resolvedUrl, '_blank');
+    }
+
+    private getAttachmentUrl(attachment: any): string {
+        const link = this.normalizeAttachmentUrl(String(attachment?.link || '').trim());
+        if (link) {
+            return link;
+        }
+
+        const fileName = attachment?.fileName || '';
+        if (!fileName) {
+            return '';
+        }
+
+        return this.getLegacyAttachmentUrl(fileName);
+    }
+
+    private getLegacyAttachmentUrl(fileName: string): string {
+        return `https://dashboard.eye-fi.com/attachments/fieldService/${encodeURIComponent(fileName)}`;
+    }
+
+    private normalizeAttachmentUrl(rawUrl: string): string {
+        if (!rawUrl) {
+            return '';
+        }
+
+        if (/^https?:\/\//i.test(rawUrl)) {
+            return rawUrl;
+        }
+
+        if (rawUrl.startsWith('/attachments/')) {
+            return `https://dashboard.eye-fi.com${rawUrl}`;
+        }
+
+        if (rawUrl.startsWith('/')) {
+            return `${window.location.origin}${rawUrl}`;
+        }
+
+        return rawUrl;
+    }
+
+    private async resolveAttachmentUrl(attachment: any): Promise<string> {
+        try {
+            const resolved = await this.attachmentsService.getViewById(attachment?.id);
+            const resolvedUrl = this.normalizeAttachmentUrl(resolved?.url || '');
+            if (resolvedUrl) {
+                return resolvedUrl;
+            }
+        } catch (error) {
+        }
+
+        return this.getAttachmentUrl(attachment);
     }
 
     setFormElements = ($event) => {

@@ -18,7 +18,7 @@
                     <a (click)="open(i)">{{row.fileName}} - {{row.createdDate}}</a> <br />
                     <p>
                         Can't open/view file? Click
-                        <a href="https://dashboard.eye-fi.com/attachments/fieldService/{{row.fileName}}" target="_blank"
+                        <a href="" (click)="openAttachmentInNewTab(row, $event)"
                             class="link-primary"> <u>here</u>
                         </a>
                     </p>

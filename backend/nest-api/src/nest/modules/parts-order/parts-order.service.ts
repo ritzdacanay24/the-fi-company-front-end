@@ -169,7 +169,8 @@ export class PartsOrderService {
              a.sod_qty_ord - a.sod_qty_ship AS qty_open,
              c.so_ord_date AS so_ord_date,
              f.abs_ship_qty AS abs_ship_qty,
-             f.abs_shp_date AS abs_shp_date
+             f.abs_shp_date AS abs_shp_date,
+             a.sod_nbr so
       FROM sod_det a
       LEFT JOIN (
         SELECT pt_part,
@@ -219,13 +220,25 @@ export class PartsOrderService {
         AND a.sod_nbr IN (${placeholders})
     `;
 
-    const rows = await this.qadOdbcService.queryWithParams<Array<Record<string, unknown>>>(sql, soNumbers);
+    const rows = await this.qadOdbcService.queryWithParams<Array<Record<string, unknown>>>(
+      sql,
+      soNumbers,
+      { keyCase: 'lower' },
+    );
 
     const map = new Map<string, Record<string, unknown>>();
     for (const row of rows) {
       const so = String(row.sod_nbr || '').trim();
       if (so && !map.has(so)) {
-        map.set(so, row);
+        map.set(so, {
+          sod_nbr: so,
+          sod_due_date: String(row.sod_due_date || ''),
+          fullDesc: String(row.fulldesc || ''),
+          qty_open: Number(row.qty_open || 0),
+          so_ord_date: String(row.so_ord_date || ''),
+          abs_ship_qty: Number(row.abs_ship_qty || 0),
+          abs_shp_date: String(row.abs_shp_date || ''),
+        });
       }
     }
 

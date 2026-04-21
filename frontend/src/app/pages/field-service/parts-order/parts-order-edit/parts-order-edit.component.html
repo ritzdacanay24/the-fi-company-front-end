@@ -21,7 +21,7 @@
       </div>
       <div class="card-body" style="min-height:300px">
 
-        <app-parts-order-form (setFormEmitter)="form = $event" [submitted]="submitted" [id]="id" [details]="details"></app-parts-order-form>
+        <app-parts-order-form (setFormEmitter)="onFormReady($event)" [submitted]="submitted" [id]="id" [details]="details"></app-parts-order-form>
 
         <div class="mt-3">
           <h4 class="mb-3">Attachments</h4>
@@ -32,7 +32,7 @@
                 <a (click)="open(i)">{{row.fileName}} - {{row.createdDate}}</a> <br />
                 <p>
                   Can't open/view file? Click
-                  <a href="https://dashboard.eye-fi.com/attachments/fieldService/{{row.fileName}}" target="_blank"
+                  <a href="" (click)="openAttachmentInNewTab(row, $event)"
                     class="link-primary"> <u>here</u>
                   </a>
                 </p>
