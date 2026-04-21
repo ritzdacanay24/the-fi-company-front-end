@@ -15,6 +15,12 @@ interface PartSearchRow {
   qty_on_hand: number | string;
   total_available: number | string;
   sct_cst_tot: number | string;
+  PT_PART?: string;
+  DESCRIPTION?: string;
+  PT_STATUS?: string;
+  QTY_ON_HAND?: number | string;
+  TOTAL_AVAILABLE?: number | string;
+  SCT_CST_TOT?: number | string;
 }
 
 interface WoSearchRow {
@@ -110,8 +116,8 @@ export class QadService {
 
     let params: readonly (string | number)[];
     if (matchCase) {
-      sql += ' WHERE a.pt_part = ?';
-      params = [term];
+      sql += ' WHERE UPPER(a.pt_part) = ?';
+      params = [term.toUpperCase()];
     } else {
       sql += ' WHERE a.pt_part LIKE ? OR a.pt_desc1 || \'-\' || a.pt_desc2 LIKE ?';
       const search = `%${term}%`;
@@ -119,7 +125,31 @@ export class QadService {
     }
 
     sql += " AND a.pt_domain = 'EYE'";
-    return this.qadOdbcService.queryWithParams<PartSearchRow[]>(sql, params);
+    const rows = await this.qadOdbcService.queryWithParams<Record<string, unknown>[]>(sql, params);
+
+    return rows.map((row) => {
+      const ptPart = String(this.pickCaseInsensitive(row, 'pt_part') || '');
+      const description = String(this.pickCaseInsensitive(row, 'description') || '');
+      const ptStatus = String(this.pickCaseInsensitive(row, 'pt_status') || '');
+      const qtyOnHand = Number(this.pickCaseInsensitive(row, 'qty_on_hand') || 0);
+      const totalAvailable = Number(this.pickCaseInsensitive(row, 'total_available') || 0);
+      const sctCstTot = Number(this.pickCaseInsensitive(row, 'sct_cst_tot') || 0);
+
+      return {
+        pt_part: ptPart,
+        description,
+        pt_status: ptStatus,
+        qty_on_hand: qtyOnHand,
+        total_available: totalAvailable,
+        sct_cst_tot: sctCstTot,
+        PT_PART: ptPart,
+        DESCRIPTION: description,
+        PT_STATUS: ptStatus,
+        QTY_ON_HAND: qtyOnHand,
+        TOTAL_AVAILABLE: totalAvailable,
+        SCT_CST_TOT: sctCstTot,
+      };
+    });
   }
 
   async searchWoNumber(text?: string): Promise<WoSearchRow[]> {
@@ -199,5 +229,9 @@ export class QadService {
     `;
 
     return this.qadOdbcService.query<CustomerNameRow[]>(sql);
+  }
+
+  private pickCaseInsensitive(row: Record<string, unknown>, key: string): unknown {
+    return row[key] ?? row[key.toUpperCase()] ?? row[key.toLowerCase()] ?? null;
   }
 }
