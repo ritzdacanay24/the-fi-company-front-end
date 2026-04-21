@@ -38,6 +38,10 @@ interface CustomerPartSearchRow {
   description: string;
   pt_status: string;
   cp_cust: string;
+  CP_CUST_PART?: string;
+  DESCRIPTION?: string;
+  PT_STATUS?: string;
+  CP_CUST?: string;
 }
 
 interface CustomerNameRow {
@@ -195,7 +199,29 @@ export class QadService {
     `;
 
     const search = `%${term}%`;
-    return this.qadOdbcService.queryWithParams<CustomerPartSearchRow[]>(sql, [search]);
+    const rows = await this.qadOdbcService.queryWithParams<Record<string, unknown>[]>(
+      sql,
+      [search],
+      { keyCase: 'upper' },
+    );
+
+    return rows.map((row) => {
+      const customerPart = String(this.pickCaseInsensitive(row, 'cp_cust_part') || '');
+      const description = String(this.pickCaseInsensitive(row, 'description') || '');
+      const status = String(this.pickCaseInsensitive(row, 'pt_status') || '');
+      const customer = String(this.pickCaseInsensitive(row, 'cp_cust') || '');
+
+      return {
+        cp_cust_part: customerPart,
+        description,
+        pt_status: status,
+        cp_cust: customer,
+        CP_CUST_PART: customerPart,
+        DESCRIPTION: description,
+        PT_STATUS: status,
+        CP_CUST: customer,
+      };
+    });
   }
 
   async searchCustomerName(text?: string): Promise<CustomerNameRow[]> {

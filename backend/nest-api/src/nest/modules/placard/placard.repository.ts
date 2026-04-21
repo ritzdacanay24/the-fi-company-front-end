@@ -141,11 +141,11 @@ export class PlacardRepository extends BaseRepository<RowDataPacket> {
         AND a.sod_domain = 'EYE'
     `;
 
-    const rows = await this.qadOdbcService.queryWithParams<Array<Record<string, unknown>>>(sql, [
-      order,
-      partNumber,
-      line,
-    ]);
+    const rows = await this.qadOdbcService.queryWithParams<Array<Record<string, unknown>>>(
+      sql,
+      [order, partNumber, line],
+      { keyCase: 'upper' },
+    );
 
     return rows[0] ?? null;
   }
