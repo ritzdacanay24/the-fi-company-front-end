@@ -118,12 +118,19 @@ export function createTranslateLoader(http: HttpClient): any {
       provide: APP_BASE_HREF, 
       useFactory: () => {
         if (environment.production) {
-          // Determine base href based on current deployment
+          // Determine base href based on current deployment path.
           const currentPath = window.location.pathname;
-          if (currentPath.includes('/dist/web-v')) {
-            return currentPath.match(/\/dist\/web-v\d+/)?.[0] || '/dist/web';
+          const matchedBase = currentPath.match(/\/(?:dist|portal)\/web(?:-v\d+)?/);
+          if (matchedBase?.[0]) {
+            return matchedBase[0];
           }
-          return '/dist/web';
+
+          const basePathFromTag = new URL(document.baseURI).pathname.replace(/\/$/, '');
+          if (basePathFromTag && basePathFromTag !== '/') {
+            return basePathFromTag;
+          }
+
+          return '/';
         }
         return '/';
       }

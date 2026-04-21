@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { EmailService } from '@/shared/email/email.service';
 import { QadOdbcService } from '@/shared/database/qad-odbc.service';
 import { toJsonSafe } from '@/shared/utils/json-safe.util';
@@ -11,6 +12,7 @@ export class WorkOrderService {
     private readonly repository: WorkOrderRepository,
     private readonly emailService: EmailService,
     private readonly qadOdbcService: QadOdbcService,
+    private readonly configService: ConfigService,
   ) {}
 
   async findOne(params: Record<string, unknown>): Promise<WorkOrderRecord | null> {
@@ -166,7 +168,10 @@ export class WorkOrderService {
     const fsSchedulerId = String(payload.fs_scheduler_id || '');
 
     if (reviewStatus && fsSchedulerId) {
-      const link = `https://dashboard.eye-fi.com/dist/web/field-service/ticket/overview?selectedViewType=Open&active=7&id=${fsSchedulerId}`;
+      const link = new URL(
+        `/field-service/ticket/overview?selectedViewType=Open&active=7&id=${encodeURIComponent(fsSchedulerId)}`,
+        this.configService.getOrThrow<string>('DASHBOARD_WEB_BASE_URL'),
+      ).toString();
 
       if (reviewStatus === 'Pending Review') {
         await this.sendBillingReviewEmail({

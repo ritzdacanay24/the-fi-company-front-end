@@ -1,4 +1,5 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { RowDataPacket } from 'mysql2';
 import { EmailService } from '@/shared/email/email.service';
 import { NcrRepository } from './ncr.repository';
@@ -10,6 +11,7 @@ export class NcrService {
   constructor(
     private readonly repository: NcrRepository,
     private readonly emailService: EmailService,
+    private readonly configService: ConfigService,
   ) {}
 
   async getList(query: {
@@ -99,7 +101,10 @@ export class NcrService {
   }
 
   private buildAssignmentEmailHtml(id: number, department: string, dueDate: string): string {
-    const link = `https://dashboard.eye-fi.com/dist/web/dashboard/quality/car/overview?id=${id}&active=2`;
+    const link = new URL(
+      `/dashboard/quality/car/overview?id=${id}&active=2`,
+      this.configService.getOrThrow<string>('DASHBOARD_WEB_BASE_URL'),
+    ).toString();
     const safeDepartment = this.escapeHtml(department || 'Unassigned');
     const safeDueDate = this.escapeHtml(dueDate || 'N/A');
 

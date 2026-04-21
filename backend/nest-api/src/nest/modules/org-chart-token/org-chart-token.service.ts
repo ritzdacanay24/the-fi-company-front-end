@@ -1,11 +1,15 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { randomBytes } from 'crypto';
 import { scryptSync, timingSafeEqual } from 'crypto';
 import { OrgChartTokenRepository } from './org-chart-token.repository';
 
 @Injectable()
 export class OrgChartTokenService {
-  constructor(private readonly repository: OrgChartTokenRepository) {}
+  constructor(
+    private readonly repository: OrgChartTokenRepository,
+    private readonly configService: ConfigService,
+  ) {}
 
   async generateToken(payload: { password?: string; expiryHours?: number; userId?: number }) {
     const token = randomBytes(32).toString('hex');
@@ -25,7 +29,10 @@ export class OrgChartTokenService {
       success: true,
       tokenId,
       token,
-      shareUrl: `https://dashboard.eye-fi.com/dist/web/standalone/org-chart?token=${token}`,
+      shareUrl: new URL(
+        `/standalone/org-chart?token=${encodeURIComponent(token)}`,
+        this.configService.getOrThrow<string>('DASHBOARD_WEB_BASE_URL'),
+      ).toString(),
       expiresAt,
       hasPassword: Boolean(passwordHash),
     };

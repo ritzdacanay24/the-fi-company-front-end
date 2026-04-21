@@ -1,8 +1,9 @@
 import {
   Component, OnInit, AfterViewInit, Input, Output, EventEmitter,
-  ChangeDetectorRef, ViewChild, TemplateRef, OnChanges, SimpleChanges
+  ChangeDetectorRef, ViewChild, TemplateRef, OnChanges, SimpleChanges, Inject
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { APP_BASE_HREF } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { NgbModal, NgbModalRef, NgbModule } from '@ng-bootstrap/ng-bootstrap';
@@ -71,7 +72,8 @@ export class ShareReportModalComponent implements OnInit, OnChanges, AfterViewIn
     private http: HttpClient,
     private cdr: ChangeDetectorRef,
     private modalService: NgbModal,
-    private lightbox: Lightbox
+    private lightbox: Lightbox,
+    @Inject(APP_BASE_HREF) private baseHref: string
   ) {}
 
   ngOnInit(): void {
@@ -522,7 +524,9 @@ export class ShareReportModalComponent implements OnInit, OnChanges, AfterViewIn
   }
 
   private buildInspectionReportUrl(token: string): string {
-    return `${window.location.origin}/dist/web/inspection/report/${token}`;
+    const runtimeMatch = window.location.pathname.match(/\/(?:dist|portal)\/web(?:-v\d+)?/);
+    const basePath = runtimeMatch?.[0] || String(this.baseHref || '/').replace(/\/$/, '');
+    return `${window.location.origin}${basePath}/inspection/report/${token}`;
   }
 
   formatDate(val: string | null | undefined): string {

@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { QadOdbcService } from '@/shared/database/qad-odbc.service';
 import { EmailService } from '@/shared/email/email.service';
 import { PartsOrderRepository } from './parts-order.repository';
@@ -18,6 +19,7 @@ export class PartsOrderService {
     private readonly repository: PartsOrderRepository,
     private readonly qadOdbcService: QadOdbcService,
     private readonly emailService: EmailService,
+    private readonly configService: ConfigService,
   ) {}
 
   async getAll(): Promise<PartsOrderRow[]> {
@@ -253,7 +255,10 @@ export class PartsOrderService {
     ];
 
     const nowDate = new Date().toISOString().slice(0, 10);
-    const link = `https://dashboard.eye-fi.com/dist/web/field-service/parts-order/edit?id=${id}`;
+    const link = new URL(
+      `/field-service/parts-order/edit?id=${id}`,
+      this.configService.getOrThrow<string>('DASHBOARD_WEB_BASE_URL'),
+    ).toString();
 
     const oem = String(payload.oem || '');
     const casinoName = String(payload.casino_name || '');

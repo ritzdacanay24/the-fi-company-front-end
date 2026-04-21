@@ -36,7 +36,7 @@ export class PathUtilsService {
     // Additional cleanup for legacy paths
     const prefixesToRemove = [
       '/velzon/angular/modern',
-      /\/dist\/web(-v\d+)?/, // Handles /dist/web, /dist/web-v1, /dist/web-v2, etc.
+      /\/(?:dist|portal)\/web(-v\d+)?/, // Handles /dist/web, /portal/web and versioned variants.
     ];
 
     for (const prefix of prefixesToRemove) {
