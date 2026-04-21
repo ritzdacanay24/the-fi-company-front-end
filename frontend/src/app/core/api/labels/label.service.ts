@@ -10,7 +10,10 @@ export class LabelService {
 
   // Read details
   getItemInfo(itemNumber: string, typeOfItemSearch?: string): Observable<any> {
-    return this.http.get<any>(`/item_search/item_search?readSingle=${itemNumber}&typeOfItemSearch=${typeOfItemSearch}`);
+    const searchType = typeOfItemSearch || 'partNumber';
+    return this.http.get<any>(
+      `apiV2/item-search/read-single?readSingle=${encodeURIComponent(itemNumber)}&typeOfItemSearch=${encodeURIComponent(searchType)}`,
+    );
   }
 
   // Read details

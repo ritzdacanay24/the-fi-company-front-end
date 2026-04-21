@@ -18,6 +18,7 @@ import { GraphicsProductionModule } from './modules/graphics-production/graphics
 import { GraphicsScheduleModule } from './modules/graphics-schedule/graphics-schedule.module';
 import { HealthModule } from './modules/health';
 import { IgtSerialNumbersModule } from './modules/igt-serial-numbers';
+import { ItemSearchModule } from './modules/item-search/item-search.module';
 import { SerialAssignmentsModule } from './modules/serial-assignments';
 import { IgtTransferModule } from './modules/igt-transfer/igt-transfer.module';
 import { InventoryByProdLineModule } from './modules/inventory-by-prod-line';
@@ -131,6 +132,7 @@ import { EmailModule } from '../shared/email/email.module';
     GraphicsScheduleModule,
     HealthModule,
     IgtSerialNumbersModule,
+    ItemSearchModule,
     IgtTransferModule,
     InventoryByProdLineModule,
     MaterialRequestModule,
