@@ -41,7 +41,10 @@ export class QirListComponent implements OnInit {
 
   onCreate() {
     this.router.navigate([NAVIGATION_ROUTE.CREATE], {
-      queryParamsHandling: "merge"
+      queryParamsHandling: "merge",
+      queryParams: {
+        id: null,
+      },
     });
   }
 

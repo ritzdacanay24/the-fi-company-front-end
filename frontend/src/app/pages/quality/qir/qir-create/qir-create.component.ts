@@ -30,10 +30,17 @@ export class QirCreateComponent {
 
   ngOnInit(): void {
     this.activatedRoute.queryParams.subscribe((params) => {
-      this.id = params["id"];
+      if (params["id"]) {
+        this.router.navigate([], {
+          relativeTo: this.activatedRoute,
+          queryParamsHandling: "merge",
+          queryParams: { id: null },
+          replaceUrl: true,
+        });
+      }
     });
 
-    if (this.id) this.getData();
+    this.id = null;
   }
 
   title = "Create Quality Incident Report";
