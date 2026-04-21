@@ -377,9 +377,13 @@ export class PlacardFormComponent implements AfterViewInit, OnDestroy {
 
   serialNumber: string;
   async getSerialNumberInfo() {
-    let data: any = await this.placardService.searchSerialNumber(
-      this.form.value.customer_serial_tag
-    );
-    this.form.get("eyefi_serial_tag").setValue(data.serialNumber);
+    const serialTag = String(this.form.value.customer_serial_tag || '').trim();
+    if (!serialTag) {
+      this.form.get('eyefi_serial_tag')?.setValue(null);
+      return;
+    }
+
+    const data: any = await this.placardService.searchSerialNumber(serialTag);
+    this.form.get('eyefi_serial_tag')?.setValue(data?.serialNumber ?? null);
   }
 }

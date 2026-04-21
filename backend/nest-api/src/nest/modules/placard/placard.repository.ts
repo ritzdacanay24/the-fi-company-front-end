@@ -156,19 +156,24 @@ export class PlacardRepository extends BaseRepository<RowDataPacket> {
         serialNumber,
         'AGS' AS customer
       FROM eyefidb.agsSerialGenerator
-      WHERE generated_SG_asset = ?
+      WHERE (generated_SG_asset = ? OR serialNumber = ?)
         AND active = 1
       UNION ALL
       SELECT generated_SG_asset AS customerSerial,
         serialNumber,
         'SG' AS customer
       FROM eyefidb.sgAssetGenerator
-      WHERE generated_SG_asset = ?
+      WHERE (generated_SG_asset = ? OR serialNumber = ?)
         AND active = 1
       LIMIT 1
     `;
 
-    const rows = await this.rawQuery<RowDataPacket>(sql, [serialNumber, serialNumber]);
+    const rows = await this.rawQuery<RowDataPacket>(sql, [
+      serialNumber,
+      serialNumber,
+      serialNumber,
+      serialNumber,
+    ]);
     return rows[0] ?? null;
   }
 

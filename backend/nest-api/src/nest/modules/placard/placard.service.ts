@@ -61,7 +61,33 @@ export class PlacardService {
   }
 
   async searchSerialNumber(serialNumber: string) {
-    return this.repository.searchSerialNumber(serialNumber);
+    const normalizedSerialNumber = String(serialNumber || '').trim();
+    if (!normalizedSerialNumber) {
+      return {
+        found: false,
+        message: 'Serial number is required',
+        serialNumber: null,
+        customerSerial: null,
+        customer: null,
+      };
+    }
+
+    const row = await this.repository.searchSerialNumber(normalizedSerialNumber);
+    if (!row) {
+      return {
+        found: false,
+        message: 'No record found',
+        serialNumber: null,
+        customerSerial: null,
+        customer: null,
+      };
+    }
+
+    return {
+      ...row,
+      found: true,
+      message: 'Record found',
+    };
   }
 
   async validateWo(woNumber: string) {
