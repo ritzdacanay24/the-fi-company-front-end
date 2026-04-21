@@ -40,14 +40,32 @@ export class AttachmentsService extends DataService<any> {
     return this.http.get<any>(`/Attachments/index?getAttachments=${start}`);
   }
 
+  private normalizeV2Payload(file: any): FormData {
+    if (!(file instanceof FormData)) {
+      return file as FormData;
+    }
+
+    const hasSubFolder = !!file.get('subFolder');
+    if (!hasSubFolder) {
+      const folderName = file.get('folderName');
+      if (typeof folderName === 'string' && folderName.trim()) {
+        file.append('subFolder', folderName.trim());
+      }
+    }
+
+    return file;
+  }
+
   uploadfile(file: any) {
-    return this.http.post(`https://dashboard.eye-fi.com/server/Api/Upload/index.php`, file).toPromise();
+    const payload = this.normalizeV2Payload(file);
+    return firstValueFrom(this.http.post(`${url}`, payload));
   }
 
   //public
 
   uploadfilePublic(file: any) {
-    return this.http.post(`https://dashboard.eye-fi.com/tasks/upload/index.php`, file).toPromise();
+    const payload = this.normalizeV2Payload(file);
+    return firstValueFrom(this.http.post(`${url}`, payload));
   }
   
   getAttachmentByQirId(id: any) {

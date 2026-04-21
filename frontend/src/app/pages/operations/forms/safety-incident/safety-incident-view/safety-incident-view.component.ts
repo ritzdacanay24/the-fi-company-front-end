@@ -5,6 +5,8 @@ import { ToastrService } from "ngx-toastr";
 import { SafetyIncidentService } from "@app/core/api/operations/safety-incident/safety-incident.service";
 import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
 import { NAVIGATION_ROUTE, FILE } from "../safety-incident-constant";
+import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
+import { FileViewerModalComponent } from "@app/shared/components/file-viewer-modal/file-viewer-modal.component";
 
 @Component({
     standalone: true,
@@ -18,7 +20,8 @@ export class SafetyIncidentViewComponent {
         private activatedRoute: ActivatedRoute,
         private api: SafetyIncidentService,
         private toastrService: ToastrService,
-        private attachmentsService: AttachmentsService
+        private attachmentsService: AttachmentsService,
+        private modalService: NgbModal
     ) { }
 
     ngOnInit(): void {
@@ -75,6 +78,34 @@ export class SafetyIncidentViewComponent {
             });
         } catch (err) {
             console.error("Error loading attachments:", err);
+        }
+    }
+
+    private openFileViewerModal(url: string, fileName: string): void {
+        const modalRef = this.modalService.open(FileViewerModalComponent, {
+            size: 'xl',
+            centered: true,
+            backdrop: true,
+            keyboard: true,
+        });
+
+        modalRef.componentInstance.url = url;
+        modalRef.componentInstance.fileName = fileName;
+    }
+
+    async openAttachment(attachment: any): Promise<void> {
+        try {
+            const resolved = await this.attachmentsService.getViewById(attachment?.id);
+            const resolvedUrl = resolved?.url || attachment?.link;
+            if (!resolvedUrl) {
+                this.toastrService.warning('Attachment URL not available');
+                return;
+            }
+
+            this.openFileViewerModal(resolvedUrl, attachment?.fileName || resolved?.fileName || 'Attachment');
+        } catch (error) {
+            console.error('Failed to resolve attachment URL:', error);
+            this.toastrService.error('Unable to open attachment');
         }
     }
 

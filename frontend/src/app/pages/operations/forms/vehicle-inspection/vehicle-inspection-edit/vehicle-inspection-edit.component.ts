@@ -8,6 +8,9 @@ import { VehicleInspectionService } from "@app/core/api/operations/vehicle-inspe
 import { VehicleInspectionFormComponent } from "../vehicle-inspection-form/vehicle-inspection-form.component";
 import { VehicleService } from "@app/core/api/operations/vehicle/vehicle.service";
 import { environment } from "src/environments/environment";
+import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
+import { FileViewerModalComponent } from "@app/shared/components/file-viewer-modal/file-viewer-modal.component";
+import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
 
 @Component({
   standalone: true,
@@ -22,7 +25,9 @@ export class VehicleInspectionEditComponent {
     private vehicleService: VehicleService,
     private toastrService: ToastrService,
     private activatedRoute: ActivatedRoute,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private modalService: NgbModal,
+    private attachmentsService: AttachmentsService
   ) {}
 
   getFormValues() {
@@ -86,8 +91,21 @@ export class VehicleInspectionEditComponent {
     return `${base}${path}`;
   }
 
+  private getLegacyVehicleImageUrl(fileName: string): string {
+    return `https://dashboard.eye-fi.com/attachments/vehicleInformation/${encodeURIComponent(fileName)}`;
+  }
+
   getImageUrl(attachment): string {
     if (!attachment) return '';
+
+    const fileName = String(attachment?.fileName || '').trim();
+    const storageSource = String(attachment?.storage_source || '').toLowerCase();
+    const isLocalStorage = storageSource === 'local';
+
+    // Null/legacy sources should always use legacy public attachment path.
+    if (!isLocalStorage && fileName) {
+      return this.getLegacyVehicleImageUrl(fileName);
+    }
 
     // Prefer persisted link (supports local uploads).
     if (attachment.link) {
@@ -123,10 +141,37 @@ export class VehicleInspectionEditComponent {
     return '';
   }
 
-  viewImage(attachment) {
-    const url = this.getImageUrl(attachment);
-    if (url) {
-      window.open(url, '_blank');
+  private openFileViewerModal(url: string, fileName: string): void {
+    const modalRef = this.modalService.open(FileViewerModalComponent, {
+      size: 'xl',
+      centered: true,
+      backdrop: true,
+      keyboard: true,
+    });
+
+    modalRef.componentInstance.url = url;
+    modalRef.componentInstance.fileName = fileName;
+  }
+
+  async viewImage(attachment: any) {
+    try {
+      let url = this.getImageUrl(attachment);
+      if (attachment?.id) {
+        const resolved = await this.attachmentsService.getViewById(attachment.id);
+        if (resolved?.url) {
+          url = resolved.url;
+        }
+      }
+
+      if (!url) {
+        this.toastrService.warning('Attachment URL not available');
+        return;
+      }
+
+      this.openFileViewerModal(url, attachment?.fileName || 'Attachment');
+    } catch (error) {
+      console.error('Failed to open attachment:', error);
+      this.toastrService.error('Unable to open attachment');
     }
   }
 

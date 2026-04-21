@@ -16,11 +16,12 @@ import { AttachmentsService } from "@app/core/api/attachments/attachments.servic
 import { IQirForm } from "../qir-form/qir-form-type";
 import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErrors";
 import { MyFormGroup } from "src/assets/js/util/_formGroup";
-import { Lightbox } from "ngx-lightbox";
 import { AuthenticationService } from "@app/core/services/auth.service";
 import moment from "moment";
 import { QirResponseModalService } from "../qir-response/qir-repsonse-modal/qir-repsonse-modal.component";
 import { QirResponseService } from "@app/core/api/quality/qir-response.service";
+import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
+import { FileViewerModalComponent } from "@app/shared/components/file-viewer-modal/file-viewer-modal.component";
 
 @Component({
   standalone: true,
@@ -36,10 +37,10 @@ export class QirEditComponent {
     private api: QirService,
     private toastrService: ToastrService,
     private attachmentsService: AttachmentsService,
-    private lightbox: Lightbox,
     private authenticationService: AuthenticationService,
     private qirResponseModalService: QirResponseModalService,
-    private qirResponseService: QirResponseService
+    private qirResponseService: QirResponseService,
+    private modalService: NgbModal
   ) { }
 
   ngOnInit(): void {
@@ -162,39 +163,66 @@ export class QirEditComponent {
     });
   }
 
-  images;
   attachments: any = [];
   async getAttachments() {
-    this.images = [];
     this.attachments = await this.attachmentsService.find({
       field: "Capa Request",
       uniqueId: this.id,
     });
+  }
 
-    for (let i = 0; i < this.attachments.length; i++) {
-      let row = this.attachments[i];
-      const src =
-        "https://dashboard.eye-fi.com/attachments/capa/" + row.fileName;
-      const caption = "Image " + i + "- " + row.createdDate;
-      const thumb =
-        "https://dashboard.eye-fi.com/attachments/capa/" + row.fileName;
-      const item = {
-        src: src,
-        caption: caption,
-        thumb: thumb,
-      };
-      this.images.push(item);
+  private getLegacyAttachmentUrl(fileName: string): string {
+    return `https://dashboard.eye-fi.com/attachments/capa/${encodeURIComponent(fileName)}`;
+  }
+
+  private openFileViewerModal(url: string, fileName: string): void {
+    const modalRef = this.modalService.open(FileViewerModalComponent, {
+      size: 'xl',
+      centered: true,
+      backdrop: true,
+      keyboard: true,
+    });
+
+    modalRef.componentInstance.url = url;
+    modalRef.componentInstance.fileName = fileName;
+  }
+
+  async openAttachment(row: any, event?: Event): Promise<void> {
+    event?.preventDefault();
+
+    try {
+      const resolved = await this.attachmentsService.getViewById(row?.id);
+      const resolvedUrl = resolved?.url || row?.link || this.getLegacyAttachmentUrl(row?.fileName || '');
+
+      if (!resolvedUrl) {
+        this.toastrService.warning('Attachment URL not available');
+        return;
+      }
+
+      this.openFileViewerModal(resolvedUrl, row?.fileName || resolved?.fileName || 'Attachment');
+    } catch (error) {
+      console.error('Failed to resolve attachment URL:', error);
+      this.toastrService.error('Unable to open attachment');
     }
   }
 
-  open(index: number): void {
-    // open lightbox
-    this.lightbox.open(this.images, index, {});
-  }
+  async downloadAttachment(row: any, event?: Event): Promise<void> {
+    event?.preventDefault();
 
-  close(): void {
-    // close lightbox programmatically
-    this.lightbox.close();
+    try {
+      const resolved = await this.attachmentsService.getViewById(row?.id);
+      const resolvedUrl = resolved?.url || row?.link || this.getLegacyAttachmentUrl(row?.fileName || '');
+
+      if (!resolvedUrl) {
+        this.toastrService.warning('Attachment URL not available');
+        return;
+      }
+
+      window.open(resolvedUrl, '_blank');
+    } catch (error) {
+      console.error('Failed to resolve attachment URL for download:', error);
+      this.toastrService.error('Unable to download attachment');
+    }
   }
 
   async deleteAttachment(id, index) {

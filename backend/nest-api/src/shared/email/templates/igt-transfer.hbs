@@ -1,0 +1,56 @@
+<html>
+  <body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f4f6f8; color: #1f2933;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 620px; background-color: #ffffff; border: 1px solid #dde3ea; border-radius: 10px; overflow: hidden;">
+            {{> email-header}}
+            <tr>
+              <td style="padding: 20px 24px; background-color: #0b5cab; color: #ffffff;">
+                <h2 style="margin: 0; font-size: 20px; font-weight: 600;">IGT Transfer Notification</h2>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 24px; font-size: 14px; line-height: 1.6;">
+                <p style="margin-top: 0;">Hello,</p>
+
+                {{#if isReno}}
+                <p style="margin: 0 0 16px 0;">Attached transfer for above referenced sign, shipping to Reno tonight.</p>
+                {{else}}
+                <p style="margin: 0 0 16px 0;">Attached transfer for above referenced sign, being transferred to Field Service today.</p>
+                {{/if}}
+
+                {{#if hasSoDueRows}}
+                <table border="1" cellpadding="0" cellspacing="0" style="border-collapse: collapse; margin: 15px 0; width: 600px; font-family: Arial, sans-serif; font-size: 14px; line-height: 1.2;">
+                  <thead>
+                    <tr style="background-color: #003366; color: white;">
+                      <th style="padding: 2px 4px; text-align: left; width: 200px; line-height: 1.2;">SO Number</th>
+                      <th style="padding: 2px 4px; text-align: left; width: 150px; line-height: 1.2;">Line #</th>
+                      <th style="padding: 2px 4px; text-align: left; width: 250px; line-height: 1.2;">Due Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {{#each soDueRows}}
+                    <tr style="background-color: #f9f9f9;">
+                      <td style="padding: 2px 4px; border: 1px solid #ddd; line-height: 1.2;">{{so_number}}</td>
+                      <td style="padding: 2px 4px; border: 1px solid #ddd; line-height: 1.2;">{{so_line}}</td>
+                      <td style="padding: 2px 4px; border: 1px solid #ddd; line-height: 1.2;">{{due_date}}</td>
+                    </tr>
+                    {{/each}}
+                  </tbody>
+                </table>
+                {{/if}}
+
+                <p style="margin: 16px 0 0 0;">Thanks,</p>
+                <p style="margin: 0;">
+                  <img src="{{signatureImageUrl}}" alt="The Fi Company" style="width:100px" />
+                </p>
+              </td>
+            </tr>
+            {{> email-footer}}
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

@@ -51,6 +51,8 @@ import { NgbActiveModal } from "@ng-bootstrap/ng-bootstrap";
           </div>
         } @else if (isPdf()) {
           <iframe [src]="safeUrl" class="pdf-viewer"></iframe>
+        } @else if (isOfficeDocument()) {
+          <iframe [src]="safeOfficeUrl" class="pdf-viewer"></iframe>
         } @else {
           <div class="preview-unavailable">
             <i class="mdi mdi-file-document-outline preview-icon"></i>
@@ -152,6 +154,7 @@ export class FileViewerModalComponent {
   @Input() fileName = "Attachment";
 
   safeUrl: SafeResourceUrl | null = null;
+  safeOfficeUrl: SafeResourceUrl | null = null;
   zoomLevel = 1;
   imageLoadError = false;
 
@@ -161,6 +164,11 @@ export class FileViewerModalComponent {
     this.imageLoadError = false;
     if (this.isPdf()) {
       this.safeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.url);
+    }
+
+    if (this.isOfficeDocument()) {
+      const officeEmbedUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(this.url)}`;
+      this.safeOfficeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(officeEmbedUrl);
     }
   }
 
@@ -179,6 +187,11 @@ export class FileViewerModalComponent {
 
   isPdf(): boolean {
     return (this.fileName || "").toLowerCase().endsWith(".pdf");
+  }
+
+  isOfficeDocument(): boolean {
+    const file = (this.fileName || "").toLowerCase();
+    return [".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx"].some((ext) => file.endsWith(ext));
   }
 
   zoomIn(): void {

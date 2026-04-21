@@ -10,6 +10,8 @@ import { SafetyIncidentFormComponent } from "../safety-incident-form/safety-inci
 import { FILE, NAVIGATION_ROUTE } from "../safety-incident-constant";
 import { UploadService } from "@app/core/api/upload/upload.service";
 import { firstValueFrom } from "rxjs";
+import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
+import { FileViewerModalComponent } from "@app/shared/components/file-viewer-modal/file-viewer-modal.component";
 
 @Component({
   standalone: true,
@@ -24,7 +26,8 @@ export class SafetyIncidentEditComponent {
     private api: SafetyIncidentService,
     private toastrService: ToastrService,
     private attachmentsService: AttachmentsService,
-    private uploadService: UploadService
+    private uploadService: UploadService,
+    private modalService: NgbModal
   ) {}
 
   setFormEmitter($event) {
@@ -112,16 +115,32 @@ export class SafetyIncidentEditComponent {
     // - comments (administrative notes can be added)
   }
 
-  viewImage(row) {
-    window.open(row.directory + "/safetyIncident/" + row.fileName, "_blank");
+  private openFileViewerModal(url: string, fileName: string): void {
+    const modalRef = this.modalService.open(FileViewerModalComponent, {
+      size: 'xl',
+      centered: true,
+      backdrop: true,
+      keyboard: true,
+    });
+
+    modalRef.componentInstance.url = url;
+    modalRef.componentInstance.fileName = fileName;
   }
 
-  getAttachmentUrl(attachment: any): string {
-    if (attachment?.link) {
-      return attachment.link;
-    }
+  async openAttachment(attachment: any): Promise<void> {
+    try {
+      const resolved = await this.attachmentsService.getViewById(attachment?.id);
+      const resolvedUrl = resolved?.url || attachment?.link;
+      if (!resolvedUrl) {
+        this.toastrService.warning('Attachment URL not available');
+        return;
+      }
 
-    return `https://dashboard.eye-fi.com/attachments/safetyIncident/${attachment?.fileName || ''}`;
+      this.openFileViewerModal(resolvedUrl, attachment?.fileName || resolved?.fileName || 'Attachment');
+    } catch (error) {
+      console.error('Failed to resolve attachment URL:', error);
+      this.toastrService.error('Unable to open attachment');
+    }
   }
 
   async onSubmit() {

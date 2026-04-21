@@ -155,9 +155,9 @@
                   <p class="mb-0 small fw-medium">{{attachment.fileName}}</p>
                   <small class="text-muted">{{attachment.fileSizeConv}}</small>
                 </div>
-                <a [href]="'https://dashboard.eye-fi.com/attachments/safetyIncident/' + attachment.fileName" target="_blank" class="btn btn-sm btn-outline-warning">
+                <button type="button" class="btn btn-sm btn-outline-warning" (click)="openAttachment(attachment)">
                   <i class="mdi mdi-download"></i>
-                </a>
+                </button>
               </div>
             </div>
 

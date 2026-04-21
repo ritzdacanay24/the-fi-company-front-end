@@ -27,6 +27,9 @@ export const envValidationSchema = Joi.object({
     otherwise: Joi.number().port().default(25),
   }),
   SMTP_SECURE: Joi.boolean().default(false),
+  SMTP_CONNECTION_TIMEOUT_MS: Joi.number().integer().min(1000).default(10000),
+  SMTP_GREETING_TIMEOUT_MS: Joi.number().integer().min(1000).default(10000),
+  SMTP_SOCKET_TIMEOUT_MS: Joi.number().integer().min(1000).default(15000),
   SMTP_USER: Joi.string().trim().allow('').optional(),
   SMTP_PASSWORD: Joi.string().trim().allow('').optional(),
   DEV_EMAIL_REROUTE_TO: Joi.string().trim().email().default('ritz.dacanay@the-fi-company.com'),
@@ -35,6 +38,10 @@ export const envValidationSchema = Joi.object({
     .trim()
     .uri()
     .default('https://the-fi-company.com/wp-content/uploads/2024/09/The-Fi-Company-Logo-Blue-1.png'),
+  MAIL_SIGNATURE_IMAGE_URL: Joi.string()
+    .trim()
+    .uri()
+    .default('https://dashboard.eye-fi.com/test/signatures/Picture1.png'),
   MAIL_DISCLAIMER_TEXT: Joi.string()
     .trim()
     .default('Confidentiality Notice: This email and any attachments are intended only for the designated recipient(s) and may contain confidential information. If you received this in error, please delete it and notify the sender immediately.'),

@@ -1,9 +1,11 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { RowDataPacket } from 'mysql2/promise';
 import PDFDocument from 'pdfkit';
 import { MysqlService } from '@/shared/database/mysql.service';
 import { QadOdbcService } from '@/shared/database/qad-odbc.service';
 import { EmailService } from '@/shared/email/email.service';
+import { EmailTemplateService } from '@/shared/email/email-template.service';
 import { IgtTransferEmailRecipientsService } from '../igt-transfer-email-recipients/igt-transfer-email-recipients.service';
 
 interface IgtTransferRow extends RowDataPacket {
@@ -68,6 +70,10 @@ export class IgtTransferService {
     private readonly qadOdbcService: QadOdbcService,
     @Inject(EmailService)
     private readonly emailService: EmailService,
+    @Inject(EmailTemplateService)
+    private readonly emailTemplateService: EmailTemplateService,
+    @Inject(ConfigService)
+    private readonly configService: ConfigService,
     @Inject(IgtTransferEmailRecipientsService)
     private readonly igtTransferEmailRecipientsService: IgtTransferEmailRecipientsService,
   ) {}
@@ -174,7 +180,6 @@ export class IgtTransferService {
     }
 
     const soDueRows = await this.getSoDueRows(main.so_number, details);
-    const soDueTableHtml = this.buildSoDueTableHtml(soDueRows);
 
     const serialNumbers = details
       .map((row) => (row.serial_numbers || '').trim())
@@ -184,7 +189,17 @@ export class IgtTransferService {
     const serialSuffix = serialNumbers.length > 0 ? ` SN# ${serialNumbers.join(', ')}` : '';
     const subject = `${main.transfer_reference} - ${slug}${serialSuffix}`;
 
-    const body = this.buildEmailBody(main.to_location, soDueTableHtml);
+    const normalizedToLocation = (main.to_location || '').toUpperCase();
+    const signatureImageUrl =
+      this.configService.get<string>('MAIL_SIGNATURE_IMAGE_URL') ||
+      'https://dashboard.eye-fi.com/test/signatures/Picture1.png';
+
+    const body = this.emailTemplateService.render('igt-transfer', {
+      isReno: normalizedToLocation === 'R200',
+      hasSoDueRows: soDueRows.length > 0,
+      soDueRows,
+      signatureImageUrl,
+    });
     const pdfBuffer = await this.generateTransferPdfBuffer(main, details, data.printedName);
 
     await this.emailService.sendMail({
@@ -318,73 +333,6 @@ export class IgtTransferService {
     }
 
     return rows;
-  }
-
-  private buildSoDueTableHtml(
-    rows: Array<{ so_number: string; so_line: string; due_date: string }>,
-  ): string {
-    if (rows.length === 0) {
-      return '';
-    }
-
-    const bodyRows = rows
-      .map(
-        (row) => `
-          <tr style="background-color: #f9f9f9;">
-            <td style="padding: 2px 4px; border: 1px solid #ddd; line-height: 1.2;">${this.escapeHtml(row.so_number)}</td>
-            <td style="padding: 2px 4px; border: 1px solid #ddd; line-height: 1.2;">${this.escapeHtml(row.so_line)}</td>
-            <td style="padding: 2px 4px; border: 1px solid #ddd; line-height: 1.2;">${this.escapeHtml(row.due_date)}</td>
-          </tr>
-        `,
-      )
-      .join('');
-
-    return `
-      <table border="1" cellpadding="0" cellspacing="0" style="border-collapse: collapse; margin: 15px 0; width: 600px; font-family: Arial, sans-serif; font-size: 14px; line-height: 1.2;">
-        <thead>
-          <tr style="background-color: #003366; color: white;">
-            <th style="padding: 2px 4px; text-align: left; width: 200px; line-height: 1.2;">SO Number</th>
-            <th style="padding: 2px 4px; text-align: left; width: 150px; line-height: 1.2;">Line #</th>
-            <th style="padding: 2px 4px; text-align: left; width: 250px; line-height: 1.2;">Due Date</th>
-          </tr>
-        </thead>
-        <tbody>${bodyRows}</tbody>
-      </table>
-    `;
-  }
-
-  private buildEmailBody(
-    toLocation: string,
-    soDueTableHtml: string,
-  ): string {
-    const location = (toLocation || '').toUpperCase();
-    const message =
-      location === 'R200'
-        ? 'Attached transfer for above referenced sign, shipping to Reno tonight.'
-        : 'Attached transfer for above referenced sign, being transferred to Field Service today.';
-
-    return `
-      <div style="font-family: Arial, sans-serif; font-size: 14px;">
-        Hello, <br/><br/>
-
-        ${message} <br/><br/>
-
-        ${soDueTableHtml}
-
-        Thanks, <br/><br/>
-
-        <img src='https://dashboard.eye-fi.com/test/signatures/Picture1.png' alt='The Fi Company' style='width:100px'/>
-      </div>
-    `;
-  }
-
-  private escapeHtml(value: string): string {
-    return value
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
   }
 
   private async generateTransferPdfBuffer(

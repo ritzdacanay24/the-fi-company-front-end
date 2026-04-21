@@ -20,11 +20,17 @@ export class EmailService {
     const secure = this.configService.getOrThrow<boolean>('SMTP_SECURE');
     const smtpUser = this.configService.get<string>('SMTP_USER');
     const smtpPassword = this.configService.get<string>('SMTP_PASSWORD');
+    const connectionTimeout = this.configService.get<number>('SMTP_CONNECTION_TIMEOUT_MS') ?? 10000;
+    const greetingTimeout = this.configService.get<number>('SMTP_GREETING_TIMEOUT_MS') ?? 10000;
+    const socketTimeout = this.configService.get<number>('SMTP_SOCKET_TIMEOUT_MS') ?? 15000;
 
     this.transporter = nodemailer.createTransport({
       host,
       port,
       secure,
+      connectionTimeout,
+      greetingTimeout,
+      socketTimeout,
       auth:
         smtpUser && smtpPassword
           ? {

@@ -8,11 +8,12 @@ import { ToastrService } from "ngx-toastr";
 import { AgGridModule } from "ag-grid-angular";
 import { autoSizeColumns } from "src/assets/js/util";
 import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
-import { Lightbox } from "ngx-lightbox";
 import { IconRendererComponent } from "@app/shared/ag-grid/icon-renderer/icon-renderer.component";
 import { AuthenticationService } from "@app/core/services/auth.service";
 import { ColDef, GridOptions } from "ag-grid-community";
 import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
+import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
+import { FileViewerModalComponent } from "@app/shared/components/file-viewer-modal/file-viewer-modal.component";
 
 @Component({
   standalone: true,
@@ -32,7 +33,7 @@ export class NcrAttachmentsListComponent implements OnInit {
     public ncrService: NcrService,
     public attachmentsService: AttachmentsService,
     private toastrService: ToastrService,
-    private lightbox: Lightbox,
+    private modalService: NgbModal,
     private authenticationService: AuthenticationService
   ) {}
 
@@ -43,17 +44,6 @@ export class NcrAttachmentsListComponent implements OnInit {
       this.id = changes["id"].currentValue;
       this.getData();
     }
-  }
-
-  images = [];
-  open(index: number): void {
-    // open lightbox
-    this.lightbox.open(this.images, index, {});
-  }
-
-  close(): void {
-    // close lightbox programmatically
-    this.lightbox.close();
   }
 
   @Input() id = null;
@@ -80,25 +70,27 @@ export class NcrAttachmentsListComponent implements OnInit {
   data;
 
   async getData() {
-    this.images = [];
     this.data = await this.attachmentsService.find({
       field: "NCR",
       uniqueId: this.id,
       active: 1,
     });
+  }
 
-    for (let i = 0; i < this.data.length; i++) {
-      let row = this.data[i];
-      const src = `https://dashboard.eye-fi.com/attachments/ncr/${row.fileName}`;
-      const caption = "Image " + i + "- " + row.createdDate;
-      const thumb = src;
-      const item = {
-        src: src,
-        caption: caption,
-        thumb: thumb,
-      };
-      this.images.push(item);
-    }
+  private getLegacyNcrAttachmentUrl(fileName: string): string {
+    return `https://dashboard.eye-fi.com/attachments/ncr/${encodeURIComponent(fileName)}`;
+  }
+
+  private openFileViewerModal(url: string, fileName: string): void {
+    const modalRef = this.modalService.open(FileViewerModalComponent, {
+      size: "xl",
+      centered: true,
+      backdrop: true,
+      keyboard: true,
+    });
+
+    modalRef.componentInstance.url = url;
+    modalRef.componentInstance.fileName = fileName;
   }
 
   async onDelete(data) {
@@ -115,13 +107,22 @@ export class NcrAttachmentsListComponent implements OnInit {
     } catch (err) {}
   }
 
-  onEdit(e) {
-    //this.lightbox.open(this.images, e.index, {});
-    window.open(
-      `https://dashboard.eye-fi.com/attachments/ncr/${e}`,
-      "Image",
-      "width=largeImage.stylewidth,height=largeImage.style.height,resizable=1"
-    );
+  async onEdit(row: any) {
+    try {
+      const resolved = await this.attachmentsService.getViewById(row?.id);
+      const resolvedUrl =
+        resolved?.url || row?.link || this.getLegacyNcrAttachmentUrl(String(row?.fileName || ""));
+
+      if (!resolvedUrl) {
+        this.toastrService.warning("Attachment URL not available");
+        return;
+      }
+
+      this.openFileViewerModal(resolvedUrl, row?.fileName || resolved?.fileName || "Attachment");
+    } catch (error) {
+      console.error("Failed to resolve NCR attachment URL:", error);
+      this.toastrService.error("Unable to open attachment");
+    }
   }
 
   columnDefs: ColDef[] = [
@@ -132,7 +133,7 @@ export class NcrAttachmentsListComponent implements OnInit {
       pinned: "left",
       cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
-        onClick: (e: any) => this.onEdit(e.rowData?.fileName),
+        onClick: (e: any) => this.onEdit(e.rowData),
         value: "SELECT",
       },
       maxWidth: 115,

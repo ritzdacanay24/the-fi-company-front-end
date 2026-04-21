@@ -10,6 +10,7 @@ import moment from "moment";
 import { FormArray, FormBuilder, FormGroup } from "@angular/forms";
 import { AuthenticationService } from "@app/core/services/auth.service";
 import { SweetAlert } from "@app/shared/sweet-alert/sweet-alert.service";
+import { TimeoutError } from "rxjs";
 
 @Component({
   standalone: true,
@@ -171,6 +172,17 @@ export class IgtTransferEditComponent {
       SweetAlert.fire({ text: "Email sent." });
     } catch (err) {
       SweetAlert.close();
+      if (err instanceof TimeoutError) {
+        SweetAlert.fire({
+          icon: "error",
+          text: "Email send timed out. Please verify SMTP service and try again.",
+        });
+      } else {
+        SweetAlert.fire({
+          icon: "error",
+          text: "Failed to send email. Please try again.",
+        });
+      }
     }
   }
 }
