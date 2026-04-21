@@ -26,6 +26,7 @@ export class AttachmentsRepository extends BaseRepository<RowDataPacket> {
     'title',
     'description',
     'directory',
+    'storage_source',
     'date_of_service',
     'type_of_work_completed',
   ]);
@@ -50,6 +51,7 @@ export class AttachmentsRepository extends BaseRepository<RowDataPacket> {
     'title',
     'description',
     'directory',
+    'storage_source',
     'date_of_service',
     'type_of_work_completed',
   ]);

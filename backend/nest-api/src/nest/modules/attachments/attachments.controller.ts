@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, ParseIntPipe, Post, Put, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AttachmentsService } from './attachments.service';
 
@@ -28,6 +28,16 @@ export class AttachmentsController {
   @Get('getAllRelatedAttachments')
   async getAllRelatedAttachments(@Query('id', ParseIntPipe) id: number) {
     return this.service.getAllRelatedAttachments(id);
+  }
+
+  @Get('viewById')
+  async viewById(@Query('id', ParseIntPipe) id: number) {
+    return this.service.getViewById(id);
+  }
+
+  @Get('viewById/:id')
+  async viewByIdPath(@Param('id', ParseIntPipe) id: number) {
+    return this.service.getViewById(id);
   }
 
   @Put('updateById')

@@ -18,9 +18,15 @@ import { NgbActiveModal } from "@ng-bootstrap/ng-bootstrap";
 
     <div class="modal-body p-0">
       <div class="viewer-container">
-        @if (isImage()) {
+        @if (isImage() && !imageLoadError) {
           <div class="image-viewer">
-            <img [src]="url" [alt]="fileName" [style.transform]="'scale(' + zoomLevel + ')'" />
+            <img
+              [src]="url"
+              [alt]="fileName"
+              [style.transform]="'scale(' + zoomLevel + ')'"
+              (error)="onImageError()"
+              (load)="onImageLoad()"
+            />
           </div>
           <div class="zoom-controls">
             <button type="button" (click)="zoomOut()" [disabled]="zoomLevel <= 0.5" title="Zoom out">
@@ -32,6 +38,16 @@ import { NgbActiveModal } from "@ng-bootstrap/ng-bootstrap";
             <button type="button" (click)="zoomIn()" [disabled]="zoomLevel >= 3" title="Zoom in">
               <i class="mdi mdi-plus"></i>
             </button>
+          </div>
+        } @else if (isImage() && imageLoadError) {
+          <div class="preview-unavailable">
+            <i class="mdi mdi-image-broken-variant preview-icon"></i>
+            <h5>Image Preview Unavailable</h5>
+            <p>The image could not be loaded from the current URL.</p>
+            <div class="d-flex justify-content-center gap-2">
+              <a [href]="url" target="_blank" class="btn btn-outline-primary">Open in New Tab</a>
+              <a [href]="url" download class="btn btn-primary">Download</a>
+            </div>
           </div>
         } @else if (isPdf()) {
           <iframe [src]="safeUrl" class="pdf-viewer"></iframe>
@@ -137,13 +153,23 @@ export class FileViewerModalComponent {
 
   safeUrl: SafeResourceUrl | null = null;
   zoomLevel = 1;
+  imageLoadError = false;
 
   constructor(public activeModal: NgbActiveModal, private sanitizer: DomSanitizer) {}
 
   ngOnInit(): void {
+    this.imageLoadError = false;
     if (this.isPdf()) {
       this.safeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.url);
     }
+  }
+
+  onImageError(): void {
+    this.imageLoadError = true;
+  }
+
+  onImageLoad(): void {
+    this.imageLoadError = false;
   }
 
   isImage(): boolean {

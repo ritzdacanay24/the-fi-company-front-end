@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { extname } from 'node:path';
 import { AttachmentsMetadataService } from './attachments-metadata.service';
-import { AttachmentsStorageService } from './attachments-storage.service';
+import { AttachmentsStorageService } from '@/nest/modules/attachments/attachments-storage.service';
 
 @Injectable()
 export class AttachmentsService {
@@ -48,12 +48,33 @@ export class AttachmentsService {
   }
 
   async find(filters: Record<string, string>) {
-    return this.metadataService.find(filters);
+    const rows = await this.metadataService.find(filters);
+    return Promise.all(rows.map((row) => this.storageService.withResolvedLink(row)));
   }
 
   async getAllRelatedAttachments(id: number) {
     const rows = await this.metadataService.getAllRelatedAttachments(id);
     return Promise.all(rows.map((row) => this.storageService.withResolvedLink(row)));
+  }
+
+  async getViewById(id: number) {
+    const row = await this.metadataService.getById(id);
+    if (!row) {
+      throw new NotFoundException('Attachment not found');
+    }
+
+    const resolved = await this.storageService.withResolvedLink(row as Record<string, unknown>);
+    const link = typeof resolved?.link === 'string' ? resolved.link.trim() : '';
+    if (!link) {
+      throw new NotFoundException('Attachment URL not available');
+    }
+
+    return {
+      id,
+      url: link,
+      fileName: resolved?.fileName,
+      storage_source: resolved?.storage_source,
+    };
   }
 
   async updateById(id: number, payload: Record<string, unknown>) {
@@ -82,6 +103,7 @@ export class AttachmentsService {
       uniqueId,
       link,
       ext,
+      storage_source: 'local',
     };
   }
 

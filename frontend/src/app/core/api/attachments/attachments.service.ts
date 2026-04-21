@@ -27,6 +27,10 @@ export class AttachmentsService extends DataService<any> {
     return { message: 'Successfully deleted' };
   };
 
+  getViewById = async (id: number): Promise<{ id: number; url: string; fileName?: string; storage_source?: string | null }> => {
+    return await firstValueFrom(this.http.get<{ id: number; url: string; fileName?: string; storage_source?: string | null }>(`${url}/viewById/${id}`));
+  };
+
 
   getAttachmentByRequestId(id: any) {
     return this.http.get(`https://dashboard.eye-fi.com/tasks/fieldService/requests/getAttachmentByRequestId.php?id=${id}`).toPromise();

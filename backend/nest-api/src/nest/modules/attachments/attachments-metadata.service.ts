@@ -21,6 +21,10 @@ export class AttachmentsMetadataService {
     return this.repository.getAllRelatedAttachments(id);
   }
 
+  getById(id: number) {
+    return this.repository.findOne({ id });
+  }
+
   async updateById(id: number, payload: Record<string, unknown>) {
     const rowCount = await this.repository.updateAttachment(id, payload);
     return { rowCount };

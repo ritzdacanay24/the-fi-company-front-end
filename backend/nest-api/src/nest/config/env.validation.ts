@@ -9,6 +9,10 @@ export const envValidationSchema = Joi.object({
     otherwise: Joi.string().trim().uri().default('https://dashboard.eye-fi.com/dist/web'),
   }),
   CORS_ORIGIN: Joi.string().allow('').optional(),
+  ATTACHMENTS_FS_REMOTE_BASE_URL: Joi.string()
+    .trim()
+    .uri()
+    .default('https://dashboard.eye-fi.com/attachments'),
   QAD_DSN: Joi.string().optional(),
   QAD_USER: Joi.string().optional(),
   QAD_PASSWORD: Joi.string().optional(),

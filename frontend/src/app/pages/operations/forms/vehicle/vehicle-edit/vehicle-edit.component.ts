@@ -72,20 +72,50 @@ export class VehicleEditComponent {
 
   data: any;
 
-  onEdit(row: any) {
-    const url = this.getAttachmentUrl(row);
+  async onEdit(row: any) {
+    try {
+      const attachmentId = Number(row?.id);
+      if (!attachmentId) {
+        this.toastrService.warning("Attachment ID not available");
+        return;
+      }
+
+      const payload = await this.attachmentsService.getViewById(attachmentId);
+      const url = this.normalizeAttachmentViewUrl(String(payload?.url || "").trim(), payload?.storage_source ?? null);
+      if (!url) {
+        this.toastrService.warning("Attachment URL not available");
+        return;
+      }
+
+      const modalRef = this.modalService.open(FileViewerModalComponent, {
+        size: "xl",
+        centered: true,
+        scrollable: true,
+      });
+      modalRef.componentInstance.url = url;
+      modalRef.componentInstance.fileName = payload?.fileName || row?.fileName || "Attachment";
+    } catch (error) {
+      this.toastrService.error("Unable to load attachment");
+    }
+  }
+
+  private normalizeAttachmentViewUrl(url: string, storageSource: string | null): string {
     if (!url) {
-      this.toastrService.warning("Attachment URL not available");
-      return;
+      return "";
     }
 
-    const modalRef = this.modalService.open(FileViewerModalComponent, {
-      size: "xl",
-      centered: true,
-      scrollable: true,
-    });
-    modalRef.componentInstance.url = url;
-    modalRef.componentInstance.fileName = row?.fileName || "Attachment";
+    if (/^https?:\/\//i.test(url)) {
+      return url;
+    }
+
+    const apiBaseUrl = String(environment.apiV2BaseUrl || "").replace(/\/+$/, "");
+    const normalizedPath = url.startsWith("/") ? url : `/${url}`;
+
+    if (storageSource === "local" || normalizedPath.startsWith("/uploads/")) {
+      return `${apiBaseUrl}${normalizedPath}`;
+    }
+
+    return `${apiBaseUrl}${normalizedPath}`;
   }
 
   getAttachmentUrl(row: any): string {

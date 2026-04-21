@@ -3,31 +3,31 @@
     <div class="col-lg-8 col-xl-8">
       <div class="card border-0">
         <div class="card-header bg-success bg-gradient text-white position-relative overflow-hidden p-4"
-             style="border-radius: 16px 16px 0 0;">
+          style="border-radius: 16px 16px 0 0;">
           <!-- Background Pattern -->
           <div class="position-absolute" style="top: -20px; right: -20px; opacity: 0.1;">
-                                                                                                 <i class="mdi mdi-tools" style="font-size: 8rem; transform: rotate(15deg);"></i>
+            <i class="mdi mdi-tools" style="font-size: 8rem; transform: rotate(15deg);"></i>
           </div>
-          
-          <div class="d-flex align-items-center position-relative">                                                                                                                                                               
+
+          <div class="d-flex align-items-center position-relative">
             <span class="bg-white bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3"
-                  style="width: 2.5rem; height: 2.5rem;">
+              style="width: 2.5rem; height: 2.5rem;">
               <i class="mdi mdi-tools fs-4 text-white"></i>
             </span>
-            <div>                
+            <div>
               <h4 class="mb-1 fw-bold text-white">
-                Submit Job                     
+                Submit Job
               </h4>
               <p class="text-white-50 mb-0">Complete work order submission and finalize service documentation</p>
             </div>
           </div>
-        </div>         
-                                                           
+        </div>
+
         <!-- Loading State -->
         <div class="card-body text-center p-5" *ngIf="isLoading">
           <div class="spinner-border text-primary mb-3" role="status">
             <span class="visually-hidden">Loading...</span>
-          </div>                                                                                                                                                                                                                                               
+          </div>
           <p class="text-muted">Loading data. Please wait...</p>
         </div>
 
@@ -39,7 +39,9 @@
               <i class="mdi mdi-information fs-5 me-3 mt-1"></i>
               <div>
                 <h6 class="alert-heading mb-2">Job Submission Process</h6>
-                <p class="mb-0">Complete all required fields below to finalize and submit your work order. This form captures essential completion details, customer information, digital signatures, and verification status.</p>
+                <p class="mb-0">Complete all required fields below to finalize and submit your work order. This form
+                  captures essential completion details, customer information, digital signatures, and verification
+                  status.</p>
               </div>
             </div>
           </div>
@@ -48,7 +50,7 @@
           <div class="mb-5">
             <div class="d-flex align-items-center mb-3">
               <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3"
-                   style="width: 2.5rem; height: 2.5rem;">
+                style="width: 2.5rem; height: 2.5rem;">
                 <i class="mdi mdi-checkbox-marked-circle text-primary"></i>
               </div>
               <div>
@@ -56,12 +58,13 @@
                 <small class="text-muted">Indicate whether the assigned work has been completed successfully</small>
               </div>
             </div>
-            
+
             <div class="row g-3">
               <div class="col-md-8">
                 <label class="form-label fw-semibold ">
                   Has all scheduled work been completed?
-                  <small class="text-muted d-block fw-normal required">Select whether the service call was completed as planned</small>
+                  <small class="text-muted d-block fw-normal required">Select whether the service call was completed as
+                    planned</small>
                 </label>
                 <select class="form-select" [(ngModel)]="data.workCompleted" (change)="update()">
                   <option selected [value]="">Please select completion status</option>
@@ -77,10 +80,11 @@
             <div class="mt-3" *ngIf="data?.workCompleted == 'No'">
               <label class="form-label fw-semibold ">
                 Detailed Explanation Required
-                <small class="text-muted d-block fw-normal required">Provide specific reasons why the service could not be completed</small>
+                <small class="text-muted d-block fw-normal required">Provide specific reasons why the service could not
+                  be completed</small>
               </label>
               <textarea class="form-control" rows="4"
-                placeholder="Please provide detailed explanation including: specific issues encountered, parts needed, customer availability, scheduling conflicts, or other relevant factors that prevented completion..." 
+                placeholder="Please provide detailed explanation including: specific issues encountered, parts needed, customer availability, scheduling conflicts, or other relevant factors that prevented completion..."
                 [(ngModel)]="data.workCompletedComment" (change)="update()"></textarea>
               <div class="form-text text-warning">
                 <i class="mdi mdi-alert me-1"></i>
@@ -93,7 +97,7 @@
           <div class="mb-5">
             <div class="d-flex align-items-center mb-3">
               <div class="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3"
-                   style="width: 2.5rem; height: 2.5rem;">
+                style="width: 2.5rem; height: 2.5rem;">
                 <i class="mdi mdi-account text-success"></i>
               </div>
               <div>
@@ -101,20 +105,21 @@
                 <small class="text-muted">Verify and update customer details for our records</small>
               </div>
             </div>
-            
+
             <div class="alert alert-light border border-success border-opacity-25 mb-3">
               <i class="mdi mdi-shield-check me-2 text-success"></i>
-              <small><strong>Privacy Notice:</strong> Customer information is securely stored and used only for service delivery and communication purposes.</small>
+              <small><strong>Privacy Notice:</strong> Customer information is securely stored and used only for service
+                delivery and communication purposes.</small>
             </div>
-            
+
             <div class="row g-3">
               <div class="col-md-6">
                 <label class="form-label fw-semibold ">
                   Primary Customer Name
-                  <small class="text-muted d-block fw-normal required">Full name of the person authorizing the service</small>
+                  <small class="text-muted d-block fw-normal required">Full name of the person authorizing the
+                    service</small>
                 </label>
-                <input type="text" class="form-control" 
-                  placeholder="Enter full customer name (First Last)" 
+                <input type="text" class="form-control" placeholder="Enter full customer name (First Last)"
                   [(ngModel)]="data.customerName1" (change)="update()">
                 <div class="form-text">
                   <i class="mdi mdi-account-check me-1"></i>
@@ -126,9 +131,8 @@
                   Primary Contact Number
                   <small class="text-muted d-block fw-normal required">Best phone number to reach the customer</small>
                 </label>
-                <input type="tel" class="form-control" 
-                  placeholder="(555) 123-4567" 
-                  [(ngModel)]="data.phone" (change)="update()">
+                <input type="tel" class="form-control" placeholder="(555) 123-4567" [(ngModel)]="data.phone"
+                  (change)="update()">
                 <div class="form-text">
                   <i class="mdi mdi-phone me-1"></i>
                   Include area code. This number may be used for follow-up communication or future service calls.
@@ -141,7 +145,7 @@
           <div class="mb-5">
             <div class="d-flex align-items-center mb-3">
               <div class="bg-info bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3"
-                   style="width: 2.5rem; height: 2.5rem;">
+                style="width: 2.5rem; height: 2.5rem;">
                 <i class="mdi mdi-draw text-info"></i>
               </div>
               <div>
@@ -152,9 +156,10 @@
 
             <div class="alert alert-info border-0 mb-4">
               <i class="mdi mdi-file-document-outline me-2"></i>
-              <small><strong>Legal Notice:</strong> Digital signatures are legally binding and serve as confirmation of service completion and customer satisfaction.</small>
+              <small><strong>Legal Notice:</strong> Digital signatures are legally binding and serve as confirmation of
+                service completion and customer satisfaction.</small>
             </div>
-            
+
             <div class="row g-4">
               <div class="col-md-6">
                 <div class="border border-primary border-opacity-25 rounded p-3 h-100">
@@ -162,16 +167,16 @@
                     <i class="mdi mdi-account me-2 text-primary"></i>Customer Authorization Signature
                   </label>
                   <p class="small text-muted mb-3">
-                    The customer's signature confirms that they received the service, are satisfied with the work completed, and authorize any charges associated with this service call.
+                    The customer's signature confirms that they received the service, are satisfied with the work
+                    completed, and authorize any charges associated with this service call.
                   </p>
                   <button class="btn btn-outline-primary w-100 mb-3" (click)="openSignature()">
                     <i class="mdi mdi-pencil me-2"></i>Capture Customer Signature
                   </button>
                   <div *ngIf="data?.customerSignatureImage" class="text-center">
-                    <img [errorImage]="'assets/images/no-image.PNG'"
-                      [defaultImage]="'assets/images/loading.PNG'" 
-                      [lazyLoad]="data?.customerSignatureImage"
-                      class="img-fluid rounded border" style="max-height: 150px;">
+                    <img [errorImage]="'assets/images/no-image.PNG'" [defaultImage]="'assets/images/loading.PNG'"
+                      [lazyLoad]="data?.customerSignatureImage" class="img-fluid rounded border"
+                      style="max-height: 150px;">
                     <div class="form-text text-success mt-2">
                       <i class="mdi mdi-check me-1"></i>Customer signature captured successfully
                     </div>
@@ -184,16 +189,16 @@
                     <i class="mdi mdi-account-wrench me-2 text-success"></i>Technician Verification Signature
                   </label>
                   <p class="small text-muted mb-3">
-                    The technician's signature certifies that all work was performed according to company standards, safety protocols were followed, and the service call is complete.
+                    The technician's signature certifies that all work was performed according to company standards,
+                    safety protocols were followed, and the service call is complete.
                   </p>
                   <button class="btn btn-outline-success w-100 mb-3" (click)="openTechSignature()">
                     <i class="mdi mdi-pencil me-2"></i>Capture Technician Signature
                   </button>
                   <div *ngIf="data?.technicianSignatureImage" class="text-center">
-                    <img [errorImage]="'assets/images/no-image.PNG'"
-                      [defaultImage]="'assets/images/loading.PNG'" 
-                      [lazyLoad]="data?.technicianSignatureImage"
-                      class="img-fluid rounded border" style="max-height: 150px;">
+                    <img [errorImage]="'assets/images/no-image.PNG'" [defaultImage]="'assets/images/loading.PNG'"
+                      [lazyLoad]="data?.technicianSignatureImage" class="img-fluid rounded border"
+                      style="max-height: 150px;">
                     <div class="form-text text-success mt-2">
                       <i class="mdi mdi-check me-1"></i>Technician signature captured successfully
                     </div>
@@ -207,20 +212,22 @@
           <div class="mb-5">
             <div class="d-flex align-items-center mb-3">
               <div class="bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3"
-                   style="width: 2.5rem; height: 2.5rem;">
+                style="width: 2.5rem; height: 2.5rem;">
                 <i class="mdi mdi-cog text-warning"></i>
               </div>
               <div>
                 <h5 class="mb-0 text-warning fw-semibold">Parts & Equipment Management</h5>
-                <small class="text-muted">Track the disposition of parts, tools, and equipment used during service</small>
+                <small class="text-muted">Track the disposition of parts, tools, and equipment used during
+                  service</small>
               </div>
             </div>
-            
+
             <div class="row">
               <div class="col-md-8">
                 <label class="form-label fw-semibold">
                   Parts and Equipment Return Location
-                  <small class="text-muted d-block fw-normal">Where were any removed parts, old equipment, or service materials returned to?</small>
+                  <small class="text-muted d-block fw-normal">Where were any removed parts, old equipment, or service
+                    materials returned to?</small>
                 </label>
                 <select class="form-select" [(ngModel)]="data.partLocation" (change)="update();goToBottom()">
                   <option value="">Please select return destination</option>
@@ -228,33 +235,36 @@
                 </select>
                 <div class="form-text">
                   <i class="mdi mdi-information me-1"></i>
-                  Select "Eye-Fi" if parts were returned to company inventory, "Customer" if left with customer, or "N/A" if no parts were involved.
+                  Select "Eye-Fi" if parts were returned to company inventory, "Customer" if left with customer, or
+                  "N/A" if no parts were involved.
                 </div>
               </div>
             </div>
 
             <!-- Eye-Fi Return Section -->
-            <div class="mt-4 border border-info border-opacity-25 rounded p-3 bg-light" *ngIf="data?.partLocation == 'Eye-Fi'">
+            <div class="mt-4 border border-info border-opacity-25 rounded p-3 bg-light"
+              *ngIf="data?.partLocation == 'Eye-Fi'">
               <h6 class="fw-semibold mb-2 d-flex align-items-center text-info">
                 <i class="mdi mdi-office-building me-2"></i>Eye-Fi Company Return Documentation
               </h6>
               <p class="small text-muted mb-3">
-                When parts or equipment are returned to Eye-Fi, we need verification from the receiving employee to maintain accurate inventory records and chain of custody.
+                When parts or equipment are returned to Eye-Fi, we need verification from the receiving employee to
+                maintain accurate inventory records and chain of custody.
               </p>
               <div class="row g-3">
                 <div class="col-md-6">
                   <label class="form-label fw-semibold required">
                     Receiving Employee Signature
-                    <small class="text-muted d-block fw-normal">Signature of Eye-Fi employee who received the returned items</small>
+                    <small class="text-muted d-block fw-normal">Signature of Eye-Fi employee who received the returned
+                      items</small>
                   </label>
                   <button class="btn btn-outline-info w-100 mb-3" (click)="openRecSignature()">
                     <i class="mdi mdi-pencil me-2"></i>Capture Employee Signature
                   </button>
                   <div *ngIf="data?.partReceivedBySignature" class="text-center">
-                    <img [errorImage]="'assets/images/no-image.PNG'"
-                      [defaultImage]="'assets/images/loading.PNG'" 
-                      [lazyLoad]="data?.partReceivedBySignature"
-                      class="img-fluid rounded border" style="max-height: 150px;">
+                    <img [errorImage]="'assets/images/no-image.PNG'" [defaultImage]="'assets/images/loading.PNG'"
+                      [lazyLoad]="data?.partReceivedBySignature" class="img-fluid rounded border"
+                      style="max-height: 150px;">
                     <div class="form-text text-success mt-2">
                       <i class="mdi mdi-check me-1"></i>Employee signature captured
                     </div>
@@ -263,10 +273,11 @@
                 <div class="col-md-6">
                   <label class="form-label fw-semibold required">
                     Receiving Employee Information
-                    <small class="text-muted d-block fw-normal">Full name and title of the person who received the returned items</small>
+                    <small class="text-muted d-block fw-normal">Full name and title of the person who received the
+                      returned items</small>
                   </label>
-                  <input type="text" class="form-control" 
-                    placeholder="Enter full name and title (e.g., John Smith - Inventory Manager)" 
+                  <input type="text" class="form-control"
+                    placeholder="Enter full name and title (e.g., John Smith - Inventory Manager)"
                     [(ngModel)]="data.partReceivedByName" (change)="update()">
                   <div class="form-text">
                     <i class="mdi mdi-account-check me-1"></i>
@@ -281,20 +292,23 @@
           <div class="mb-4">
             <div class="d-flex align-items-center mb-3">
               <div class="bg-danger bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3"
-                   style="width: 2.5rem; height: 2.5rem;">
+                style="width: 2.5rem; height: 2.5rem;">
                 <i class="mdi mdi-shield-check text-danger"></i>
               </div>
               <div>
                 <h5 class="mb-0 text-danger fw-semibold">Quality Assurance & Team Verification</h5>
-                <small class="text-muted">Multi-level verification ensures quality standards and proper completion protocols</small>
+                <small class="text-muted">Multi-level verification ensures quality standards and proper completion
+                  protocols</small>
               </div>
             </div>
 
             <div class="alert alert-warning border-0 mb-3">
               <i class="mdi mdi-account-group me-2"></i>
-              <small><strong>Team Verification Process:</strong> Each team member listed below must verify and approve this ticket before final submission. Click on any team member to update their verification status.</small>
+              <small><strong>Team Verification Process:</strong> Each team member listed below must verify and approve
+                this ticket before final submission. Click on any team member to update their verification
+                status.</small>
             </div>
-            
+
             <div class="border border-danger border-opacity-25 rounded">
               <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
@@ -309,10 +323,8 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <tr *ngFor="let row of teamsData" 
-                        class="cursor-pointer" 
-                        (click)="ticketVerified(row)"
-                        style="cursor: pointer;">
+                    <tr *ngFor="let row of teamsData" class="cursor-pointer" (click)="ticketVerified(row)"
+                      style="cursor: pointer;">
                       <td class="py-3">
                         <div class="d-flex align-items-center">
                           <i class="mdi mdi-account me-3 text-muted"></i>
@@ -335,10 +347,11 @@
                 </table>
               </div>
             </div>
-            
+
             <div class="form-text mt-2">
               <i class="mdi mdi-information me-1"></i>
-              All team members must verify the ticket before it can be successfully submitted. Verification confirms work quality, completion standards, and customer satisfaction.
+              All team members must verify the ticket before it can be successfully submitted. Verification confirms
+              work quality, completion standards, and customer satisfaction.
             </div>
           </div>
 
@@ -346,7 +359,7 @@
           <div class="mb-4" *ngIf="data && !loading">
             <div class="d-flex align-items-center mb-3">
               <div class="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3"
-                   style="width: 2.5rem; height: 2.5rem;">
+                style="width: 2.5rem; height: 2.5rem;">
                 <i class="mdi mdi-file-check text-success"></i>
               </div>
               <div>
@@ -390,8 +403,8 @@
                       <i class="mdi mdi-checkbox-marked-circle me-1"></i>Work Completion
                     </h6>
                     <div class="d-flex align-items-center">
-                      <span class="badge me-2" 
-                            [ngClass]="data.workCompleted === 'Yes' ? 'bg-success' : data.workCompleted === 'No' ? 'bg-danger' : 'bg-warning'">
+                      <span class="badge me-2"
+                        [ngClass]="data.workCompleted === 'Yes' ? 'bg-success' : data.workCompleted === 'No' ? 'bg-danger' : 'bg-warning'">
                         <i class="mdi mdi-check me-1" *ngIf="data.workCompleted === 'Yes'"></i>
                         <i class="mdi mdi-close me-1" *ngIf="data.workCompleted === 'No'"></i>
                         <i class="mdi mdi-help me-1" *ngIf="!data.workCompleted"></i>
@@ -399,7 +412,8 @@
                       </span>
                     </div>
                     <div *ngIf="data.workCompleted === 'No' && data.workCompletedComment" class="mt-2">
-                      <small class="text-muted">Reason: {{data.workCompletedComment | slice:0:100}}{{data.workCompletedComment?.length > 100 ? '...' : ''}}</small>
+                      <small class="text-muted">Reason: {{data.workCompletedComment |
+                        slice:0:100}}{{data.workCompletedComment?.length > 100 ? '...' : ''}}</small>
                     </div>
                   </div>
                 </div>
@@ -412,13 +426,13 @@
                     </h6>
                     <div class="small">
                       <div class="mb-1">
-                        <strong>Name:</strong> 
+                        <strong>Name:</strong>
                         <span [ngClass]="data.customerName1 ? 'text-success' : 'text-danger'">
                           {{data.customerName1 || 'Not Provided'}}
                         </span>
                       </div>
                       <div>
-                        <strong>Phone:</strong> 
+                        <strong>Phone:</strong>
                         <span [ngClass]="data.phone ? 'text-success' : 'text-danger'">
                           {{data.phone || 'Not Provided'}}
                         </span>
@@ -434,13 +448,11 @@
                       <i class="mdi mdi-draw me-1"></i>Digital Signatures
                     </h6>
                     <div class="d-flex flex-wrap gap-2">
-                      <span class="badge" 
-                            [ngClass]="data.customerSignatureImage ? 'bg-success' : 'bg-danger'">
+                      <span class="badge" [ngClass]="data.customerSignatureImage ? 'bg-success' : 'bg-danger'">
                         <i class="mdi mdi-account me-1"></i>
                         Customer: {{data.customerSignatureImage ? 'Captured' : 'Missing'}}
                       </span>
-                      <span class="badge" 
-                            [ngClass]="data.technicianSignatureImage ? 'bg-success' : 'bg-danger'">
+                      <span class="badge" [ngClass]="data.technicianSignatureImage ? 'bg-success' : 'bg-danger'">
                         <i class="mdi mdi-account-wrench me-1"></i>
                         Technician: {{data.technicianSignatureImage ? 'Captured' : 'Missing'}}
                       </span>
@@ -455,20 +467,19 @@
                       <i class="mdi mdi-cog me-1"></i>Parts & Equipment
                     </h6>
                     <div>
-                      <span class="badge" 
-                            [ngClass]="data.partLocation ? 'bg-info' : 'bg-secondary'">
+                      <span class="badge" [ngClass]="data.partLocation ? 'bg-info' : 'bg-secondary'">
                         {{data.partLocation || 'Not Specified'}}
                       </span>
                     </div>
                     <div *ngIf="data.partLocation === 'Eye-Fi'" class="mt-2 small">
                       <div class="mb-1">
-                        <strong>Employee:</strong> 
+                        <strong>Employee:</strong>
                         <span [ngClass]="data.partReceivedByName ? 'text-success' : 'text-danger'">
                           {{data.partReceivedByName || 'Not Provided'}}
                         </span>
                       </div>
                       <div>
-                        <strong>Signature:</strong> 
+                        <strong>Signature:</strong>
                         <span [ngClass]="data.partReceivedBySignature ? 'text-success' : 'text-danger'">
                           {{data.partReceivedBySignature ? 'Captured' : 'Missing'}}
                         </span>
@@ -484,9 +495,8 @@
                       <i class="mdi mdi-shield-check me-1"></i>Team Verification Status
                     </h6>
                     <div class="d-flex flex-wrap gap-2" *ngIf="teamsData?.length">
-                      <span *ngFor="let member of teamsData" 
-                            class="badge" 
-                            [ngClass]="member.ticket_verified ? 'bg-success' : 'bg-warning text-dark'">
+                      <span *ngFor="let member of teamsData" class="badge"
+                        [ngClass]="member.ticket_verified ? 'bg-success' : 'bg-warning text-dark'">
                         <i class="mdi mdi-account me-1"></i>
                         {{member.user}}: {{member.ticket_verified ? 'Verified' : 'Pending'}}
                       </span>
@@ -505,7 +515,8 @@
                       <div>
                         <div class="fw-bold">Credit Card Transactions Not Fully Assigned</div>
                         <div class="small">
-                          You have {{totalBankTransactins - assignedTotalBankTransactions}} unassigned credit card transaction(s). 
+                          You have {{totalBankTransactins - assignedTotalBankTransactions}} unassigned credit card
+                          transaction(s).
                           You can still proceed with submission, but it's recommended to assign all transactions first.
                         </div>
                       </div>
@@ -515,11 +526,11 @@
 
                 <!-- Validation Status -->
                 <div class="col-12">
-                  <div class="alert border-0" 
-                       [ngClass]="getValidationStatus().isValid ? 'alert-success' : 'alert-warning'">
+                  <div class="alert border-0"
+                    [ngClass]="getValidationStatus().isValid ? 'alert-success' : 'alert-warning'">
                     <div class="d-flex align-items-center">
-                      <i [class]="getValidationStatus().isValid ? 'mdi mdi-check-all text-success' : 'mdi mdi-alert text-warning'" 
-                         class="me-2 fs-5"></i>
+                      <i [class]="getValidationStatus().isValid ? 'mdi mdi-check-all text-success' : 'mdi mdi-alert text-warning'"
+                        class="me-2 fs-5"></i>
                       <div>
                         <div class="fw-bold">
                           {{getValidationStatus().isValid ? 'Ready for Submission' : 'Incomplete Information'}}
@@ -546,16 +557,14 @@
           <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
             <div class="d-flex align-items-center text-muted">
               <i class="mdi mdi-information me-2"></i>
-              <small>{{getValidationStatus().isValid ? 'All requirements met' : 'Please complete missing fields above'}}</small>
+              <small>{{getValidationStatus().isValid ? 'All requirements met' : 'Please complete missing fields
+                above'}}</small>
             </div>
             <div class="d-flex gap-2">
-              <button class="btn btn-outline-warning" 
-                (click)="onClearSubmissionDate()" *ngIf="this.data.dateSubmitted">
+              <button class="btn btn-outline-warning" (click)="onClearSubmissionDate()" *ngIf="this.data.dateSubmitted">
                 <i class="mdi mdi-delete me-2"></i>Clear Submission Date
               </button>
-              <button class="btn btn-primary btn-lg" 
-                      (click)="submit()" 
-                      [disabled]="!getValidationStatus().isValid">
+              <button class="btn btn-primary btn-lg" (click)="submit()" [disabled]="!getValidationStatus().isValid">
                 <i class="mdi mdi-send me-2"></i>Submit Complete Job
               </button>
             </div>
@@ -567,11 +576,11 @@
 </div>
 
 <style>
-.cursor-pointer:hover {
-  background-color: #f8f9fa;
-}
+  .cursor-pointer:hover {
+    background-color: #f8f9fa;
+  }
 
-.alert {
-  border-radius: 8px;
-}
+  .alert {
+    border-radius: 8px;
+  }
 </style>

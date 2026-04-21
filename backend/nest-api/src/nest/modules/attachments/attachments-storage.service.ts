@@ -45,7 +45,7 @@ export class AttachmentsStorageService {
     }
 
     const publicBaseUrl = this.getPublicBaseUrl(subFolder);
-    return `${publicBaseUrl}/${fileName}`;
+    return `${publicBaseUrl}/${encodeURIComponent(fileName)}`;
   }
 
   async withResolvedLink<T extends Record<string, unknown>>(row: T): Promise<T> {
@@ -58,23 +58,44 @@ export class AttachmentsStorageService {
     }
 
     const localLink = this.resolveLink(fileName, subFolder);
-    if (localLink && (await this.fileExistsInUploadTargets(fileName, subFolder))) {
+    const fileExistsLocally = await this.fileExistsInUploadTargets(fileName, subFolder);
+    const storageSource = this.resolveStorageSource(row, fileExistsLocally);
+
+    if (storageSource === 'local' && localLink) {
       return {
         ...row,
         link: localLink,
+        storage_source: 'local',
+      };
+    }
+
+    if (storageSource === 'legacy') {
+      if (existingLink) {
+        return {
+          ...row,
+          link: this.normalizeExistingLink(existingLink, fileName, subFolder),
+          storage_source: 'legacy',
+        };
+      }
+
+      return {
+        ...row,
+        link: `${this.remoteBaseUrl}/${subFolder}/${encodeURIComponent(fileName)}`,
+        storage_source: 'legacy',
       };
     }
 
     if (existingLink) {
       return {
         ...row,
-        link: existingLink,
+        link: this.normalizeExistingLink(existingLink, fileName, subFolder),
+        storage_source: row?.storage_source ?? row?.storageSource ?? null,
       };
     }
 
     return {
       ...row,
-      link: `${this.remoteBaseUrl}/${subFolder}/${fileName}`,
+      storage_source: row?.storage_source ?? row?.storageSource ?? null,
     };
   }
 
@@ -163,7 +184,7 @@ export class AttachmentsStorageService {
       return configured.replace(/\/+$/, '');
     }
 
-    return '/uploads';
+    return 'https://dashboard.eye-fi.com/attachments';
   }
 
   private getUploadTargetDirs(subFolder: string): string[] {
@@ -197,6 +218,76 @@ export class AttachmentsStorageService {
       return 'vehicleInformation';
     }
 
+    if (field.includes('vehicle information')) {
+      return 'vehicleInformation';
+    }
+
+    if (field.includes('shippingrequest') || field.includes('shipping request')) {
+      return 'shippingRequest';
+    }
+
+    if (field.includes('safety incident')) {
+      return 'safetyIncident';
+    }
+
     return 'fieldService';
+  }
+
+  private normalizeExistingLink(existingLink: string, fileName: string, subFolder: string): string {
+    if (!existingLink) {
+      return `${this.remoteBaseUrl}/${subFolder}/${encodeURIComponent(fileName)}`;
+    }
+
+    if (/^https?:\/\//i.test(existingLink)) {
+      return existingLink;
+    }
+
+    const normalizedPath = existingLink.replace(/\\/g, '/');
+    const attachmentsSegment = '/attachments/';
+    const attachmentsIndex = normalizedPath.toLowerCase().indexOf(attachmentsSegment);
+    if (attachmentsIndex >= 0) {
+      const remainder = normalizedPath.slice(attachmentsIndex + attachmentsSegment.length);
+      const parts = remainder.split('/').filter(Boolean);
+      if (parts.length >= 2) {
+        const normalizedSubFolder = parts.shift() as string;
+        const normalizedFileName = parts.join('/');
+        return `${this.remoteBaseUrl}/${normalizedSubFolder}/${encodeURIComponent(normalizedFileName)}`;
+      }
+    }
+
+    if (existingLink.startsWith('/uploads/') || existingLink.startsWith('uploads/')) {
+      return `${this.remoteBaseUrl}/${subFolder}/${encodeURIComponent(fileName)}`;
+    }
+
+    return existingLink;
+  }
+
+  private resolveStorageSource(
+    row: Record<string, unknown>,
+    fileExistsLocally: boolean,
+  ): 'local' | 'legacy' | null {
+    const fromRow = this.parseStorageSource(row?.storage_source ?? row?.storageSource);
+    if (fromRow) {
+      return fromRow;
+    }
+
+    if (fileExistsLocally) {
+      return 'local';
+    }
+
+    return null;
+  }
+
+  private parseStorageSource(value: unknown): 'local' | 'legacy' | null {
+    if (typeof value !== 'string') {
+      return null;
+    }
+
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'local' || normalized === 'legacy') {
+      return normalized;
+    }
+
+    return null;
   }
 }
