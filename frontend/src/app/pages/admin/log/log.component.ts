@@ -7,10 +7,6 @@ import { AgGridModule } from "ag-grid-angular";
 import { ActivatedRoute, Router } from "@angular/router";
 import { highlightRowView, autoSizeColumns } from "src/assets/js/util";
 import { SharedModule } from "@app/shared/shared.module";
-import {
-  _decompressFromEncodedURIComponent,
-  _compressToEncodedURIComponent,
-} from "src/assets/js/util/jslzString";
 import { LogService } from "@app/core/api/log.service";
 
 @Component({
@@ -109,35 +105,12 @@ export class LogComponent implements OnInit {
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
       this.gridApi = params.api;
-
-      let data = this.activatedRoute.snapshot.queryParams["gridParams"];
-      _decompressFromEncodedURIComponent(data, params);
     },
     onFirstDataRendered: (params) => {
       highlightRowView(params, "id", this.id);
       autoSizeColumns(params);
     },
     getRowId: (params) => params.data.id?.toString(),
-    onFilterChanged: (params) => {
-      let gridParams = _compressToEncodedURIComponent(this.gridApi);
-      this.router.navigate([`.`], {
-        relativeTo: this.activatedRoute,
-        queryParamsHandling: "merge",
-        queryParams: {
-          gridParams,
-        },
-      });
-    },
-    onSortChanged: (params) => {
-      let gridParams = _compressToEncodedURIComponent(this.gridApi);
-      this.router.navigate([`.`], {
-        relativeTo: this.activatedRoute,
-        queryParamsHandling: "merge",
-        queryParams: {
-          gridParams,
-        },
-      });
-    },
   };
 
   async getData() {

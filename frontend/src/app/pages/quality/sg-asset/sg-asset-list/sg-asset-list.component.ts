@@ -9,7 +9,6 @@ import { SgAssetService } from '@app/core/api/quality/sg-asset.service'
 import { NAVIGATION_ROUTE } from '../sg-asset-constant'
 import { SharedModule } from '@app/shared/shared.module'
 import { highlightRowView, autoSizeColumns } from 'src/assets/js/util'
-import { _decompressFromEncodedURIComponent, _compressToEncodedURIComponent } from 'src/assets/js/util/jslzString'
 import { SgAssetActionDropdownRendererComponent } from './sg-asset-action-dropdown-renderer.component'
 
 @Component({
@@ -135,37 +134,19 @@ export class SgAssetListComponent implements OnInit {
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
       this.gridApi = params.api;
-
-      let data = this.activatedRoute.snapshot.queryParams['gridParams']
-      _decompressFromEncodedURIComponent(data, params);
     },
     onFirstDataRendered: (params) => {
       highlightRowView(params, 'id', this.id);
       autoSizeColumns(params)
     },
     getRowId: params => params.data.id?.toString(),
-    onFilterChanged: params => this.updateUrl(params),
-    onSortChanged: params => this.updateUrl(params),
   };
 
-  updateUrl = (params) => {
-    let gridParams = _compressToEncodedURIComponent(params.api);
-    this.router.navigate([`.`], {
-      relativeTo: this.activatedRoute,
-      queryParamsHandling: 'merge',
-      queryParams: {
-        gridParams
-      }
-    });
-  }
-
   onEdit(id) {
-    let gridParams = _compressToEncodedURIComponent(this.gridApi);
     this.router.navigate([NAVIGATION_ROUTE.EDIT], {
       queryParamsHandling: 'merge',
       queryParams: {
-        id: id,
-        gridParams
+        id: id
       }
     });
   }

@@ -14,10 +14,6 @@ import {
   agGridDateFilter,
 } from "src/assets/js/util";
 import { SharedModule } from "@app/shared/shared.module";
-import {
-  _compressToEncodedURIComponent,
-  _decompressFromEncodedURIComponent,
-} from "src/assets/js/util/jslzString";
 import { GridFiltersComponent } from "@app/shared/grid-filters/grid-filters.component";
 import { GridSettingsComponent } from "@app/shared/grid-settings/grid-settings.component";
 import { ItemInfoModalService } from "@app/shared/components/item-info-modal/item-info-modal.component";
@@ -39,7 +35,6 @@ import { ShortagesActionsCellRendererComponent } from "../shortages-actions-cell
     GridSettingsComponent,
     GridFiltersComponent,
     BreadcrumbComponent,
-    ShortagesActionsCellRendererComponent,
   ],
   selector: "app-shortages-list",
   templateUrl: "./shortages-list.component.html",
@@ -357,37 +352,19 @@ export class ShortagesListComponent implements OnInit {
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
       this.gridApi = params.api;
-
-      let data = this.activatedRoute.snapshot.queryParams["gridParams"];
-      _decompressFromEncodedURIComponent(data, params);
     },
     onFirstDataRendered: (params) => {
       highlightRowView(params, "id", this.id);
       autoSizeColumns(params);
     },
     getRowId: (params) => params.data.id?.toString(),
-    onFilterChanged: (params) => this.updateUrl(params),
-    onSortChanged: (params) => this.updateUrl(params),
-  };
-
-  updateUrl = (params) => {
-    let gridParams = _compressToEncodedURIComponent(params.api);
-    this.router.navigate([`.`], {
-      relativeTo: this.activatedRoute,
-      queryParamsHandling: "merge",
-      queryParams: {
-        gridParams,
-      },
-    });
   };
 
   onEdit(id) {
-    let gridParams = _compressToEncodedURIComponent(this.gridApi);
     this.router.navigate([NAVIGATION_ROUTE.EDIT], {
       queryParamsHandling: "merge",
       queryParams: {
         id: id,
-        gridParams,
       },
     });
   }

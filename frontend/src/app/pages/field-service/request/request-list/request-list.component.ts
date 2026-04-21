@@ -7,10 +7,6 @@ import { NgSelectModule } from "@ng-select/ng-select";
 import { NAVIGATION_ROUTE } from "../request-constant";
 import { LinkRendererComponent } from "@app/shared/ag-grid/cell-renderers";
 import { highlightRowView, autoSizeColumns } from "src/assets/js/util";
-import {
-  _compressToEncodedURIComponent,
-  _decompressFromEncodedURIComponent,
-} from "src/assets/js/util/jslzString";
 import { RequestChartComponent } from "../request-chart/request-chart.component";
 import { DateRangeComponent } from "@app/shared/components/date-range/date-range.component";
 import { GridFiltersComponent } from "@app/shared/grid-filters/grid-filters.component";
@@ -248,32 +244,10 @@ export class RequestsListComponent implements OnInit {
     columnDefs: [],
     onGridReady: (params: any) => {
       this.gridApi = params.api;
-      let data = this.activatedRoute.snapshot.queryParams["gridParams"];
-      _decompressFromEncodedURIComponent(data, params);
     },
     onFirstDataRendered: (params) => {
       highlightRowView(params, "id", this.id);
       autoSizeColumns(params);
-    },
-    onFilterChanged: (params) => {
-      let gridParams = _compressToEncodedURIComponent(this.gridApi);
-      this.router.navigate([`.`], {
-        relativeTo: this.activatedRoute,
-        queryParamsHandling: "merge",
-        queryParams: {
-          gridParams,
-        },
-      });
-    },
-    onSortChanged: (params) => {
-      let gridParams = _compressToEncodedURIComponent(this.gridApi);
-      this.router.navigate([`.`], {
-        relativeTo: this.activatedRoute,
-        queryParamsHandling: "merge",
-        queryParams: {
-          gridParams,
-        },
-      });
     },
   };
 
@@ -446,12 +420,10 @@ export class RequestsListComponent implements OnInit {
   }
 
   openWorkOrder(id) {
-    let gridParams = _compressToEncodedURIComponent(this.gridApi);
     this.router.navigate([NAVIGATION_ROUTE.EDIT], {
       queryParamsHandling: "merge",
       queryParams: {
         id: id,
-        gridParams,
       },
     });
   }

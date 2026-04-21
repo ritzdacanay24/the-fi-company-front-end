@@ -9,10 +9,6 @@ import { NAVIGATION_ROUTE } from "../rma-constant";
 import { RmaService } from "@app/core/api/quality/rma.service";
 import { SharedModule } from "@app/shared/shared.module";
 import { highlightRowView, autoSizeColumns } from "src/assets/js/util";
-import {
-  _compressToEncodedURIComponent,
-  _decompressFromEncodedURIComponent,
-} from "src/assets/js/util/jslzString";
 import { GridSettingsComponent } from "@app/shared/grid-settings/grid-settings.component";
 import { GridFiltersComponent } from "@app/shared/grid-filters/grid-filters.component";
 import { BreadcrumbComponent, BreadcrumbItem } from "@app/shared/components/breadcrumb/breadcrumb.component";
@@ -198,44 +194,19 @@ export class RmaListComponent implements OnInit {
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
       this.gridApi = params.api;
-
-      let data = this.activatedRoute.snapshot.queryParams["gridParams"];
-      _decompressFromEncodedURIComponent(data, params);
     },
     onFirstDataRendered: (params) => {
       highlightRowView(params, "id", this.id);
       autoSizeColumns(params);
     },
     getRowId: (params) => params.data.id?.toString(),
-    onFilterChanged: (params) => {
-      let gridParams = _compressToEncodedURIComponent(this.gridApi);
-      this.router.navigate([`.`], {
-        relativeTo: this.activatedRoute,
-        queryParamsHandling: "merge",
-        queryParams: {
-          gridParams,
-        },
-      });
-    },
-    onSortChanged: (params) => {
-      let gridParams = _compressToEncodedURIComponent(this.gridApi);
-      this.router.navigate([`.`], {
-        relativeTo: this.activatedRoute,
-        queryParamsHandling: "merge",
-        queryParams: {
-          gridParams,
-        },
-      });
-    },
   };
 
   onEdit(id) {
-    let gridParams = _compressToEncodedURIComponent(this.gridApi);
     this.router.navigate([NAVIGATION_ROUTE.EDIT], {
       queryParamsHandling: "merge",
       queryParams: {
         id: id,
-        gridParams,
       },
     });
   }

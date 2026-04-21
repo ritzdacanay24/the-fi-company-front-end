@@ -9,10 +9,6 @@ import { NAVIGATION_ROUTE } from "../qir-constant";
 import { QirService } from "@app/core/api/quality/qir.service";
 import { SharedModule } from "@app/shared/shared.module";
 import { highlightRowView, autoSizeColumns } from "src/assets/js/util";
-import {
-  _decompressFromEncodedURIComponent,
-  _compressToEncodedURIComponent,
-} from "src/assets/js/util/jslzString";
 import { GridSettingsComponent } from "@app/shared/grid-settings/grid-settings.component";
 import { GridFiltersComponent } from "@app/shared/grid-filters/grid-filters.component";
 import { BreadcrumbComponent, BreadcrumbItem } from "@app/shared/components/breadcrumb/breadcrumb.component";
@@ -206,9 +202,6 @@ export class QirListComponent implements OnInit {
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
       this.gridApi = params.api;
-
-      let data = this.activatedRoute.snapshot.queryParams["gridParams"];
-      _decompressFromEncodedURIComponent(data, params);
       this.onQuickSearchChange();
     },
     onFirstDataRendered: (params) => {
@@ -216,39 +209,22 @@ export class QirListComponent implements OnInit {
       autoSizeColumns(params);
     },
     getRowId: (params) => params.data.id?.toString(),
-    onFilterChanged: (params) => this.updateUrl(params),
-    onSortChanged: (params) => this.updateUrl(params),
-  };
-
-  updateUrl = (params) => {
-    let gridParams = _compressToEncodedURIComponent(params.api);
-    this.router.navigate([`.`], {
-      relativeTo: this.activatedRoute,
-      queryParamsHandling: "merge",
-      queryParams: {
-        gridParams,
-      },
-    });
   };
 
   onEdit(id) {
-    let gridParams = _compressToEncodedURIComponent(this.gridApi);
     this.router.navigate([NAVIGATION_ROUTE.EDIT], {
       queryParamsHandling: "merge",
       queryParams: {
         id: id,
-        gridParams,
       },
     });
   }
 
   onView(id) {
-    let gridParams = _compressToEncodedURIComponent(this.gridApi);
     this.router.navigate([NAVIGATION_ROUTE.VIEW], {
       queryParamsHandling: "merge",
       queryParams: {
         id: id,
-        gridParams,
       },
     });
   }

@@ -9,10 +9,6 @@ import { NAVIGATION_ROUTE } from "../ticket-event-constant";
 import { TicketEventService } from "@app/core/api/field-service/ticket-event.service";
 import { SharedModule } from "@app/shared/shared.module";
 import { highlightRowView, autoSizeColumns } from "src/assets/js/util";
-import {
-  _compressToEncodedURIComponent,
-  _decompressFromEncodedURIComponent,
-} from "src/assets/js/util/jslzString";
 import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
 
 @Component({
@@ -128,44 +124,19 @@ export class TicketEventListComponent implements OnInit {
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
       this.gridApi = params.api;
-
-      let data = this.activatedRoute.snapshot.queryParams["gridParams"];
-      _decompressFromEncodedURIComponent(data, params);
     },
     onFirstDataRendered: (params) => {
       highlightRowView(params, "id", this.id);
       autoSizeColumns(params);
     },
     getRowId: (params) => params.data.id?.toString(),
-    onFilterChanged: (params) => {
-      let gridParams = _compressToEncodedURIComponent(this.gridApi);
-      this.router.navigate([`.`], {
-        relativeTo: this.activatedRoute,
-        queryParamsHandling: "merge",
-        queryParams: {
-          gridParams,
-        },
-      });
-    },
-    onSortChanged: (params) => {
-      let gridParams = _compressToEncodedURIComponent(this.gridApi);
-      this.router.navigate([`.`], {
-        relativeTo: this.activatedRoute,
-        queryParamsHandling: "merge",
-        queryParams: {
-          gridParams,
-        },
-      });
-    },
   };
 
   onEdit(id) {
-    let gridParams = _compressToEncodedURIComponent(this.gridApi);
     this.router.navigate([NAVIGATION_ROUTE.EDIT], {
       queryParamsHandling: "merge",
       queryParams: {
         id: id,
-        gridParams,
       },
     });
   }
