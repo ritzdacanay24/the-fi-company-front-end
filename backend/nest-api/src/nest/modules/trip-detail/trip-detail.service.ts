@@ -76,7 +76,6 @@ export class TripDetailService {
       const html = this.buildEmailHtml(fsId, recipients?.names || '', jobs, tripDetails);
 
       await this.emailService.sendMail({
-        from: 'noreply@the-fi-company.com',
         to: emails,
         cc: [
           'ritz.dacanay@the-fi-company.com',

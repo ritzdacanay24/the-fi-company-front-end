@@ -1,5 +1,8 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { EmailService } from '@/shared/email/email.service';
+import { QadOdbcService } from '@/shared/database/qad-odbc.service';
+import { toJsonSafe } from '@/shared/utils/json-safe.util';
+import { addLowercaseAliases } from '@/shared/utils/row-alias.util';
 import { WorkOrderRecord, WorkOrderRepository } from './work-order.repository';
 
 @Injectable()
@@ -7,6 +10,7 @@ export class WorkOrderService {
   constructor(
     private readonly repository: WorkOrderRepository,
     private readonly emailService: EmailService,
+    private readonly qadOdbcService: QadOdbcService,
   ) {}
 
   async findOne(params: Record<string, unknown>): Promise<WorkOrderRecord | null> {
@@ -27,6 +31,96 @@ export class WorkOrderService {
 
   async getByWorkOrderId(workOrderId: number) {
     return this.repository.getByWorkOrderId(workOrderId);
+  }
+
+  async getDetailsByWorkOrderNumber(workOrderNumber: string): Promise<Record<string, unknown>> {
+    const normalized = String(workOrderNumber || '').trim();
+    if (!normalized) {
+      throw new BadRequestException('workOrderNumber is required');
+    }
+
+    const detailSql = `
+      SELECT a.wod_nbr
+        , a.wod_lot
+        , a.wod_iss_date
+        , a.wod_part
+        , a.wod_qty_req wod_qty_req
+        , a.wod_qty_pick wod_qty_pick
+        , a.wod_qty_iss wod_qty_iss
+        , a.wod_qty_all wod_qty_all
+        , a.wod_qty_req-a.wod_qty_iss qty_open
+        , a.wod_nbr
+        , CONCAT(c.pt_desc1,c.pt_desc2) pt_desc1
+        , c.pt_um
+        , c.pt_part_type
+        , d.totalAvail
+        , d.totalOnHand
+        , a.wod_qty_req - (a.wod_qty_pick+a.wod_qty_iss) short
+        , CASE
+            WHEN a.wod_qty_req = 0 THEN 0
+            ELSE (a.wod_qty_iss/NULLIF(a.wod_qty_req, 0))*100
+          END lineStatus
+        , CASE
+            WHEN a.wod_qty_req = 0 THEN 'text-success'
+            WHEN (a.wod_qty_iss/NULLIF(a.wod_qty_req,0))*100 = '100' THEN 'text-success'
+          END lineStatusClass
+        , wod_op
+        , wod_bom_qty wod_bom_qty
+        , c.pt_rev
+      FROM wod_det a
+      LEFT JOIN pt_mstr c
+        ON c.pt_part = a.wod_part
+        AND pt_domain = 'EYE'
+      LEFT JOIN (
+        SELECT b.in_part
+          , SUM(b.in_qty_avail) totalAvail
+          , SUM(b.in_qty_all) totalAll
+          , SUM(b.in_qty_oh) totalOnHand
+        FROM in_mstr b
+        WHERE b.in_domain = 'EYE'
+        GROUP BY b.in_part
+      ) d ON d.in_part = a.wod_part
+      WHERE LTRIM(RTRIM(a.wod_nbr)) = ?
+        AND wod_domain = 'EYE'
+      ORDER BY a.wod_nbr ASC
+      WITH (NOLOCK)
+    `;
+
+    const mainSql = `
+      SELECT a.wo_so_job
+        , a.wo_nbr
+        , a.wo_lot
+        , a.wo_ord_date
+        , a.wo_due_date
+        , a.wo_part
+        , a.wo_qty_ord
+        , CONCAT(c.pt_desc1,c.pt_desc2) pt_desc1
+        , a.wo_order_sheet_printed
+        , a.wo_status
+        , a.wo_rmks
+        , CASE WHEN a.wo_so_job = 'dropin' THEN 1 ELSE 0 END dropInClass
+      FROM wo_mstr a
+      LEFT JOIN pt_mstr c
+        ON c.pt_part = a.wo_part
+        AND pt_domain = 'EYE'
+      WHERE a.wo_domain = 'EYE'
+        AND LTRIM(RTRIM(a.wo_nbr)) = ?
+      WITH (NOLOCK)
+    `;
+
+    const [details, mainRows] = await Promise.all([
+      this.qadOdbcService.queryWithParams<Array<Record<string, unknown>>>(detailSql, [normalized], {
+        keyCase: 'upper',
+      }),
+      this.qadOdbcService.queryWithParams<Array<Record<string, unknown>>>(mainSql, [normalized], {
+        keyCase: 'upper',
+      }),
+    ]);
+
+    return toJsonSafe({
+      details: details.map((row) => addLowercaseAliases(row)),
+      mainDetails: addLowercaseAliases(mainRows[0] || {}),
+    }) as Record<string, unknown>;
   }
 
   async getAll(selectedViewType?: string, dateFrom?: string, dateTo?: string, isAllRaw?: string) {
@@ -130,11 +224,11 @@ export class WorkOrderService {
     `;
 
     await this.emailService.sendMail({
-      from: 'noreply@the-fi-company.com',
       to: params.to,
       bcc: params.bcc,
       subject: `Action Required: Billing Review - ${params.fsSchedulerId}`,
       html,
     });
   }
+
 }

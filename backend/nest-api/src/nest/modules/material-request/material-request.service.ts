@@ -37,6 +37,7 @@ export class MaterialRequestService {
     private readonly emailService: EmailService,
     private readonly emailTemplateService: EmailTemplateService,
     private readonly configService: ConfigService,
+    private readonly urlBuilder: UrlBuilder,
   ) {}
 
   async getList(query: {
@@ -392,8 +393,7 @@ export class MaterialRequestService {
         );
       }
 
-      const baseUrl = this.configService.getOrThrow<string>('DASHBOARD_WEB_BASE_URL');
-      const link = UrlBuilder.operations.materialRequestValidation(baseUrl, insertId);
+      const link = this.urlBuilder.operations.materialRequestValidation(insertId);
 
       const html = this.emailTemplateService.render('material-request-created', {
         id: insertId,
@@ -438,8 +438,7 @@ export class MaterialRequestService {
         return;
       }
 
-      const baseUrl = this.configService.getOrThrow<string>('DASHBOARD_WEB_BASE_URL');
-      const link = UrlBuilder.operations.materialRequestView(baseUrl, id);
+      const link = this.urlBuilder.operations.materialRequestView(id);
       const status = info.pickedCompletedDate ? 'Picking Complete' : String(info.queue_status || 'Updated');
 
       const html = this.emailTemplateService.render('material-request-picked-complete', {

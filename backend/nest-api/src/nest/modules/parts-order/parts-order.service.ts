@@ -302,7 +302,6 @@ export class PartsOrderService {
     `;
 
     await this.emailService.sendMail({
-      from: 'noreply@the-fi-company.com',
       to: recipients,
       subject: `ID - ${id} Parts Order - ${nowDate}`,
       html,

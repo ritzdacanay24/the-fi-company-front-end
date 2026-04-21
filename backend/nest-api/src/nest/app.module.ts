@@ -19,6 +19,7 @@ import { GraphicsScheduleModule } from './modules/graphics-schedule/graphics-sch
 import { HealthModule } from './modules/health';
 import { IgtSerialNumbersModule } from './modules/igt-serial-numbers';
 import { ItemSearchModule } from './modules/item-search/item-search.module';
+import { LateReasonCodesModule } from './modules/late-reason-codes/late-reason-codes.module';
 import { MasterControlModule } from './modules/master-control/master-control.module';
 import { SerialAssignmentsModule } from './modules/serial-assignments';
 import { IgtTransferModule } from './modules/igt-transfer/igt-transfer.module';
@@ -45,7 +46,11 @@ import { RfqModule } from './modules/rfq/rfq.module';
 import { RmaModule } from './modules/rma/rma.module';
 import { SafetyIncidentModule } from './modules/safety-incident';
 import { ShortagesModule } from './modules/shortages/shortages.module';
+import { ShippingModule } from './modules/shipping/shipping.module';
 import { ShippingRequestModule } from './modules/shipping-request/shipping-request.module';
+import { WorkOrderOwnerModule } from './modules/work-order-owner/work-order-owner.module';
+import { NotesModule } from './modules/notes/notes.module';
+import { OwnersModule } from './modules/owners/owners.module';
 import { SgAssetModule } from './modules/sg-asset';
 import { TrainingModule } from './modules/training';
 import { UniqueLabelsModule } from './modules/unique-labels';
@@ -99,6 +104,7 @@ import { FsQirModule } from './modules/fs-qir/fs-qir.module';
 import { FileStorageModule } from './modules/file-storage/file-storage.module';
 import { MysqlModule } from '../shared/database/mysql.module';
 import { EmailModule } from '../shared/email/email.module';
+import { UrlModule } from '../shared/url/url.module';
 
 @Module({
   imports: [
@@ -119,6 +125,7 @@ import { EmailModule } from '../shared/email/email.module';
     }),
     MysqlModule,
     EmailModule,
+    UrlModule,
     AddressSearchModule,
     FileStorageModule,
     AttachmentsModule,
@@ -135,6 +142,7 @@ import { EmailModule } from '../shared/email/email.module';
     HealthModule,
     IgtSerialNumbersModule,
     ItemSearchModule,
+    LateReasonCodesModule,
     MasterControlModule,
     IgtTransferModule,
     InventoryByProdLineModule,
@@ -160,7 +168,11 @@ import { EmailModule } from '../shared/email/email.module';
     RmaModule,
     SafetyIncidentModule,
     ShortagesModule,
+    ShippingModule,
     ShippingRequestModule,
+    WorkOrderOwnerModule,
+    NotesModule,
+    OwnersModule,
     SerialAssignmentsModule,
     SgAssetModule,
     TrainingModule,

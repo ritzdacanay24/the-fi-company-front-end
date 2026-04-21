@@ -18,7 +18,7 @@ export class WorkOrderInfoService {
         return this.http.get<any>(`/work_order_search/work_order_search?getTransactions=${customerCoNumber}`);
     }
         getDataByWorkOrderNumber(workOrderNumber: number): Observable<any> {
-            return this.http.get<any>(`/work_order_view/work_order_view?Details=${workOrderNumber}`);
+            return this.http.get<any>(`apiV2/work-order/details?workOrderNumber=${workOrderNumber}`);
         }
         getWipReport(): Observable<any> {
             return this.http.get<any>(`apiV2/wip-report`);

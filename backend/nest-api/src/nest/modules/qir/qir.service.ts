@@ -1,6 +1,8 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { RowDataPacket } from 'mysql2';
 import { EmailService } from '@/shared/email/email.service';
+import { EmailTemplateService } from '@/shared/email/email-template.service';
+import { UrlBuilder } from '@/shared/url/url-builder';
 import { QirRepository } from './qir.repository';
 
 @Injectable()
@@ -10,6 +12,8 @@ export class QirService {
   constructor(
     private readonly repository: QirRepository,
     private readonly emailService: EmailService,
+    private readonly emailTemplateService: EmailTemplateService,
+    private readonly urlBuilder: UrlBuilder,
   ) {}
 
   async getList(query: {
@@ -83,48 +87,34 @@ export class QirService {
       const qtyAffected = String(payload.qtyAffected || '');
       const priority = String(payload.priority || '');
       const issueComment = String(payload.issueComment || '');
-      const link = `https://dashboard.eye-fi.com/dist/web/dashboard/quality/qir/edit?id=${insertId}`;
+      const link = this.urlBuilder.operations.qirEdit(insertId, 'Open');
+      const createdDate = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+      const html = this.emailTemplateService.render('qir-created', {
+        qirId: insertId,
+        stakeholder,
+        failureType,
+        customerName,
+        componentType,
+        type1,
+        eyefiPartNumber,
+        qtyAffected,
+        priority,
+        issueComment,
+        link,
+        createdDate,
+      });
 
       await this.emailService.sendMail({
-        from: process.env.MAIL_FROM || 'noreply@the-fi-company.com',
         to: recipients,
         cc: ['ritz.dacanay@the-fi-company.com'],
         subject: `New QIR Submitted ${insertId} Stakeholder ${stakeholder}`,
-        html: `
-          <html>
-            <body style="padding:50px">
-              <p>Please do not reply to this email. To view this qir, click on the direct link to <a href="${link}" target="_parent">Quality Inspection Report</a>.</p>
-              <p>QIR Number: ${insertId}. The QIR info and the issue statement is included below.</p>
-              <p>Created Date: ${new Date().toISOString().slice(0, 19).replace('T', ' ')}</p>
-              <p>Stakeholder: ${this.escapeHtml(stakeholder)}</p>
-              <p>Failure Type: ${this.escapeHtml(failureType)}</p>
-              <p>Customer Name: ${this.escapeHtml(customerName)}</p>
-              <p>Component Type: ${this.escapeHtml(componentType)}</p>
-              <p>Type: ${this.escapeHtml(type1)}</p>
-              <p>Part Number: ${this.escapeHtml(eyefiPartNumber)}</p>
-              <p>Qty Affected: ${this.escapeHtml(qtyAffected)}</p>
-              <p>Severity: ${this.escapeHtml(priority)}</p>
-              <p>Issue statement:</p>
-              <p>${this.escapeHtml(issueComment)}</p>
-              <p><a href="${link}" target="_parent">View QIR</a></p>
-              <p>Thank you</p>
-            </body>
-          </html>
-        `,
+        html,
       });
     } catch (error) {
       this.logger.warn(
         `QIR notification email failed for id ${insertId}: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
-  }
-
-  private escapeHtml(value: string): string {
-    return value
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
   }
 }

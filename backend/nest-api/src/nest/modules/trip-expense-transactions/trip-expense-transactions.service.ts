@@ -263,7 +263,6 @@ export class TripExpenseTransactionsService {
 
     if (toEmails.length) {
       await this.emailService.sendMail({
-        from: process.env.MAIL_FROM || 'noreply@the-fi-company.com',
         to: toEmails.join(','),
         cc: ccEmails.join(','),
         subject,

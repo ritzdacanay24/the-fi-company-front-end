@@ -30,6 +30,7 @@ export class VehicleInspectionService {
     private readonly emailService: EmailService,
     private readonly emailTemplateService: EmailTemplateService,
     private readonly configService: ConfigService,
+    private readonly urlBuilder: UrlBuilder,
   ) {}
 
   async getList() {
@@ -176,8 +177,7 @@ export class VehicleInspectionService {
         );
       }
 
-      const baseUrl = this.configService.getOrThrow<string>('DASHBOARD_WEB_BASE_URL');
-      const link = UrlBuilder.operations.vehicleInspectionEdit(baseUrl, inspectionId);
+      const link = this.urlBuilder.operations.vehicleInspectionEdit(inspectionId);
       const html = this.emailTemplateService.render('vehicle-inspection-failed', {
         inspectionId,
         link,

@@ -207,7 +207,6 @@ export class IgtTransferService {
     const pdfBuffer = await this.generateTransferPdfBuffer(main, details, data.printedName);
 
     await this.emailService.sendMail({
-      from: process.env.MAIL_FROM || 'noreply@the-fi-company.com',
       to: recipients.to,
       cc: recipients.cc.length > 0 ? recipients.cc : undefined,
       subject,

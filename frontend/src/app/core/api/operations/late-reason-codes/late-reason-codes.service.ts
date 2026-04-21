@@ -12,17 +12,17 @@ export class LateReasonCodesService {
   constructor(private http: HttpClient, private router: Router) { }
 
   getData(department = ""): Observable<any> {
-    return this.http.get<any>(`/LateReasonCodes/read?department=${department}`);
+    return this.http.get<any>(`apiV2/late-reason-codes/read?department=${department}`);
   }
   save(params): Observable<any> {
-    return this.http.post<any>(`/LateReasonCodes/save`, params);
+    return this.http.post<any>(`apiV2/late-reason-codes/save`, params);
   }
   remove(params): Observable<any> {
-    return this.http.post<any>(`/LateReasonCodes/remove`, params);
+    return this.http.post<any>(`apiV2/late-reason-codes/remove`, params);
   }
 
   getKpi(dateFrom, dateTo, typeOfView, queue): Observable<any> {
-    return this.http.get<any>(`/LateReasonCodes/kpi?dateFrom=${dateFrom}&dateTo=${dateTo}&typeOfView=${typeOfView}&queue=${queue}`);
+    return this.http.get<any>(`apiV2/late-reason-codes/kpi?dateFrom=${dateFrom}&dateTo=${dateTo}&typeOfView=${typeOfView}&queue=${queue}`);
   }
 
 }

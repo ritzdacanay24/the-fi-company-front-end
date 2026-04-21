@@ -1,34 +1,36 @@
+import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+
+@Injectable()
 export class UrlBuilder {
-  static operations = {
-    safetyIncidentEdit(baseUrl: string, id: number): string {
-      return UrlBuilder.withQuery(baseUrl, '/operations/forms/safety-incident/edit', { id });
-    },
-    forkliftInspectionEdit(baseUrl: string, id: number): string {
-      return UrlBuilder.withQuery(baseUrl, '/operations/forms/forklift-inspection/edit', { id });
-    },
-    vehicleInspectionEdit(baseUrl: string, id: number): string {
-      return UrlBuilder.withQuery(baseUrl, '/operations/forms/vehicle-inspection/edit', { id });
-    },
-    shippingRequestEdit(baseUrl: string, id: number): string {
-      return UrlBuilder.withQuery(baseUrl, '/operations/forms/shipping-request/edit', { id });
-    },
-    materialRequestEdit(baseUrl: string, id: number): string {
-      return UrlBuilder.withQuery(baseUrl, '/operations/forms/material-request/edit', { id });
-    },
-    materialRequestValidation(baseUrl: string, id: number): string {
-      return UrlBuilder.withQuery(baseUrl, '/operations/material-request/validate-list', { id });
-    },
-    materialRequestView(baseUrl: string, id: number): string {
-      return UrlBuilder.withQuery(baseUrl, '/operations/material-request/view', { id });
-    },
+  constructor(private readonly configService: ConfigService) {}
+
+  readonly operations = {
+    safetyIncidentEdit: (id: number): string =>
+      this.withQuery('/operations/forms/safety-incident/edit', { id }),
+    forkliftInspectionEdit: (id: number): string =>
+      this.withQuery('/operations/forms/forklift-inspection/edit', { id }),
+    vehicleInspectionEdit: (id: number): string =>
+      this.withQuery('/operations/forms/vehicle-inspection/edit', { id }),
+    shippingRequestEdit: (id: number): string =>
+      this.withQuery('/operations/forms/shipping-request/edit', { id }),
+    materialRequestEdit: (id: number): string =>
+      this.withQuery('/operations/forms/material-request/edit', { id }),
+    materialRequestValidation: (id: number): string =>
+      this.withQuery('/operations/material-request/validate-list', { id }),
+    materialRequestView: (id: number): string =>
+      this.withQuery('/operations/material-request/view', { id }),
+    qirEdit: (id: number, selectedViewType = 'Open'): string =>
+      this.withQuery('/quality/qir/edit', { selectedViewType, id }),
   };
 
-  private static withQuery(
-    baseUrl: string,
+  private withQuery(
     path: string,
     query: Record<string, string | number | boolean | undefined>,
   ): string {
-    const normalizedBase = this.normalizeBaseUrl(baseUrl);
+    const normalizedBase = this.normalizeBaseUrl(
+      this.configService.getOrThrow<string>('DASHBOARD_WEB_BASE_URL'),
+    );
     const normalizedPath = path.startsWith('/') ? path : `/${path}`;
     const url = new URL(`${normalizedBase}${normalizedPath}`);
 
@@ -43,7 +45,7 @@ export class UrlBuilder {
     return url.toString();
   }
 
-  private static normalizeBaseUrl(baseUrl: string): string {
+  private normalizeBaseUrl(baseUrl: string): string {
     return String(baseUrl || '').replace(/\/+$/, '');
   }
 }

@@ -24,6 +24,7 @@ export class ForkliftInspectionService {
     private readonly emailService: EmailService,
     private readonly emailTemplateService: EmailTemplateService,
     private readonly configService: ConfigService,
+    private readonly urlBuilder: UrlBuilder,
   ) {}
 
   async getList() {
@@ -180,8 +181,7 @@ export class ForkliftInspectionService {
         );
       }
 
-      const baseUrl = this.configService.getOrThrow<string>('DASHBOARD_WEB_BASE_URL');
-      const link = UrlBuilder.operations.forkliftInspectionEdit(baseUrl, inspectionId);
+      const link = this.urlBuilder.operations.forkliftInspectionEdit(inspectionId);
       const html = this.emailTemplateService.render('forklift-inspection-failed', {
         inspectionId,
         link,

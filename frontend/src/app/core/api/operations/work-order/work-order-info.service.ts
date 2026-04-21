@@ -9,7 +9,7 @@ export class WorkOrderInfoService {
     constructor(private http: HttpClient) { }
 
     getDataByWorkOrderNumber(workOrderNumber: number) {
-        return this.http.get<any>(`/work_order_view/work_order_view?Details=${workOrderNumber}`).toPromise();
+        return this.http.get<any>(`apiV2/work-order/details?workOrderNumber=${workOrderNumber}`).toPromise();
     }
     getWipReport(): Observable<any> {
         return this.http.get<any>(`apiV2/wip-report`);

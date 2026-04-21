@@ -70,7 +70,6 @@ export class NcrService {
 
     if (recipients.length > 0) {
       await this.emailService.sendMail({
-        from: process.env.MAIL_FROM || 'noreply@the-fi-company.com',
         to: recipients,
         subject: `You are now assigned to NCR # ${id}`,
         html: this.buildAssignmentEmailHtml(id, department, String(payload.ca_due_dt || '')),

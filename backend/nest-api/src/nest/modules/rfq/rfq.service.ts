@@ -246,7 +246,6 @@ export class RfqService {
 
     try {
       await this.emailService.sendMail({
-        from: process.env.MAIL_FROM || 'noreply@the-fi-company.com',
         to: recipients,
         cc,
         bcc: ['ritz.dacanay@the-fi-company.com'],

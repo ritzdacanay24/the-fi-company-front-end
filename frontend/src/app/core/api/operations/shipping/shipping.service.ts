@@ -43,7 +43,7 @@ export class ShippingService {
   }
 
   saveMisc(params: Misc): Observable<any> {
-    return this.http.post(`/Shipping/index`, params);
+    return this.http.post(`apiV2/shipping/save-misc`, params);
   }
 
   saveMiscArray(params: Misc[]): Observable<any> {

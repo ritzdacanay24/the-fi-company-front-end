@@ -25,6 +25,11 @@ export class WorkOrderController {
     return this.service.getByWorkOrderId(workOrderId);
   }
 
+  @Get('details')
+  async getDetails(@Query('workOrderNumber') workOrderNumber?: string) {
+    return this.service.getDetailsByWorkOrderNumber(workOrderNumber || '');
+  }
+
   @Get(':id')
   async getById(@Param('id', ParseIntPipe) id: number) {
     return this.service.getById(id);

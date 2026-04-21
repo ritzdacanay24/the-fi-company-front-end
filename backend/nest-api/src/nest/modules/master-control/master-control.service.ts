@@ -2,6 +2,8 @@ import { Inject, Injectable } from '@nestjs/common';
 import { RowDataPacket } from 'mysql2/promise';
 import { MysqlService } from '@/shared/database/mysql.service';
 import { QadOdbcService } from '@/shared/database/qad-odbc.service';
+import { toJsonSafe } from '@/shared/utils/json-safe.util';
+import { addLowercaseAliases } from '@/shared/utils/row-alias.util';
 
 type MasterRow = Record<string, unknown>;
 
@@ -44,7 +46,7 @@ export class MasterControlService {
     const { routingOps, all } = this.resolveRouting(routingInput);
     const details = await this.getRoutingRows(routingOps, all);
     const formatted = await this.formatDataStructure(details);
-    return this.toJsonSafe(formatted) as MasterRow[];
+    return toJsonSafe(formatted) as MasterRow[];
   }
 
   async getPickDetailsByWorkOrderNumber(
@@ -73,7 +75,7 @@ export class MasterControlService {
       .filter(Boolean);
 
     for (const sourceRow of result) {
-      const row = this.addLowercaseAliases(sourceRow);
+      const row = addLowercaseAliases(sourceRow);
       const qtyReq = Number(row.WOD_QTY_REQ || 0);
       const qtyIss = Number(row.WOD_QTY_ISS || 0);
       const openPicks = qtyReq - qtyIss;
@@ -84,7 +86,7 @@ export class MasterControlService {
 
       row.locations = inventoryItems
         .filter((loc) => String(loc.LD_PART || loc.ld_part || '') === String(row.WOD_PART || row.wod_part || ''))
-        .map((loc) => this.addLowercaseAliases(loc));
+        .map((loc) => addLowercaseAliases(loc));
 
       if (openPicks > 0) {
         openWorkOrderCount += 1;
@@ -116,16 +118,16 @@ export class MasterControlService {
       details,
       filteredSections: filtered,
       hardware,
-      mainDetails: this.addLowercaseAliases(await this.getWoMstrByWorkOrderNumber(workOrderNumber)),
+      mainDetails: addLowercaseAliases(await this.getWoMstrByWorkOrderNumber(workOrderNumber)),
       totalWorkOrderCount,
       openWorkOrderCount,
       completedWorkOrderCount,
       workOrderPercentComplete,
       doesOrderHaveLines: result.length > 0,
-      printDetails: printDetails ? this.addLowercaseAliases(printDetails) : {},
+      printDetails: printDetails ? addLowercaseAliases(printDetails) : {},
     };
 
-    return this.toJsonSafe(payload) as Record<string, unknown>;
+    return toJsonSafe(payload) as Record<string, unknown>;
   }
 
   private resolveRouting(routingInput: string): { routingOps: number[]; all: boolean } {
@@ -553,32 +555,4 @@ export class MasterControlService {
     return (rows[0] as unknown as PrintDetailRow) || null;
   }
 
-  private addLowercaseAliases<T extends Record<string, unknown>>(row: T): T {
-    const aliases = Object.entries(row).map(([key, value]) => [key.toLowerCase(), value]);
-    return {
-      ...Object.fromEntries(aliases),
-      ...row,
-    } as T;
-  }
-
-  private toJsonSafe<T>(value: T): T {
-    if (typeof value === 'bigint') {
-      const asNumber = Number(value);
-      return (Number.isSafeInteger(asNumber) ? asNumber : value.toString()) as T;
-    }
-
-    if (Array.isArray(value)) {
-      return value.map((item) => this.toJsonSafe(item)) as T;
-    }
-
-    if (value && typeof value === 'object') {
-      const converted = Object.entries(value as Record<string, unknown>).map(([key, val]) => [
-        key,
-        this.toJsonSafe(val),
-      ]);
-      return Object.fromEntries(converted) as T;
-    }
-
-    return value;
-  }
 }

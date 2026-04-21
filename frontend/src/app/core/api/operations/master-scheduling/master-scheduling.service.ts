@@ -85,7 +85,7 @@ export class MasterSchedulingService extends DataService<any> {
   }
 
   getShipping = async () =>
-    await firstValueFrom(this.http.get<any[]>(`https://dashboard.eye-fi.com/server/Api/Shipping/index?runOpenShippingReport`));
+    await firstValueFrom(this.http.get<any[]>(`apiV2/shipping/read-open-report`));
 
   getMasterProduction = async (routing) =>
     await firstValueFrom(
@@ -104,7 +104,7 @@ export class MasterSchedulingService extends DataService<any> {
   }
 
   saveMisc(params: any) {
-    return firstValueFrom(this.http.post(`/Shipping/index`, params));
+    return firstValueFrom(this.http.post(`apiV2/shipping/save-misc`, params));
   }
 
   private initializeMockData() {

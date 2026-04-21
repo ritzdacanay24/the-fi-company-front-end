@@ -15,6 +15,7 @@ export class ShippingRequestService {
     private readonly emailService: EmailService,
     private readonly emailTemplateService: EmailTemplateService,
     private readonly configService: ConfigService,
+    private readonly urlBuilder: UrlBuilder,
   ) {}
 
   async getList(query: {
@@ -86,8 +87,7 @@ export class ShippingRequestService {
         );
       }
 
-      const baseUrl = this.configService.getOrThrow<string>('DASHBOARD_WEB_BASE_URL');
-      const link = UrlBuilder.operations.shippingRequestEdit(baseUrl, id);
+      const link = this.urlBuilder.operations.shippingRequestEdit(id);
       const html = this.emailTemplateService.render('shipping-request-created', { id, link });
 
       await this.emailService.sendMail({
@@ -115,8 +115,7 @@ export class ShippingRequestService {
       }
 
       const cc = await this.repository.getNotificationRecipients('tracking_number_notification_shipping_request');
-      const baseUrl = this.configService.getOrThrow<string>('DASHBOARD_WEB_BASE_URL');
-      const link = UrlBuilder.operations.shippingRequestEdit(baseUrl, id);
+      const link = this.urlBuilder.operations.shippingRequestEdit(id);
       const html = this.emailTemplateService.render('shipping-request-tracking', {
         id,
         link,

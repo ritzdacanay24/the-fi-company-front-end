@@ -1,5 +1,4 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { CreateSafetyIncidentDto, UpdateSafetyIncidentDto } from './dto';
 import { SafetyIncidentRecord, SafetyIncidentRepository } from './safety-incident.repository';
 import { EmailService } from '@/shared/email/email.service';
@@ -14,7 +13,7 @@ export class SafetyIncidentService {
     private readonly safetyIncidentRepository: SafetyIncidentRepository,
     private readonly emailService: EmailService,
     private readonly emailTemplateService: EmailTemplateService,
-    private readonly configService: ConfigService,
+    private readonly urlBuilder: UrlBuilder,
   ) {}
 
   async getList(params: {
@@ -87,8 +86,7 @@ export class SafetyIncidentService {
         return;
       }
 
-      const baseUrl = this.configService.getOrThrow<string>('DASHBOARD_WEB_BASE_URL');
-      const link = UrlBuilder.operations.safetyIncidentEdit(baseUrl, insertId);
+      const link = this.urlBuilder.operations.safetyIncidentEdit(insertId);
       const html = this.emailTemplateService.render('safety-incident-created', {
         insertId,
         link,
