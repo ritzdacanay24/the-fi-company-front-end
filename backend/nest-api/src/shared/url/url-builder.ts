@@ -9,6 +9,9 @@ export class UrlBuilder {
     vehicleInspectionEdit(baseUrl: string, id: number): string {
       return UrlBuilder.withQuery(baseUrl, '/operations/forms/vehicle-inspection/edit', { id });
     },
+    shippingRequestEdit(baseUrl: string, id: number): string {
+      return UrlBuilder.withQuery(baseUrl, '/operations/forms/shipping-request/edit', { id });
+    },
   };
 
   private static withQuery(

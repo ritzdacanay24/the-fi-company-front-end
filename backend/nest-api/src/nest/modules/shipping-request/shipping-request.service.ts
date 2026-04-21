@@ -1,6 +1,9 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { RowDataPacket } from 'mysql2';
 import { EmailService } from '@/shared/email/email.service';
+import { EmailTemplateService } from '@/shared/email/email-template.service';
+import { UrlBuilder } from '@/shared/url/url-builder';
 import { ShippingRequestRepository } from './shipping-request.repository';
 
 @Injectable()
@@ -10,6 +13,8 @@ export class ShippingRequestService {
   constructor(
     private readonly repository: ShippingRequestRepository,
     private readonly emailService: EmailService,
+    private readonly emailTemplateService: EmailTemplateService,
+    private readonly configService: ConfigService,
   ) {}
 
   async getList(query: {
@@ -73,28 +78,23 @@ export class ShippingRequestService {
 
   private async sendCreateNotification(id: number) {
     try {
-      const recipients = await this.repository.getNotificationRecipients('create_shipping_request');
+      let recipients = await this.repository.getNotificationRecipients('create_shipping_request');
       if (recipients.length === 0) {
-        return;
+        recipients = [this.configService.getOrThrow<string>('DEV_EMAIL_REROUTE_TO')];
+        this.logger.warn(
+          `[email] No active create_shipping_request recipients; using fallback recipient ${recipients[0]}`,
+        );
       }
 
-      const link = `https://dashboard.eye-fi.com/dist/web/operations/forms/shipping-request/edit?id=${id}`;
+      const baseUrl = this.configService.getOrThrow<string>('DASHBOARD_WEB_BASE_URL');
+      const link = UrlBuilder.operations.shippingRequestEdit(baseUrl, id);
+      const html = this.emailTemplateService.render('shipping-request-created', { id, link });
+
       await this.emailService.sendMail({
-        from: process.env.MAIL_FROM || 'noreply@the-fi-company.com',
         to: recipients,
         cc: ['ritz.dacanay@the-fi-company.com'],
         subject: `Shipping Request Form #${id}`,
-        html: `
-          <html>
-            <body>
-              <p>Hello Team,</p>
-              <p>A shipping request form was submitted.</p>
-              <p>Please click <a href="${link}">here</a> to view the shipping request details.</p>
-              <p>----------------------------------------------------</p>
-              <p>This is an automated email. Please do not respond.</p>
-            </body>
-          </html>
-        `,
+        html,
       });
     } catch (error) {
       this.logger.warn(
@@ -115,38 +115,24 @@ export class ShippingRequestService {
       }
 
       const cc = await this.repository.getNotificationRecipients('tracking_number_notification_shipping_request');
-      const link = `https://dashboard.eye-fi.com/dist/web/operations/forms/shipping-request/edit?id=${id}`;
+      const baseUrl = this.configService.getOrThrow<string>('DASHBOARD_WEB_BASE_URL');
+      const link = UrlBuilder.operations.shippingRequestEdit(baseUrl, id);
+      const html = this.emailTemplateService.render('shipping-request-tracking', {
+        id,
+        link,
+        trackingNumber,
+      });
 
       await this.emailService.sendMail({
-        from: process.env.MAIL_FROM || 'noreply@the-fi-company.com',
         to,
         cc,
         subject: `Shipping Request Form #${id}`,
-        html: `
-          <html>
-            <body>
-              <p>Hello your shipment has been processed. Your tracking # is ${this.escapeHtml(trackingNumber)}.</p>
-              <p>Please click <a href="${link}">here</a> to view the shipping request details.</p>
-              <p>Thank you.</p>
-              <p>----------------------------------------------------</p>
-              <p>This is an automated email. Please do not respond.</p>
-            </body>
-          </html>
-        `,
+        html,
       });
     } catch (error) {
       this.logger.warn(
         `Shipping request tracking email failed for id ${id}: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
-  }
-
-  private escapeHtml(value: string): string {
-    return value
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
   }
 }

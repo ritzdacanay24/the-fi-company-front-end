@@ -250,7 +250,7 @@ export class ShippingRequestListComponent implements OnInit {
 
   onEdit(id) {
     let gridParams = _compressToEncodedURIComponent(this.gridApi);
-    this.router.navigate([NAVIGATION_ROUTE.VIEW], {
+    this.router.navigate([NAVIGATION_ROUTE.EDIT], {
       queryParamsHandling: "merge",
       queryParams: {
         id: id,

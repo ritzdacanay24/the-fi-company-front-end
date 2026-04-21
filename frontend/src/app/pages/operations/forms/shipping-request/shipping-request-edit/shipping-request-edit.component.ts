@@ -11,6 +11,9 @@ import { MyFormGroup } from "src/assets/js/util/_formGroup";
 import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
 import moment from "moment";
 import { AuthenticationService } from "@app/core/services/auth.service";
+import { UploadService } from "@app/core/api/upload/upload.service";
+import { firstValueFrom } from "rxjs";
+import { environment } from "src/environments/environment";
 
 @Component({
   standalone: true,
@@ -25,7 +28,8 @@ export class ShippingRequestEditComponent {
     private api: ShippingRequestService,
     private toastrService: ToastrService,
     private attachmentsService: AttachmentsService,
-    private authenticationService: AuthenticationService
+    private authenticationService: AuthenticationService,
+    private uploadService: UploadService
   ) {}
 
   ngOnInit(): void {
@@ -141,20 +145,44 @@ export class ShippingRequestEditComponent {
     if (this.myFiles) {
       let totalAttachments = 0;
       this.isLoading = true;
-      const formData = new FormData();
       for (var i = 0; i < this.myFiles.length; i++) {
+        const formData = new FormData();
         formData.append("file", this.myFiles[i]);
         formData.append("field", "shippingRequest");
         formData.append("uniqueData", `${this.id}`);
         formData.append("folderName", "shippingRequest");
+        formData.append("subFolder", "shippingRequest");
         try {
-          await this.attachmentsService.uploadfile(formData);
+          await firstValueFrom(this.uploadService.uploadAttachmentV2(formData));
           totalAttachments++;
         } catch (err) {}
       }
       this.isLoading = false;
       await this.getAttachments();
     }
+  }
+
+  getAttachmentUrl(attachment: any): string {
+    const rawLink = String(attachment?.link || "").trim();
+    if (rawLink) {
+      if (/^https?:\/\//i.test(rawLink)) {
+        return rawLink;
+      }
+
+      if (rawLink.startsWith("/")) {
+        const apiBaseUrl = String(environment.apiV2BaseUrl || "").replace(/\/+$/, "");
+        return `${apiBaseUrl}${rawLink}`;
+      }
+
+      return rawLink;
+    }
+
+    const fileName = attachment?.fileName || "";
+    if (!fileName) {
+      return "";
+    }
+
+    return `https://dashboard.eye-fi.com/attachments/shippingRequest/${fileName}`;
   }
 
   updateTracking = async () => {
