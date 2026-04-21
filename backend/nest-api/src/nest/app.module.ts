@@ -19,6 +19,7 @@ import { GraphicsScheduleModule } from './modules/graphics-schedule/graphics-sch
 import { HealthModule } from './modules/health';
 import { IgtSerialNumbersModule } from './modules/igt-serial-numbers';
 import { ItemSearchModule } from './modules/item-search/item-search.module';
+import { MasterControlModule } from './modules/master-control/master-control.module';
 import { SerialAssignmentsModule } from './modules/serial-assignments';
 import { IgtTransferModule } from './modules/igt-transfer/igt-transfer.module';
 import { InventoryByProdLineModule } from './modules/inventory-by-prod-line';
@@ -134,6 +135,7 @@ import { EmailModule } from '../shared/email/email.module';
     HealthModule,
     IgtSerialNumbersModule,
     ItemSearchModule,
+    MasterControlModule,
     IgtTransferModule,
     InventoryByProdLineModule,
     MaterialRequestModule,
