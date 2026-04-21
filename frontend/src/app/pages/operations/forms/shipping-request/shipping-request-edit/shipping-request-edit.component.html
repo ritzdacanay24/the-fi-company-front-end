@@ -71,8 +71,7 @@
             <h4 class="mb-2">Attachments</h4>
             <ul class="list-group">
               <li class="list-group-item d-flex justify-content-between" *ngFor="let row of attachments; let i = index">
-                <a [href]="getAttachmentUrl(row)"
-                  target="_blank">{{row.fileName}} - {{row.createdDate}}</a>
+                <a href="#" (click)="openAttachment(row, $event)">{{row.fileName}} - {{row.createdDate}}</a>
                 <span class="text-danger pointer" (click)="deleteAttachment(row.id, i)">X</span>
               </li>
             </ul>

@@ -12,6 +12,11 @@ import { AttachmentsService } from "@app/core/api/attachments/attachments.servic
 import { ColDef, GridOptions } from "ag-grid-community";
 import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
 import { AgGridModule } from "ag-grid-angular";
+import { UploadService } from "@app/core/api/upload/upload.service";
+import { firstValueFrom } from "rxjs";
+import { environment } from "src/environments/environment";
+import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
+import { FileViewerModalComponent } from "@app/shared/components/file-viewer-modal/file-viewer-modal.component";
 
 @Component({
   standalone: true,
@@ -26,7 +31,9 @@ export class VehicleEditComponent {
     private api: VehicleService,
     private toastrService: ToastrService,
     private attachmentsService: AttachmentsService,
-    private ref: ChangeDetectorRef
+    private ref: ChangeDetectorRef,
+    private uploadService: UploadService,
+    private modalService: NgbModal
   ) { }
 
   ngOnInit(): void {
@@ -65,8 +72,43 @@ export class VehicleEditComponent {
 
   data: any;
 
-  onEdit(e: any) {
-    window.open(e, '_blank').focus();
+  onEdit(row: any) {
+    const url = this.getAttachmentUrl(row);
+    if (!url) {
+      this.toastrService.warning("Attachment URL not available");
+      return;
+    }
+
+    const modalRef = this.modalService.open(FileViewerModalComponent, {
+      size: "xl",
+      centered: true,
+      scrollable: true,
+    });
+    modalRef.componentInstance.url = url;
+    modalRef.componentInstance.fileName = row?.fileName || "Attachment";
+  }
+
+  getAttachmentUrl(row: any): string {
+    const rawLink = String(row?.link || "").trim();
+    if (rawLink) {
+      if (/^https?:\/\//i.test(rawLink)) {
+        return rawLink;
+      }
+
+      if (rawLink.startsWith("/")) {
+        const apiBaseUrl = String(environment.apiV2BaseUrl || "").replace(/\/+$/, "");
+        return `${apiBaseUrl}${rawLink}`;
+      }
+
+      return rawLink;
+    }
+
+    const fileName = String(row?.fileName || "").trim();
+    if (!fileName) {
+      return "";
+    }
+
+    return `https://dashboard.eye-fi.com/attachments/vehicleInformation/${fileName}`;
 
   }
 
@@ -78,7 +120,7 @@ export class VehicleEditComponent {
       pinned: "left",
       cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
-        onClick: (e: any) => this.onEdit(`https://dashboard.eye-fi.com/attachments/vehicleInformation/${e.rowData.fileName}`),
+        onClick: (e: any) => this.onEdit(e.rowData),
         value: "View",
       },
       maxWidth: 100,
@@ -188,14 +230,15 @@ export class VehicleEditComponent {
     if (this.myFiles) {
       let totalAttachments = 0;
       this.isLoading = true;
-      const formData = new FormData();
       for (var i = 0; i < this.myFiles.length; i++) {
+        const formData = new FormData();
         formData.append("file", this.myFiles[i]);
         formData.append("field", "Vehicle Information");
         formData.append("uniqueData", `${this.id}`);
         formData.append("folderName", "vehicleInformation");
+        formData.append("subFolder", "vehicleInformation");
         try {
-          await this.attachmentsService.uploadfile(formData);
+          await firstValueFrom(this.uploadService.uploadAttachmentV2(formData));
           totalAttachments++;
         } catch (err) { }
       }

@@ -8,6 +8,8 @@ import { ForkliftInspectionFormComponent } from "../forklift-inspection-form/for
 import { ForkliftInspectionService } from "@app/core/api/operations/forklift-inspection/forklift-inspection.service";
 import { formValues as formData } from "./../forklift-inspection-form/formData";
 import { environment } from "src/environments/environment";
+import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
+import { FileViewerModalComponent } from "@app/shared/components/file-viewer-modal/file-viewer-modal.component";
 
 @Component({
   standalone: true,
@@ -20,7 +22,8 @@ export class ForkliftInspectionEditComponent {
     private router: Router,
     private api: ForkliftInspectionService,
     private toastrService: ToastrService,
-    private activatedRoute: ActivatedRoute
+    private activatedRoute: ActivatedRoute,
+    private modalService: NgbModal
   ) {}
 
   ngOnInit(): void {
@@ -49,14 +52,22 @@ export class ForkliftInspectionEditComponent {
 
   data;
 
-  viewImage(row: any) {
+  viewImage(row: any, event?: Event) {
+    event?.preventDefault();
+
     const url = this.getAttachmentUrl(row);
     if (!url) {
       this.toastrService.warning("Attachment URL not available");
       return;
     }
 
-    window.open(url, "_blank");
+    const modalRef = this.modalService.open(FileViewerModalComponent, {
+      size: "xl",
+      centered: true,
+      scrollable: true,
+    });
+    modalRef.componentInstance.url = url;
+    modalRef.componentInstance.fileName = row?.fileName || row?.filename || row?.name || "Attachment";
   }
 
   getAttachmentUrl(attachment: any): string {

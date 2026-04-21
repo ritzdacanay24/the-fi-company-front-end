@@ -14,6 +14,8 @@ import { AuthenticationService } from "@app/core/services/auth.service";
 import { UploadService } from "@app/core/api/upload/upload.service";
 import { firstValueFrom } from "rxjs";
 import { environment } from "src/environments/environment";
+import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
+import { FileViewerModalComponent } from "@app/shared/components/file-viewer-modal/file-viewer-modal.component";
 
 @Component({
   standalone: true,
@@ -29,7 +31,8 @@ export class ShippingRequestEditComponent {
     private toastrService: ToastrService,
     private attachmentsService: AttachmentsService,
     private authenticationService: AuthenticationService,
-    private uploadService: UploadService
+    private uploadService: UploadService,
+    private modalService: NgbModal
   ) {}
 
   ngOnInit(): void {
@@ -183,6 +186,24 @@ export class ShippingRequestEditComponent {
     }
 
     return `https://dashboard.eye-fi.com/attachments/shippingRequest/${fileName}`;
+  }
+
+  openAttachment(attachment: any, event?: Event): void {
+    event?.preventDefault();
+
+    const url = this.getAttachmentUrl(attachment);
+    if (!url) {
+      this.toastrService.warning("Attachment URL not available");
+      return;
+    }
+
+    const modalRef = this.modalService.open(FileViewerModalComponent, {
+      size: "xl",
+      centered: true,
+      scrollable: true,
+    });
+    modalRef.componentInstance.url = url;
+    modalRef.componentInstance.fileName = attachment?.fileName || "Attachment";
   }
 
   updateTracking = async () => {
