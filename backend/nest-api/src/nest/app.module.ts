@@ -86,6 +86,7 @@ import { CrashKitModule } from './modules/crash-kit';
 import { CommentsModule } from './modules/comments/comments.module';
 import { RequestModule } from './modules/request';
 import { RequestCommentsModule } from './modules/request-comments';
+import { ReceivingModule } from './modules/receiving/receiving.module';
 import { WorkOrderModule } from './modules/work-order';
 import { ReportsModule } from './modules/reports';
 import { JobModule } from './modules/job';
@@ -200,6 +201,7 @@ import { EmailModule } from '../shared/email/email.module';
     CommentsModule,
     RequestModule,
     RequestCommentsModule,
+    ReceivingModule,
     WorkOrderModule,
     ReportsModule,
     JobModule,
