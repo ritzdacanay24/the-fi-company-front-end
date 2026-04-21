@@ -16,6 +16,7 @@ export const envValidationSchema = Joi.object({
   QAD_DSN: Joi.string().optional(),
   QAD_USER: Joi.string().optional(),
   QAD_PASSWORD: Joi.string().optional(),
+  TOMTOM_API_KEY: Joi.string().trim().allow('').optional(),
   SMTP_HOST: Joi.alternatives().conditional('NODE_ENV', {
     is: 'development',
     then: Joi.string().trim().default('mailpit'),

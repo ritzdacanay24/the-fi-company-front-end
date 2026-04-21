@@ -1,6 +1,7 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
+import { AddressSearchModule } from './modules/address-search/address-search.module';
 import { AgsSerialModule } from './modules/ags-serial';
 import { EyeFiAssetNumbersModule } from './modules/eyefi-asset-numbers';
 import { EyeFiSerialModule } from './modules/eyefi-serial';
@@ -113,6 +114,7 @@ import { EmailModule } from '../shared/email/email.module';
     }),
     MysqlModule,
     EmailModule,
+    AddressSearchModule,
     FileStorageModule,
     AttachmentsModule,
     AgsSerialModule,

@@ -3,9 +3,7 @@ import { firstValueFrom, Observable } from "rxjs";
 import { HttpClient } from "@angular/common/http";
 import { DataService } from "../DataService";
 
-let url = "";
-
-let GOOGLE_SEARCH_API = "G5yW6WfoOA8pAl6MAwaW2Xgw0AsnXyoA";
+const url = "apiV2/address-search";
 
 @Injectable({
   providedIn: "root",
@@ -16,17 +14,13 @@ export class AddressSearch extends DataService<any> {
   }
 
   searchAddress(q): Observable<any> {
-    return this.http.get<any>(
-      `https://dashboard.eye-fi.com/api/addressSearch/addressSearch.php?q=${q}`
-    );
+    return this.http.get<any>(`${url}/addressSearch?q=${encodeURIComponent(q || "")}`);
   }
 
   searchNearbyAirport({ q, lat, lon, radius, limit, categorySet }: any) {
     return firstValueFrom(
       this.http.get<any>(
-        decodeURIComponent(
-          `https://dashboard.eye-fi.com/server/Api/addressSearch/airportSearch.php?q=${q}&categorySet=${categorySet}&lat=${lat}&lon=${lon}&radius=${radius}&limit=${limit}`
-        )
+        `${url}/airportSearch?q=${encodeURIComponent(q || "")}&categorySet=${encodeURIComponent(categorySet || "")}&lat=${encodeURIComponent(lat || "")}&lon=${encodeURIComponent(lon || "")}&radius=${encodeURIComponent(radius || "")}&limit=${encodeURIComponent(limit || "")}`
       )
     );
   }
