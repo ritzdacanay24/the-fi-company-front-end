@@ -90,6 +90,7 @@ import { FieldServiceOverviewModule } from './modules/field-service-overview/fie
 import { TripExpenseModule } from './modules/trip-expense/trip-expense.module';
 import { TripExpenseTransactionsModule } from './modules/trip-expense-transactions/trip-expense-transactions.module';
 import { FsQirModule } from './modules/fs-qir/fs-qir.module';
+import { FileStorageModule } from './modules/file-storage/file-storage.module';
 import { MysqlModule } from '../shared/database/mysql.module';
 import { EmailModule } from '../shared/email/email.module';
 
@@ -112,6 +113,7 @@ import { EmailModule } from '../shared/email/email.module';
     }),
     MysqlModule,
     EmailModule,
+    FileStorageModule,
     AttachmentsModule,
     AgsSerialModule,
     EyeFiAssetNumbersModule,

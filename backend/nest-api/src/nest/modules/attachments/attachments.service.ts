@@ -1,13 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { extname } from 'node:path';
 import { AttachmentsMetadataService } from './attachments-metadata.service';
-import { AttachmentsStorageService } from '@/nest/modules/attachments/attachments-storage.service';
+import { FileStorageService } from '@/nest/modules/file-storage/file-storage.service';
 
 @Injectable()
 export class AttachmentsService {
   constructor(
     private readonly metadataService: AttachmentsMetadataService,
-    private readonly storageService: AttachmentsStorageService,
+    private readonly storageService: FileStorageService,
   ) {}
 
   async create(
@@ -28,6 +28,22 @@ export class AttachmentsService {
     }
   }
 
+  async uploadToFolder(
+    file?: { originalname?: string; buffer?: Buffer },
+    folder?: string,
+  ) {
+    const subFolder = this.resolveGenericSubFolder(folder);
+    const storedFileName = await this.storageService.storeUploadedFile(file, subFolder);
+    const url = this.storageService.resolveLink(storedFileName, subFolder);
+
+    return {
+      success: true,
+      fileName: storedFileName,
+      url,
+      subFolder,
+    };
+  }
+
   private resolveSubFolder(payload: Record<string, unknown>): string {
     const explicitSubFolder = typeof payload?.subFolder === 'string' ? payload.subFolder.trim() : '';
     if (explicitSubFolder) {
@@ -40,6 +56,31 @@ export class AttachmentsService {
     }
 
     return 'fieldService';
+  }
+
+  private resolveGenericSubFolder(folder?: string): string {
+    if (!folder || !folder.trim()) {
+      return 'general';
+    }
+
+    const normalized = folder
+      .trim()
+      .replace(/\\/g, '/')
+      .replace(/^\/+/, '')
+      .replace(/\/+$/, '');
+
+    if (!normalized) {
+      return 'general';
+    }
+
+    const segments = normalized.split('/').filter(Boolean);
+    if (segments.length === 0 || segments.some((segment) => segment === '.' || segment === '..')) {
+      return 'general';
+    }
+
+    const safeSegments = segments.map((segment) => segment.replace(/[^a-zA-Z0-9_-]/g, ''));
+    const safe = safeSegments.filter(Boolean).join('/');
+    return safe || 'general';
   }
 
   async getByWorkOrderId(workOrderId: number) {

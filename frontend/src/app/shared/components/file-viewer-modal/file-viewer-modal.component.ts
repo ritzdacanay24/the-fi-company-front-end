@@ -3,6 +3,12 @@ import { SafeResourceUrl, DomSanitizer } from "@angular/platform-browser";
 import { Component, Input } from "@angular/core";
 import { NgbActiveModal } from "@ng-bootstrap/ng-bootstrap";
 
+interface FileViewerItem {
+  id?: string | number;
+  url?: string;
+  fileName?: string;
+}
+
 @Component({
   selector: "app-file-viewer-modal",
   standalone: true,
@@ -12,13 +18,31 @@ import { NgbActiveModal } from "@ng-bootstrap/ng-bootstrap";
       <h5 class="modal-title d-flex align-items-center gap-2">
         <i class="mdi mdi-file-eye"></i>
         <span [title]="fileName">{{ fileName || "Attachment" }}</span>
+        @if (showNavigation()) {
+          <span class="badge bg-secondary">{{ currentIndex + 1 }} / {{ items.length }}</span>
+        }
       </h5>
-      <button type="button" class="btn-close" aria-label="Close" (click)="activeModal.dismiss()"></button>
+      <div class="header-actions d-flex align-items-center gap-2 ms-auto">
+        @if (showNavigation()) {
+          <button type="button" class="btn btn-sm btn-outline-secondary" (click)="previousItem()" [disabled]="!canPrevious() || resolvingItem">
+            <i class="mdi mdi-chevron-left"></i>
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" (click)="nextItem()" [disabled]="!canNext() || resolvingItem">
+            <i class="mdi mdi-chevron-right"></i>
+          </button>
+        }
+        <button type="button" class="btn-close ms-1" aria-label="Close" (click)="activeModal.dismiss()"></button>
+      </div>
     </div>
 
     <div class="modal-body p-0">
       <div class="viewer-container">
-        @if (isImage() && !imageLoadError) {
+        @if (resolvingItem) {
+          <div class="preview-unavailable">
+            <div class="spinner-border text-primary" role="status"></div>
+            <h5 class="mt-3">Loading File...</h5>
+          </div>
+        } @else if (isImage() && !imageLoadError) {
           <div class="image-viewer">
             <img
               [src]="url"
@@ -53,6 +77,8 @@ import { NgbActiveModal } from "@ng-bootstrap/ng-bootstrap";
           <iframe [src]="safeUrl" class="pdf-viewer"></iframe>
         } @else if (isOfficeDocument()) {
           <iframe [src]="safeOfficeUrl" class="pdf-viewer"></iframe>
+        } @else if (isVideo()) {
+          <video [src]="url" controls class="pdf-viewer"></video>
         } @else {
           <div class="preview-unavailable">
             <i class="mdi mdi-file-document-outline preview-icon"></i>
@@ -146,22 +172,109 @@ import { NgbActiveModal } from "@ng-bootstrap/ng-bootstrap";
         font-size: 3rem;
         color: var(--bs-secondary-color);
       }
+
+      .modal-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .header-actions {
+        margin-left: auto;
+      }
     `,
   ],
 })
 export class FileViewerModalComponent {
   @Input() url!: string;
   @Input() fileName = "Attachment";
+  @Input() items: FileViewerItem[] = [];
+  @Input() initialIndex = 0;
+  @Input() enableNavigation = false;
+  @Input() resolveById?: (id: string | number) => Promise<{ url: string; fileName?: string } | null>;
 
   safeUrl: SafeResourceUrl | null = null;
   safeOfficeUrl: SafeResourceUrl | null = null;
   zoomLevel = 1;
   imageLoadError = false;
+  currentIndex = 0;
+  resolvingItem = false;
 
   constructor(public activeModal: NgbActiveModal, private sanitizer: DomSanitizer) {}
 
   ngOnInit(): void {
+    this.currentIndex = Math.max(0, this.initialIndex || 0);
+    this.applyCurrentItem();
+  }
+
+  showNavigation(): boolean {
+    return this.enableNavigation && Array.isArray(this.items) && this.items.length > 0;
+  }
+
+  canPrevious(): boolean {
+    return this.currentIndex > 0;
+  }
+
+  canNext(): boolean {
+    return this.currentIndex < this.items.length - 1;
+  }
+
+  async previousItem(): Promise<void> {
+    if (!this.showNavigation() || !this.canPrevious() || this.resolvingItem) {
+      return;
+    }
+
+    this.currentIndex -= 1;
+    await this.applyCurrentItem();
+  }
+
+  async nextItem(): Promise<void> {
+    if (!this.showNavigation() || !this.canNext() || this.resolvingItem) {
+      return;
+    }
+
+    this.currentIndex += 1;
+    await this.applyCurrentItem();
+  }
+
+  private async applyCurrentItem(): Promise<void> {
     this.imageLoadError = false;
+    this.safeUrl = null;
+    this.safeOfficeUrl = null;
+    this.zoomLevel = 1;
+
+    if (!Array.isArray(this.items) || this.items.length === 0) {
+      this.refreshPreviewUrls();
+      return;
+    }
+
+    const item = this.items[this.currentIndex];
+    if (!item) {
+      this.refreshPreviewUrls();
+      return;
+    }
+
+    if (!item.url && item.id !== undefined && this.resolveById) {
+      this.resolvingItem = true;
+      try {
+        const resolved = await this.resolveById(item.id);
+        if (resolved?.url) {
+          item.url = resolved.url;
+          if (resolved.fileName) {
+            item.fileName = resolved.fileName;
+          }
+        }
+      } finally {
+        this.resolvingItem = false;
+      }
+    }
+
+    this.url = item.url || this.url;
+    this.fileName = item.fileName || this.fileName;
+    this.refreshPreviewUrls();
+  }
+
+  private refreshPreviewUrls(): void {
     if (this.isPdf()) {
       this.safeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.url);
     }
@@ -181,17 +294,48 @@ export class FileViewerModalComponent {
   }
 
   isImage(): boolean {
-    const file = (this.fileName || "").toLowerCase();
-    return [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".svg"].some((ext) => file.endsWith(ext));
+    const url = this.getNormalizedUrl();
+    if (url.startsWith('data:image/')) {
+      return true;
+    }
+
+    if (this.hasExtension([".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".svg"])) {
+      return true;
+    }
+
+    // If type hints are missing (common for checklist image labels), prefer image preview.
+    return !this.hasExtension([
+      ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".msg", ".eml", ".zip", ".rar", ".7z", ".mp4", ".webm", ".mov", ".avi", ".mkv"
+    ]);
   }
 
   isPdf(): boolean {
-    return (this.fileName || "").toLowerCase().endsWith(".pdf");
+    const url = this.getNormalizedUrl();
+    return url.startsWith('data:application/pdf') || this.hasExtension([".pdf"]);
   }
 
   isOfficeDocument(): boolean {
-    const file = (this.fileName || "").toLowerCase();
-    return [".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx"].some((ext) => file.endsWith(ext));
+    return this.hasExtension([".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx"]);
+  }
+
+  isVideo(): boolean {
+    const url = this.getNormalizedUrl();
+    return url.startsWith('data:video/') || this.hasExtension([".mp4", ".webm", ".mov", ".avi", ".mkv"]);
+  }
+
+  private getNormalizedUrl(): string {
+    return String(this.url || '').toLowerCase().trim();
+  }
+
+  private getHints(): string[] {
+    const fileHint = String(this.fileName || '').toLowerCase().trim();
+    const urlHint = this.getNormalizedUrl().split('?')[0].split('#')[0];
+    return [fileHint, urlHint];
+  }
+
+  private hasExtension(extensions: string[]): boolean {
+    const hints = this.getHints();
+    return hints.some((hint) => extensions.some((ext) => hint.endsWith(ext)));
   }
 
   zoomIn(): void {

@@ -13,6 +13,7 @@ import { UploadService } from '@app/core/api/upload/upload.service';
 import { PhotoChecklistUploadService } from '@app/core/api/photo-checklist/photo-checklist-upload.service';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import { QualityDocumentSelectorComponent, QualityDocumentSelection } from '@app/shared/components/quality-document-selector/quality-document-selector.component';
+import { FileViewerModalComponent } from '@app/shared/components/file-viewer-modal/file-viewer-modal.component';
 
 interface SampleImage {
   id?: string;
@@ -4780,21 +4781,58 @@ Enter choice (1-4):`;
     const images = this.getSampleImages(itemIndex);
     if (images.length === 0) return;
 
-    this.currentPreviewImages = images;
-    this.currentPreviewIndex = startIndex;
-    this.currentPreviewImage = images[startIndex].url;
-    this.previewImageLoading = true;
-    this.previewImageError = false;
-    this.isImageZoomed = false;
+    const viewerItems = images
+      .filter((img) => !!img?.url)
+      .map((img, index) => ({
+        id: img.id || `sample-${itemIndex}-${index}`,
+        url: this.normalizeViewerUrl(img.url),
+        fileName: img.label || `Sample Image ${index + 1}`,
+      }));
 
-    // Open the enhanced preview modal
-    this.modalService.open(this.imagePreviewModal, {
+    if (viewerItems.length === 0) {
+      return;
+    }
+
+    const safeIndex = Math.max(0, Math.min(startIndex, viewerItems.length - 1));
+    this.openSharedFileViewer(viewerItems, safeIndex, false);
+  }
+
+  private normalizeViewerUrl(url: string): string {
+    if (!url) {
+      return '';
+    }
+
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) {
+      return url;
+    }
+
+    const baseUrl = 'https://dashboard.eye-fi.com';
+    const cleanUrl = url.startsWith('/') ? url : `/${url}`;
+    return `${baseUrl}${cleanUrl}`;
+  }
+
+  private openSharedFileViewer(
+    items: Array<{ id?: string | number; url?: string; fileName?: string }>,
+    initialIndex = 0,
+    enableNavigation = false
+  ): void {
+    if (!items.length) {
+      return;
+    }
+
+    const modalRef = this.modalService.open(FileViewerModalComponent, {
       size: 'xl',
       centered: true,
-      backdrop: 'static',
+      backdrop: true,
       keyboard: true,
-      windowClass: 'image-preview-modal'
     });
+
+    const safeIndex = Math.max(0, Math.min(initialIndex, items.length - 1));
+    modalRef.componentInstance.items = items;
+    modalRef.componentInstance.initialIndex = safeIndex;
+    modalRef.componentInstance.enableNavigation = enableNavigation;
+    modalRef.componentInstance.url = items[safeIndex]?.url || '';
+    modalRef.componentInstance.fileName = items[safeIndex]?.fileName || 'Attachment';
   }
 
   nextPreviewImage(): void {

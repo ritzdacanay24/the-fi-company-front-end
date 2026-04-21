@@ -23,6 +23,7 @@ import { ChecklistNavItem } from '@app/shared/models/checklist-navigation.model'
 import { PdfParserService } from './services/pdf-parser.service';
 import { WordParserService } from './services/word-parser.service';
 import { RevisionDescriptionDialogComponent } from './components/revision-description-dialog.component';
+import { FileViewerModalComponent } from '@app/shared/components/file-viewer-modal/file-viewer-modal.component';
 
 interface SampleImage {
   id?: string;
@@ -2608,11 +2609,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   previewSampleImage(itemIndex: number): void {
     const primaryImage = this.getPrimarySampleImage(itemIndex);
     if (primaryImage?.url) {
-      this.previewImageUrl = primaryImage.url;
-      this.modalService.open(this.imagePreviewModalRef, {
-        size: 'lg',
-        centered: true
-      });
+      this.openSampleImagesViewer(itemIndex, 0);
     }
   }
 
@@ -2934,8 +2931,12 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
    * Open image in full-screen preview modal
    */
   openImagePreview(imageUrl: string): void {
-    this.previewImageUrl = imageUrl;
-    this.modalService.open(this.imagePreviewModalRef, { size: 'lg', centered: true });
+    this.openSharedFileViewer([
+      {
+        url: imageUrl,
+        fileName: 'Image Preview'
+      }
+    ], 0);
   }
 
   previewNavPrimaryImage(itemIndex: number, event?: Event): void {
@@ -2964,8 +2965,12 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       return;
     }
 
-    this.previewVideoUrl = url;
-    this.modalService.open(this.videoPreviewModalRef, { size: 'lg', centered: true });
+    this.openSharedFileViewer([
+      {
+        url,
+        fileName: 'Sample Video'
+      }
+    ], 0);
   }
 
   /**
@@ -4674,11 +4679,8 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     const refImages = this.getReferenceImages(itemIndex);
     const image = refImages[refImageIndex];
     if (image?.url) {
-      this.previewImageUrl = image.url;
-      this.modalService.open(this.imagePreviewModalRef, {
-        size: 'lg',
-        centered: true
-      });
+      const startIndex = this.hasPrimarySampleImage(itemIndex) ? refImageIndex + 1 : refImageIndex;
+      this.openSampleImagesViewer(itemIndex, startIndex);
     }
   }
 
@@ -4793,8 +4795,71 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     }
 
     if (url) {
-      this.previewVideoUrl = url;
-      this.modalService.open(this.videoPreviewModalRef, { size: 'lg', centered: true });
+      this.openSharedFileViewer([
+        {
+          url,
+          fileName: 'Sample Video'
+        }
+      ], 0);
+    }
+  }
+
+  private openSampleImagesViewer(itemIndex: number, startIndex: number): void {
+    const viewerItems: Array<{ url: string; fileName: string }> = [];
+
+    const primary = this.getPrimarySampleImage(itemIndex);
+    if (primary?.url) {
+      const primaryUrl = primary.url.startsWith('data:') ? primary.url : this.getAbsoluteImageUrl(primary.url);
+      viewerItems.push({
+        url: primaryUrl,
+        fileName: primary.label || 'Primary Sample Image'
+      });
+    }
+
+    const references = this.getReferenceImages(itemIndex);
+    for (const refImage of references) {
+      if (!refImage?.url) {
+        continue;
+      }
+      const refUrl = refImage.url.startsWith('data:') ? refImage.url : this.getAbsoluteImageUrl(refImage.url);
+      viewerItems.push({
+        url: refUrl,
+        fileName: refImage.label || 'Reference Image'
+      });
+    }
+
+    if (viewerItems.length === 0) {
+      return;
+    }
+
+    this.openSharedFileViewer(viewerItems, Math.max(0, Math.min(startIndex, viewerItems.length - 1)), undefined, true);
+  }
+
+  private openSharedFileViewer(
+    items: Array<{ id?: string | number; url?: string; fileName?: string }>,
+    initialIndex = 0,
+    resolveById?: (id: string | number) => Promise<{ url: string; fileName?: string } | null>,
+    enableNavigation = false
+  ): void {
+    if (!items.length) {
+      return;
+    }
+
+    const modalRef = this.modalService.open(FileViewerModalComponent, {
+      size: 'xl',
+      centered: true,
+      backdrop: true,
+      keyboard: true,
+    });
+
+    const safeIndex = Math.max(0, Math.min(initialIndex, items.length - 1));
+    modalRef.componentInstance.items = items;
+    modalRef.componentInstance.initialIndex = safeIndex;
+    modalRef.componentInstance.enableNavigation = enableNavigation;
+    modalRef.componentInstance.url = items[safeIndex]?.url || '';
+    modalRef.componentInstance.fileName = items[safeIndex]?.fileName || 'Attachment';
+    if (resolveById) {
+      modalRef.componentInstance.resolveById = resolveById;
     }
   }
 

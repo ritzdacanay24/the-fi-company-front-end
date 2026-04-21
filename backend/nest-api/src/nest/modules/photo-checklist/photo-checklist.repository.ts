@@ -563,6 +563,100 @@ export class PhotoChecklistRepository {
     );
   }
 
+  async createPhotoSubmission(payload: {
+    instance_id: number;
+    item_id: number;
+    file_name: string;
+    file_path: string;
+    file_url: string;
+    file_type: string;
+    file_size: number;
+    mime_type: string;
+    photo_metadata: string;
+  }): Promise<number> {
+    const result = await this.mysqlService.execute<ResultSetHeader>(
+      `INSERT INTO photo_submissions (
+         instance_id,
+         item_id,
+         file_name,
+         file_path,
+         file_url,
+         file_type,
+         file_size,
+         mime_type,
+         photo_metadata
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE
+         file_name = VALUES(file_name),
+         file_path = VALUES(file_path),
+         file_url = VALUES(file_url),
+         file_type = VALUES(file_type),
+         file_size = VALUES(file_size),
+         mime_type = VALUES(mime_type),
+         photo_metadata = VALUES(photo_metadata),
+         updated_at = CURRENT_TIMESTAMP`,
+      [
+        payload.instance_id,
+        payload.item_id,
+        payload.file_name,
+        payload.file_path,
+        payload.file_url,
+        payload.file_type,
+        payload.file_size,
+        payload.mime_type,
+        payload.photo_metadata,
+      ],
+    );
+
+    return Number(result.insertId || 0);
+  }
+
+  async getPhotoSubmissionById(id: number): Promise<RowDataPacket | null> {
+    const rows = await this.mysqlService.query<RowDataPacket[]>(
+      `SELECT id, instance_id, item_id, file_name, file_url, file_path, file_type, created_at, photo_metadata
+       FROM photo_submissions
+       WHERE id = ?
+       LIMIT 1`,
+      [id],
+    );
+
+    return rows[0] || null;
+  }
+
+  async findPhotoSubmissionIdByLocator(
+    instanceId: number,
+    itemId: number,
+    fileUrlCandidates: string[],
+  ): Promise<number | null> {
+    if (!fileUrlCandidates.length) {
+      return null;
+    }
+
+    const placeholders = fileUrlCandidates.map(() => '?').join(',');
+    const rows = await this.mysqlService.query<RowDataPacket[]>(
+      `SELECT id
+       FROM photo_submissions
+       WHERE instance_id = ?
+         AND item_id = ?
+         AND file_url IN (${placeholders})
+       ORDER BY id DESC
+       LIMIT 1`,
+      [instanceId, itemId, ...fileUrlCandidates],
+    );
+
+    const rowId = Number(rows[0]?.id || 0);
+    return rowId > 0 ? rowId : null;
+  }
+
+  async deletePhotoSubmissionById(id: number): Promise<number> {
+    const result = await this.mysqlService.execute<ResultSetHeader>(
+      'DELETE FROM photo_submissions WHERE id = ?',
+      [id],
+    );
+
+    return result.affectedRows;
+  }
+
   async updateInstance(id: number, payload: Record<string, unknown>): Promise<void> {
     const allowedFields = [
       'status',

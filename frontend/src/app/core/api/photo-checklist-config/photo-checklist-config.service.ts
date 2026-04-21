@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
 import { ChecklistTemplateTransformer, ChecklistTemplateResponse } from './checklist-template.models';
+import { environment } from 'src/environments/environment';
 
 // ==============================================
 // Interfaces
@@ -190,6 +191,8 @@ export interface ChecklistConfig {
 export class PhotoChecklistConfigService {
   private readonly baseUrl = '/photo-checklist/photo-checklist-config.php';
   private readonly nestPhotoChecklistBaseUrl = 'apiv2/inspection-checklist';
+  private readonly uploadApiV2BaseUrl = (environment as any).apiV2UploadBaseUrl || environment.apiV2BaseUrl || '';
+  private readonly mediaApiBaseUrl = `${this.uploadApiV2BaseUrl.replace(/\/+$/, '')}/inspection-checklist`;
   
   // Reactive state management
   private templatesSubject = new BehaviorSubject<ChecklistTemplate[]>([]);
@@ -569,21 +572,20 @@ export class PhotoChecklistConfigService {
     }
 
     return this.http.post<{success: boolean, file_url: string, media?: { id: number | null; item_id: number | null; file_url: string; file_type: 'image' | 'video'; file_name: string; created_at: string | null }}>(
-      `${this.baseUrl}?request=photos`, 
+      `${this.mediaApiBaseUrl}/media/upload`, 
       formData
     );
   }
 
   deletePhoto(photoId: number): Observable<{success: boolean}> {
-    return this.http.post<{success: boolean}>(
-      `${this.baseUrl}?request=photo&id=${photoId}`,
-      {}
+    return this.http.delete<{success: boolean}>(
+      `${this.mediaApiBaseUrl}/media/${photoId}`
     );
   }
 
   deleteMediaByLocator(instanceId: number, itemId: number, fileUrl: string): Observable<{success: boolean}> {
     return this.http.post<{success: boolean}>(
-      `${this.baseUrl}?request=photo`,
+      `${this.mediaApiBaseUrl}/media/delete-by-locator`,
       {
         instance_id: instanceId,
         item_id: itemId,

@@ -6,6 +6,16 @@ import { AttachmentsService } from './attachments.service';
 export class AttachmentsController {
   constructor(private readonly service: AttachmentsService) {}
 
+  @Post('upload')
+  @UseInterceptors(FileInterceptor('file'))
+  async upload(
+    @Body('folder') folder?: string,
+    @Body('subFolder') subFolder?: string,
+    @UploadedFile() file?: { originalname?: string; buffer?: Buffer },
+  ) {
+    return this.service.uploadToFolder(file, folder || subFolder);
+  }
+
   @Post()
   @UseInterceptors(FileInterceptor('file'))
   async create(

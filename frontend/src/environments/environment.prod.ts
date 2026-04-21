@@ -27,5 +27,6 @@ export const environment = {
   wipApiBaseUrl: '/server/ApiV2',
   vehicleApiBaseUrl: '/server/ApiV2',
   apiV2BaseUrl: '/server/ApiV2',
+  apiV2UploadBaseUrl: '/server/ApiV2',
 
 };

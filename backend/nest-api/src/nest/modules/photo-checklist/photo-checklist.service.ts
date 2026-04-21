@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import { RowDataPacket } from 'mysql2/promise';
 import { PhotoChecklistRepository } from './photo-checklist.repository';
+import { FileStorageService } from '../file-storage/file-storage.service';
 
 type ChecklistItemRow = RowDataPacket & {
   id?: number | string;
@@ -21,7 +22,10 @@ type ChecklistItemNode = Record<string, unknown> & {
 
 @Injectable()
 export class PhotoChecklistService {
-  constructor(private readonly repository: PhotoChecklistRepository) {}
+  constructor(
+    private readonly repository: PhotoChecklistRepository,
+    private readonly fileStorageService: FileStorageService,
+  ) {}
 
   async getTemplates(options?: { includeInactive?: boolean; includeDeleted?: boolean }) {
     return this.repository.getTemplates(options);
@@ -158,6 +162,121 @@ export class PhotoChecklistService {
   async updateInstanceItemCompletion(instanceId: number, itemId: number, payload: Record<string, unknown>) {
     await this.repository.updateInstanceItemCompletion(instanceId, itemId, payload);
     return { success: true, instance_id: instanceId, item_id: itemId };
+  }
+
+  async uploadMedia(
+    instanceId: number,
+    itemId: number,
+    file?: { originalname?: string; mimetype?: string; size?: number; buffer?: Buffer },
+    options?: { captureSource?: string; userId?: string },
+  ) {
+    const bucket = (process.env.CHECKLIST_MEDIA_BUCKET || process.env.FILE_STORAGE_DEFAULT_BUCKET || 'checklist-media').trim();
+    const stored = await this.fileStorageService.storeUploadedFileInBucket(file, {
+      bucket,
+      keyPrefix: `instances/${instanceId}/items/${itemId}`,
+    });
+
+    const fileName = stored.key;
+    const fileUrl = stored.url;
+    const fileType = String(file?.mimetype || '').toLowerCase().includes('video') ? 'video' : 'image';
+    const captureSource = this.normalizeCaptureSource(options?.captureSource);
+
+    const uploadPayload = {
+      instance_id: instanceId,
+      item_id: itemId,
+      file_name: fileName,
+      file_path: fileUrl,
+      file_url: fileUrl,
+      file_type: fileType,
+      file_size: Number(file?.size || 0),
+      mime_type: file?.mimetype || '',
+      photo_metadata: JSON.stringify({
+        capture_source: captureSource,
+        storage: {
+          provider: 'bucket',
+          bucket: stored.bucket,
+          key: stored.key,
+        },
+      }),
+    };
+
+    const insertId = await this.repository.createPhotoSubmission(uploadPayload);
+    const resolvedId = insertId > 0
+      ? insertId
+      : await this.repository.findPhotoSubmissionIdByLocator(instanceId, itemId, [fileUrl]);
+    const media = resolvedId ? await this.repository.getPhotoSubmissionById(resolvedId) : null;
+
+    return {
+      success: true,
+      file_url: fileUrl,
+      media: {
+        id: Number(media?.id || resolvedId || insertId || 0),
+        item_id: Number(media?.item_id || itemId),
+        file_url: String(media?.file_url || fileUrl),
+        file_type: (String(media?.file_type || fileType) === 'video' ? 'video' : 'image') as 'video' | 'image',
+        file_name: String(media?.file_name || fileName),
+        created_at: (media?.created_at as string | null) ?? null,
+      },
+      user_id: options?.userId || null,
+    };
+  }
+
+  async deleteMediaById(id: number) {
+    const media = await this.repository.getPhotoSubmissionById(id);
+    if (!media) {
+      throw new NotFoundException({
+        code: 'RC_CHECKLIST_MEDIA_NOT_FOUND',
+        message: 'Media not found',
+      });
+    }
+
+    const storageInfo = this.extractStorageInfo(media?.photo_metadata, String(media?.file_name || ''));
+    if (storageInfo?.bucket && storageInfo?.key) {
+      await this.fileStorageService.deleteStoredFileInBucket(storageInfo.key, storageInfo.bucket);
+    } else {
+      const fileName = String(media.file_name || '').trim();
+      if (fileName) {
+        await this.fileStorageService.deleteStoredFile(fileName, 'photo-submissions');
+      }
+    }
+
+    const affectedRows = await this.repository.deletePhotoSubmissionById(id);
+    if (affectedRows < 1) {
+      throw new NotFoundException({
+        code: 'RC_CHECKLIST_MEDIA_NOT_FOUND',
+        message: 'Media not found',
+      });
+    }
+
+    return { success: true, deleted_id: id };
+  }
+
+  async deleteMediaByLocator(instanceId: number, itemId: number, fileUrl: string) {
+    const normalizedInstanceId = Number(instanceId || 0);
+    const normalizedItemId = Number(itemId || 0);
+    const candidates = this.normalizeMediaLocatorCandidates(fileUrl);
+
+    if (normalizedInstanceId <= 0 || normalizedItemId <= 0 || candidates.length === 0) {
+      throw new NotFoundException({
+        code: 'RC_CHECKLIST_MEDIA_LOCATOR_INVALID',
+        message: 'Missing required locator fields',
+      });
+    }
+
+    const mediaId = await this.repository.findPhotoSubmissionIdByLocator(
+      normalizedInstanceId,
+      normalizedItemId,
+      candidates,
+    );
+
+    if (!mediaId) {
+      throw new NotFoundException({
+        code: 'RC_CHECKLIST_MEDIA_NOT_FOUND',
+        message: 'Media not found for provided locator',
+      });
+    }
+
+    return this.deleteMediaById(mediaId);
   }
 
   async deleteInstance(id: number) {
@@ -388,6 +507,81 @@ export class PhotoChecklistService {
     }
 
     return Number(rawItemId || 0);
+  }
+
+  private normalizeMediaLocatorCandidates(fileUrl: string): string[] {
+    const raw = String(fileUrl || '').trim();
+    if (!raw) {
+      return [];
+    }
+
+    let path = raw;
+    if (/^https?:\/\//i.test(raw)) {
+      try {
+        const parsed = new URL(raw);
+        path = parsed.pathname || '';
+      } catch {
+        path = raw;
+      }
+    }
+
+    path = decodeURIComponent(path.replace(/\?.*$/, ''));
+    path = `/${path.replace(/^\/+/, '')}`;
+    const trimmed = path.replace(/^\//, '');
+
+    const candidates = [path, trimmed, `/${trimmed}`].filter(Boolean);
+    return Array.from(new Set(candidates));
+  }
+
+  private normalizeCaptureSource(rawSource?: string): 'in-app' | 'library' | 'system' | null {
+    const source = String(rawSource || '').trim().toLowerCase();
+    if (!source) {
+      return null;
+    }
+
+    if (source === 'in-app' || source === 'app' || source === 'browser') {
+      return 'in-app';
+    }
+
+    if (source === 'library' || source === 'gallery' || source === 'upload' || source === 'file') {
+      return 'library';
+    }
+
+    if (source === 'system' || source === 'camera' || source === 'native-camera' || source === 'device-camera') {
+      return 'system';
+    }
+
+    return null;
+  }
+
+  private extractStorageInfo(
+    rawMetadata: unknown,
+    fallbackKey: string,
+  ): { bucket: string; key: string } | null {
+    if (!rawMetadata) {
+      return null;
+    }
+
+    let metadata: any;
+    if (typeof rawMetadata === 'string') {
+      try {
+        metadata = JSON.parse(rawMetadata);
+      } catch {
+        metadata = null;
+      }
+    } else if (typeof rawMetadata === 'object') {
+      metadata = rawMetadata;
+    }
+
+    const storage = metadata?.storage;
+    const bucket = String(storage?.bucket || '').trim();
+    const key = String(storage?.key || fallbackKey || '').trim();
+
+    if (!bucket || !key) {
+      return null;
+    }
+
+    return { bucket, key };
   }
 
   async getConfig() {

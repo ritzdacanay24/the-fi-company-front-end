@@ -1,9 +1,9 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { mkdir, stat, unlink, writeFile } from 'node:fs/promises';
-import { basename, join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 
 @Injectable()
-export class AttachmentsStorageService {
+export class FileStorageService {
   private readonly explicitUploadDirs = this.resolveExplicitUploadDirs();
   private readonly uploadRootDirs = this.resolveUploadRootDirs();
   private readonly explicitPublicBaseUrl = this.resolveExplicitPublicBaseUrl();
@@ -18,15 +18,46 @@ export class AttachmentsStorageService {
       throw new BadRequestException('File is required');
     }
 
-    const safeOriginalName = basename(file.originalname);
-    const storedFileName = `${Date.now()}_${safeOriginalName}`;
+    const storedFileName = this.buildStoredFileName(file.originalname);
 
-    await this.writeFileToUploadTargets(storedFileName, file.buffer, subFolder);
+    const safeSubFolder = this.sanitizeSubFolder(subFolder, 'fieldService');
+    await this.writeFileToUploadTargets(storedFileName, file.buffer, safeSubFolder);
     return storedFileName;
   }
 
+  async storeUploadedFileInBucket(
+    file?: { originalname?: string; buffer?: Buffer },
+    options?: { bucket?: string; keyPrefix?: string },
+  ): Promise<{ bucket: string; key: string; fileName: string; url: string }> {
+    if (!file?.buffer || !file?.originalname) {
+      throw new BadRequestException('File is required');
+    }
+
+    const bucket = this.resolveBucketName(options?.bucket);
+    const keyPrefix = this.sanitizeKeyPrefix(options?.keyPrefix || '');
+    const fileName = this.buildStoredFileName(file.originalname);
+    const key = keyPrefix ? `${keyPrefix}/${fileName}` : fileName;
+
+    const bucketRootDir = this.resolveBucketRootDir();
+    const absoluteFilePath = join(bucketRootDir, bucket, key);
+    await mkdir(dirname(absoluteFilePath), { recursive: true });
+    await writeFile(absoluteFilePath, file.buffer);
+
+    const publicBase = this.resolveBucketPublicBaseUrl();
+    const encodedKey = key.split('/').map((segment) => encodeURIComponent(segment)).join('/');
+    const url = `${publicBase}/${bucket}/${encodedKey}`;
+
+    return {
+      bucket,
+      key,
+      fileName,
+      url,
+    };
+  }
+
   async deleteStoredFile(fileName: string, subFolder = 'fieldService'): Promise<void> {
-    const targetDirs = this.getUploadTargetDirs(subFolder);
+    const safeSubFolder = this.sanitizeSubFolder(subFolder, 'fieldService');
+    const targetDirs = this.getUploadTargetDirs(safeSubFolder);
 
     await Promise.all(
       targetDirs.map(async (uploadDir) => {
@@ -39,12 +70,29 @@ export class AttachmentsStorageService {
     );
   }
 
+  async deleteStoredFileInBucket(key: string, bucket?: string): Promise<void> {
+    const safeKey = this.sanitizeKeyPrefix(key);
+    if (!safeKey) {
+      return;
+    }
+
+    const bucketName = this.resolveBucketName(bucket);
+    const absolutePath = join(this.resolveBucketRootDir(), bucketName, safeKey);
+
+    try {
+      await unlink(absolutePath);
+    } catch {
+      // Best-effort cleanup.
+    }
+  }
+
   resolveLink(fileName: unknown, subFolder = 'fieldService'): string | null {
     if (typeof fileName !== 'string' || !fileName) {
       return null;
     }
 
-    const publicBaseUrl = this.getPublicBaseUrl(subFolder);
+    const safeSubFolder = this.sanitizeSubFolder(subFolder, 'fieldService');
+    const publicBaseUrl = this.getPublicBaseUrl(safeSubFolder);
     return `${publicBaseUrl}/${encodeURIComponent(fileName)}`;
   }
 
@@ -138,6 +186,61 @@ export class AttachmentsStorageService {
     }
   }
 
+  private buildStoredFileName(originalName: string): string {
+    const safeOriginalName = basename(originalName);
+    return `${Date.now()}_${safeOriginalName}`;
+  }
+
+  private resolveBucketRootDir(): string {
+    const configured = process.env.FILE_STORAGE_BUCKET_ROOT_DIR?.trim();
+    if (configured) {
+      return configured;
+    }
+
+    return this.uploadRootDirs[0] || join(process.cwd(), 'uploads');
+  }
+
+  private resolveBucketPublicBaseUrl(): string {
+    const configured = process.env.FILE_STORAGE_BUCKET_PUBLIC_BASE_URL?.trim();
+    if (configured) {
+      return configured.replace(/\/+$/, '');
+    }
+
+    return '/attachments';
+  }
+
+  private resolveBucketName(bucket?: string): string {
+    const fallback = process.env.FILE_STORAGE_DEFAULT_BUCKET?.trim() || 'general';
+    const raw = bucket && bucket.trim() ? bucket.trim() : fallback;
+    return this.sanitizeBucketName(raw);
+  }
+
+  private sanitizeBucketName(bucket: string): string {
+    const normalized = String(bucket || '').trim().toLowerCase();
+    const safe = normalized.replace(/[^a-z0-9._-]/g, '');
+    return safe || 'general';
+  }
+
+  private sanitizeKeyPrefix(keyPrefix: string): string {
+    const normalized = String(keyPrefix || '')
+      .trim()
+      .replace(/\\/g, '/')
+      .replace(/^\/+/, '')
+      .replace(/\/+$/, '');
+
+    if (!normalized) {
+      return '';
+    }
+
+    const segments = normalized.split('/').filter(Boolean);
+    const safeSegments = segments
+      .filter((segment) => segment !== '.' && segment !== '..')
+      .map((segment) => segment.replace(/[^a-zA-Z0-9._-]/g, ''))
+      .filter(Boolean);
+
+    return safeSegments.join('/');
+  }
+
   private resolveExplicitUploadDirs(): string[] {
     const configured = process.env.ATTACHMENTS_FS_UPLOAD_DIRS
       ?.split(',')
@@ -188,19 +291,46 @@ export class AttachmentsStorageService {
   }
 
   private getUploadTargetDirs(subFolder: string): string[] {
+    const safeSubFolder = this.sanitizeSubFolder(subFolder, 'fieldService');
     if (this.explicitUploadDirs.length > 0) {
       return this.explicitUploadDirs;
     }
 
-    return this.uploadRootDirs.map((rootDir) => join(rootDir, subFolder));
+    return this.uploadRootDirs.map((rootDir) => join(rootDir, safeSubFolder));
   }
 
   private getPublicBaseUrl(subFolder: string): string {
+    const safeSubFolder = this.sanitizeSubFolder(subFolder, 'fieldService');
     if (this.explicitPublicBaseUrl) {
       return this.explicitPublicBaseUrl;
     }
 
-    return `${this.publicRootBaseUrl}/${subFolder}`;
+    return `${this.publicRootBaseUrl}/${safeSubFolder}`;
+  }
+
+  private sanitizeSubFolder(subFolder: string, fallback: string): string {
+    if (!subFolder || typeof subFolder !== 'string') {
+      return fallback;
+    }
+
+    const normalized = subFolder
+      .trim()
+      .replace(/\\/g, '/')
+      .replace(/^\/+/, '')
+      .replace(/\/+$/, '');
+
+    if (!normalized) {
+      return fallback;
+    }
+
+    const segments = normalized.split('/').filter(Boolean);
+    if (segments.length === 0 || segments.some((segment) => segment === '.' || segment === '..')) {
+      return fallback;
+    }
+
+    const safeSegments = segments.map((segment) => segment.replace(/[^a-zA-Z0-9_-]/g, ''));
+    const safe = safeSegments.filter(Boolean).join('/');
+    return safe || fallback;
   }
 
   private resolveSubFolder(row: Record<string, unknown>): string {

@@ -60,3 +60,7 @@ backend/qad-driver/
 #main app config
 /frontend/src/app/config/app.config.ts
 /frontend/.angular
+
+# backend runtime logs
+/backend/nest-api/logs/
+/backend/nest-api/*.log

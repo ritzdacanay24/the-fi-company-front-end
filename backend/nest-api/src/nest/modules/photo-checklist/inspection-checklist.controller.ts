@@ -1,4 +1,5 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { PhotoChecklistService } from './photo-checklist.service';
 
 @Controller('inspection-checklist')
@@ -163,6 +164,38 @@ export class InspectionChecklistController {
     @Body() payload: { item_id: number } & Record<string, unknown>,
   ) {
     return this.service.updateInstanceItemCompletion(id, Number(payload.item_id), payload);
+  }
+
+  @Post('media/upload')
+  @UseInterceptors(FileInterceptor('photo'))
+  async uploadMedia(
+    @Body('instance_id', ParseIntPipe) instanceId: number,
+    @Body('item_id', ParseIntPipe) itemId: number,
+    @Body('capture_source') captureSource: string | undefined,
+    @Body('user_id') userId: string | undefined,
+    @UploadedFile() file?: { originalname?: string; mimetype?: string; size?: number; buffer?: Buffer },
+  ) {
+    return this.service.uploadMedia(instanceId, itemId, file, {
+      captureSource,
+      userId,
+    });
+  }
+
+  @Delete('media/:id')
+  async deleteMediaById(@Param('id', ParseIntPipe) id: number) {
+    return this.service.deleteMediaById(id);
+  }
+
+  @Post('media/delete-by-locator')
+  async deleteMediaByLocator(
+    @Body()
+    payload: {
+      instance_id: number;
+      item_id: number;
+      file_url: string;
+    },
+  ) {
+    return this.service.deleteMediaByLocator(payload.instance_id, payload.item_id, payload.file_url);
   }
 
   @Delete('instances/:id')

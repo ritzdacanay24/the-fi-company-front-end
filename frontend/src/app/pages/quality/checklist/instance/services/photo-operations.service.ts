@@ -196,8 +196,7 @@ export class PhotoOperationsService {
     if (photoUrl.startsWith('http')) {
       return photoUrl;
     }
-    
-    const cleanPath = photoUrl.startsWith('/') ? photoUrl.substring(1) : photoUrl;
-    return `https://dashboard.eye-fi.com/${cleanPath}`;
+
+    return photoUrl.startsWith('/') ? photoUrl : `/${photoUrl}`;
   }
 }
