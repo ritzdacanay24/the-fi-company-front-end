@@ -203,26 +203,34 @@ export class UnifiedWebSocketService implements OnModuleDestroy {
       return;
     }
 
-    const counts = await this.menuBadgeService.getSidebarBadgeCounts();
+    try {
+      const counts = await this.menuBadgeService.getSidebarBadgeCounts();
 
-    subscribedClientIds.forEach((clientId) => {
+      subscribedClientIds.forEach((clientId) => {
+        this.sendToClient(clientId, {
+          type: WebSocketMessageType.SIDEBAR_MENU_BADGE_COUNTS,
+          channel: BADGE_CHANNEL,
+          data: { counts },
+          timestamp: Date.now(),
+        });
+      });
+    } catch (error) {
+      this.logger.error('Failed to broadcast badge counts:', error as Error);
+    }
+  }
+
+  private async sendBadgeCountsToClient(clientId: string): Promise<void> {
+    try {
+      const counts = await this.menuBadgeService.getSidebarBadgeCounts();
       this.sendToClient(clientId, {
         type: WebSocketMessageType.SIDEBAR_MENU_BADGE_COUNTS,
         channel: BADGE_CHANNEL,
         data: { counts },
         timestamp: Date.now(),
       });
-    });
-  }
-
-  private async sendBadgeCountsToClient(clientId: string): Promise<void> {
-    const counts = await this.menuBadgeService.getSidebarBadgeCounts();
-    this.sendToClient(clientId, {
-      type: WebSocketMessageType.SIDEBAR_MENU_BADGE_COUNTS,
-      channel: BADGE_CHANNEL,
-      data: { counts },
-      timestamp: Date.now(),
-    });
+    } catch (error) {
+      this.logger.error(`Failed to send badge counts to ${clientId}:`, error as Error);
+    }
   }
 
   private sendToClient(clientId: string, message: UnifiedWebSocketMessage): boolean {
