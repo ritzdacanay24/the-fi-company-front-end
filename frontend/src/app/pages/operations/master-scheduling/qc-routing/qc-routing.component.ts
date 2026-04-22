@@ -21,6 +21,8 @@ import { MasterSchedulingService } from "@app/core/api/operations/master-schedul
   styleUrls: [],
 })
 export class QcRoutingComponent implements OnInit {
+  private hasInitializedGrid = false;
+
   constructor(
     public route: ActivatedRoute,
     public router: Router,
@@ -34,8 +36,6 @@ export class QcRoutingComponent implements OnInit {
       this.id = params["id"];
       this.routing = params["routing"] || this.routing;
     });
-    this.getData();
-    this.getTableSettings();
   }
 
   query = "";
@@ -77,8 +77,13 @@ export class QcRoutingComponent implements OnInit {
 
   gridApi: GridApi;
 
-  setGridApi($event) {
+  async setGridApi($event) {
     this.gridApi = $event.api;
+
+    if (!this.hasInitializedGrid) {
+      this.hasInitializedGrid = true;
+      await this.getData();
+    }
   }
 
   tableList: any;
@@ -87,7 +92,11 @@ export class QcRoutingComponent implements OnInit {
     this.tableList = await this.tableSettingsService.getTableByUserId({
       pageId: this.pageId,
     });
-    this.gridApi!.applyColumnState({
+    if (!this.gridApi || !this.tableList?.currentView?.data) {
+      return;
+    }
+
+    this.gridApi.applyColumnState({
       state: this.tableList.currentView.data,
       applyOrder: true,
     });
@@ -106,8 +115,8 @@ export class QcRoutingComponent implements OnInit {
       this.gridApi?.showLoadingOverlay();
       this.data = await this.api.getMasterProduction(this.routing);
 
-      if (this.gridApi.isDestroyed()) return;
-      this.gridApi!.redrawRows();
+      if (!this.gridApi || this.gridApi.isDestroyed()) return;
+      this.gridApi.redrawRows();
 
       this.gridApi?.hideOverlay();
     } catch (err) {

@@ -93,6 +93,7 @@ export const MENU_DATA: MenuItem[] = [
     },
     {
         id: 10,
+        badgeId: "pickAndStageOpen",
         label: "Pick & Stage",
         link: "/operations/master-scheduling/picking-routing",
         description: "Pick & Stage Schedule",
@@ -110,6 +111,7 @@ export const MENU_DATA: MenuItem[] = [
     },
     {
         id: 12,
+        badgeId: "finalTestQcOpen",
         label: "Final/Test QC",
         link: "/operations/master-scheduling/qc-routing",
         description: "Quality Control Schedule",

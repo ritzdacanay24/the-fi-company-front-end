@@ -6,6 +6,9 @@ CREATE TABLE IF NOT EXISTS menu_badge_cache (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO menu_badge_cache (menu_id, count)
-VALUES ('production-routing-open', 0)
+VALUES
+  ('pick-and-stage-open', 0),
+  ('production-routing-open', 0),
+  ('final-test-qc-open', 0)
 ON DUPLICATE KEY UPDATE
   count = count;

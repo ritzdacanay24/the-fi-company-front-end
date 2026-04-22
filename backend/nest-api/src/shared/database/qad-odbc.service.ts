@@ -10,8 +10,8 @@ type QadQueryOptions = {
 @Injectable()
 export class QadOdbcService {
   private connectTimeoutMs(): number {
-    const raw = Number(process.env.QAD_CONNECT_TIMEOUT_MS || 3000);
-    return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : 3000;
+    const raw = Number(process.env.QAD_CONNECT_TIMEOUT_MS || 30000);
+    return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : 30000;
   }
 
   private connectTimeoutSeconds(): number {

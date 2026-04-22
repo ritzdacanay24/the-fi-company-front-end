@@ -43,7 +43,9 @@ export class SidebarComponent implements OnInit {
   private readonly badgeKeys = new Set<keyof SidebarMenuBadgeCounts>([
     'validationQueue',
     'pickingQueue',
+    'pickAndStageOpen',
     'productionRoutingOpen',
+    'finalTestQcOpen',
     'vehicleExpiringSoon',
     'shortagesOpen',
     'safetyIncidentOpen',
@@ -61,7 +63,9 @@ export class SidebarComponent implements OnInit {
   private readonly badgeVariantByKey: Record<keyof SidebarMenuBadgeCounts, string> = {
     validationQueue: 'sidebar-count-badge--critical',
     pickingQueue: 'sidebar-count-badge--attention',
+    pickAndStageOpen: 'sidebar-count-badge--attention',
     productionRoutingOpen: 'sidebar-count-badge--attention',
+    finalTestQcOpen: 'sidebar-count-badge--attention',
     vehicleExpiringSoon: 'sidebar-count-badge--critical',
     shortagesOpen: 'sidebar-count-badge--critical',
     safetyIncidentOpen: 'sidebar-count-badge--critical',
@@ -112,7 +116,9 @@ export class SidebarComponent implements OnInit {
   menuBadgeCounts: SidebarMenuBadgeCounts = {
     validationQueue: 0,
     pickingQueue: 0,
+    pickAndStageOpen: 0,
     productionRoutingOpen: 0,
+    finalTestQcOpen: 0,
     vehicleExpiringSoon: 0,
     shortagesOpen: 0,
     safetyIncidentOpen: 0,
