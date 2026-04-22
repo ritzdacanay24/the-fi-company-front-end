@@ -1,6 +1,7 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AddressSearchModule } from './modules/address-search/address-search.module';
 import { AgsSerialModule } from './modules/ags-serial';
 import { EyeFiAssetNumbersModule } from './modules/eyefi-asset-numbers';
@@ -124,6 +125,7 @@ import { UrlModule } from '../shared/url/url.module';
       },
       cache: true,
     }),
+    ScheduleModule.forRoot(),
     MysqlModule,
     EmailModule,
     UrlModule,

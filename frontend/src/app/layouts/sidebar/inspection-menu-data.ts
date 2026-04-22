@@ -19,6 +19,7 @@ export const INSPECTION_MENU: MenuItem[] = [
     },
     {
         id: 3,
+        badgeId: "inspectionChecklistExecutionInProgress",
         label: "Execution",
         link: "/inspection-checklist/execution",
         description: "Execute active inspection checklists",

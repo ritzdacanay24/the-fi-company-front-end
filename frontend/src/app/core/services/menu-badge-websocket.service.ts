@@ -7,6 +7,7 @@ import { WebsocketService } from './websocket.service';
 export interface SidebarMenuBadgeCounts {
   validationQueue: number;
   pickingQueue: number;
+  productionRoutingOpen: number;
   vehicleExpiringSoon: number;
   shortagesOpen: number;
   safetyIncidentOpen: number;
@@ -41,6 +42,7 @@ interface BadgeWsMessage {
 const ZERO_COUNTS: SidebarMenuBadgeCounts = {
   validationQueue: 0,
   pickingQueue: 0,
+  productionRoutingOpen: 0,
   vehicleExpiringSoon: 0,
   shortagesOpen: 0,
   safetyIncidentOpen: 0,
@@ -179,6 +181,7 @@ export class MenuBadgeWebsocketService implements OnDestroy {
     this.countsSubject.next({
       validationQueue:                     toNum(pick('validationQueue'),                     current.validationQueue),
       pickingQueue:                        toNum(pick('pickingQueue'),                        current.pickingQueue),
+      productionRoutingOpen:               toNum(pick('productionRoutingOpen'),               current.productionRoutingOpen),
       vehicleExpiringSoon:                 toNum(pick('vehicleExpiringSoon'),                 current.vehicleExpiringSoon),
       shortagesOpen:                       toNum(pick('shortagesOpen'),                       current.shortagesOpen),
       safetyIncidentOpen:                  toNum(pick('safetyIncidentOpen'),                  current.safetyIncidentOpen),

@@ -101,6 +101,7 @@ export const MENU_DATA: MenuItem[] = [
     },
     {
         id: 11,
+        badgeId: "productionRoutingOpen",
         label: "Production Schedule",
         link: "/operations/master-scheduling/production-routing",
         description: "Production Schedule",
@@ -160,11 +161,13 @@ export const MENU_DATA: MenuItem[] = [
                 accessRequired: false,
             },
             {
+                badgeId: "validationQueue",
                 label: "Validation Queue",
                 link: "/operations/material-request/validate-list",
                 description: "Requests Awaiting Validation",
             },
             {
+                badgeId: "pickingQueue",
                 label: "Picking Queue",
                 link: "/operations/material-request/picking",
                 description: "Ready for Picking",
@@ -212,6 +215,7 @@ export const MENU_DATA: MenuItem[] = [
     },
     {
         id: 20,
+        badgeId: "vehicleExpiringSoon",
         label: "Vehicle Management",
         link: "/operations/forms/vehicle/list",
         description: "Company Vehicle Records",
@@ -265,6 +269,7 @@ export const MENU_DATA: MenuItem[] = [
                 activatedRoutes: "/operations/graphics/*"
             },
             {
+                badgeId: "graphicsProductionOpen",
                 label: "Graphics Production",
                 link: "/operations/graphics/production",
                 description: "Graphics production tracking",
@@ -295,6 +300,7 @@ export const MENU_DATA: MenuItem[] = [
     },
     {
         id: 27,
+        badgeId: "shippingRequestOpen",
         label: "Shipping Request",
         icon: "las la-shipping-fast",
         link: "/operations/forms/shipping-request",
@@ -327,6 +333,7 @@ export const MENU_DATA: MenuItem[] = [
         hideCheckBox: true,
         subItems: [
             {
+                badgeId: "shortagesOpen",
                 label: "Shortages",
                 link: "/operations/shortages/list",
                 description: "Material Shortages",
@@ -366,6 +373,7 @@ export const MENU_DATA: MenuItem[] = [
         hideCheckBox: true,
         subItems: [
             {
+                badgeId: "safetyIncidentOpen",
                 label: "Safety Incidents",
                 description: "Report and Track Safety Incidents",
                 link: "/operations/forms/safety-incident/list",
@@ -405,6 +413,7 @@ export const MENU_DATA: MenuItem[] = [
         hideCheckBox: true,
         subItems: [
             {
+                badgeId: "returnsRmaOpen",
                 label: "Returns (RMA)",
                 link: "/quality/rma/list",
                 description: "Product Returns & Authorizations",
@@ -412,6 +421,7 @@ export const MENU_DATA: MenuItem[] = [
                 activatedRoutes: "/quality/rma/*"
             },
             {
+                badgeId: "correctiveActionsOpen",
                 label: "Corrective Actions",
                 link: "/quality/car/list",
                 description: "Track Corrective Action Requests",
@@ -426,6 +436,7 @@ export const MENU_DATA: MenuItem[] = [
                 activatedRoutes: "/quality/mrb/*"
             },
             {
+                badgeId: "qualityIssuesOpen",
                 label: "Quality Issues",
                 link: "/quality/qir",
                 description: "Issue Reports & Tracking",
@@ -433,6 +444,7 @@ export const MENU_DATA: MenuItem[] = [
                 activatedRoutes: "/quality/qir/*"
             },
             {
+                badgeId: "permitChecklistOpen",
                 label: "Permit Checklists",
                 link: "/quality/permit-checklists",
                 description: "DCA and Seismic document workflow forms",
@@ -458,14 +470,17 @@ function sortMenuItems(items: MenuItem[]): MenuItem[] {
             if (a.isTitle && a.label === "Menu") return -1;
             if (b.isTitle && b.label === "Menu") return 1;
 
-            // For all other items with IDs, sort by ID
-            if (a.id !== undefined && b.id !== undefined) {
-                return a.id - b.id;
+            const aId = typeof a.id === 'number' ? a.id : Number.NaN;
+            const bId = typeof b.id === 'number' ? b.id : Number.NaN;
+
+            // For numeric IDs, keep deterministic numeric ordering.
+            if (Number.isFinite(aId) && Number.isFinite(bId)) {
+                return aId - bId;
             }
 
-            // If only one has ID, prioritize it
-            if (a.id !== undefined) return -1;
-            if (b.id !== undefined) return 1;
+            // If only one has numeric ID, prioritize numeric IDs.
+            if (Number.isFinite(aId)) return -1;
+            if (Number.isFinite(bId)) return 1;
 
             // If neither has ID, sort by label
             return (a.label || '').localeCompare(b.label || '');

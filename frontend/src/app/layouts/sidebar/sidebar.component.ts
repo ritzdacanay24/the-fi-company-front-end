@@ -40,6 +40,42 @@ import {
   styleUrls: ["./sidebar.component.scss"],
 })
 export class SidebarComponent implements OnInit {
+  private readonly badgeKeys = new Set<keyof SidebarMenuBadgeCounts>([
+    'validationQueue',
+    'pickingQueue',
+    'productionRoutingOpen',
+    'vehicleExpiringSoon',
+    'shortagesOpen',
+    'safetyIncidentOpen',
+    'qualityIssuesOpen',
+    'correctiveActionsOpen',
+    'returnsRmaOpen',
+    'permitChecklistOpen',
+    'shippingRequestOpen',
+    'graphicsProductionOpen',
+    'fieldsServiceRequestsOpen',
+    'trainingLiveSessionsOpen',
+    'inspectionChecklistExecutionInProgress',
+  ]);
+
+  private readonly badgeVariantByKey: Record<keyof SidebarMenuBadgeCounts, string> = {
+    validationQueue: 'sidebar-count-badge--critical',
+    pickingQueue: 'sidebar-count-badge--attention',
+    productionRoutingOpen: 'sidebar-count-badge--attention',
+    vehicleExpiringSoon: 'sidebar-count-badge--critical',
+    shortagesOpen: 'sidebar-count-badge--critical',
+    safetyIncidentOpen: 'sidebar-count-badge--critical',
+    qualityIssuesOpen: 'sidebar-count-badge--critical',
+    correctiveActionsOpen: 'sidebar-count-badge--critical',
+    returnsRmaOpen: 'sidebar-count-badge--critical',
+    permitChecklistOpen: 'sidebar-count-badge--critical',
+    shippingRequestOpen: 'sidebar-count-badge--critical',
+    graphicsProductionOpen: 'sidebar-count-badge--critical',
+    fieldsServiceRequestsOpen: 'sidebar-count-badge--critical',
+    trainingLiveSessionsOpen: 'sidebar-count-badge--critical',
+    inspectionChecklistExecutionInProgress: 'sidebar-count-badge--critical',
+  };
+
   menu: any;
   toggle: any = true;
   menuItems: MenuItem[] = [];
@@ -76,6 +112,7 @@ export class SidebarComponent implements OnInit {
   menuBadgeCounts: SidebarMenuBadgeCounts = {
     validationQueue: 0,
     pickingQueue: 0,
+    productionRoutingOpen: 0,
     vehicleExpiringSoon: 0,
     shortagesOpen: 0,
     safetyIncidentOpen: 0,
@@ -336,105 +373,15 @@ export class SidebarComponent implements OnInit {
       };
     }
 
-    if (menu.link?.includes('/operations/material-request/validate-list')) {
-      return {
-        text: this.formatBadgeCount(count),
-        variant: 'sidebar-count-badge--critical',
-      };
+    const variant = this.resolveLeafBadgeVariant(menu);
+    if (!variant) {
+      return null;
     }
 
-    if (menu.link?.includes('/operations/material-request/picking')) {
-      return {
-        text: this.formatBadgeCount(count),
-        variant: 'sidebar-count-badge--attention',
-      };
-    }
-
-    if (menu.link?.includes('/operations/forms/vehicle/list')) {
-      return {
-        text: this.formatBadgeCount(count),
-        variant: 'sidebar-count-badge--critical',
-      };
-    }
-
-    if (menu.link?.includes('/operations/shortages/list')) {
-      return {
-        text: this.formatBadgeCount(count),
-        variant: 'sidebar-count-badge--critical',
-      };
-    }
-
-    if (menu.link?.includes('/operations/forms/safety-incident/list')) {
-      return {
-        text: this.formatBadgeCount(count),
-        variant: 'sidebar-count-badge--critical',
-      };
-    }
-
-    if (menu.link?.includes('/quality/qir')) {
-      return {
-        text: this.formatBadgeCount(count),
-        variant: 'sidebar-count-badge--critical',
-      };
-    }
-
-    if (menu.link?.includes('/quality/car/list')) {
-      return {
-        text: this.formatBadgeCount(count),
-        variant: 'sidebar-count-badge--critical',
-      };
-    }
-
-    if (menu.link?.includes('/quality/rma/list')) {
-      return {
-        text: this.formatBadgeCount(count),
-        variant: 'sidebar-count-badge--critical',
-      };
-    }
-
-    if (menu.link?.includes('/quality/permit-checklists')) {
-      return {
-        text: this.formatBadgeCount(count),
-        variant: 'sidebar-count-badge--critical',
-      };
-    }
-
-    if (menu.link?.includes('/operations/forms/shipping-request')) {
-      return {
-        text: this.formatBadgeCount(count),
-        variant: 'sidebar-count-badge--critical',
-      };
-    }
-
-    if (menu.link?.includes('/operations/graphics/production')) {
-      return {
-        text: this.formatBadgeCount(count),
-        variant: 'sidebar-count-badge--critical',
-      };
-    }
-
-    if (menu.link?.includes('/field-service/request')) {
-      return {
-        text: this.formatBadgeCount(count),
-        variant: 'sidebar-count-badge--critical',
-      };
-    }
-
-    if (menu.link?.includes('/training/live')) {
-      return {
-        text: this.formatBadgeCount(count),
-        variant: 'sidebar-count-badge--critical',
-      };
-    }
-
-    if (menu.link?.includes('/inspection-checklist/execution')) {
-      return {
-        text: this.formatBadgeCount(count),
-        variant: 'sidebar-count-badge--critical',
-      };
-    }
-
-    return null;
+    return {
+      text: this.formatBadgeCount(count),
+      variant,
+    };
   }
 
   private getBadgeCount(menu: MenuItem): number {
@@ -442,63 +389,25 @@ export class SidebarComponent implements OnInit {
       return menu.subItems.reduce((sum: number, child: MenuItem) => sum + this.getBadgeCount(child), 0);
     }
 
-    if (menu.link?.includes('/operations/material-request/validate-list')) {
-      return this.menuBadgeCounts.validationQueue;
+    const key = this.resolveLeafBadgeKey(menu);
+    return key ? this.menuBadgeCounts[key] : 0;
+  }
+
+  private resolveLeafBadgeKey(menu: MenuItem): keyof SidebarMenuBadgeCounts | null {
+    if (typeof menu.badgeId === 'string' && this.badgeKeys.has(menu.badgeId as keyof SidebarMenuBadgeCounts)) {
+      return menu.badgeId as keyof SidebarMenuBadgeCounts;
     }
 
-    if (menu.link?.includes('/operations/material-request/picking')) {
-      return this.menuBadgeCounts.pickingQueue;
+    if (typeof menu.id === 'string' && this.badgeKeys.has(menu.id as keyof SidebarMenuBadgeCounts)) {
+      return menu.id as keyof SidebarMenuBadgeCounts;
     }
 
-    if (menu.link?.includes('/operations/forms/vehicle/list')) {
-      return this.menuBadgeCounts.vehicleExpiringSoon;
-    }
+    return null;
+  }
 
-    if (menu.link?.includes('/operations/shortages/list')) {
-      return this.menuBadgeCounts.shortagesOpen;
-    }
-
-    if (menu.link?.includes('/operations/forms/safety-incident/list')) {
-      return this.menuBadgeCounts.safetyIncidentOpen;
-    }
-
-    if (menu.link?.includes('/quality/qir')) {
-      return this.menuBadgeCounts.qualityIssuesOpen;
-    }
-
-    if (menu.link?.includes('/quality/car/list')) {
-      return this.menuBadgeCounts.correctiveActionsOpen;
-    }
-
-    if (menu.link?.includes('/quality/rma/list')) {
-      return this.menuBadgeCounts.returnsRmaOpen;
-    }
-
-    if (menu.link?.includes('/quality/permit-checklists')) {
-      return this.menuBadgeCounts.permitChecklistOpen;
-    }
-
-    if (menu.link?.includes('/operations/forms/shipping-request')) {
-      return this.menuBadgeCounts.shippingRequestOpen;
-    }
-
-    if (menu.link?.includes('/operations/graphics/production')) {
-      return this.menuBadgeCounts.graphicsProductionOpen;
-    }
-
-    if (menu.link?.includes('/field-service/request')) {
-      return this.menuBadgeCounts.fieldsServiceRequestsOpen;
-    }
-
-    if (menu.link?.includes('/training/live')) {
-      return this.menuBadgeCounts.trainingLiveSessionsOpen;
-    }
-
-    if (menu.link?.includes('/inspection-checklist/execution')) {
-      return this.menuBadgeCounts.inspectionChecklistExecutionInProgress;
-    }
-
-    return 0;
+  private resolveLeafBadgeVariant(menu: MenuItem): string | null {
+    const key = this.resolveLeafBadgeKey(menu);
+    return key ? this.badgeVariantByKey[key] : null;
   }
 
   private formatBadgeCount(count: number): string {
@@ -1030,7 +939,7 @@ export class SidebarComponent implements OnInit {
     console.log(`[${this.currentMenuType}] Hidden items:`, configItems.filter(item => !item.visible));
   }
 
-  toggleMenuItemVisibility(itemId: number) {
+  toggleMenuItemVisibility(itemId: number | string) {
     console.log(`[${this.currentMenuType}] Toggling visibility for item ID:`, itemId);
     const config = this.getMenuConfiguration();
     console.log(`[${this.currentMenuType}] Current config before toggle:`, config);
@@ -1188,7 +1097,7 @@ export class SidebarComponent implements OnInit {
     this.saveCurrentOrder();
   }
 
-  restoreHiddenItem(itemId: number) {
+  restoreHiddenItem(itemId: number | string) {
     this.toggleMenuItemVisibility(itemId);
   }
 

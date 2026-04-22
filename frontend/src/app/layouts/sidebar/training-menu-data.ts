@@ -9,6 +9,7 @@ export const TRAINING_MENU: MenuItem[] = [
     },
     {
         id: 2,
+        badgeId: "trainingLiveSessionsOpen",
         label: "Live Sessions",
         link: "/training/live",
         description: "Join Training & Badge Sign-Off",

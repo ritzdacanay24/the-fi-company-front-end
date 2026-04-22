@@ -18,13 +18,20 @@ export class QadOdbcService {
     return Math.max(1, Math.ceil(this.connectTimeoutMs() / 1000));
   }
 
+  private queryTimeoutMs(): number {
+    const raw = Number(process.env.QAD_QUERY_TIMEOUT_MS || 60000);
+    return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : 60000;
+  }
+
   private connectionString(): string {
     const dsn = process.env.QAD_DSN || 'DEV';
     const user = process.env.QAD_USER || 'change_me';
     const password = process.env.QAD_PASSWORD || 'change_me';
     const loginTimeout = this.connectTimeoutSeconds();
 
-    return `DSN=${dsn};UID=${user};PWD=${password};LoginTimeout=${loginTimeout};ConnectionTimeout=${loginTimeout}`;
+    // LoginTimeout: max time to establish the connection.
+    // ConnectionTimeout is intentionally omitted — it can kill active query result fetches.
+    return `DSN=${dsn};UID=${user};PWD=${password};LoginTimeout=${loginTimeout}`;
   }
 
   private async connectWithTimeout(): Promise<odbc.Connection> {
@@ -70,7 +77,7 @@ export class QadOdbcService {
 
   async query<T = Record<string, unknown>[]>(sql: string, options?: QadQueryOptions): Promise<T> {
     return this.withConnection(async (conn) => {
-      const rows = (await conn.query(sql)) as T;
+      const rows = (await this.withQueryTimeout(conn.query(sql))) as T;
       return this.normalizeKeys(rows, options?.keyCase || 'preserve');
     });
   }
@@ -81,8 +88,27 @@ export class QadOdbcService {
     options?: QadQueryOptions,
   ): Promise<T> {
     return this.withConnection(async (conn) => {
-      const rows = (await conn.query(sql, [...params])) as T;
+      const rows = (await this.withQueryTimeout(conn.query(sql, [...params]))) as T;
       return this.normalizeKeys(rows, options?.keyCase || 'preserve');
+    });
+  }
+
+  private withQueryTimeout<T>(promise: Promise<T>): Promise<T> {
+    const timeoutMs = this.queryTimeoutMs();
+    return new Promise<T>((resolve, reject) => {
+      const timer = setTimeout(() => {
+        reject(new Error(`[odbc] Query timeout after ${timeoutMs}ms`));
+      }, timeoutMs);
+
+      promise
+        .then((result) => {
+          clearTimeout(timer);
+          resolve(result);
+        })
+        .catch((error: Error) => {
+          clearTimeout(timer);
+          reject(error);
+        });
     });
   }
 

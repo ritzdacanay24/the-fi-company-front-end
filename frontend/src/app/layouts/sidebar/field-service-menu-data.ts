@@ -46,6 +46,7 @@ export const FIELD_SERVICE_MENU_DATA: MenuItem[] = [
     },
     {
         id: 10,
+        badgeId: "fieldsServiceRequestsOpen",
         label: "Service Requests",
         icon: "las la-clipboard-list",
         link: "/field-service/request/list",
@@ -201,10 +202,17 @@ function sortFieldServiceMenuItems(items: MenuItem[]): MenuItem[] {
             if (a.label === "Settings" && a.id === 12) return 1;
             if (b.label === "Settings" && b.id === 12) return -1;
 
-            // For all other items, sort by ID
-            if (a.id !== undefined && b.id !== undefined) {
-                return a.id - b.id;
+            const aId = typeof a.id === 'number' ? a.id : Number.NaN;
+            const bId = typeof b.id === 'number' ? b.id : Number.NaN;
+
+            // For numeric IDs, keep deterministic numeric ordering.
+            if (Number.isFinite(aId) && Number.isFinite(bId)) {
+                return aId - bId;
             }
+
+            // If only one has numeric ID, prioritize numeric IDs.
+            if (Number.isFinite(aId)) return -1;
+            if (Number.isFinite(bId)) return 1;
 
             return (a.label || '').localeCompare(b.label || '');
         })

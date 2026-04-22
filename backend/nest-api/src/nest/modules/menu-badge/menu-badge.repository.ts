@@ -10,6 +10,7 @@ interface MenuBadgeCountRow extends RowDataPacket {
 export interface SidebarMenuBadgeCounts {
   validationQueue: number;
   pickingQueue: number;
+  productionRoutingOpen: number;
   vehicleExpiringSoon: number;
   shortagesOpen: number;
   safetyIncidentOpen: number;
@@ -44,6 +45,16 @@ export class MenuBadgeRepository {
       WHERE m.active = 1
         AND m.queue_status NOT IN ('complete', 'cancelled')
         AND m.pickedCompletedDate IS NULL
+
+      UNION ALL
+
+      SELECT 'productionRoutingOpen' AS menu_id,
+             COALESCE((
+               SELECT mbc.count
+               FROM menu_badge_cache mbc
+               WHERE mbc.menu_id = 'production-routing-open'
+               LIMIT 1
+             ), 0) AS count
 
       UNION ALL
 
@@ -138,6 +149,7 @@ export class MenuBadgeRepository {
     const defaults: SidebarMenuBadgeCounts = {
       validationQueue: 0,
       pickingQueue: 0,
+      productionRoutingOpen: 0,
       vehicleExpiringSoon: 0,
       shortagesOpen: 0,
       safetyIncidentOpen: 0,
