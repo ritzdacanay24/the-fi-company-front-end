@@ -6,8 +6,8 @@ export class PartsOrderController {
   constructor(private readonly service: PartsOrderService) {}
 
   @Get()
-  async getAll() {
-    return this.service.getAll();
+  async getAll(@Query('view') view?: string) {
+    return this.service.getAll(view);
   }
 
   @Get('find')

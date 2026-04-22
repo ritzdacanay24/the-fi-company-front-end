@@ -20,8 +20,13 @@ export class PartsOrderService extends DataService<any> {
         return firstValueFrom(this.http.get<any[]>(url));
     };
 
-    override getAll = async (): Promise<any[]> =>
-        firstValueFrom(this.http.get<any[]>(`${partsOrderV2Url}`));
+    override getAll = async (params?: Partial<any>): Promise<any[]> => {
+        const query = params
+            ? new URLSearchParams(params as Record<string, string>).toString()
+            : '';
+        const url = query ? `${partsOrderV2Url}?${query}` : `${partsOrderV2Url}`;
+        return firstValueFrom(this.http.get<any[]>(url));
+    };
 
     override getById = async (id: number): Promise<any> =>
         firstValueFrom(this.http.get<any>(`${partsOrderV2Url}/${id}`));

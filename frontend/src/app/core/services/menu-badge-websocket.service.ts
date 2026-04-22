@@ -23,6 +23,7 @@ export interface SidebarMenuBadgeCounts {
   shippingRequestOpen: number;
   graphicsProductionOpen: number;
   fieldsServiceRequestsOpen: number;
+  partsOrderOpen: number;
   trainingLiveSessionsOpen: number;
   inspectionChecklistExecutionInProgress: number;
 }
@@ -62,6 +63,7 @@ const ZERO_COUNTS: SidebarMenuBadgeCounts = {
   shippingRequestOpen: 0,
   graphicsProductionOpen: 0,
   fieldsServiceRequestsOpen: 0,
+  partsOrderOpen: 0,
   trainingLiveSessionsOpen: 0,
   inspectionChecklistExecutionInProgress: 0,
 };
@@ -200,6 +202,7 @@ export class MenuBadgeWebsocketService implements OnDestroy {
       shippingRequestOpen:                 toNum(pick('shippingRequestOpen'),                 current.shippingRequestOpen),
       graphicsProductionOpen:              toNum(pick('graphicsProductionOpen'),              current.graphicsProductionOpen),
       fieldsServiceRequestsOpen:           toNum(pick('fieldsServiceRequestsOpen'),           current.fieldsServiceRequestsOpen),
+      partsOrderOpen:                      toNum(pick('partsOrderOpen'),                      current.partsOrderOpen),
       trainingLiveSessionsOpen:            toNum(pick('trainingLiveSessionsOpen'),            current.trainingLiveSessionsOpen),
       inspectionChecklistExecutionInProgress: toNum(pick('inspectionChecklistExecutionInProgress'), current.inspectionChecklistExecutionInProgress),
     });

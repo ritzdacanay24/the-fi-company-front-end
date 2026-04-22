@@ -83,10 +83,10 @@ export class PartsOrderListComponent implements OnInit {
       this.isAll = params["isAll"]
         ? params["isAll"].toLocaleLowerCase() === "true"
         : false;
-      this.selectedViewType =
-        params["selectedViewType"] || this.selectedViewType;
+      const selectedViewTypeParam = params["selectedViewType"] || this.selectedViewType;
+      this.selectedViewType = selectedViewTypeParam === "All" ? "All" : "Open";
+      this.getData();
     });
-    this.getData();
   }
 
   columnDefs: ColDef[] = [
@@ -275,12 +275,6 @@ export class PartsOrderListComponent implements OnInit {
   selectedViewOptions = [
     {
       name: "Open",
-      value: 1,
-      selected: false,
-    },
-    {
-      name: "Closed",
-      value: 0,
       selected: false,
     },
     {
@@ -289,7 +283,7 @@ export class PartsOrderListComponent implements OnInit {
     },
   ];
 
-  data: any;
+  data: any[] = [];
 
   id: any;
 
@@ -316,11 +310,27 @@ export class PartsOrderListComponent implements OnInit {
     this.getData();
   }
 
+  changeSelectedViewType() {
+    this.selectedViewType = this.selectedViewType === "All" ? "All" : "Open";
+
+    this.router.navigate(["."], {
+      relativeTo: this.activatedRoute,
+      queryParams: {
+        selectedViewType: this.selectedViewType,
+      },
+      queryParamsHandling: "merge",
+    });
+
+    this.getData();
+  }
+
   async getData() {
     try {
       this.gridApi?.showLoadingOverlay();
 
-      this.data = await this.partsOrderService.getAll();
+      const view = this.selectedViewType === "All" ? "all" : "open";
+      const rows = await this.partsOrderService.getAll({ view });
+      this.data = Array.isArray(rows) ? rows : [];
 
       this.router.navigate(["."], {
         queryParams: {

@@ -29,6 +29,7 @@ import { SERIAL_MANAGEMENT_MENU } from "./serial-management-menu-data";
 import { TRAINING_MENU } from "./training-menu-data";
 import { INSPECTION_MENU } from "./inspection-menu-data";
 import { PROJECT_MANAGER_MENU } from "./project-manager-menu-data";
+import { MENU } from "./menu";
 import {
   SidebarMenuBadgeCounts,
   MenuBadgeWebsocketService,
@@ -58,6 +59,7 @@ export class SidebarComponent implements OnInit {
     'shippingRequestOpen',
     'graphicsProductionOpen',
     'fieldsServiceRequestsOpen',
+    'partsOrderOpen',
     'trainingLiveSessionsOpen',
     'inspectionChecklistExecutionInProgress',
   ]);
@@ -80,6 +82,7 @@ export class SidebarComponent implements OnInit {
     shippingRequestOpen: 'sidebar-count-badge--critical',
     graphicsProductionOpen: 'sidebar-count-badge--critical',
     fieldsServiceRequestsOpen: 'sidebar-count-badge--critical',
+    partsOrderOpen: 'sidebar-count-badge--critical',
     trainingLiveSessionsOpen: 'sidebar-count-badge--critical',
     inspectionChecklistExecutionInProgress: 'sidebar-count-badge--critical',
   };
@@ -135,12 +138,17 @@ export class SidebarComponent implements OnInit {
     shippingRequestOpen: 0,
     graphicsProductionOpen: 0,
     fieldsServiceRequestsOpen: 0,
+    partsOrderOpen: 0,
     trainingLiveSessionsOpen: 0,
     inspectionChecklistExecutionInProgress: 0,
   };
 
   get appRailItems() {
     return this.appSwitcherService.getApps();
+  }
+
+  appHasBadgeNotifications(appId: AppType): boolean {
+    return this.getAppBadgeCount(appId) > 0;
   }
 
   get currentSectionName(): string {
@@ -403,6 +411,30 @@ export class SidebarComponent implements OnInit {
 
     const key = this.resolveLeafBadgeKey(menu);
     return key ? this.menuBadgeCounts[key] : 0;
+  }
+
+  private getAppBadgeCount(appId: AppType): number {
+    return this.getMenuItemsForApp(appId).reduce((sum, menu) => sum + this.getBadgeCount(menu), 0);
+  }
+
+  private getMenuItemsForApp(appId: AppType): MenuItem[] {
+    switch (appId) {
+      case 'field-service':
+        return FIELD_SERVICE_MENU;
+      case 'admin':
+        return ADMIN_MENU;
+      case 'serial-management':
+        return SERIAL_MANAGEMENT_MENU;
+      case 'training':
+        return TRAINING_MENU;
+      case 'inspection':
+        return INSPECTION_MENU;
+      case 'project-manager':
+        return PROJECT_MANAGER_MENU;
+      case 'main':
+      default:
+        return MENU;
+    }
   }
 
   private resolveLeafBadgeKey(menu: MenuItem): keyof SidebarMenuBadgeCounts | null {

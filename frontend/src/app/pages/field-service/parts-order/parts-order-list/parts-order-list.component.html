@@ -40,6 +40,14 @@
                             </div>
                         </div>
 
+                        <div class="ms-2" style="width: 140px;">
+                            <select class="form-select" [(ngModel)]="selectedViewType" (change)="changeSelectedViewType()">
+                                @for (option of selectedViewOptions; track option.name) {
+                                <option [ngValue]="option.name">{{ option.name }}</option>
+                                }
+                            </select>
+                        </div>
+
                         <div class="ms-3">
                             <app-grid-settings [gridApi]="gridApi" [pageId]="pageId"></app-grid-settings>
                         </div>

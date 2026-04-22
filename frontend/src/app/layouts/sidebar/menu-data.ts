@@ -179,6 +179,7 @@ export const MENU_DATA: MenuItem[] = [
     },
     {
         id: 16.1,
+        badgeId: "partsOrderOpen",
         label: "Parts Request",
         link: "/operations/parts-order/list",
         description: "Field Service Parts Requests",

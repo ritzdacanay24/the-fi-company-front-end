@@ -25,6 +25,7 @@ export interface SidebarMenuBadgeCounts {
   shippingRequestOpen: number;
   graphicsProductionOpen: number;
   fieldsServiceRequestsOpen: number;
+  partsOrderOpen: number;
   trainingLiveSessionsOpen: number;
   inspectionChecklistExecutionInProgress: number;
 }
@@ -177,6 +178,13 @@ export class MenuBadgeRepository {
 
       UNION ALL
 
+      SELECT 'partsOrderOpen' AS menu_id, COUNT(*) AS count
+      FROM eyefidb.fs_parts_order po
+      WHERE po.tracking_number IS NULL
+         OR TRIM(po.tracking_number) = ''
+
+      UNION ALL
+
       SELECT 'trainingLiveSessionsOpen' AS menu_id, COUNT(*) AS count
       FROM training_sessions ts
       WHERE ts.status IN ('scheduled', 'in-progress')
@@ -206,6 +214,7 @@ export class MenuBadgeRepository {
       shippingRequestOpen: 0,
       graphicsProductionOpen: 0,
       fieldsServiceRequestsOpen: 0,
+      partsOrderOpen: 0,
       trainingLiveSessionsOpen: 0,
       inspectionChecklistExecutionInProgress: 0,
     };

@@ -7,6 +7,7 @@ import { PartsOrderRepository } from './parts-order.repository';
 interface PartsOrderRow extends Record<string, unknown> {
   id: number;
   so_number?: string | null;
+  tracking_number?: string | null;
   details?: string | Array<Record<string, unknown>>;
   arrival_date?: string | null;
   qad_info?: Record<string, unknown>;
@@ -22,7 +23,7 @@ export class PartsOrderService {
     private readonly configService: ConfigService,
   ) {}
 
-  async getAll(): Promise<PartsOrderRow[]> {
+  async getAll(view?: string): Promise<PartsOrderRow[]> {
     const rows = (await this.repository.find()) as PartsOrderRow[];
 
     const soNumbers = Array.from(
@@ -35,7 +36,9 @@ export class PartsOrderService {
 
     const qadBySo = soNumbers.length ? await this.getQadInfoBySo(soNumbers) : new Map<string, Record<string, unknown>>();
 
-    return rows.map((row) => {
+    const normalizedView = String(view || '').trim().toLowerCase();
+
+    const mappedRows: PartsOrderRow[] = rows.map((row): PartsOrderRow => {
       const parsedDetails = this.parseDetails(row.details);
       const so = String(row.so_number || '').trim();
       const qadInfo = so ? qadBySo.get(so) ?? {} : {};
@@ -43,7 +46,8 @@ export class PartsOrderService {
       const dueDate = String((qadInfo.sod_due_date as string) || '');
       const qtyOpen = Number(qadInfo.qty_open ?? 0);
       const arrivalDate = String(row.arrival_date || '');
-      const isPastDue = dueDate && arrivalDate && qtyOpen !== 0 && dueDate > arrivalDate ? 'Yes' : 'No';
+      const isPastDue: PartsOrderRow['isPastDue'] =
+        dueDate && arrivalDate && qtyOpen !== 0 && dueDate > arrivalDate ? 'Yes' : 'No';
 
       return {
         ...row,
@@ -52,6 +56,12 @@ export class PartsOrderService {
         isPastDue,
       };
     });
+
+    if (normalizedView === 'open') {
+      return mappedRows.filter((row) => !this.hasTrackingNumber(row.tracking_number));
+    }
+
+    return mappedRows;
   }
 
   async find(query: Record<string, unknown>): Promise<PartsOrderRow[]> {
@@ -159,6 +169,19 @@ export class PartsOrderService {
     } catch {
       return [];
     }
+  }
+
+  private hasTrackingNumber(value: unknown): boolean {
+    if (value === null || value === undefined) {
+      return false;
+    }
+
+    const normalized = String(value).trim().toLowerCase();
+    if (!normalized) {
+      return false;
+    }
+
+    return !['null', 'undefined', 'n/a', 'na', 'none', '-'].includes(normalized);
   }
 
   private async getQadInfoBySo(soNumbers: string[]): Promise<Map<string, Record<string, unknown>>> {
