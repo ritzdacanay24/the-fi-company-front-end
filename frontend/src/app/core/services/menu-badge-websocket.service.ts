@@ -1,6 +1,7 @@
 import { Injectable, OnDestroy } from '@angular/core';
 import { BehaviorSubject, Subject, Subscription } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
+import { StructuredWebsocketService } from './structured-websocket.service';
 import { WebsocketService } from './websocket.service';
 
 // ─── Badge counts interface used by sidebar ───────────────────────────────────
@@ -84,11 +85,14 @@ export class MenuBadgeWebsocketService implements OnDestroy {
   readonly counts$ = this.countsSubject.asObservable();
 
   // ── Internal state ─────────────────────────────────────────────────────────
-  private unsubscribeBadgeRoom: (() => void) | null = null;
+  private badgeSubscription: Subscription | null = null;
   private destroy$ = new Subject<void>();
   private initialized = false;
 
-  constructor(private readonly websocketService: WebsocketService) {}
+  constructor(
+    private readonly websocketService: WebsocketService,
+    private readonly structuredWebsocketService: StructuredWebsocketService,
+  ) {}
 
   // ── Public API used by sidebar.component ──────────────────────────────────
 
@@ -101,10 +105,7 @@ export class MenuBadgeWebsocketService implements OnDestroy {
     if (this.initialized) return;
     this.initialized = true;
 
-    // Ensure websocket is connected
-    if (!this.websocketService.getWebSocket()) {
-      this.websocketService.connect();
-    }
+    this.structuredWebsocketService.init();
 
     this.joinBadgeRoom();
 
@@ -113,15 +114,15 @@ export class MenuBadgeWebsocketService implements OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(event => {
         if (event instanceof CloseEvent) {
-          // Clear stale unsubscribe handle – socket is gone
-          this.unsubscribeBadgeRoom = null;
+          if (this.badgeSubscription) {
+            this.badgeSubscription.unsubscribe();
+            this.badgeSubscription = null;
+          }
           this.countsSubject.next({ ...ZERO_COUNTS });
 
           // Reconnect and re-join after a short delay
           setTimeout(() => {
-            if (!this.websocketService.getWebSocket()) {
-              this.websocketService.connect();
-            }
+            this.structuredWebsocketService.init();
             this.joinBadgeRoom();
           }, 3000);
         }
@@ -135,32 +136,27 @@ export class MenuBadgeWebsocketService implements OnDestroy {
    * Safe to call multiple times – cleans up existing subscription first.
    */
   private joinBadgeRoom(): void {
-    // Cleanup previous subscription if any
-    if (this.unsubscribeBadgeRoom) {
-      this.unsubscribeBadgeRoom();
-      this.unsubscribeBadgeRoom = null;
+    if (this.badgeSubscription) {
+      this.badgeSubscription.unsubscribe();
+      this.badgeSubscription = null;
     }
 
-    const ws = this.websocketService.getWebSocket();
-    if (!ws) return;
+    this.structuredWebsocketService.joinChannel(BADGE_CHANNEL);
 
-    // Subscribe to badge channel messages
-    const subscription: Subscription = ws
-      .multiplex(
-        () => ({ type: BadgeMessageType.JOIN_ROOM,  channel: BADGE_CHANNEL }),
-        () => ({ type: BadgeMessageType.LEAVE_ROOM, channel: BADGE_CHANNEL }),
-        (msg: BadgeWsMessage) =>
-          msg?.type === BadgeMessageType.BADGE_COUNTS || msg?.channel === BADGE_CHANNEL
-      )
-      .subscribe((msg: BadgeWsMessage) => this.handleBadgeMessage(msg));
+    this.structuredWebsocketService.publish(BADGE_CHANNEL, BadgeMessageType.JOIN_ROOM, {});
 
-    this.unsubscribeBadgeRoom = () => subscription.unsubscribe();
+    this.badgeSubscription = this.structuredWebsocketService
+      .subscribe<BadgeWsMessage>(BADGE_CHANNEL, BadgeMessageType.BADGE_COUNTS)
+      .subscribe((socketEnvelope) => {
+        this.handleBadgeMessage({
+          type: socketEnvelope.type,
+          channel: socketEnvelope.channel,
+          data: socketEnvelope.data as any,
+        });
+      });
 
     // Immediately request current counts from backend (like Creorx does)
-    this.websocketService.next({
-      type: BadgeMessageType.REQUEST,
-      channel: BADGE_CHANNEL,
-    });
+    this.structuredWebsocketService.publish(BADGE_CHANNEL, BadgeMessageType.REQUEST, {});
   }
 
   /**
@@ -212,9 +208,11 @@ export class MenuBadgeWebsocketService implements OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
-    if (this.unsubscribeBadgeRoom) {
-      this.unsubscribeBadgeRoom();
-      this.unsubscribeBadgeRoom = null;
+    if (this.badgeSubscription) {
+      this.badgeSubscription.unsubscribe();
+      this.badgeSubscription = null;
     }
+    this.structuredWebsocketService.publish(BADGE_CHANNEL, BadgeMessageType.LEAVE_ROOM, {});
+    this.structuredWebsocketService.leaveChannel(BADGE_CHANNEL);
   }
 }
