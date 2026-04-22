@@ -568,13 +568,13 @@ html[data-sidebar-size="sm-hover"] {
 }
 
 :host ::ng-deep .navbar-menu .navbar-nav .nav-link .sidebar-count-badge--attention {
-	background-color: rgba(255, 255, 255, 0.2) !important;
-	color: #ffffff !important;
+	background-color: rgba(240, 179, 59, 0.34) !important;
+	color: #ffd166 !important;
 }
 
 :host ::ng-deep .navbar-menu .navbar-nav .nav-link .sidebar-count-badge--critical {
-	background-color: rgba(220, 53, 69, 0.2) !important;
-	color: #ff6b7a !important;
+	background-color: rgba(220, 53, 69, 0.34) !important;
+	color: #ffffff !important;
 }
 
 /* Temporarily shown hidden items styling */

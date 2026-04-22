@@ -7,6 +7,7 @@ type CountRow = {
   pick_and_stage_open: number | string;
   production_routing_open: number | string;
   final_test_qc_open: number | string;
+  shipping_schedule_due_now: number | string;
 };
 
 @Injectable()
@@ -20,20 +21,21 @@ export class MenuBadgeCacheRefreshService implements OnModuleInit {
 
   async onModuleInit(): Promise<void> {
     // Prime cache once at startup so first badge read does not wait for the cron window.
-    await this.refreshRoutingBadgeCounts();
+    await this.refreshCachedBadgeCounts();
   }
 
   @Cron('*/2 * * * *', {
-    name: 'refresh-routing-badge-cache',
+    name: 'refresh-cached-menu-badge-counts',
     timeZone: 'America/Los_Angeles',
   })
-  async refreshRoutingBadgeCountCron(): Promise<void> {
-    await this.refreshRoutingBadgeCounts();
+  async refreshCachedBadgeCountsCron(): Promise<void> {
+    await this.refreshCachedBadgeCounts();
   }
 
-  async refreshRoutingBadgeCounts(): Promise<void> {
+  async refreshCachedBadgeCounts(): Promise<void> {
     try {
       const { pickAndStageOpen, productionRoutingOpen, finalTestQcOpen } = await this.getRoutingOpenCounts();
+      const shippingScheduleDueNow = await this.getShippingScheduleDueNowCount();
 
       await this.mysqlService.execute(
         `
@@ -41,15 +43,16 @@ export class MenuBadgeCacheRefreshService implements OnModuleInit {
           VALUES
             ('pick-and-stage-open', ?),
             ('production-routing-open', ?),
-            ('final-test-qc-open', ?)
+            ('final-test-qc-open', ?),
+            ('shipping-schedule-due-now', ?)
           ON DUPLICATE KEY UPDATE
             count = VALUES(count),
             updated_at = CURRENT_TIMESTAMP
         `,
-        [pickAndStageOpen, productionRoutingOpen, finalTestQcOpen],
+        [pickAndStageOpen, productionRoutingOpen, finalTestQcOpen, shippingScheduleDueNow],
       );
     } catch (error) {
-      this.logger.error('Failed to refresh routing badge cache', error as Error);
+      this.logger.error('Failed to refresh cached menu badge counts', error as Error);
     }
   }
 
@@ -95,5 +98,25 @@ export class MenuBadgeCacheRefreshService implements OnModuleInit {
       productionRoutingOpen: Number(rows[0]?.production_routing_open || 0),
       finalTestQcOpen: Number(rows[0]?.final_test_qc_open || 0),
     };
+  }
+
+  private async getShippingScheduleDueNowCount(): Promise<number> {
+    const rows = await this.qadOdbcService.query<CountRow[]>(
+      `
+        SELECT COUNT(*) shipping_schedule_due_now
+        FROM sod_det a
+        JOIN so_mstr c ON c.so_nbr = a.sod_nbr
+        WHERE a.sod_domain = 'EYE'
+          AND c.so_domain = 'EYE'
+          AND a.sod_qty_ord != a.sod_qty_ship
+          AND c.so_compl_date IS NULL
+          AND a.sod_project = ''
+          AND a.sod_per_date IS NOT NULL
+          AND a.sod_per_date <= CURDATE()
+      `,
+      { keyCase: 'lower' },
+    );
+
+    return Number(rows[0]?.shipping_schedule_due_now || 0);
   }
 }

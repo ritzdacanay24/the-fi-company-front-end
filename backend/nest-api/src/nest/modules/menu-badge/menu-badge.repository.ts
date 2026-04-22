@@ -13,7 +13,9 @@ export interface SidebarMenuBadgeCounts {
   pickAndStageOpen: number;
   productionRoutingOpen: number;
   finalTestQcOpen: number;
+  shippingScheduleDueNow: number;
   vehicleExpiringSoon: number;
+  vehicleInspectionPendingResolutions: number;
   shortagesOpen: number;
   safetyIncidentOpen: number;
   qualityIssuesOpen: number;
@@ -80,11 +82,29 @@ export class MenuBadgeRepository {
 
       UNION ALL
 
+      SELECT 'shippingScheduleDueNow' AS menu_id,
+             COALESCE((
+               SELECT mbc.count
+               FROM menu_badge_cache mbc
+               WHERE mbc.menu_id = 'shipping-schedule-due-now'
+               LIMIT 1
+             ), 0) AS count
+
+      UNION ALL
+
       SELECT 'vehicleExpiringSoon' AS menu_id, COUNT(*) AS count
       FROM vehicleInformation v
       WHERE v.active = 1
         AND NULLIF(v.exp, '') IS NOT NULL
         AND DATEDIFF(STR_TO_DATE(v.exp, '%Y-%m-%d'), CURDATE()) BETWEEN 0 AND 30
+
+      UNION ALL
+
+      SELECT 'vehicleInspectionPendingResolutions' AS menu_id,
+             COUNT(DISTINCT d.forklift_checklist_id) AS count
+      FROM forms.vehicle_inspection_details d
+      WHERE d.status = 0
+        AND d.resolved_confirmed_date IS NULL
 
       UNION ALL
 
@@ -174,7 +194,9 @@ export class MenuBadgeRepository {
       pickAndStageOpen: 0,
       productionRoutingOpen: 0,
       finalTestQcOpen: 0,
+      shippingScheduleDueNow: 0,
       vehicleExpiringSoon: 0,
+      vehicleInspectionPendingResolutions: 0,
       shortagesOpen: 0,
       safetyIncidentOpen: 0,
       qualityIssuesOpen: 0,

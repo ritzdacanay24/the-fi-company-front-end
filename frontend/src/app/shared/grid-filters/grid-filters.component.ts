@@ -34,9 +34,34 @@ export class GridFiltersComponent implements OnInit {
     this.getOtherGridByUsers();
   }
 
+  private parseStoredData<T>(value: T | string | null | undefined): T | null {
+    if (value == null) {
+      return null;
+    }
+
+    if (typeof value !== 'string') {
+      return value as T;
+    }
+
+    try {
+      return JSON.parse(value) as T;
+    } catch {
+      return null;
+    }
+  }
+
+  private applyCurrentFilterModel(): void {
+    if (!this.current || !this.gridApi) {
+      return;
+    }
+
+    const filterModel = this.parseStoredData<Record<string, unknown>>(this.current.data);
+    this.gridApi.setFilterModel(filterModel);
+  }
+
   checkFiltersApplied(data) {
-    const parsed = typeof data === 'string' ? JSON.parse(data) : data;
-    return Object.keys(parsed).length;
+    const parsed = this.parseStoredData<Record<string, unknown>>(data);
+    return parsed ? Object.keys(parsed).length : 0;
   }
 
   @Output() emitFilter = new EventEmitter<string>();
@@ -81,8 +106,7 @@ export class GridFiltersComponent implements OnInit {
     if (this.current) {
       this.value = this.current.id;
       this.currentView = this.current;
-
-      this.gridApi.setFilterModel(typeof this.current.data === 'string' ? JSON.parse(this.current.data) : this.current.data);
+      this.applyCurrentFilterModel();
     }
   };
 
@@ -108,7 +132,7 @@ export class GridFiltersComponent implements OnInit {
     if (this.current) {
       this.value = this.current?.id;
       this.currentView = this.current;
-      this.gridApi.setFilterModel(typeof this.current.data === 'string' ? JSON.parse(this.current.data) : this.current.data);
+      this.applyCurrentFilterModel();
     }
   }
 
@@ -141,6 +165,9 @@ export class GridFiltersComponent implements OnInit {
     }
     if (changes["gridApi"]) {
       this.gridApi = changes["gridApi"].currentValue;
+      if (this.gridApi) {
+        this.applyCurrentFilterModel();
+      }
     }
     if (changes["dataRenderered"]?.currentValue) {
       this.setFilter();
@@ -149,8 +176,8 @@ export class GridFiltersComponent implements OnInit {
 
   clearFilters() {
     this.value = null;
-    this.gridApi.setFilterModel(null);
-    this.gridApi.onFilterChanged();
+    this.gridApi?.setFilterModel(null);
+    this.gridApi?.onFilterChanged();
     this.emitFilter.emit(this.value);
   }
 
@@ -164,9 +191,9 @@ export class GridFiltersComponent implements OnInit {
   }
 
   selectTable(row) {
-    let e = typeof row.data === 'object' && row.data !== null ? row.data : (this.isJsonString(row.data) ? JSON.parse(row.data) : row.data);
+    let e = typeof row.data === 'object' && row.data !== null ? row.data : this.parseStoredData(row.data);
     try {
-      this.gridApi.setFilterModel(e);
+      this.gridApi?.setFilterModel(e);
       this.value = row.id;
       //this.emitFilter.emit(this.value);
       this.currentView = row;
@@ -181,6 +208,10 @@ export class GridFiltersComponent implements OnInit {
   }
 
   async update() {
+    if (!this.gridApi) {
+      return;
+    }
+
     const savedState = this.gridApi.getFilterModel();
 
     let saveData = {
@@ -199,6 +230,13 @@ export class GridFiltersComponent implements OnInit {
   }
 
   updateToDefault() {
+    if (!this.gridApi) {
+      this.value = null;
+      this.currentView = null;
+      this.emitFilter.emit(this.value);
+      return;
+    }
+
     this.gridApi?.showLoadingOverlay();
     this.value = null;
     this.currentView = null;
@@ -212,6 +250,10 @@ export class GridFiltersComponent implements OnInit {
   }
 
   createNewView() {
+    if (!this.gridApi) {
+      return;
+    }
+
     const savedState = this.gridApi.getFilterModel();
     let inst = this.gridFiltersModalService.open(savedState, this.pageId);
     inst.result.then(

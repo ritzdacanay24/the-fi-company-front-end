@@ -9,6 +9,7 @@ INSERT INTO menu_badge_cache (menu_id, count)
 VALUES
   ('pick-and-stage-open', 0),
   ('production-routing-open', 0),
-  ('final-test-qc-open', 0)
+  ('final-test-qc-open', 0),
+  ('shipping-schedule-due-now', 0)
 ON DUPLICATE KEY UPDATE
   count = count;

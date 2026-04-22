@@ -69,6 +69,7 @@ export const MENU_DATA: MenuItem[] = [
     },
     {
         id: 8,
+        badgeId: "shippingScheduleDueNow",
         label: "Shipping Schedule",
         link: "/operations/master-scheduling/shipping",
         description: "Shipping Schedule",
@@ -103,7 +104,7 @@ export const MENU_DATA: MenuItem[] = [
     {
         id: 11,
         badgeId: "productionRoutingOpen",
-        label: "Production Schedule",
+        label: "Production",
         link: "/operations/master-scheduling/production-routing",
         description: "Production Schedule",
         icon: "las la-cogs",
@@ -384,6 +385,7 @@ export const MENU_DATA: MenuItem[] = [
                 activatedRoutes: "/operations/forms/safety-incident/*"
             },
             {
+                badgeId: "vehicleInspectionPendingResolutions",
                 label: "Vehicle Inspections",
                 link: "/operations/forms/vehicle-inspection",
                 description: "Vehicle Safety Inspections",

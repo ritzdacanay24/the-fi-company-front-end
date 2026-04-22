@@ -10,7 +10,9 @@ export interface SidebarMenuBadgeCounts {
   pickAndStageOpen: number;
   productionRoutingOpen: number;
   finalTestQcOpen: number;
+  shippingScheduleDueNow: number;
   vehicleExpiringSoon: number;
+  vehicleInspectionPendingResolutions: number;
   shortagesOpen: number;
   safetyIncidentOpen: number;
   qualityIssuesOpen: number;
@@ -47,7 +49,9 @@ const ZERO_COUNTS: SidebarMenuBadgeCounts = {
   pickAndStageOpen: 0,
   productionRoutingOpen: 0,
   finalTestQcOpen: 0,
+  shippingScheduleDueNow: 0,
   vehicleExpiringSoon: 0,
+  vehicleInspectionPendingResolutions: 0,
   shortagesOpen: 0,
   safetyIncidentOpen: 0,
   qualityIssuesOpen: 0,
@@ -188,7 +192,9 @@ export class MenuBadgeWebsocketService implements OnDestroy {
       pickAndStageOpen:                    toNum(pick('pickAndStageOpen'),                    current.pickAndStageOpen),
       productionRoutingOpen:               toNum(pick('productionRoutingOpen'),               current.productionRoutingOpen),
       finalTestQcOpen:                     toNum(pick('finalTestQcOpen'),                     current.finalTestQcOpen),
+      shippingScheduleDueNow:              toNum(pick('shippingScheduleDueNow'),              current.shippingScheduleDueNow),
       vehicleExpiringSoon:                 toNum(pick('vehicleExpiringSoon'),                 current.vehicleExpiringSoon),
+      vehicleInspectionPendingResolutions: toNum(pick('vehicleInspectionPendingResolutions'), current.vehicleInspectionPendingResolutions),
       shortagesOpen:                       toNum(pick('shortagesOpen'),                       current.shortagesOpen),
       safetyIncidentOpen:                  toNum(pick('safetyIncidentOpen'),                  current.safetyIncidentOpen),
       qualityIssuesOpen:                   toNum(pick('qualityIssuesOpen'),                   current.qualityIssuesOpen),

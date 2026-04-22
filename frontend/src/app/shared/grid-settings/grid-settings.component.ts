@@ -40,6 +40,46 @@ export class GridSettingsComponent implements OnInit {
     this.getOtherGridByUsers();
   }
 
+  private parseStoredData<T>(value: T | string | null | undefined): T | null {
+    if (value == null) {
+      return null;
+    }
+
+    if (typeof value !== 'string') {
+      return value as T;
+    }
+
+    try {
+      return JSON.parse(value) as T;
+    } catch {
+      return null;
+    }
+  }
+
+  private applyCurrentGridState(): void {
+    if (!this.currentView || !this.gridApi) {
+      return;
+    }
+
+    const allState = this.parseStoredData<Record<string, any>>(this.currentView.allState);
+    const pivotState = allState?.['pivot'];
+    if (pivotState?.pivotMode) {
+      this.gridApi.setGridOption("pivotMode", pivotState.pivotMode);
+    }
+
+    const columnState = this.parseStoredData<any[]>(this.currentView.data);
+    if (!columnState) {
+      return;
+    }
+
+    setTimeout(() => {
+      this.gridApi?.applyColumnState({
+        state: columnState,
+        applyOrder: true,
+      });
+    }, 200);
+  }
+
   query;
 
   @Output() emitGrid = new EventEmitter<string>();
@@ -49,6 +89,9 @@ export class GridSettingsComponent implements OnInit {
   currentView: any;
   getOtherGridByUsers = async () => {
     this.myView = false;
+    this.otherGrids = [];
+    this.currentUserGrids = [];
+
     let data = await this.tableSettingsService.getTableByUserId({
       pageId: this.pageId,
       userId: this.authenticationService.currentUserValue.id,
@@ -74,29 +117,7 @@ export class GridSettingsComponent implements OnInit {
     if (current) {
       this.value = current.id;
       this.currentView = current;
-
-      let d = JSON.parse(current?.allState);
-
-      if (d?.pivot?.pivotMode) {
-        this.gridApi!.setGridOption("pivotMode", d.pivot?.pivotMode);
-      }
-
-      // if (d?.rowGroupExpansion?.expandedRowGroupIds) {
-      //     setTimeout(() => {
-      //         this.gridApi!.expandAll();
-      //     }, 500);
-      // }
-
-      // if (d?.focusedCell?.colId) {
-      //     this.gridApi!.ensureColumnVisible(d.focusedCell?.colId, 'middle');
-      // }
-
-      setTimeout(() => {
-        this.gridApi!.applyColumnState({
-          state: typeof current.data === 'string' ? JSON.parse(current.data) : current.data,
-          applyOrder: true,
-        });
-      }, 200);
+      this.applyCurrentGridState();
 
       // onFirstDataRendered: (params) => {
       //     let groups = store.getItem(OPEN_GROUP_KEY);
@@ -142,16 +163,25 @@ export class GridSettingsComponent implements OnInit {
     if (changes["pageId"]) {
       this.pageId = changes["pageId"].currentValue;
     }
+    if (changes["gridApi"]) {
+      this.gridApi = changes["gridApi"].currentValue;
+      if (this.gridApi) {
+        this.applyCurrentGridState();
+      }
+    }
   }
 
   selectTable(row) {
     this.myView = true;
     this.gridApi?.showLoadingOverlay();
+    const columnState = this.parseStoredData<any[]>(row.data);
     setTimeout(() => {
-      this.gridApi!.applyColumnState({
-        state: typeof row.data === 'string' ? JSON.parse(row.data) : row.data,
-        applyOrder: true,
-      });
+      if (columnState) {
+        this.gridApi?.applyColumnState({
+          state: columnState,
+          applyOrder: true,
+        });
+      }
       this.gridApi?.hideOverlay();
     }, 500);
     this.value = row.id;
@@ -167,6 +197,10 @@ export class GridSettingsComponent implements OnInit {
   }
 
   async update() {
+    if (!this.gridApi) {
+      return;
+    }
+
     const savedState = this.gridApi.getColumnState();
     const allState = this.gridApi.getState();
     let saveData = {
@@ -184,6 +218,13 @@ export class GridSettingsComponent implements OnInit {
 
   updateToDefault() {
     this.myView = false;
+    if (!this.gridApi) {
+      this.value = "";
+      this.currentView = null;
+      this.emitGrid.emit(this.value);
+      return;
+    }
+
     this.gridApi?.showLoadingOverlay();
     this.value = "";
     this.currentView = null;
@@ -197,6 +238,10 @@ export class GridSettingsComponent implements OnInit {
   }
 
   createNewView() {
+    if (!this.gridApi) {
+      return;
+    }
+
     const savedState = this.gridApi.getColumnState();
     let inst = this.gridSettingsModalService.open(savedState, this.pageId);
     inst.result.then(
