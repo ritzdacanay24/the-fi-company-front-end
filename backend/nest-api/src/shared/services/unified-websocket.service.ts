@@ -4,6 +4,8 @@ import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { MenuBadgeService } from '@/nest/modules/menu-badge/menu-badge.service';
 
 export enum WebSocketMessageType {
+  JOIN_CHANNEL = 'join_channel',
+  LEAVE_CHANNEL = 'leave_channel',
   JOIN_SIDEBAR_MENU_BADGE_ROOM = 'join_sidebar_menu_badge_room',
   LEAVE_SIDEBAR_MENU_BADGE_ROOM = 'leave_sidebar_menu_badge_room',
   REQUEST_SIDEBAR_MENU_BADGE_COUNTS = 'request_sidebar_menu_badge_counts',
@@ -18,6 +20,7 @@ interface UnifiedWebSocketMessage {
   type: WebSocketMessageType | string;
   channel?: string;
   data?: unknown;
+  message?: string;
   timestamp?: number;
 }
 
@@ -108,6 +111,18 @@ export class UnifiedWebSocketService implements OnModuleDestroy {
     }
 
     switch (message.type) {
+      case WebSocketMessageType.JOIN_CHANNEL:
+        if (typeof message.channel === 'string' && message.channel.length > 0) {
+          client.channels.add(message.channel);
+        }
+        break;
+
+      case WebSocketMessageType.LEAVE_CHANNEL:
+        if (typeof message.channel === 'string' && message.channel.length > 0) {
+          client.channels.delete(message.channel);
+        }
+        break;
+
       case WebSocketMessageType.JOIN_SIDEBAR_MENU_BADGE_ROOM:
         client.channels.add(BADGE_CHANNEL);
         this.sendBadgeCountsToClient(clientId).catch((error) => {
@@ -135,8 +150,29 @@ export class UnifiedWebSocketService implements OnModuleDestroy {
         break;
 
       default:
+        this.broadcastChannelMessage(message);
         break;
     }
+  }
+
+  private broadcastChannelMessage(message: UnifiedWebSocketMessage): void {
+    if (typeof message.type !== 'string' || message.type.length === 0 || !message.channel) {
+      return;
+    }
+
+    const payload: UnifiedWebSocketMessage = {
+      type: message.type,
+      channel: message.channel,
+      data: message.data,
+      message: message.message,
+      timestamp: message.timestamp ?? Date.now(),
+    };
+
+    this.clients.forEach((client, targetClientId) => {
+      if (client.channels.has(message.channel!)) {
+        this.sendToClient(targetClientId, payload);
+      }
+    });
   }
 
   private startBadgePolling(): void {

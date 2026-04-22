@@ -1,15 +1,19 @@
-import { Component, OnInit, Input, HostListener } from '@angular/core';
+import { Component, Inject, OnDestroy, OnInit, Input, HostListener } from '@angular/core';
 import { FormBuilder, FormGroup, FormArray, FormControl, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { SharedModule } from '@app/shared/shared.module';
 import { MaterialRequestService } from '@app/core/api/operations/material-request/material-request.service';
 import { MaterialRequestDetailService } from '@app/core/api/operations/material-request/material-request-detail.service';
 import { AuthenticationService } from '@app/core/services/auth.service';
+import {
+  MaterialPickingMessageType,
+  MaterialRequestPickingWebsocketService,
+} from '@app/core/services/material-request-picking-websocket.service';
 import { ToastrService } from 'ngx-toastr';
-import { WebsocketService } from '@app/core/services/websocket.service';
 import moment from 'moment';
 import { NgxBarcode6Module } from "ngx-barcode6";
 import { MaterialPickingValidationModalService } from '../material-picking-validation-modal/material-picking-validation-modal.component';
+import { Subscription } from 'rxjs';
 
 @Component({
   standalone: true,
@@ -18,7 +22,7 @@ import { MaterialPickingValidationModalService } from '../material-picking-valid
   templateUrl: './material-request-picking-improved.component.html',
   styleUrls: ['./material-request-picking-improved.component.scss']
 })
-export class MaterialRequestPickingImprovedComponent implements OnInit {
+export class MaterialRequestPickingImprovedComponent implements OnInit, OnDestroy {
 
   @Input() id: number | null = null; // Specific request ID to show picking details for
   @Input() viewMode: boolean = false; // Read-only mode
@@ -40,13 +44,24 @@ export class MaterialRequestPickingImprovedComponent implements OnInit {
     private detailApi: MaterialRequestDetailService,
     private authService: AuthenticationService,
     private toastr: ToastrService,
-    private websocketService: WebsocketService,
+    @Inject(MaterialRequestPickingWebsocketService)
+    private materialRequestPickingWebsocketService: MaterialRequestPickingWebsocketService,
     private materialPickingValidationModalService: MaterialPickingValidationModalService
   ) {}
 
+  private materialPickingTransactionSubscription?: Subscription;
+
   ngOnInit(): void {
+    this.materialRequestPickingWebsocketService.init();
     this.loadPickingRequests();
     this.setupWebSocket();
+  }
+
+  ngOnDestroy(): void {
+    if (this.materialPickingTransactionSubscription) {
+      this.materialPickingTransactionSubscription.unsubscribe();
+    }
+    this.materialRequestPickingWebsocketService.destroy();
   }
 
   /**
@@ -123,20 +138,22 @@ export class MaterialRequestPickingImprovedComponent implements OnInit {
 
 
   setupWebSocket() {
-    // Subscribe to real-time picking updates
-    this.websocketService
-      .multiplex(
-        () => ({ subscribe: 'MATERIAL_PICKING_TRANSACTION' }),
-        () => ({ unsubscribe: 'MATERIAL_PICKING_TRANSACTION' }),
-        (message) => message.type === 'MATERIAL_PICKING_TRANSACTION'
-      )
-      .subscribe((data: any) => {
-        this.handleRealTimeUpdate(data);
+    this.materialPickingTransactionSubscription = this.materialRequestPickingWebsocketService
+      .subscribe<any>(MaterialPickingMessageType.MATERIAL_PICKING_TRANSACTION)
+      .subscribe((socketMessage) => {
+        this.handleRealTimeUpdate(socketMessage);
       });
   }
 
   handleRealTimeUpdate(data: any) {
-    // Update the picking requests list in real-time
+    if (!data?.data) {
+      return;
+    }
+
+    if (this.selectedRequest?.id === data.data.id) {
+      this.selectedRequest = data.data;
+    }
+
     const index = this.pickingRequests.findIndex(req => req.id === data.data.id);
     if (index !== -1) {
       this.pickingRequests[index] = data.data;
@@ -198,6 +215,12 @@ export class MaterialRequestPickingImprovedComponent implements OnInit {
         }
       }, 200);
 
+      this.materialRequestPickingWebsocketService.publish(
+        MaterialPickingMessageType.MATERIAL_PICKING_TRANSACTION,
+        request,
+        'Material pick sheet printed'
+      );
+
       this.toastr.success('Material pick sheet printed');
     } catch (error) {
       console.error('Error printing:', error);
@@ -244,11 +267,11 @@ export class MaterialRequestPickingImprovedComponent implements OnInit {
             request.pickedCompletedDate = moment().format("YYYY-MM-DD HH:mm:ss");
             await this.api.completePicking(request);
 
-            this.websocketService.next({
-              message: "Material pick sheet completed",
-              data: request,
-              type: "MATERIAL_PICKING_TRANSACTION",
-            });
+            this.materialRequestPickingWebsocketService.publish(
+              MaterialPickingMessageType.MATERIAL_PICKING_TRANSACTION,
+              request,
+              'Material pick sheet completed'
+            );
 
             this.pickingRequests = this.pickingRequests.filter(req => req.id !== request.id);
 
@@ -321,12 +344,11 @@ export class MaterialRequestPickingImprovedComponent implements OnInit {
       // For now, we'll just save locally and show success
       // TODO: Implement updatePickedQuantities API endpoint
       
-      // Send websocket notification
-      this.websocketService.next({
-        message: 'Picked quantities updated',
-        data: saveData,
-        type: 'MATERIAL_PICKING_UPDATE'
-      });
+      this.materialRequestPickingWebsocketService.publish(
+        MaterialPickingMessageType.MATERIAL_PICKING_TRANSACTION,
+        request,
+        'Picked quantities updated'
+      );
 
       this.toastr.success('Picked quantities saved successfully');
       

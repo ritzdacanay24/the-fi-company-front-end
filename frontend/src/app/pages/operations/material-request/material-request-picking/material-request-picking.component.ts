@@ -1,18 +1,17 @@
-import { Component, OnInit } from "@angular/core";
+import { Component, OnDestroy, OnInit } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
 import { MaterialRequestService } from "@app/core/api/operations/material-request/material-request.service";
 import { AuthenticationService } from "@app/core/services/auth.service";
-import { WebsocketService } from "@app/core/services/websocket.service";
+import {
+  MaterialPickingMessageType,
+  MaterialRequestPickingWebsocketService,
+} from "@app/core/services/material-request-picking-websocket.service";
 import { SharedModule } from "@app/shared/shared.module";
 import moment from "moment";
 import { NgxBarcode6Module } from "ngx-barcode6";
 import { Subscription, interval } from "rxjs";
 import { SweetAlert } from "@app/shared/sweet-alert/sweet-alert.service";
 import { MaterialPickingValidationModalService } from "../material-picking-validation-modal/material-picking-validation-modal.component";
-
-const MATERIAL_PICKING_TRANSACTION = "MATERIAL_PICKING_TRANSACTION";
-const VALIDATE_ADD_TRANSACTION = "VALIDATE_ADD_TRANSACTION";
-const PICKING_ADD_TRANSACTION = "PICKING_ADD_TRANSACTION";
 
 @Component({
   standalone: true,
@@ -21,78 +20,101 @@ const PICKING_ADD_TRANSACTION = "PICKING_ADD_TRANSACTION";
   templateUrl: "./material-request-picking.component.html",
   styleUrls: [],
 })
-export class MaterialRequestPickingComponent implements OnInit {
+export class MaterialRequestPickingComponent implements OnInit, OnDestroy {
   constructor(
     public route: ActivatedRoute,
     public router: Router,
     public api: MaterialRequestService,
     public authenticationService: AuthenticationService,
-    private websocketService: WebsocketService,
+    private materialRequestPickingWebsocketService: MaterialRequestPickingWebsocketService,
     private materialPickingValidationModalService: MaterialPickingValidationModalService
-  ) {
-    /**
-     * Subscribe to current view.
-     * Add subscription
-     * If data is found in the array, assign it to the new data
-     * If data is not found, push new data
-     *
-     */
-    this.websocketService
-      .multiplex(
-        () => ({ subscribe: PICKING_ADD_TRANSACTION }),
-        () => ({ unsubscribe: PICKING_ADD_TRANSACTION }),
-        (message) => message.type === PICKING_ADD_TRANSACTION
-      )
-      .subscribe((data: any) => {
-        var index = this.data.findIndex((x) => x.id == data.data.id);
-        index === -1
-          ? this.data.push(data.data)
-          : (this.data = this.data.map((el) =>
-              el.id === data.data.id ? data.data : el
-            ));
-      });
+  ) {}
 
-    /**
-     * This should already receive the new array of data
-     */
-    this.websocketService
-      .multiplex(
-        () => ({ subscribe: MATERIAL_PICKING_TRANSACTION }),
-        () => ({ unsubscribe: MATERIAL_PICKING_TRANSACTION }),
-        (message) => message.type === MATERIAL_PICKING_TRANSACTION
-      )
-      .subscribe((data: any) => {
-        this.data = this.data.map((el) =>
-          el.id === data.data.id ? data.data : el
-        );
-      });
-  }
+  title: string = "Material Request Picking";
+  icon = "mdi-account-group";
+  isLoading = false;
+  data;
+
+  subscription: Subscription;
+  pickingAddTransactionSubscription: Subscription;
+  materialPickingTransactionSubscription: Subscription;
 
   ngOnInit(): void {
+    this.materialRequestPickingWebsocketService.init();
+    this.setupWebSocketSubscriptions();
     this.getData();
   }
 
-  title: string = "Material Request Picking";
+  ngOnDestroy(): void {
+    if (this.subscription) this.subscription.unsubscribe();
+    if (this.pickingAddTransactionSubscription)
+      this.pickingAddTransactionSubscription.unsubscribe();
+    if (this.materialPickingTransactionSubscription)
+      this.materialPickingTransactionSubscription.unsubscribe();
+    this.materialRequestPickingWebsocketService.destroy();
+  }
 
-  icon = "mdi-account-group";
+  setupWebSocketSubscriptions() {
+    this.pickingAddTransactionSubscription = this.materialRequestPickingWebsocketService
+      .subscribe<any>(MaterialPickingMessageType.PICKING_ADD_TRANSACTION)
+      .subscribe((socketMessage) => {
+        if (!socketMessage?.data) {
+          return;
+        }
 
-  isLoading = false;
+        const index =
+          this.data?.findIndex((x) => x.id == socketMessage.data.id) ?? -1;
+        index === -1
+          ? this.data.push(socketMessage.data)
+          : (this.data = this.data.map((el) =>
+              el.id === socketMessage.data.id ? socketMessage.data : el
+            ));
+      });
 
-  data;
+    this.materialPickingTransactionSubscription = this.materialRequestPickingWebsocketService
+      .subscribe<any>(MaterialPickingMessageType.MATERIAL_PICKING_TRANSACTION)
+      .subscribe((socketMessage) => {
+        if (!socketMessage?.data || !Array.isArray(this.data)) {
+          return;
+        }
+
+        this.data = this.data.map((el) =>
+          el.id === socketMessage.data.id ? socketMessage.data : el
+        );
+      });
+  }
 
   updateClock = () => {
     const rows = Array.isArray(this.data) ? this.data : [];
     for (let i = 0; i < rows.length; i++) {
       if (rows[i]?.printedDate) {
-        rows[i].timeDiff = timeUntil(
-          rows[i].printedDate,
-          rows[i].timeDiff
-        );
+        rows[i].timeDiff = timeUntil(rows[i].printedDate, rows[i].timeDiff);
       } else {
         rows[i].timeDiff = "";
       }
     }
   };
+
+  async getData(showLoading = true) {
+    try {
+      this.isLoading = showLoading;
+      const data: any = await this.api.getPicking();
+      this.data = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.result)
+          ? data.result
+          : [];
+
+      if (this.subscription) {
+        this.subscription.unsubscribe();
+      }
+      this.subscription = interval(1000).subscribe(() => this.updateClock());
+
+      this.isLoading = false;
+    } catch {
+      this.isLoading = false;
+    }
+  }
 
   async onClearPrint(row) {
     try {
@@ -108,12 +130,12 @@ export class MaterialRequestPickingComponent implements OnInit {
       row.printedBy = null;
       row.printedDate = null;
 
-      this.websocketService.next({
-        message: "Cleared print",
-        data: row,
-        type: MATERIAL_PICKING_TRANSACTION,
-      });
-    } catch (err) {}
+      this.materialRequestPickingWebsocketService.publish(
+        MaterialPickingMessageType.MATERIAL_PICKING_TRANSACTION,
+        row,
+        "Cleared print"
+      );
+    } catch {}
   }
 
   async sendBackToValidation(row) {
@@ -125,43 +147,22 @@ export class MaterialRequestPickingComponent implements OnInit {
       row.validated = null;
       row.disabled = true;
 
-      this.websocketService.next({
-        message: "Removed from picking queue",
-        type: MATERIAL_PICKING_TRANSACTION,
-        data: row,
-      });
+      this.materialRequestPickingWebsocketService.publish(
+        MaterialPickingMessageType.MATERIAL_PICKING_TRANSACTION,
+        row,
+        "Removed from picking queue"
+      );
 
-      this.websocketService.next({
-        message: "Material request returned back to the validation queue.",
-        type: VALIDATE_ADD_TRANSACTION,
-        data: row,
-      });
+      this.materialRequestPickingWebsocketService.publish(
+        MaterialPickingMessageType.VALIDATE_ADD_TRANSACTION,
+        row,
+        "Material request returned back to the validation queue."
+      );
 
       this.isLoading = false;
-    } catch (err) {
+    } catch {
       this.isLoading = false;
       row.disabled = false;
-    }
-  }
-
-  subscription: Subscription;
-
-  ngOnDestroy() {
-    if (this.subscription) this.subscription.unsubscribe();
-  }
-
-  async getData(showLoading = true) {
-    try {
-      this.isLoading = showLoading;
-      let data: any = await this.api.getPicking();
-      this.data = Array.isArray(data) ? data : (Array.isArray(data?.result) ? data.result : []);
-
-      const source = interval(1000);
-      this.subscription = source.subscribe((val) => this.updateClock());
-
-      this.isLoading = false;
-    } catch (err) {
-      this.isLoading = false;
     }
   }
 
@@ -169,7 +170,7 @@ export class MaterialRequestPickingComponent implements OnInit {
     try {
       row.isLoading = true;
 
-      let printedDate = moment().format("YYYY-MM-DD HH:mm:ss");
+      const printedDate = moment().format("YYYY-MM-DD HH:mm:ss");
 
       for (let i = 0; i < row.details.length; i++) {
         row.details[i].printedBy =
@@ -183,12 +184,14 @@ export class MaterialRequestPickingComponent implements OnInit {
       row.printedDate = printedDate;
 
       setTimeout(() => {
-        var printContents = document.getElementById(
-          "pickSheet-" + row.id
-        ).innerHTML;
-        var popupWin = window.open("", "_blank", "width=1000,height=600");
-        popupWin.document.open();
+        const printContents = document.getElementById("pickSheet-" + row.id)
+          ?.innerHTML;
+        const popupWin = window.open("", "_blank", "width=1000,height=600");
+        if (!printContents || !popupWin) {
+          return;
+        }
 
+        popupWin.document.open();
         popupWin.document.write(`
         <html>
           <head>
@@ -199,19 +202,10 @@ export class MaterialRequestPickingComponent implements OnInit {
               size: landscape;
             }
             @media print {
-              body{
-                  font-size:12px !important
-              }
-              table{
-                font-size: 12px !important
-              }
-              p {
-                font-size:12px !important;
-                margin-bottom:2px;
-              }
-              thead {
-                font-size:12px !important
-              }
+              body{font-size:12px !important}
+              table{font-size: 12px !important}
+              p {font-size:12px !important; margin-bottom:2px;}
+              thead {font-size:12px !important}
             }
             </style>
           </head>
@@ -228,28 +222,27 @@ export class MaterialRequestPickingComponent implements OnInit {
         };
       }, 200);
 
-      this.websocketService.next({
-        message: "Material pick sheet printed",
-        data: row,
-        type: MATERIAL_PICKING_TRANSACTION,
-      });
-    } catch (err) {
+      this.materialRequestPickingWebsocketService.publish(
+        MaterialPickingMessageType.MATERIAL_PICKING_TRANSACTION,
+        row,
+        "Material pick sheet printed"
+      );
+    } catch {
       row.isLoading = false;
     }
   }
 
   getLineItemShortages(row) {
-    let shortageItemsFound = [];
+    const shortageItemsFound = [];
     for (let i = 0; i < row.details.length; i++) {
-      // if value is null convert it to 0
       if (row.details[i].active == 1) {
         row.details[i].qtyPicked =
           row.details[i].qtyPicked == null ? 0 : row.details[i].qtyPicked;
 
-        let qtyRequired = parseInt(row.details[i].qty);
-        let qtyPicked = parseInt(row.details[i].qtyPicked);
+        const qtyRequired = parseInt(row.details[i].qty);
+        const qtyPicked = parseInt(row.details[i].qtyPicked);
 
-        let openBalance = qtyRequired - qtyPicked;
+        const openBalance = qtyRequired - qtyPicked;
         if (openBalance > 0) {
           shortageItemsFound.push(row.details[i]);
           row.details[i].shortageQty = openBalance;
@@ -280,37 +273,32 @@ export class MaterialRequestPickingComponent implements OnInit {
         this.authenticationService.currentUserValue.id;
     }
 
-    let itemShortagesFound = this.getLineItemShortages(row);
+    const itemShortagesFound = this.getLineItemShortages(row);
 
     const modalRef = this.materialPickingValidationModalService.open(row);
     modalRef.componentInstance.shortages = itemShortagesFound;
 
     modalRef.result.then(
-      async (result: any) => {
+      async () => {
         try {
           row.pickedCompletedDate = moment().format("YYYY-MM-DD HH:mm:ss");
           await this.api.completePicking(row);
 
-          this.websocketService.next({
-            message: "Material pick sheet completed",
-            data: row,
-            type: MATERIAL_PICKING_TRANSACTION,
-          });
+          this.materialRequestPickingWebsocketService.publish(
+            MaterialPickingMessageType.MATERIAL_PICKING_TRANSACTION,
+            row,
+            "Material pick sheet completed"
+          );
 
           this.data = this.data.filter((x) => x.id !== row.id);
 
           SweetAlert.toast({ title: "Pick completed" });
-        } catch (err) {}
+        } catch {}
       },
       () => {}
     );
   }
 
-  /**
-   * Check if a date is overdue
-   * @param dueDate - The due date to check
-   * @returns boolean indicating if the date is overdue
-   */
   isOverdue(dueDate: string): boolean {
     if (!dueDate) return false;
     const due = moment(dueDate);
@@ -318,26 +306,20 @@ export class MaterialRequestPickingComponent implements OnInit {
     return now.isAfter(due);
   }
 
-  /**
-   * Get picking urgency based on elapsed time
-   * @param timeDiff - The time difference string
-   * @returns string indicating urgency level
-   */
   getPickingUrgency(timeDiff: string): string {
-    if (!timeDiff) return 'Normal';
-    
-    // Extract hours from the timeDiff string
+    if (!timeDiff) return "Normal";
+
     const hoursMatch = timeDiff.match(/(\d+) hours?/);
     const daysMatch = timeDiff.match(/(\d+) Days?/);
-    
+
     let totalHours = 0;
     if (daysMatch) totalHours += parseInt(daysMatch[1]) * 24;
     if (hoursMatch) totalHours += parseInt(hoursMatch[1]);
-    
-    if (totalHours >= 24) return 'Critical';
-    if (totalHours >= 8) return 'High';
-    if (totalHours >= 4) return 'Medium';
-    return 'Normal';
+
+    if (totalHours >= 24) return "Critical";
+    if (totalHours >= 8) return "High";
+    if (totalHours >= 4) return "Medium";
+    return "Normal";
   }
 }
 
@@ -345,17 +327,13 @@ function timeUntil(s, timeToStart) {
   const now = moment();
   const expiration = moment(s);
 
-  // get the difference between the moments
   const diff = expiration.diff(now);
-
-  //express as a duration
   const diffDuration = moment.duration(diff);
 
-  // display
-  let days = Math.abs(diffDuration.days());
-  let hours = Math.abs(diffDuration.hours());
-  let mintues = Math.abs(diffDuration.minutes());
-  let seconds = Math.abs(diffDuration.seconds());
+  const days = Math.abs(diffDuration.days());
+  const hours = Math.abs(diffDuration.hours());
+  const mintues = Math.abs(diffDuration.minutes());
+  const seconds = Math.abs(diffDuration.seconds());
 
   return (
     days + " Days " + hours + " hours " + mintues + "  min " + seconds + " sec "
