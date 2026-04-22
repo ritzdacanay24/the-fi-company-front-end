@@ -374,15 +374,11 @@ html[data-sidebar-size="sm-hover"] {
 /* Truncation helpers used globally in the sidebar */
 .menu-link span,
 .nav-link span {
-	display: -webkit-box;
-	-webkit-line-clamp: 2;
-	line-clamp: 2;
-	-webkit-box-orient: vertical;
+	display: block;
 	overflow: hidden;
 	text-overflow: ellipsis;
-	word-wrap: break-word;
-	line-height: 1.2em;
-	max-height: 2.4em;
+	white-space: nowrap;
+	line-height: 1.2;
 	max-width: 180px;
 }
 
@@ -510,6 +506,75 @@ html[data-sidebar-size="sm-hover"] {
 .nav-link .badge {
 	margin-left: auto;
 	margin-right: 30px; /* Account for star icon space */
+}
+
+:host ::ng-deep .navbar-menu .navbar-nav .nav-link[data-bs-toggle='collapse'] {
+	padding-right: 56px !important;
+}
+
+:host ::ng-deep .navbar-menu .navbar-nav .nav-link[data-bs-toggle='collapse'] span {
+	max-width: calc(100% - 68px) !important;
+}
+
+:host ::ng-deep .navbar-menu .navbar-nav .nav-link[data-bs-toggle='collapse']::after {
+	right: 12px !important;
+	margin-left: 0 !important;
+}
+
+:host ::ng-deep .navbar-menu .navbar-nav .nav-link .sidebar-count-badge {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	font-size: 9px !important;
+	font-weight: 700 !important;
+	padding: 1px 5px !important;
+	border-radius: 10px !important;
+	line-height: 1 !important;
+	min-width: 16px !important;
+	height: 16px !important;
+	text-align: center !important;
+	white-space: nowrap !important;
+	position: absolute !important;
+	top: 50% !important;
+	right: 10px !important;
+	transform: translateY(-50%) !important;
+	border: none !important;
+	box-shadow: none !important;
+	background-color: rgba(255, 255, 255, 0.2) !important;
+	color: #ffffff !important;
+	font-variant-numeric: tabular-nums !important;
+}
+
+:host ::ng-deep .navbar-menu .navbar-nav .nav-link .sidebar-count-badge.sidebar-count-badge--single {
+	width: 16px !important;
+	min-width: 16px !important;
+	height: 16px !important;
+	padding: 0 !important;
+	border-radius: 50% !important;
+}
+
+/* Parent menu items with collapse arrow need extra offset, matching CreoRx behavior. */
+:host ::ng-deep .navbar-menu .navbar-nav .nav-link .sidebar-count-badge.sidebar-count-badge--parent {
+	right: 30px !important;
+}
+
+:host ::ng-deep .navbar-menu .navbar-nav .nav-link.has-favorite .sidebar-count-badge {
+	right: 34px !important;
+}
+
+:host ::ng-deep .navbar-menu .navbar-nav .nav-link .sidebar-count-badge--aggregate {
+	background-color: rgba(255, 255, 255, 0.2) !important;
+	color: #ffffff !important;
+}
+
+:host ::ng-deep .navbar-menu .navbar-nav .nav-link .sidebar-count-badge--attention {
+	background-color: rgba(255, 255, 255, 0.2) !important;
+	color: #ffffff !important;
+}
+
+:host ::ng-deep .navbar-menu .navbar-nav .nav-link .sidebar-count-badge--critical {
+	background-color: rgba(220, 53, 69, 0.2) !important;
+	color: #ff6b7a !important;
 }
 
 /* Temporarily shown hidden items styling */

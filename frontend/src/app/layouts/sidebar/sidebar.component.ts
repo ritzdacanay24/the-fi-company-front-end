@@ -1,6 +1,7 @@
 import {
   Component,
   OnInit,
+  OnDestroy,
   EventEmitter,
   Output,
   ViewChild,
@@ -13,6 +14,7 @@ import {
 import { NavigationEnd, Router } from "@angular/router";
 import { CdkDragDrop, moveItemInArray } from "@angular/cdk/drag-drop";
 import { NgbModal, NgbModalRef } from "@ng-bootstrap/ng-bootstrap";
+import { Subscription } from "rxjs";
 
 import { MenuItem } from "./menu.model";
 import { environment } from "src/environments/environment";
@@ -27,6 +29,10 @@ import { SERIAL_MANAGEMENT_MENU } from "./serial-management-menu-data";
 import { TRAINING_MENU } from "./training-menu-data";
 import { INSPECTION_MENU } from "./inspection-menu-data";
 import { PROJECT_MANAGER_MENU } from "./project-manager-menu-data";
+import {
+  SidebarMenuBadgeCounts,
+  MenuBadgeWebsocketService,
+} from "@app/core/services/menu-badge-websocket.service";
 
 @Component({
   selector: "app-sidebar",
@@ -66,6 +72,23 @@ export class SidebarComponent implements OnInit {
   configMenuItems = signal([]);
   originalMenuItems: MenuItem[] = []; // Store original items
   currentMenuType: string = 'main'; // Track current menu type
+  private menuBadgeSubscription?: Subscription;
+  menuBadgeCounts: SidebarMenuBadgeCounts = {
+    validationQueue: 0,
+    pickingQueue: 0,
+    vehicleExpiringSoon: 0,
+    shortagesOpen: 0,
+    safetyIncidentOpen: 0,
+    qualityIssuesOpen: 0,
+    correctiveActionsOpen: 0,
+    returnsRmaOpen: 0,
+    permitChecklistOpen: 0,
+    shippingRequestOpen: 0,
+    graphicsProductionOpen: 0,
+    fieldsServiceRequestsOpen: 0,
+    trainingLiveSessionsOpen: 0,
+    inspectionChecklistExecutionInProgress: 0,
+  };
 
   get appRailItems() {
     return this.appSwitcherService.getApps();
@@ -104,7 +127,8 @@ export class SidebarComponent implements OnInit {
     public menuService: MenuService,
     private appSwitcherService: AppSwitcherService,
     private pathUtils: PathUtilsService,
-    private modalService: NgbModal
+    private modalService: NgbModal,
+    private menuBadgeWebsocketService: MenuBadgeWebsocketService
   ) {
     this.getMenu();
     
@@ -281,6 +305,204 @@ export class SidebarComponent implements OnInit {
   ngOnInit(): void {
     // Menu Items
     // this.menuItems = MENU;
+    this.menuBadgeWebsocketService.init();
+    this.menuBadgeSubscription = this.menuBadgeWebsocketService.counts$.subscribe((counts) => {
+      this.menuBadgeCounts = counts;
+    });
+  }
+
+  ngOnDestroy(): void {
+    if (this.menuBadgeSubscription) {
+      this.menuBadgeSubscription.unsubscribe();
+      this.menuBadgeSubscription = undefined;
+    }
+  }
+
+  getMenuBadge(menu: MenuItem): { text: string; variant: string } | null {
+    const count = this.getBadgeCount(menu);
+    if (count <= 0) {
+      return null;
+    }
+
+    // Parent/category badges only appear when collapsed; expanded state shows child badges only.
+    if (this.hasItems(menu)) {
+      if (this.shouldExpandDropdown(menu)) {
+        return null;
+      }
+
+      return {
+        text: this.formatBadgeCount(count),
+        variant: 'sidebar-count-badge--aggregate',
+      };
+    }
+
+    if (menu.link?.includes('/operations/material-request/validate-list')) {
+      return {
+        text: this.formatBadgeCount(count),
+        variant: 'sidebar-count-badge--critical',
+      };
+    }
+
+    if (menu.link?.includes('/operations/material-request/picking')) {
+      return {
+        text: this.formatBadgeCount(count),
+        variant: 'sidebar-count-badge--attention',
+      };
+    }
+
+    if (menu.link?.includes('/operations/forms/vehicle/list')) {
+      return {
+        text: this.formatBadgeCount(count),
+        variant: 'sidebar-count-badge--critical',
+      };
+    }
+
+    if (menu.link?.includes('/operations/shortages/list')) {
+      return {
+        text: this.formatBadgeCount(count),
+        variant: 'sidebar-count-badge--critical',
+      };
+    }
+
+    if (menu.link?.includes('/operations/forms/safety-incident/list')) {
+      return {
+        text: this.formatBadgeCount(count),
+        variant: 'sidebar-count-badge--critical',
+      };
+    }
+
+    if (menu.link?.includes('/quality/qir')) {
+      return {
+        text: this.formatBadgeCount(count),
+        variant: 'sidebar-count-badge--critical',
+      };
+    }
+
+    if (menu.link?.includes('/quality/car/list')) {
+      return {
+        text: this.formatBadgeCount(count),
+        variant: 'sidebar-count-badge--critical',
+      };
+    }
+
+    if (menu.link?.includes('/quality/rma/list')) {
+      return {
+        text: this.formatBadgeCount(count),
+        variant: 'sidebar-count-badge--critical',
+      };
+    }
+
+    if (menu.link?.includes('/quality/permit-checklists')) {
+      return {
+        text: this.formatBadgeCount(count),
+        variant: 'sidebar-count-badge--critical',
+      };
+    }
+
+    if (menu.link?.includes('/operations/forms/shipping-request')) {
+      return {
+        text: this.formatBadgeCount(count),
+        variant: 'sidebar-count-badge--critical',
+      };
+    }
+
+    if (menu.link?.includes('/operations/graphics/production')) {
+      return {
+        text: this.formatBadgeCount(count),
+        variant: 'sidebar-count-badge--critical',
+      };
+    }
+
+    if (menu.link?.includes('/field-service/request')) {
+      return {
+        text: this.formatBadgeCount(count),
+        variant: 'sidebar-count-badge--critical',
+      };
+    }
+
+    if (menu.link?.includes('/training/live')) {
+      return {
+        text: this.formatBadgeCount(count),
+        variant: 'sidebar-count-badge--critical',
+      };
+    }
+
+    if (menu.link?.includes('/inspection-checklist/execution')) {
+      return {
+        text: this.formatBadgeCount(count),
+        variant: 'sidebar-count-badge--critical',
+      };
+    }
+
+    return null;
+  }
+
+  private getBadgeCount(menu: MenuItem): number {
+    if (this.hasItems(menu)) {
+      return menu.subItems.reduce((sum: number, child: MenuItem) => sum + this.getBadgeCount(child), 0);
+    }
+
+    if (menu.link?.includes('/operations/material-request/validate-list')) {
+      return this.menuBadgeCounts.validationQueue;
+    }
+
+    if (menu.link?.includes('/operations/material-request/picking')) {
+      return this.menuBadgeCounts.pickingQueue;
+    }
+
+    if (menu.link?.includes('/operations/forms/vehicle/list')) {
+      return this.menuBadgeCounts.vehicleExpiringSoon;
+    }
+
+    if (menu.link?.includes('/operations/shortages/list')) {
+      return this.menuBadgeCounts.shortagesOpen;
+    }
+
+    if (menu.link?.includes('/operations/forms/safety-incident/list')) {
+      return this.menuBadgeCounts.safetyIncidentOpen;
+    }
+
+    if (menu.link?.includes('/quality/qir')) {
+      return this.menuBadgeCounts.qualityIssuesOpen;
+    }
+
+    if (menu.link?.includes('/quality/car/list')) {
+      return this.menuBadgeCounts.correctiveActionsOpen;
+    }
+
+    if (menu.link?.includes('/quality/rma/list')) {
+      return this.menuBadgeCounts.returnsRmaOpen;
+    }
+
+    if (menu.link?.includes('/quality/permit-checklists')) {
+      return this.menuBadgeCounts.permitChecklistOpen;
+    }
+
+    if (menu.link?.includes('/operations/forms/shipping-request')) {
+      return this.menuBadgeCounts.shippingRequestOpen;
+    }
+
+    if (menu.link?.includes('/operations/graphics/production')) {
+      return this.menuBadgeCounts.graphicsProductionOpen;
+    }
+
+    if (menu.link?.includes('/field-service/request')) {
+      return this.menuBadgeCounts.fieldsServiceRequestsOpen;
+    }
+
+    if (menu.link?.includes('/training/live')) {
+      return this.menuBadgeCounts.trainingLiveSessionsOpen;
+    }
+
+    if (menu.link?.includes('/inspection-checklist/execution')) {
+      return this.menuBadgeCounts.inspectionChecklistExecutionInProgress;
+    }
+
+    return 0;
+  }
+
+  private formatBadgeCount(count: number): string {
+    return count > 99 ? '99+' : String(count);
   }
 
   /**

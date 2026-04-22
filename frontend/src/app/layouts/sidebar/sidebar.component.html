@@ -128,6 +128,11 @@
             (click)="searchTerm() ? null : toggleItem(menu)">
             <i class="{{ menu.icon }} icon nav-icon" *ngIf="menu.icon && menu.id"></i>
             <span class=""> {{ menu.label }} </span>
+            <ng-container *ngIf="getMenuBadge(menu) as badge">
+                <span class="sidebar-count-badge sidebar-count-badge--parent"
+                  [class.sidebar-count-badge--single]="(badge.text + '').length === 1"
+                  [ngClass]="badge.variant">{{ badge.text }}</span>
+            </ng-container>
             <i *ngIf="searchTerm()" class="bx bx-search-alt-2 ms-2 text-muted small" title="Search result"></i>
           </a>
           }@else{
@@ -143,6 +148,11 @@
             (click)="updateActive($event); handleHiddenItemClick(menu)" (mouseenter)="mouseHovering(menu)" (mouseleave)="mouseLeft(menu)">
             <i class="{{ menu.icon }} icon nav-icon" *ngIf="menu.icon && menu.id"></i>
             <span class="">{{ menu.label }}</span>
+            <ng-container *ngIf="getMenuBadge(menu) as badge">
+                <span class="sidebar-count-badge"
+                  [class.sidebar-count-badge--single]="(badge.text + '').length === 1"
+                  [ngClass]="badge.variant">{{ badge.text }}</span>
+            </ng-container>
 
             <!-- Search result indicator -->
             <i *ngIf="searchTerm()" class="bx bx-search-alt-2 ms-2 text-muted small" title="Search result"></i>

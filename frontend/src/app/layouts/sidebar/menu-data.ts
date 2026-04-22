@@ -141,7 +141,7 @@ export const MENU_DATA: MenuItem[] = [
     },
     {
         id: 16,
-        label: "Material Requests",
+        label: "Material Req",
         icon: "las la-clipboard-list",
         isCollapsed: true,
         hideCheckBox: true,

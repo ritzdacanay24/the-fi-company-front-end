@@ -3,8 +3,8 @@
 import { Injectable } from '@angular/core';
 import { webSocket, WebSocketSubject } from 'rxjs/webSocket';
 import { AuthenticationService } from './auth.service';
-import { CORE_SETTINGS } from '../constants/app.config';
 import { ToastrService } from 'ngx-toastr';
+import { environment } from 'src/environments/environment';
 import { Subject, Observable, BehaviorSubject, retry } from 'rxjs';
 
 @Injectable({
@@ -42,7 +42,7 @@ export class WebsocketService {
 
     connect() {
         this.myWebSocket = webSocket({
-            url: CORE_SETTINGS.websocketUrl,
+            url: this.buildWebSocketUrl(),
             openObserver: {
                 next: (data) => {
                     console.log("connection ok");
@@ -98,6 +98,19 @@ export class WebsocketService {
 
     multiplex(subscribe, unsubscribe, transact) {
         return this.myWebSocket?.multiplex(subscribe, unsubscribe, transact);
+    }
+
+    private buildWebSocketUrl(): string {
+        const base = environment.nestApiBaseUrl;
+        if (base) {
+            // Absolute URL (e.g. http://localhost:3002) — replace protocol with ws/wss
+            const url = new URL(base);
+            const protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+            return `${protocol}//${url.host}/api/ws`;
+        }
+        // Relative (same origin in production)
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        return `${protocol}//${window.location.host}/api/ws`;
     }
 
 }

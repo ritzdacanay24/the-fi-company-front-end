@@ -8,6 +8,7 @@ import compression from 'compression';
 import { AppModule } from './nest/app.module';
 import { GlobalHttpExceptionFilter } from './nest/filters/http-exception.filter';
 import { initializeFileLogging } from './shared/logging/file-logger.bootstrap';
+import { UnifiedWebSocketService } from './shared/services/unified-websocket.service';
 
 async function bootstrap() {
   initializeFileLogging();
@@ -64,6 +65,9 @@ async function bootstrap() {
 
   const port = Number(process.env.PORT || 3000);
   await app.listen(port);
+
+  const wsService = app.get(UnifiedWebSocketService);
+  wsService.setHttpServer(app.getHttpServer());
 
   const logger = new Logger('Bootstrap');
   logger.log(`nest-api listening on port ${port}`);
