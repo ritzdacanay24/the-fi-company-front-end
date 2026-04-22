@@ -16,6 +16,19 @@ export interface RequestCommentRow extends RowDataPacket {
   request_change_completed: string | null;
 }
 
+export interface RequestEmailContextRow extends RowDataPacket {
+  id: number;
+  subject: string | null;
+  token: string | null;
+  date_of_service: string | null;
+  start_time: string | null;
+  customer_co_number: string | null;
+  so_number: string | null;
+  property: string | null;
+  state: string | null;
+  city: string | null;
+}
+
 @Injectable()
 export class RequestCommentsRepository extends BaseRepository<RowDataPacket> {
   private readonly allowedColumns = new Set([
@@ -52,5 +65,28 @@ export class RequestCommentsRepository extends BaseRepository<RowDataPacket> {
       `,
       [fsRequestId],
     );
+  }
+
+  async getRequestEmailContext(fsRequestId: number): Promise<RequestEmailContextRow | null> {
+    const rows = await this.rawQuery<RequestEmailContextRow>(
+      `
+        SELECT id,
+               subject,
+               token,
+               date_of_service,
+               start_time,
+               customer_co_number,
+               so_number,
+               property,
+               state,
+               city
+        FROM eyefidb.fs_request
+        WHERE id = ?
+        LIMIT 1
+      `,
+      [fsRequestId],
+    );
+
+    return rows[0] ?? null;
   }
 }

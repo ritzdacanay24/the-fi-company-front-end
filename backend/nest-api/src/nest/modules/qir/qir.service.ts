@@ -75,8 +75,20 @@ export class QirService {
 
   private async sendCreateNotification(insertId: number, payload: Record<string, unknown>) {
     try {
-      const recipients = await this.emailNotificationsService.getRecipients('internal_qir_notification');
-      if (recipients.length === 0) {
+      const qirType = String(payload.type1 || payload.type || '').trim();
+      const isExternalQir = /^external\b/i.test(qirType);
+
+      const internalRecipients = await this.emailNotificationsService.getRecipients(
+        'internal_qir_notification',
+      );
+      const externalRecipients = isExternalQir
+        ? await this.emailNotificationsService.getRecipients('external_qir_notification')
+        : [];
+
+      const to = this.uniqueEmails(internalRecipients);
+      const cc = this.uniqueEmails(externalRecipients);
+
+      if (to.length === 0 && cc.length === 0) {
         return;
       }
 
@@ -108,8 +120,8 @@ export class QirService {
       });
 
       await this.emailService.sendMail({
-        to: recipients,
-        cc: ['ritz.dacanay@the-fi-company.com'],
+        to: to.length > 0 ? to : cc,
+        cc: to.length > 0 && cc.length > 0 ? cc : undefined,
         subject: `New QIR Submitted ${insertId} Stakeholder ${stakeholder}`,
         html,
       });
@@ -118,5 +130,9 @@ export class QirService {
         `QIR notification email failed for id ${insertId}: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
+  }
+
+  private uniqueEmails(values: string[]): string[] {
+    return Array.from(new Set(values.map((value) => String(value || '').trim()).filter(Boolean)));
   }
 }

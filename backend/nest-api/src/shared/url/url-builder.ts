@@ -26,6 +26,11 @@ export class UrlBuilder {
       this.withQuery('/operations/forms/igt-transfer/edit', { selectedViewType, id }),
   };
 
+  readonly fieldService = {
+    requestEdit: (id: number, selectedViewType = 'Open'): string =>
+      this.withQuery('/field-service/request/edit', { selectedViewType, id }),
+  };
+
   private withQuery(
     path: string,
     query: Record<string, string | number | boolean | undefined>,

@@ -1,0 +1,58 @@
+<html>
+  <body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f4f6f8; color: #1f2933;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 620px; background-color: #ffffff; border: 1px solid #dde3ea; border-radius: 10px; overflow: hidden;">
+            {{> email-header}}
+            <tr>
+              <td style="padding: 20px 24px; background-color: #0b5cab; color: #ffffff;">
+                <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Field Service Request Comment</h2>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 24px; font-size: 14px; line-height: 1.6;">
+                {{#if requestChange}}
+                <p style="margin: 0 0 12px 0; font-weight: 700; font-size: 18px; color: #111827;">
+                  <span style="background: #fff3a3; padding: 2px 6px;">** Request Change **</span>
+                </p>
+                {{/if}}
+                <p style="margin-top: 0;">New comment added{{#if createdBy}} by {{createdBy}}{{/if}}</p>
+                <p style="margin: 0 0 16px 0; white-space: pre-wrap;">{{comment}}</p>
+                {{#if customerLink}}
+                <p style="margin: 0 0 24px 0;">
+                  A new comment was added. Please click
+                  <a href="{{customerLink}}" style="color: #0b5cab;">here</a>
+                  to view/add comment.
+                </p>
+                {{/if}}
+
+                <p style="margin: 0 0 8px 0;"><strong>Details</strong></p>
+                {{#if createdBy}}
+                <p style="margin: 0 0 4px 0;">New comment added by {{createdBy}}</p>
+                {{/if}}
+                {{#if requestId}}<p style="margin: 0 0 4px 0;">Request ID: {{requestId}}</p>{{/if}}
+                {{#if requestDate}}<p style="margin: 0 0 4px 0;">Request Date of Service: {{requestDate}}</p>{{/if}}
+                {{#if requestTime}}<p style="margin: 0 0 4px 0;">Request Time of Service: {{requestTime}}</p>{{/if}}
+                <p style="margin: 0 0 4px 0;">Customer CO: {{customerCo}}</p>
+                <p style="margin: 0 0 4px 0;">SO #: {{soNumber}}</p>
+                <p style="margin: 0 0 4px 0;">Property: {{property}}</p>
+                <p style="margin: 0 0 4px 0;">state: {{state}}</p>
+                <p style="margin: 0 0 16px 0;">city: {{city}}</p>
+
+                {{#if internalLink}}
+                <p style="margin: 0 0 24px 0;">
+                  Field service schedulers, please click
+                  <a href="{{internalLink}}" style="color: #0b5cab;">here</a>
+                  to view request.
+                </p>
+                {{/if}}
+              </td>
+            </tr>
+            {{> email-footer}}
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
