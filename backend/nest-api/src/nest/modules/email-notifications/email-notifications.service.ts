@@ -2,12 +2,12 @@ import { Inject, Injectable } from '@nestjs/common';
 import { RowDataPacket } from 'mysql2/promise';
 import { MysqlService } from '@/shared/database/mysql.service';
 
-interface IgtTransferEmailRecipientRow extends RowDataPacket {
+interface EmailNotificationRecipientRow extends RowDataPacket {
   email: string | null;
 }
 
 @Injectable()
-export class IgtTransferEmailRecipientsService {
+export class EmailNotificationsService {
   constructor(
     @Inject(MysqlService)
     private readonly mysqlService: MysqlService,
@@ -19,7 +19,7 @@ export class IgtTransferEmailRecipientsService {
       return [];
     }
 
-    const rows = await this.mysqlService.query<IgtTransferEmailRecipientRow[]>(
+    const rows = await this.mysqlService.query<EmailNotificationRecipientRow[]>(
       `
         SELECT IFNULL(b.email, a.notification_emails) AS email
         FROM safety_incident_config a

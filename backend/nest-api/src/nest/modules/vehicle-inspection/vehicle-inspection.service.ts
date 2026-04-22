@@ -4,6 +4,7 @@ import { VehicleInspectionRepository } from './vehicle-inspection.repository';
 import { EmailService } from '@/shared/email/email.service';
 import { EmailTemplateService } from '@/shared/email/email-template.service';
 import { UrlBuilder } from '@/shared/url/url-builder';
+import { EmailNotificationsService } from '../email-notifications';
 
 interface VehicleInspectionGroupedDetail {
   name: string;
@@ -28,6 +29,7 @@ export class VehicleInspectionService {
   constructor(
     private readonly repository: VehicleInspectionRepository,
     private readonly emailService: EmailService,
+    private readonly emailNotificationsService: EmailNotificationsService,
     private readonly emailTemplateService: EmailTemplateService,
     private readonly configService: ConfigService,
     private readonly urlBuilder: UrlBuilder,
@@ -169,7 +171,7 @@ export class VehicleInspectionService {
     headerData: Record<string, any>,
   ): Promise<void> {
     try {
-      let recipients = await this.repository.getNotificationRecipients('create_vehicle_inspection');
+      let recipients = await this.emailNotificationsService.getRecipients('create_vehicle_inspection');
       if (recipients.length === 0) {
         recipients = [this.configService.getOrThrow<string>('DEV_EMAIL_REROUTE_TO')];
         this.logger.warn(

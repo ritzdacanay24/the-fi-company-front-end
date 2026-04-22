@@ -12,27 +12,9 @@ export interface ForkliftChecklistRow extends RowDataPacket {
   comments: string;
 }
 
-export interface ForkliftNotificationRecipientRow extends RowDataPacket {
-  email: string;
-}
-
 @Injectable()
 export class ForkliftInspectionRepository {
   constructor(@Inject(MysqlService) private readonly mysqlService: MysqlService) {}
-
-  async getNotificationRecipients(subscriptionName: string): Promise<string[]> {
-    const sql = `
-      SELECT DISTINCT email
-      FROM cron_email_notifications
-      WHERE subscribed_to = ?
-        AND active = 1
-        AND email IS NOT NULL
-        AND TRIM(email) <> ''
-    `;
-
-    const rows = await this.mysqlService.query<ForkliftNotificationRecipientRow[]>(sql, [subscriptionName]);
-    return rows.map((row) => row.email.trim()).filter(Boolean);
-  }
 
   async getList(): Promise<RowDataPacket[]> {
     const sql = `

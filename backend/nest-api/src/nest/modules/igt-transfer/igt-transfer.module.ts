@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { IgtTransferController } from './igt-transfer.controller';
 import { IgtTransferService } from './igt-transfer.service';
-import { IgtTransferEmailRecipientsModule } from '../igt-transfer-email-recipients';
+import { EmailNotificationsModule } from '../email-notifications';
 
 @Module({
-  imports: [IgtTransferEmailRecipientsModule],
+  imports: [EmailNotificationsModule],
   controllers: [IgtTransferController],
   providers: [IgtTransferService],
 })

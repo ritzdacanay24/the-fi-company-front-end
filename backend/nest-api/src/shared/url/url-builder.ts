@@ -22,6 +22,8 @@ export class UrlBuilder {
       this.withQuery('/operations/material-request/view', { id }),
     qirEdit: (id: number, selectedViewType = 'Open'): string =>
       this.withQuery('/quality/qir/edit', { selectedViewType, id }),
+    igtTransferEdit: (id: number, selectedViewType = 'Active'): string =>
+      this.withQuery('/operations/forms/igt-transfer/edit', { selectedViewType, id }),
   };
 
   private withQuery(

@@ -6,7 +6,8 @@ import { MysqlService } from '@/shared/database/mysql.service';
 import { QadOdbcService } from '@/shared/database/qad-odbc.service';
 import { EmailService } from '@/shared/email/email.service';
 import { EmailTemplateService } from '@/shared/email/email-template.service';
-import { IgtTransferEmailRecipientsService } from '../igt-transfer-email-recipients/igt-transfer-email-recipients.service';
+import { UrlBuilder } from '@/shared/url/url-builder';
+import { EmailNotificationsService } from '../email-notifications';
 
 interface IgtTransferRow extends RowDataPacket {
   id: number;
@@ -74,8 +75,9 @@ export class IgtTransferService {
     private readonly emailTemplateService: EmailTemplateService,
     @Inject(ConfigService)
     private readonly configService: ConfigService,
-    @Inject(IgtTransferEmailRecipientsService)
-    private readonly igtTransferEmailRecipientsService: IgtTransferEmailRecipientsService,
+    @Inject(UrlBuilder)
+    private readonly urlBuilder: UrlBuilder,
+    private readonly emailNotificationsService: EmailNotificationsService,
   ) {}
 
   async getList(params: GetListParams): Promise<IgtTransferRow[]> {
@@ -193,9 +195,7 @@ export class IgtTransferService {
     const signatureImageUrl =
       this.configService.get<string>('MAIL_SIGNATURE_IMAGE_URL') ||
       'https://dashboard.eye-fi.com/test/signatures/Picture1.png';
-    const dashboardBaseUrl =
-      this.configService.get<string>('DASHBOARD_WEB_BASE_URL') || 'http://localhost:4200';
-    const editUrl = `${dashboardBaseUrl.replace(/\/+$/, '')}/operations/forms/igt-transfer/edit?selectedViewType=Active&id=${id}`;
+    const editUrl = this.urlBuilder.operations.igtTransferEdit(id);
 
     const body = this.emailTemplateService.render('igt-transfer', {
       isReno: normalizedToLocation === 'R200',
@@ -244,17 +244,10 @@ export class IgtTransferService {
       return { to: [], cc: [] };
     }
 
-    const to = await this.igtTransferEmailRecipientsService.getRecipients(toKey);
-    const cc = await this.igtTransferEmailRecipientsService.getRecipients(`${toKey}_cc`);
+    const to = await this.emailNotificationsService.getRecipients(toKey);
+    const cc = await this.emailNotificationsService.getRecipients(`${toKey}_cc`);
 
-    // Keep legacy fallback for Z024 CC if no dedicated DB key exists.
-    const resolvedCc = cc.length > 0
-      ? cc
-      : normalized === 'Z024'
-        ? this.parseEmails('ritz.dacanay@the-fi-company.com')
-        : [];
-
-    return { to, cc: resolvedCc };
+    return { to, cc };
   }
 
   private getNoticeKeyForLocation(toLocation: string): string | null {
@@ -268,13 +261,6 @@ export class IgtTransferService {
     }
 
     return null;
-  }
-
-  private parseEmails(csv: string): string[] {
-    return csv
-      .split(',')
-      .map((value) => value.trim())
-      .filter(Boolean);
   }
 
   private slugify(value?: string): string {
