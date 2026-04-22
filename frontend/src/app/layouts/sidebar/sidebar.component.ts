@@ -688,6 +688,11 @@ export class SidebarComponent implements OnInit {
     });
   }
 
+  getFavoritesBadgeTotal(): number {
+    if (!this.favs?.length) return 0;
+    return this.favs.reduce((sum, fav) => sum + this.getBadgeCount(fav), 0);
+  }
+
   saveAsFavorite(item) {
     if (!item) return; // Add safety check
     item.showStarColor = true;

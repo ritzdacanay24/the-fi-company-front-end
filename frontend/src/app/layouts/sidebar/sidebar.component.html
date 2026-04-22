@@ -49,6 +49,7 @@
             [attr.aria-label]="app.name"
             (click)="switchRailApp(app.id)">
             <i [class]="app.icon"></i>
+            <span *ngIf="appHasBadgeNotifications(app.id)" class="rail-inline-notification-dot"></span>
             <span class="rail-inline-tooltip">{{ app.name }}</span>
           </button>
 
@@ -76,6 +77,10 @@
               class="nav-item nav-link pointer" data-bs-toggle="collapse">
               <i class="las la-star icon nav-icon"></i>
               <span class="">Favorites</span>
+              <span *ngIf="isCollapsed && getFavoritesBadgeTotal() > 0"
+                class="sidebar-count-badge sidebar-count-badge--aggregate ms-auto me-4">
+                {{ getFavoritesBadgeTotal() > 99 ? '99+' : getFavoritesBadgeTotal() }}
+              </span>
             </a>
             <div class="collapse menu-dropdown" #collapse="ngbCollapse" [(ngbCollapse)]="isCollapsed">
               <ul class="nav nav-sm flex-column" [attr.aria-expanded]="!isCollapsed">
@@ -147,7 +152,8 @@
           </a>
           }@else{
           <a [attr.data-parent]="menu.parent_id" [routerLink]="menu.link" class="nav-link"
-            (click)="updateActive($event); handleHiddenItemClick(menu)" (mouseenter)="mouseHovering(menu)" (mouseleave)="mouseLeft(menu)">
+            (click)="updateActive($event); handleHiddenItemClick(menu)"
+            (contextmenu)="$event.preventDefault(); menu.showStarColor ? removeAsFavorite(menu) : saveAsFavorite(menu)">
             <i class="{{ menu.icon }} icon nav-icon" *ngIf="menu.icon && menu.id"></i>
             <span class="">{{ menu.label }}</span>
             <ng-container *ngIf="getMenuBadge(menu) as badge">
@@ -165,14 +171,6 @@
               Hidden
             </span>
 
-            <!-- Show star on hover for non-favorited items -->
-            <i style="position:absolute;right:10px" *ngIf="menu.showStar && !menu.showStarColor"
-              class="las la-star text-end icon nav-icon"
-              (click)="$event.preventDefault();saveAsFavorite(menu);$event.stopPropagation()"></i>
-            <!-- Always show star for favorited items -->
-            <i style="position:absolute;right:10px" *ngIf="menu.showStarColor"
-              class="las la-star text-end icon nav-icon text-warning"
-              (click)="$event.preventDefault();removeAsFavorite(menu);$event.stopPropagation()"></i>
           </a>
           }
           }
