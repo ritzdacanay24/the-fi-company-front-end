@@ -20,10 +20,6 @@ interface NcrChartRow extends RowDataPacket {
   on_time: number;
 }
 
-interface NotificationRecipientRow extends RowDataPacket {
-  email: string;
-}
-
 interface NcrComplaintCodeRow extends RowDataPacket {
   id: number;
   name: string;
@@ -228,20 +224,6 @@ export class NcrRepository extends BaseRepository<RowDataPacket> {
     }
 
     return super.updateById(id, Object.fromEntries(entries));
-  }
-
-  async getNotificationRecipients(notificationKey: string): Promise<string[]> {
-    const sql = `
-      SELECT DISTINCT email
-      FROM cron_email_notifications
-      WHERE subscribed_to = ?
-        AND active = 1
-        AND email IS NOT NULL
-        AND TRIM(email) <> ''
-    `;
-
-    const rows = await this.rawQuery<NotificationRecipientRow>(sql, [notificationKey]);
-    return rows.map((row) => row.email.trim()).filter(Boolean);
   }
 
   async getComplaintCodes(): Promise<NcrComplaintCodeRow[]> {

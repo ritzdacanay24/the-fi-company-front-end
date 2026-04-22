@@ -3,10 +3,6 @@ import { RowDataPacket } from 'mysql2/promise';
 import { MysqlService } from '@/shared/database/mysql.service';
 import { BaseRepository } from '@/shared/repositories';
 
-interface NotificationRecipientRow extends RowDataPacket {
-  email: string;
-}
-
 @Injectable()
 export class ShippingRequestRepository extends BaseRepository<RowDataPacket> {
   private static readonly ALLOWED_COLUMNS = [
@@ -106,20 +102,6 @@ export class ShippingRequestRepository extends BaseRepository<RowDataPacket> {
 
   async deleteById(id: number): Promise<number> {
     return super.deleteById(id);
-  }
-
-  async getNotificationRecipients(notificationKey: string): Promise<string[]> {
-    const sql = `
-      SELECT DISTINCT email
-      FROM cron_email_notifications
-      WHERE subscribed_to = ?
-        AND active = 1
-        AND email IS NOT NULL
-        AND TRIM(email) <> ''
-    `;
-
-    const rows = await this.rawQuery<NotificationRecipientRow>(sql, [notificationKey]);
-    return rows.map((row) => row.email.trim()).filter(Boolean);
   }
 
   private getSafePayload(payload: Record<string, unknown>): Record<string, unknown> {

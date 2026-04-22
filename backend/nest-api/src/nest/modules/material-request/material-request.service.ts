@@ -6,6 +6,7 @@ import { MaterialRequestRepository } from './material-request.repository';
 import { EmailService } from '@/shared/email/email.service';
 import { EmailTemplateService } from '@/shared/email/email-template.service';
 import { UrlBuilder } from '@/shared/url/url-builder';
+import { EmailNotificationsService } from '../email-notifications';
 
 type MaterialRequestPayload = {
   main?: Record<string, unknown>;
@@ -38,6 +39,7 @@ export class MaterialRequestService {
     private readonly emailTemplateService: EmailTemplateService,
     private readonly configService: ConfigService,
     private readonly urlBuilder: UrlBuilder,
+    private readonly emailNotificationsService: EmailNotificationsService,
   ) {}
 
   async getList(query: {
@@ -382,14 +384,13 @@ export class MaterialRequestService {
 
   private async sendCreateNotification(insertId: number, main: Record<string, unknown>): Promise<void> {
     try {
-      const to = this.parseRecipientList(this.configService.get<string>('MATERIAL_REQUEST_NOTIFY_TO'));
-      const cc = this.parseRecipientList(this.configService.get<string>('MATERIAL_REQUEST_NOTIFY_CC'));
+      const to = await this.emailNotificationsService.getRecipients('create_material_request');
       const fallbackTo = this.configService.getOrThrow<string>('DEV_EMAIL_REROUTE_TO');
 
       const recipients = to.length > 0 ? to : [fallbackTo];
       if (to.length === 0) {
         this.logger.warn(
-          `[email] No MATERIAL_REQUEST_NOTIFY_TO configured; using fallback recipient ${fallbackTo}`,
+          `[email] No create_material_request recipients configured; using fallback recipient ${fallbackTo}`,
         );
       }
 
@@ -406,7 +407,6 @@ export class MaterialRequestService {
 
       await this.emailService.sendMail({
         to: recipients,
-        cc: cc.length > 0 ? cc : undefined,
         subject: `Material Request Form #${insertId}`,
         html,
       });
@@ -415,13 +415,6 @@ export class MaterialRequestService {
         `Material request create email failed for id ${insertId}: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
-  }
-
-  private parseRecipientList(value: string | undefined): string[] {
-    return String(value || '')
-      .split(',')
-      .map((email) => email.trim())
-      .filter(Boolean);
   }
 
   private async sendPickingCompleteNotification(id: number): Promise<void> {

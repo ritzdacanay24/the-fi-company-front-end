@@ -2,6 +2,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { RowDataPacket } from 'mysql2';
 import { EmailService } from '@/shared/email/email.service';
+import { EmailNotificationsService, type EmailNotificationAccessValue } from '../email-notifications';
 import { NcrRepository } from './ncr.repository';
 
 @Injectable()
@@ -12,6 +13,7 @@ export class NcrService {
     private readonly repository: NcrRepository,
     private readonly emailService: EmailService,
     private readonly configService: ConfigService,
+    private readonly emailNotificationsService: EmailNotificationsService,
   ) {}
 
   async getList(query: {
@@ -67,7 +69,7 @@ export class NcrService {
 
     let recipients: string[] = [];
     if (notificationKey) {
-      recipients = await this.repository.getNotificationRecipients(notificationKey);
+      recipients = await this.emailNotificationsService.getRecipients(notificationKey);
     }
 
     if (recipients.length > 0) {
@@ -92,7 +94,7 @@ export class NcrService {
     return this.repository.getComplaintCodes();
   }
 
-  private getAssignmentNotificationKey(department: string): string | null {
+  private getAssignmentNotificationKey(department: string): EmailNotificationAccessValue | null {
     if (department === 'Production') return 'car_assigned_to_production';
     if (department === 'Logistics') return 'car_assigned_to_logistics';
     if (department === 'Quality') return 'car_assigned_to_quality';

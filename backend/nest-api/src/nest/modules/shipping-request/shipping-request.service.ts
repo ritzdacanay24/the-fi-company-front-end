@@ -5,6 +5,7 @@ import { EmailService } from '@/shared/email/email.service';
 import { EmailTemplateService } from '@/shared/email/email-template.service';
 import { UrlBuilder } from '@/shared/url/url-builder';
 import { ShippingRequestRepository } from './shipping-request.repository';
+import { EmailNotificationsService } from '../email-notifications';
 
 @Injectable()
 export class ShippingRequestService {
@@ -16,6 +17,7 @@ export class ShippingRequestService {
     private readonly emailTemplateService: EmailTemplateService,
     private readonly configService: ConfigService,
     private readonly urlBuilder: UrlBuilder,
+    private readonly emailNotificationsService: EmailNotificationsService,
   ) {}
 
   async getList(query: {
@@ -79,7 +81,7 @@ export class ShippingRequestService {
 
   private async sendCreateNotification(id: number) {
     try {
-      let recipients = await this.repository.getNotificationRecipients('create_shipping_request');
+      let recipients = await this.emailNotificationsService.getRecipients('create_shipping_request');
       if (recipients.length === 0) {
         recipients = [this.configService.getOrThrow<string>('DEV_EMAIL_REROUTE_TO')];
         this.logger.warn(
@@ -114,7 +116,9 @@ export class ShippingRequestService {
         return;
       }
 
-      const cc = await this.repository.getNotificationRecipients('tracking_number_notification_shipping_request');
+      const cc = await this.emailNotificationsService.getRecipients(
+        'tracking_number_notification_shipping_request',
+      );
       const link = this.urlBuilder.operations.shippingRequestEdit(id);
       const html = this.emailTemplateService.render('shipping-request-tracking', {
         id,

@@ -3,6 +3,7 @@ import { RowDataPacket } from 'mysql2';
 import { EmailService } from '@/shared/email/email.service';
 import { EmailTemplateService } from '@/shared/email/email-template.service';
 import { UrlBuilder } from '@/shared/url/url-builder';
+import { EmailNotificationsService } from '../email-notifications';
 import { QirRepository } from './qir.repository';
 
 @Injectable()
@@ -14,6 +15,7 @@ export class QirService {
     private readonly emailService: EmailService,
     private readonly emailTemplateService: EmailTemplateService,
     private readonly urlBuilder: UrlBuilder,
+    private readonly emailNotificationsService: EmailNotificationsService,
   ) {}
 
   async getList(query: {
@@ -73,7 +75,7 @@ export class QirService {
 
   private async sendCreateNotification(insertId: number, payload: Record<string, unknown>) {
     try {
-      const recipients = await this.repository.getNotificationRecipients('internal_qir_notification');
+      const recipients = await this.emailNotificationsService.getRecipients('internal_qir_notification');
       if (recipients.length === 0) {
         return;
       }

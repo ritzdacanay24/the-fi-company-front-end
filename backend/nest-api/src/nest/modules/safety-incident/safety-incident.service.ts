@@ -4,6 +4,7 @@ import { SafetyIncidentRecord, SafetyIncidentRepository } from './safety-inciden
 import { EmailService } from '@/shared/email/email.service';
 import { EmailTemplateService } from '@/shared/email/email-template.service';
 import { UrlBuilder } from '@/shared/url/url-builder';
+import { EmailNotificationsService } from '../email-notifications';
 
 @Injectable()
 export class SafetyIncidentService {
@@ -14,6 +15,7 @@ export class SafetyIncidentService {
     private readonly emailService: EmailService,
     private readonly emailTemplateService: EmailTemplateService,
     private readonly urlBuilder: UrlBuilder,
+    private readonly emailNotificationsService: EmailNotificationsService,
   ) {}
 
   async getList(params: {
@@ -80,7 +82,7 @@ export class SafetyIncidentService {
 
   private async sendCreateNotification(insertId: number): Promise<void> {
     try {
-      const recipients = await this.safetyIncidentRepository.getCreateNotificationRecipients();
+      const recipients = await this.emailNotificationsService.getRecipients('safety_incident');
       if (recipients.length === 0) {
         this.logger.warn('No active safety incident recipients configured in safety_incident_config');
         return;

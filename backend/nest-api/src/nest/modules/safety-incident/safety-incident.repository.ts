@@ -8,10 +8,6 @@ export interface SafetyIncidentRecord extends RowDataPacket {
   [key: string]: unknown;
 }
 
-interface SafetyIncidentNotificationRecipientRow extends RowDataPacket {
-  email: string | null;
-}
-
 @Injectable()
 export class SafetyIncidentRepository extends BaseRepository<SafetyIncidentRecord> {
   constructor(@Inject(MysqlService) mysqlService: MysqlService) {
@@ -99,24 +95,6 @@ export class SafetyIncidentRepository extends BaseRepository<SafetyIncidentRecor
   async createIncident(payload: Record<string, unknown>): Promise<number> {
     const sanitized = this.sanitizePayload(payload);
     return this.create(sanitized);
-  }
-
-  async getCreateNotificationRecipients(): Promise<string[]> {
-    const rows = await this.rawQuery<SafetyIncidentNotificationRecipientRow>(
-      `SELECT IFNULL(b.email, a.notification_emails) AS email
-       FROM safety_incident_config a
-       LEFT JOIN db.users b ON b.id = a.user_id
-       WHERE a.location = 'safety_incident'`,
-    );
-
-    return rows
-      .flatMap((row) =>
-        String(row.email || '')
-          .split(/[;,]/)
-          .map((email) => email.trim())
-          .filter(Boolean),
-      )
-      .filter((email, index, list) => list.indexOf(email) === index);
   }
 
   async updateIncidentById(id: number, payload: Record<string, unknown>): Promise<number> {

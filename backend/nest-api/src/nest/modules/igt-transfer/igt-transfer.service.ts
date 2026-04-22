@@ -7,7 +7,7 @@ import { QadOdbcService } from '@/shared/database/qad-odbc.service';
 import { EmailService } from '@/shared/email/email.service';
 import { EmailTemplateService } from '@/shared/email/email-template.service';
 import { UrlBuilder } from '@/shared/url/url-builder';
-import { EmailNotificationsService } from '../email-notifications';
+import { EmailNotificationsService, type EmailNotificationAccessValue } from '../email-notifications';
 
 interface IgtTransferRow extends RowDataPacket {
   id: number;
@@ -245,12 +245,11 @@ export class IgtTransferService {
     }
 
     const to = await this.emailNotificationsService.getRecipients(toKey);
-    const cc = await this.emailNotificationsService.getRecipients(`${toKey}_cc`);
 
-    return { to, cc };
+    return { to, cc: [] };
   }
 
-  private getNoticeKeyForLocation(toLocation: string): string | null {
+  private getNoticeKeyForLocation(toLocation: string): EmailNotificationAccessValue | null {
     const normalized = (toLocation || '').toUpperCase();
     if (normalized === 'R200') {
       return 'igt_transfer_location_R200';
