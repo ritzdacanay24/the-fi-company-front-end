@@ -33,6 +33,13 @@ export const envValidationSchema = Joi.object({
   SMTP_SOCKET_TIMEOUT_MS: Joi.number().integer().min(1000).default(15000),
   SMTP_USER: Joi.string().trim().allow('').optional(),
   SMTP_PASSWORD: Joi.string().trim().allow('').optional(),
+  MAIL_TRANSPORT: Joi.alternatives().conditional('NODE_ENV', {
+    is: 'development',
+    then: Joi.string().valid('smtp', 'sendmail').default('smtp'),
+    otherwise: Joi.string().valid('smtp', 'sendmail').default('sendmail'),
+  }),
+  SENDMAIL_PATH: Joi.string().trim().default('/usr/sbin/sendmail'),
+  SENDMAIL_NEWLINE: Joi.string().valid('unix', 'windows').default('unix'),
   DEV_EMAIL_REROUTE_TO: Joi.string().trim().email().default('ritz.dacanay@the-fi-company.com'),
   MAIL_FROM: Joi.string().trim().default('noreply@the-fi-company.com'),
   MAIL_LOGO_URL: Joi.string()

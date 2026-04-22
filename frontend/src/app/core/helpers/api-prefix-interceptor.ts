@@ -41,6 +41,10 @@ export class ApiPrefixInterceptor implements HttpInterceptor {
     } else if (url.indexOf("api/") == 0) {
       request = request.clone({ url: 'https://dashboard.eye-fi.com/' + url });
 
+    } else if (/^\/?server\//i.test(url)) {
+      const normalizedServerPath = url.indexOf('/') === 0 ? url : `/${url}`;
+      request = request.clone({ url: `https://dashboard.eye-fi.com${normalizedServerPath}` });
+
     } else {
       const normalizedUrl = url.indexOf('/') === 0 ? url.substring(1) : url;
       request = request.clone({ url: 'https://dashboard.eye-fi.com/server/Api/' + normalizedUrl });

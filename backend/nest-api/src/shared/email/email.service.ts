@@ -8,12 +8,26 @@ export class EmailService {
   private readonly isDevelopment: boolean;
   private readonly defaultFrom: string;
   private readonly devEmailRerouteTo: string;
+  private readonly mailTransport: 'smtp' | 'sendmail';
 
   constructor(private readonly configService: ConfigService) {
     const nodeEnv = this.configService.getOrThrow<string>('NODE_ENV').toLowerCase();
     this.isDevelopment = nodeEnv === 'development';
     this.defaultFrom = this.configService.getOrThrow<string>('MAIL_FROM');
     this.devEmailRerouteTo = this.configService.getOrThrow<string>('DEV_EMAIL_REROUTE_TO');
+    this.mailTransport = this.configService.get<'smtp' | 'sendmail'>('MAIL_TRANSPORT') ?? 'smtp';
+
+    if (this.mailTransport === 'sendmail') {
+      const sendmailPath = this.configService.get<string>('SENDMAIL_PATH') ?? '/usr/sbin/sendmail';
+      const newline = this.configService.get<'unix' | 'windows'>('SENDMAIL_NEWLINE') ?? 'unix';
+
+      this.transporter = nodemailer.createTransport({
+        sendmail: true,
+        path: sendmailPath,
+        newline,
+      });
+      return;
+    }
 
     const host = this.configService.getOrThrow<string>('SMTP_HOST');
     const port = this.configService.getOrThrow<number>('SMTP_PORT');
