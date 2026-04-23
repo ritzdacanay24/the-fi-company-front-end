@@ -2662,16 +2662,16 @@ export class ShippingComponent implements OnInit, OnDestroy {
         return "";
       },
     },
-    { field: "sod_type", headerName: "SOD Type", filter: "agSetColumnFilter" },
+    { field: "SOD_TYPE", headerName: "SOD Type", filter: "agSetColumnFilter" },
     {
-      field: "sod_per_date",
+      field: "SOD_PER_DATE",
       headerName: "Performance Date",
       filter: "agDateColumnFilter",
       filterParams: agGridDateFilter,
       cellRenderer: StatusDateRenderer,
     },
     {
-      field: "sod_req_date",
+      field: "SOD_REQ_DATE",
       headerName: "Request Date",
       filter: "agDateColumnFilter",
       filterParams: agGridDateFilter,
