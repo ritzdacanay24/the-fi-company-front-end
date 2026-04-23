@@ -1,4 +1,4 @@
-import { Component, OnInit } from "@angular/core";
+import { Component, OnDestroy, OnInit } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
 import { SharedModule } from "@app/shared/shared.module";
 import {
@@ -39,7 +39,10 @@ import { NgbDropdownModule } from "@ng-bootstrap/ng-bootstrap";
 import { TableSettingsService } from "@app/core/api/table-settings/table-settings.service";
 import { GridSettingsComponent } from "@app/shared/grid-settings/grid-settings.component";
 import { GridFiltersComponent } from "@app/shared/grid-filters/grid-filters.component";
-import { WebsocketService } from "@app/core/services/websocket.service";
+import {
+  ShippingMessageType,
+  ShippingWebsocketService,
+} from "@app/core/services/shipping-websocket.service";
 import { AuthenticationService } from "@app/core/services/auth.service";
 import { PartsOrderModalService } from "@app/pages/field-service/parts-order/parts-order-modal/parts-order-modal.component";
 import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
@@ -58,6 +61,7 @@ import { LateReasonCodeRendererV2Component } from "@app/shared/ag-grid/cell-rend
 import { OwnerRendererV2Component } from "@app/shared/ag-grid/owner-renderer-v2/owner-renderer-v2.component";
 import { OwnersService } from "@app/core/api/owners/owners.service";
 import { OwnerManagementModalService } from "@app/shared/components/owner-management-modal/owner-management-modal.component";
+import { Subscription } from "rxjs";
 
 // Priority-related interfaces
 interface PriorityData {
@@ -85,9 +89,6 @@ interface ShippingOrder {
   [key: string]: any; // For other dynamic properties
 }
 
-const WS_SHIPPING = "WS_SHIPPING";
-const WS_SHIPPING_PRIORITY = "WS_SHIPPING_PRIORITY";
-
 @Component({
   standalone: true,
   imports: [
@@ -102,7 +103,7 @@ const WS_SHIPPING_PRIORITY = "WS_SHIPPING_PRIORITY";
   templateUrl: "./shipping.component.html",
   styleUrls: ["./shipping.component.scss"],
 })
-export class ShippingComponent implements OnInit {
+export class ShippingComponent implements OnInit, OnDestroy {
   // Owner dropdown configuration - loaded dynamically from database setting
   ownerDropdownEnabled = false;
 
@@ -162,7 +163,7 @@ export class ShippingComponent implements OnInit {
     private rfqModalService: RfqModalService,
     private shippingMiscModalService: ShippingMiscModalService,
     private tableSettingsService: TableSettingsService,
-    private websocketService: WebsocketService,
+    private shippingWebsocketService: ShippingWebsocketService,
     private authenticationService: AuthenticationService,
     private partsOrderModalService: PartsOrderModalService,
     private workOrderInfoModalService: WorkOrderInfoModalService,
@@ -170,55 +171,10 @@ export class ShippingComponent implements OnInit {
     private pathUtils: PathUtilsService,
     private ownersService: OwnersService,
     private ownerManagementModalService: OwnerManagementModalService
-  ) {
-    this.websocketService = websocketService;
+  ) {}
 
-    //watch for changes if this modal is open
-    //changes will only occur if modal is open and if the modal equals to the same qir number
-    const ws_observable = this.websocketService.multiplex(
-      () => ({ subscribe: WS_SHIPPING }),
-      () => ({ unsubscribe: WS_SHIPPING }),
-      (message) => message.type === WS_SHIPPING
-    );
-
-    //if changes are found, patch new values
-    ws_observable.subscribe((data: any) => {
-      if (Array.isArray(data?.message)) {
-        this.gridApi.applyTransaction({ update: data?.message });
-        this.gridApi.redrawRows();
-      } else {
-        var rowNode = this.gridApi.getRowNode(data.message.id);
-        this.gridApi.applyTransaction({ update: [data.message] });
-        this.gridApi.redrawRows({ rowNodes: [rowNode] });
-
-        this.refreshCells([rowNode]);
-      }
-    });
-
-    // Watch for priority changes
-    const ws_priority_observable = this.websocketService.multiplex(
-      () => ({ subscribe: WS_SHIPPING_PRIORITY }),
-      () => ({ unsubscribe: WS_SHIPPING_PRIORITY }),
-      (message) => message.type === WS_SHIPPING_PRIORITY
-    );
-
-    // Handle priority change notifications
-    ws_priority_observable.subscribe((data: any) => {
-      console.log('🔔 Received priority update via WebSocket:', data);
-
-      if (data?.message) {
-        // Reload priorities to get the latest data
-        this.loadPriorities().then(() => {
-          console.log('✅ Priorities reloaded due to WebSocket update');
-
-          // Refresh both grids
-          if (this.gridApi) {
-            this.gridApi.refreshCells();
-          }
-        });
-      }
-    });
-  }
+  private shippingSubscription?: Subscription;
+  private shippingPrioritySubscription?: Subscription;
 
   statusCount = {
     pastDue: 0,
@@ -275,6 +231,9 @@ export class ShippingComponent implements OnInit {
     // Check if priority help alert should be shown
     this.initializePriorityHelpAlert();
 
+    this.shippingWebsocketService.init();
+    this.setupWebSocketSubscriptions();
+
     // Set up global methods for cell renderer buttons
     (window as any).removePriorityOrder = (orderId: string) => this.removePriorityOrder(orderId);
     (window as any).addToPriorityList = (orderData: any) => this.addToPriorityList(orderData);
@@ -286,6 +245,59 @@ export class ShippingComponent implements OnInit {
     if (this.comment) {
       this.viewComment(this.comment, null);
     }
+  }
+
+  ngOnDestroy(): void {
+    if (this.shippingSubscription) {
+      this.shippingSubscription.unsubscribe();
+    }
+    if (this.shippingPrioritySubscription) {
+      this.shippingPrioritySubscription.unsubscribe();
+    }
+    this.shippingWebsocketService.destroy();
+  }
+
+  private setupWebSocketSubscriptions(): void {
+    this.shippingSubscription = this.shippingWebsocketService
+      .subscribe<any>(ShippingMessageType.SHIPPING)
+      .subscribe((socketEnvelope) => {
+        const payload = socketEnvelope?.data as any;
+        if (!payload?.message || !this.gridApi) {
+          return;
+        }
+
+        if (Array.isArray(payload.message)) {
+          this.gridApi.applyTransaction({ update: payload.message });
+          this.gridApi.redrawRows();
+          return;
+        }
+
+        const rowNode = this.gridApi.getRowNode(payload.message.id);
+        this.gridApi.applyTransaction({ update: [payload.message] });
+        this.gridApi.redrawRows({ rowNodes: rowNode ? [rowNode] : undefined });
+
+        if (rowNode) {
+          this.refreshCells([rowNode]);
+        }
+      });
+
+    this.shippingPrioritySubscription = this.shippingWebsocketService
+      .subscribe<any>(ShippingMessageType.SHIPPING_PRIORITY)
+      .subscribe((socketEnvelope) => {
+        const payload = socketEnvelope?.data as any;
+        console.log("🔔 Received priority update via WebSocket:", payload);
+
+        if (!payload?.message) {
+          return;
+        }
+
+        this.loadPriorities().then(() => {
+          console.log("✅ Priorities reloaded due to WebSocket update");
+          if (this.gridApi) {
+            this.gridApi.refreshCells();
+          }
+        });
+      });
   }
 
   /**
@@ -480,7 +492,7 @@ export class ShippingComponent implements OnInit {
         rowNode.data.recent_comments = result;
         this.gridApi.redrawRows({ rowNodes: [rowNode] });
 
-        this.websocketService.next({
+        this.shippingWebsocketService.publish(ShippingMessageType.SHIPPING, {
           actions: {
             time: moment().format("h:mm A"),
             icon: "feather icon-message-square",
@@ -488,7 +500,6 @@ export class ShippingComponent implements OnInit {
             info: `Comment added by ${this.authenticationService.currentUserValue.full_name} on SO#: ${rowNode.data.SALES_ORDER_LINE_NUMBER} Comment: ${rowNode.data.recent_comments.comments_html}`,
           },
           message: rowNode.data,
-          type: WS_SHIPPING,
         });
         this.router.navigate([`.`], {
           relativeTo: this.activatedRoute,
@@ -1493,7 +1504,7 @@ export class ShippingComponent implements OnInit {
         break;
     }
 
-    this.websocketService.next({
+    this.shippingWebsocketService.publish(ShippingMessageType.SHIPPING_PRIORITY, {
       actions: {
         time: timestamp,
         icon: icon,
@@ -1508,7 +1519,6 @@ export class ShippingComponent implements OnInit {
         timestamp: new Date().toISOString(),
         user: currentUser?.full_name || 'Unknown User'
       },
-      type: WS_SHIPPING_PRIORITY,
     });
 
     console.log(`🔔 WebSocket notification sent for priority ${action}:`, message);
@@ -2850,9 +2860,8 @@ export class ShippingComponent implements OnInit {
 
     this.setPinnedRows();
 
-    this.websocketService.next({
+    this.shippingWebsocketService.publish(ShippingMessageType.SHIPPING, {
       message: newData,
-      type: WS_SHIPPING,
     });
   }
 
@@ -2867,10 +2876,7 @@ export class ShippingComponent implements OnInit {
 
     this.setPinnedRows();
 
-    // this.websocketService.next({
-    //     message: newData,
-    //     type: WS_SHIPPING
-    // });
+    // Intentionally local-only update by user action.
   }
 
   updateUrl = (params) => {

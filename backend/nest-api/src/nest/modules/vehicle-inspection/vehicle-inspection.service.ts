@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadGatewayException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { VehicleInspectionRepository } from './vehicle-inspection.repository';
 import { EmailService } from '@/shared/email/email.service';
@@ -25,6 +25,7 @@ interface FailedVehicleInspectionItem {
 @Injectable()
 export class VehicleInspectionService {
   private readonly logger = new Logger(VehicleInspectionService.name);
+  private readonly legacyEndpointUrl: string;
 
   constructor(
     private readonly repository: VehicleInspectionRepository,
@@ -33,7 +34,11 @@ export class VehicleInspectionService {
     private readonly emailTemplateService: EmailTemplateService,
     private readonly configService: ConfigService,
     private readonly urlBuilder: UrlBuilder,
-  ) {}
+  ) {
+    this.legacyEndpointUrl =
+      this.configService.get<string>('VEHICLE_INSPECTION_LEGACY_URL') ||
+      'https://dashboard.eye-fi.com/server/ApiV2/vehicle-inspection/index';
+  }
 
   async getList() {
     return this.repository.getList();
@@ -137,6 +142,14 @@ export class VehicleInspectionService {
     };
   }
 
+  async createLegacy(payload: Record<string, any>) {
+    return this.callLegacyEndpoint({ method: 'POST', payload });
+  }
+
+  async searchByIdLegacy(id: number) {
+    return this.callLegacyEndpoint({ method: 'GET', searchById: id });
+  }
+
   private groupDetails(rows: Array<Record<string, any>>): VehicleInspectionGroupedDetail[] {
     const map = new Map<string, VehicleInspectionGroupedDetail>();
 
@@ -204,6 +217,83 @@ export class VehicleInspectionService {
         `Failed to send vehicle inspection issue notification for id ${inspectionId}`,
         error instanceof Error ? error.stack : undefined,
       );
+    }
+  }
+
+  private async callLegacyEndpoint(options: {
+    method: 'GET' | 'POST';
+    payload?: Record<string, any>;
+    searchById?: number;
+  }) {
+    const timeoutMs = 15000;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const url = new URL(this.legacyEndpointUrl);
+      if (typeof options.searchById === 'number') {
+        url.searchParams.set('searchById', String(options.searchById));
+      }
+
+      const response = await fetch(url.toString(), {
+        method: options.method,
+        headers: {
+          Accept: 'application/json, text/plain, */*',
+          ...(options.method === 'POST' ? { 'Content-Type': 'application/json' } : {}),
+        },
+        ...(options.method === 'POST'
+          ? { body: JSON.stringify(options.payload ?? {}) }
+          : {}),
+        signal: controller.signal,
+      });
+
+      const rawBody = await response.text();
+      const parsedBody = this.tryParseJson(rawBody);
+
+      if (!response.ok) {
+        this.logger.error(
+          `[legacy] Vehicle inspection legacy call failed with ${response.status} ${response.statusText}`,
+        );
+
+        throw new BadGatewayException({
+          code: 'RC_VEHICLE_LEGACY_CALL_FAILED',
+          message: 'Vehicle inspection legacy endpoint failed',
+          legacyStatus: response.status,
+          legacyStatusText: response.statusText,
+          legacyResponse: parsedBody,
+        });
+      }
+
+      this.logger.log(`[legacy] Vehicle inspection legacy call succeeded: ${url.toString()}`);
+      return parsedBody;
+    } catch (error) {
+      if (error instanceof BadGatewayException) {
+        throw error;
+      }
+
+      this.logger.error(
+        `[legacy] Vehicle inspection legacy endpoint unavailable: ${this.legacyEndpointUrl}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+
+      throw new BadGatewayException({
+        code: 'RC_VEHICLE_LEGACY_UNAVAILABLE',
+        message: 'Vehicle inspection legacy endpoint is unavailable',
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  private tryParseJson(value: string): any {
+    if (!value) {
+      return {};
+    }
+
+    try {
+      return JSON.parse(value);
+    } catch {
+      return { raw: value };
     }
   }
 }

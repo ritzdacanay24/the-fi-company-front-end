@@ -2,6 +2,7 @@ import {
   Component,
   EventEmitter,
   Input,
+  OnDestroy,
   OnInit,
   Output,
   SimpleChanges,
@@ -25,16 +26,17 @@ import {
   isEmpty,
 } from "src/assets/js/util";
 import { KanbanAddModalService } from "@app/pages/operations/master-scheduling/work-order-tracker/work-order-tracker-add-modal/work-order-tracker-add-modal.component";
-import { WebsocketService } from "@app/core/services/websocket.service";
+import {
+  MasterProductionMessageType,
+  MasterProductionWebsocketService,
+} from "@app/core/services/master-production-websocket.service";
 import { ColDef, GridApi, GridOptions } from "ag-grid-community";
 import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
 import { CommentsRendererV2Component } from "@app/shared/ag-grid/comments-renderer-v2/comments-renderer-v2.component";
 import { LateReasonCodeRendererV2Component } from "@app/shared/ag-grid/cell-renderers/late-reason-code-renderer-v2/late-reason-code-renderer-v2.component";
 import { PickSheetRendererV2Component } from "@app/shared/ag-grid/pick-sheet-renderer-v2/pick-sheet-renderer.component";
 import { MasterSchedulingService } from "@app/core/api/operations/master-scheduling/master-scheduling.service";
-
-const MASTER_PRODUCTION = "MASTER_PRODUCTION";
-const WORK_ORDER_ROUTING = "Work Order Routing";
+import { Subscription } from "rxjs";
 
 @Component({
   standalone: true,
@@ -46,7 +48,7 @@ const WORK_ORDER_ROUTING = "Work Order Routing";
   selector: "app-master-production",
   templateUrl: "./master-production.component.html",
 })
-export class MasterProductionComponent implements OnInit {
+export class MasterProductionComponent implements OnInit, OnDestroy {
   constructor(
     public router: Router,
     public activatedRoute: ActivatedRoute,
@@ -57,32 +59,10 @@ export class MasterProductionComponent implements OnInit {
     private lateReasonCodeModalService: LateReasonCodeModalService,
     private api: MasterSchedulingService,
     private kanbanAddModalService: KanbanAddModalService,
-    private websocketService: WebsocketService
-  ) {
-    this.websocketService = websocketService;
+    private masterProductionWebsocketService: MasterProductionWebsocketService
+  ) {}
 
-    //watch for changes if this modal is open
-    //changes will only occur if modal is open and if the modal equals to the same qir number
-    const ws_observable = this.websocketService.multiplex(
-      () => ({ subscribe: MASTER_PRODUCTION }),
-      () => ({ unsubscribe: MASTER_PRODUCTION }),
-      (message) => message.type === MASTER_PRODUCTION
-    );
-
-    //if changes are found, patch new values
-    ws_observable.subscribe((data: any) => {
-      if (Array.isArray(data?.message)) {
-        this.gridApi.applyTransaction({ update: data?.message });
-        this.gridApi.redrawRows();
-      } else {
-        var rowNode = this.gridApi.getRowNode(data.message.id);
-        this.gridApi.applyTransaction({ update: [data.message] });
-        this.gridApi.redrawRows({ rowNodes: [rowNode] });
-
-        this.refreshCells([rowNode]);
-      }
-    });
-  }
+  private masterProductionSubscription?: Subscription;
 
   public refreshCells(rowNode) {
     this.gridApi.flashCells({
@@ -93,7 +73,40 @@ export class MasterProductionComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // Component initialization
+    this.masterProductionWebsocketService.init();
+    this.setupWebSocketSubscriptions();
+  }
+
+  ngOnDestroy(): void {
+    if (this.masterProductionSubscription) {
+      this.masterProductionSubscription.unsubscribe();
+    }
+    this.masterProductionWebsocketService.destroy();
+  }
+
+  private setupWebSocketSubscriptions(): void {
+    this.masterProductionSubscription = this.masterProductionWebsocketService
+      .subscribe<any>(MasterProductionMessageType.MASTER_PRODUCTION)
+      .subscribe((socketEnvelope) => {
+        const payload = socketEnvelope?.data as any;
+        if (!payload?.message || !this.gridApi) {
+          return;
+        }
+
+        if (Array.isArray(payload.message)) {
+          this.gridApi.applyTransaction({ update: payload.message });
+          this.gridApi.redrawRows();
+          return;
+        }
+
+        const rowNode = this.gridApi.getRowNode(payload.message.id);
+        this.gridApi.applyTransaction({ update: [payload.message] });
+        this.gridApi.redrawRows({ rowNodes: rowNode ? [rowNode] : undefined });
+
+        if (rowNode) {
+          this.refreshCells([rowNode]);
+        }
+      });
   }
 
   ngOnChanges(changes: SimpleChanges) {
@@ -125,10 +138,10 @@ export class MasterProductionComponent implements OnInit {
     rowNode.data = newData;
     this.gridApi.redrawRows({ rowNodes: [rowNode] });
 
-    this.websocketService.next({
-      message: newData,
-      type: MASTER_PRODUCTION,
-    });
+    this.masterProductionWebsocketService.publish(
+      MasterProductionMessageType.MASTER_PRODUCTION,
+      { message: newData }
+    );
   }
 
   openPickSheet = (workOrder) => {
@@ -185,10 +198,10 @@ export class MasterProductionComponent implements OnInit {
     this.gridApi.redrawRows({ rowNodes: updatedData });
 
     if (ws) {
-      this.websocketService.next({
-        message: newData,
-        type: WORK_ORDER_ROUTING,
-      });
+      this.masterProductionWebsocketService.publish(
+        MasterProductionMessageType.WORK_ORDER_ROUTING,
+        { message: newData }
+      );
     }
   }
 

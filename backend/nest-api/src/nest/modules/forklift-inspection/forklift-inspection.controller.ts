@@ -20,6 +20,37 @@ export class ForkliftInspectionController {
     return this.service.create(payload);
   }
 
+  @Post('createLegacy')
+  async createLegacy(@Body() payload: Record<string, any>) {
+    return this.service.createLegacy(payload);
+  }
+
+  @Get('index')
+  async indexGet() {
+    return {
+      status: 1,
+      message: 'forklift-inspection/index is available. Use POST to submit payload.',
+    };
+  }
+
+  @Post('index')
+  async indexPost(@Body() payload: Record<string, any>) {
+    return this.service.create(payload);
+  }
+
+  @Put('index')
+  async indexPut(
+    @Query('id') id?: string,
+    @Body() payload: Record<string, any> = {},
+  ) {
+    const parsedId = Number(id);
+    if (id && Number.isFinite(parsedId) && parsedId > 0) {
+      return this.service.updateById(parsedId, payload);
+    }
+
+    return this.service.create(payload);
+  }
+
   @Put('updateById')
   async updateById(@Query('id', ParseIntPipe) id: number, @Body() payload: Record<string, any>) {
     return this.service.updateById(id, payload);

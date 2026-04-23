@@ -249,6 +249,137 @@ html[data-sidebar-size="sm-hover"] {
 	transition: all 0.05s ease-out !important;
 }
 
+/* Single brand logo sizing: larger visual size without changing brand box height. */
+:host ::ng-deep .navbar-brand-box {
+	position: relative;
+	height: 50px !important;
+	min-height: 50px !important;
+	max-height: 50px !important;
+	padding: 0 !important;
+	overflow: hidden;
+}
+
+:host ::ng-deep .navbar-brand-box .fi-brand-logo-link {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	height: 100% !important;
+	line-height: 1 !important;
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%, -50%);
+	width: calc(100% - 60px);
+	min-width: 0;
+	padding: 0 10px;
+	box-sizing: border-box;
+}
+
+:host ::ng-deep .navbar-brand-box .fi-brand-logo-link .fi-brand-logo-sm,
+:host ::ng-deep .navbar-brand-box .fi-brand-logo-link .fi-brand-logo-lg {
+	height: 100%;
+	width: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+:host ::ng-deep .navbar-brand-box .fi-brand-logo-link .fi-avatar-xs {
+	width: 34px;
+	height: 34px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+
+:host ::ng-deep .navbar-brand-box .fi-brand-logo-link .fi-avatar-title {
+	width: 100%;
+	height: 100%;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 6px;
+	background: rgba(77, 176, 255, 0.28);
+	border: 1px solid rgba(130, 202, 255, 0.45);
+}
+
+/* Collapsed sidebar: center the FI tile using full-box flex layout. */
+:host ::ng-deep [data-sidebar-size='sm'] .navbar-brand-box .fi-brand-logo-link,
+:host ::ng-deep [data-sidebar-size='sm-hover'] .navbar-brand-box .fi-brand-logo-link {
+	left: 0;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	transform: none;
+	width: 100%;
+	padding: 0;
+}
+
+:host ::ng-deep [data-sidebar-size='sm'] .navbar-brand-box .fi-brand-logo-link .fi-brand-logo-sm,
+:host ::ng-deep [data-sidebar-size='sm-hover'] .navbar-brand-box .fi-brand-logo-link .fi-brand-logo-sm {
+	justify-content: center;
+}
+
+:host ::ng-deep .navbar-brand-box .fi-brand-logo-img {
+	display: block;
+	width: auto;
+	max-width: 100%;
+	max-height: calc(100% - 8px);
+	height: auto;
+	object-fit: contain;
+}
+
+:host ::ng-deep .navbar-brand-box .fi-brand-logo-collapsed {
+	min-width: auto;
+	height: auto;
+	padding: 0;
+	border-radius: 0;
+	background: transparent;
+	color: #f2f8ff;
+	font-size: 14px;
+	font-weight: 700;
+	line-height: 1;
+	text-align: center;
+	letter-spacing: 0.06em;
+	box-shadow: none;
+}
+
+/* In collapsed sidebar modes, show badge indicators as small notification dots (no numbers). */
+:host ::ng-deep [data-sidebar-size='sm'] .navbar-menu .navbar-nav .nav-link .sidebar-count-badge,
+:host ::ng-deep [data-sidebar-size='sm-hover'] .navbar-menu .navbar-nav .nav-link .sidebar-count-badge {
+	width: 8px !important;
+	height: 8px !important;
+	min-width: 8px !important;
+	padding: 0 !important;
+	border-radius: 50% !important;
+	font-size: 0 !important;
+	line-height: 0 !important;
+	text-indent: -9999px !important;
+	overflow: hidden !important;
+	background-color: #7ed2ff !important;
+	box-shadow: 0 0 0 2px rgba(23, 44, 84, 0.9) !important;
+	right: 8px !important;
+	top: 8px !important;
+	transform: none !important;
+}
+
+:host ::ng-deep [data-sidebar-size='sm'] .navbar-menu .navbar-nav .nav-link .sidebar-count-badge.sidebar-count-badge--parent,
+:host ::ng-deep [data-sidebar-size='sm-hover'] .navbar-menu .navbar-nav .nav-link .sidebar-count-badge.sidebar-count-badge--parent,
+:host ::ng-deep [data-sidebar-size='sm'] .navbar-menu .navbar-nav .nav-link.has-favorite .sidebar-count-badge,
+:host ::ng-deep [data-sidebar-size='sm-hover'] .navbar-menu .navbar-nav .nav-link.has-favorite .sidebar-count-badge {
+	right: 8px !important;
+}
+
+:host ::ng-deep .navbar-brand-box .fi-brand-toggle-btn {
+	position: absolute;
+	inset-inline-end: 10px;
+	top: 50%;
+	transform: translateY(-50%);
+	float: none !important;
+	margin: 0 !important;
+	z-index: 2;
+}
+
 /* Force white text colors for all menu elements */
 .navbar-menu .navbar-nav .nav-link,
 .navbar-menu .navbar-nav .nav-sm .nav-link,

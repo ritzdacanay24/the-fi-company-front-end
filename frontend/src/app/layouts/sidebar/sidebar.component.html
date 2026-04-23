@@ -2,29 +2,10 @@
 <div class="app-menu navbar-menu">
   <!-- LOGO -->
   <div class="navbar-brand-box">
-    <!-- Dark Logo-->
-    <a routerLink="/" class="logo logo-dark">
-      <span class="logo-sm">
-        <img
-          src="https://media.licdn.com/dms/image/C560BAQH-W14cKPsFNg/company-logo_200_200/0/1630662405857/fiholding_logo?e=2147483647&v=beta&t=c-KfmJAV4ryZDJ07JKAuwMLTAEBS7qrP6vWbLiOzF_w"
-          alt="" height="22">
-      </span>
-      <span class="logo-lg text-white">
-        The Fi Company
-      </span>
+    <a routerLink="/" class="logo fi-brand-logo-link" aria-label="The Fi Company Home">
+      <img class="fi-brand-logo-img" src="assets/images/the-fi-cropped.png" alt="The Fi Company">
     </a>
-    <!-- Light Logo-->
-    <a routerLink="/" class="logo logo-light">
-      <span class="logo-sm">
-        <img
-          src="https://media.licdn.com/dms/image/C560BAQH-W14cKPsFNg/company-logo_200_200/0/1630662405857/fiholding_logo?e=2147483647&v=beta&t=c-KfmJAV4ryZDJ07JKAuwMLTAEBS7qrP6vWbLiOzF_w"
-          alt="" height="22">
-      </span>
-      <span class="logo-lg text-white">
-        The Fi Company
-      </span>
-    </a>
-    <button type="button" class="btn btn-sm p-0 fs-20 header-item float-end btn-vertical-sm-hover" id="vertical-hover"
+    <button type="button" class="btn btn-sm p-0 fs-20 header-item btn-vertical-sm-hover fi-brand-toggle-btn" id="vertical-hover"
       (click)="toggleMobileMenu($event)">
       <i class="ri-record-circle-line"></i>
     </button>

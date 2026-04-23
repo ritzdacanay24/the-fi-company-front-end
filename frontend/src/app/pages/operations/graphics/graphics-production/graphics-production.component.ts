@@ -1,4 +1,4 @@
-import { Component, OnInit } from "@angular/core";
+import { Component, OnDestroy, OnInit } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
 import { GraphicsService } from "@app/core/api/operations/graphics/graphics.service";
 import { SharedModule } from "@app/shared/shared.module";
@@ -6,12 +6,14 @@ import { QueueSelectionService } from "./queue-selection/queue-selection.compone
 import { GraphicsBomModalService } from "./graphics-bom-modal/graphics-bom-modal.component";
 import { CommentsModalService } from "@app/shared/components/comments/comments-modal.service";
 import { CompleteService } from "./complete/complete.component";
-import { WebsocketService } from "@app/core/services/websocket.service";
-
-const GRAPHICS_PRODUCTION = "GRAPHICS PRODUCTION";
+import {
+  GraphicsProductionMessageType,
+  GraphicsProductionWebsocketService,
+} from "@app/core/services/graphics-production-websocket.service";
 
 import { Pipe, PipeTransform } from "@angular/core";
 import { SweetAlert } from "@app/shared/sweet-alert/sweet-alert.service";
+import { Subscription } from "rxjs";
 
 @Pipe({
   standalone: true,
@@ -33,7 +35,7 @@ export class FilterlistPipe implements PipeTransform {
   templateUrl: "./graphics-production.component.html",
   styleUrls: ["./graphics-production.component.scss"],
 })
-export class GraphicsProductionComponent implements OnInit {
+export class GraphicsProductionComponent implements OnInit, OnDestroy {
   constructor(
     public route: ActivatedRoute,
     public router: Router,
@@ -42,33 +44,39 @@ export class GraphicsProductionComponent implements OnInit {
     private graphicsBomModalService: GraphicsBomModalService,
     private commentsModalService: CommentsModalService,
     private completeService: CompleteService,
-    private websocketService: WebsocketService
-  ) {
-    this.websocketService = websocketService;
+    private graphicsProductionWebsocketService: GraphicsProductionWebsocketService
+  ) {}
 
-    //watch for changes if this modal is open
-    //changes will only occur if modal is open and if the modal equals to the same qir number
-    this.websocketService
-      .multiplex(
-        () => ({ subscribe: GRAPHICS_PRODUCTION }),
-        () => ({ unsubscribe: GRAPHICS_PRODUCTION }),
-        (message) => message.type === GRAPHICS_PRODUCTION
-      )
-      .subscribe((data) => {
-        this.getData(false);
-      });
-  }
+  private graphicsProductionSubscription?: Subscription;
 
   ngOnInit(): void {
+    this.graphicsProductionWebsocketService.init();
+    this.setupWebSocketSubscriptions();
     this.getData();
+  }
+
+  ngOnDestroy(): void {
+    if (this.graphicsProductionSubscription) {
+      this.graphicsProductionSubscription.unsubscribe();
+    }
+    this.graphicsProductionWebsocketService.destroy();
+  }
+
+  private setupWebSocketSubscriptions(): void {
+    this.graphicsProductionSubscription = this.graphicsProductionWebsocketService
+      .subscribe<any>(GraphicsProductionMessageType.GRAPHICS_PRODUCTION)
+      .subscribe(() => {
+        this.getData(false);
+      });
   }
 
   searchWorkOrder = "";
 
   send() {
-    this.websocketService.next({
-      type: GRAPHICS_PRODUCTION,
-    });
+    this.graphicsProductionWebsocketService.publish(
+      GraphicsProductionMessageType.GRAPHICS_PRODUCTION,
+      {}
+    );
   }
 
   async onDeleteWO(row) {

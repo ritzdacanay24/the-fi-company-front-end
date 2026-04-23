@@ -26,6 +26,11 @@ async function bootstrap() {
   // Keep compatibility with legacy proxy prefixes that still forward to /api.
   // This intentionally complements the frontend interceptor's /apiV2 normalization.
   app.use((req: Request, _res: Response, next: NextFunction) => {
+    if (req.url === '/server/ApiV2' || req.url.startsWith('/server/ApiV2/')) {
+      req.url = req.url.replace(/^\/server\/ApiV2/, '/apiV2');
+    } else if (req.url === '/server/apiV2' || req.url.startsWith('/server/apiV2/')) {
+      req.url = req.url.replace(/^\/server\/apiV2/, '/apiV2');
+    } else
     if (req.url === '/api/apiV2' || req.url.startsWith('/api/apiV2/')) {
       req.url = req.url.replace(/^\/api\/apiV2/, '/apiV2');
     } else if (req.url === '/api' || req.url.startsWith('/api/')) {

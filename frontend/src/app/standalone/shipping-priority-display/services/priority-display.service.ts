@@ -1,8 +1,11 @@
 import { Injectable } from '@angular/core';
-import { Observable, BehaviorSubject, combineLatest, EMPTY, of } from 'rxjs';
+import { Observable, BehaviorSubject, combineLatest, EMPTY, of, Subscription } from 'rxjs';
 import { map, catchError, tap } from 'rxjs/operators';
 import { MasterSchedulingService } from '@app/core/api/operations/master-scheduling/master-scheduling.service';
-import { WebsocketService } from '@app/core/services/websocket.service';
+import {
+  ShippingMessageType,
+  ShippingWebsocketService,
+} from '@app/core/services/shipping-websocket.service';
 
 // Priority-related interfaces
 export interface PriorityData {
@@ -147,8 +150,6 @@ export interface PriorityDisplayData {
   lastUpdated: string;
 }
 
-const WS_SHIPPING_PRIORITY = "WS_SHIPPING_PRIORITY";
-
 @Injectable({
   providedIn: 'root'
 })
@@ -180,13 +181,14 @@ export class PriorityDisplayService {
 
   constructor(
     private api: MasterSchedulingService,
-    private websocketService: WebsocketService
+    private shippingWebsocketService: ShippingWebsocketService
   ) {
     // Don't setup WebSocket in constructor - wait for first load
   }
 
   // Track if WebSocket is setup
   private isWebSocketSetup = false;
+  private shippingPrioritySubscription?: Subscription;
 
   /**
    * Load priority data and update the display
@@ -406,23 +408,16 @@ export class PriorityDisplayService {
    */
   private setupWebSocketConnection(): void {
     try {
-      // Check if websocketService is available
-      if (!this.websocketService || !this.websocketService.multiplex) {
-        console.warn('⚠️ WebSocket service not available, skipping real-time updates');
-        return;
-      }
+      this.shippingWebsocketService.init();
 
-      const ws_priority_observable = this.websocketService.multiplex(
-        () => ({ subscribe: WS_SHIPPING_PRIORITY }),
-        () => ({ unsubscribe: WS_SHIPPING_PRIORITY }),
-        (message) => message.type === WS_SHIPPING_PRIORITY
-      );
-
-      ws_priority_observable.subscribe({
+      this.shippingPrioritySubscription = this.shippingWebsocketService
+        .subscribe<any>(ShippingMessageType.SHIPPING_PRIORITY)
+        .subscribe({
         next: (data: any) => {
-          console.log('🔔 Received priority update via WebSocket:', data);
+          const payload = data?.data as any;
+          console.log('🔔 Received priority update via WebSocket:', payload);
           
-          if (data?.message) {
+          if (payload?.message) {
             this.loadPriorityData();
           }
         },

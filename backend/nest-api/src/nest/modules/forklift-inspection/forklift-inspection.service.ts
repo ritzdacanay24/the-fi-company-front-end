@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadGatewayException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ForkliftInspectionRepository } from './forklift-inspection.repository';
 import { EmailService } from '@/shared/email/email.service';
@@ -19,6 +19,7 @@ interface FailedForkliftChecklistItem {
 @Injectable()
 export class ForkliftInspectionService {
   private readonly logger = new Logger(ForkliftInspectionService.name);
+  private readonly legacySubmitUrl: string;
 
   constructor(
     private readonly repository: ForkliftInspectionRepository,
@@ -27,7 +28,11 @@ export class ForkliftInspectionService {
     private readonly emailTemplateService: EmailTemplateService,
     private readonly configService: ConfigService,
     private readonly urlBuilder: UrlBuilder,
-  ) {}
+  ) {
+    this.legacySubmitUrl =
+      this.configService.get<string>('FORKLIFT_INSPECTION_LEGACY_URL') ||
+      'https://dashboard.eye-fi.com/server/ApiV2/forklift-inspection/index';
+  }
 
   async getList() {
     return this.repository.getList();
@@ -108,6 +113,63 @@ export class ForkliftInspectionService {
     };
   }
 
+  async createLegacy(payload: Record<string, any>) {
+    const timeoutMs = 15000;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const response = await fetch(this.legacySubmitUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json, text/plain, */*',
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+
+      const rawBody = await response.text();
+      const parsedBody = this.tryParseJson(rawBody);
+
+      if (!response.ok) {
+        this.logger.error(
+          `[createLegacy] Legacy submit failed with ${response.status} ${response.statusText}`,
+        );
+
+        throw new BadGatewayException({
+          code: 'RC_FORKLIFT_LEGACY_SUBMIT_FAILED',
+          message: 'Legacy forklift inspection submit failed',
+          legacyStatus: response.status,
+          legacyStatusText: response.statusText,
+          legacyResponse: parsedBody,
+        });
+      }
+
+      this.logger.log(
+        `[createLegacy] Forwarded forklift inspection submit to legacy endpoint ${this.legacySubmitUrl}`,
+      );
+
+      return parsedBody;
+    } catch (error) {
+      if (error instanceof BadGatewayException) {
+        throw error;
+      }
+
+      this.logger.error(
+        `[createLegacy] Failed to call legacy endpoint ${this.legacySubmitUrl}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+
+      throw new BadGatewayException({
+        code: 'RC_FORKLIFT_LEGACY_UNAVAILABLE',
+        message: 'Legacy forklift inspection endpoint is unavailable',
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
   async updateById(id: number, payload: Record<string, any>) {
     const header = await this.repository.getHeaderById(id);
     if (!header) {
@@ -167,6 +229,18 @@ export class ForkliftInspectionService {
     }
 
     return Array.from(map.values());
+  }
+
+  private tryParseJson(value: string): any {
+    if (!value) {
+      return {};
+    }
+
+    try {
+      return JSON.parse(value);
+    } catch {
+      return { raw: value };
+    }
   }
 
   private async sendIssueNotification(

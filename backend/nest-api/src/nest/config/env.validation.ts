@@ -53,6 +53,14 @@ export const envValidationSchema = Joi.object({
   MAIL_DISCLAIMER_TEXT: Joi.string()
     .trim()
     .default('Confidentiality Notice: This email and any attachments are intended only for the designated recipient(s) and may contain confidential information. If you received this in error, please delete it and notify the sender immediately.'),
+  FORKLIFT_INSPECTION_LEGACY_URL: Joi.string()
+    .trim()
+    .uri()
+    .default('https://dashboard.eye-fi.com/server/ApiV2/forklift-inspection/index'),
+  VEHICLE_INSPECTION_LEGACY_URL: Joi.string()
+    .trim()
+    .uri()
+    .default('https://dashboard.eye-fi.com/server/ApiV2/vehicle-inspection/index'),
   IGT_TRANSFER_R200_TO: Joi.string().allow('').optional(),
   IGT_TRANSFER_Z024_TO: Joi.string().allow('').optional(),
   IGT_TRANSFER_Z024_CC: Joi.string().allow('').optional(),
