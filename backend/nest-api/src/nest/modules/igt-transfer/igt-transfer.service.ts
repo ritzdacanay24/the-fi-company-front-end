@@ -167,10 +167,29 @@ export class IgtTransferService {
     }
 
     const data = (payload || {}) as AutomatedIgtTransferPayload;
-    const main = data.main || {};
+    const payloadMain = data.main || {};
+    const pickNonEmpty = (...values: unknown[]): string => {
+      for (const value of values) {
+        if (typeof value === 'string') {
+          const normalized = value.trim();
+          if (normalized) {
+            return normalized;
+          }
+        }
+      }
+
+      return '';
+    };
+
+    const main: AutomatedIgtTransferMain = {
+      ...payloadMain,
+      transfer_reference: pickNonEmpty(payloadMain.transfer_reference),
+      transfer_reference_description: pickNonEmpty(payloadMain.transfer_reference_description),
+      to_location: pickNonEmpty(payloadMain.to_location),
+    };
     const details = Array.isArray(data.details) ? data.details : [];
 
-    if (!main.transfer_reference || !main.transfer_reference_description || !main.to_location) {
+    if (!main.transfer_reference || !main.to_location) {
       throw new BadRequestException('Missing required transfer header fields');
     }
 
