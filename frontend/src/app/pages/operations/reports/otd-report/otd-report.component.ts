@@ -94,10 +94,6 @@ export class OtdReportComponent implements OnInit {
       this.gridApi?.showLoadingOverlay();
       this.isLoading = true;
       await this.reportService.refreshOtdData(
-        this.dateFrom,
-        this.dateTo,
-        this.displayCustomers,
-        this.typeOfView
       );
       await this.getData();
 

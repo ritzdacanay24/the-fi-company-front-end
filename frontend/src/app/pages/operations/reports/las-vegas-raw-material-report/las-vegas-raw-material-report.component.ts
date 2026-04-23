@@ -46,12 +46,12 @@ export class LasVegasRawMaterialReportComponent implements OnInit {
 
   columnDefs:any = [
     { field: "ld_part", headerName: "Part #", filter: "agTextColumnFilter" },
-    { field: "FULLDESC", headerName: "Description", filter: "agTextColumnFilter" },
-    { field: "TOTALVALUE", headerName: "Ext Value", filter: "agTextColumnFilter", valueFormatter: currencyFormatter },
-    { field: "QTYOH", headerName: "Qty OH", filter: "agTextColumnFilter" },
-    { field: "PT_PROD_LINE", headerName: "Prod Line", filter: "agTextColumnFilter" },
-    { field: "PL_DESC", headerName: "Prod Line Description", filter: "agTextColumnFilter" },
-    { field: "PT_ARTICLE", headerName: "Customer", filter: "agTextColumnFilter" }
+    { field: "fulldesc", headerName: "Description", filter: "agTextColumnFilter" },
+    { field: "totalvalue", headerName: "Ext Value", filter: "agTextColumnFilter", valueFormatter: currencyFormatter },
+    { field: "qtyoh", headerName: "Qty OH", filter: "agTextColumnFilter" },
+    { field: "pt_prod_line", headerName: "Prod Line", filter: "agTextColumnFilter" },
+    { field: "pl_desc", headerName: "Prod Line Description", filter: "agTextColumnFilter" },
+    { field: "pt_article", headerName: "Customer", filter: "agTextColumnFilter" }
   ];
 
   gridOptions: GridOptions = {

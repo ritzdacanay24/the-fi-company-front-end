@@ -131,4 +131,78 @@ export class ReportsController {
   ) {
     return this.service.getTicketEventReportChart(dateFrom, dateTo, typeOfView);
   }
+
+  // ─── Operations Reports ──────────────────────────────────────────────────────
+
+  @Get('jiaxing-location-value')
+  async getJiaxingLocationValue(@Query('name') name?: string) {
+    return this.service.getJiaxingLocationValue(name);
+  }
+
+  @Get('las-vegas-raw-material')
+  async getLasVegasRawMaterial() {
+    return this.service.getLasVegasRawMaterial();
+  }
+
+  @Get('shipped-orders-grouped')
+  async getShippedOrdersGrouped(
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+  ) {
+    return this.service.getShippedOrdersGrouped(dateFrom, dateTo);
+  }
+
+  @Get('shipped-orders-chart')
+  async getShippedOrdersChart(
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+    @Query('typeOfView') typeOfView?: string,
+  ) {
+    return this.service.getShippedOrdersChart(dateFrom, dateTo, typeOfView);
+  }
+
+  @Get('daily-report')
+  async getDailyReport() {
+    return this.service.getDailyReport();
+  }
+
+  @Get('one-sku-location-report')
+  async getOneSkuLocationReport() {
+    return this.service.getOneSkuLocationReport();
+  }
+
+  @Get('item-consolidation-report')
+  async getItemConsolidationReport() {
+    return this.service.getItemConsolidationReport();
+  }
+
+  @Get('inventory-valuation')
+  async getInventoryValuation(@Query('showAll') showAll?: string) {
+    return this.service.getInventoryValuation(showAll);
+  }
+
+  @Get('otd-report')
+  async getOtdReport(
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+    @Query('displayCustomers') displayCustomers?: string,
+    @Query('typeOfView') typeOfView?: string,
+  ) {
+    return this.service.getOtdReport(dateFrom, dateTo, displayCustomers, typeOfView);
+  }
+
+  @Get('otd-report-v1')
+  async getOtdReportV1(
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+    @Query('displayCustomers') displayCustomers?: string,
+    @Query('typeOfView') typeOfView?: string,
+  ) {
+    return this.service.getOtdReportV1(dateFrom, dateTo, displayCustomers, typeOfView);
+  }
+
+  @Get('otd-refresh')
+  async refreshOtdData() {
+    return this.service.refreshOtdData();
+  }
 }

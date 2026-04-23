@@ -47,7 +47,7 @@ export class ItemConsolidationReportComponent implements OnInit {
     columnDefs:any = [
         { field: "ld_part", headerName: "Part Number", filter: "agTextColumnFilter", rowGroup: true, enableRowGroup: true },
         { field: "ld_loc", headerName: "Location" },
-        { field: "total_items_in_location", headerName: "Items In Location", filter: "agTextColumnFilter" },
+        { field: "items_in_location", headerName: "Items In Location", filter: "agTextColumnFilter" },
         { field: "ld_qty_all", headerName: "Qty Allocated", filter: "agTextColumnFilter" },
         { field: "ld_qty_oh", headerName: "Qty in Location", filter: "agTextColumnFilter" },
         { field: "sct_cst_tot", headerName: "Std Cost", filter: "agTextColumnFilter", valueFormatter: currencyFormatter },
@@ -92,7 +92,7 @@ export class ItemConsolidationReportComponent implements OnInit {
         try {
             this.gridApi?.showLoadingOverlay()
             let data = await this.api.getItemConsolidationReport();
-            this.data = data
+            this.data = Array.isArray(data) ? data : (data?.LocationDetails ?? []);
             this.gridApi?.hideOverlay();
         } catch (err) {
             this.gridApi?.hideOverlay()

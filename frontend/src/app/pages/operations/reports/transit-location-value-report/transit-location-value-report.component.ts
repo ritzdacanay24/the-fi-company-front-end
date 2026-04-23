@@ -57,7 +57,7 @@ export class TransitLocationValueReportComponent implements OnInit {
     },
     {
       headerName: "Description",
-      field: "PT_DESC1",
+      field: "pt_desc1",
       filter: "agTextColumnFilter",
     },
     {
@@ -67,20 +67,20 @@ export class TransitLocationValueReportComponent implements OnInit {
     },
     {
       headerName: "Last Receipt",
-      field: "LAST_RECEIPT",
+      field: "last_receipt",
       filter: "agTextColumnFilter",
     },
     { headerName: "Lot/Serial", field: "ld_lot", filter: "agTextColumnFilter" },
     { headerName: "Supplier", field: "PT_VEND", filter: "agTextColumnFilter" },
     {
       headerName: "Unit Cost",
-      field: "SCT_CST_TOT",
+      field: "sct_cst_tot",
       filter: "agTextColumnFilter",
       valueFormatter: currencyFormatter,
     },
     {
       headerName: "Ext Cost",
-      field: "EXT_COST",
+      field: "ext_cost",
       filter: "agTextColumnFilter",
       valueFormatter: currencyFormatter,
       pinned: "right",

@@ -30,6 +30,21 @@ export class WorkOrderController {
     return this.service.getDetailsByWorkOrderNumber(workOrderNumber || '');
   }
 
+  @Get('legacy-read')
+  async legacyRead(@Query('order') order?: string) {
+    return this.service.getLegacyReadByWorkOrderNumber(order || '');
+  }
+
+  @Get('customer-order-numbers')
+  async getCustomerOrderNumbers(@Query('customerOrderNumber') customerOrderNumber?: string) {
+    return this.service.getLegacyCustomerOrderNumbers(customerOrderNumber || '');
+  }
+
+  @Get('transactions')
+  async getTransactions(@Query('order') order?: string) {
+    return this.service.getLegacyTransactions(order || '');
+  }
+
   @Get(':id')
   async getById(@Param('id', ParseIntPipe) id: number) {
     return this.service.getById(id);

@@ -277,7 +277,7 @@ export class InventoryValuationComponent implements OnInit {
   }
 
   getInventoryValuation(showAll): any {
-    return this.http.get<any>(`/ItemUsage/item_usage?getInventoryValuation&showAll=${showAll}`);
+    return this.http.get<any>(`apiV2/reports/inventory-valuation?showAll=${showAll}`);
   }
 
   ngOnInit(): void {

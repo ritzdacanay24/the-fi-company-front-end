@@ -9,13 +9,13 @@ export class WorkOrderInfoService {
     constructor(private http: HttpClient) { }
 
     getSalesOrderNumberDetails(salesOrderNumber: string): Observable<any> {
-        return this.http.get<any>(`/work_order_search/work_order_search?Read&order=${salesOrderNumber}`);
+        return this.http.get<any>(`apiV2/work-order/legacy-read?order=${salesOrderNumber}`);
     }
     getCustomerOrderNumbers(customerCoNumber: number): Observable<any> {
-        return this.http.get<any>(`/work_order_search/work_order_search?getCustomerOrderNumbers=${customerCoNumber}`);
+        return this.http.get<any>(`apiV2/work-order/customer-order-numbers?customerOrderNumber=${customerCoNumber}`);
     }
     getTransactions(customerCoNumber: string): Observable<any> {
-        return this.http.get<any>(`/work_order_search/work_order_search?getTransactions=${customerCoNumber}`);
+        return this.http.get<any>(`apiV2/work-order/transactions?order=${customerCoNumber}`);
     }
         getDataByWorkOrderNumber(workOrderNumber: number): Observable<any> {
             return this.http.get<any>(`apiV2/work-order/details?workOrderNumber=${workOrderNumber}`);

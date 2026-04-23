@@ -69,6 +69,7 @@ import { CalendarEventModule } from './modules/calendar-event';
 import { EventModule } from './modules/event';
 import { TicketEventModule } from './modules/ticket-event';
 import { JobConnectionModule } from './modules/job-connection';
+import { KanbanPrioritiesModule } from './modules/kanban-priorities';
 import { StatusCategoryModule } from './modules/status-category';
 import { NonBillableCodeModule } from './modules/non-billable-code';
 import { TripDetailModule } from './modules/trip-detail';
@@ -94,6 +95,7 @@ import { CommentsModule } from './modules/comments/comments.module';
 import { RequestModule } from './modules/request';
 import { RequestCommentsModule } from './modules/request-comments';
 import { ReceivingModule } from './modules/receiving/receiving.module';
+import { SalesOrderSearchModule } from './modules/sales-order-search';
 import { WorkOrderModule } from './modules/work-order';
 import { ReportsModule } from './modules/reports';
 import { JobModule } from './modules/job';
@@ -194,6 +196,7 @@ import { UrlModule } from '../shared/url/url.module';
     EventModule,
     TicketEventModule,
     JobConnectionModule,
+    KanbanPrioritiesModule,
     StatusCategoryModule,
     NonBillableCodeModule,
     TripDetailModule,
@@ -219,6 +222,7 @@ import { UrlModule } from '../shared/url/url.module';
     RequestModule,
     RequestCommentsModule,
     ReceivingModule,
+    SalesOrderSearchModule,
     WorkOrderModule,
     ReportsModule,
     JobModule,

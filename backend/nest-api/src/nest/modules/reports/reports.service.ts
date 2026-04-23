@@ -16,6 +16,8 @@ import {
   ServiceReportRow,
   TicketEventChartRow,
 } from './reports.repository';
+import { toJsonSafe } from '@/shared/utils/json-safe.util';
+import { DailyReportService } from './daily-report.service';
 
 type ReportView = 'Weekly' | 'Monthly' | 'Annually' | 'Daily' | 'Quarterly';
 type ChartRow = Pick<TicketEventChartRow, 'value' | 'label' | 'request_date' | 'background_color'>;
@@ -25,7 +27,10 @@ type JobByUserChartMappedRow = Pick<ChartRow, 'value' | 'label' | 'request_date'
 
 @Injectable()
 export class ReportsService {
-  constructor(private readonly repository: ReportsRepository) {}
+  constructor(
+    private readonly repository: ReportsRepository,
+    private readonly dailyReportService: DailyReportService,
+  ) {}
 
   async getCustomerReport(dateFrom?: string, dateTo?: string): Promise<CustomerReportRow[]> {
     const from = (dateFrom || '').trim();
@@ -407,4 +412,215 @@ export class ReportsService {
     const hue = Math.abs(hash) % 360;
     return `hsla(${hue}, 68%, 46%, 0.73)`;
   }
+
+  // ─── Operations Reports ────────────────────────────────────────────────────
+
+  async getJiaxingLocationValue(name?: string): Promise<Record<string, unknown>[]> {
+    return this.repository.getJiaxingLocationValue((name || 'JX01').trim() || 'JX01');
+  }
+
+  async getLasVegasRawMaterial(): Promise<Record<string, unknown>[]> {
+    return this.repository.getLasVegasRawMaterial();
+  }
+
+  async getShippedOrdersGrouped(dateFrom?: string, dateTo?: string): Promise<Record<string, unknown>[]> {
+    const from = (dateFrom || '').trim();
+    const to = (dateTo || '').trim();
+    if (!from || !to) throw new BadRequestException('dateFrom and dateTo are required');
+    return this.repository.getShippedOrdersGrouped(from, to);
+  }
+
+  async getShippedOrdersChart(dateFrom?: string, dateTo?: string, typeOfView?: string): Promise<unknown> {
+    const from = (dateFrom || '').trim();
+    const to = (dateTo || '').trim();
+    if (!from || !to) throw new BadRequestException('dateFrom and dateTo are required');
+
+    const rows = await this.repository.getShippedOrdersChartData(from, to);
+    const view = this.normalizeView(typeOfView);
+
+    const labels: string[] = [];
+    const totalCost: number[] = [];
+    const backgroundColor: string[] = [];
+    const goal = 200000;
+
+    const cursor = new Date(from);
+    const end = new Date(to);
+
+    while (cursor <= end) {
+      const { label, compareKey } = this.getLabelContext(cursor, view);
+      if (!labels.includes(label)) {
+        labels.push(label);
+        let periodTotal = 0;
+        for (const row of rows) {
+          const shpDate = String(row['abs_shp_date'] ?? row['ABS_SHP_DATE'] ?? '');
+          if (!shpDate) continue;
+          const rowKey = this.formatDateKey(new Date(shpDate), view);
+          if (rowKey === compareKey) {
+            periodTotal += Number(row['shipped_qty'] ?? row['SHIPPED_QTY'] ?? 0);
+          }
+        }
+        totalCost.push(periodTotal);
+        backgroundColor.push(periodTotal > goal ? '#006400' : '#8FBC8F');
+      }
+      this.advanceCursor(cursor, view);
+    }
+
+    return { obj: { label: labels }, chart: { totalCost, backgroundColor, goalLine: labels.map(() => goal) } };
+  }
+
+  async getDailyReport(): Promise<unknown> {
+    return this.dailyReportService.getDailyReport();
+  }
+
+  async getOneSkuLocationReport(): Promise<Record<string, unknown>[]> {
+    const rows = await this.repository.getOneSkuLocationReport();
+    return toJsonSafe(rows) as Record<string, unknown>[];
+  }
+
+  async getItemConsolidationReport(): Promise<unknown> {
+    const [qadRows, mysqlRows] = await Promise.all([
+      this.repository.getItemConsolidationQad(),
+      this.repository.getItemConsolidationMysql(),
+    ]);
+
+    const completedMap = new Map<string, boolean>();
+    for (const row of mysqlRows) {
+      const part = String(row['partNumber'] ?? '').trim();
+      if (part) completedMap.set(part, row['completed'] == 1);
+    }
+
+    const details = qadRows.map((row) => {
+      const part = String(row['ld_part'] ?? '').trim();
+      return { ...row, COMPLETED: completedMap.get(part) ?? false, id: part };
+    });
+
+    const locationCount1 = details.length;
+    return toJsonSafe({ LocationDetails: details, LocationCount1: locationCount1 });
+  }
+
+  async getInventoryValuation(showAll?: string): Promise<unknown> {
+    const allowedSites = new Set(['All', 'JX01', 'RMLV', 'FGLV']);
+    const site = allowedSites.has(String(showAll || '').trim()) ? String(showAll).trim() : 'All';
+    const results = await this.repository.getInventoryValuation(site);
+    return toJsonSafe({
+      results,
+      resultsq: [],
+      lastUpdate: 'Live',
+    });
+  }
+
+  async getOtdReport(dateFrom?: string, dateTo?: string, displayCustomers?: string, typeOfView?: string): Promise<unknown> {
+    const from = (dateFrom || '').trim();
+    const to = (dateTo || '').trim();
+    if (!from || !to) throw new BadRequestException('dateFrom and dateTo are required');
+
+    const showAll = !displayCustomers || displayCustomers === 'Show All' || displayCustomers === 'false' || displayCustomers === 'undefined';
+    const custFilter = showAll ? undefined : displayCustomers;
+
+    const [details, summary, chartData] = await Promise.all([
+      this.repository.getOtdReportDetails(from, to, custFilter),
+      this.repository.getOtdReportSummary(from, to),
+      this.repository.getOtdReportChartData(from, to, custFilter),
+    ]);
+
+    let totalLines = 0;
+    let totalShippedOnTime = 0;
+    let average: number | string = 0;
+
+    for (const row of summary) {
+      const label = String(row['label'] ?? '');
+      if (!showAll && label === displayCustomers) {
+        average = row['value'] as number;
+      } else {
+        totalLines += Number(row['total_lines'] ?? 0);
+        totalShippedOnTime += Number(row['total_shipped_on_time'] ?? 0);
+      }
+    }
+
+    if (showAll) {
+      average = totalLines > 0 ? Number(((totalShippedOnTime / totalLines) * 100).toFixed(2)) : 0;
+    }
+
+    return { details, summary, chartData, average };
+  }
+
+  async getOtdReportV1(dateFrom?: string, dateTo?: string, displayCustomers?: string, typeOfView?: string): Promise<unknown> {
+    const from = (dateFrom || '').trim();
+    const to = (dateTo || '').trim();
+    if (!from || !to) throw new BadRequestException('dateFrom and dateTo are required');
+
+    const showAll = !displayCustomers || displayCustomers === 'Show All' || displayCustomers === 'false' || displayCustomers === 'undefined';
+    const custFilter = showAll ? undefined : displayCustomers;
+
+    const [details, summary] = await Promise.all([
+      this.repository.getOtdReportV1Details(from, to, custFilter),
+      this.repository.getOtdReportV1Summary(from, to),
+    ]);
+
+    const soLines = details.map((r) => String(r['soAndLine'] ?? `${r['so_nbr']}-${r['sod_line']}`));
+    const soNbrs = [...new Set(details.map((r) => String(r['so_nbr'] ?? '')).filter(Boolean))];
+
+    const [owners, sodParts] = await Promise.all([
+      this.repository.getOtdReportV1WorkOrderOwners(soLines),
+      this.repository.getOtdReportV1SodParts(soNbrs),
+    ]);
+
+    const ownersMap = new Map<string, Record<string, unknown>>();
+    for (const o of owners) ownersMap.set(String(o['so'] ?? ''), o as Record<string, unknown>);
+
+    const sodPartsMap = new Map<string, string>();
+    for (const p of sodParts) {
+      sodPartsMap.set(`${p['sod_nbr']}-${p['sod_line']}`, String(p['sod_part'] ?? ''));
+    }
+
+    const enrichedDetails = details.map((row) => {
+      const soAndLine = String(row['soAndLine'] ?? `${row['so_nbr']}-${row['sod_line']}`);
+      return {
+        ...row,
+        misc: ownersMap.get(soAndLine) ?? {},
+        sod_part: sodPartsMap.get(`${row['so_nbr']}-${row['sod_line']}`) ?? null,
+        lateReasonCode: (ownersMap.get(soAndLine) as any)?.lateReasonCode ?? null,
+      };
+    });
+
+    let totalLines = 0;
+    let totalShippedOnTime = 0;
+    let average: number | string = 0;
+
+    for (const row of summary) {
+      const label = String(row['label'] ?? '');
+      if (!showAll && label === displayCustomers) {
+        average = row['value'] as number;
+      } else {
+        totalLines += Number(row['total_lines'] ?? 0);
+        totalShippedOnTime += Number(row['total_shipped_on_time'] ?? 0);
+      }
+    }
+
+    if (showAll) {
+      average = totalLines > 0 ? Number(((totalShippedOnTime / totalLines) * 100).toFixed(2)) : 0;
+    }
+
+    return { details: enrichedDetails, summary, average };
+  }
+
+  async refreshOtdData(): Promise<unknown> {
+    return this.repository.refreshOtdData();
+  }
+
+  private formatDateKey(date: Date, typeOfView: ReportView): string {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const day = date.getDate();
+
+    if (typeOfView === 'Weekly') return `${this.getWeekNumber(date)}-${year}`;
+    if (typeOfView === 'Monthly') return `${month + 1}-${year}`;
+    if (typeOfView === 'Annually') return `${year}`;
+    if (typeOfView === 'Quarterly') return `${Math.ceil((month + 1) / 3)}-${year}`;
+    const mm = String(month + 1).padStart(2, '0');
+    const dd = String(day).padStart(2, '0');
+    const yy = String(year).slice(-2);
+    return `${mm}/${dd}/${yy}-${year}`;
+  }
+
 }

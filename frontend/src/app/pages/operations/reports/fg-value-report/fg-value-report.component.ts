@@ -46,13 +46,13 @@ export class FgValueReportComponent implements OnInit {
 
   columnDefs:any = [
     { headerName: "Item Number", field: "ld_part", filter: "agMultiColumnFilter" },
-    { headerName: "Description", field: "PT_DESC1", filter: "agTextColumnFilter" },
+    { headerName: "Description", field: "pt_desc1", filter: "agTextColumnFilter" },
     { headerName: "Qty On Hand - Inv Detail", field: "ld_qty_oh", filter: "agTextColumnFilter" },
-    { headerName: "Last Receipt", field: "LAST_RECEIPT", filter: "agTextColumnFilter" },
+    { headerName: "Last Receipt", field: "last_receipt", filter: "agTextColumnFilter" },
     { headerName: "Lot/Serial", field: "ld_lot", filter: "agTextColumnFilter" },
-    { headerName: "Supplier", field: "PT_VEND", filter: "agTextColumnFilter" },
-    { headerName: "Unit Cost", field: "SCT_CST_TOT", filter: "agTextColumnFilter", valueFormatter: currencyFormatter },
-    { headerName: "Ext Cost", field: "EXT_COST", filter: "agTextColumnFilter", valueFormatter: currencyFormatter, pinned: 'right', },
+    { headerName: "Supplier", field: "pt_vend", filter: "agTextColumnFilter" },
+    { headerName: "Unit Cost", field: "sct_cst_tot", filter: "agTextColumnFilter", valueFormatter: currencyFormatter },
+    { headerName: "Ext Cost", field: "ext_cost", filter: "agTextColumnFilter", valueFormatter: currencyFormatter, pinned: 'right', },
   ];
 
   gridOptions: GridOptions = {

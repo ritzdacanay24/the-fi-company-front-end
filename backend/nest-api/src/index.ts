@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 
 import express, { NextFunction, Request, Response } from 'express';
-import { Logger, RequestMethod, ValidationPipe } from '@nestjs/common';
+import { ConsoleLogger, Logger, RequestMethod, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { join } from 'path';
 import compression from 'compression';
@@ -10,10 +10,28 @@ import { GlobalHttpExceptionFilter } from './nest/filters/http-exception.filter'
 import { initializeFileLogging } from './shared/logging/file-logger.bootstrap';
 import { UnifiedWebSocketService } from './shared/services/unified-websocket.service';
 
+class NestStartupLogger extends ConsoleLogger {
+  private readonly suppressedContexts = new Set([
+    'RouterExplorer',
+    'RoutesResolver',
+    'InstanceLoader',
+  ]);
+
+  override log(message: unknown, context?: string): void {
+    if (context && this.suppressedContexts.has(context)) {
+      return;
+    }
+    super.log(message, context);
+  }
+}
+
 async function bootstrap() {
   initializeFileLogging();
 
-  const app = await NestFactory.create(AppModule, { bodyParser: false });
+  const app = await NestFactory.create(AppModule, {
+    bodyParser: false,
+    logger: new NestStartupLogger(),
+  });
 
   const requestBodyLimit = process.env.REQUEST_BODY_LIMIT || '25mb';
 

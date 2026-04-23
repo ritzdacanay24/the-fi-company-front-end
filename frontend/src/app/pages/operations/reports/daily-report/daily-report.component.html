@@ -91,9 +91,9 @@
                                 <tr *ngFor="let row of data?.onTime">
                                     <td class="ps-3"> - {{row.so_cust}}</td>
                                     <td>{{row.shipped_before_or_on_due_date}}</td>
-                                    <td>{{row.toal_lines_today}}</td>
+                                    <td>{{getOnTimeTotalLines(row)}}</td>
                                     <td style="white-space:nowrap;" class="text-end">
-                                        {{row.shipped_before_or_on_due_date/row.toal_lines_today*100 | number :
+                                        {{getOnTimePercent(row) | number :
                                         '1.2-2'}} %
                                     </td>
                                 </tr>
@@ -147,13 +147,13 @@
                                 </tr>
 
 
-                                <tr *ngFor="let row of logistics?.lateReasonCodes">
+                                <tr *ngFor="let row of data?.lateReasonCodes">
                                     <td width="80" style="font-weight: bolder;" class="ps-3"> - {{row.lateReasonCode}}
                                     </td>
                                     <td colspan="3">{{row.value || 0}}</td>
                                 </tr>
 
-                                <tr *ngIf="!logistics?.lateReasonCodes?.length">
+                                <tr *ngIf="!data?.lateReasonCodes?.length">
                                     <td colspan="4">No reason codes found.</td>
                                 </tr>
                             </ng-container>

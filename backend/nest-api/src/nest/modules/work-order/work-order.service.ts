@@ -125,6 +125,134 @@ export class WorkOrderService {
     }) as Record<string, unknown>;
   }
 
+  async getLegacyReadByWorkOrderNumber(workOrderNumber: string): Promise<Record<string, unknown>> {
+    const normalized = String(workOrderNumber || '').trim();
+    if (!normalized) {
+      throw new BadRequestException('order is required');
+    }
+
+    const [mainRows, detailRows, routingRows] = await Promise.all([
+      this.qadOdbcService.queryWithParams<Array<Record<string, unknown>>>(
+        `
+          SELECT *
+          FROM wo_mstr
+          WHERE wo_nbr = ?
+            AND wo_domain = 'EYE'
+          WITH (NOLOCK)
+        `,
+        [normalized],
+        { keyCase: 'upper' },
+      ),
+      this.qadOdbcService.queryWithParams<Array<Record<string, unknown>>>(
+        `
+          SELECT *
+          FROM wod_det
+          WHERE wod_nbr = ?
+            AND wod_domain = 'EYE'
+          WITH (NOLOCK)
+        `,
+        [normalized],
+        { keyCase: 'upper' },
+      ),
+      this.qadOdbcService.queryWithParams<Array<Record<string, unknown>>>(
+        `
+          SELECT *
+          FROM wr_route
+          WHERE wr_nbr = ?
+            AND wr_domain = 'EYE'
+          WITH (NOLOCK)
+        `,
+        [normalized],
+        { keyCase: 'upper' },
+      ),
+    ]);
+
+    const main = mainRows[0] || null;
+
+    return toJsonSafe({
+      main: addLowercaseAliases(main || {}),
+      details: detailRows.map((row) => addLowercaseAliases(row)),
+      routing: routingRows.map((row) => addLowercaseAliases(row)),
+      orderFound: !!main,
+    }) as Record<string, unknown>;
+  }
+
+  async getLegacyCustomerOrderNumbers(orderCategory: string): Promise<Record<string, unknown>[]> {
+    const normalized = String(orderCategory || '').trim();
+    if (!normalized) {
+      throw new BadRequestException('customerOrderNumber is required');
+    }
+
+    const rows = await this.qadOdbcService.queryWithParams<Array<Record<string, unknown>>>(
+      `
+        SELECT sod_nbr
+          , sod_order_category
+          , sod_custpart
+          , sod_due_date
+          , sod_part
+          , a.*
+        FROM sod_det
+        LEFT JOIN (
+          SELECT a.so_nbr
+            , a.so_cust
+            , a.so_ship
+            , a.so_ord_date
+            , a.so_req_date
+            , a.so_due_date
+            , a.so_shipvia
+            , a.so_inv_date
+            , a.so_ship_date
+            , a.so_po
+          FROM so_mstr a
+          WHERE so_domain = 'EYE'
+        ) a ON a.so_nbr = sod_det.sod_nbr
+        WHERE sod_domain = 'EYE'
+          AND sod_order_category = ?
+        WITH (NOLOCK)
+      `,
+      [normalized],
+      { keyCase: 'upper' },
+    );
+
+    return rows.map((row) => addLowercaseAliases(row));
+  }
+
+  async getLegacyTransactions(order: string): Promise<Record<string, unknown>[]> {
+    const normalized = String(order || '').trim();
+    if (!normalized) {
+      throw new BadRequestException('order is required');
+    }
+
+    const rows = await this.qadOdbcService.queryWithParams<Array<Record<string, unknown>>>(
+      `
+        SELECT tr_ship_id
+          , tr_part
+          , tr_date
+          , tr_type
+          , tr_last_date
+          , tr_nbr
+          , tr_addr
+          , tr_rmks
+          , tr_qty_loc
+          , tr_userid
+          , tr_type
+          , tr_per_date
+          , tr_last_date
+          , tr_time
+          , tr_qty_req
+          , tr_qty_chg
+        FROM tr_hist
+        WHERE tr_so_job = ?
+          AND tr_domain = 'EYE'
+        WITH (NOLOCK)
+      `,
+      [normalized],
+      { keyCase: 'upper' },
+    );
+
+    return rows.map((row) => addLowercaseAliases(row));
+  }
+
   async getAll(selectedViewType?: string, dateFrom?: string, dateTo?: string, isAllRaw?: string) {
     const isAll = String(isAllRaw).toLowerCase() === 'true';
     return this.repository.getAll(selectedViewType, dateFrom, dateTo, isAll);

@@ -101,7 +101,27 @@ export class DailyReportComponent implements OnInit {
     myCopiedData
 
     isLoading = false;
-    logistics
+
+    private toNumber(value: unknown): number {
+        const numeric = Number(value ?? 0);
+        return Number.isFinite(numeric) ? numeric : 0;
+    }
+
+    private getMetricValue(value: unknown): number {
+        if (value && typeof value === 'object') {
+            return this.toNumber((value as any).value ?? (value as any).VALUE);
+        }
+        return this.toNumber(value);
+    }
+
+    getOnTimeTotalLines(row: any): number {
+        return this.toNumber(row?.total_lines_today ?? row?.toal_lines_today ?? row?.total_shipped_today);
+    }
+
+    getOnTimePercent(row: any): number {
+        const totalLines = this.getOnTimeTotalLines(row);
+        return totalLines > 0 ? (this.toNumber(row?.shipped_before_or_on_due_date) / totalLines) * 100 : 0;
+    }
 
     async setHistoryMode(): Promise<void> {
         this.viewMode = 'history';
@@ -141,7 +161,6 @@ export class DailyReportComponent implements OnInit {
         try {
             this.isLoading = true;
             this.data = await this.api.getDailyReport();
-            this.logistics = await this.logisiticsDailyReportService.getDailyReport()
             this.displayedDate = this.today;
             this.displayedDateAsOf = this.todayAsOf;
 
@@ -150,7 +169,6 @@ export class DailyReportComponent implements OnInit {
 
         } catch (err) {
             this.data = null;
-            this.logistics = null;
             this.displayedColumns = [];
         } finally {
             this.isLoading = false;
@@ -179,7 +197,6 @@ export class DailyReportComponent implements OnInit {
                 this.displayedDateAsOf = `${date} 00:00:00`;
             }
 
-            this.logistics = await this.logisiticsDailyReportService.getDailyReport();
             await this.getDailyReportConfi();
 
             if (this.data) {
@@ -189,7 +206,6 @@ export class DailyReportComponent implements OnInit {
             }
         } catch (err) {
             this.data = null;
-            this.logistics = null;
             this.displayedColumns = [];
         } finally {
             this.isLoading = false;
@@ -259,7 +275,7 @@ export class DailyReportComponent implements OnInit {
                     subtitle: ''
                 },
                 valueInfo: {
-                    title: currency(this.logistics?.openBalanceCurrentMonth),
+                    title: currency(this.data?.openBalanceCurrentMonth),
                     subtitle: ''
                 }
             },
@@ -272,7 +288,7 @@ export class DailyReportComponent implements OnInit {
                     subtitle: ''
                 },
                 valueInfo: {
-                    title: this.logistics?.openLinesForCurrentWeek?.VALUE,
+                    title: this.getMetricValue(this.data?.openLinesForCurrentWeek),
                     subtitle: ''
                 }
             },
@@ -285,7 +301,7 @@ export class DailyReportComponent implements OnInit {
                     subtitle: ''
                 },
                 valueInfo: {
-                    title: this.logistics?.openLinesToday?.VALUE,
+                    title: this.getMetricValue(this.data?.openLinesToday),
                     subtitle: ''
                 }
             },
@@ -298,7 +314,7 @@ export class DailyReportComponent implements OnInit {
                     subtitle: ''
                 },
                 valueInfo: {
-                    title: this.logistics?.ops10RoutingCompleted?.VALUE,
+                    title: this.getMetricValue(this.data?.ops10RoutingCompleted),
                     subtitle: ''
                 }
             },
@@ -311,7 +327,7 @@ export class DailyReportComponent implements OnInit {
                     subtitle: ''
                 },
                 valueInfo: {
-                    title: this.data?.production?.production_routing_20?.due?.total_overdue_orders + this.data?.production?.production_routing_20?.due?.due_open,
+                    title: this.toNumber(this.data?.production?.production_routing_20?.due?.total_overdue_orders) + this.toNumber(this.data?.production?.production_routing_20?.due?.due_open),
                     subtitle: ''
                 }
             },
@@ -321,10 +337,10 @@ export class DailyReportComponent implements OnInit {
                 isVisible: true,
                 titleInfo: {
                     title: `Future Open Revenue, Current Month`,
-                    subtitle: `${this.logistics?.futuerOpenRevenueCurrentMonth?.dateFrom} - ${this.logistics?.futuerOpenRevenueCurrentMonth?.dateTo}`,
+                    subtitle: `${this.data?.futuerOpenRevenueCurrentMonth?.dateFrom} - ${this.data?.futuerOpenRevenueCurrentMonth?.dateTo}`,
                 },
                 valueInfo: {
-                    title: currency(this.logistics?.futuerOpenRevenueCurrentMonth?.value),
+                    title: currency(this.data?.futuerOpenRevenueCurrentMonth?.value),
                     subtitle: ''
                 }
             },
