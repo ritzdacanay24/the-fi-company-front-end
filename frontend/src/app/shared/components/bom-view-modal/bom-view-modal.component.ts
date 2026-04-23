@@ -533,7 +533,7 @@ export class BomViewModalComponent implements OnInit {
       nested: formValue.nested ? '1' : '0'
     });
 
-    const url = `https://dashboard.eye-fi.com/tasks/GraphicsDemandsV1%20copy.php?${params.toString()}`;
+    const url = `apiV2/bom-structure?${params.toString()}`;
 
     try {
       const data = await this.http.get<any[]>(url).toPromise();

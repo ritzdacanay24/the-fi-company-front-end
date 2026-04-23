@@ -225,7 +225,7 @@ export class BomGraphicsComponent implements OnInit {
     this.error = "";
     const formValues = this.filterForm.value;
 
-    const url = `https://dashboard.eye-fi.com/tasks/GraphicsDemandsV1%20copy.php?days=300&debug=0&graphics_only=1&so=${encodeURIComponent(
+    const url = `apiV2/bom-structure?days=300&debug=0&graphics_only=1&so=${encodeURIComponent(
       formValues.so || ''
     )}&nested=0&part=${encodeURIComponent(formValues.part || '')}`;
 

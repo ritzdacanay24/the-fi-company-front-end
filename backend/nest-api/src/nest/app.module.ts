@@ -12,6 +12,7 @@ import { envValidationSchema } from './config/env.validation';
 import { LoggingInterceptor } from './interceptors/logging.interceptor';
 import { RequestContextMiddleware } from './middlewares/request-context.middleware';
 import { AttachmentsModule } from './modules/attachments/attachments.module';
+import { BomStructureModule } from './modules/bom-structure/bom-structure.module';
 import { ForkliftInspectionModule } from './modules/forklift-inspection';
 import { GraphicsBomModule } from './modules/graphics-bom/graphics-bom.module';
 import { GraphicsDemandModule } from './modules/graphics-demand/graphics-demand.module';
@@ -134,6 +135,7 @@ import { UrlModule } from '../shared/url/url.module';
     AddressSearchModule,
     FileStorageModule,
     AttachmentsModule,
+    BomStructureModule,
     AgsSerialModule,
     EyeFiAssetNumbersModule,
     EyeFiSerialModule,

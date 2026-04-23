@@ -646,7 +646,7 @@ export class BomViewComponent implements OnInit, OnChanges {
       nested: formValues.nested ? '1' : '0'
     });
 
-    const url = `https://dashboard.eye-fi.com/tasks/GraphicsDemandsV1%20copy.php?${params.toString()}`;
+    const url = `apiV2/bom-structure?${params.toString()}`;
 
     this.http.get<any[]>(url).subscribe({
       next: (data) => {
