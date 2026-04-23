@@ -95,6 +95,7 @@ export class SidebarComponent implements OnInit {
   @Output() mobileMenuButtonClicked = new EventEmitter();
   maxFavs = 5;
   favs = [];
+  isSidebarHoverExpanded = false;
 
   // User preferences with localStorage persistence
   isCollapsed: boolean = true; // Favorites section collapsed state
@@ -242,7 +243,7 @@ export class SidebarComponent implements OnInit {
     
     if (this.sidebarPreferences.sidebarSize === 'small' && currentSize !== 'sm-hover') {
       document.documentElement.setAttribute("data-sidebar-size", "sm-hover");
-    } else if (this.sidebarPreferences.sidebarSize === 'normal' && currentSize === 'sm-hover') {
+    } else if (this.sidebarPreferences.sidebarSize === 'normal' && (currentSize === 'sm-hover' || currentSize === 'sm')) {
       document.documentElement.removeAttribute("data-sidebar-size");
     }
   }
@@ -570,6 +571,20 @@ export class SidebarComponent implements OnInit {
   isSidebarSmall(): boolean {
     const size = document.documentElement.getAttribute("data-sidebar-size");
     return size === "sm" || size === "sm-hover";
+  }
+
+  shouldShowExpandedRailContent(): boolean {
+    return !this.isSidebarSmall() || this.isSidebarHoverExpanded;
+  }
+
+  onSidebarMouseEnter(): void {
+    if (this.isSidebarSmall()) {
+      this.isSidebarHoverExpanded = true;
+    }
+  }
+
+  onSidebarMouseLeave(): void {
+    this.isSidebarHoverExpanded = false;
   }
 
   /***

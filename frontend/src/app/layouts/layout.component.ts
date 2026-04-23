@@ -28,16 +28,21 @@ export class LayoutComponent implements OnInit {
     private websocketService: WebsocketService
   ) { }
 
+  private normalizeSidebarSize(size: string): string {
+    return size === 'sm' ? 'sm-hover' : size;
+  }
+
 
   setThemeLayout(data) {
     this.layoutType = data.LAYOUT;
+    const normalizedSidebarSize = this.normalizeSidebarSize(data.SIDEBAR_SIZE);
     document.documentElement.setAttribute('data-layout', data.LAYOUT);
     document.documentElement.setAttribute('data-bs-theme', data.LAYOUT_MODE);
     document.documentElement.setAttribute('data-layout-width', data.LAYOUT_WIDTH);
     document.documentElement.setAttribute('data-layout-position', data.LAYOUT_POSITION);
     document.documentElement.setAttribute('data-topbar', data.TOPBAR);
     data.LAYOUT == "vertical" || data.LAYOUT == "twocolumn" ? document.documentElement.setAttribute('data-sidebar', data.SIDEBAR_COLOR) : '';
-    data.LAYOUT == "vertical" || data.LAYOUT == "twocolumn" ? document.documentElement.setAttribute('data-sidebar-size', data.SIDEBAR_SIZE) : '';
+    data.LAYOUT == "vertical" || data.LAYOUT == "twocolumn" ? document.documentElement.setAttribute('data-sidebar-size', normalizedSidebarSize) : '';
     data.LAYOUT == "vertical" || data.LAYOUT == "twocolumn" ? document.documentElement.setAttribute('data-sidebar-image', data.SIDEBAR_IMAGE) : '';
     data.LAYOUT == "vertical" || data.LAYOUT == "twocolumn" ? document.documentElement.setAttribute('data-layout-style', data.SIDEBAR_VIEW) : '';
     document.documentElement.setAttribute('data-preloader', data.DATA_PRELOADER)

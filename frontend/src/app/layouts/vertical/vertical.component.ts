@@ -20,6 +20,13 @@ export class VerticalComponent implements OnInit {
     sidebarSize: 'lg' // Default size
   };
 
+  private normalizeSidebarSize(value: string | null): string {
+    if (value === 'sm') {
+      return 'sm-hover';
+    }
+    return value || 'lg';
+  }
+
   constructor(private eventService: EventService, private router: Router, private activatedRoute: ActivatedRoute,private store: Store<RootReducerState>) {
     // Load preferences on initialization
     this.loadSidebarPreferences();
@@ -58,7 +65,7 @@ export class VerticalComponent implements OnInit {
           document.querySelector('.hamburger-icon')?.classList.add('open')
         }
         else if (document.documentElement.clientWidth <= 1024) {
-          document.documentElement.setAttribute('data-sidebar-size', 'sm');
+          document.documentElement.setAttribute('data-sidebar-size', 'sm-hover');
           document.querySelector('.hamburger-icon')?.classList.add('open')
         }
         else if (document.documentElement.clientWidth >= 1024) {
@@ -90,18 +97,18 @@ export class VerticalComponent implements OnInit {
    * Now saves the sidebar size preference to localStorage
    */
   onToggleMobileMenu() {
-    const currentSIdebarSize = document.documentElement.getAttribute("data-sidebar-size");
+    const currentSIdebarSize = this.normalizeSidebarSize(document.documentElement.getAttribute("data-sidebar-size"));
     let newSidebarSize = currentSIdebarSize;
     
     if (document.documentElement.clientWidth >= 767) {
-      if (currentSIdebarSize == null) {
-        newSidebarSize = (document.documentElement.getAttribute('data-sidebar-size') == null || document.documentElement.getAttribute('data-sidebar-size') == "lg") ? 'sm' : 'lg';
+      if (document.documentElement.getAttribute('data-sidebar-size') == null) {
+        newSidebarSize = (document.documentElement.getAttribute('data-sidebar-size') == null || currentSIdebarSize == "lg") ? 'sm-hover' : 'lg';
         document.documentElement.setAttribute('data-sidebar-size', newSidebarSize);
       } else if (currentSIdebarSize == "md") {
-        newSidebarSize = (document.documentElement.getAttribute('data-sidebar-size') == "md") ? 'sm' : 'md';
+        newSidebarSize = (currentSIdebarSize == "md") ? 'sm-hover' : 'md';
         document.documentElement.setAttribute('data-sidebar-size', newSidebarSize);
       } else {
-        newSidebarSize = (document.documentElement.getAttribute('data-sidebar-size') == "sm") ? 'lg' : 'sm';
+        newSidebarSize = (currentSIdebarSize == "sm-hover") ? 'lg' : 'sm-hover';
         document.documentElement.setAttribute('data-sidebar-size', newSidebarSize);
       }
       
@@ -147,6 +154,7 @@ export class VerticalComponent implements OnInit {
       const savedPreferences = localStorage.getItem('vertical-sidebar-preferences');
       if (savedPreferences) {
         this.sidebarPreferences = { ...this.sidebarPreferences, ...JSON.parse(savedPreferences) };
+        this.sidebarPreferences.sidebarSize = this.normalizeSidebarSize(this.sidebarPreferences.sidebarSize);
       }
       
       // Apply the saved sidebar size on initialization
@@ -167,7 +175,8 @@ export class VerticalComponent implements OnInit {
   private applySavedSidebarSize(): void {
     if (document.documentElement.clientWidth >= 767) {
       // Only apply on larger screens to avoid conflicts with mobile behavior
-      const savedSize = this.sidebarPreferences.sidebarSize;
+      const savedSize = this.normalizeSidebarSize(this.sidebarPreferences.sidebarSize);
+      this.sidebarPreferences.sidebarSize = savedSize;
       if (savedSize && savedSize !== 'lg') { // lg is often the default, so only set if different
         document.documentElement.setAttribute('data-sidebar-size', savedSize);
       }

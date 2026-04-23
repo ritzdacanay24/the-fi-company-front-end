@@ -155,88 +155,77 @@
 	--vz-vertical-menu-sub-item-hover-color: #ffffff;
 }
 
-/* Enhanced sidebar hover expansion for sm-hover mode */
-html[data-sidebar-size="sm-hover"] {
+/* Creorx parity: collapsed/hover states must not animate layout shifts. */
+:host ::ng-deep {
+	[data-sidebar-size="sm"] .navbar-menu,
+	[data-sidebar-size="sm"] .main-content,
+	[data-sidebar-size="sm"] .navbar-brand-box,
+	[data-sidebar-size="sm"] #page-topbar,
+	[data-sidebar-size="sm-hover"] .navbar-menu,
+	[data-sidebar-size="sm-hover"] .main-content,
+	[data-sidebar-size="sm-hover"] .navbar-brand-box,
+	[data-sidebar-size="sm-hover"] #page-topbar,
+	[data-sidebar-size="sm-hover-active"] .navbar-menu,
+	[data-sidebar-size="sm-hover-active"] .main-content,
+	[data-sidebar-size="sm-hover-active"] .navbar-brand-box,
+	[data-sidebar-size="sm-hover-active"] #page-topbar {
+		transition: none !important;
+	}
+}
+
+/* Creorx-like hover-active expansion: expand sidebar over content (no content push). */
+:host ::ng-deep html[data-layout="vertical"][data-sidebar-size="sm-hover-active"] {
 	.navbar-menu {
-		/* Ensure the hover area covers the entire sidebar */
-		&:hover {
-			/* Force expansion of entire sidebar to full width */
-			width: var(--vz-vertical-menu-width) !important;
-			
-			/* Smooth transition */
-			transition: width 0.15s ease-in-out !important;
-			
-			/* Ensure proper z-index so it overlays content */
-			z-index: 1051 !important;
-			
-			/* Add shadow to indicate overlay */
-			box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1) !important;
-			
-			/* Show ALL text elements across the entire sidebar */
-			.navbar-nav {
-				.nav-link span,
-				.menu-title span,
-				.badge {
-					display: inline-block !important;
-					opacity: 1 !important;
-					visibility: visible !important;
-				}
-				
-				/* Ensure dropdown menus can show */
-				.menu-dropdown {
-					display: block !important;
-				}
-				
-				/* Show collapsed menu items */
-				.nav-link {
-					padding-left: 1rem !important;
-					padding-right: 1rem !important;
-				}
+		width: var(--vz-vertical-menu-width) !important;
+		z-index: 1005 !important;
+		box-shadow: var(--vz-vertical-menu-box-shadow) !important;
+
+		.navbar-nav {
+			.nav-link span,
+			.menu-title span,
+			.badge {
+				display: inline-block !important;
+				opacity: 1 !important;
+				visibility: visible !important;
 			}
-			
-			/* Show logo text */
-			.logo {
-				span.logo-lg {
-					display: inline-block !important;
-					opacity: 1 !important;
-				}
-				span.logo-sm {
-					display: none !important;
-				}
-			}
-			
-			/* Show brand box text alignment */
-			.navbar-brand-box {
-				text-align: left !important;
-			}
-			
-			/* Ensure search box shows if enabled */
-			.menu-search-container {
+
+			.menu-dropdown {
 				display: block !important;
 			}
+
+			.nav-link {
+				padding-left: 1rem !important;
+				padding-right: 1rem !important;
+			}
 		}
-		
-		/* Add transition for smooth collapse */
-		transition: width 0.15s ease-in-out;
-		
-		/* Ensure hover trigger area is adequate */
-		position: relative;
-		
-		/* Add invisible hover trigger area on the right edge */
-		&::after {
-			content: '';
-			position: absolute;
-			top: 0;
-			right: -10px; /* Extend 10px to the right for easier hover triggering */
-			width: 10px;
-			height: 100%;
-			z-index: 1050;
+
+		.logo {
+			span.logo-lg {
+				display: inline-block !important;
+				opacity: 1 !important;
+			}
+			span.logo-sm {
+				display: none !important;
+			}
+		}
+
+		.navbar-brand-box {
+			text-align: left !important;
 		}
 	}
-	
-	/* Ensure main content doesn't get pushed when sidebar expands on hover */
-	.main-content {
-		transition: margin-left 0s !important; /* Disable main content movement on hover */
+
+	@media (min-width: 768px) {
+		.main-content {
+			margin-left: var(--vz-vertical-menu-width-sm) !important;
+		}
+
+		#page-topbar {
+			left: var(--vz-vertical-menu-width-sm) !important;
+		}
+
+		.footer {
+			left: var(--vz-vertical-menu-width-sm) !important;
+		}
 	}
 }
 
@@ -275,8 +264,8 @@ html[data-sidebar-size="sm-hover"] {
 	box-sizing: border-box;
 }
 
-:host ::ng-deep .navbar-brand-box .fi-brand-logo-link .fi-brand-logo-sm,
-:host ::ng-deep .navbar-brand-box .fi-brand-logo-link .fi-brand-logo-lg {
+:host ::ng-deep .navbar-brand-box .fi-brand-logo-link .logo-sm,
+:host ::ng-deep .navbar-brand-box .fi-brand-logo-link .logo-lg {
 	height: 100%;
 	width: 100%;
 	display: flex;
@@ -315,8 +304,8 @@ html[data-sidebar-size="sm-hover"] {
 	padding: 0;
 }
 
-:host ::ng-deep [data-sidebar-size='sm'] .navbar-brand-box .fi-brand-logo-link .fi-brand-logo-sm,
-:host ::ng-deep [data-sidebar-size='sm-hover'] .navbar-brand-box .fi-brand-logo-link .fi-brand-logo-sm {
+:host ::ng-deep [data-sidebar-size='sm'] .navbar-brand-box .fi-brand-logo-link .logo-sm,
+:host ::ng-deep [data-sidebar-size='sm-hover'] .navbar-brand-box .fi-brand-logo-link .logo-sm {
 	justify-content: center;
 }
 
@@ -342,6 +331,14 @@ html[data-sidebar-size="sm-hover"] {
 	text-align: center;
 	letter-spacing: 0.06em;
 	box-shadow: none;
+}
+
+:host ::ng-deep .navbar-brand-box .fi-brand-logo-link .logo-sm .fi-brand-logo-collapsed {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	height: 100%;
 }
 
 /* In collapsed sidebar modes, show badge indicators as small notification dots (no numbers). */
@@ -735,6 +732,36 @@ html[data-sidebar-size="sm-hover"] {
 :host ::ng-deep .navbar-menu .navbar-nav .nav-link .sidebar-count-badge--critical {
 	background-color: rgba(255, 255, 255, 0.22) !important;
 	color: #ffffff !important;
+}
+
+/* Root-cause fix: center the collapsed app rail itself within sidebar width. */
+:host ::ng-deep html[data-sidebar-size='sm'] .app-menu .container-fluid,
+:host ::ng-deep html[data-sidebar-size='sm-hover'] .navbar-menu:not(:hover) .container-fluid {
+	padding-left: 0 !important;
+	padding-right: 0 !important;
+}
+
+:host ::ng-deep html[data-sidebar-size='sm'] .sidebar-menu-layout,
+:host ::ng-deep html[data-sidebar-size='sm-hover'] .navbar-menu:not(:hover) .sidebar-menu-layout {
+	justify-content: center !important;
+}
+
+:host ::ng-deep html[data-sidebar-size='sm'] .sidebar-app-rail-inline,
+:host ::ng-deep html[data-sidebar-size='sm-hover'] .navbar-menu:not(:hover) .sidebar-app-rail-inline {
+	margin-left: auto !important;
+	margin-right: auto !important;
+	border-right: 0 !important;
+	background: transparent !important;
+	padding-left: 0 !important;
+	padding-right: 0 !important;
+}
+
+/* Normalize icon font glyph centering in collapsed rail buttons. */
+:host ::ng-deep html[data-sidebar-size='sm'] .sidebar-app-rail-inline .rail-inline-btn i,
+:host ::ng-deep html[data-sidebar-size='sm-hover'] .navbar-menu:not(:hover) .sidebar-app-rail-inline .rail-inline-btn i {
+	display: inline-block !important;
+	width: 1.25rem !important;
+	text-align: center !important;
 }
 
 /* Temporarily shown hidden items styling */

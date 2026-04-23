@@ -1,9 +1,14 @@
 <!-- ========== App Menu ========== -->
-<div class="app-menu navbar-menu">
+<div class="app-menu navbar-menu" (mouseenter)="onSidebarMouseEnter()" (mouseleave)="onSidebarMouseLeave()">
   <!-- LOGO -->
   <div class="navbar-brand-box">
     <a routerLink="/" class="logo fi-brand-logo-link" aria-label="The Fi Company Home">
-      <img class="fi-brand-logo-img" src="assets/images/the-fi-cropped.png" alt="The Fi Company">
+      <span class="logo-lg" *ngIf="!isSidebarSmall() || isSidebarHoverExpanded">
+        <img class="fi-brand-logo-img" src="assets/images/the-fi-cropped.png" alt="The Fi Company">
+      </span>
+      <span class="logo-sm" *ngIf="isSidebarSmall() && !isSidebarHoverExpanded">
+        <span class="fi-brand-logo-collapsed" aria-hidden="true">FI</span>
+      </span>
     </a>
     <button type="button" class="btn btn-sm p-0 fs-20 header-item btn-vertical-sm-hover fi-brand-toggle-btn" id="vertical-hover"
       (click)="toggleMobileMenu($event)">
@@ -16,13 +21,13 @@
       <div id="two-column-menu">
       </div>
 
-      <div *ngIf="!isSidebarSmall()" class="menu-section-header px-3 pb-2 pt-2">
+      <div *ngIf="shouldShowExpandedRailContent()" class="menu-section-header px-3 pb-2 pt-2">
         <small class="menu-section-kicker">Current Section</small>
         <div class="menu-section-name">{{ currentSectionName }}</div>
       </div>
 
       <div class="sidebar-menu-layout">
-        <nav *ngIf="!isSidebarSmall()" class="sidebar-app-rail-inline" aria-label="Switch application">
+        <nav *ngIf="shouldShowExpandedRailContent()" class="sidebar-app-rail-inline" aria-label="Switch application">
           <button
             *ngFor="let app of appRailItems"
             class="rail-inline-btn"
