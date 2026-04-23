@@ -42,9 +42,24 @@
                 {{/if}}
 
                 <p style="margin: 16px 0 8px 0;">Review this transfer in Dashboard:</p>
-                <p style="margin: 0;">
-                  <a href="{{editUrl}}" style="display: inline-block; background-color: #0b5cab; color: #ffffff; text-decoration: none; font-weight: 600; padding: 10px 16px; border-radius: 6px;">Open IGT Transfer</a>
-                </p>
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0;">
+                  <tr>
+                    <td align="left" bgcolor="#0b5cab" style="border-radius: 6px; mso-padding-alt: 10px 16px;">
+                      <!--[if mso]>
+                      <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" href="{{editUrl}}" style="height:40px;v-text-anchor:middle;width:170px;" arcsize="10%" stroke="f" fillcolor="#0b5cab">
+                        <w:anchorlock/>
+                        <center style="color:#ffffff;font-family:Arial, Helvetica, sans-serif;font-size:18px;font-weight:700;">Open IGT Transfer</center>
+                      </v:roundrect>
+                      <![endif]-->
+                      <!--[if !mso]><!-- -->
+                      <a
+                        href="{{editUrl}}"
+                        style="display: inline-block; padding: 10px 16px; font-family: Arial, Helvetica, sans-serif; font-size: 18px; font-weight: 700; line-height: 20px; color: #ffffff; text-decoration: none; background-color: #0b5cab; border-radius: 6px; border: 1px solid #0b5cab;"
+                      >Open IGT Transfer</a>
+                      <!--<![endif]-->
+                    </td>
+                  </tr>
+                </table>
               </td>
             </tr>
             {{> email-footer}}
