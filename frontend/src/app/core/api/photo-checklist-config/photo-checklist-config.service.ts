@@ -3,7 +3,6 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
 import { ChecklistTemplateTransformer, ChecklistTemplateResponse } from './checklist-template.models';
-import { environment } from 'src/environments/environment';
 
 // ==============================================
 // Interfaces
@@ -190,9 +189,8 @@ export interface ChecklistConfig {
 })
 export class PhotoChecklistConfigService {
   private readonly baseUrl = '/photo-checklist/photo-checklist-config.php';
-  private readonly nestPhotoChecklistBaseUrl = 'apiv2/inspection-checklist';
-  private readonly uploadApiV2BaseUrl = (environment as any).apiV2UploadBaseUrl || environment.apiV2BaseUrl || '';
-  private readonly mediaApiBaseUrl = `${this.uploadApiV2BaseUrl.replace(/\/+$/, '')}/inspection-checklist`;
+  private readonly nestPhotoChecklistBaseUrl = 'apiV2/inspection-checklist';
+  private readonly mediaApiBaseUrl = this.nestPhotoChecklistBaseUrl;
   
   // Reactive state management
   private templatesSubject = new BehaviorSubject<ChecklistTemplate[]>([]);
