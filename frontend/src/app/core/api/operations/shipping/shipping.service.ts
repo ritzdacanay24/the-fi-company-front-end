@@ -31,11 +31,11 @@ export class ShippingService {
   }
 
   getMisc(soNumberAndLineNumber: string): Observable<ShippingMisc> {
-    return this.http.get<ShippingMisc>(`/userTrans/getUserTransByFieldName.php?so=${soNumberAndLineNumber}`);
+    return this.http.get<ShippingMisc>(`apiV2/user-transactions/get-user-trans-by-field-name?so=${encodeURIComponent(soNumberAndLineNumber)}`);
   }
 
   getMiscAysnc(soNumberAndLineNumber: string) {
-    return this.http.get<ShippingMisc>(`/userTrans/getUserTransByFieldName.php?so=${soNumberAndLineNumber}`).toPromise();
+    return this.http.get<ShippingMisc>(`apiV2/user-transactions/get-user-trans-by-field-name?so=${encodeURIComponent(soNumberAndLineNumber)}`).toPromise();
   }
 
   getShippingChanges(soNumberAndLineNumber: string) {

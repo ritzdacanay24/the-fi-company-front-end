@@ -9,10 +9,10 @@ export class WorkOrderRoutingService {
     constructor(private http: HttpClient) { }
 
     getDataByItem(partNumber: string): Observable<any> {
-        return this.http.get<any>(`/work_order_routing/work_order_routing?ReadSingle=${partNumber}`);
+        return this.http.get<any>(`apiV2/work-order-routing/work-order-routing?ReadSingle=${encodeURIComponent(partNumber)}`);
     }
     getRoutingByWoNumber(wo_nbr: string): Observable<any> {
-        return this.http.get<any>(`/work_order_routing/getRoutingByWoNumber?wo_nbr=${wo_nbr}`);
+        return this.http.get<any>(`apiV2/work-order-routing/get-routing-by-wo-number?wo_nbr=${encodeURIComponent(wo_nbr)}`);
     }
 
     

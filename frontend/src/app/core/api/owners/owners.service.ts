@@ -28,7 +28,7 @@ export interface OwnerResponse {
   error?: string;
 }
 
-let url = 'owners/index.php';
+const ownersApiV2Url = 'apiV2/owners';
 
 @Injectable({
   providedIn: 'root'
@@ -48,7 +48,7 @@ export class OwnersService extends DataService<any> {
   public readonly userOwners$ = this._userOwners$.asObservable();
 
   constructor(http: HttpClient) {
-    super(url, http);
+    super(ownersApiV2Url, http);
     // Load active owners on initialization
     this.loadActiveOwners();
   }
@@ -57,7 +57,7 @@ export class OwnersService extends DataService<any> {
    * Get all owners (active and inactive)
    */
   getAllOwners = async (): Promise<OwnerResponse> => {
-    const response = await firstValueFrom(this.http.get<OwnerResponse>(url));
+    const response = await firstValueFrom(this.http.get<OwnerResponse>(ownersApiV2Url));
     if (response.success && Array.isArray(response.data)) {
       this._owners$.next(response.data);
     }
@@ -69,7 +69,7 @@ export class OwnersService extends DataService<any> {
    */
   getActiveOwners = async (): Promise<OwnerResponse> => {
     const response = await firstValueFrom(
-      this.http.get<OwnerResponse>(`${url}?active=true`)
+      this.http.get<OwnerResponse>(`${ownersApiV2Url}?active=true`)
     );
     if (response.success && Array.isArray(response.data)) {
       this._activeOwners$.next(response.data);
@@ -101,7 +101,7 @@ export class OwnersService extends DataService<any> {
    */
   getOwnerById = async (id: number): Promise<OwnerResponse> => {
     return await firstValueFrom(
-      this.http.get<OwnerResponse>(`${url}?id=${id}`)
+      this.http.get<OwnerResponse>(`${ownersApiV2Url}?id=${id}`)
     );
   }
 
@@ -114,7 +114,7 @@ export class OwnersService extends DataService<any> {
       user_id: userId
     };
     const response = await firstValueFrom(
-      this.http.post<OwnerResponse>(url, payload)
+      this.http.post<OwnerResponse>(ownersApiV2Url, payload)
     );
     if (response.success) {
       this.refreshOwners();
@@ -132,7 +132,7 @@ export class OwnersService extends DataService<any> {
       user_id: userId
     };
     const response = await firstValueFrom(
-      this.http.put<OwnerResponse>(url, payload)
+      this.http.put<OwnerResponse>(ownersApiV2Url, payload)
     );
     if (response.success) {
       this.refreshOwners();
@@ -149,7 +149,7 @@ export class OwnersService extends DataService<any> {
       user_id: userId
     };
     const response = await firstValueFrom(
-      this.http.request<OwnerResponse>('DELETE', url, { body: payload })
+      this.http.request<OwnerResponse>('DELETE', ownersApiV2Url, { body: payload })
     );
     if (response.success) {
       this.refreshOwners();
@@ -170,7 +170,7 @@ export class OwnersService extends DataService<any> {
       user_id: userId
     };
     const response = await firstValueFrom(
-      this.http.post<OwnerResponse>(url, payload)
+      this.http.post<OwnerResponse>(ownersApiV2Url, payload)
     );
     if (response.success) {
       this.refreshOwners();
@@ -226,7 +226,7 @@ export class OwnersService extends DataService<any> {
    */
   getOwnersForUser = async (userId: string | number, activeOnly: boolean = true): Promise<OwnerResponse> => {
     return await firstValueFrom(
-      this.http.get<OwnerResponse>(`${url}?action=for-user&user_id=${userId}&active=${activeOnly}`)
+      this.http.get<OwnerResponse>(`${ownersApiV2Url}?action=for-user&user_id=${userId}&active=${activeOnly}`)
     );
   }
   
@@ -241,7 +241,7 @@ export class OwnersService extends DataService<any> {
       admin_user_id: adminUserId
     };
     return await firstValueFrom(
-      this.http.post<OwnerResponse>(url, payload)
+      this.http.post<OwnerResponse>(ownersApiV2Url, payload)
     );
   }
   
@@ -256,7 +256,7 @@ export class OwnersService extends DataService<any> {
       admin_user_id: adminUserId
     };
     return await firstValueFrom(
-      this.http.post<OwnerResponse>(url, payload)
+      this.http.post<OwnerResponse>(ownersApiV2Url, payload)
     );
   }
   
@@ -265,7 +265,7 @@ export class OwnersService extends DataService<any> {
    */
   getUsersForOwner = async (ownerId: number): Promise<any> => {
     return await firstValueFrom(
-      this.http.get<any>(`${url}?action=users-for-owner&owner_id=${ownerId}`)
+      this.http.get<any>(`${ownersApiV2Url}?action=users-for-owner&owner_id=${ownerId}`)
     );
   }
   
@@ -274,7 +274,7 @@ export class OwnersService extends DataService<any> {
    */
   getOwnerAssignmentsForUser = async (userId: string | number): Promise<OwnerResponse> => {
     return await firstValueFrom(
-      this.http.get<OwnerResponse>(`${url}?action=owner-assignments&user_id=${userId}`)
+      this.http.get<OwnerResponse>(`${ownersApiV2Url}?action=owner-assignments&user_id=${userId}`)
     );
   }
   
@@ -292,7 +292,7 @@ export class OwnersService extends DataService<any> {
    */
   getAdminUsers = async (): Promise<OwnerResponse> => {
     return await firstValueFrom(
-      this.http.get<OwnerResponse>(`${url}?action=get-admin-users`)
+      this.http.get<OwnerResponse>(`${ownersApiV2Url}?action=get-admin-users`)
     );
   }
 
@@ -306,7 +306,7 @@ export class OwnersService extends DataService<any> {
       created_by: createdBy
     };
     return await firstValueFrom(
-      this.http.post<OwnerResponse>(url, payload)
+      this.http.post<OwnerResponse>(ownersApiV2Url, payload)
     );
   }
 
@@ -320,7 +320,7 @@ export class OwnersService extends DataService<any> {
       removed_by: removedBy
     };
     return await firstValueFrom(
-      this.http.post<OwnerResponse>(url, payload)
+      this.http.post<OwnerResponse>(ownersApiV2Url, payload)
     );
   }
 
@@ -329,7 +329,7 @@ export class OwnersService extends DataService<any> {
    */
   getOwnerDropdownSetting = async (): Promise<{success: boolean; data: {enabled: boolean}; error?: string}> => {
     return await firstValueFrom(
-      this.http.get<{success: boolean; data: {enabled: boolean}; error?: string}>(`${url}?action=dropdown-setting`)
+      this.http.get<{success: boolean; data: {enabled: boolean}; error?: string}>(`${ownersApiV2Url}?action=dropdown-setting`)
     );
   }
 
@@ -343,7 +343,7 @@ export class OwnersService extends DataService<any> {
       updated_by: updatedBy
     };
     return await firstValueFrom(
-      this.http.post<OwnerResponse>(url, payload)
+      this.http.post<OwnerResponse>(ownersApiV2Url, payload)
     );
   }
 }

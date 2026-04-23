@@ -10,6 +10,10 @@ export class UserTransactionsService {
     @Inject(UserTransactionsRepository) private readonly repository: UserTransactionsRepository,
   ) {}
 
+  async getUpdatedOwnerTransactions(so: string): Promise<GenericRow[]> {
+    return this.repository.getUpdatedOwnerTransactions(so);
+  }
+
   /**
    * Insert user transaction records (audit trail)
    */

@@ -11,6 +11,14 @@ export class WorkOrderOwnerRepository extends BaseRepository<RowDataPacket> {
     super('eyefidb.workOrderOwner', mysqlService, 'id');
   }
 
+  async findOneBySo(so: string): Promise<GenericRow | null> {
+    const rows = await this.rawQuery<RowDataPacket>(
+      'SELECT * FROM eyefidb.workOrderOwner WHERE so = ? LIMIT 1',
+      [so],
+    );
+    return (rows[0] as GenericRow) || null;
+  }
+
   /**
    * Fetch workOrderOwner by SO
    */

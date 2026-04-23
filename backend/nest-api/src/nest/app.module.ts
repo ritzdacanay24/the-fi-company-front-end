@@ -3,6 +3,7 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AddressSearchModule } from './modules/address-search/address-search.module';
+import { ShipToAddressModule } from './modules/ship-to-address/ship-to-address.module';
 import { AgsSerialModule } from './modules/ags-serial';
 import { EyeFiAssetNumbersModule } from './modules/eyefi-asset-numbers';
 import { EyeFiSerialModule } from './modules/eyefi-serial';
@@ -51,6 +52,7 @@ import { ShortagesModule } from './modules/shortages/shortages.module';
 import { ShippingModule } from './modules/shipping/shipping.module';
 import { ShippingRequestModule } from './modules/shipping-request/shipping-request.module';
 import { WorkOrderOwnerModule } from './modules/work-order-owner/work-order-owner.module';
+import { WorkOrderRoutingModule } from './modules/work-order-routing/work-order-routing.module';
 import { NotesModule } from './modules/notes/notes.module';
 import { OwnersModule } from './modules/owners/owners.module';
 import { SgAssetModule } from './modules/sg-asset';
@@ -133,6 +135,7 @@ import { UrlModule } from '../shared/url/url.module';
     EmailModule,
     UrlModule,
     AddressSearchModule,
+    ShipToAddressModule,
     FileStorageModule,
     AttachmentsModule,
     BomStructureModule,
@@ -178,6 +181,7 @@ import { UrlModule } from '../shared/url/url.module';
     ShippingModule,
     ShippingRequestModule,
     WorkOrderOwnerModule,
+    WorkOrderRoutingModule,
     NotesModule,
     OwnersModule,
     SerialAssignmentsModule,

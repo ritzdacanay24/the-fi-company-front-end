@@ -9,6 +9,6 @@ export class AddressInfoService {
     constructor(private http: HttpClient) { }
 
     getData(addressCode: string): Observable<any> {
-        return this.http.get<any>(`/ShipToAddress/index?read=${addressCode}`)
+        return this.http.get<any>(`apiV2/ship-to-address/index?read=${encodeURIComponent(addressCode)}`)
     }
 }

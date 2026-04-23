@@ -12,6 +12,30 @@ export class UserTransactionsRepository extends BaseRepository<RowDataPacket> {
     super('eyefidb.userTrans', mysqlService, 'id');
   }
 
+  async getUpdatedOwnerTransactions(so: string): Promise<UserTransactionRow[]> {
+    const sql = `
+      SELECT a.id
+        , a.field
+        , a.o
+        , a.n
+        , a.createDate
+        , a.comment
+        , a.userId
+        , a.so
+        , a.type
+        , a.partNumber
+        , a.reasonCode
+        , CONCAT(b.first, ' ', b.last) createdByFullName
+      FROM eyefidb.userTrans a
+      LEFT JOIN db.users b ON a.userId = b.id
+      WHERE a.field = ?
+        AND a.so = ?
+      ORDER BY a.id DESC
+    `;
+
+    return this.rawQuery<UserTransactionRow>(sql, ['Updated Owner', so]);
+  }
+
   /**
    * Insert user transaction records (audit trail)
    */

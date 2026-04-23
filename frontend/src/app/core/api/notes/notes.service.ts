@@ -9,11 +9,11 @@ export class NotesService {
   constructor(private http: HttpClient) { }
 
   getData(soNumberAndLineNumber: string, userId: number): Observable<any> {
-    return this.http.get<any>(`/Notes/index?getById=1&so=${soNumberAndLineNumber}&userId=${userId}`);
+    return this.http.get<any>(`apiV2/notes/index?getById=1&so=${encodeURIComponent(soNumberAndLineNumber)}&userId=${userId}`);
   }
 
   saveNotes(params: any): Observable<any> {
-    return this.http.post(`/Notes/index`, params)
+    return this.http.post(`apiV2/notes/index`, params)
   }
 
 

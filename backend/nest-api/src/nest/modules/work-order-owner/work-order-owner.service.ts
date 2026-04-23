@@ -12,6 +12,10 @@ export class WorkOrderOwnerService {
     @Inject(UserTransactionsService) private readonly userTransactionsService: UserTransactionsService,
   ) {}
 
+  async findOneBySo(so: string): Promise<GenericRow | null> {
+    return this.repository.findOneBySo(so);
+  }
+
   /**
    * Get workOrderOwner record by SO
    */
