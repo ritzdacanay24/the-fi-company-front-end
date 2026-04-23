@@ -65,7 +65,7 @@ export class EmailNotificationsService {
       [key],
     );
 
-    return ['ritz.dacanay@the-fi-company.com']
+    //return ['ritz.dacanay@the-fi-company.com']
 
     return rows
       .flatMap((row) =>

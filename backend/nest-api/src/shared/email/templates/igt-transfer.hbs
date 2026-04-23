@@ -1,60 +1,60 @@
 <html>
-  <body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f4f6f8; color: #1f2933;">
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 24px 12px;">
+  <body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f5f5f5; color: #222222;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 8px 0;">
       <tr>
         <td align="center">
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 620px; background-color: #ffffff; border: 1px solid #dde3ea; border-radius: 10px; overflow: hidden;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 620px; background-color: #ffffff; border: 1px solid #d8d8d8;">
             {{> email-header}}
             <tr>
-              <td style="padding: 20px 24px; background-color: #0b5cab; color: #ffffff;">
+              <td style="padding: 12px 16px; background-color: #0b5cab; color: #ffffff;">
                 <h2 style="margin: 0; font-size: 20px; font-weight: 600;">IGT Transfer Notification</h2>
               </td>
             </tr>
             <tr>
-              <td style="padding: 24px; font-size: 14px; line-height: 1.6;">
-                <p style="margin-top: 0;">Hello,</p>
+              <td style="padding: 14px 16px; font-size: 14px; line-height: 1.4;">
+                <p style="margin: 0 0 10px 0;">Hello,</p>
 
                 {{#if isReno}}
-                <p style="margin: 0 0 16px 0;">Attached transfer for above referenced sign, shipping to Reno tonight.</p>
+                <p style="margin: 0 0 10px 0;">Attached transfer for above referenced sign, shipping to Reno tonight.</p>
                 {{else}}
-                <p style="margin: 0 0 16px 0;">Attached transfer for above referenced sign, being transferred to Field Service today.</p>
+                <p style="margin: 0 0 10px 0;">Attached transfer for above referenced sign, being transferred to Field Service today.</p>
                 {{/if}}
 
                 {{#if hasSoDueRows}}
-                <table border="1" cellpadding="0" cellspacing="0" style="border-collapse: collapse; margin: 15px 0; width: 600px; font-family: Arial, sans-serif; font-size: 14px; line-height: 1.2;">
+                <table border="1" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse; margin: 8px 0; width: 100%; font-family: Arial, sans-serif; font-size: 14px; line-height: 1.15;">
                   <thead>
-                    <tr style="background-color: #003366; color: white;">
-                      <th style="padding: 2px 4px; text-align: left; width: 200px; line-height: 1.2;">SO Number</th>
-                      <th style="padding: 2px 4px; text-align: left; width: 150px; line-height: 1.2;">Line #</th>
-                      <th style="padding: 2px 4px; text-align: left; width: 250px; line-height: 1.2;">Due Date</th>
+                    <tr style="background-color: #ffffff; color: #222222;">
+                      <th style="padding: 3px 5px; text-align: left; line-height: 1.15; border: 1px solid #bbbbbb;">SO Number</th>
+                      <th style="padding: 3px 5px; text-align: left; line-height: 1.15; border: 1px solid #bbbbbb;">Line #</th>
+                      <th style="padding: 3px 5px; text-align: left; line-height: 1.15; border: 1px solid #bbbbbb;">Due Date</th>
                     </tr>
                   </thead>
                   <tbody>
                     {{#each soDueRows}}
-                    <tr style="background-color: #f9f9f9;">
-                      <td style="padding: 2px 4px; border: 1px solid #ddd; line-height: 1.2;">{{so_number}}</td>
-                      <td style="padding: 2px 4px; border: 1px solid #ddd; line-height: 1.2;">{{so_line}}</td>
-                      <td style="padding: 2px 4px; border: 1px solid #ddd; line-height: 1.2;">{{due_date}}</td>
+                    <tr style="background-color: #ffffff;">
+                      <td style="padding: 3px 5px; border: 1px solid #d0d0d0; line-height: 1.15;">{{so_number}}</td>
+                      <td style="padding: 3px 5px; border: 1px solid #d0d0d0; line-height: 1.15;">{{so_line}}</td>
+                      <td style="padding: 3px 5px; border: 1px solid #d0d0d0; line-height: 1.15;">{{due_date}}</td>
                     </tr>
                     {{/each}}
                   </tbody>
                 </table>
                 {{/if}}
 
-                <p style="margin: 16px 0 8px 0;">Review this transfer in Dashboard:</p>
+                <p style="margin: 8px 0 4px 0;">Review this transfer in Dashboard:</p>
                 <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0;">
                   <tr>
-                    <td align="left" bgcolor="#0d6efd" style="border-radius: 6px; mso-padding-alt: 10px 16px;">
+                    <td align="left" bgcolor="#0b5cab" style="mso-padding-alt: 6px 10px;">
                       <!--[if mso]>
-                      <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" href="{{editUrl}}" style="height:42px;v-text-anchor:middle;width:190px;" arcsize="9%" stroke="f" fillcolor="#0d6efd">
+                      <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" href="{{editUrl}}" style="height:30px;v-text-anchor:middle;width:145px;" arcsize="4%" stroke="f" fillcolor="#0b5cab">
                         <w:anchorlock/>
-                        <center style="color:#ffffff;font-family:Arial, Helvetica, sans-serif;font-size:16px;font-weight:500;">Open IGT Transfer</center>
+                        <center style="color:#ffffff;font-family:Arial, Helvetica, sans-serif;font-size:13px;font-weight:600;">Open IGT Transfer</center>
                       </v:roundrect>
                       <![endif]-->
                       <!--[if !mso]><!-- -->
                       <a
                         href="{{editUrl}}"
-                        style="display: inline-block; min-width: 190px; padding: 10px 16px; font-family: Arial, Helvetica, sans-serif; font-size: 16px; font-weight: 500; line-height: 1.5; text-align: center; white-space: nowrap; vertical-align: middle; color: #ffffff; text-decoration: none; background-color: #0d6efd; border: 1px solid #0d6efd; border-radius: 6px;"
+                        style="display: inline-block; min-width: 145px; padding: 6px 10px; font-family: Arial, Helvetica, sans-serif; font-size: 13px; font-weight: 600; line-height: 1.2; text-align: center; white-space: nowrap; color: #ffffff; text-decoration: none; background-color: #0b5cab; border: 1px solid #0b5cab;"
                       >Open IGT Transfer</a>
                       <!--<![endif]-->
                     </td>
