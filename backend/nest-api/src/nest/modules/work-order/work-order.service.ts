@@ -125,6 +125,37 @@ export class WorkOrderService {
     }) as Record<string, unknown>;
   }
 
+  async getCompletedWorkOrders(): Promise<Record<string, unknown>[]> {
+    const rows = await this.qadOdbcService.query<Array<Record<string, unknown>>>(
+      `
+        SELECT a.wo_nbr,
+               a.wo_line,
+               a.wo_due_date,
+               a.wo_part,
+               a.wo_qty_ord,
+               a.wo_qty_comp,
+               wod_qty_req,
+               wod_qty_iss,
+               CASE WHEN (wod_qty_iss > wod_qty_req) THEN 'Yes' END AS wod_status,
+               wo_status AS real_wod_status
+        FROM wo_mstr a
+        LEFT JOIN (
+          SELECT wod_nbr,
+                 SUM(wod_qty_req) AS wod_qty_req,
+                 SUM(wod_qty_iss) AS wod_qty_iss
+          FROM wod_det
+          GROUP BY wod_nbr
+        ) b ON b.wod_nbr = a.wo_nbr
+        WHERE a.wo_domain = 'EYE'
+          AND a.wo_status NOT IN ('C', 'P', 'F', 'A')
+          AND (a.wo_qty_comp - a.wo_qty_ord) = 0
+      `,
+      { keyCase: 'lower' },
+    );
+
+    return rows;
+  }
+
   async getLegacyReadByWorkOrderNumber(workOrderNumber: string): Promise<Record<string, unknown>> {
     const normalized = String(workOrderNumber || '').trim();
     if (!normalized) {

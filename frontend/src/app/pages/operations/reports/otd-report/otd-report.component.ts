@@ -312,7 +312,10 @@ export class OtdReportComponent implements OnInit {
       field: "value",
       headerName: "OTD %",
       filter: "agTextColumnFilter",
-      cellRenderer: (e) => e.value?.toFixed(2) + "%",
+      cellRenderer: (e) => {
+        const numericValue = Number(e?.value ?? 0);
+        return Number.isFinite(numericValue) ? `${numericValue.toFixed(2)}%` : "0.00%";
+      },
       cellClass: (params: any) => {
         if (params.data) {
           if (params.value >= this.goal)

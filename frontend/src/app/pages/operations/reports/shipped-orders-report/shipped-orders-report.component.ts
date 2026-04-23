@@ -55,10 +55,14 @@ export class ShippedOrdersReportComponent implements OnInit {
       this.dateTo = params["dateTo"] || this.dateTo;
       this.dateRange = [this.dateFrom, this.dateTo];
       this.comment = params["comment"];
+      this.showChart = String(params["showChart"] || "false").toLowerCase() === "true";
+
+      if (this.showChart && !this.dataChart) {
+        this.getChartData();
+      }
     });
 
     this.getData();
-    this.getChartData();
 
     if (this.comment) {
       this.viewComment(this.comment, null);
@@ -77,6 +81,7 @@ export class ShippedOrdersReportComponent implements OnInit {
   }
 
   title = "Shipped Orders Report";
+  showChart = false;
 
   dateFrom = moment().format("YYYY-MM-DD");
   dateTo = moment().format("YYYY-MM-DD");
@@ -126,13 +131,13 @@ export class ShippedOrdersReportComponent implements OnInit {
       filter: "agMultiColumnFilter",
     },
     {
-      field: "SOD_NBR",
+      field: "sod_nbr",
       headerName: "SO #",
       filter: "agMultiColumnFilter",
       pinned: "left",
       cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
-        onClick: (e) => this.salesOrderInfoModalService.open(e.rowData.SOD_NBR),
+        onClick: (e) => this.salesOrderInfoModalService.open(e.rowData.sod_nbr),
         isLink: true,
       },
     },
@@ -202,9 +207,9 @@ export class ShippedOrdersReportComponent implements OnInit {
       cellRendererParams: {
         onClick: (params: any) =>
           this.viewComment(
-            params.rowData.SOD_NBR + "-" + params.rowData.SOD_LINE,
+            params.rowData.sod_nbr + "-" + params.rowData.SOD_LINE,
             params.rowData.id,
-            params.rowData.SOD_NBR
+            params.rowData.sod_nbr
           ),
       },
     },
@@ -282,7 +287,7 @@ export class ShippedOrdersReportComponent implements OnInit {
       filter: "agMultiColumnFilter",
       cellRenderer: IconRendererV2Component,
       cellRendererParams: {
-        onClick: (e) => this.viewPartsOrder(e.rowData.SOD_NBR),
+        onClick: (e) => this.viewPartsOrder(e.rowData.sod_nbr),
         iconName: "mdi mdi-ballot-outline",
       },
     },
@@ -330,7 +335,8 @@ export class ShippedOrdersReportComponent implements OnInit {
         this.dateFrom,
         this.dateTo
       );
-      this.data = data?.orderInfo ? data?.orderInfo : [];
+      const rows = data ? data : [];
+      this.data = this.normalizeGridRows(rows);
       this.router.navigate(["."], {
         queryParams: {
           dateFrom: this.dateFrom,
@@ -364,6 +370,22 @@ export class ShippedOrdersReportComponent implements OnInit {
     this.getChartData();
   }
 
+  toggleChartView(showChart: boolean) {
+    this.showChart = showChart;
+
+    this.router.navigate(["."], {
+      queryParams: {
+        showChart: showChart ? "true" : "false",
+      },
+      relativeTo: this.activatedRoute,
+      queryParamsHandling: "merge",
+    });
+
+    if (showChart && !this.dataChart) {
+      this.getChartData();
+    }
+  }
+
   async getChartData() {
     // var a = moment(this.dateFrom1);
     // var b = moment(this.dateTo1);
@@ -379,7 +401,51 @@ export class ShippedOrdersReportComponent implements OnInit {
       this.typeOfView,
       this.showCustomers
     );
-    this.dataChart = data;
+    this.dataChart = this.normalizeChartPayload(data);
     this.isLoading = false;
+  }
+
+  private normalizeGridRows(rows: any[]): any[] {
+    return (rows || []).map((row) => {
+      const normalized: Record<string, any> = { ...row };
+      for (const key of Object.keys(row || {})) {
+        normalized[key.toUpperCase()] = row[key];
+        normalized[key.toLowerCase()] = row[key];
+      }
+      return normalized;
+    });
+  }
+
+  private normalizeChartPayload(payload: any): any {
+    if (!payload) {
+      return payload;
+    }
+
+    if (payload.chartnew) {
+      return payload;
+    }
+
+    const labels: string[] = payload?.obj?.label || [];
+    const totalCost: number[] = payload?.chart?.totalCost || [];
+    const backgroundColor: string[] = payload?.chart?.backgroundColor || [];
+    const goalLine: number[] = payload?.chart?.goalLine || labels.map(() => 200000);
+
+    return {
+      ...payload,
+      chartnew: {
+        shipped_value: {
+          label: 'Shipped Value',
+          dataset: totalCost,
+          backgroundColor,
+          type: 'bar',
+        },
+        target_goal: {
+          label: 'Goal',
+          dataset: goalLine,
+          backgroundColor: '#cc0000',
+          type: 'line',
+        },
+      },
+    };
   }
 }

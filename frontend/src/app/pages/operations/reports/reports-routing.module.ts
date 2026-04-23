@@ -21,7 +21,6 @@ import { RevenueComponent } from './revenue/revenue.component';
 import { WorkOrderVarianceReport } from './work-order-variance-report/work-order-variance-report.component';
 import { OtdReportComponent } from './otd-report/otd-report.component';
 import { ReasonCodeReportComponent } from './reason-code-report/reason-code-report.component';
-import { ShippedOrdersReportV1Component } from './shipped-orders-report-no-chart/shipped-orders-report.component';
 
 const routes: Routes = [
   {
@@ -86,7 +85,8 @@ const routes: Routes = [
       {
         title: "Shipped Orders Report V1",
         path: 'shipped-orders-report-v1',
-        component: ShippedOrdersReportV1Component
+        redirectTo: 'shipped-orders-report',
+        pathMatch: 'full'
       },
       {
         title: "Negative Location Report",

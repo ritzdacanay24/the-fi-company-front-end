@@ -16,7 +16,7 @@ export class RevenueService {
 
     // Read Chart Info
     getChartData(dateFrom: string, dateTo: string, typeOfView: string) {
-        return this.http.get<any>(`/revenue/revenue?getGroupedOrders&dateFrom=${dateFrom}&dateTo=${dateTo}&typeOfView=${typeOfView}`).toPromise()
+        return this.http.get<any>(`apiV2/reports/revenue-chart?dateFrom=${dateFrom}&dateTo=${dateTo}&typeOfView=${typeOfView}`).toPromise()
     }
 
     // Read revenue future by customer
@@ -25,13 +25,8 @@ export class RevenueService {
         if (excludeTariffFees) {
             params = params.set('applyAgsDiscount', 'true');
         }
-  // Debug logging
-    console.log('excludeTariffFees:', excludeTariffFees);
-    console.log('params object:', params);
-    console.log('params toString:', params.toString());
-    console.log('params keys:', params.keys());
 
-        return this.http.get<any>('/revenue/future_revenue_by_customer', { params }).toPromise();
+        return this.http.get<any>('apiV2/reports/future-revenue-by-customer', { params }).toPromise();
     }
 
     // Read revenue future by customer
@@ -53,8 +48,7 @@ export class RevenueService {
             params = params.set('applyAgsDiscount', 'true');
         }
 
-        console.log('getFutureRevenueByCustomerByWeekly params', params);
-        return this.http.get<any>('/revenue/future_revenue_by_customer', { params }).toPromise();
+        return this.http.get<any>('apiV2/reports/future-revenue-by-customer', { params }).toPromise();
     }
 
 }

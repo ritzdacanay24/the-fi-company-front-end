@@ -16,6 +16,6 @@ export class WorkOrderInfoService {
     }
 
     getCompletedWorkers() {
-        return this.http.get<any>(`/work_order_view/completedWorkOrders`).toPromise();
+        return this.http.get<any>(`apiV2/work-order/completedWorkOrders`).toPromise();
     }
 }

@@ -6,11 +6,24 @@ import { DailyReportRepository } from './daily-report.repository';
 export class DailyReportService {
   constructor(private readonly repository: DailyReportRepository) {}
 
+  private getLegacyNow(): Date {
+    return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
+  }
+
+  private formatDate(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
   async getDailyReport(): Promise<unknown> {
-    const today = new Date();
-    const todayString = today.toISOString().slice(0, 10);
-    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0, 10);
-    const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().slice(0, 10);
+    const today = this.getLegacyNow();
+    const todayString = this.formatDate(today);
+    const startOfMonthDate = new Date(today.getFullYear(), today.getMonth(), 1);
+    const endOfMonthDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    const startOfMonth = this.formatDate(startOfMonthDate);
+    const endOfMonth = this.formatDate(endOfMonthDate);
     const day = today.getDay();
     const mondayOffset = day === 0 ? -6 : 1 - day;
     const fridayOffset = day === 0 ? -2 : 5 - day;
@@ -18,12 +31,12 @@ export class DailyReportService {
     startCurrentWeek.setDate(today.getDate() + mondayOffset);
     const endCurrentWeek = new Date(today);
     endCurrentWeek.setDate(today.getDate() + fridayOffset);
-    const nextMonthStart = new Date(today.getFullYear(), today.getMonth() + 1, 1).toISOString().slice(0, 10);
-    const nextThreeMonthEnd = new Date(today.getFullYear(), today.getMonth() + 4, 0).toISOString().slice(0, 10);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(today.getDate() + 1);
+    const nextMonthStartDate = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+    const nextThreeMonthEndDate = new Date(today.getFullYear(), today.getMonth() + 4, 0);
+    const nextMonthStart = this.formatDate(nextMonthStartDate);
+    const nextThreeMonthEnd = this.formatDate(nextThreeMonthEndDate);
 
-    const [summary, onTime, production, totalInventory, wip, transit, intgrtd, reject, eye01, jx01, all, fgLV, ss, threeMonthsRevenue, scheduledJobs, openBalanceCurrentMonthDetails, openLinesForCurrentWeek, ops10RoutingCompleted, openLinesToday, futureOpenRevenue, todaySoLines] = await Promise.all([
+    const [summary, onTime, productionRouting, totalInventory, wip, transit, intgrtd, reject, inventoryTurns, ss, threeMonthsRevenue, scheduledJobs, openBalanceCurrentMonthDetails, openLinesForCurrentWeek, futureOpenRevenue, todaySoLines, ops10Routing] = await Promise.all([
       this.repository.getDailyReportSummary(),
       this.repository.getDailyReportOnTime(),
       this.repository.getDailyReportProductionRouting(20),
@@ -32,19 +45,15 @@ export class DailyReportService {
       this.repository.getDailyReportLocationExtCost('TRANSIT'),
       this.repository.getDailyReportLocationExtCost('INTGRTD'),
       this.repository.getDailyReportLocationExtCost('REJECT'),
-      this.repository.getDailyReportInventoryTurns('rmlv'),
-      this.repository.getDailyReportInventoryTurns('jx01'),
-      this.repository.getDailyReportInventoryTurns('all'),
-      this.repository.getDailyReportInventoryTurns('fglv'),
+      this.repository.getDailyReportInventoryTurnsCombined(),
       this.repository.getDailyReportSafetyStockTotal(),
       this.repository.getDailyReportThreeMonthsRevenue(nextMonthStart, nextThreeMonthEnd),
       this.repository.getDailyReportScheduledJobs(),
       this.repository.getDailyReportOpenBalanceCurrentMonthDetails(startOfMonth, endOfMonth),
-      this.repository.getDailyReportOpenLinesForCurrentWeek(startCurrentWeek.toISOString().slice(0, 10), endCurrentWeek.toISOString().slice(0, 10)),
-      this.repository.getDailyReportOpsCompleted(todayString, todayString, 10),
-      this.repository.getDailyReportOpenLinesToday(todayString),
-      this.repository.getDailyReportFutureOpenRevenue(tomorrow.toISOString().slice(0, 10), endOfMonth),
+      this.repository.getDailyReportOpenLinesForCurrentWeek(this.formatDate(startCurrentWeek), this.formatDate(endCurrentWeek)),
+      this.repository.getDailyReportFutureOpenRevenue(startOfMonth, endOfMonth),
       this.repository.getDailyReportSoLinesForDate(todayString),
+      this.repository.getDailyReportOpsCompleted(todayString, todayString, 10),
     ]);
 
     const openBalanceSoLines = [...new Set(openBalanceCurrentMonthDetails.map((row) => String(row['so_line'] ?? '')).filter(Boolean))];
@@ -52,6 +61,27 @@ export class DailyReportService {
       this.repository.getDailyReportOwnersBySoLines(openBalanceSoLines),
       this.repository.getDailyReportLateReasonCodesBySoLines(todaySoLines),
     ]);
+
+    const eye01 = {
+      lessthanone: inventoryTurns['rmlv_lessthanone'] ?? 0,
+      greaterthanorequaltoone: inventoryTurns['rmlv_greaterthanorequaltoone'] ?? 0,
+      total: inventoryTurns['rmlv_total'] ?? 0,
+    };
+    const jx01 = {
+      lessthanone: inventoryTurns['jx01_lessthanone'] ?? 0,
+      greaterthanorequaltoone: inventoryTurns['jx01_greaterthanorequaltoone'] ?? 0,
+      total: inventoryTurns['jx01_total'] ?? 0,
+    };
+    const all = {
+      lessthanone: inventoryTurns['all_lessthanone'] ?? 0,
+      greaterthanorequaltoone: inventoryTurns['all_greaterthanorequaltoone'] ?? 0,
+      total: inventoryTurns['all_total'] ?? 0,
+    };
+    const fgLV = {
+      lessthanone: inventoryTurns['fglv_lessthanone'] ?? 0,
+      greaterthanorequaltoone: inventoryTurns['fglv_greaterthanorequaltoone'] ?? 0,
+      total: inventoryTurns['fglv_total'] ?? 0,
+    };
 
     const ownerSet = new Set(openBalanceOwners.map((row) => String(row['so'] ?? '')));
     const openBalanceCurrentMonth = openBalanceCurrentMonthDetails.reduce((total, row) => {
@@ -111,12 +141,12 @@ export class DailyReportService {
       production: {
         production_routing_20: {
           due: {
-            due_open: this.toNumber(production['due_today_not_completed']),
-            due_completed_today: this.toNumber(production['completed_before_or_on_due_date']),
-            due_total: this.toNumber(production['today_count']),
-            total_overdue_orders: this.toNumber(production['total_overdue_orders']),
-            due_percent: this.toNumber(production['today_count']) > 0
-              ? (this.toNumber(production['completed_before_or_on_due_date']) / this.toNumber(production['today_count'])) * 100
+            due_open: this.toNumber(productionRouting['due_today_not_completed']),
+            due_completed_today: this.toNumber(productionRouting['completed_before_or_on_due_date']),
+            due_total: this.toNumber(productionRouting['today_count']),
+            total_overdue_orders: this.toNumber(productionRouting['total_overdue_orders']),
+            due_percent: this.toNumber(productionRouting['today_count']) > 0
+              ? (this.toNumber(productionRouting['completed_before_or_on_due_date']) / this.toNumber(productionRouting['today_count'])) * 100
               : 0,
           },
         },
@@ -125,10 +155,10 @@ export class DailyReportService {
       openBalanceCurrentMonth,
       openLinesForCurrentWeek: this.toNumber(openLinesForCurrentWeek['value']),
       lateReasonCodes: lateReasonCodes.map((row) => ({ lateReasonCode: row['latereasoncode'], value: this.toNumber(row['value']) })),
-      ops10RoutingCompleted: this.toNumber(ops10RoutingCompleted['value']),
-      openLinesToday: this.toNumber(openLinesToday['value']),
+      ops10RoutingCompleted: this.toNumber(ops10Routing['value']),
+      openLinesToday: todaySoLines.length,
       futuerOpenRevenueCurrentMonth: {
-        dateFrom: tomorrow.toISOString().slice(0, 10),
+        dateFrom: startOfMonth,
         dateTo: endOfMonth,
         value: this.toNumber(futureOpenRevenue['value']),
       },

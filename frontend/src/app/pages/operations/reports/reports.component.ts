@@ -171,14 +171,6 @@ export class ReportsComponent implements OnInit {
       keywords: ['shipped', 'orders', 'fulfillment', 'delivery']
     },
     {
-      title: 'Shipped Orders Report V1',
-      description: 'Alternative view of shipping performance metrics',
-      path: 'shipped-orders-report-v1',
-      icon: 'mdi mdi-truck',
-      category: 'shipping',
-      keywords: ['shipped', 'orders', 'alternative', 'metrics']
-    },
-    {
       title: 'OTD Report',
       description: 'On-time delivery performance and analysis',
       path: 'otd-report',

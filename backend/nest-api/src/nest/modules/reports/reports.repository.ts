@@ -144,6 +144,30 @@ export interface JobByUserChartRow extends RowDataPacket {
   request_date: string;
 }
 
+export interface RevenueAllRow extends RowDataPacket {
+  price: number;
+  daten: string;
+  month: number;
+  year: number;
+  tyoeof: string;
+}
+
+export interface FutureRevenueByCustomerSummaryRow extends RowDataPacket {
+  so_cust: string;
+  month: number;
+  year: number;
+  balance: number;
+}
+
+export interface FutureRevenueByCustomerWeeklyRow extends RowDataPacket {
+  so_cust: string;
+  date1: string;
+  total: number;
+  revenue_after_tariff: number;
+  tariff_amount: number;
+  net_revenue: number;
+}
+
 @Injectable()
 export class ReportsRepository extends BaseRepository<RowDataPacket> {
   constructor(
@@ -519,6 +543,186 @@ export class ReportsRepository extends BaseRepository<RowDataPacket> {
       `,
       [dateFrom, dateTo],
     );
+  }
+
+  async getRevenueAllRows(dateFrom: string, dateTo: string): Promise<RevenueAllRow[]> {
+    const sql = `
+      SELECT price,
+             daten,
+             month,
+             year,
+             RTRIM(tyoeOf) AS tyoeOf
+      FROM (
+        SELECT SUM(a.PostingLineCreditLC - a.PostingLineDebitLC) AS price,
+               PostingDate AS daten,
+               MONTH(PostingDate) AS month,
+               YEAR(PostingDate) AS year,
+               CASE
+                 WHEN a.GL_ID = 15774615 THEN 'Product'
+                 WHEN a.GL_ID = 15774617 THEN 'Service Storage'
+                 WHEN a.GL_ID IN (15774616, 15790482, 15790530) THEN 'Service Parts'
+                 WHEN a.GL_ID = 15774618 THEN 'Kitting'
+                 ELSE 'Graphics'
+               END AS tyoeOf
+        FROM PostingLine a
+        LEFT JOIN (
+          SELECT Posting_ID,
+                 DInvoice_ID
+          FROM DInvoicePosting
+        ) b ON b.Posting_ID = a.Posting_ID
+        WHERE a.gl_id IN (15774615, 15774616, 15790482, 15790530, 15774617, 15774618, 27413065)
+          AND PostingDate <> '2022-12-31'
+        GROUP BY PostingDate,
+                 MONTH(PostingDate),
+                 YEAR(PostingDate),
+                 CASE
+                   WHEN a.GL_ID = 15774615 THEN 'Product'
+                   WHEN a.GL_ID = 15774617 THEN 'Service Storage'
+                   WHEN a.GL_ID IN (15774616, 15790482, 15790530) THEN 'Service Parts'
+                   WHEN a.GL_ID = 15774618 THEN 'Kitting'
+                   ELSE 'Graphics'
+                 END
+
+        UNION ALL
+
+        SELECT SUM((sod_qty_ord - sod_qty_ship) * sod_price) AS price,
+               sod_due_date AS daten,
+               MONTH(sod_due_date) AS month,
+               YEAR(sod_due_date) AS year,
+               CASE WHEN sod_qty_ord != sod_qty_ship THEN 'Open' ELSE 'total_shipped' END AS tyoeOf
+        FROM sod_det a
+        WHERE sod_domain = 'EYE'
+          AND sod_qty_ord != sod_qty_ship
+        GROUP BY sod_due_date,
+                 MONTH(sod_due_date),
+                 YEAR(sod_due_date),
+                 CASE WHEN sod_qty_ord != sod_qty_ship THEN 'Open' ELSE 'total_shipped' END
+
+        UNION ALL
+
+        SELECT SUM(abs_ship_qty * sod_price) AS price,
+               abs_shp_date AS daten,
+               MONTH(abs_shp_date) AS month,
+               YEAR(abs_shp_date) AS year,
+               CASE WHEN abs_inv_nbr != '' THEN 'invoiced_amount' ELSE 'Pending Invoice' END AS tyoeOf
+        FROM abs_mstr a
+        LEFT JOIN (
+          SELECT sod_price,
+                 sod_line,
+                 sod_nbr,
+                 sod_acct
+          FROM sod_det
+          WHERE sod_domain = 'EYE'
+            AND sod_domain = 'EYE'
+        ) b ON b.sod_nbr = a.abs_order AND b.sod_line = a.abs_line
+        WHERE abs_domain = 'EYE'
+          AND abs_inv_nbr = ''
+        GROUP BY abs_shp_date,
+                 MONTH(abs_shp_date),
+                 YEAR(abs_shp_date),
+                 CASE WHEN abs_inv_nbr != '' THEN 'invoiced_amount' ELSE 'Pending Invoice' END
+      ) a
+      WHERE daten BETWEEN ? AND ?
+         OR (MONTH(daten) = MONTH(CURDATE()) AND YEAR(daten) = YEAR(CURDATE()))
+      ORDER BY CASE
+                 WHEN tyoeOf = 'Product' THEN 1
+                 WHEN tyoeOf = 'Service Storage' THEN 2
+                 WHEN tyoeOf = 'Service Parts' THEN 3
+                 WHEN tyoeOf = 'Kitting' THEN 4
+                 WHEN tyoeOf = 'Graphics' THEN 5
+                 WHEN tyoeOf = 'Pending Invoice' THEN 6
+                 WHEN tyoeOf = 'Open' THEN 7
+               END ASC
+    `;
+
+    return this.qad.queryWithParams<RevenueAllRow[]>(sql, [dateFrom, dateTo], { keyCase: 'lower' });
+  }
+
+  async getFutureRevenueByCustomerRows(applyAgsDiscount: boolean): Promise<FutureRevenueByCustomerSummaryRow[]> {
+    const discountMultiplier = applyAgsDiscount ? '0.91' : '1.0';
+    const sql = `
+      SELECT c.so_cust AS so_cust,
+             MONTH(a.sod_per_date) AS month,
+             YEAR(a.sod_per_date) AS year,
+             SUM(
+               CASE
+                 WHEN c.so_cust = 'AMEGAM' THEN (a.sod_price * (a.sod_qty_ord - a.sod_qty_ship)) * ${discountMultiplier}
+                 ELSE (a.sod_price * (a.sod_qty_ord - a.sod_qty_ship))
+               END
+             ) AS balance
+      FROM sod_det a
+      JOIN (
+        SELECT so_nbr,
+               so_cust,
+               so_ord_date,
+               so_ship,
+               so_bol,
+               so_cmtindx,
+               so_compl_date,
+               so_shipvia
+        FROM so_mstr
+        WHERE so_domain = 'EYE'
+          AND so_compl_date IS NULL
+      ) c ON c.so_nbr = a.sod_nbr
+      WHERE sod_domain = 'EYE'
+        AND sod_qty_ord != sod_qty_ship
+        AND sod_project = ''
+        AND sod_part != 'DISCOUNT'
+      GROUP BY c.so_cust,
+               MONTH(a.sod_per_date),
+               YEAR(a.sod_per_date)
+      ORDER BY a.sod_per_date ASC
+    `;
+
+    return this.qad.query<FutureRevenueByCustomerSummaryRow[]>(sql, { keyCase: 'lower' });
+  }
+
+  async getFutureRevenueByCustomerWeeklyRows(
+    start: string,
+    end: string,
+  ): Promise<FutureRevenueByCustomerWeeklyRow[]> {
+    const sql = `
+      SELECT c.so_cust AS so_cust,
+             a.sod_per_date AS date1,
+             (a.sod_price * (a.sod_qty_ord - a.sod_qty_ship)) AS total,
+             CASE
+               WHEN c.so_cust IN ('AMEGAM', 'ZITRO', 'ECLIPSE') THEN (a.sod_price * (a.sod_qty_ord - a.sod_qty_ship)) * 0.91
+               ELSE (a.sod_price * (a.sod_qty_ord - a.sod_qty_ship))
+             END AS revenue_after_tariff,
+             CASE
+               WHEN c.so_cust IN ('AMEGAM', 'ZITRO', 'ECLIPSE') THEN (a.sod_price * (a.sod_qty_ord - a.sod_qty_ship)) * 0.09
+               WHEN c.so_cust IN ('INTGAM', 'BLUBERI', 'BALTEC', 'EVIGAM', 'SONNY') AND sod_prodline = 'TAR' THEN (a.sod_price * (a.sod_qty_ord - a.sod_qty_ship))
+               ELSE 0
+             END AS tariff_amount,
+             CASE
+               WHEN c.so_cust IN ('INTGAM', 'BLUBERI', 'BALTEC', 'EVIGAM', 'SONNY') AND sod_prodline <> 'TAR' THEN (a.sod_price * (a.sod_qty_ord - a.sod_qty_ship))
+               WHEN c.so_cust IN ('INTGAM', 'BLUBERI', 'BALTEC', 'EVIGAM', 'SONNY') AND sod_prodline = 'TAR' THEN 0
+               WHEN c.so_cust IN ('AMEGAM', 'ZITRO', 'ECLIPSE') THEN (a.sod_price * (a.sod_qty_ord - a.sod_qty_ship)) * 0.91
+               ELSE (a.sod_price * (a.sod_qty_ord - a.sod_qty_ship))
+             END AS net_revenue
+      FROM sod_det a
+      JOIN (
+        SELECT so_nbr,
+               so_cust,
+               so_ord_date,
+               so_ship,
+               so_bol,
+               so_cmtindx,
+               so_compl_date,
+               so_shipvia
+        FROM so_mstr
+        WHERE so_domain = 'EYE'
+          AND so_compl_date IS NULL
+      ) c ON c.so_nbr = a.sod_nbr
+      WHERE sod_domain = 'EYE'
+        AND sod_project = ''
+        AND sod_qty_ord != sod_qty_ship
+        AND a.sod_per_date BETWEEN ? AND ?
+        AND sod_part != 'DISCOUNT'
+      ORDER BY a.sod_due_date ASC
+    `;
+
+    return this.qad.queryWithParams<FutureRevenueByCustomerWeeklyRow[]>(sql, [start, end], { keyCase: 'upper' });
   }
 
   // ─── Operations Reports (migrated from legacy PHP) ───────────────────────────
@@ -1397,5 +1601,29 @@ export class ReportsRepository extends BaseRepository<RowDataPacket> {
     }
 
     return { updated: totalInserted };
+  }
+
+  async getOtdReportReasonChart(dateFrom: string, dateTo: string): Promise<Record<string, unknown>[]> {
+    const sql = `
+      SELECT SUM(total_lines) AS total_lines,
+             CASE WHEN ROW_NUMBER <= 5 THEN label ELSE 'Other' END AS label
+      FROM (
+        SELECT b.lateReasonCode AS label,
+               COUNT(*) AS total_lines,
+               @curRow := @curRow + 1 AS row_number
+        FROM eyefidb.on_time_delivery a
+        LEFT JOIN eyefidb.workOrderOwner b ON b.so = CONCAT(a.so_nbr, '-', a.line_nbr)
+        WHERE a.last_shipped_on BETWEEN ? AND ?
+          AND a.so_nbr NOT LIKE 'FS%'
+          AND a.last_shipped_on IS NOT NULL
+          AND b.lateReasonCode <> ''
+        GROUP BY b.lateReasonCode
+      ) ranked
+      CROSS JOIN (SELECT @curRow := 0) r
+      GROUP BY CASE WHEN ROW_NUMBER <= 5 THEN label ELSE 'Other' END
+    `;
+
+    const result = await this.mysqlService.query(sql, [dateFrom, dateTo]);
+    return (result as any) || [];
   }
 }

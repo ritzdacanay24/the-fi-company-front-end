@@ -1,4 +1,4 @@
-<div class="row">
+<div class="row" *ngIf="showChart">
   <div class="col-lg-12">
     <div class="card">
       <div class="card-header">
@@ -68,6 +68,25 @@
 
           <div class="ms-3 me-3">
             <app-grid-filters [gridApi]="gridApi" [pageId]="pageId"></app-grid-filters>
+          </div>
+
+          <div class="ms-3">
+            <div class="btn-group" role="group" aria-label="Chart view toggle">
+              <button
+                type="button"
+                class="btn"
+                [ngClass]="!showChart ? 'btn-primary' : 'btn-outline-primary'"
+                (click)="toggleChartView(false)">
+                No Chart
+              </button>
+              <button
+                type="button"
+                class="btn"
+                [ngClass]="showChart ? 'btn-primary' : 'btn-outline-primary'"
+                (click)="toggleChartView(true)">
+                View Chart
+              </button>
+            </div>
           </div>
 
           <div class="ms-auto">

@@ -132,6 +132,34 @@ export class ReportsController {
     return this.service.getTicketEventReportChart(dateFrom, dateTo, typeOfView);
   }
 
+  @Get('revenue-chart')
+  async getRevenueChart(
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+    @Query('typeOfView') typeOfView?: string,
+  ) {
+    return this.service.getRevenueChart(dateFrom, dateTo, typeOfView);
+  }
+
+  @Get('future-revenue-by-customer')
+  async getFutureRevenueByCustomer(
+    @Query('applyAgsDiscount') applyAgsDiscount?: string,
+    @Query('getFutureRevenueByCustomerByWeekly') getFutureRevenueByCustomerByWeekly?: string,
+    @Query('start') start?: string,
+    @Query('end') end?: string,
+    @Query('weekStart') weekStart?: string,
+    @Query('weekEnd') weekEnd?: string,
+  ) {
+    return this.service.getFutureRevenueByCustomer(
+      applyAgsDiscount,
+      getFutureRevenueByCustomerByWeekly,
+      start,
+      end,
+      weekStart,
+      weekEnd,
+    );
+  }
+
   // ─── Operations Reports ──────────────────────────────────────────────────────
 
   @Get('jiaxing-location-value')

@@ -5,12 +5,14 @@ import {
   CustomerReportRow,
   ExpenseChartRow,
   ExpenseReportRow,
+  FutureRevenueByCustomerSummaryRow,
   InvoiceChartRow,
   InvoiceReportRow,
   JobByUserChartRow,
   JobByUserReportRow,
   JobByLocationRow,
   PlatformAvgRow,
+  RevenueAllRow,
   ReportsRepository,
   ServiceChartRow,
   ServiceReportRow,
@@ -230,6 +232,147 @@ export class ReportsService {
     return this.buildChart(rows, from, to, view);
   }
 
+  async getRevenueChart(dateFrom?: string, dateTo?: string, typeOfView?: string) {
+    const from = (dateFrom || '').trim();
+    const to = (dateTo || '').trim();
+
+    if (!from || !to) {
+      throw new BadRequestException('dateFrom and dateTo are required');
+    }
+
+    const view = this.normalizeView(typeOfView);
+    const rows = await this.repository.getRevenueAllRows(from, to);
+    return {
+      chartData: this.buildRevenueChart(rows, from, to, view),
+    };
+  }
+
+  async getFutureRevenueByCustomer(
+    applyAgsDiscount?: string,
+    getFutureRevenueByCustomerByWeekly?: string,
+    start?: string,
+    end?: string,
+    weekStart?: string,
+    weekEnd?: string,
+  ) {
+    const useAgsDiscount = String(applyAgsDiscount || '').toLowerCase() === 'true';
+    const isWeekly = String(getFutureRevenueByCustomerByWeekly || '').toLowerCase() === 'true';
+
+    if (isWeekly) {
+      const startDate = (start || '').trim();
+      const endDate = (end || '').trim();
+      const weekStartDate = (weekStart || '').trim();
+      const weekEndDate = (weekEnd || '').trim();
+
+      if (!startDate || !endDate || !weekStartDate || !weekEndDate) {
+        throw new BadRequestException('start, end, weekStart, and weekEnd are required for weekly mode');
+      }
+
+      const results = await this.repository.getFutureRevenueByCustomerWeeklyRows(startDate, endDate);
+      return {
+        chart2: [],
+        chart1: [],
+        obj: {
+          label: this.buildWeekLabels(weekStartDate, weekEndDate),
+        },
+        dateFrom: startDate,
+        dateTo: endDate,
+        test22: [],
+        results,
+        weekStart: weekStartDate,
+        weekEnd: weekEndDate,
+        t: this.buildPseudoWeeklyDates(weekStartDate, weekEndDate),
+      };
+    }
+
+    const rows = await this.repository.getFutureRevenueByCustomerRows(useAgsDiscount);
+    return this.mapFutureRevenueCustomerMatrix(rows);
+  }
+
+  private mapFutureRevenueCustomerMatrix(rows: FutureRevenueByCustomerSummaryRow[]): Array<Record<string, number | string>> {
+    const periodSet = new Set<string>();
+    const customerMap = new Map<string, Record<string, number | string>>();
+
+    for (const row of rows) {
+      const customer = String(row.so_cust || '');
+      if (!customer) {
+        continue;
+      }
+
+      const period = `${row.month}-${row.year}`;
+      periodSet.add(period);
+
+      if (!customerMap.has(customer)) {
+        customerMap.set(customer, { Customer: customer });
+      }
+
+      const customerRow = customerMap.get(customer) as Record<string, number | string>;
+      customerRow[period] = Number(row.balance || 0);
+    }
+
+    const periods = Array.from(periodSet).sort((a, b) => {
+      const [am, ay] = a.split('-').map((value) => Number(value));
+      const [bm, by] = b.split('-').map((value) => Number(value));
+      if (ay !== by) {
+        return ay - by;
+      }
+      return am - bm;
+    });
+
+    const customers = Array.from(customerMap.values());
+    for (const row of customers) {
+      let grandTotal = 0;
+      for (const period of periods) {
+        const value = Number(row[period] || 0);
+        row[period] = value;
+        grandTotal += value;
+      }
+      row['Grand Total'] = grandTotal;
+    }
+
+    return customers;
+  }
+
+  private buildWeekLabels(weekStart: string, weekEnd: string): string[] {
+    const labels: string[] = [];
+    const start = new Date(weekStart);
+    const end = new Date(weekEnd);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+      return labels;
+    }
+
+    const cursor = new Date(start);
+    while (cursor <= end) {
+      labels.push(`${this.getIsoWeek(cursor)}-${cursor.getFullYear()}`);
+      cursor.setDate(cursor.getDate() + 7);
+    }
+    return labels;
+  }
+
+  private buildPseudoWeeklyDates(weekStart: string, weekEnd: string): string[] {
+    const dates: string[] = [];
+    const start = new Date(weekStart);
+    const end = new Date(weekEnd);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+      return dates;
+    }
+
+    const cursor = new Date(start);
+    while (cursor < end) {
+      dates.push(cursor.toISOString().slice(0, 10));
+      cursor.setDate(cursor.getDate() + 5);
+    }
+    return dates;
+  }
+
+  private getIsoWeek(date: Date): number {
+    const temp = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const day = temp.getUTCDay() || 7;
+    temp.setUTCDate(temp.getUTCDate() + 4 - day);
+    const yearStart = new Date(Date.UTC(temp.getUTCFullYear(), 0, 1));
+    return Math.ceil((((temp.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  }
+
   private normalizeView(typeOfView?: string): ReportView {
     const normalized = (typeOfView || 'Monthly').trim();
     if (
@@ -413,6 +556,172 @@ export class ReportsService {
     return `hsla(${hue}, 68%, 46%, 0.73)`;
   }
 
+  private buildRevenueChart(rows: RevenueAllRow[], dateFrom: string, dateTo: string, typeOfView: ReportView) {
+    const labels: string[] = [];
+    const chart: Record<string, { dataset: number[]; label: string; backgroundColor: string; borderColor: string[] }> = {};
+    const categories = [...new Set(rows.map((row) => String(row.tyoeof || '').trim()).filter(Boolean))];
+    const colors = ['#009B77', '#A52A2A', '#B8860B', '#39CCCC', '#FF851B', '#B565A7', '#E0E0E0'];
+
+    const now = new Date();
+    const currentMonth = now.getMonth() + 1;
+    const currentYear = now.getFullYear();
+
+    const overall = {
+      projected: 0,
+      open: 0,
+      currentRevenue: 0,
+      pendingInvoice: 0,
+      Graphics: 0,
+      Kitting: 0,
+      Product: 0,
+      serviceParts: 0,
+      serviceStorage: 0,
+    };
+
+    for (const row of rows) {
+      const rowMonth = Number(row.month ?? 0);
+      const rowYear = Number(row.year ?? 0);
+      const rowType = String(row.tyoeof ?? '').trim();
+      const value = Number(row.price ?? 0);
+
+      if (rowMonth !== currentMonth || rowYear !== currentYear) {
+        continue;
+      }
+
+      overall.projected += value;
+      if (rowType === 'Open') {
+        overall.open += value;
+      }
+      if (rowType === 'Pending Invoice') {
+        overall.pendingInvoice += value;
+      }
+      if (['Graphics', 'Kitting', 'Product', 'Service Parts', 'Service Storage'].includes(rowType)) {
+        overall.currentRevenue += value;
+      }
+      if (rowType === 'Graphics') {
+        overall.Graphics += value;
+      }
+      if (rowType === 'Kitting') {
+        overall.Kitting += value;
+      }
+      if (rowType === 'Product') {
+        overall.Product += value;
+      }
+      if (rowType === 'Service Parts') {
+        overall.serviceParts += value;
+      }
+      if (rowType === 'Service Storage') {
+        overall.serviceStorage += value;
+      }
+    }
+
+    const cursor = new Date(dateFrom);
+    const end = new Date(dateTo);
+    const currentCompareKey = this.getRevenueCompareKey(now, typeOfView);
+
+    while (cursor <= end) {
+      const labelContext = this.getRevenueLabelContext(cursor, typeOfView);
+      labels.push(labelContext.label);
+
+      categories.forEach((category, index) => {
+        if (!chart[category]) {
+          chart[category] = {
+            dataset: [],
+            label: category,
+            backgroundColor: colors[index % colors.length],
+            borderColor: [],
+          };
+        }
+
+        const total = rows.reduce((sum, row) => {
+          const rowType = String(row.tyoeof ?? '').trim();
+          if (rowType !== category) {
+            return sum;
+          }
+
+          const rowDate = new Date(String(row.daten ?? ''));
+          if (Number.isNaN(rowDate.getTime())) {
+            return sum;
+          }
+
+          if (this.getRevenueCompareKey(rowDate, typeOfView) !== labelContext.compareKey) {
+            return sum;
+          }
+
+          return sum + Number(row.price ?? 0);
+        }, 0);
+
+        chart[category].dataset.push(total);
+        chart[category].borderColor.push(labelContext.compareKey === currentCompareKey ? 'rgb(131, 152, 222)' : '');
+      });
+
+      this.advanceCursor(cursor, typeOfView);
+    }
+
+    return {
+      label: labels,
+      chart,
+      results: rows,
+      overall,
+    };
+  }
+
+  private getRevenueLabelContext(date: Date, typeOfView: ReportView): { label: string; compareKey: string } {
+    if (typeOfView === 'Weekly') {
+      const week = this.getWeekNumber(date);
+      const year = date.getFullYear();
+      return { label: `${week}-${year}`, compareKey: `${week}-${year}` };
+    }
+
+    if (typeOfView === 'Monthly') {
+      const monthShort = date.toLocaleString('en-US', { month: 'short' });
+      const year = date.getFullYear();
+      return { label: `${monthShort}-${year}`, compareKey: `${monthShort}-${year}` };
+    }
+
+    if (typeOfView === 'Annually') {
+      const year = date.getFullYear();
+      return { label: `${year}`, compareKey: `${year}` };
+    }
+
+    if (typeOfView === 'Daily') {
+      const mm = String(date.getMonth() + 1).padStart(2, '0');
+      const dd = String(date.getDate()).padStart(2, '0');
+      const yy = String(date.getFullYear()).slice(-2);
+      const yyyy = date.getFullYear();
+      return { label: `${mm}/${dd}/${yy}`, compareKey: `${mm}/${dd}/${yy}-${yyyy}` };
+    }
+
+    const quarter = Math.ceil((date.getMonth() + 1) / 3);
+    const year = date.getFullYear();
+    return { label: `Qtr:${quarter}-${year}`, compareKey: `${quarter}-${year}` };
+  }
+
+  private getRevenueCompareKey(date: Date, typeOfView: ReportView): string {
+    if (typeOfView === 'Weekly') {
+      return `${this.getWeekNumber(date)}-${date.getFullYear()}`;
+    }
+
+    if (typeOfView === 'Monthly') {
+      return `${date.toLocaleString('en-US', { month: 'short' })}-${date.getFullYear()}`;
+    }
+
+    if (typeOfView === 'Annually') {
+      return `${date.getFullYear()}`;
+    }
+
+    if (typeOfView === 'Daily') {
+      const mm = String(date.getMonth() + 1).padStart(2, '0');
+      const dd = String(date.getDate()).padStart(2, '0');
+      const yy = String(date.getFullYear()).slice(-2);
+      const yyyy = date.getFullYear();
+      return `${mm}/${dd}/${yy}-${yyyy}`;
+    }
+
+    const quarter = Math.ceil((date.getMonth() + 1) / 3);
+    return `${quarter}-${date.getFullYear()}`;
+  }
+
   // ─── Operations Reports ────────────────────────────────────────────────────
 
   async getJiaxingLocationValue(name?: string): Promise<Record<string, unknown>[]> {
@@ -551,10 +860,13 @@ export class ReportsService {
 
     const showAll = !displayCustomers || displayCustomers === 'Show All' || displayCustomers === 'false' || displayCustomers === 'undefined';
     const custFilter = showAll ? undefined : displayCustomers;
+    const view = this.normalizeView(typeOfView);
 
-    const [details, summary] = await Promise.all([
+    const [details, summary, otdChartRows, reasonChartRows] = await Promise.all([
       this.repository.getOtdReportV1Details(from, to, custFilter),
       this.repository.getOtdReportV1Summary(from, to),
+      this.repository.getOtdReportChartData(from, to, custFilter),
+      this.repository.getOtdReportReasonChart(from, to),
     ]);
 
     const soLines = details.map((r) => String(r['soAndLine'] ?? `${r['so_nbr']}-${r['sod_line']}`));
@@ -601,7 +913,58 @@ export class ReportsService {
       average = totalLines > 0 ? Number(((totalShippedOnTime / totalLines) * 100).toFixed(2)) : 0;
     }
 
-    return { details: enrichedDetails, summary, average };
+    // When "Show All" is selected, aggregate across all customers per date
+    // to match legacy PHP behavior (single 'nocustomer' series)
+    let mappedChartRows: ChartRow[];
+    
+    if (showAll) {
+      // Group by date and aggregate across all customers
+      const dateAggregates = new Map<string, { totalLines: number; totalShippedOnTime: number; sod_per_date: string }>();
+      
+      for (const row of otdChartRows) {
+        const date = String(row['sod_per_date'] ?? '');
+        const existing = dateAggregates.get(date) || { totalLines: 0, totalShippedOnTime: 0, sod_per_date: date };
+        existing.totalLines += Number(row['total_lines'] ?? 0);
+        existing.totalShippedOnTime += Number(row['total_shipped_on_time'] ?? 0);
+        dateAggregates.set(date, existing);
+      }
+      
+      // Convert aggregates to ChartRow format
+      mappedChartRows = Array.from(dateAggregates.values()).map((agg) => ({
+        value: agg.totalLines > 0 ? Number(((agg.totalShippedOnTime / agg.totalLines) * 100).toFixed(2)) : 0,
+        label: 'nocustomer',  // Match legacy PHP key
+        request_date: agg.sod_per_date,
+        background_color: this.getColorForLabel('nocustomer'),
+      }));
+    } else {
+      // Keep individual customer series for specific customer selection
+      mappedChartRows = otdChartRows.map((row) => ({
+        value: Number(row['value'] ?? 0),
+        label: String(row['label'] ?? row['so_cust'] ?? 'Other'),
+        request_date: String(row['sod_per_date'] ?? ''),
+        background_color: this.getColorForLabel(String(row['label'] ?? row['so_cust'] ?? 'Other')),
+      }));
+    }
+
+    const chartData = this.buildChart(mappedChartRows, from, to, view);
+
+    // Build reasonChart from queried data
+    const reasonChart: { label: string[]; value: number[] } = { label: [], value: [] };
+    if (reasonChartRows && reasonChartRows.length > 0) {
+      for (const row of reasonChartRows) {
+        reasonChart.label.push(String(row['label'] ?? 'Other'));
+        reasonChart.value.push(Number(row['total_lines'] ?? 0));
+      }
+    }
+
+    return {
+      details: enrichedDetails,
+      summary,
+      average,
+      chartData,
+      goal: 90,
+      reasonChart,
+    };
   }
 
   async refreshOtdData(): Promise<unknown> {

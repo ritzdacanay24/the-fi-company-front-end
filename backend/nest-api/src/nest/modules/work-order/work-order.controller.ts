@@ -30,6 +30,11 @@ export class WorkOrderController {
     return this.service.getDetailsByWorkOrderNumber(workOrderNumber || '');
   }
 
+  @Get('completedWorkOrders')
+  async getCompletedWorkOrders() {
+    return this.service.getCompletedWorkOrders();
+  }
+
   @Get('legacy-read')
   async legacyRead(@Query('order') order?: string) {
     return this.service.getLegacyReadByWorkOrderNumber(order || '');
