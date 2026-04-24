@@ -1,0 +1,371 @@
+<div class="row">
+  <div class="col-lg-12">
+    <div class="card">
+      <div class="card-header border-0">
+        <h4 class="card-title mb-1">Access Control</h4>
+        <p class="text-muted mb-0">Manage role permissions, module domains, and user-specific access exceptions.</p>
+      </div>
+
+      <div class="card-body" *ngIf="!isLoading; else loadingTpl">
+        <ul class="nav nav-pills mb-4">
+          <li class="nav-item">
+            <button
+              type="button"
+              class="nav-link"
+              [class.active]="activeTab === 'role'"
+              (click)="switchTab('role')">
+              Roles & Permissions
+            </button>
+          </li>
+          <li class="nav-item">
+            <button
+              type="button"
+              class="nav-link"
+              [class.active]="activeTab === 'modules'"
+              (click)="switchTab('modules')">
+              Module Mapping
+            </button>
+          </li>
+          <li class="nav-item">
+            <button
+              type="button"
+              class="nav-link"
+              [class.active]="activeTab === 'user'"
+              (click)="switchTab('user')">
+              User Exceptions
+            </button>
+          </li>
+          <li class="nav-item">
+            <button
+              type="button"
+              class="nav-link position-relative"
+              [class.active]="activeTab === 'requests'"
+              (click)="switchTab('requests')">
+              Access Requests
+              <span
+                *ngIf="pendingRequestCount > 0"
+                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                {{ pendingRequestCount }}
+              </span>
+            </button>
+          </li>
+        </ul>
+
+        <ng-container *ngIf="activeTab === 'role'">
+          <div class="card border mb-3">
+            <div class="card-body">
+              <h6 class="mb-3">Create New Role</h6>
+              <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                  <label class="form-label">Role Name</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    [(ngModel)]="newRoleName"
+                    placeholder="e.g. intake">
+                </div>
+                <div class="col-md-5">
+                  <label class="form-label">Description</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    [(ngModel)]="newRoleDescription"
+                    placeholder="Optional description">
+                </div>
+                <div class="col-md-3 text-md-end">
+                  <button
+                    class="btn btn-outline-primary w-100"
+                    [disabled]="isCreatingRole"
+                    (click)="createRole()">
+                    <span *ngIf="isCreatingRole" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                    Create Role
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-3 align-items-end mb-3">
+            <div class="col-md-6 col-lg-4">
+              <label class="form-label">Role</label>
+              <select
+                class="form-select"
+                [ngModel]="selectedRoleId"
+                (ngModelChange)="onRoleChange($event)">
+                <option [ngValue]="null">Select role</option>
+                <option *ngFor="let role of roles; trackBy: trackByRole" [ngValue]="role.id">
+                  {{ role.name }}
+                </option>
+              </select>
+            </div>
+            <div class="col-md-6 col-lg-8 text-md-end">
+              <button
+                class="btn btn-primary"
+                [disabled]="isSaving || !selectedRoleId"
+                (click)="save()">
+                <span *ngIf="isSaving" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                Save Role Permissions
+              </button>
+            </div>
+          </div>
+
+          <div class="table-responsive border rounded" *ngIf="selectedRoleId; else emptyRoleTpl">
+            <table class="table table-sm align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th style="width: 80px;">Allow</th>
+                  <th>Permission</th>
+                  <th>Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let permission of permissions; trackBy: trackByPermission">
+                  <td>
+                    <input
+                      type="checkbox"
+                      class="form-check-input"
+                      [checked]="isPermissionSelected(permission.id)"
+                      (change)="togglePermission(permission.id, $any($event.target).checked)">
+                  </td>
+                  <td class="fw-semibold">{{ permission.name }}</td>
+                  <td class="text-muted">{{ permission.description || '-' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </ng-container>
+
+        <ng-container *ngIf="activeTab === 'modules'">
+          <div class="alert alert-secondary">
+            Map each module to a domain. User access is evaluated by role permissions plus domain scope.
+          </div>
+
+          <div class="table-responsive border rounded">
+            <table class="table table-sm align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Module</th>
+                  <th>Key</th>
+                  <th style="min-width: 180px;">Domain</th>
+                  <th style="min-width: 180px;">Department</th>
+                  <th style="width: 90px;">Active</th>
+                  <th style="width: 140px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let module of modules; trackBy: trackByModule">
+                  <td class="fw-semibold">{{ module.display_name }}</td>
+                  <td><code>{{ module.module_key }}</code></td>
+                  <td>
+                    <input
+                      type="text"
+                      class="form-control form-control-sm"
+                      [(ngModel)]="getModuleEdit(module).domain">
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      class="form-control form-control-sm"
+                      [(ngModel)]="getModuleEdit(module).department">
+                  </td>
+                  <td>
+                    <input
+                      type="checkbox"
+                      class="form-check-input"
+                      [(ngModel)]="getModuleEdit(module).isActive">
+                  </td>
+                  <td>
+                    <button
+                      class="btn btn-sm btn-primary"
+                      [disabled]="isSavingModuleId === module.id"
+                      (click)="saveModule(module)">
+                      <span *ngIf="isSavingModuleId === module.id" class="spinner-border spinner-border-sm me-1" role="status"></span>
+                      Save
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </ng-container>
+
+        <ng-container *ngIf="activeTab === 'user'">
+          <div class="alert alert-info">
+            Assign explicit user-level permission exceptions for a domain. This supports special cases like intake users.
+          </div>
+
+          <div class="row g-3 align-items-end mb-3">
+            <div class="col-md-6 col-lg-5">
+              <label class="form-label">User</label>
+              <select
+                class="form-select"
+                [ngModel]="selectedUserId"
+                (ngModelChange)="onUserChange($event)">
+                <option [ngValue]="null">Select user</option>
+                <option *ngFor="let user of users; trackBy: trackByUser" [ngValue]="user.id">
+                  {{ user.name }} (ID: {{ user.id }})
+                </option>
+              </select>
+            </div>
+
+            <div class="col-md-6 col-lg-3">
+              <label class="form-label">Domain</label>
+              <select
+                class="form-select"
+                [ngModel]="selectedGrantDomain"
+                (ngModelChange)="onGrantDomainChange($event)">
+                <option [ngValue]="''">Select domain</option>
+                <option *ngFor="let domain of domains; trackBy: trackByValue" [ngValue]="domain">
+                  {{ domain }}
+                </option>
+              </select>
+            </div>
+
+            <div class="col-lg-4 text-lg-end">
+              <button
+                class="btn btn-primary"
+                [disabled]="isSavingUserGrants || !selectedUserId || !selectedGrantDomain"
+                (click)="saveUserGrants()">
+                <span *ngIf="isSavingUserGrants" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                Save User Exceptions
+              </button>
+            </div>
+          </div>
+
+          <div class="table-responsive border rounded" *ngIf="selectedUserId && selectedGrantDomain; else emptyUserGrantTpl">
+            <table class="table table-sm align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th style="width: 80px;">Allow</th>
+                  <th>Permission</th>
+                  <th>Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let permission of permissions; trackBy: trackByPermission">
+                  <td>
+                    <input
+                      type="checkbox"
+                      class="form-check-input"
+                      [checked]="isUserGrantPermissionSelected(permission.id)"
+                      (change)="toggleUserGrantPermission(permission.id, $any($event.target).checked)">
+                  </td>
+                  <td class="fw-semibold">{{ permission.name }}</td>
+                  <td class="text-muted">{{ permission.description || '-' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </ng-container>
+
+        <!-- REQUESTS TAB -->
+        <ng-container *ngIf="activeTab === 'requests'">
+          <div class="d-flex align-items-center justify-content-between mb-3">
+            <div class="d-flex gap-2">
+              <button
+                *ngFor="let s of requestStatusFilters; trackBy: trackByStatusFilter"
+                class="btn btn-sm"
+                [class.btn-warning]="requestStatusFilter === s.value"
+                [class.btn-outline-secondary]="requestStatusFilter !== s.value"
+                (click)="setRequestStatusFilter(s.value)">
+                {{ s.label }}
+                <span *ngIf="s.value === 'pending' && pendingRequestCount > 0" class="badge bg-danger ms-1">{{ pendingRequestCount }}</span>
+              </button>
+            </div>
+            <button class="btn btn-sm btn-outline-secondary" (click)="loadRequests()">
+              <i class="mdi mdi-refresh me-1"></i> Refresh
+            </button>
+          </div>
+
+          <div *ngIf="isLoadingRequests" class="text-center py-5">
+            <div class="spinner-border text-warning" role="status"></div>
+            <p class="mt-2 text-muted">Loading requests...</p>
+          </div>
+
+          <div *ngIf="!isLoadingRequests && permissionRequests.length === 0" class="text-center py-5">
+            <i class="mdi mdi-check-circle-outline text-success" style="font-size:3rem;"></i>
+            <p class="mt-2 text-muted">No {{ requestStatusFilter || '' }} requests</p>
+          </div>
+
+          <div *ngIf="!isLoadingRequests && permissionRequests.length > 0" class="table-responsive border rounded">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>#</th>
+                  <th>User</th>
+                  <th>Permission</th>
+                  <th>Domain</th>
+                  <th>Reason</th>
+                  <th>Status</th>
+                  <th>Requested</th>
+                  <th>Reviewer</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let req of permissionRequests; trackBy: trackByRequest">
+                  <td><small class="text-muted">#{{ req.id }}</small></td>
+                  <td>
+                    <div class="fw-medium">{{ req.requester_name }}</div>
+                    <small class="text-muted">{{ req.requester_email }}</small>
+                  </td>
+                  <td><span class="badge bg-secondary">{{ req.permission_name }}</span></td>
+                  <td><span class="badge bg-light text-dark border">{{ req.domain }}</span></td>
+                  <td>
+                    <small class="text-muted" style="max-width:200px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+                      [title]="req.reason || ''">
+                      {{ req.reason || '—' }}
+                    </small>
+                  </td>
+                  <td>
+                    <span *ngIf="req.status === 'pending'"  class="badge bg-warning text-dark"><i class="mdi mdi-clock-outline me-1"></i>Pending</span>
+                    <span *ngIf="req.status === 'approved'" class="badge bg-success"><i class="mdi mdi-check-circle me-1"></i>Approved</span>
+                    <span *ngIf="req.status === 'denied'"   class="badge bg-danger"><i class="mdi mdi-close-circle me-1"></i>Denied</span>
+                    <span *ngIf="req.status === 'revoked'"  class="badge bg-secondary"><i class="mdi mdi-cancel me-1"></i>Revoked</span>
+                    <span *ngIf="req.status === 'expired'"  class="badge bg-secondary"><i class="mdi mdi-timer-off me-1"></i>Expired</span>
+                    <div *ngIf="req.review_notes" class="small text-muted mt-1" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" [title]="req.review_notes">
+                      {{ req.review_notes }}
+                    </div>
+                    <div *ngIf="req.expires_at" class="small text-muted">until {{ req.expires_at | date:'shortDate' }}</div>
+                  </td>
+                  <td><small>{{ req.requested_at | date:'short' }}</small></td>
+                  <td><small class="text-muted">{{ req.reviewer_name || '—' }}</small></td>
+                  <td>
+                    <div *ngIf="req.status === 'pending'" class="d-flex gap-1">
+                      <button class="btn btn-sm btn-success" (click)="approveRequest(req)" title="Approve">
+                        <i class="mdi mdi-check"></i>
+                      </button>
+                      <button class="btn btn-sm btn-danger" (click)="denyRequest(req)" title="Deny">
+                        <i class="mdi mdi-close"></i>
+                      </button>
+                    </div>
+                    <small *ngIf="req.status !== 'pending'" class="text-muted">—</small>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </ng-container>
+      </div>
+
+      <ng-template #loadingTpl>
+        <div class="card-body text-center py-5">
+          <div class="spinner-border text-primary" role="status"></div>
+          <p class="text-muted mt-3 mb-0">Loading role and permission data...</p>
+        </div>
+      </ng-template>
+
+      <ng-template #emptyRoleTpl>
+        <div class="alert alert-info mb-0">
+          Select a role to view and edit its permissions.
+        </div>
+      </ng-template>
+
+      <ng-template #emptyUserGrantTpl>
+        <div class="alert alert-warning mb-0">
+          Select a user and domain to manage user-specific permissions.
+        </div>
+      </ng-template>
+    </div>
+  </div>
+</div>

@@ -1,4 +1,11 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
+import { AccessControlService } from '../access-control';
 import { CreateSafetyIncidentDto, UpdateSafetyIncidentDto } from './dto';
 import { SafetyIncidentRecord, SafetyIncidentRepository } from './safety-incident.repository';
 import { EmailService } from '@/shared/email/email.service';
@@ -12,6 +19,7 @@ export class SafetyIncidentService {
 
   constructor(
     private readonly safetyIncidentRepository: SafetyIncidentRepository,
+    private readonly accessControlService: AccessControlService,
     private readonly emailService: EmailService,
     private readonly emailTemplateService: EmailTemplateService,
     private readonly urlBuilder: UrlBuilder,
@@ -61,9 +69,13 @@ export class SafetyIncidentService {
     return safetyIncident;
   }
 
-  async create(dto: CreateSafetyIncidentDto): Promise<SafetyIncidentRecord> {
+  async create(dto: CreateSafetyIncidentDto, userId: number): Promise<SafetyIncidentRecord> {
     const insertId = await this.safetyIncidentRepository.createIncident(
-      dto as Record<string, unknown>,
+      {
+        ...(dto as Record<string, unknown>),
+        created_by: userId,
+        status: dto.status ?? 'Open',
+      },
     );
 
     await this.sendCreateNotification(insertId);
@@ -106,7 +118,11 @@ export class SafetyIncidentService {
     }
   }
 
-  async updateById(id: number, dto: UpdateSafetyIncidentDto): Promise<SafetyIncidentRecord> {
+  async updateById(
+    id: number,
+    dto: UpdateSafetyIncidentDto,
+    userId: number,
+  ): Promise<SafetyIncidentRecord> {
     const existing = await this.safetyIncidentRepository.getById(id);
     if (!existing) {
       throw new NotFoundException({
@@ -115,7 +131,12 @@ export class SafetyIncidentService {
       });
     }
 
-    if (Object.keys(dto).length === 0) {
+    const sanitizedUpdate = { ...(dto as Record<string, unknown>) };
+    delete sanitizedUpdate.created_by;
+
+    await this.assertCanUpdateIncident(userId, existing, sanitizedUpdate);
+
+    if (Object.keys(sanitizedUpdate).length === 0) {
       throw new BadRequestException({
         code: 'RC_SAFETY_INCIDENT_EMPTY_UPDATE',
         message: 'No fields provided for update',
@@ -124,7 +145,7 @@ export class SafetyIncidentService {
 
     const affectedRows = await this.safetyIncidentRepository.updateIncidentById(
       id,
-      dto as Record<string, unknown>,
+      sanitizedUpdate,
     );
 
     if (affectedRows === 0) {
@@ -137,7 +158,7 @@ export class SafetyIncidentService {
     return this.getById(id);
   }
 
-  async deleteById(id: number): Promise<{ success: true; id: number }> {
+  async deleteById(id: number, userId: number): Promise<{ success: true; id: number }> {
     const existing = await this.safetyIncidentRepository.getById(id);
     if (!existing) {
       throw new NotFoundException({
@@ -146,7 +167,159 @@ export class SafetyIncidentService {
       });
     }
 
+    await this.assertCanDeleteIncident(userId, existing);
+
     await this.safetyIncidentRepository.deleteIncidentById(id);
     return { success: true, id };
+  }
+
+  async archiveById(id: number, userId: number): Promise<SafetyIncidentRecord> {
+    const existing = await this.safetyIncidentRepository.getById(id);
+    if (!existing) {
+      throw new NotFoundException({
+        code: 'RC_SAFETY_INCIDENT_NOT_FOUND',
+        message: `Safety incident with id ${id} not found`,
+      });
+    }
+
+    if (existing.archived_at) {
+      throw new BadRequestException({
+        code: 'RC_SAFETY_INCIDENT_ALREADY_ARCHIVED',
+        message: 'Safety incident is already archived',
+      });
+    }
+
+    // Owner can archive their own; manager/supervisor/admin can archive any
+    if (!this.isIncidentOwner(existing, userId) && !(await this.userCanManageAnyIncident(userId))) {
+      throw new ForbiddenException({
+        code: 'RC_SAFETY_INCIDENT_FORBIDDEN',
+        message: 'You cannot archive this safety incident',
+      });
+    }
+
+    await this.safetyIncidentRepository.archiveIncidentById(id, userId);
+    const updated = await this.safetyIncidentRepository.getById(id);
+    return updated!;
+  }
+
+  async unarchiveById(id: number, userId: number): Promise<SafetyIncidentRecord> {
+    const canManage = await this.userCanManageAnyIncident(userId);
+    if (!canManage) {
+      throw new ForbiddenException({
+        code: 'RC_SAFETY_INCIDENT_FORBIDDEN',
+        message: 'Only supervisors, managers, or admins can unarchive safety incidents',
+      });
+    }
+
+    const existing = await this.safetyIncidentRepository.getById(id);
+    if (!existing) {
+      throw new NotFoundException({
+        code: 'RC_SAFETY_INCIDENT_NOT_FOUND',
+        message: `Safety incident with id ${id} not found`,
+      });
+    }
+
+    await this.safetyIncidentRepository.unarchiveIncidentById(id);
+    const updated = await this.safetyIncidentRepository.getById(id);
+    return updated!;
+  }
+
+  async getArchived(): Promise<SafetyIncidentRecord[]> {
+    return this.safetyIncidentRepository.getArchived();
+  }
+
+  private async assertCanUpdateIncident(
+    userId: number,
+    safetyIncident: SafetyIncidentRecord,
+    updatePayload: Record<string, unknown>,
+  ): Promise<void> {
+    if (await this.userCanManageAnyIncident(userId)) {
+      return;
+    }
+
+    if (!this.isIncidentOwner(safetyIncident, userId)) {
+      throw new ForbiddenException({
+        code: 'RC_SAFETY_INCIDENT_FORBIDDEN',
+        message: 'You can only update your own safety incidents',
+      });
+    }
+
+    if (!this.isOwnerEditableStatus(safetyIncident)) {
+      throw new ForbiddenException({
+        code: 'RC_SAFETY_INCIDENT_LOCKED',
+        message: 'This safety incident can no longer be edited by the submitter',
+      });
+    }
+
+    const nextStatus = this.normalizeStatus(updatePayload.status);
+    if (nextStatus && nextStatus !== 'open') {
+      throw new ForbiddenException({
+        code: 'RC_SAFETY_INCIDENT_STATUS_FORBIDDEN',
+        message: 'Only supervisors, managers, or admins can change the incident status',
+      });
+    }
+  }
+
+  private async assertCanDeleteIncident(
+    userId: number,
+    safetyIncident: SafetyIncidentRecord,
+  ): Promise<void> {
+    if (this.isIncidentOwner(safetyIncident, userId) && this.isOwnerEditableStatus(safetyIncident)) {
+      return;
+    }
+
+    const requiredPermission = 'delete';
+    const moduleKey = 'safety-incident';
+    const mappedModuleDomain = await this.accessControlService.getModuleDomain(moduleKey);
+    const requiredDomain = String(mappedModuleDomain || '').trim();
+
+    if (!requiredDomain) {
+      throw new ForbiddenException({
+        code: 'RC_SAFETY_INCIDENT_DOMAIN_CONFIG_MISSING',
+        message: 'Safety Incident module domain is not configured',
+        failedCheck: 'permission',
+        requiredPermissions: [requiredPermission],
+        requiredDomain: null,
+        moduleKey,
+        configuredModuleDomain: null,
+      });
+    }
+
+    const canDeleteAcrossDomain = await this.accessControlService.userHasPermissionForDomain(
+      userId,
+      requiredPermission,
+      requiredDomain,
+    );
+
+    if (canDeleteAcrossDomain) {
+      return;
+    }
+
+    throw new ForbiddenException({
+      code: 'RC_SAFETY_INCIDENT_DELETE_FORBIDDEN',
+      message: 'You cannot delete this safety incident',
+      failedCheck: 'permission',
+      requiredPermissions: [requiredPermission],
+      requiredDomain,
+      moduleKey,
+      configuredModuleDomain: mappedModuleDomain,
+    });
+  }
+
+  private async userCanManageAnyIncident(userId: number): Promise<boolean> {
+    return this.accessControlService.userHasRoles(userId, ['admin', 'manager', 'supervisor']);
+  }
+
+  private isIncidentOwner(safetyIncident: SafetyIncidentRecord, userId: number): boolean {
+    return Number(safetyIncident.created_by) === userId;
+  }
+
+  private isOwnerEditableStatus(safetyIncident: SafetyIncidentRecord): boolean {
+    const status = this.normalizeStatus(safetyIncident.status);
+    return status === '' || status === 'open';
+  }
+
+  private normalizeStatus(status: unknown): string {
+    return typeof status === 'string' ? status.trim().toLowerCase() : '';
   }
 }
