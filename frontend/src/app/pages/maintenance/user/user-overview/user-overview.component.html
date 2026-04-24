@@ -96,10 +96,18 @@
                                 </li>
                                 <li [ngbNavItem]="3" class="nav-item">
                                     <a ngbNavLink class="nav-link" data-bs-toggle="tab" role="tab">
-                                        <i class="ri-file-info-line text-muted align-bottom me-1"></i> Permissions
+                                        <i class="ri-file-list-3-line text-muted align-bottom me-1"></i> Page Access
                                     </a>
                                     <ng-template ngbNavContent  *ngIf="active == 3">
                                         <app-user-permissions [id]="id"></app-user-permissions>
+                                    </ng-template>
+                                </li>
+                                <li [ngbNavItem]="4" class="nav-item">
+                                    <a ngbNavLink class="nav-link" data-bs-toggle="tab" role="tab">
+                                        <i class="ri-shield-user-line text-muted align-bottom me-1"></i> RBAC
+                                    </a>
+                                    <ng-template ngbNavContent *ngIf="active == 4">
+                                        <app-user-rbac [id]="id"></app-user-rbac>
                                     </ng-template>
                                 </li>
                             </ul>

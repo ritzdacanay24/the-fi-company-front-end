@@ -8,6 +8,7 @@ import { NgbDropdownModule, NgbNavModule } from "@ng-bootstrap/ng-bootstrap";
 import { UserEditComponent } from "../user-edit/user-edit.component";
 import { UserPasswordComponent } from "../user-password/user-password.component";
 import { UserPermissionsComponent } from "../user-permissions/user-permissions.component";
+import { UserRbacComponent } from "../user-rbac/user-rbac.component";
 import { UserEditFormComponent } from "../forms/edit-form/user-edit-form.component";
 import { NewUserService } from "@app/core/api/users/users.service";
 import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErrors";
@@ -22,6 +23,7 @@ import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErr
     UserEditComponent,
     UserPasswordComponent,
     UserPermissionsComponent,
+    UserRbacComponent,
   ],
   selector: "app-user-overview",
   templateUrl: "./user-overview.component.html",

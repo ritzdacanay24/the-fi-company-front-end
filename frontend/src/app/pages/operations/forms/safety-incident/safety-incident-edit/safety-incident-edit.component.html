@@ -53,6 +53,27 @@
       </div>
 
       <div class="card shadow-sm border-0">
+        <div class="card-header bg-white border-bottom d-flex align-items-center justify-content-between py-3 px-4">
+          <span class="fw-semibold text-dark">
+            <i class="mdi mdi-alert-circle-outline text-danger me-2"></i>
+            Safety Incident #{{ id }}
+          </span>
+          <div ngbDropdown placement="bottom-end" [container]="'body'">
+            <button type="button" class="btn btn-sm btn-outline-secondary" ngbDropdownToggle>
+              Actions
+            </button>
+            <div ngbDropdownMenu>
+              <h6 class="dropdown-header">Incident Actions</h6>
+              <button ngbDropdownItem (click)="onArchive()">
+                <i class="mdi mdi-archive-outline me-2 text-warning"></i>Archive Incident
+              </button>
+              <div class="dropdown-divider"></div>
+              <button ngbDropdownItem (click)="onDelete()">
+                <i class="mdi mdi-delete-outline me-2 text-danger"></i>Delete Incident
+              </button>
+            </div>
+          </div>
+        </div>
         <div class="card-body p-4">
           <app-safety-incident-form (setFormEmitter)="setFormEmitter($event)" [submitted]="submitted"
             [id]="id"></app-safety-incident-form>

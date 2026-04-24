@@ -10,12 +10,12 @@ import { SafetyIncidentFormComponent } from "../safety-incident-form/safety-inci
 import { FILE, NAVIGATION_ROUTE } from "../safety-incident-constant";
 import { UploadService } from "@app/core/api/upload/upload.service";
 import { firstValueFrom } from "rxjs";
-import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
+import { NgbDropdown, NgbDropdownItem, NgbDropdownMenu, NgbDropdownToggle, NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { FileViewerModalComponent } from "@app/shared/components/file-viewer-modal/file-viewer-modal.component";
 
 @Component({
   standalone: true,
-  imports: [SharedModule, SafetyIncidentFormComponent],
+  imports: [SharedModule, SafetyIncidentFormComponent, NgbDropdown, NgbDropdownToggle, NgbDropdownMenu, NgbDropdownItem],
   selector: "app-safety-incident-edit",
   templateUrl: "./safety-incident-edit.component.html",
 })
@@ -211,6 +211,34 @@ export class SafetyIncidentEditComponent {
       if (failedAttachments > 0) {
         this.toastrService.warning(`${totalAttachments} file(s) uploaded, ${failedAttachments} failed`);
       }
+    }
+  }
+
+  async onArchive() {
+    if (!confirm(`Archive Safety Incident #${this.id}? It will be hidden from the active list but remain on record.`)) return;
+    try {
+      this.isLoading = true;
+      await this.api.archive(this.id);
+      this.toastrService.success('Safety incident archived successfully');
+      this.form.markAsPristine();
+      this.goBack();
+    } catch (err) {
+      this.isLoading = false;
+      this.toastrService.error('Failed to archive safety incident');
+    }
+  }
+
+  async onDelete() {
+    if (!confirm(`Are you sure you want to delete Safety Incident #${this.id}? This action cannot be undone.`)) return;
+    try {
+      this.isLoading = true;
+      await this.api.delete(this.id);
+      this.toastrService.success('Safety incident deleted successfully');
+      this.form.markAsPristine();
+      this.goBack();
+    } catch (err) {
+      this.isLoading = false;
+      this.toastrService.error('Failed to delete safety incident');
     }
   }
 

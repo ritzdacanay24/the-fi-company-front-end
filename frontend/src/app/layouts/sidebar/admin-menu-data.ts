@@ -47,6 +47,16 @@ export const ADMIN_MENU: MenuItem[] = [
         accessRequired: true,
     },
     {
+        id: 9,
+        label: "Access Control",
+        link: "/admin/access-control",
+        description: "Assign permissions to roles",
+        icon: "las la-user-shield",
+        hideCheckBox: true,
+        accessRequired: true,
+        activatedRoutes: "/admin/access-control"
+    },
+    {
         id: 6,
         label: "Quick Actions",
         isTitle: true,

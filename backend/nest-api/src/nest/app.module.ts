@@ -1,5 +1,5 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AddressSearchModule } from './modules/address-search/address-search.module';
@@ -24,6 +24,9 @@ import { IgtSerialNumbersModule } from './modules/igt-serial-numbers';
 import { ItemSearchModule } from './modules/item-search/item-search.module';
 import { LateReasonCodesModule } from './modules/late-reason-codes/late-reason-codes.module';
 import { MasterControlModule } from './modules/master-control/master-control.module';
+import { AccessControlModule } from './modules/access-control/access-control.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { AuthGuard } from './guards/auth.guard';
 import { SerialAssignmentsModule } from './modules/serial-assignments';
 import { IgtTransferModule } from './modules/igt-transfer/igt-transfer.module';
 import { InventoryByProdLineModule } from './modules/inventory-by-prod-line';
@@ -154,6 +157,8 @@ import { UrlModule } from '../shared/url/url.module';
     ItemSearchModule,
     LateReasonCodesModule,
     MasterControlModule,
+    AccessControlModule,
+    AuthModule,
     IgtTransferModule,
     InventoryByProdLineModule,
     MaterialRequestModule,
@@ -243,6 +248,10 @@ import { UrlModule } from '../shared/url/url.module';
     {
       provide: APP_INTERCEPTOR,
       useClass: LoggingInterceptor,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: AuthGuard,
     },
   ],
 })

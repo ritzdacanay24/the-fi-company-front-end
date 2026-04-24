@@ -4,6 +4,7 @@ import { NgbNavModule } from "@ng-bootstrap/ng-bootstrap";
 import { QueryComponent } from "./query/query.component";
 import { AccessGuard } from "@app/core/guards/access.guard";
 import { LogComponent } from "./log/log.component";
+import { AccessControlComponent } from "../maintenance/access-control/access-control.component";
 
 const routes: Routes = [
   {
@@ -20,6 +21,12 @@ const routes: Routes = [
   {
     path: "log",
     component: LogComponent,
+    canActivate: [AccessGuard],
+    runGuardsAndResolvers: "always",
+  },
+  {
+    path: "access-control",
+    component: AccessControlComponent,
     canActivate: [AccessGuard],
     runGuardsAndResolvers: "always",
   },

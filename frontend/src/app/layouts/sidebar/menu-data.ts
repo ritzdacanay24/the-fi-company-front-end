@@ -465,6 +465,12 @@ export const MENU_DATA: MenuItem[] = [
             // },
         ],
     },
+    {
+        id: 36,
+        label: "Admin & Maintenance",
+        isTitle: true,
+        hideCheckBox: true,
+    },
 ];
 
 // Function to recursively sort menu items by ID, then by label

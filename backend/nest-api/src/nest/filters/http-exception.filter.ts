@@ -47,6 +47,23 @@ export class GlobalHttpExceptionFilter implements ExceptionFilter {
         ? (responseBody.endpoint as string)
         : undefined;
 
+    const additionalPayload = responseBody
+      ? Object.entries(responseBody).reduce<Record<string, unknown>>((acc, [key, value]) => {
+          // These keys are normalized explicitly below.
+          if (key === 'message' || key === 'statusCode' || key === 'error') {
+            return acc;
+          }
+
+          // details/endpoint/code are also normalized explicitly below.
+          if (key === 'details' || key === 'endpoint' || key === 'code') {
+            return acc;
+          }
+
+          acc[key] = value;
+          return acc;
+        }, {})
+      : {};
+
     const message =
       typeof exceptionResponse === 'string'
         ? exceptionResponse
@@ -90,6 +107,7 @@ export class GlobalHttpExceptionFilter implements ExceptionFilter {
       message: normalizedMessage,
       ...(normalizedDetails !== undefined ? { details: normalizedDetails } : {}),
       ...(endpoint ? { endpoint } : {}),
+      ...additionalPayload,
       path: request.url,
       requestId: request.requestId || null,
       timestamp: new Date().toISOString(),

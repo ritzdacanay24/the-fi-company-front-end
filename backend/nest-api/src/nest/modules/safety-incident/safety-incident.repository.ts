@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { RowDataPacket } from 'mysql2/promise';
+import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { MysqlService } from '@/shared/database/mysql.service';
 import { BaseRepository } from '@/shared/repositories/base.repository';
 
@@ -37,6 +37,8 @@ export class SafetyIncidentRepository extends BaseRepository<SafetyIncidentRecor
     'corrective_action_owner_user_id',
     'corrective_action_owner_user_email',
     'details_of_any_damage_or_personal_injury',
+    'archived_at',
+    'archived_by',
   ]);
 
   private sanitizePayload(payload: Record<string, unknown>): Record<string, unknown> {
@@ -55,7 +57,7 @@ export class SafetyIncidentRepository extends BaseRepository<SafetyIncidentRecor
   }): Promise<SafetyIncidentRecord[]> {
     const { selectedViewType, dateFrom, dateTo, isAll } = params;
 
-    let sql = 'SELECT * FROM safety_incident a WHERE 1=1';
+    let sql = 'SELECT * FROM safety_incident a WHERE a.archived_at IS NULL';
     const sqlParams: Array<string> = [];
 
     if (!isAll && dateFrom && dateTo) {
@@ -80,7 +82,13 @@ export class SafetyIncidentRepository extends BaseRepository<SafetyIncidentRecor
 
   async getAll(): Promise<SafetyIncidentRecord[]> {
     return this.rawQuery<SafetyIncidentRecord>(
-      'SELECT * FROM safety_incident ORDER BY created_date DESC',
+      'SELECT * FROM safety_incident WHERE archived_at IS NULL ORDER BY created_date DESC',
+    );
+  }
+
+  async getArchived(): Promise<SafetyIncidentRecord[]> {
+    return this.rawQuery<SafetyIncidentRecord>(
+      'SELECT * FROM safety_incident WHERE archived_at IS NOT NULL ORDER BY archived_at DESC',
     );
   }
 
@@ -108,5 +116,21 @@ export class SafetyIncidentRepository extends BaseRepository<SafetyIncidentRecor
 
   async deleteIncidentById(id: number): Promise<number> {
     return this.deleteById(id);
+  }
+
+  async archiveIncidentById(id: number, archivedBy: number): Promise<number> {
+    const result = await this.mysqlService.execute<ResultSetHeader>(
+      'UPDATE safety_incident SET archived_at = NOW(), archived_by = ? WHERE id = ?',
+      [archivedBy, id],
+    );
+    return result.affectedRows;
+  }
+
+  async unarchiveIncidentById(id: number): Promise<number> {
+    const result = await this.mysqlService.execute<ResultSetHeader>(
+      'UPDATE safety_incident SET archived_at = NULL, archived_by = NULL WHERE id = ?',
+      [id],
+    );
+    return result.affectedRows;
   }
 }

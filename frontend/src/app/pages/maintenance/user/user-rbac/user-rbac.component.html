@@ -1,0 +1,119 @@
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">
+        <h4 class="card-title mb-0">Roles</h4>
+      </div>
+      <div class="card-body">
+        <p class="text-muted mb-3">Assign one or more RBAC roles. Effective permissions are derived from the selected roles.</p>
+
+        <div *ngIf="!isLoading; else rolesLoading" class="vstack gap-3">
+          <div class="form-check" *ngFor="let role of roles; trackBy: trackByRole">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              [id]="'role-' + role.id"
+              [checked]="isRoleSelected(role.id)"
+              (change)="toggleRole(role.id, $any($event.target).checked)"
+            >
+            <label class="form-check-label" [for]="'role-' + role.id">
+              <span class="fw-semibold text-capitalize">{{ role.name }}</span>
+              <span class="d-block text-muted small" *ngIf="role.description">{{ role.description }}</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">
+        <h4 class="card-title mb-0">Domain Scopes</h4>
+      </div>
+      <div class="card-body">
+        <p class="text-muted mb-3">Scope determines where the selected roles apply. Use <strong>*</strong> for cross-domain access.</p>
+
+        <div *ngIf="!isLoading; else scopesLoading" class="vstack gap-3">
+          <div class="form-check">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              id="scope-all"
+              [checked]="isScopeSelected('*')"
+              (change)="toggleScope('*', $any($event.target).checked)"
+            >
+            <label class="form-check-label" for="scope-all">
+              <span class="fw-semibold">All domains (*)</span>
+              <span class="d-block text-muted small">Broad legacy-style access across all registered domains.</span>
+            </label>
+          </div>
+
+          <div class="form-check" *ngFor="let domain of domains; trackBy: trackByValue">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              [id]="'scope-' + domain"
+              [checked]="isScopeSelected(domain)"
+              (change)="toggleScope(domain, $any($event.target).checked)"
+            >
+            <label class="form-check-label text-capitalize" [for]="'scope-' + domain">
+              {{ domain }}
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+          <h4 class="card-title mb-0">Effective Permissions</h4>
+          <div class="text-muted small mt-1">These are derived from the user's assigned roles after save.</div>
+        </div>
+        <button class="btn btn-primary" [disabled]="isSaving || isLoading" (click)="save()">
+          Save RBAC
+        </button>
+      </div>
+      <div class="card-body">
+        <ng-container *ngIf="!isLoading; else permissionsLoading">
+          <div class="mb-3">
+            <div class="text-muted small mb-2">Assigned scopes</div>
+            <ng-container *ngIf="selectedScopeValues.length; else noScopes">
+              <span class="badge bg-light text-dark border me-1 mb-1" *ngFor="let scope of selectedScopeValues; trackBy: trackByValue">{{ scope }}</span>
+            </ng-container>
+            <ng-template #noScopes>
+              <span class="text-muted">No domain scopes assigned</span>
+            </ng-template>
+          </div>
+
+          <div>
+            <div class="text-muted small mb-2">Permissions from assigned roles</div>
+            <ng-container *ngIf="permissions.length; else noPermissions">
+              <span class="badge bg-secondary-subtle text-secondary me-1 mb-1 text-uppercase" *ngFor="let permission of permissions">
+                {{ permission.name }}
+              </span>
+            </ng-container>
+            <ng-template #noPermissions>
+              <span class="text-muted">No effective permissions</span>
+            </ng-template>
+          </div>
+        </ng-container>
+      </div>
+    </div>
+  </div>
+</div>
+
+<ng-template #rolesLoading>
+  <div class="text-muted">Loading roles...</div>
+</ng-template>
+
+<ng-template #scopesLoading>
+  <div class="text-muted">Loading scopes...</div>
+</ng-template>
+
+<ng-template #permissionsLoading>
+  <div class="text-muted">Loading RBAC details...</div>
+</ng-template>
