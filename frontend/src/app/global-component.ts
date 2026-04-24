@@ -4,7 +4,7 @@ export const GlobalComponent = {
   headerToken: { Authorization: `Bearer ${localStorage.getItem("token")}` },
 
   // Auth Api
-  AUTH_API: "https://dashboard.eye-fi.com/server/Api/",
+  AUTH_API: "apiV2/",
 
   // Products Api
   product: "apps/product",

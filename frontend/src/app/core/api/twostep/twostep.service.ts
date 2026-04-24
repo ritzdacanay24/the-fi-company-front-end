@@ -1,9 +1,16 @@
 import { Injectable } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
 import { DataService } from "../DataService";
-import { firstValueFrom } from "rxjs";
 
-let url = "auth/Login/twostep";
+const url = "auth/twostep";
+
+interface TwoStepResult {
+  valid: boolean;
+  status: string;
+  status_code: number;
+  twostep_token?: string | null;
+  passCode?: string | null;
+}
 
 @Injectable({
   providedIn: "root",
@@ -13,21 +20,27 @@ export class TwostepService extends DataService<any> {
     super(url, http);
   }
 
-  twoStepGenerateCode = async (params) =>
-    await firstValueFrom(this.http.post<any>(`${url}/twostep`, params));
+  // 2FA is being retired; keep method contracts but avoid legacy endpoint calls.
+  twoStepGenerateCode = async (_params: any): Promise<TwoStepResult> => ({
+    valid: false,
+    status: "disabled",
+    status_code: 0,
+    passCode: null,
+  });
 
-  validatetwoStepCode = async (params) =>
-    await firstValueFrom(
-      this.http.post<any>(`${url}/validatetwoStepCode`, params)
-    );
+  validatetwoStepCode = async (_params: any): Promise<TwoStepResult> => ({
+    valid: false,
+    status: "disabled",
+    status_code: 0,
+    twostep_token: null,
+  });
 
-  validatetwoStepCodeAndPassCode = async (params) =>
-    await firstValueFrom(
-      this.http.post<any>(`${url}/validatetwoStepCodeAndPassCode`, params)
-    );
+  validatetwoStepCodeAndPassCode = async (_params: any): Promise<TwoStepResult> => ({
+    valid: false,
+    status: "disabled",
+    status_code: 0,
+    twostep_token: null,
+  });
 
-  isTwostepEnabled = async () =>
-    await firstValueFrom(
-      this.http.get<any>(`${url}/isTwostepEnabled`)
-    );
+  isTwostepEnabled = async () => 0;
 }

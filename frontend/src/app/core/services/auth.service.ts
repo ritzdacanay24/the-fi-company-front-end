@@ -3,7 +3,6 @@ import { getFirebaseBackend } from "../../authUtils";
 import { User } from "src/app/store/Authentication/auth.models";
 import { BehaviorSubject, Observable, of, throwError } from "rxjs";
 import { HttpClient, HttpHeaders } from "@angular/common/http";
-import { GlobalComponent } from "../../global-component";
 import { Store } from "@ngrx/store";
 import { catchError, map } from "rxjs/operators";
 import {
@@ -16,7 +15,7 @@ import {
 import { TokenStorageService } from "./token-storage.service";
 import { THE_FI_COMPANY_CURRENT_USER } from "../guards/admin.guard";
 
-const AUTH_API = GlobalComponent.AUTH_API;
+const AUTH_API = "apiV2/";
 
 const httpOptions = {
   headers: new HttpHeaders({ "Content-Type": "application/json" }),
@@ -90,7 +89,7 @@ export class AuthenticationService {
 
     return this.http
       .post(
-        AUTH_API + "auth/Login/login",
+        AUTH_API + "auth/login",
         {
           email,
           password,
@@ -116,7 +115,7 @@ export class AuthenticationService {
   loginWithCardNumber(cardNumber: string) {
     return this.http
       .post(
-        AUTH_API + "auth/Login/login-card",
+        AUTH_API + "auth/login/card",
         {
           card_number: cardNumber
         },

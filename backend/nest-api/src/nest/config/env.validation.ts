@@ -67,4 +67,6 @@ export const envValidationSchema = Joi.object({
   IGT_TRANSFER_LOGO_URL: Joi.string().uri().allow('').optional(),
   MATERIAL_REQUEST_NOTIFY_TO: Joi.string().allow('').optional(),
   MATERIAL_REQUEST_NOTIFY_CC: Joi.string().allow('').optional(),
+  JWT_SECRET: Joi.string().trim().default('your-secret-key-change-in-production'),
+  JWT_EXPIRES_IN: Joi.string().default('24h'),
 });
