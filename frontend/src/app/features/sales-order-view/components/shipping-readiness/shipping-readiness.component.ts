@@ -411,7 +411,7 @@ export class ShippingReadinessComponent implements OnInit, OnDestroy {
     }
 
     private getSalesOrdersFromAPI(): Observable<SalesOrder[]> {
-        const apiUrl = 'https://dashboard.eye-fi.com/server/Api/Shipping/index?runOpenShippingReport';
+        const apiUrl = 'apiV2/shipping/read-open-report';
 
         return this.http.get<any>(apiUrl).pipe(
             map(response => {

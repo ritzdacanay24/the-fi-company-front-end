@@ -7,14 +7,13 @@ import { SalesOrder, ShippingEligibility, ShippingIssue, ShippingWarning, Shippi
   providedIn: 'root'
 })
 export class SalesOrderShippingService {
-  private readonly API_URL = '/backend/api/sales-orders';
+  private readonly API_URL = 'apiV2/sales-order-search';
 
   constructor(private http: HttpClient) {}
 
   // Get sales order data
   getSalesOrder(salesOrderNumber: string): Observable<SalesOrder> {
-    // For now, return mock data. Replace with actual API call
-    return this.http.get<SalesOrder>(`${this.API_URL}/${salesOrderNumber}`);
+    return this.http.get<SalesOrder>(`${this.API_URL}/read?so_number=${encodeURIComponent(salesOrderNumber)}`);
   }
 
   // Validate shipping eligibility for a sales order

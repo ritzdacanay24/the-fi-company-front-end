@@ -15,14 +15,14 @@ export class PageAccessController {
     return this.pageAccessService.getByUserId(userId);
   }
 
-  /** Toggle access (create/activate/delete) — mirrors page-access/create.php */
+  /** Toggle access (create/activate/delete). */
   @Post()
   @Permissions('manage')
   async toggle(@Body('user_id', ParseIntPipe) userId: number, @Body('menu_id', ParseIntPipe) menuId: number) {
     return this.pageAccessService.toggle(userId, menuId);
   }
 
-  /** Request access (active=0 record) — mirrors page-access/request-access.php */
+  /** Request access (active=0 record). */
   @Post('requestAccess')
   @Permissions('write')
   async requestAccess(

@@ -4,6 +4,8 @@ import { HttpClient } from '@angular/common/http';
 import { DataService } from '../DataService';
 
 const requestV2Url = 'apiV2/request';
+const publicRequestV2Url = 'apiV2/public/field-service';
+const jobV2Url = 'apiV2/job';
 
 @Injectable({
   providedIn: 'root'
@@ -31,15 +33,32 @@ export class RequestService extends DataService<any> {
   };
 
   createFieldServiceRequest(params, sendEmail = false) {
-    return firstValueFrom(this.http.post<{ message: string, id?: number }>(`https://dashboard.eye-fi.com/tasks/createFsRequest.php?sendEmail=${sendEmail}`, params))
+    const isPublicPayload =
+      params &&
+      typeof params === 'object' &&
+      ('customer_name' in params || 'service_type' in params || 'description' in params);
+
+    if (isPublicPayload) {
+      return firstValueFrom(this.http.post<any>(`${publicRequestV2Url}/requests`, params)).then((response) => ({
+        ...response,
+        id: response?.id ?? response?.requestId,
+        insertId: response?.insertId ?? response?.id ?? response?.requestId,
+      }));
+    }
+
+    return firstValueFrom(this.http.post<any>(`${requestV2Url}`, { ...params, sendEmail })).then((response) => ({
+      ...response,
+      id: response?.id,
+      insertId: response?.insertId ?? response?.id,
+    }));
   }
 
   getByToken(token) {
-    return firstValueFrom(this.http.get(`https://dashboard.eye-fi.com/tasks/fieldService/requests/getByToken.php?token=${token}`));
+    return firstValueFrom(this.http.get(`${publicRequestV2Url}/requests/by-token?token=${encodeURIComponent(token)}`));
   }
 
   getjobByRequestId(request_id) {
-    return firstValueFrom(this.http.get(`https://dashboard.eye-fi.com/tasks/fieldService/jobs/getByRequestId.php?request_id=${request_id}`));
+    return firstValueFrom(this.http.get(`${jobV2Url}/findOne?request_id=${encodeURIComponent(request_id)}`));
   }
 
   getAllRequests(selectedViewType?: string) {
@@ -51,6 +70,23 @@ export class RequestService extends DataService<any> {
 
 
   onRequestChanges(params, sendEmail = false) {
-    return firstValueFrom(this.http.post<{ message: string, id?: number }>(`https://dashboard.eye-fi.com/tasks/onRequestChanges.php?sendEmail=${sendEmail}`, params))
+    const requestId = Number(params?.fs_request_id ?? params?.request_id ?? 0);
+    const token = String(params?.token || '').trim();
+
+    if (!requestId || !token) {
+      throw new Error('request_id and token are required');
+    }
+
+    return firstValueFrom(
+      this.http.post<{ message: string; id?: number }>(
+        `${publicRequestV2Url}/requests/${requestId}/comments?token=${encodeURIComponent(token)}`,
+        {
+          name: params?.name,
+          comment: params?.comment,
+          request_change: !!params?.request_change,
+          sendEmail,
+        },
+      ),
+    );
   }
 }

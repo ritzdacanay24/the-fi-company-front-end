@@ -15,7 +15,7 @@ import { Permissions, RolePermissionGuard } from '../access-control';
 import { SerialAssignmentsService } from './serial-assignments.service';
 import { AssignmentsFilterDto, VoidAssignmentDto, DeleteAssignmentDto, RestoreAssignmentDto, BulkVoidDto } from './dto';
 
-@Controller(['serial-assignments', 'serial-assignments/index.php'])
+@Controller('serial-assignments')
 @UseGuards(RolePermissionGuard)
 export class SerialAssignmentsController {
   constructor(private readonly service: SerialAssignmentsService) {}

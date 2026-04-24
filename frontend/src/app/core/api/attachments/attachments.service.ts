@@ -23,7 +23,7 @@ export class AttachmentsService extends DataService<any> {
   };
 
   override delete = async (id: number): Promise<{ message: string }> => {
-    await firstValueFrom(this.http.delete<{ rowCount: number }>(`${url}/deleteById?id=${id}`));
+    await firstValueFrom(this.http.delete<{ rowCount: number }>(`${url}/${id}`));
     return { message: 'Successfully deleted' };
   };
 
@@ -33,7 +33,9 @@ export class AttachmentsService extends DataService<any> {
 
 
   getAttachmentByRequestId(id: any) {
-    return this.http.get(`https://dashboard.eye-fi.com/tasks/fieldService/requests/getAttachmentByRequestId.php?id=${id}`).toPromise();
+    return firstValueFrom(this.http.get<any[]>(
+      `${url}/find?field=${encodeURIComponent('Field Service Request')}&uniqueId=${encodeURIComponent(String(id ?? ''))}`,
+    ));
   }
 
   getAttachments(start: string): Observable<any> {
@@ -69,7 +71,9 @@ export class AttachmentsService extends DataService<any> {
   }
   
   getAttachmentByQirId(id: any) {
-    return this.http.get(`https://dashboard.eye-fi.com/tasks/quality/qir/getAttachmentById.php?id=${id}`).toPromise();
+    return firstValueFrom(this.http.get<any[]>(
+      `${url}/find?field=${encodeURIComponent('Capa Request')}&uniqueId=${encodeURIComponent(String(id ?? ''))}`,
+    ));
   }
 
 }

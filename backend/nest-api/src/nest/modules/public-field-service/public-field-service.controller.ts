@@ -11,6 +11,11 @@ import { PublicRequestTokenGuard } from './public-request-token.guard';
 export class PublicFieldServiceController {
   constructor(private readonly service: PublicFieldServiceService) {}
 
+  @Get('requests/by-token')
+  async getRequestByToken(@Query('token') token?: string) {
+    return this.service.getRequestByToken(token);
+  }
+
   @Post('requests')
   async createRequest(@Body() payload: CreatePublicRequestDto) {
     return this.service.createRequest(payload);
@@ -55,7 +60,7 @@ export class PublicFieldServiceController {
   @UseInterceptors(FileInterceptor('file'))
   async uploadAttachment(
     @Param('id', ParseIntPipe) requestId: number,
-    @UploadedFile() file?: { originalname?: string; size?: number },
+    @UploadedFile() file?: { originalname?: string; size?: number; buffer?: Buffer },
     @Headers('authorization') authorization?: string,
     @Query('token') queryToken?: string,
   ) {

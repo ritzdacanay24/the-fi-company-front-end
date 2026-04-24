@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Observable, firstValueFrom } from 'rxjs';
+import { Observable, firstValueFrom, map } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { DataService } from '../DataService';
 
@@ -73,7 +73,8 @@ export class SchedulerService extends DataService<any> {
   }
 
   getByDateRangeCalendar() {
-    return firstValueFrom(this.http.get<any>(`https://dashboard.eye-fi.com/server/Api//FieldService/index?getTicketAssignmentsByTechs=1&techName=Ritz%20Dacanay&ticketStatus=Open`));
+    const today = new Date().toISOString().slice(0, 10);
+    return firstValueFrom(this.http.get<any>(`${schedulerV2Url}/techSchedule?dateFrom=${today}&dateTo=${today}`));
   }
 
   getSchedulerByDateRange(dateFrom: string, dateTo: string) {
@@ -101,8 +102,25 @@ export class SchedulerService extends DataService<any> {
   }
 
   searchByQadPartNumber(q: string, currentCompanySelection: string): Observable<any> {
-    let apiURL = `https://dashboard.eye-fi.com/tasks/fieldService/customer_item_search.php?q=${q}&currentCompanySelection=${currentCompanySelection}`;
-    return this.http.get(apiURL)
+    const safeQuery = encodeURIComponent(String(q || '').trim());
+    const safeCompany = String(currentCompanySelection || '').trim();
+
+    return this.http.get<any[]>(`apiV2/qad/searchCustomerPartNumber?text=${safeQuery}`).pipe(
+      // Preserve response shape expected by existing ng-select templates.
+      map((rows) => (rows || [])
+        .filter((row) => !safeCompany || String(row?.cp_cust || row?.CP_CUST || '').trim() === safeCompany)
+        .map((row) => {
+          const description = String(row?.description || row?.DESCRIPTION || '');
+          const [ptDesc1 = '', ...rest] = description.split('-');
+          const ptDesc2 = rest.join('-').trim();
+
+          return {
+            ...row,
+            pt_desc1: row?.pt_desc1 ?? row?.PT_DESC1 ?? ptDesc1.trim(),
+            pt_desc2: row?.pt_desc2 ?? row?.PT_DESC2 ?? ptDesc2,
+          };
+        })),
+    );
   }
 
   getMap(dateFrom: string, dateTo: string) {

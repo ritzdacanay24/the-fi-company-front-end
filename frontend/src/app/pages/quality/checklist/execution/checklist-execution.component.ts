@@ -3,7 +3,6 @@ import { Component, Inject, OnDestroy, OnInit, Renderer2 } from '@angular/core';
 import { Router } from '@angular/router';
 import { first } from 'rxjs/operators';
 import { WorkOrderInfoService } from '@app/core/api/work-order/work-order-info.service';
-import { QualityPhotoChecklistService } from '@app/core/api/quality-photo-checklist/quality-photo-checklist-service';
 import { PhotoChecklistConfigService, ChecklistTemplate, ChecklistInstance } from '@app/core/api/photo-checklist-config/photo-checklist-config.service';
 import { SharedModule } from '@app/shared/shared.module';
 import { AuthenticationService } from '@app/core/services/auth.service';
@@ -130,7 +129,6 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
 
   constructor(
     private photosService: PhotosService,
-    private qualityPhotoChecklistService: QualityPhotoChecklistService,
     private workOrderInfoService: WorkOrderInfoService,
     private photoChecklistConfigService: PhotoChecklistConfigService,
     private router: Router,

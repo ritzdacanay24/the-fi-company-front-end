@@ -34,7 +34,6 @@ export class PageAccessService {
 
   /**
    * Request access — inserts a record with active=0 if one doesn't already exist.
-   * Mirrors: request-access.php
    */
   async requestAccess(userId: number, menuId: number): Promise<{ action: string }> {
     const existing = await this.pageAccessRepository.findByUserAndMenu(userId, menuId);

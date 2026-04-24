@@ -54,18 +54,18 @@ export class AttachmentsController {
     return this.service.getViewById(id);
   }
 
-  @Put('updateById')
+  @Put(':id')
   @Permissions('write')
-  async updateById(
-    @Query('id', ParseIntPipe) id: number,
+  async update(
+    @Param('id', ParseIntPipe) id: number,
     @Body() payload: Record<string, unknown>,
   ) {
     return this.service.updateById(id, payload);
   }
 
-  @Delete('deleteById')
+  @Delete(':id')
   @Permissions('delete')
-  async deleteById(@Query('id', ParseIntPipe) id: number) {
+  async remove(@Param('id', ParseIntPipe) id: number) {
     return this.service.deleteById(id);
   }
 }

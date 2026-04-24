@@ -1,10 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { UserRecord, UsersRepository } from './users.repository';
 import { RowDataPacket } from 'mysql2/promise';
+import { FileStorageService } from '@/nest/modules/file-storage/file-storage.service';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly usersRepository: UsersRepository) {}
+  constructor(
+    private readonly usersRepository: UsersRepository,
+    private readonly fileStorageService: FileStorageService,
+  ) {}
 
   async getList(active?: number): Promise<UserRecord[]> {
     return this.usersRepository.getList(active);
@@ -42,6 +46,10 @@ export class UsersService {
     return user;
   }
 
+  async search(text: string): Promise<UserRecord[]> {
+    return this.usersRepository.search(text);
+  }
+
   async create(payload: Record<string, unknown>): Promise<UserRecord> {
     const safe = this.usersRepository.sanitizePayload(payload);
     const insertId = await this.usersRepository.create(safe);
@@ -63,5 +71,26 @@ export class UsersService {
     }
 
     return { message: 'Password is now reset.', type: 'success' };
+  }
+
+  async uploadPhoto(id: number, file?: { originalname?: string; buffer?: Buffer }) {
+    await this.getById(id);
+
+    const subFolder = 'users';
+    const storedFileName = await this.fileStorageService.storeUploadedFile(file, subFolder);
+    const url = this.fileStorageService.resolveLink(storedFileName, subFolder);
+
+    await this.usersRepository.updateById(id, {
+      image: url,
+      fileName: storedFileName,
+      showImage: 1,
+    });
+
+    return {
+      success: true,
+      message: 'Photo uploaded successfully',
+      url,
+      fileName: storedFileName,
+    };
   }
 }

@@ -215,6 +215,11 @@ export class InspectionChecklistController {
     return this.service.deleteMediaByLocator(payload.instance_id, payload.item_id, payload.file_url);
   }
 
+  @Get('instances/:id/export')
+  async exportInstance(@Param('id', ParseIntPipe) id: number) {
+    return this.service.getInstanceById(id);
+  }
+
   @Delete('instances/:id')
   @Permissions('delete')
   async deleteInstance(@Param('id', ParseIntPipe) id: number) {

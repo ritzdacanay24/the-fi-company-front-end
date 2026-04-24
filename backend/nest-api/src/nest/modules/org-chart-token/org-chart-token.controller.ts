@@ -35,51 +35,6 @@ export class OrgChartTokenController {
     return this.service.listTokens();
   }
 
-  @Post('index.php')
-  @Permissions('manage')
-  async postCompatibility(
-    @Query('mode') mode: string,
-    @Body() payload: { password?: string; expiryHours?: number; userId?: number; tokenId?: number },
-    @Headers('authorization') authorization?: string,
-  ) {
-    if (mode === 'generate') {
-      this.requireAuthorization(authorization);
-      return this.service.generateToken(payload || {});
-    }
-
-    if (mode === 'revoke') {
-      this.requireAuthorization(authorization);
-      return this.service.revokeToken(Number(payload?.tokenId));
-    }
-
-    return {
-      success: false,
-      error: 'Invalid mode parameter',
-    };
-  }
-
-  @Get('index.php')
-  async getCompatibility(
-    @Query('mode') mode: string,
-    @Query('token') token?: string,
-    @Query('password') password?: string,
-    @Headers('authorization') authorization?: string,
-  ) {
-    if (mode === 'validate') {
-      return this.service.validateToken(token || '', password);
-    }
-
-    if (mode === 'list') {
-      this.requireAuthorization(authorization);
-      return this.service.listTokens();
-    }
-
-    return {
-      success: false,
-      error: 'Invalid mode parameter',
-    };
-  }
-
   private requireAuthorization(authorization?: string) {
     if (!authorization) {
       throw new UnauthorizedException({ error: 'Unauthorized' });

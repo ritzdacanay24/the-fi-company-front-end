@@ -2,9 +2,7 @@ import { Injectable } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
 import { DataService } from "../DataService";
 import { firstValueFrom } from "rxjs";
-import { environment } from "src/environments/environment";
 
-let url = "user";
 const usersV2Url = "apiV2/users";
 
 @Injectable({
@@ -12,10 +10,8 @@ const usersV2Url = "apiV2/users";
 })
 export class NewUserService extends DataService<any> {
   constructor(http: HttpClient) {
-    super(url, http);
+    super(usersV2Url, http);
   }
-
-  private readonly legacyApiBaseUrl = environment.legacyApiBaseUrl.replace(/\/+$/, '');
 
   override getById = async (id: number) =>
     firstValueFrom(this.http.get<any>(`${usersV2Url}/${id}`));
@@ -25,10 +21,7 @@ export class NewUserService extends DataService<any> {
 
   uploadfile(id, file: any) {
     return this.http
-      .post(
-        `${this.legacyApiBaseUrl}/users/addPhoto.php?id=${id}`,
-        file
-      )
+      .post(`${usersV2Url}/${id}/photo`, file)
       .toPromise();
   }
 

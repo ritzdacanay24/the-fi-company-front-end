@@ -19,15 +19,17 @@ export class ShippingService {
   constructor(private http: HttpClient) { }
 
   automatedIGTTransfer(params: any) {
-    return this.http.post(`/Shipping/transfer.php`, params).toPromise()
+    const id = params?.id ?? params?.transferId;
+    const query = id !== undefined && id !== null ? `?id=${encodeURIComponent(String(id))}` : '';
+    return this.http.post(`apiV2/igt-transfer/automatedIGTTransfer${query}`, params).toPromise();
   }
 
   getLineNumbers(so_number) {
-    return (this.http.get(`/Shipping/index?getLineNumbers&so_number=${so_number}`)).toPromise()
+    return this.http.get(`apiV2/igt-transfer/getSoLineDetails?so_number=${encodeURIComponent(String(so_number ?? ''))}`).toPromise();
   }
 
   getData(): Observable<Shipping[]> {
-    return this.http.get<Shipping[]>(`/Shipping/index?runOpenShippingReport`);
+    return this.http.get<Shipping[]>(`apiV2/shipping/read-open-report`);
   }
 
   getMisc(soNumberAndLineNumber: string): Observable<ShippingMisc> {

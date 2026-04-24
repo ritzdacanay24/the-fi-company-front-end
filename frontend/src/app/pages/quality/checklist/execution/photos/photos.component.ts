@@ -9,7 +9,6 @@ import moment from 'moment';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import { CommonModule } from '@angular/common';
 import { SharedModule } from '@app/shared/shared.module';
-import { QualityPhotoChecklistService } from '@app/core/api/quality-photo-checklist/quality-photo-checklist-service';
 import { PhotoChecklistConfigService, ChecklistInstance, ChecklistItem } from '@app/core/api/photo-checklist-config/photo-checklist-config.service';
 
 interface ChecklistDetail {
@@ -58,7 +57,6 @@ export class PhotosComponent implements OnInit {
 
   // New properties for configuration management
   currentInstance: ChecklistInstance | null = null;
-  useNewSystem: boolean = true; // Flag to switch between old and new system
   config: {[key: string]: any} = {};
 
   reset() {
@@ -104,29 +102,15 @@ export class PhotosComponent implements OnInit {
 
   searchWorkOrder() {
     this.loadingIndicator = true;
-    
-    // Load configuration first
-    this.configService.getConfig().pipe(first()).subscribe(config => {
-      this.config = config;
-    });
 
-    if (this.useNewSystem) {
-      this.searchWorkOrderNew();
-    } else {
-      this.searchWorkOrderLegacy();
-    }
-  }
-
-  searchWorkOrderNew() {
-    // Try to find existing instance or create new one
     this.configService.readByPartNumber(this.woNumber, this.partNumber, this.serialNumber, this.typeOfView)
       .pipe(first()).subscribe({
         next: (data) => {
           this.loadingIndicator = false;
-          
+
           if (data && data.items) {
-            this.currentInstance = data;
-            this.convertInstanceToCheckList(data);
+            this.currentInstance = data as ChecklistInstance;
+            this.convertInstanceToCheckList(data as ChecklistInstance);
             this.beginWhereLeftOff();
           } else {
             alert('No checklist found for this work order.');
@@ -134,53 +118,11 @@ export class PhotosComponent implements OnInit {
           }
         },
         error: () => {
-          // Fallback to legacy system
-          this.useNewSystem = false;
-          this.searchWorkOrderLegacy();
+          this.loadingIndicator = false;
+          alert('No checklist found for this work order.');
+          this.dismiss();
         }
       });
-  }
-
-  searchWorkOrderLegacy() {
-    this.qualityPhotoChecklistService.readByPartNumber(this.woNumber, this.partNumber, this.serialNumber, this.typeOfView).pipe(first()).subscribe(data => {
-      this.loadingIndicator = false;
-
-      if (data.length == 0) {
-        alert('No checklist found for this work order.');
-        this.dismiss()
-      }
-
-      let restructuedDetails = []
-      for (let i = 0; i < data.length; i++) {
-        let ext = data[i].fileName == null ? 'jpg' : data[i].fileName.split('.').pop();
-        restructuedDetails.push({
-          id: data[i].id,
-          photoId: data[i].photoId,
-          name: data[i].name,
-          checklist: data[i].checklist,
-          photo: data[i].url,
-          fileName: data[i].fileName,
-          photoInfo: "",
-          error: false,
-          submittedDate: data[i].submittedDate,
-          exampleImage: `https://dashboard.eye-fi.com/attachments/qc/qc-sample-photos/${data[i].partNumber}/${data[i].samplePhoto}`,
-          type: ['png', 'jpg', 'jpeg', 'gif'].includes(ext.toLowerCase()) ? 'img' : 'video'
-        })
-      }
-
-      this.checkList.push({
-        name: data[0].name,
-        details: restructuedDetails
-      })
-
-      this.isChecklistSubmitted = restructuedDetails[0].submittedDate
-
-      this.beginWhereLeftOff()
-
-    }, () => {
-      this.loadingIndicator = false;
-      this.dismiss();
-    });
   }
 
   convertInstanceToCheckList(instance: ChecklistInstance) {
@@ -235,13 +177,12 @@ export class PhotosComponent implements OnInit {
   constructor(
     private ngbActiveModal: NgbActiveModal,
     private authenticationService: AuthenticationService,
-    private qualityPhotoChecklistService: QualityPhotoChecklistService,
     private configService: PhotoChecklistConfigService,
   ) {
     this.currentUserInfo = authenticationService.currentUserValue;
 
     this.uploader = new FileUploader({
-      url: 'https://dashboard.eye-fi.com/server/Api/QualityPhotoChecklist/save',
+      url: 'apiV2/inspection-checklist/media/upload',
       disableMultipart: false,
       formatDataFunctionIsAsync: false,
       authToken: `Bearer ${this.authenticationService.currentUserValue.access_token}`,
@@ -251,7 +192,6 @@ export class PhotosComponent implements OnInit {
       queueLimit: 10,
       removeAfterUpload: false
     });
-
 
     this.uploader.onBeforeUploadItem = (item) => {
       item.withCredentials = false;
@@ -288,20 +228,19 @@ export class PhotosComponent implements OnInit {
 
   remove(i) {
     this.loadingIndicator = true;
-    let d = this.checkList[0].details[this.getActualIndex];
+    const d = this.checkList[0].details[this.getActualIndex];
 
-    let params = {
-      id: d.photoId,
-      fileName: d.fileName
-    }
-
-
-    this.qualityPhotoChecklistService.removePhoto(params).pipe(first()).subscribe(data => {
-      d.photo = ''
+    this.configService.deleteMediaByLocator(
+      this.currentInstance.id,
+      parseInt(d.id),
+      d.photo
+    ).pipe(first()).subscribe(() => {
+      d.photo = '';
       d.photoInfo = '';
+      d.fileName = null;
+      d.photoId = null;
       this.loadingIndicator = false;
     }, () => this.loadingIndicator = false);
-
   }
 
   review() {
@@ -352,47 +291,34 @@ export class PhotosComponent implements OnInit {
     this.logoFileNameFile = file.item(0);
     var reader = new FileReader();
 
-    let detailIndex:any = this.checkList[0].details[this.viewIndex - 1];
-    let createdDate = moment().format('YYYY-MM-DD HH:mm:ss');
+    const detailIndex: any = this.checkList[0].details[this.viewIndex - 1];
 
     reader.onload = (event: any) => {
       this.imageUrlOfLogo = event.target.result;
-
-
-      detailIndex.photo = event.target.result
+      detailIndex.photo = event.target.result;
       detailIndex.photoInfo = item;
+    };
 
-
-    }
-
-
-    var formData = new FormData(); // Currently empty
-
-    formData.append("file", item);
-    formData.append("woNumber", this.woNumber);
-    formData.append("checklist", detailIndex.checklist);
-    formData.append("name", detailIndex.name);
-    formData.append("createdDate", createdDate);
-    formData.append("partNumber", this.partNumber);
-    formData.append("serialNumber", this.serialNumber);
-    formData.append("createdBy", this.currentUserInfo.id.toString());
-
-    this.qualityPhotoChecklistService.create(formData).pipe(first()).subscribe(data => {
-      this.loadingIndicator = false
+    this.configService.uploadPhoto(
+      this.currentInstance.id,
+      parseInt(detailIndex.id),
+      item,
+      { userId: this.currentUserInfo.id }
+    ).pipe(first()).subscribe(data => {
+      this.loadingIndicator = false;
       this.loading = false;
       reader.readAsDataURL(this.logoFileNameFile as File);
-      detailIndex.photoId = data.id;
-      detailIndex.fileName = 'https://dashboard.eye-fi.com' + data.fileName;
+      detailIndex.photoId = data.media?.id?.toString() || detailIndex.id;
+      detailIndex.fileName = data.file_url;
+      detailIndex.photo = data.file_url;
 
       if (!this.getMaxLength()) {
-        this.change('next')
+        this.change('next');
       } else {
-        this.review()
+        this.review();
       }
 
-
-      this.reset()
-
+      this.reset();
     }, () => this.loadingIndicator = false);
 
 
@@ -428,16 +354,13 @@ export class PhotosComponent implements OnInit {
       }
     }
 
-    let params = {
-      woNumber: this.woNumber,
-      partNumber: this.partNumber,
-      serialNumber: this.serialNumber,
-      submitedBy: this.currentUserInfo.id,
-      submittedDate: submittedDate
-    }
-    this.qualityPhotoChecklistService.submit(params).pipe(first()).subscribe(data => {
+    this.configService.updateInstance(this.currentInstance.id, {
+      status: 'completed',
+      submitted_at: submittedDate,
+      submitted_by: this.currentUserInfo.id
+    }).pipe(first()).subscribe(() => {
       this.loadingIndicator = false;
-      alert('success!!')
+      alert('success!!');
       this.ngbActiveModal.close(this.checkList);
     }, () => this.loadingIndicator = false);
 

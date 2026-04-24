@@ -9,8 +9,11 @@ import {
   Patch,
   Post,
   Query,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { Permissions, RolePermissionGuard } from '../access-control';
 import { UsersService } from './users.service';
 
@@ -31,6 +34,11 @@ export class UsersController {
   @Get('find')
   async find(@Query() query: Record<string, unknown>) {
     return this.usersService.find(query);
+  }
+
+  @Get('search')
+  async search(@Query('text') text?: string) {
+    return this.usersService.search(text || '');
   }
 
   @Get('getUserWithTechRate')
@@ -70,5 +78,15 @@ export class UsersController {
       throw new BadRequestException('email and newPassword are required');
     }
     return this.usersService.resetPassword(body.email, body.newPassword);
+  }
+
+  @Post(':id/photo')
+  @Permissions('manage')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadPhoto(
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFile() file?: { originalname?: string; buffer?: Buffer },
+  ) {
+    return this.usersService.uploadPhoto(id, file);
   }
 }

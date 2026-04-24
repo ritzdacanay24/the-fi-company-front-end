@@ -23,11 +23,6 @@ export class TicketEventController {
     return this.ticketEventService.find(params);
   }
 
-  @Get('find.php')
-  async findPhp(@Query() params: Record<string, unknown>): Promise<TicketEventRecord[]> {
-    return this.ticketEventService.find(params);
-  }
-
   @Get('active')
   async getActive(): Promise<TicketEventRecord[]> {
     return this.ticketEventService.getActive();

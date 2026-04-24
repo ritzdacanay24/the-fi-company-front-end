@@ -133,6 +133,29 @@ export class UsersRepository extends BaseRepository<UserRecord> {
     return rows[0] ?? null;
   }
 
+  async search(text: string): Promise<UserRecord[]> {
+    const trimmed = String(text || '').trim();
+    if (!trimmed) {
+      return [];
+    }
+
+    const like = `%${trimmed}%`;
+    return this.rawQuery<UserRecord>(
+      `SELECT *
+       FROM db.users
+       WHERE active = 1
+         AND (
+           first LIKE ?
+           OR last LIKE ?
+           OR CONCAT(first, ' ', last) LIKE ?
+           OR email LIKE ?
+         )
+       ORDER BY first ASC
+       LIMIT 100`,
+      [like, like, like, like],
+    );
+  }
+
   async resetPasswordByEmail(email: string, newPassword: string): Promise<boolean> {
     const hashed = createHash('sha256').update(newPassword).digest('hex');
     const result = await this.rawQuery<RowDataPacket>(

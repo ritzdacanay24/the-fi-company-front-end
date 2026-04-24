@@ -25,7 +25,7 @@ export interface UserAssignment {
   providedIn: 'root'
 })
 export class DepartmentService {
-  private apiUrl = 'departments';
+  private apiUrl = 'apiV2/departments';
 
   constructor(private http: HttpClient) {}
 

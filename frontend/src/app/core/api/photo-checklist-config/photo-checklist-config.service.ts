@@ -188,7 +188,6 @@ export interface ChecklistConfig {
   providedIn: 'root'
 })
 export class PhotoChecklistConfigService {
-  private readonly baseUrl = '/photo-checklist/photo-checklist-config.php';
   private readonly nestPhotoChecklistBaseUrl = 'apiV2/inspection-checklist';
   private readonly mediaApiBaseUrl = this.nestPhotoChecklistBaseUrl;
   
@@ -645,15 +644,17 @@ export class PhotoChecklistConfigService {
   }
 
   // ==============================================
-  // Legacy Compatibility Methods
+  // Legacy Compatibility Methods (migrated to NestJS)
   // ==============================================
 
-  readByPartNumber(woNumber: string, partNumber: string, serialNumber: string, typeOfView?: string): Observable<any> {
-    return this.http.get(`${this.baseUrl}?request=read&woNumber=${woNumber}&partNumber=${partNumber}&serialNumber=${serialNumber}&typeOfView=${typeOfView || ''}`);
+  readByPartNumber(woNumber: string, partNumber: string, serialNumber: string, _typeOfView?: string): Observable<ChecklistInstance | undefined> {
+    return this.searchInstances({ workOrderNumber: woNumber, partNumber, serialNumber }).pipe(
+      map(results => results[0])
+    );
   }
 
   getOpenChecklists(): Observable<ChecklistInstance[]> {
-    return this.http.get<ChecklistInstance[]>(`${this.baseUrl}?request=read&getOpenChecklists=true`);
+    return this.getInstances();
   }
 
   // ==============================================
@@ -742,7 +743,7 @@ export class PhotoChecklistConfigService {
    * Download instance data for PDF generation
    */
   downloadInstancePDF(instanceId: number): Observable<any> {
-    return this.http.get<any>(`${this.baseUrl}?request=instance_pdf&id=${instanceId}`);
+    return this.http.get<any>(`${this.nestPhotoChecklistBaseUrl}/instances/${instanceId}/export`);
   }
 
   // ==============================================

@@ -3,8 +3,8 @@ import { firstValueFrom, map } from "rxjs";
 import { HttpClient } from "@angular/common/http";
 import { MindeeService } from "../mindee/mindee.service";
 import { MindeeApiResponse, ExpenseReceiptPrediction, MindeeRequestOptions } from "../mindee/mindee-interfaces";
+import { environment } from "src/environments/environment";
 
-let url = "FieldServiceMobile/trip-expense";
 const tripExpenseV2Url = 'apiV2/trip-expense';
 
 @Injectable({
@@ -97,7 +97,7 @@ export class TripExpenseService {
   }
 
   getPredictApi(id) {
-    return firstValueFrom(this.http.get(`${url}/getPredictApi.php`));
+    return Promise.resolve(environment.mindeeApiKey || null);
   }
 
   async copyReceiptFile(params: {
@@ -106,8 +106,8 @@ export class TripExpenseService {
     targetWorkOrderId: string;
     targetFsId: string;
   }) {
-    // This would copy the actual file and return new file details
-    return this.http.post(`${url}/copy-file`, params).toPromise();
+    // Not wired to apiV2 yet; keep signature and fail fast instead of silently hitting legacy endpoints.
+    throw new Error('copyReceiptFile is not available in apiV2 yet.');
   }
 
   // Alternative method if you want to get receipts by workOrderId

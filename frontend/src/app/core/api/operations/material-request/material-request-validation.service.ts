@@ -39,7 +39,7 @@ export interface ReviewAssignment {
     providedIn: 'root'
 })
 export class MaterialRequestValidationService {
-    private baseUrl = `/operations/material-request-detail`;
+    private baseUrl = `apiV2/material-request-detail`;
     private reviewsUrl = `${this.baseUrl}/reviews`;
     private reviewActionsUrl = `${this.baseUrl}/review-actions`;
 
@@ -52,7 +52,7 @@ export class MaterialRequestValidationService {
 
     // Approve an item (direct validation, not review)
     approveItem(itemId: number, comment?: string): Observable<any> {
-        return this.http.put(`${this.baseUrl}/index?id=${itemId}`, {
+        return this.http.put(`${this.baseUrl}/${itemId}`, {
             validationStatus: 'approved',
             validationComment: comment,
             validatedBy: this.autheService.currentUserValue?.id,
@@ -62,7 +62,7 @@ export class MaterialRequestValidationService {
 
     // Reject an item (direct validation, not review)
     rejectItem(itemId: number, comment: string): Observable<any> {
-        return this.http.put(`${this.baseUrl}/index?id=${itemId}`, {
+        return this.http.put(`${this.baseUrl}/${itemId}`, {
             validationStatus: 'rejected',
             validationComment: comment,
             validatedBy: this.autheService.currentUserValue?.id,
@@ -72,7 +72,7 @@ export class MaterialRequestValidationService {
 
     // Reset an item back to pending status (undo approve/reject)
     resetItemToPending(itemId: number): Observable<any> {
-        return this.http.put(`${this.baseUrl}/index?id=${itemId}`, {
+        return this.http.put(`${this.baseUrl}/${itemId}`, {
             validationStatus: 'pending',
             validationComment: '',
             validatedBy: null,
@@ -135,7 +135,7 @@ export class MaterialRequestValidationService {
 
     // Add comment to item
     addComment(itemId: number, comment: string): Observable<any> {
-        return this.http.put(`${this.baseUrl}/index?id=${itemId}`, {
+        return this.http.put(`${this.baseUrl}/${itemId}`, {
             validationComment: comment
         });
     }
@@ -210,12 +210,12 @@ export class MaterialRequestValidationService {
 
     // Get all reviews for admin dashboard
     getAllReviewsForAdmin(): Observable<any> {
-        return this.http.get(`${this.baseUrl}/material-request-admin-reviews-api.php/admin-dashboard`);
+        return this.http.get(`${this.baseUrl}/material-request-admin-reviews-api/admin-dashboard`);
     }
 
     // Reassign review to different reviewer
     reassignReview(reviewId: number, newReviewerId: string, reason: string): Observable<any> {
-        return this.http.post(`${this.baseUrl}/material-request-admin-reviews-api.php/review-actions`, {
+        return this.http.post(`${this.baseUrl}/material-request-admin-reviews-api/review-actions`, {
             action: 'reassign_review',
             reviewId: reviewId,
             newReviewerId: newReviewerId,
@@ -235,7 +235,7 @@ export class MaterialRequestValidationService {
 
     // Escalate reviews (bulk operation)
     escalateReviews(reviewIds: number[]): Observable<any> {
-        return this.http.post(`${this.baseUrl}/material-request-admin-reviews-api.php/review-actions`, {
+        return this.http.post(`${this.baseUrl}/material-request-admin-reviews-api/review-actions`, {
             action: 'escalate_review',
             reviewIds: reviewIds,
             escalatedBy: this.autheService.currentUserValue?.id
@@ -244,7 +244,7 @@ export class MaterialRequestValidationService {
 
     // Cancel review assignment
     cancelReview(reviewId: number): Observable<any> {
-        return this.http.post(`${this.baseUrl}/material-request-admin-reviews-api.php/review-actions`, {
+        return this.http.post(`${this.baseUrl}/material-request-admin-reviews-api/review-actions`, {
             action: 'cancel_review',
             reviewId: reviewId,
             cancelledBy: this.autheService.currentUserValue?.id
@@ -253,6 +253,6 @@ export class MaterialRequestValidationService {
 
     // Update item configuration (AC Code, TR Type)
     updateItemConfiguration(itemId: number, config: { ac_code?: string, trType?: string }): Observable<any> {
-        return this.http.put(`${this.baseUrl}/index?id=${itemId}`, config);
+        return this.http.put(`${this.baseUrl}/${itemId}`, config);
     }
 }

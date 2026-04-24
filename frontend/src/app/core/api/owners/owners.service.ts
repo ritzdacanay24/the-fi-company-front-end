@@ -283,7 +283,7 @@ export class OwnersService extends DataService<any> {
    */
   getAllUsers = async (): Promise<any> => {
     return await firstValueFrom(
-      this.http.get<any>('FieldServiceMobile/user/find.php?active=1')
+      this.http.get<any>('apiV2/users/find?active=1')
     );
   }
 

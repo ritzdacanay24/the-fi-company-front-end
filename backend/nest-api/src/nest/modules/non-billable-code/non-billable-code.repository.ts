@@ -5,8 +5,13 @@ import { MysqlService } from '@/shared/database/mysql.service';
 
 export interface NonBillableCodeRecord extends RowDataPacket {
   id: number;
+  name: string | null;
+  description: string | null;
+  code: string | null;
   active: number | null;
 }
+
+const ALLOWED_COLUMNS = new Set(['name', 'description', 'code', 'active']);
 
 @Injectable()
 export class NonBillableCodeRepository extends BaseRepository<NonBillableCodeRecord> {
@@ -28,5 +33,13 @@ export class NonBillableCodeRepository extends BaseRepository<NonBillableCodeRec
     }
 
     return this.find();
+  }
+
+  sanitizePayload(payload: Record<string, unknown>): Record<string, unknown> {
+    return Object.fromEntries(
+      Object.entries(payload).filter(
+        ([key, value]) => ALLOWED_COLUMNS.has(key) && value !== undefined,
+      ),
+    );
   }
 }

@@ -22,6 +22,14 @@ export class RequestService {
     return this.repository.findOne({ id });
   }
 
+  async getByToken(token: string) {
+    return this.repository.findOne({ token });
+  }
+
+  async getByIdAndToken(id: number, token: string) {
+    return this.repository.findOne({ id, token });
+  }
+
   async getAllRequests(selectedViewType?: string) {
     return this.repository.getAllRequests(selectedViewType);
   }

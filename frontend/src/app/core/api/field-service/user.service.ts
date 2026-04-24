@@ -4,7 +4,6 @@ import { DataService } from "../DataService";
 import { Observable, firstValueFrom } from "rxjs";
 import { queryString } from "src/assets/js/util/queryString";
 
-let url = "FieldServiceMobile/user";
 const usersV2Url = 'apiV2/users';
 const orgChartUrl = 'apiV2/org-chart';
 const orgChartTokenUrl = 'apiV2/org-chart-token';
@@ -14,7 +13,7 @@ const orgChartTokenUrl = 'apiV2/org-chart-token';
 })
 export class UserService extends DataService<any> {
   constructor(http: HttpClient) {
-    super(url, http);
+    super(usersV2Url, http);
   }
 
   getList(active?: number) {
@@ -40,13 +39,11 @@ export class UserService extends DataService<any> {
   }
 
   searchUser(q: string): Observable<any> {
-    let apiURL = `${url}/searchUser?text=${q}`;
-    return this.http.get(apiURL);
+    return this.http.get(`${usersV2Url}/search?text=${encodeURIComponent(q || '')}`);
   }
 
   searchUserV1(q: string): Observable<any> {
-    let apiURL = `${url}/searchUserV1?text=${q}`;
-    return this.http.get(apiURL);
+    return this.http.get(`${usersV2Url}/search?text=${encodeURIComponent(q || '')}`);
   }
 
   public resetPassword(params: { email: string; password: string }) {
@@ -86,7 +83,6 @@ export class UserService extends DataService<any> {
   public validateOrgChartToken(token: string, password?: string): Observable<any> {
     const safeToken = encodeURIComponent(token);
     const safePassword = password != null ? encodeURIComponent(password) : null;
-    const params = safePassword ? `mode=validate&token=${safeToken}&password=${safePassword}` : `mode=validate&token=${safeToken}`;
     return this.http.get(`${orgChartTokenUrl}/validate?${safePassword ? `token=${safeToken}&password=${safePassword}` : `token=${safeToken}`}`);
   }
 

@@ -5,7 +5,7 @@ import { CreateSgAssetDto } from './dto/create-sg-asset.dto';
 import { UpdateSgAssetDto } from './dto/update-sg-asset.dto';
 import { SgAssetService } from './sg-asset.service';
 
-@Controller(['quality/sg-asset', 'Quality/sg-asset', 'sg-asset'])
+@Controller('quality/sg-asset')
 @UseGuards(RolePermissionGuard)
 @Domain('inventory')
 export class SgAssetController {
@@ -61,95 +61,6 @@ export class SgAssetController {
   @Post('bulk')
   @Permissions('write')
   async bulkCreateRest(@Body() payload: BulkCreateSgAssetDto) {
-    return this.sgAssetService.bulkCreate(payload);
-  }
-
-  // Legacy compatibility endpoints
-  @Get('getList')
-  async getList(
-    @Query('selectedViewType') selectedViewType?: string,
-    @Query('dateFrom') dateFrom?: string,
-    @Query('dateTo') dateTo?: string,
-    @Query('isAll') isAll?: string,
-  ) {
-    return this.sgAssetService.getList({
-      selectedViewType,
-      dateFrom,
-      dateTo,
-      isAll: isAll === '1' || isAll === 'true',
-    });
-  }
-
-  @Get('getAll')
-  async getAll() {
-    return this.sgAssetService.getAll();
-  }
-
-  @Get('getAll.php')
-  async getAllPhp() {
-    return this.sgAssetService.getAll();
-  }
-
-  @Get('getById')
-  async getById(@Query('id', ParseIntPipe) id: number) {
-    return this.sgAssetService.getById(id);
-  }
-
-  @Get('getById.php')
-  async getByIdPhp(@Query('id', ParseIntPipe) id: number) {
-    return this.sgAssetService.getById(id);
-  }
-
-  @Get('checkIfSerialIsFound')
-  async checkIfSerialIsFound(@Query('assetNumber') assetNumber?: string) {
-    return this.sgAssetService.checkIfSerialIsFound(assetNumber);
-  }
-
-  @Post('create')
-  @Permissions('write')
-  async create(@Body() payload: CreateSgAssetDto) {
-    return this.sgAssetService.create(payload);
-  }
-
-  @Post('create.php')
-  @Permissions('write')
-  async createPhp(@Body() payload: CreateSgAssetDto) {
-    return this.sgAssetService.create(payload);
-  }
-
-  @Put('updateById/:id')
-  @Permissions('manage')
-  async updateById(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() payload: UpdateSgAssetDto,
-  ) {
-    return this.sgAssetService.updateById(id, payload);
-  }
-
-  @Put('updateById.php')
-  @Permissions('manage')
-  async updateByIdPhp(
-    @Query('id', ParseIntPipe) id: number,
-    @Body() payload: UpdateSgAssetDto,
-  ) {
-    return this.sgAssetService.updateById(id, payload);
-  }
-
-  @Delete('deleteById/:id')
-  @Permissions('delete')
-  async deleteById(@Param('id', ParseIntPipe) id: number) {
-    return this.sgAssetService.deleteById(id);
-  }
-
-  @Delete('deleteById.php')
-  @Permissions('delete')
-  async deleteByIdPhp(@Query('id', ParseIntPipe) id: number) {
-    return this.sgAssetService.deleteById(id);
-  }
-
-  @Post('bulkCreate.php')
-  @Permissions('write')
-  async bulkCreate(@Body() payload: BulkCreateSgAssetDto) {
     return this.sgAssetService.bulkCreate(payload);
   }
 }

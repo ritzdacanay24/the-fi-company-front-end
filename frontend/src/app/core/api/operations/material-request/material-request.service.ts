@@ -4,6 +4,7 @@ import { DataService } from '../../DataService';
 import { firstValueFrom } from 'rxjs';
 
 const url = 'apiV2/material-request';
+const igtTransferV2Url = 'apiV2/igt-transfer';
 
 @Injectable({
   providedIn: 'root'
@@ -54,7 +55,7 @@ export class MaterialRequestService extends DataService<any> {
     await firstValueFrom(this.http.get<any[]>(`${url}/getHeader?id=${id}`));
 
   getSoLineDetails = async (order: string) =>
-    await firstValueFrom(this.http.get<any[]>(`https://dashboard.eye-fi.com/server/Api/Shipping/index?getLineNumbers&so_number=${order}`));
+    await firstValueFrom(this.http.get<any[]>(`${igtTransferV2Url}/getSoLineDetails?so_number=${encodeURIComponent(String(order ?? ''))}`));
 
   automatedIGTTransfer(id: number, params: any) {
     return firstValueFrom(this.http.post(`${url}/automatedIGTTransfer?id=${id}`, params))

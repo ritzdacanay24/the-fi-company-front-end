@@ -9,6 +9,7 @@ import { EyeFiAssetNumbersModule } from './modules/eyefi-asset-numbers';
 import { EyeFiSerialModule } from './modules/eyefi-serial';
 import { SerialAvailabilityModule } from './modules/serial-availability';
 import { DataScrubModule } from './modules/data-scrub';
+import { DepartmentsModule } from './modules/departments/departments.module';
 import { envValidationSchema } from './config/env.validation';
 import { LoggingInterceptor } from './interceptors/logging.interceptor';
 import { RequestContextMiddleware } from './middlewares/request-context.middleware';
@@ -149,6 +150,7 @@ import { UrlModule } from '../shared/url/url.module';
     EyeFiSerialModule,
     SerialAvailabilityModule,
     DataScrubModule,
+    DepartmentsModule,
     ForkliftInspectionModule,
     GraphicsBomModule,
     GraphicsDemandModule,
