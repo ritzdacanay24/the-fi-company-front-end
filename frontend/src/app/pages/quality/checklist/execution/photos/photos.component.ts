@@ -356,8 +356,7 @@ export class PhotosComponent implements OnInit {
 
     this.configService.updateInstance(this.currentInstance.id, {
       status: 'completed',
-      submitted_at: submittedDate,
-      submitted_by: this.currentUserInfo.id
+      submitted_at: submittedDate
     }).pipe(first()).subscribe(() => {
       this.loadingIndicator = false;
       alert('success!!');
