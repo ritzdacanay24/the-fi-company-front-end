@@ -355,6 +355,13 @@ export class PermitChecklistsComponent implements OnInit {
       minWidth: 190,
       pinned: "left",
       cellClass: "fw-semibold",
+      cellRenderer: (params: any) => {
+        const ticketId = String(params.value || "");
+        if (!ticketId) {
+          return "-";
+        }
+        return `<span class="text-primary text-decoration-underline" style="cursor:pointer;">${ticketId}</span>`;
+      },
     },
     {
       headerName: "Form",
@@ -427,23 +434,6 @@ export class PermitChecklistsComponent implements OnInit {
         return new Date(params.value).toLocaleString();
       },
     },
-    {
-      headerName: "Actions",
-      field: "actions",
-      sortable: false,
-      filter: false,
-      minWidth: 190,
-      pinned: "right",
-      cellRenderer: "permitTicketActionsRenderer",
-      cellRendererParams: {
-        onOpen: (ticketId: string) => {
-          this.openTicket(ticketId);
-        },
-        onArchive: (ticketId: string) => {
-          this.deleteTicket(ticketId);
-        },
-      },
-    },
   ];
 
   ticketGridOptions: GridOptions = {
@@ -457,6 +447,18 @@ export class PermitChecklistsComponent implements OnInit {
     rowHeight: 44,
     animateRows: true,
     suppressMenuHide: true,
+    onCellClicked: (params: any) => {
+      if (params?.colDef?.field !== "ticketId") {
+        return;
+      }
+
+      const ticketId = String(params?.value || "").trim();
+      if (!ticketId) {
+        return;
+      }
+
+      this.openTicket(ticketId);
+    },
   };
 
   auditColumnDefs: ColDef[] = [
@@ -1887,7 +1889,7 @@ export class PermitChecklistsComponent implements OnInit {
     this.persistLocalData();
   }
 
-  createTicket(): void {
+  async createTicket(): Promise<void> {
     const now = new Date().toISOString();
     const ticket: PermitChecklistTicket = {
       ticketId: this.generateTicketId(this.draftFormType),
@@ -1902,6 +1904,14 @@ export class PermitChecklistsComponent implements OnInit {
       financials: this.createEmptyFinancials(this.draftFormType),
       attachments: [],
     };
+
+    try {
+      await this.permitChecklistsService.upsertTicket(ticket);
+    } catch {
+      // Global interceptor handles 403 permission modal. Keep local state unchanged.
+      this.statusMessage = "Ticket was not created due to access restrictions.";
+      return;
+    }
 
     this.tickets = [ticket, ...this.tickets];
     this.refreshRecentTickets();

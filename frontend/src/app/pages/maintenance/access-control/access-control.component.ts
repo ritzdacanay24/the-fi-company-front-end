@@ -8,8 +8,9 @@ import {
   AccessControlUserSummary,
   PermissionRequest,
 } from "@app/core/api/access-control/access-control.service";
+import { PermissionRequestActionModalComponent } from "@app/shared/modals/permission-request-action/permission-request-action.component";
 import { ToastrService } from "ngx-toastr";
-import Swal from "sweetalert2";
+import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
 
 @Component({
   standalone: true,
@@ -61,6 +62,7 @@ export class AccessControlComponent {
   constructor(
     private readonly accessControlApi: AccessControlApiService,
     private readonly toastrService: ToastrService,
+    private readonly modalService: NgbModal,
   ) {}
 
   async ngOnInit(): Promise<void> {
@@ -267,64 +269,61 @@ export class AccessControlComponent {
   }
 
   async approveRequest(req: PermissionRequest): Promise<void> {
-    const result = await Swal.fire({
-      title: "Approve Request",
-      html: `
-        <div class="text-start">
-          <p class="mb-3">Grant <strong>${req.permission_name}</strong> in domain <strong>${req.domain}</strong> to <strong>${req.requester_name}</strong>?</p>
-          <label class="form-label small text-muted">Expiry date <span class="fw-normal">(leave blank for permanent)</span></label>
-          <input id="swal-expires-at" type="date" class="form-control form-control-sm" />
-        </div>`,
-      confirmButtonText: "Approve & Grant",
-      confirmButtonColor: "#198754",
-      showCancelButton: true,
-      cancelButtonText: "Cancel",
-      focusConfirm: false,
-      preConfirm: () => {
-        const input = document.getElementById("swal-expires-at") as HTMLInputElement;
-        return input?.value || null;
-      },
-    });
-
-    if (!result.isConfirmed) return;
-
-    try {
-      await this.accessControlApi.approvePermissionRequest(req.id!, result.value ?? null);
-      this.toastrService.success(`Approved: ${req.requester_name} now has ${req.permission_name} in ${req.domain}`);
-      await this.loadRequests();
-    } catch {
-      this.toastrService.error("Failed to approve request");
-    }
+    await this.openRequestActionModal(req, "approve");
   }
 
   async denyRequest(req: PermissionRequest): Promise<void> {
-    const result = await Swal.fire({
-      title: "Deny Request",
-      html: `
-        <div class="text-start">
-          <p class="mb-3">Deny <strong>${req.permission_name}</strong> request from <strong>${req.requester_name}</strong>?</p>
-          <label class="form-label small text-muted">Reason for denial <span class="fw-normal">(optional, shown to user)</span></label>
-          <textarea id="swal-deny-notes" class="form-control form-control-sm" rows="2" placeholder="e.g. Not required for your role..."></textarea>
-        </div>`,
-      confirmButtonText: "Deny",
-      confirmButtonColor: "#dc3545",
-      showCancelButton: true,
-      cancelButtonText: "Cancel",
-      focusConfirm: false,
-      preConfirm: () => {
-        const input = document.getElementById("swal-deny-notes") as HTMLTextAreaElement;
-        return input?.value || null;
-      },
+    await this.openRequestActionModal(req, "deny");
+  }
+
+  async openRequestActions(req: PermissionRequest): Promise<void> {
+    await this.openRequestActionModal(req, "edit");
+  }
+
+  private async openRequestActionModal(
+    req: PermissionRequest,
+    initialAction: "edit" | "approve" | "deny" | "delete",
+  ): Promise<void> {
+    const allowedActions = req.status === "pending"
+      ? ["edit", "approve", "deny", "delete"]
+      : ["delete"];
+
+    const modalRef = this.modalService.open(PermissionRequestActionModalComponent, {
+      centered: true,
+      size: "lg",
+      backdrop: "static",
+      keyboard: false,
     });
 
-    if (!result.isConfirmed) return;
+    modalRef.componentInstance.data = {
+      request: req,
+      permissions: this.permissions.map((permission) => ({ id: permission.id, name: permission.name })),
+      domains: this.domains,
+      allowedActions,
+      initialAction: allowedActions.includes(initialAction) ? initialAction : allowedActions[0],
+    };
 
     try {
-      await this.accessControlApi.denyPermissionRequest(req.id!, result.value ?? null);
-      this.toastrService.success("Request denied");
+      const result = await modalRef.result;
+      if (!result?.action) return;
+
+      if (result.action === "approve") {
+        await this.accessControlApi.approvePermissionRequest(req.id!, result?.payload?.expiresAt ?? null);
+        this.toastrService.success(`Approved: ${req.requester_name} now has ${req.permission_name} in ${req.domain}`);
+      } else if (result.action === "deny") {
+        await this.accessControlApi.denyPermissionRequest(req.id!, result?.payload?.reviewNotes ?? null);
+        this.toastrService.success("Request denied");
+      } else if (result.action === "edit") {
+        await this.accessControlApi.updatePermissionRequest(req.id!, result.payload || {});
+        this.toastrService.success(`Request #${req.id} updated`);
+      } else if (result.action === "delete") {
+        await this.accessControlApi.deletePermissionRequest(req.id!);
+        this.toastrService.success(`Request #${req.id} deleted`);
+      }
+
       await this.loadRequests();
     } catch {
-      this.toastrService.error("Failed to deny request");
+      // Modal dismissed; no-op
     }
   }
 

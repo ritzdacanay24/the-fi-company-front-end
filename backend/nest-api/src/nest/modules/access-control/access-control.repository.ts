@@ -611,20 +611,22 @@ export class AccessControlRepository {
     // Normalize domain — old rows may have stored '' due to MySQL non-strict NULL handling
     const grantDomain = String(req.domain || '').trim() || '*';
 
-    await this.mysqlService.execute(
-      `UPDATE eyefidb.app_permission_requests
-        SET status = 'approved', reviewed_by = ?, reviewed_at = NOW(), expires_at = ?
-        WHERE id = ?`,
-      [reviewerId, expiresAt ?? null, requestId],
-    );
+    await this.mysqlService.withTransaction(async (connection) => {
+      await connection.execute(
+        `UPDATE eyefidb.app_permission_requests
+          SET status = 'approved', reviewed_by = ?, reviewed_at = NOW(), expires_at = ?
+          WHERE id = ?`,
+        [reviewerId, expiresAt ?? null, requestId],
+      );
 
-    // Insert the grant — guard reads this table on every protected request
-    await this.mysqlService.execute(
-      `INSERT INTO eyefidb.app_user_permission_grants
-          (user_id, permission_id, domain, granted_by, expires_at, is_active)
-        VALUES (?, ?, ?, ?, ?, 1)`,
-      [req.user_id, req.permission_id, grantDomain, reviewerId, expiresAt ?? null],
-    );
+      // Insert the grant — guard reads this table on every protected request
+      await connection.execute(
+        `INSERT INTO eyefidb.app_user_permission_grants
+            (user_id, permission_id, domain, request_id, granted_by, expires_at, is_active)
+          VALUES (?, ?, ?, ?, ?, ?, 1)`,
+        [req.user_id, req.permission_id, grantDomain, requestId, reviewerId, expiresAt ?? null],
+      );
+    });
   }
 
   async denyPermissionRequest(
@@ -644,5 +646,84 @@ export class AccessControlRepository {
     if (Number(result?.affectedRows || 0) === 0) {
       throw new Error('Request not found or not pending');
     }
+  }
+
+  async updatePermissionRequest(
+    requestId: number,
+    payload: { permissionId?: number; domain?: string; reason?: string | null; reference?: string | null },
+  ): Promise<void> {
+    const fields: string[] = [];
+    const params: unknown[] = [];
+
+    if (payload.permissionId !== undefined) {
+      fields.push('permission_id = ?');
+      params.push(payload.permissionId);
+    }
+
+    if (payload.domain !== undefined) {
+      fields.push('domain = ?');
+      params.push(payload.domain);
+    }
+
+    if (payload.reason !== undefined) {
+      fields.push('reason = ?');
+      params.push(payload.reason ?? null);
+    }
+
+    if (payload.reference !== undefined) {
+      fields.push('reference = ?');
+      params.push(payload.reference ?? null);
+    }
+
+    if (fields.length === 0) {
+      throw new Error('No fields provided for update');
+    }
+
+    const result = await this.mysqlService.query<any>(
+      `
+        UPDATE eyefidb.app_permission_requests
+        SET ${fields.join(', ')}, updated_at = NOW()
+        WHERE id = ? AND status = 'pending'
+      `,
+      [...params, requestId],
+    );
+
+    if (Number(result?.affectedRows || 0) === 0) {
+      throw new Error('Permission request not found or not pending');
+    }
+  }
+
+  async deletePermissionRequest(requestId: number, reviewerId?: number | null): Promise<void> {
+    const requestRows = await this.mysqlService.query<Array<RowDataPacket & { user_id: number; permission_id: number; domain: string; status: string }>>(
+      `SELECT user_id, permission_id, domain, status FROM eyefidb.app_permission_requests WHERE id = ? LIMIT 1`,
+      [requestId],
+    );
+
+    const req = requestRows[0];
+    if (!req) {
+      throw new Error('Permission request not found');
+    }
+
+    await this.mysqlService.withTransaction(async (connection) => {
+      // Revoke active grants tied to this request first.
+      await connection.execute(
+        `
+          UPDATE eyefidb.app_user_permission_grants
+          SET is_active = 0,
+              revoked_at = NOW(),
+              revoked_by = ?,
+              updated_at = NOW()
+          WHERE request_id = ?
+            AND is_active = 1
+            AND revoked_at IS NULL
+        `,
+        [reviewerId ?? null, requestId],
+      );
+
+      await connection.execute(
+        `DELETE FROM eyefidb.app_permission_requests WHERE id = ?`,
+        [requestId],
+      );
+    });
   }
 }

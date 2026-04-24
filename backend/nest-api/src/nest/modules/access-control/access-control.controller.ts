@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
 import { AccessControlService } from './access-control.service';
 import { Permissions } from './permissions.decorator';
 import { RolePermissionGuard } from './role-permission.guard';
@@ -160,5 +160,24 @@ export class AccessControlController {
   ) {
     const reviewerId = Number(req?.user?.id || 0);
     return this.accessControlService.denyPermissionRequest(id, reviewerId, body?.reviewNotes ?? null);
+  }
+
+  @Patch('permission-requests/:id')
+  @Permissions('manage')
+  async updatePermissionRequest(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { permissionId?: number; domain?: string; reason?: string | null; reference?: string | null },
+  ) {
+    return this.accessControlService.updatePermissionRequest(id, body || {});
+  }
+
+  @Delete('permission-requests/:id')
+  @Permissions('manage')
+  async deletePermissionRequest(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: any,
+  ) {
+    const reviewerId = Number(req?.user?.id || 0);
+    return this.accessControlService.deletePermissionRequest(id, reviewerId || null);
   }
 }

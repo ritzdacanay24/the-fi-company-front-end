@@ -11,15 +11,19 @@ import { AuthenticationService } from "../services/auth.service";
 import { ToastrService } from "ngx-toastr";
 import { THE_FI_COMPANY_TWOSTEP_TOKEN } from "../guards/admin.guard";
 import { Router } from "@angular/router";
-import Swal from 'sweetalert2';
+import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { AccessControlApiService } from "../api/access-control/access-control.service";
+import { PermissionRequiredComponent, PermissionRequiredData } from "../../shared/modals/permission-required/permission-required.component";
 
 @Injectable()
 export class ErrorInterceptor implements HttpInterceptor {
+  private isPermissionModalOpen = false;
+
   constructor(
     private authenticationService: AuthenticationService,
     @Inject(Injector) private readonly injector: Injector,
     private router: Router,
+    private modalService: NgbModal,
   ) {}
 
   private get toastService() {
@@ -30,84 +34,61 @@ export class ErrorInterceptor implements HttpInterceptor {
     return this.injector.get(AccessControlApiService);
   }
 
-  private escapeHtml(value: unknown): string {
-    return String(value ?? '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-  }
-
-  private renderTagList(values: unknown[], emptyLabel: string): string {
-    if (!Array.isArray(values) || values.length === 0) {
-      return `<span class="text-muted">${this.escapeHtml(emptyLabel)}</span>`;
+  private async showPermissionRequiredModal(details: any, canRequest: boolean): Promise<void> {
+    if (this.isPermissionModalOpen) {
+      return;
     }
 
-    return values
-      .map((value) => `<span class="badge bg-light text-dark border me-1 mb-1">${this.escapeHtml(value)}</span>`)
-      .join('');
-  }
+    this.isPermissionModalOpen = true;
 
-  private renderGrantList(grants: Array<{ permission?: string; domain?: string; expiresAt?: string | null }>): string {
-    if (!Array.isArray(grants) || grants.length === 0) {
-      return '<span class="text-muted">None</span>';
-    }
-
-    return grants
-      .map((grant) => {
-        const permission = this.escapeHtml(grant?.permission || 'unknown');
-        const domain = this.escapeHtml(grant?.domain || 'unknown');
-        const expiry = grant?.expiresAt ? ` <span class="text-muted">until ${this.escapeHtml(grant.expiresAt)}</span>` : '';
-        return `<div><span class="badge bg-light text-dark border me-1 mb-1">${permission} @ ${domain}</span>${expiry}</div>`;
-      })
-      .join('');
-  }
-
-  private buildForbiddenHtml(details: any, includeRequestForm: boolean = false): string {
+    console.log('🔐 Showing permission required modal', { details, canRequest });
+    
     const user = this.authenticationService.currentUserValue;
     const userName = [user?.first, user?.last].filter(Boolean).join(' ');
-    const message = this.escapeHtml(details?.message || 'You do not have permission to perform this action.');
-    const failedCheck = details?.failedCheck === 'role' ? 'Missing required role' : 'Missing required permission';
 
-    const requiredDomain = details?.requiredDomain
-      ? `<div class="mb-2"><strong>Required domain:</strong> ${this.escapeHtml(details.requiredDomain)}</div>`
-      : '';
+    const failedCheck = details?.failedCheck === 'role' ? 'role' : 'permission';
+    const message = details?.message || 'You do not have permission to perform this action.';
 
-    const configuredDomain = details?.configuredModuleDomain
-      ? `<div class="mb-2"><strong>Configured module domain:</strong> ${this.escapeHtml(details.configuredModuleDomain)}${details?.moduleKey ? ` <span class="text-muted">(${this.escapeHtml(details.moduleKey)})</span>` : ''}</div>`
-      : '';
+    const modalData: PermissionRequiredData = {
+      message,
+      failedCheck,
+      requiredDomain: details?.requiredDomain,
+      configuredModuleDomain: details?.configuredModuleDomain,
+      moduleKey: details?.moduleKey,
+      requiredRoles: details?.requiredRoles || [],
+      requiredPermissions: details?.requiredPermissions || [],
+      currentRoles: details?.currentRoles || [],
+      currentPermissions: details?.currentPermissions || [],
+      currentDomainGrants: details?.currentDomainGrants || [],
+      userName,
+      canRequest,
+    };
 
-    const requiredRolesHtml = (Array.isArray(details?.requiredRoles) && details.requiredRoles.length > 0)
-      ? `<div class="mb-2"><strong>Required roles:</strong><br>${this.renderTagList(details.requiredRoles, 'None specified')}</div>`
-      : '';
+    console.log('🔐 Modal data prepared:', modalData);
 
-    const requiredPermissionsHtml = (Array.isArray(details?.requiredPermissions) && details.requiredPermissions.length > 0)
-      ? `<div class="mb-3"><strong>Required permissions:</strong><br>${this.renderTagList(details.requiredPermissions, 'None specified')}</div>`
-      : '';
+    const modalRef = this.modalService.open(PermissionRequiredComponent, {
+      centered: true,
+      backdrop: 'static',
+      keyboard: false,
+    });
 
-    const requestForm = includeRequestForm ? `
-      <hr class="my-3">
-      <div class="text-start">
-        <p class="small text-muted mb-2">Submit a request to your administrator:</p>
-        <label for="swal-reason-input" class="form-label small fw-semibold">Reason <span class="text-muted fw-normal">(optional)</span></label>
-        <textarea id="swal-reason-input" class="form-control form-control-sm" rows="2" placeholder="Explain why you need this access..."></textarea>
-      </div>` : '';
+    console.log('🔐 Modal ref created:', modalRef);
 
-    return `
-      <div class="text-start">
-        <p class="mb-2">${message}</p>
-        <div class="small text-muted mb-3">${this.escapeHtml(failedCheck)}${userName ? ` for ${this.escapeHtml(userName)}` : ''}</div>
-        ${requiredDomain}
-        ${configuredDomain}
-        ${requiredRolesHtml}
-        ${requiredPermissionsHtml}
-        <div class="mb-2"><strong>Your roles:</strong><br>${this.renderTagList(details?.currentRoles, 'No assigned RBAC roles')}</div>
-        <div class="mb-2"><strong>Your permissions:</strong><br>${this.renderTagList(details?.currentPermissions, 'No assigned RBAC permissions')}</div>
-        <div class="mb-0"><strong>Your active grants${details?.requiredDomain ? ` for ${this.escapeHtml(details.requiredDomain)}` : ''}:</strong><br>${this.renderGrantList(details?.currentDomainGrants || [])}</div>
-        ${requestForm}
-      </div>
-    `;
+    modalRef.componentInstance.data = modalData;
+
+    try {
+      const result = await modalRef.result;
+      console.log('🔐 Modal result:', result);
+      if (result?.action === 'request') {
+        await this.handlePermissionRequest(details, result.reason);
+      }
+    } catch (dismissReason) {
+      // Modal was dismissed, not confirmed
+      console.log('🔐 Modal dismissed:', dismissReason);
+      return;
+    } finally {
+      this.isPermissionModalOpen = false;
+    }
   }
 
   private async handlePermissionRequest(details: any, reason: string | null) {
@@ -132,12 +113,11 @@ export class ErrorInterceptor implements HttpInterceptor {
         reason,
       });
 
-      Swal.fire({
-        icon: 'success',
-        title: 'Request Submitted',
-        text: 'Your access request has been submitted to your administrator for approval.',
-        confirmButtonText: 'OK',
-      });
+      this.toastService.success(
+        'Your access request has been submitted to your administrator for approval.',
+        'Request Submitted',
+        { timeOut: 5000 }
+      );
     } catch (err) {
       console.error('Error submitting permission request:', err);
       this.toastService.error('Failed to submit access request. Please try again.', 'Error');
@@ -164,29 +144,17 @@ export class ErrorInterceptor implements HttpInterceptor {
         }
 
         if (error.status === 403) {
+          console.log('🚫 403 Forbidden error caught:', error);
           const details = typeof error?.error === 'object' && error?.error !== null ? error.error : {};
           const canRequest = Array.isArray(details?.requiredPermissions) &&
             details.requiredPermissions.length > 0 &&
             !!details?.requiredDomain;
 
-          Swal.fire({
-            icon: 'warning',
-            title: 'Permission Required',
-            html: this.buildForbiddenHtml(details, canRequest),
-            confirmButtonText: canRequest ? 'Request Access' : 'OK',
-            confirmButtonColor: canRequest ? '#0d6efd' : '#6c757d',
-            showCancelButton: canRequest,
-            cancelButtonText: 'Close',
-            cancelButtonColor: '#6c757d',
-            focusConfirm: false,
-            preConfirm: canRequest ? () => {
-              const reasonInput = document.getElementById('swal-reason-input') as HTMLTextAreaElement;
-              return reasonInput?.value || null;
-            } : undefined,
-          }).then(async (result) => {
-            if (canRequest && result.isConfirmed) {
-              await this.handlePermissionRequest(details, result.value ?? null);
-            }
+          console.log('🚫 Permission details:', { details, canRequest });
+
+          // Fire modal without blocking
+          this.showPermissionRequiredModal(details, canRequest).catch(err => {
+            console.error('❌ Error showing permission modal:', err);
           });
 
           return throwError(error);

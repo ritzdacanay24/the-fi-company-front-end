@@ -61,6 +61,13 @@ export interface PermissionRequest {
   expires_at: string | null;
 }
 
+export interface UpdatePermissionRequestPayload {
+  permissionId?: number;
+  domain?: string;
+  reason?: string | null;
+  reference?: string | null;
+}
+
 @Injectable({
   providedIn: "root",
 })
@@ -143,4 +150,10 @@ export class AccessControlApiService {
 
   denyPermissionRequest = async (id: number, reviewNotes?: string | null) =>
     firstValueFrom(this.http.put<{ success: boolean }>(`${url}/permission-requests/${id}/deny`, { reviewNotes: reviewNotes ?? null }));
+
+  updatePermissionRequest = async (id: number, payload: UpdatePermissionRequestPayload) =>
+    firstValueFrom(this.http.patch<{ success: boolean }>(`${url}/permission-requests/${id}`, payload));
+
+  deletePermissionRequest = async (id: number) =>
+    firstValueFrom(this.http.delete<{ success: boolean }>(`${url}/permission-requests/${id}`));
 }

@@ -1,0 +1,93 @@
+<div class="modal-header border-bottom bg-light">
+  <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2">
+    <i class="mdi mdi-shield-key-outline text-warning"></i>
+    Request #{{ data.request.id }} Actions
+  </h5>
+  <button type="button" class="btn-close" aria-label="Close" (click)="onCancel()"></button>
+</div>
+
+<div class="modal-body">
+  <div class="small text-muted mb-3">
+    <div><strong>User:</strong> {{ data.request.requester_name }}</div>
+    <div><strong>Status:</strong> {{ data.request.status }}</div>
+  </div>
+
+  <div class="mb-3" *ngIf="data.allowedActions.length > 1">
+    <label class="form-label small fw-semibold">Action</label>
+    <select class="form-select form-select-sm" [(ngModel)]="selectedAction">
+      <option *ngFor="let action of data.allowedActions" [ngValue]="action">
+        {{ action | titlecase }}
+      </option>
+    </select>
+  </div>
+
+  <div *ngIf="selectedAction === 'edit'" class="d-flex flex-column gap-2">
+    <div>
+      <label class="form-label small fw-semibold">Permission</label>
+      <select class="form-select form-select-sm" [(ngModel)]="editPermissionId">
+        <option *ngFor="let permission of data.permissions" [ngValue]="permission.id">
+          {{ permission.name }}
+        </option>
+      </select>
+    </div>
+    <div>
+      <label class="form-label small fw-semibold">Domain</label>
+      <select class="form-select form-select-sm" [(ngModel)]="editDomain">
+        <option *ngFor="let domain of data.domains" [ngValue]="domain">
+          {{ domain }}
+        </option>
+      </select>
+    </div>
+    <div>
+      <label class="form-label small fw-semibold">Reason</label>
+      <textarea
+        class="form-control form-control-sm"
+        rows="3"
+        [(ngModel)]="editReason"
+        placeholder="Reason for access request"></textarea>
+    </div>
+  </div>
+
+  <div *ngIf="selectedAction === 'approve'" class="d-flex flex-column gap-2">
+    <div>
+      <label class="form-label small fw-semibold">Review Notes (optional)</label>
+      <textarea
+        class="form-control form-control-sm"
+        rows="2"
+        [(ngModel)]="reviewNotes"
+        placeholder="Optional reviewer notes"></textarea>
+    </div>
+    <div>
+      <label class="form-label small fw-semibold">Expiry Date (optional)</label>
+      <input type="date" class="form-control form-control-sm" [(ngModel)]="expiresAt" />
+    </div>
+  </div>
+
+  <div *ngIf="selectedAction === 'deny'" class="d-flex flex-column gap-2">
+    <label class="form-label small fw-semibold">Reason for denial (optional)</label>
+    <textarea
+      class="form-control form-control-sm"
+      rows="2"
+      [(ngModel)]="reviewNotes"
+      placeholder="Optional reason shown to requester"></textarea>
+  </div>
+
+  <div *ngIf="selectedAction === 'delete'" class="alert alert-danger mb-0">
+    <i class="mdi mdi-alert-circle-outline me-2"></i>
+    This will permanently remove this request record.
+  </div>
+</div>
+
+<div class="modal-footer border-top bg-light">
+  <button type="button" class="btn btn-outline-secondary" (click)="onCancel()">
+    Cancel
+  </button>
+  <button
+    type="button"
+    class="btn"
+    [class.btn-danger]="isDangerAction()"
+    [class.btn-warning]="!isDangerAction()"
+    (click)="confirm()">
+    {{ getConfirmLabel() }}
+  </button>
+</div>

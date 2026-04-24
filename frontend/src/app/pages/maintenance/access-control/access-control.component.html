@@ -338,8 +338,18 @@
                       <button class="btn btn-sm btn-danger" (click)="denyRequest(req)" title="Deny">
                         <i class="mdi mdi-close"></i>
                       </button>
+                      <button class="btn btn-sm btn-outline-primary" (click)="openRequestActions(req)" title="More Actions">
+                        <i class="mdi mdi-dots-horizontal"></i>
+                      </button>
                     </div>
-                    <small *ngIf="req.status !== 'pending'" class="text-muted">—</small>
+                    <button
+                      *ngIf="req.status !== 'pending'"
+                      class="btn btn-sm btn-outline-primary"
+                      (click)="openRequestActions(req)"
+                      title="Actions">
+                      <i class="mdi mdi-dots-horizontal me-1"></i>
+                      Actions
+                    </button>
                   </td>
                 </tr>
               </tbody>

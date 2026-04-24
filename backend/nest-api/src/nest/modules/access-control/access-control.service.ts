@@ -323,4 +323,69 @@ export class AccessControlService {
       throw new BadRequestException(err?.message || 'Failed to deny request');
     }
   }
+
+  async updatePermissionRequest(
+    requestId: number,
+    payload: { permissionId?: number; domain?: string; reason?: string | null; reference?: string | null },
+  ) {
+    if (!requestId || requestId <= 0) {
+      throw new BadRequestException('requestId is required');
+    }
+
+    const normalizedPayload: {
+      permissionId?: number;
+      domain?: string;
+      reason?: string | null;
+      reference?: string | null;
+    } = {};
+
+    if (payload.permissionId !== undefined) {
+      const permissionId = Number(payload.permissionId);
+      if (!Number.isInteger(permissionId) || permissionId <= 0) {
+        throw new BadRequestException('permissionId must be a positive integer');
+      }
+      normalizedPayload.permissionId = permissionId;
+    }
+
+    if (payload.domain !== undefined) {
+      const domain = String(payload.domain || '').trim();
+      if (!domain) {
+        throw new BadRequestException('domain is required when provided');
+      }
+      normalizedPayload.domain = domain;
+    }
+
+    if (payload.reason !== undefined) {
+      const reason = String(payload.reason || '').trim();
+      normalizedPayload.reason = reason.length > 0 ? reason : null;
+    }
+
+    if (payload.reference !== undefined) {
+      const reference = String(payload.reference || '').trim();
+      normalizedPayload.reference = reference.length > 0 ? reference : null;
+    }
+
+    await this.repository.updatePermissionRequest(requestId, normalizedPayload);
+    return {
+      success: true,
+      requestId,
+      ...normalizedPayload,
+    };
+  }
+
+  async deletePermissionRequest(requestId: number, reviewerId?: number | null) {
+    if (!requestId || requestId <= 0) {
+      throw new BadRequestException('requestId is required');
+    }
+
+    try {
+      await this.repository.deletePermissionRequest(requestId, reviewerId || null);
+      return { success: true, requestId };
+    } catch (err: any) {
+      if (err?.message?.includes('not found')) {
+        throw new NotFoundException(err.message);
+      }
+      throw new BadRequestException(err?.message || 'Failed to delete request');
+    }
+  }
 }
