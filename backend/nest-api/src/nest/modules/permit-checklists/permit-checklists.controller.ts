@@ -38,7 +38,7 @@ export class PermitChecklistsController {
   }
 
   @Post('sync-directories')
-  @Permissions('write')
+  @Permissions('manage')
   async syncDirectories(
     @Body() payload: { customers?: Array<Record<string, unknown>>; architects?: Array<Record<string, unknown>> },
   ) {
@@ -46,7 +46,7 @@ export class PermitChecklistsController {
   }
 
   @Post('sync-billing-defaults')
-  @Permissions('write')
+  @Permissions('manage')
   async syncBillingDefaults(@Body() payload: { customerBillingDefaultsByType?: Record<string, unknown> }) {
     return this.service.syncBillingDefaults(payload?.customerBillingDefaultsByType);
   }

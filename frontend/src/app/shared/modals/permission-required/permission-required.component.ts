@@ -77,4 +77,8 @@ export class PermissionRequiredComponent implements OnInit {
   hasCurrentGrants(): boolean {
     return Array.isArray(this.data.currentDomainGrants) && this.data.currentDomainGrants.length > 0;
   }
+
+  shouldShowDiagnostics(): boolean {
+    return !!this.data.configuredModuleDomain || !!this.data.moduleKey || this.hasCurrentRoles() || this.hasCurrentPermissions() || this.hasCurrentGrants();
+  }
 }

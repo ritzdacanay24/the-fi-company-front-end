@@ -1033,7 +1033,7 @@ export class PermitChecklistsComponent implements OnInit {
     this.newArchitectNameDraft = "";
   }
 
-  addArchitect(): void {
+  async addArchitect(): Promise<void> {
     const name = String(this.newArchitectNameDraft || "").trim();
     if (!name) {
       this.statusMessage = "Enter an architect name before adding.";
@@ -1046,7 +1046,7 @@ export class PermitChecklistsComponent implements OnInit {
       return;
     }
 
-    this.architects = [
+    const newList = [
       ...this.architects,
       {
         id: this.generateDirectoryId("arch"),
@@ -1054,26 +1054,40 @@ export class PermitChecklistsComponent implements OnInit {
       },
     ].sort((a, b) => a.name.localeCompare(b.name));
 
+    try {
+      await this.permitChecklistsService.syncDirectories(this.customers, newList);
+    } catch {
+      this.statusMessage = "Failed to add architect. You may not have permission.";
+      return;
+    }
+
+    this.architects = newList;
     this.newArchitectNameDraft = "";
-    this.directorySyncDirty = true;
-    this.persistLocalData();
+    this.directorySyncDirty = false;
     this.statusMessage = "Architect added.";
   }
 
-  removeArchitect(architectId: string): void {
+  async removeArchitect(architectId: string): Promise<void> {
     const target = this.architects.find((architect) => architect.id === architectId);
     if (!target) {
       return;
     }
 
-    this.architects = this.architects.filter((architect) => architect.id !== architectId);
+    const newList = this.architects.filter((architect) => architect.id !== architectId);
 
-    this.directorySyncDirty = true;
-    this.persistLocalData();
+    try {
+      await this.permitChecklistsService.syncDirectories(this.customers, newList);
+    } catch {
+      this.statusMessage = "Failed to remove architect. You may not have permission.";
+      return;
+    }
+
+    this.architects = newList;
+    this.directorySyncDirty = false;
     this.statusMessage = `Architect ${target.name} removed.`;
   }
 
-  addCustomer(): void {
+  async addCustomer(): Promise<void> {
     const name = String(this.newCustomerNameDraft || "").trim();
     if (!name) {
       this.statusMessage = "Enter a customer name before adding.";
@@ -1086,7 +1100,7 @@ export class PermitChecklistsComponent implements OnInit {
       return;
     }
 
-    this.customers = [
+    const newList = [
       ...this.customers,
       {
         id: this.generateDirectoryId("cust"),
@@ -1094,21 +1108,36 @@ export class PermitChecklistsComponent implements OnInit {
       },
     ].sort((a, b) => a.name.localeCompare(b.name));
 
+    try {
+      await this.permitChecklistsService.syncDirectories(newList, this.architects);
+    } catch {
+      this.statusMessage = "Failed to add customer. You may not have permission.";
+      return;
+    }
+
+    this.customers = newList;
     this.newCustomerNameDraft = "";
-    this.directorySyncDirty = true;
-    this.persistLocalData();
+    this.directorySyncDirty = false;
     this.statusMessage = "Customer added.";
   }
 
-  removeCustomer(customerId: string): void {
+  async removeCustomer(customerId: string): Promise<void> {
     const target = this.customers.find((customer) => customer.id === customerId);
     if (!target) {
       return;
     }
 
-    this.customers = this.customers.filter((customer) => customer.id !== customerId);
-    this.directorySyncDirty = true;
-    this.persistLocalData();
+    const newList = this.customers.filter((customer) => customer.id !== customerId);
+
+    try {
+      await this.permitChecklistsService.syncDirectories(newList, this.architects);
+    } catch {
+      this.statusMessage = "Failed to remove customer. You may not have permission.";
+      return;
+    }
+
+    this.customers = newList;
+    this.directorySyncDirty = false;
     this.statusMessage = `Customer ${target.name} removed.`;
   }
 

@@ -1,128 +1,136 @@
-<div class="modal-header border-bottom bg-light">
-  <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2">
-    <i class="mdi mdi-shield-lock-outline text-warning" style="font-size: 1.5rem;"></i>
+<div class="modal-header permission-modal-header border-bottom">
+  <h5 class="modal-title fw-semibold text-dark d-flex align-items-center gap-2 mb-0">
+    <span class="permission-modal-icon">
+      <i class="mdi mdi-shield-lock-outline"></i>
+    </span>
     Permission Required
   </h5>
   <button type="button" class="btn-close" aria-label="Close" (click)="onCancel()"></button>
 </div>
 
-<div class="modal-body">
-  <!-- Main Message -->
-  <p class="mb-1 fw-500">{{ data.message }}</p>
-  <div class="small text-muted mb-3">
+<div class="modal-body permission-modal-body">
+  <p class="mb-1 fw-semibold text-dark">{{ data.message }}</p>
+  <div class="small text-secondary mb-4">
     {{ data.failedCheck === 'role' ? 'Missing required role' : 'Missing required permission' }}
     <span *ngIf="data.userName">for <strong>{{ data.userName }}</strong></span>
   </div>
 
-  <!-- Required Domain -->
-  <div class="alert alert-warning text-start mb-3" *ngIf="data.requiredDomain" role="alert">
-    <i class="mdi mdi-alert-circle-outline me-2"></i>
-    <strong>Required Domain:</strong>
-    <code class="bg-light text-dark rounded px-2 py-1 ms-2">{{ data.requiredDomain }}</code>
+  <div class="permission-meta-grid mb-4" *ngIf="data.requiredDomain || hasRequiredRoles() || hasRequiredPermissions()">
+    <div class="permission-meta-card permission-meta-card-critical" *ngIf="data.requiredDomain">
+      <div class="permission-meta-label">Required Domain</div>
+      <div class="permission-meta-value">{{ data.requiredDomain }}</div>
+    </div>
   </div>
 
-  <!-- Configured Module Domain -->
-  <div class="alert alert-info text-start mb-3" *ngIf="data.configuredModuleDomain" role="alert">
-    <i class="mdi mdi-information-outline me-2"></i>
-    <strong>Configured Domain:</strong>
-    <code class="bg-light text-dark rounded px-2 py-1 ms-2">{{ data.configuredModuleDomain }}</code>
-    <small class="text-muted ms-2 d-block mt-1" *ngIf="data.moduleKey">Module: {{ data.moduleKey }}</small>
-  </div>
-
-  <!-- Required Roles -->
-  <div class="mb-3" *ngIf="hasRequiredRoles()">
-    <strong class="d-block mb-2 text-dark">Required Roles:</strong>
+  <div class="permission-section mb-3" *ngIf="hasRequiredRoles()">
+    <strong class="permission-section-title d-block">Required Roles</strong>
     <div class="d-flex flex-wrap gap-2">
-      <span *ngFor="let role of data.requiredRoles" class="badge bg-secondary">
+      <span *ngFor="let role of data.requiredRoles" class="permission-pill permission-pill-critical">
         {{ role }}
       </span>
     </div>
   </div>
 
-  <!-- Required Permissions -->
-  <div class="mb-3" *ngIf="hasRequiredPermissions()">
-    <strong class="d-block mb-2 text-dark">Required Permissions:</strong>
+  <div class="permission-section mb-3" *ngIf="hasRequiredPermissions()">
+    <strong class="permission-section-title d-block">Required Permissions</strong>
     <div class="d-flex flex-wrap gap-2">
-      <span *ngFor="let permission of data.requiredPermissions" class="badge bg-danger">
+      <span *ngFor="let permission of data.requiredPermissions" class="permission-pill permission-pill-critical">
         {{ permission }}
       </span>
     </div>
   </div>
 
-  <!-- Your Roles -->
-  <div class="mb-3">
-    <strong class="d-block mb-2 text-dark">Your Roles:</strong>
-    <div class="d-flex flex-wrap gap-2">
-      <span *ngIf="hasCurrentRoles()">
-        <span *ngFor="let role of data.currentRoles" class="badge bg-success">
-          {{ role }}
-        </span>
-      </span>
-      <span *ngIf="!hasCurrentRoles()" class="text-muted small">
-        <i class="mdi mdi-minus-circle-outline me-1"></i>No assigned roles
-      </span>
-    </div>
-  </div>
-
-  <!-- Your Permissions -->
-  <div class="mb-3">
-    <strong class="d-block mb-2 text-dark">Your Permissions:</strong>
-    <div class="d-flex flex-wrap gap-2">
-      <span *ngIf="hasCurrentPermissions()">
-        <span *ngFor="let permission of data.currentPermissions" class="badge bg-info text-dark">
-          {{ permission }}
-        </span>
-      </span>
-      <span *ngIf="!hasCurrentPermissions()" class="text-muted small">
-        <i class="mdi mdi-minus-circle-outline me-1"></i>No assigned permissions
-      </span>
-    </div>
-  </div>
-
-  <!-- Your Active Grants -->
-  <div class="mb-3">
-    <strong class="d-block mb-2 text-dark">
-      Your Active Grants
-      <span class="text-muted fw-normal small" *ngIf="data.requiredDomain">
-        ({{ data.requiredDomain }})
-      </span>
-      :
-    </strong>
-    <div *ngIf="hasCurrentGrants()" class="d-flex flex-column gap-2">
-      <div *ngFor="let grant of data.currentDomainGrants" class="d-flex align-items-center gap-2">
-        <span class="badge bg-light text-dark border">
-          {{ grant.permission }} &#64; {{ grant.domain }}
-        </span>
-        <small class="text-muted" *ngIf="grant.expiresAt">
-          <i class="mdi mdi-clock-outline me-1"></i>until {{ grant.expiresAt }}
-        </small>
-      </div>
-    </div>
-    <span *ngIf="!hasCurrentGrants()" class="text-muted small">
-      <i class="mdi mdi-minus-circle-outline me-1"></i>None
-    </span>
-  </div>
-
-  <!-- Permission Request Form -->
-  <div *ngIf="data.canRequest" class="alert alert-light border text-start mb-0">
-    <p class="small text-muted mb-2 fw-500">
-      <i class="mdi mdi-email-outline me-2"></i>Request Access from Your Administrator:
+  <div *ngIf="data.canRequest" class="permission-request-panel mb-0">
+    <p class="small text-secondary mb-2 fw-semibold">
+      <i class="mdi mdi-email-outline me-2"></i>Request access from your administrator
     </p>
     <label for="permission-reason-input" class="form-label small fw-semibold mb-2">
       Reason <span class="text-muted fw-normal">(optional)</span>
     </label>
     <textarea
       id="permission-reason-input"
-      class="form-control form-control-sm"
-      rows="2"
+      class="form-control permission-reason-input"
+      rows="3"
       placeholder="Explain why you need this access..."
       [(ngModel)]="reason"
       [disabled]="isSubmitting()"
     ></textarea>
   </div>
+
+  <details class="permission-diagnostics mt-4" *ngIf="shouldShowDiagnostics()">
+    <summary class="permission-diagnostics-summary">
+      Technical details
+    </summary>
+
+    <div class="permission-diagnostics-body mt-3">
+      <div class="permission-section mb-3" *ngIf="data.configuredModuleDomain || data.moduleKey">
+        <strong class="permission-section-title d-block">Routing Context</strong>
+        <div class="permission-diagnostics-grid">
+          <div class="permission-meta-card" *ngIf="data.configuredModuleDomain">
+            <div class="permission-meta-label">Configured Domain</div>
+            <div class="permission-meta-value">{{ data.configuredModuleDomain }}</div>
+          </div>
+          <div class="permission-meta-card" *ngIf="data.moduleKey">
+            <div class="permission-meta-label">Module</div>
+            <div class="permission-meta-value">{{ data.moduleKey }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="permission-section mb-3">
+        <strong class="permission-section-title d-block">Your Roles</strong>
+        <div class="d-flex flex-wrap gap-2">
+          <span *ngIf="hasCurrentRoles()">
+            <span *ngFor="let role of data.currentRoles" class="permission-pill permission-pill-neutral">
+              {{ role }}
+            </span>
+          </span>
+          <span *ngIf="!hasCurrentRoles()" class="permission-empty-state small">
+            <i class="mdi mdi-minus-circle-outline me-1"></i>No assigned roles
+          </span>
+        </div>
+      </div>
+
+      <div class="permission-section mb-3">
+        <strong class="permission-section-title d-block">Your Permissions</strong>
+        <div class="d-flex flex-wrap gap-2">
+          <span *ngIf="hasCurrentPermissions()">
+            <span *ngFor="let permission of data.currentPermissions" class="permission-pill permission-pill-neutral">
+              {{ permission }}
+            </span>
+          </span>
+          <span *ngIf="!hasCurrentPermissions()" class="permission-empty-state small">
+            <i class="mdi mdi-minus-circle-outline me-1"></i>No assigned permissions
+          </span>
+        </div>
+      </div>
+
+      <div class="permission-section">
+        <strong class="permission-section-title d-block">
+          Your Active Grants
+          <span class="text-secondary fw-normal small" *ngIf="data.requiredDomain">
+            ({{ data.requiredDomain }})
+          </span>
+        </strong>
+        <div *ngIf="hasCurrentGrants()" class="d-flex flex-column gap-2">
+          <div *ngFor="let grant of data.currentDomainGrants" class="permission-grant-row">
+            <span class="permission-pill permission-pill-neutral">
+              {{ grant.permission }} &#64; {{ grant.domain }}
+            </span>
+            <small class="permission-grant-expiry" *ngIf="grant.expiresAt">
+              <i class="mdi mdi-clock-outline me-1"></i>until {{ grant.expiresAt }}
+            </small>
+          </div>
+        </div>
+        <span *ngIf="!hasCurrentGrants()" class="permission-empty-state small">
+          <i class="mdi mdi-minus-circle-outline me-1"></i>None
+        </span>
+      </div>
+    </div>
+  </details>
 </div>
 
-<div class="modal-footer border-top bg-light">
+<div class="modal-footer permission-modal-footer border-top">
   <button
     type="button"
     class="btn btn-outline-secondary"
@@ -135,7 +143,7 @@
   <button
     *ngIf="data.canRequest"
     type="button"
-    class="btn btn-warning"
+    class="btn btn-primary"
     (click)="onRequestAccess()"
     [disabled]="isSubmitting()"
   >
