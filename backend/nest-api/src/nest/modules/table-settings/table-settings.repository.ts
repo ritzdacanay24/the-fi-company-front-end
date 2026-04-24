@@ -57,6 +57,14 @@ export class TableSettingsRepository {
     return rows[0] ?? null;
   }
 
+  async getByIdAndUserId(id: number, userId: number): Promise<RowDataPacket | null> {
+    const rows = await this.mysqlService.query<RowDataPacket[]>(
+      `SELECT * FROM tableSettings WHERE id = ? AND userId = ? LIMIT 1`,
+      [id, userId],
+    );
+    return rows[0] ?? null;
+  }
+
   private serialize(value: any): any {
     if (value !== null && typeof value === 'object') {
       return JSON.stringify(value);
@@ -64,9 +72,9 @@ export class TableSettingsRepository {
     return value;
   }
 
-  async create(data: Record<string, any>): Promise<{ insertId: number }> {
-    const keys = Object.keys(data);
-    const values = Object.values(data).map((v) => this.serialize(v));
+  async create(payload: Record<string, any>): Promise<{ insertId: number }> {
+    const keys = Object.keys(payload);
+    const values = Object.values(payload).map((v) => this.serialize(v));
     const sql = `INSERT INTO tableSettings (${keys.join(', ')}) VALUES (${keys.map(() => '?').join(', ')})`;
     const result: any = await this.mysqlService.query(sql, values);
     return { insertId: result.insertId };

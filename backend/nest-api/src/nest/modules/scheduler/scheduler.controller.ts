@@ -1,8 +1,10 @@
-import { Controller, Get, Post, Put, Delete, Param, Query, Body, ParseIntPipe } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Permissions, RolePermissionGuard } from '../access-control';
 import { SchedulerService } from './scheduler.service';
 import { SchedulerRecord } from './scheduler.repository';
 
 @Controller('scheduler')
+@UseGuards(RolePermissionGuard)
 export class SchedulerController {
   constructor(private readonly schedulerService: SchedulerService) {}
 
@@ -100,16 +102,19 @@ export class SchedulerController {
   }
 
   @Post()
+  @Permissions('write')
   async create(@Body() payload: Record<string, unknown>): Promise<SchedulerRecord | null> {
     return this.schedulerService.create(payload);
   }
 
   @Put(':id')
+  @Permissions('write')
   async update(@Param('id', ParseIntPipe) id: number, @Body() payload: Record<string, unknown>): Promise<SchedulerRecord | null> {
     return this.schedulerService.update(id, payload);
   }
 
   @Delete(':id')
+  @Permissions('delete')
   async delete(@Param('id', ParseIntPipe) id: number): Promise<boolean> {
     return this.schedulerService.delete(id);
   }

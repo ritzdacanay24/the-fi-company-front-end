@@ -81,16 +81,25 @@ export class TableFilterSettingsRepository {
     return rows[0] ?? null;
   }
 
-  async create(data: Record<string, any>): Promise<{ insertId: number }> {
-    const keys = Object.keys(data);
-    const values = Object.values(data);
+  async getByIdAndUserId(id: number, userId: number): Promise<RowDataPacket | null> {
+    const rows = await this.mysqlService.query<RowDataPacket[]>(
+      'SELECT * FROM tableFilterSettings WHERE id = ? AND userId = ? LIMIT 1',
+      [id, userId],
+    );
+
+    return rows[0] ?? null;
+  }
+
+  async create(payload: Record<string, any>): Promise<{ insertId: number }> {
+    const keys = Object.keys(payload);
+    const values = Object.values(payload);
     const sql = `INSERT INTO tableFilterSettings (${keys.join(', ')}) VALUES (${keys.map(() => '?').join(', ')})`;
     const result: any = await this.mysqlService.query(sql, values);
     return { insertId: result.insertId };
   }
 
-  async update(id: number, data: Record<string, any>): Promise<void> {
-    const entries = Object.entries(data);
+  async update(id: number, payload: Record<string, any>): Promise<void> {
+    const entries = Object.entries(payload);
     if (entries.length === 0) return;
     const sql = `UPDATE tableFilterSettings SET ${entries.map(([key]) => `${key} = ?`).join(', ')} WHERE id = ?`;
     await this.mysqlService.query(sql, [...entries.map(([, v]) => v), id]);

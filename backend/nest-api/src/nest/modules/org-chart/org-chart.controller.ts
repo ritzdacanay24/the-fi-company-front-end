@@ -1,7 +1,9 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { RolePermissionGuard } from '../access-control';
 import { OrgChartService } from './org-chart.service';
 
 @Controller('org-chart')
+@UseGuards(RolePermissionGuard)
 export class OrgChartController {
   constructor(private readonly service: OrgChartService) {}
 

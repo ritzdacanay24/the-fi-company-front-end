@@ -154,6 +154,31 @@ export class UlLabelsService {
     }
   }
 
+  async archiveLabel(idRaw?: string): Promise<ApiResponse> {
+    const id = Number(idRaw);
+    if (!Number.isFinite(id) || id <= 0) {
+      return { success: false, message: 'ID is required for archive' };
+    }
+
+    try {
+      const result = await this.mysqlService.execute<ResultSetHeader>(
+        `UPDATE ul_labels SET status = 'archived' WHERE id = ?`,
+        [id],
+      );
+
+      if (result.affectedRows === 0) {
+        return { success: false, message: 'UL label not found' };
+      }
+
+      return { success: true, message: 'UL label archived successfully' };
+    } catch (error) {
+      return {
+        success: false,
+        message: `Error archiving UL label: ${this.getErrorMessage(error)}`,
+      };
+    }
+  }
+
   async deleteLabel(idRaw?: string): Promise<ApiResponse> {
     const id = Number(idRaw);
     if (!Number.isFinite(id) || id <= 0) {

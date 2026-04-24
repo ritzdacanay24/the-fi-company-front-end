@@ -1,7 +1,9 @@
-import { BadRequestException, Controller, Get, Query } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { RolePermissionGuard } from '../access-control';
 import { MasterControlService } from './master-control.service';
 
 @Controller('master-control')
+@UseGuards(RolePermissionGuard)
 export class MasterControlController {
   constructor(private readonly service: MasterControlService) {}
 

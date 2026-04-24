@@ -1,7 +1,9 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Permissions, RolePermissionGuard } from '../access-control';
 import { NcrService } from './ncr.service';
 
 @Controller('ncr')
+@UseGuards(RolePermissionGuard)
 export class NcrController {
   constructor(private readonly service: NcrService) {}
 
@@ -36,11 +38,13 @@ export class NcrController {
   }
 
   @Post('create')
+  @Permissions('write')
   async create(@Body() payload: Record<string, unknown>) {
     return this.service.create(payload);
   }
 
   @Put('updateById')
+  @Permissions('write')
   async updateByIdQuery(
     @Query('id', ParseIntPipe) id: number,
     @Body() payload: Record<string, unknown>,
@@ -49,6 +53,7 @@ export class NcrController {
   }
 
   @Put('updateById/:id')
+  @Permissions('write')
   async updateByIdPath(
     @Param('id', ParseIntPipe) id: number,
     @Body() payload: Record<string, unknown>,
@@ -57,6 +62,7 @@ export class NcrController {
   }
 
   @Put('updateAndSendEmailToDepartment')
+  @Permissions('write')
   async updateAndSendEmailToDepartment(
     @Query('id', ParseIntPipe) id: number,
     @Body() payload: Record<string, unknown>,

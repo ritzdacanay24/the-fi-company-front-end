@@ -9,13 +9,16 @@ import {
   Put,
   Query,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import { Permissions, RolePermissionGuard } from '../access-control';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { TripExpenseTransactionsService } from './trip-expense-transactions.service';
 import { UploadedSpreadsheetFile } from './types';
 
 @Controller('trip-expense-transactions')
+@UseGuards(RolePermissionGuard)
 export class TripExpenseTransactionsController {
   constructor(private readonly service: TripExpenseTransactionsService) {}
 
@@ -71,11 +74,13 @@ export class TripExpenseTransactionsController {
   }
 
   @Post()
+  @Permissions('write')
   create(@Body() payload: Record<string, unknown>) {
     return this.service.create(payload);
   }
 
   @Post('emailMissingReceiptsToTechs')
+  @Permissions('write')
   emailMissingReceiptsToTechs(
     @Query('fsId') fsIdRaw?: string,
     @Query('ticketNumber') ticketNumber?: string,
@@ -90,6 +95,7 @@ export class TripExpenseTransactionsController {
   }
 
   @Post('upload')
+  @Permissions('write')
   @UseInterceptors(FileInterceptor('file'))
   upload(
     @UploadedFile() file: UploadedSpreadsheetFile,
@@ -99,6 +105,7 @@ export class TripExpenseTransactionsController {
   }
 
   @Put('updateCreditCardTransactionById/:id')
+  @Permissions('write')
   updateCreditCardTransactionById(
     @Param('id', ParseIntPipe) id: number,
     @Body() payload: Record<string, unknown>,
@@ -107,6 +114,7 @@ export class TripExpenseTransactionsController {
   }
 
   @Delete(':id')
+  @Permissions('delete')
   deleteById(@Param('id', ParseIntPipe) id: number) {
     return this.service.deleteById(id);
   }

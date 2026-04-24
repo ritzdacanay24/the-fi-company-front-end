@@ -1,7 +1,9 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { RolePermissionGuard } from '../access-control';
 import { AddressSearchService } from './address-search.service';
 
 @Controller('address-search')
+@UseGuards(RolePermissionGuard)
 export class AddressSearchController {
   constructor(private readonly service: AddressSearchService) {}
 

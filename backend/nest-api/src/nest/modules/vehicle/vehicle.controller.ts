@@ -8,11 +8,14 @@ import {
   Post,
   Put,
   Query,
+  UseGuards,
 } from '@nestjs/common';
+import { Permissions, RolePermissionGuard } from '../access-control';
 import { CreateVehicleDto, UpdateVehicleDto } from './dto';
 import { VehicleService } from './vehicle.service';
 
 @Controller('vehicle')
+@UseGuards(RolePermissionGuard)
 export class VehicleController {
   constructor(@Inject(VehicleService) private readonly vehicleService: VehicleService) {}
 
@@ -47,16 +50,19 @@ export class VehicleController {
   }
 
   @Post('create')
+  @Permissions('write')
   async create(@Body() payload: CreateVehicleDto) {
     return await this.vehicleService.create(payload);
   }
 
   @Put('updateById')
+  @Permissions('write')
   async updateById(@Query('id', ParseIntPipe) id: number, @Body() payload: UpdateVehicleDto) {
     return await this.vehicleService.updateById(id, payload);
   }
 
   @Delete('deleteById')
+  @Permissions('delete')
   async deleteById(@Query('id', ParseIntPipe) id: number) {
     return await this.vehicleService.deleteById(id);
   }

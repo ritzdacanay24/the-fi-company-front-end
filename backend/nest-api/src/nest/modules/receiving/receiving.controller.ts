@@ -1,7 +1,9 @@
-import { Body, Controller, Delete, Get, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Permissions, RolePermissionGuard } from '../access-control';
 import { ReceivingService } from './receiving.service';
 
 @Controller('receiving/read')
+@UseGuards(RolePermissionGuard)
 export class ReceivingController {
   constructor(private readonly service: ReceivingService) {}
 
@@ -24,16 +26,19 @@ export class ReceivingController {
   }
 
   @Post()
+  @Permissions('write')
   async create(@Body() payload: Record<string, unknown>) {
     return this.service.create(payload);
   }
 
   @Put()
+  @Permissions('write')
   async update(@Query('id') id?: string, @Body() payload?: Record<string, unknown>) {
     return this.service.update(id || '', payload || {});
   }
 
   @Delete()
+  @Permissions('delete')
   async delete(
     @Query('id') id?: string,
     @Query('deleteAttachment') deleteAttachment?: string,

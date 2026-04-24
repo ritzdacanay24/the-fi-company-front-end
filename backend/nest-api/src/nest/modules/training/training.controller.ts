@@ -1,7 +1,9 @@
-import { Body, Controller, Delete, Get, Headers, Inject, Param, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Headers, Inject, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Permissions, RolePermissionGuard } from '../access-control';
 import { TrainingService } from './training.service';
 
 @Controller('training')
+@UseGuards(RolePermissionGuard)
 export class TrainingController {
   constructor(
     @Inject(TrainingService)
@@ -19,16 +21,19 @@ export class TrainingController {
   }
 
   @Post('sessions')
+  @Permissions('write')
   async createSession(@Body() body: Record<string, unknown> = {}) {
     return this.trainingService.createSession(body);
   }
 
   @Put('sessions/:id')
+  @Permissions('write')
   async updateSession(@Param('id') id: string, @Body() body: Record<string, unknown> = {}) {
     return this.trainingService.updateSession(id, body);
   }
 
   @Delete('sessions/:id')
+  @Permissions('delete')
   async deleteSession(@Param('id') id: string) {
     return this.trainingService.deleteSession(id);
   }
@@ -53,31 +58,37 @@ export class TrainingController {
   }
 
   @Get('sessions/:id/export')
+  @Permissions('read')
   async exportSessionAttendance(@Param('id') id: string) {
     return this.trainingService.exportAttendanceSheet(id);
   }
 
   @Post('sessions/:id/expected-attendees')
+  @Permissions('write')
   async addExpectedAttendee(@Param('id') id: string, @Body() body: Record<string, unknown> = {}) {
     return this.trainingService.addExpectedAttendee(id, body);
   }
 
   @Post('sessions/:id/expected-attendees/bulk')
+  @Permissions('write')
   async bulkAddExpectedAttendees(@Param('id') id: string, @Body() body: Record<string, unknown> = {}) {
     return this.trainingService.bulkAddExpectedAttendees(id, body);
   }
 
   @Delete('sessions/:sessionId/expected-attendees/:employeeId')
+  @Permissions('write')
   async removeExpectedAttendee(@Param('sessionId') sessionId: string, @Param('employeeId') employeeId: string) {
     return this.trainingService.removeExpectedAttendee(sessionId, employeeId);
   }
 
   @Delete('attendance/:id')
+  @Permissions('delete')
   async removeAttendance(@Param('id') id: string) {
     return this.trainingService.removeAttendance(id);
   }
 
   @Post('badge-scans')
+  @Permissions('write')
   async scanBadge(
     @Body() body: Record<string, unknown> = {},
     @Headers('x-forwarded-for') forwardedFor?: string,
@@ -118,16 +129,19 @@ export class TrainingController {
   }
 
   @Post('templates')
+  @Permissions('manage')
   async createTemplate(@Body() body: Record<string, unknown> = {}) {
     return this.trainingService.createTemplate(body);
   }
 
   @Put('templates/:id')
+  @Permissions('manage')
   async updateTemplate(@Param('id') id: string, @Body() body: Record<string, unknown> = {}) {
     return this.trainingService.updateTemplate(id, body);
   }
 
   @Delete('templates/:id')
+  @Permissions('manage')
   async deleteTemplate(@Param('id') id: string) {
     return this.trainingService.deleteTemplate(id);
   }

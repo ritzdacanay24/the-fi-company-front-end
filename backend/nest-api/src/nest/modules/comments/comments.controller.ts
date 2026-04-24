@@ -1,7 +1,9 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import { Permissions, RolePermissionGuard } from '../access-control';
 import { CommentsService } from './comments.service';
 
 @Controller('comments')
+@UseGuards(RolePermissionGuard)
 export class CommentsController {
   constructor(private readonly service: CommentsService) {}
 
@@ -15,6 +17,7 @@ export class CommentsController {
   }
 
   @Post('create')
+  @Permissions('write')
   async create(
     @Body()
     payload: {
@@ -32,6 +35,7 @@ export class CommentsController {
   }
 
   @Post('delete')
+  @Permissions('delete')
   async delete(@Body() payload: { id?: number | string; active?: number | string }) {
     return this.service.delete(payload);
   }

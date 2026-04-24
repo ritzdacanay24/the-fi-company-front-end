@@ -1,7 +1,9 @@
-import { Body, Controller, Get, ParseIntPipe, Put, Query } from '@nestjs/common';
+import { Body, Controller, Get, ParseIntPipe, Put, Query, UseGuards } from '@nestjs/common';
+import { Permissions, RolePermissionGuard } from '../access-control';
 import { GraphicsScheduleService } from './graphics-schedule.service';
 
 @Controller('graphics-schedule')
+@UseGuards(RolePermissionGuard)
 export class GraphicsScheduleController {
   constructor(private readonly service: GraphicsScheduleService) {}
 
@@ -16,6 +18,7 @@ export class GraphicsScheduleController {
   }
 
   @Put('updateById')
+  @Permissions('write')
   async updateById(
     @Query('id', ParseIntPipe) id: number,
     @Body() payload: Record<string, unknown>,

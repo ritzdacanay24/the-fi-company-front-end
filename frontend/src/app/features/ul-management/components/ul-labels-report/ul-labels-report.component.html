@@ -18,20 +18,6 @@
               <p class="text-muted mb-0">View and manage all UL certified labels and their status information</p>
             </div>
           </div>
-          <div class="d-flex gap-2">
-            <!-- <button type="button" class="btn btn-outline-secondary" (click)="goBack()" title="Go back">
-              <i class="mdi mdi-arrow-left me-2"></i>Back
-            </button> -->
-            <button type="button" class="btn btn-outline-info" (click)="goToUsageReport()" title="View UL usage report">
-              <i class="mdi mdi-chart-line me-2"></i>Usage Report
-            </button>
-            <button type="button" class="btn btn-outline-primary" (click)="goToUpload()" title="Upload UL label ranges">
-              <i class="mdi mdi-upload me-2"></i>Upload Labels
-            </button>
-            <button type="button" class="btn btn-primary" (click)="createULLabel()" title="Create new UL label">
-              <i class="mdi mdi-plus me-2"></i>Create UL Label
-            </button>
-          </div>
         </div>
       </div>
 
@@ -169,3 +155,49 @@
     </div>
   </div>
 </div>
+
+<ng-template #editLabelModal let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title">Edit UL Label</h5>
+    <button type="button" class="btn-close" aria-label="Close" (click)="closeEditModal()"></button>
+  </div>
+  <div class="modal-body">
+    <form [formGroup]="editLabelForm" class="row g-3">
+      <div class="col-12 col-md-6">
+        <label class="form-label">UL Number</label>
+        <input type="text" class="form-control" formControlName="ul_number" readonly>
+      </div>
+      <div class="col-12 col-md-6">
+        <label class="form-label">Status</label>
+        <select class="form-select" formControlName="status">
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+          <option value="expired">Expired</option>
+        </select>
+      </div>
+      <div class="col-12">
+        <label class="form-label">Description</label>
+        <textarea class="form-control" rows="3" formControlName="description"></textarea>
+      </div>
+      <div class="col-12 col-md-6">
+        <label class="form-label">Category</label>
+        <input type="text" class="form-control" formControlName="category">
+      </div>
+      <div class="col-12 col-md-6">
+        <label class="form-label">Manufacturer</label>
+        <input type="text" class="form-control" formControlName="manufacturer">
+      </div>
+      <div class="col-12">
+        <label class="form-label">Part Number</label>
+        <input type="text" class="form-control" formControlName="part_number">
+      </div>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline-secondary" (click)="closeEditModal()" [disabled]="isSavingEdit">Cancel</button>
+    <button type="button" class="btn btn-primary" (click)="saveEditedLabel()" [disabled]="isSavingEdit">
+      <span *ngIf="isSavingEdit" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+      Save Changes
+    </button>
+  </div>
+</ng-template>

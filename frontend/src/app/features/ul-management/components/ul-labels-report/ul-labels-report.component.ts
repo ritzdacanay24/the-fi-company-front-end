@@ -1,14 +1,15 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { ToastrService } from 'ngx-toastr';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Location } from '@angular/common';
-import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
+import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { SharedModule } from '@app/shared/shared.module';
 import { ULLabelService } from '../../services/ul-label.service';
 import { ULLabel } from '../../models/ul-label.model';
 import { ColDef, GridApi, GridReadyEvent, GridOptions } from 'ag-grid-community';
 import { BreadcrumbComponent, BreadcrumbItem } from "@app/shared/components/breadcrumb/breadcrumb.component";
+import { AuthenticationService } from '@app/core/services/auth.service';
 import moment from 'moment';
 import { AgGridModule } from 'ag-grid-angular';
 import { NgApexchartsModule } from 'ng-apexcharts';
@@ -50,10 +51,16 @@ type LabelsChartOptions = {
   styleUrls: ['./ul-labels-report.component.scss']
 })
 export class ULLabelsReportComponent implements OnInit {
+  @ViewChild('editLabelModal') editLabelModal!: TemplateRef<any>;
+
   filterForm: FormGroup;
+  editLabelForm: FormGroup;
   ulLabels: ULLabel[] = [];
   filteredData: ULLabel[] = [];
   isLoading = false;
+  isSavingEdit = false;
+  selectedEditLabelId: number | null = null;
+  private editModalRef: NgbModalRef | null = null;
   gridApi!: GridApi;
 
   inventoryInsights = {
@@ -164,8 +171,10 @@ export class ULLabelsReportComponent implements OnInit {
       filter: false,
       cellRenderer: ULLabelActionDropdownRendererComponent,
       cellRendererParams: {
+        canEdit: this.canEditLabels(),
         onEdit: (id: number) => this.editULLabel(id),
         onToggle: (id: number, status: string) => this.toggleULLabel(String(id), status),
+        onArchive: (id: number) => this.archiveULLabel(String(id)),
         onDelete: (id: number) => this.deleteULLabel(String(id)),
       },
     }
@@ -191,6 +200,7 @@ export class ULLabelsReportComponent implements OnInit {
     private fb: FormBuilder,
     private ulLabelService: ULLabelService,
     private toastr: ToastrService,
+    private authenticationService: AuthenticationService,
     private router: Router,
     private activatedRoute: ActivatedRoute,
     private location: Location,
@@ -202,6 +212,15 @@ export class ULLabelsReportComponent implements OnInit {
       status: [''],
       startDate: [''],
       endDate: ['']
+    });
+
+    this.editLabelForm = this.fb.group({
+      ul_number: [''],
+      description: [''],
+      category: [''],
+      manufacturer: [''],
+      part_number: [''],
+      status: ['active'],
     });
   }
 
@@ -434,6 +453,11 @@ export class ULLabelsReportComponent implements OnInit {
   }
 
   editULLabel(id: number): void {
+    if (!this.canEditLabels()) {
+      this.toastr.error('Only admins can edit UL labels.');
+      return;
+    }
+
     const ulLabel = this.ulLabels.find(label => label.id === id);
     if (ulLabel) {
       // Check if UL label has been used
@@ -445,6 +469,11 @@ export class ULLabelsReportComponent implements OnInit {
       // Open modal for editing
       this.openEditModal(ulLabel);
     }
+  }
+
+  private canEditLabels(): boolean {
+    const currentUser = this.authenticationService.currentUserValue;
+    return currentUser?.isAdmin == 1 || currentUser?.employeeType != 0;
   }
 
   exportData(): void {
@@ -580,58 +609,73 @@ export class ULLabelsReportComponent implements OnInit {
   }
 
   openEditModal(ulLabel: ULLabel): void {
-    // Create a simple inline modal content
-    const modalContent = `
-      <div class="modal-header">
-        <h4 class="modal-title">Edit UL Label</h4>
-        <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
-      </div>
-      <div class="modal-body">
-        <form>
-          <div class="mb-3">
-            <label for="ulNumber" class="form-label">UL Number</label>
-            <input type="text" class="form-control" id="ulNumber" value="${ulLabel.ul_number}" readonly>
-          </div>
-          <div class="mb-3">
-            <label for="description" class="form-label">Description</label>
-            <textarea class="form-control" id="description" rows="3">${ulLabel.description}</textarea>
-          </div>
-          <div class="mb-3">
-            <label for="category" class="form-label">Category</label>
-            <input type="text" class="form-control" id="category" value="${ulLabel.category}">
-          </div>
-          <div class="mb-3">
-            <label for="manufacturer" class="form-label">Manufacturer</label>
-            <input type="text" class="form-control" id="manufacturer" value="${ulLabel.manufacturer || ''}">
-          </div>
-          <div class="mb-3">
-            <label for="status" class="form-label">Status</label>
-            <select class="form-control" id="status">
-              <option value="active" ${ulLabel.status === 'active' ? 'selected' : ''}>Active</option>
-              <option value="inactive" ${ulLabel.status === 'inactive' ? 'selected' : ''}>Inactive</option>
-              <option value="expired" ${ulLabel.status === 'expired' ? 'selected' : ''}>Expired</option>
-            </select>
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" (click)="modal.dismiss()">Cancel</button>
-        <button type="button" class="btn btn-primary" (click)="saveULLabel()">Save Changes</button>
-      </div>
-    `;
+    if (!ulLabel.id) {
+      this.toastr.error('Unable to edit this UL label. Missing ID.');
+      return;
+    }
 
-    // For now, just show a toast message indicating modal would open
-    // In a full implementation, you would create a proper modal component
-    this.toastr.info(`Edit UL Label: ${ulLabel.ul_number} (Modal functionality would open here)`);
-    
-    // TODO: Implement proper NgBootstrap modal with a dedicated component
-    // const modalRef = this.modalService.open(ULEditModalComponent);
-    // modalRef.componentInstance.ulLabel = ulLabel;
-    // modalRef.result.then((result) => {
-    //   if (result) {
-    //     this.loadULLabels(); // Refresh data
-    //   }
-    // });
+    this.selectedEditLabelId = ulLabel.id;
+    this.editLabelForm.patchValue({
+      ul_number: ulLabel.ul_number || '',
+      description: ulLabel.description || '',
+      category: ulLabel.category || '',
+      manufacturer: ulLabel.manufacturer || '',
+      part_number: ulLabel.part_number || '',
+      status: ulLabel.status || 'active',
+    });
+
+    this.editModalRef = this.modalService.open(this.editLabelModal, {
+      size: 'lg',
+      backdrop: 'static',
+      keyboard: false,
+    });
+  }
+
+  saveEditedLabel(): void {
+    if (!this.selectedEditLabelId) {
+      this.toastr.error('Unable to save changes. Missing UL label ID.');
+      return;
+    }
+
+    this.isSavingEdit = true;
+
+    const formValue = this.editLabelForm.value;
+    const payload: ULLabel = {
+      ul_number: String(formValue.ul_number || '').trim(),
+      description: String(formValue.description || '').trim(),
+      category: String(formValue.category || '').trim(),
+      manufacturer: String(formValue.manufacturer || '').trim(),
+      part_number: String(formValue.part_number || '').trim(),
+      status: formValue.status,
+    };
+
+    this.ulLabelService.updateLabel(this.selectedEditLabelId, payload).subscribe({
+      next: () => {
+        this.isSavingEdit = false;
+        this.toastr.success('UL label updated successfully');
+        this.closeEditModal();
+        this.loadULLabels();
+      },
+      error: (error) => {
+        this.isSavingEdit = false;
+        console.error('Error updating UL label:', error);
+        this.toastr.error('Failed to update UL label');
+      }
+    });
+  }
+
+  closeEditModal(): void {
+    this.editModalRef?.close();
+    this.editModalRef = null;
+    this.selectedEditLabelId = null;
+    this.editLabelForm.reset({
+      ul_number: '',
+      description: '',
+      category: '',
+      manufacturer: '',
+      part_number: '',
+      status: 'active',
+    });
   }
 
   viewULLabel(id: number): void {
@@ -672,6 +716,28 @@ export class ULLabelsReportComponent implements OnInit {
         error: (error) => {
           console.error('Error updating UL label status:', error);
           this.toastr.error(`Failed to ${action} UL label`);
+        }
+      });
+    }
+  }
+
+  archiveULLabel(id: string): void {
+    const idNumber = parseInt(id);
+    const ulLabel = this.ulLabels.find(label => label.id === idNumber);
+
+    if (ulLabel && this.isULLabelUsed(ulLabel)) {
+      this.toastr.warning('This UL label has been used and cannot be archived.');
+      return;
+    }
+
+    if (confirm('Archive this UL label? It will no longer appear in active inventory.')) {
+      this.ulLabelService.archiveLabel(idNumber).subscribe({
+        next: () => {
+          this.toastr.success('UL label archived successfully');
+          this.loadULLabels();
+        },
+        error: (error) => {
+          console.error('Error archiving UL label:', error);
         }
       });
     }

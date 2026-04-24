@@ -1,9 +1,133 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { QualityVersionControlRepository } from './quality-version-control.repository';
 
 @Injectable()
 export class QualityVersionControlService {
   constructor(private readonly repository: QualityVersionControlRepository) {}
+
+  async createChecklistDocument(payload: {
+    prefix?: string;
+    title?: string;
+    description?: string;
+    department?: string;
+    category?: string;
+    template_id?: number;
+    created_by?: string;
+    revision_description?: string;
+  }) {
+    const required: Array<keyof typeof payload> = [
+      'prefix',
+      'title',
+      'department',
+      'category',
+      'template_id',
+      'created_by',
+      'revision_description',
+    ];
+
+    for (const field of required) {
+      const value = payload[field];
+      if (value == null || String(value).trim() === '') {
+        throw new BadRequestException(`Missing required field: ${field}`);
+      }
+    }
+
+    const result = await this.repository.createChecklistDocumentWithInitialRevision({
+      prefix: String(payload.prefix),
+      title: String(payload.title),
+      description: payload.description ? String(payload.description) : undefined,
+      department: String(payload.department),
+      category: String(payload.category),
+      template_id: Number(payload.template_id),
+      created_by: String(payload.created_by),
+      revision_description: String(payload.revision_description),
+    });
+
+    return {
+      success: true,
+      document_id: result.document_id,
+      document_number: result.document_number,
+      revision_id: result.revision_id,
+      revision_number: 1,
+      message: `Document ${result.document_number} created successfully with Rev 1`,
+    };
+  }
+
+  async createChecklistRevision(payload: {
+    document_id?: number;
+    template_id?: number;
+    revision_description?: string;
+    changes_summary?: string;
+    items_added?: number;
+    items_removed?: number;
+    items_modified?: number;
+    changes_detail?: unknown;
+    created_by?: string;
+  }) {
+    const required: Array<keyof typeof payload> = [
+      'document_id',
+      'template_id',
+      'revision_description',
+      'created_by',
+    ];
+
+    for (const field of required) {
+      const value = payload[field];
+      if (value == null || String(value).trim() === '') {
+        throw new BadRequestException(`Missing required field: ${field}`);
+      }
+    }
+
+    const itemsAdded = Number(payload.items_added ?? 0);
+    const itemsRemoved = Number(payload.items_removed ?? 0);
+    const itemsModified = Number(payload.items_modified ?? 0);
+
+    const changesSummary = String(payload.changes_summary || '').trim() || [
+      itemsAdded > 0 ? `Added ${itemsAdded} item(s)` : '',
+      itemsRemoved > 0 ? `Removed ${itemsRemoved} item(s)` : '',
+      itemsModified > 0 ? `Modified ${itemsModified} item(s)` : '',
+    ].filter(Boolean).join(', ');
+
+    const result = await this.repository.createChecklistRevisionWithMetadata({
+      document_id: Number(payload.document_id),
+      template_id: Number(payload.template_id),
+      revision_description: String(payload.revision_description),
+      changes_summary: changesSummary,
+      items_added: itemsAdded,
+      items_removed: itemsRemoved,
+      items_modified: itemsModified,
+      changes_detail: payload.changes_detail,
+      created_by: String(payload.created_by),
+    });
+
+    return {
+      success: true,
+      revision_id: result.revision_id,
+      revision_number: result.revision_number,
+      document_number: result.document_number,
+      message: `${result.document_number}, Rev ${result.revision_number} created successfully (Pending Approval)`,
+    };
+  }
+
+  async approveChecklistRevision(payload: { revision_id?: number; approved_by?: string }) {
+    if (!payload.revision_id || !payload.approved_by) {
+      throw new BadRequestException('Missing required fields: revision_id, approved_by');
+    }
+
+    await this.repository.approveRevision(Number(payload.revision_id), String(payload.approved_by));
+    return {
+      success: true,
+      message: 'Revision approved successfully',
+    };
+  }
+
+  async getChecklistRevisionHistory(documentId: number) {
+    if (!documentId || Number.isNaN(documentId)) {
+      throw new BadRequestException('Missing required parameter: document_id');
+    }
+
+    return this.repository.getChecklistRevisionHistory(documentId);
+  }
 
   async getDocuments(filters?: {
     type?: string;

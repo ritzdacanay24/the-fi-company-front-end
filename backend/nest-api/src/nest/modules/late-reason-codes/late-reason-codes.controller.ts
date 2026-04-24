@@ -1,7 +1,9 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import { Permissions, RolePermissionGuard } from '../access-control';
 import { LateReasonCodesService } from './late-reason-codes.service';
 
 @Controller('late-reason-codes')
+@UseGuards(RolePermissionGuard)
 export class LateReasonCodesController {
   constructor(private readonly service: LateReasonCodesService) {}
 
@@ -11,11 +13,13 @@ export class LateReasonCodesController {
   }
 
   @Post('save')
+  @Permissions('write')
   async save(@Body() payload: { newItem?: string; department?: string }) {
     return this.service.save(payload || {});
   }
 
   @Post('remove')
+  @Permissions('delete')
   async remove(@Body() payload: { id?: number | string }) {
     return this.service.remove(payload || {});
   }

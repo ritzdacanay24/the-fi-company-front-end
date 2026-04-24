@@ -1,7 +1,9 @@
-import { Body, Controller, Get, Inject, ParseIntPipe, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Inject, ParseIntPipe, Post, Query, UseGuards } from '@nestjs/common';
+import { Permissions, RolePermissionGuard } from '../access-control';
 import { PageAccessService } from './page-access.service';
 
 @Controller('page-access')
+@UseGuards(RolePermissionGuard)
 export class PageAccessController {
   constructor(
     @Inject(PageAccessService)
@@ -15,12 +17,14 @@ export class PageAccessController {
 
   /** Toggle access (create/activate/delete) — mirrors page-access/create.php */
   @Post()
+  @Permissions('manage')
   async toggle(@Body('user_id', ParseIntPipe) userId: number, @Body('menu_id', ParseIntPipe) menuId: number) {
     return this.pageAccessService.toggle(userId, menuId);
   }
 
   /** Request access (active=0 record) — mirrors page-access/request-access.php */
   @Post('requestAccess')
+  @Permissions('write')
   async requestAccess(
     @Query('user_id', ParseIntPipe) userId: number,
     @Query('menu_id', ParseIntPipe) menuId: number,

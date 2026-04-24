@@ -39,6 +39,7 @@ import { OrgChartModule } from './modules/org-chart/org-chart.module';
 import { PlacardModule } from './modules/placard/placard.module';
 import { PermitChecklistsModule } from './modules/permit-checklists/permit-checklists.module';
 import { PhotoChecklistModule } from './modules/photo-checklist/photo-checklist.module';
+import { ChecklistDocumentControlModule } from './modules/checklist-document-control/checklist-document-control.module';
 import { QadModule } from './modules/qad';
 import { QadTablesModule } from './modules/qad-tables/qad-tables.module';
 import { QirModule } from './modules/qir/qir.module';
@@ -100,6 +101,7 @@ import { CrashKitModule } from './modules/crash-kit';
 import { CommentsModule } from './modules/comments/comments.module';
 import { RequestModule } from './modules/request';
 import { RequestCommentsModule } from './modules/request-comments';
+import { PublicFieldServiceModule } from './modules/public-field-service';
 import { ReceivingModule } from './modules/receiving/receiving.module';
 import { SalesOrderSearchModule } from './modules/sales-order-search';
 import { WorkOrderModule } from './modules/work-order';
@@ -170,6 +172,7 @@ import { UrlModule } from '../shared/url/url.module';
     PlacardModule,
     PermitChecklistsModule,
     PhotoChecklistModule,
+    ChecklistDocumentControlModule,
     QadModule,
     QadTablesModule,
     QirModule,
@@ -232,6 +235,7 @@ import { UrlModule } from '../shared/url/url.module';
     CommentsModule,
     RequestModule,
     RequestCommentsModule,
+    PublicFieldServiceModule,
     ReceivingModule,
     SalesOrderSearchModule,
     WorkOrderModule,

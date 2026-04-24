@@ -352,7 +352,7 @@ export class PhotoChecklistConfigService {
     message: string;
   }> {
     return this.http.post<any>(
-      'checklist-document-control/?action=create-document',
+      'apiV2/checklist-document-control?action=create-document',
       data
     );
   }
@@ -379,7 +379,7 @@ export class PhotoChecklistConfigService {
     message: string;
   }> {
     return this.http.post<any>(
-      'checklist-document-control/?action=create-revision',
+      'apiV2/checklist-document-control?action=create-revision',
       data
     );
   }
@@ -395,7 +395,7 @@ export class PhotoChecklistConfigService {
     message: string;
   }> {
     return this.http.post<any>(
-      'checklist-document-control/?action=approve-revision',
+      'apiV2/checklist-document-control?action=approve-revision',
       data
     );
   }
@@ -405,7 +405,7 @@ export class PhotoChecklistConfigService {
    */
   getRevisionHistory(documentId: number): Observable<any[]> {
     return this.http.get<any[]>(
-      `checklist-document-control/?action=get-revision-history&document_id=${documentId}`
+      `apiV2/checklist-document-control?action=get-revision-history&document_id=${documentId}`
     );
   }
 

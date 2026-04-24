@@ -1,8 +1,10 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Permissions, RolePermissionGuard } from '../access-control';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { TripExpenseService } from './trip-expense.service';
 
 @Controller('trip-expense')
+@UseGuards(RolePermissionGuard)
 export class TripExpenseController {
   constructor(private readonly service: TripExpenseService) {}
 
@@ -32,6 +34,7 @@ export class TripExpenseController {
   }
 
   @Post()
+  @Permissions('write')
   @UseInterceptors(FileInterceptor('file'))
   create(
     @Body() payload: Record<string, unknown> = {},
@@ -41,6 +44,7 @@ export class TripExpenseController {
   }
 
   @Put(':id')
+  @Permissions('write')
   @UseInterceptors(FileInterceptor('file'))
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -51,6 +55,7 @@ export class TripExpenseController {
   }
 
   @Delete(':id')
+  @Permissions('delete')
   delete(@Param('id', ParseIntPipe) id: number) {
     return this.service.delete(id);
   }

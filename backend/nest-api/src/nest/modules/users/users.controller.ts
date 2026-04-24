@@ -1,7 +1,21 @@
-import { Body, Controller, Get, Inject, Param, ParseIntPipe, Patch, Post, Query, BadRequestException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Inject,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import { Permissions, RolePermissionGuard } from '../access-control';
 import { UsersService } from './users.service';
 
 @Controller('users')
+@UseGuards(RolePermissionGuard)
 export class UsersController {
   constructor(
     @Inject(UsersService)
@@ -35,11 +49,13 @@ export class UsersController {
   }
 
   @Post()
+  @Permissions('manage')
   async create(@Body() body: Record<string, unknown>) {
     return this.usersService.create(body);
   }
 
   @Patch(':id')
+  @Permissions('manage')
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() body: Record<string, unknown>,
@@ -48,6 +64,7 @@ export class UsersController {
   }
 
   @Post('reset-password')
+  @Permissions('manage')
   async resetPassword(@Body() body: { email?: string; newPassword?: string }) {
     if (!body.email || !body.newPassword) {
       throw new BadRequestException('email and newPassword are required');

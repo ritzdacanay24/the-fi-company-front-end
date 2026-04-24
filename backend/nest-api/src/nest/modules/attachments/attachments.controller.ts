@@ -1,12 +1,15 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Permissions, RolePermissionGuard } from '../access-control';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AttachmentsService } from './attachments.service';
 
 @Controller('attachments')
+@UseGuards(RolePermissionGuard)
 export class AttachmentsController {
   constructor(private readonly service: AttachmentsService) {}
 
   @Post('upload')
+  @Permissions('write')
   @UseInterceptors(FileInterceptor('file'))
   async upload(
     @Body('folder') folder?: string,
@@ -17,6 +20,7 @@ export class AttachmentsController {
   }
 
   @Post()
+  @Permissions('write')
   @UseInterceptors(FileInterceptor('file'))
   async create(
     @Body() payload: Record<string, unknown>,
@@ -51,6 +55,7 @@ export class AttachmentsController {
   }
 
   @Put('updateById')
+  @Permissions('write')
   async updateById(
     @Query('id', ParseIntPipe) id: number,
     @Body() payload: Record<string, unknown>,
@@ -59,6 +64,7 @@ export class AttachmentsController {
   }
 
   @Delete('deleteById')
+  @Permissions('delete')
   async deleteById(@Query('id', ParseIntPipe) id: number) {
     return this.service.deleteById(id);
   }

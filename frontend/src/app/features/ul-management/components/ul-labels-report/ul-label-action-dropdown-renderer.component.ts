@@ -5,8 +5,10 @@ import { ICellRendererAngularComp } from 'ag-grid-angular';
 import { ICellRendererParams } from 'ag-grid-community';
 
 export interface ULLabelActionCellParams extends ICellRendererParams {
+  canEdit?: boolean;
   onEdit: (id: number) => void;
   onToggle: (id: number, status: string) => void;
+  onArchive: (id: number) => void;
   onDelete: (id: number) => void;
 }
 
@@ -33,6 +35,10 @@ export class ULLabelActionDropdownRendererComponent implements ICellRendererAngu
     return raw === true || raw === 1 || raw === '1';
   }
 
+  get canEditAction(): boolean {
+    return !!(this.params as any)?.canEdit;
+  }
+
   onEdit(): void {
     const id = this.params?.data?.id;
     if (id != null) {
@@ -45,6 +51,13 @@ export class ULLabelActionDropdownRendererComponent implements ICellRendererAngu
     const status = this.params?.data?.status;
     if (id != null && status) {
       this.params.onToggle(Number(id), String(status));
+    }
+  }
+
+  onArchive(): void {
+    const id = this.params?.data?.id;
+    if (id != null) {
+      this.params.onArchive(Number(id));
     }
   }
 

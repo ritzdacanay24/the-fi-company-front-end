@@ -1,7 +1,9 @@
-import { Controller, Get, Inject } from '@nestjs/common';
+import { Controller, Get, Inject, UseGuards } from '@nestjs/common';
+import { RolePermissionGuard } from '../access-control';
 import { InventoryByProdLineService } from './inventory-by-prod-line.service';
 
 @Controller('inventory-by-prod-line')
+@UseGuards(RolePermissionGuard)
 export class InventoryByProdLineController {
   constructor(
     @Inject(InventoryByProdLineService)

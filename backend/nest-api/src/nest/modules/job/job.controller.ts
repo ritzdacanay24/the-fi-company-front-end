@@ -1,7 +1,9 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Permissions, RolePermissionGuard } from '../access-control';
 import { JobService } from './job.service';
 
 @Controller('job')
+@UseGuards(RolePermissionGuard)
 export class JobController {
   constructor(private readonly service: JobService) {}
 
@@ -30,16 +32,19 @@ export class JobController {
   }
 
   @Post()
+  @Permissions('write')
   async create(@Body() payload: Record<string, unknown>) {
     return this.service.create(payload);
   }
 
   @Put(':id')
+  @Permissions('write')
   async update(@Param('id', ParseIntPipe) id: number, @Body() payload: Record<string, unknown>) {
     return this.service.update(id, payload);
   }
 
   @Put('updateInvoice/:id')
+  @Permissions('write')
   async updateInvoice(@Param('id', ParseIntPipe) id: number, @Body() payload: Record<string, unknown>) {
     return this.service.updateInvoice(id, payload);
   }

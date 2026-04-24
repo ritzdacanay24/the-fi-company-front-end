@@ -1,7 +1,9 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { RolePermissionGuard } from '../access-control';
 import { BomStructureService } from './bom-structure.service';
 
 @Controller('bom-structure')
+@UseGuards(RolePermissionGuard)
 export class BomStructureController {
   constructor(private readonly service: BomStructureService) {}
 

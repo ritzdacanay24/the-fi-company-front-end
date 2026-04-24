@@ -1,7 +1,9 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { RolePermissionGuard } from '../access-control';
 import { SerialAvailabilityService } from './serial-availability.service';
 
 @Controller('serial-availability')
+@UseGuards(RolePermissionGuard)
 export class SerialAvailabilityController {
   constructor(private readonly serialAvailabilityService: SerialAvailabilityService) {}
 

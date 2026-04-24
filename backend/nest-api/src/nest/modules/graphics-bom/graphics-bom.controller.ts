@@ -9,12 +9,15 @@ import {
   Put,
   Query,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import { Permissions, RolePermissionGuard } from '../access-control';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { GraphicsBomService } from './graphics-bom.service';
 
 @Controller('graphics-bom')
+@UseGuards(RolePermissionGuard)
 export class GraphicsBomController {
   constructor(private readonly service: GraphicsBomService) {}
 
@@ -39,11 +42,13 @@ export class GraphicsBomController {
   }
 
   @Post('create')
+  @Permissions('write')
   async create(@Body() payload: Record<string, unknown>) {
     return this.service.create(payload);
   }
 
   @Put('updateById')
+  @Permissions('write')
   async updateByIdQuery(
     @Query('id', ParseIntPipe) id: number,
     @Body() payload: Record<string, unknown>,
@@ -52,6 +57,7 @@ export class GraphicsBomController {
   }
 
   @Put('updateById/:id')
+  @Permissions('write')
   async updateByIdPath(
     @Param('id', ParseIntPipe) id: number,
     @Body() payload: Record<string, unknown>,
@@ -60,16 +66,19 @@ export class GraphicsBomController {
   }
 
   @Delete('deleteById')
+  @Permissions('delete')
   async deleteByIdQuery(@Query('id', ParseIntPipe) id: number) {
     return this.service.deleteById(id);
   }
 
   @Delete('deleteById/:id')
+  @Permissions('delete')
   async deleteByIdPath(@Param('id', ParseIntPipe) id: number) {
     return this.service.deleteById(id);
   }
 
   @Post('upload')
+  @Permissions('write')
   @UseInterceptors(FileInterceptor('file'))
   async upload(@UploadedFile() file?: { originalname?: string; buffer: Buffer }) {
     return this.service.upload(file);

@@ -1,7 +1,9 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Permissions, RolePermissionGuard } from '../access-control';
 import { MrbService } from './mrb.service';
 
 @Controller('mrb')
+@UseGuards(RolePermissionGuard)
 export class MrbController {
   constructor(private readonly service: MrbService) {}
 
@@ -36,11 +38,13 @@ export class MrbController {
   }
 
   @Post('create')
+  @Permissions('write')
   async create(@Body() payload: Record<string, unknown>) {
     return this.service.create(payload);
   }
 
   @Put('updateById/:id')
+  @Permissions('write')
   async updateByIdPath(
     @Param('id', ParseIntPipe) id: number,
     @Body() payload: Record<string, unknown>,
@@ -49,6 +53,7 @@ export class MrbController {
   }
 
   @Put('updateById')
+  @Permissions('write')
   async updateByIdQuery(
     @Query('id', ParseIntPipe) id: number,
     @Body() payload: Record<string, unknown>,
@@ -57,11 +62,13 @@ export class MrbController {
   }
 
   @Delete('deleteById/:id')
+  @Permissions('delete')
   async deleteByIdPath(@Param('id', ParseIntPipe) id: number) {
     return this.service.deleteById(id);
   }
 
   @Delete('deleteById')
+  @Permissions('delete')
   async deleteByIdQuery(@Query('id', ParseIntPipe) id: number) {
     return this.service.deleteById(id);
   }

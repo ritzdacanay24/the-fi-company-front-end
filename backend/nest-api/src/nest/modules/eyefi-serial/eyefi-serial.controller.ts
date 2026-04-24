@@ -8,8 +8,10 @@ import {
   Put,
   Query,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 import { Response } from 'express';
+import { Permissions, RolePermissionGuard } from '../access-control';
 import { EyeFiSerialService } from './eyefi-serial.service';
 import { UpdateEyeFiSerialStatusDto } from './dto/update-eyefi-serial-status.dto';
 import { BulkCreateEyeFiSerialDto } from './dto/bulk-create-eyefi-serial.dto';
@@ -17,6 +19,7 @@ import { CreateAssignmentDto } from './dto/create-assignment.dto';
 import { UpdateAssignmentDto } from './dto/update-assignment.dto';
 
 @Controller(['eyefi-serial-numbers', 'quality/eyefi-serial-numbers'])
+@UseGuards(RolePermissionGuard)
 export class EyeFiSerialController {
   constructor(private readonly eyeFiSerialService: EyeFiSerialService) {}
 
@@ -51,6 +54,7 @@ export class EyeFiSerialController {
   }
 
   @Put('serial/:serialNumber/status')
+  @Permissions('write')
   async updateStatus(
     @Param('serialNumber') serialNumber: string,
     @Body() dto: UpdateEyeFiSerialStatusDto,
@@ -74,6 +78,7 @@ export class EyeFiSerialController {
   }
 
   @Post('assignments')
+  @Permissions('write')
   async createAssignment(@Body() dto: CreateAssignmentDto) {
     return this.eyeFiSerialService.createAssignment(dto);
   }
@@ -109,6 +114,7 @@ export class EyeFiSerialController {
   }
 
   @Post('bulk')
+  @Permissions('write')
   async bulkCreate(@Body() dto: BulkCreateEyeFiSerialDto) {
     return this.eyeFiSerialService.bulkCreate(dto);
   }
@@ -121,6 +127,7 @@ export class EyeFiSerialController {
   }
 
   @Put('assignments/:id')
+  @Permissions('write')
   async updateAssignment(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateAssignmentDto,

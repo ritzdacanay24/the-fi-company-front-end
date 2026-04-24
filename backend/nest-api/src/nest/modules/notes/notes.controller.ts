@@ -1,7 +1,9 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import { Permissions, RolePermissionGuard } from '../access-control';
 import { NotesService } from './notes.service';
 
 @Controller('notes')
+@UseGuards(RolePermissionGuard)
 export class NotesController {
   constructor(private readonly service: NotesService) {}
 
@@ -19,6 +21,7 @@ export class NotesController {
   }
 
   @Post('index')
+  @Permissions('write')
   async save(@Body() body: Record<string, unknown>): Promise<number | Record<string, unknown>> {
     if (body.insert) {
       return this.service.insert(body);

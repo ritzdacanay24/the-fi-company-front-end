@@ -1,8 +1,10 @@
-import { Controller, Get, Post, Put, Delete, Param, Query, Body, ParseIntPipe } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Permissions, RolePermissionGuard } from '../access-control';
 import { TicketEventService } from './ticket-event.service';
 import { TicketEventRecord } from './ticket-event.repository';
 
 @Controller('ticket-event')
+@UseGuards(RolePermissionGuard)
 export class TicketEventController {
   constructor(private readonly ticketEventService: TicketEventService) {}
 
@@ -42,11 +44,13 @@ export class TicketEventController {
   }
 
   @Post()
+  @Permissions('write')
   async create(@Body() payload: Record<string, unknown>): Promise<TicketEventRecord | null> {
     return this.ticketEventService.create(payload);
   }
 
   @Put(':id')
+  @Permissions('write')
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() payload: Record<string, unknown>,
@@ -55,6 +59,7 @@ export class TicketEventController {
   }
 
   @Delete(':id')
+  @Permissions('delete')
   async delete(@Param('id', ParseIntPipe) id: number): Promise<boolean> {
     return this.ticketEventService.delete(id);
   }

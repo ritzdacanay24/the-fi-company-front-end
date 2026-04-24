@@ -1,7 +1,9 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import { Permissions, RolePermissionGuard } from '../access-control';
 import { QadTablesService } from './qad-tables.service';
 
 @Controller('qad-tables')
+@UseGuards(RolePermissionGuard)
 export class QadTablesController {
   constructor(private readonly service: QadTablesService) {}
 
@@ -19,6 +21,7 @@ export class QadTablesController {
   }
 
   @Post()
+  @Permissions('manage')
   post(@Body() payload: { query?: string }) {
     return this.service.runQuery(payload?.query || '');
   }

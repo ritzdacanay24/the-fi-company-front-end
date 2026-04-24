@@ -9,11 +9,14 @@ import {
   Put,
   Query,
   Req,
+  UseGuards,
 } from '@nestjs/common';
 import { Request } from 'express';
+import { Permissions, RolePermissionGuard } from '../access-control';
 import { MaterialRequestService } from './material-request.service';
 
 @Controller('material-request')
+@UseGuards(RolePermissionGuard)
 export class MaterialRequestController {
   constructor(private readonly service: MaterialRequestService) {}
 
@@ -53,12 +56,14 @@ export class MaterialRequestController {
   }
 
   @Post('create')
+  @Permissions('write')
   async create(@Body() payload: Record<string, unknown>, @Req() req: Request) {
     const userId = (req as Request & { user?: { id?: number } }).user?.id;
     return this.service.create(payload, userId);
   }
 
   @Put('updateById')
+  @Permissions('write')
   async updateByIdQuery(
     @Query('id', ParseIntPipe) id: number,
     @Body() payload: Record<string, unknown>,
@@ -67,6 +72,7 @@ export class MaterialRequestController {
   }
 
   @Put('updateById/:id')
+  @Permissions('write')
   async updateByIdPath(
     @Param('id', ParseIntPipe) id: number,
     @Body() payload: Record<string, unknown>,
@@ -75,11 +81,13 @@ export class MaterialRequestController {
   }
 
   @Delete('deleteById')
+  @Permissions('delete')
   async deleteByIdQuery(@Query('id', ParseIntPipe) id: number) {
     return this.service.deleteById(id);
   }
 
   @Delete('deleteById/:id')
+  @Permissions('delete')
   async deleteByIdPath(@Param('id', ParseIntPipe) id: number) {
     return this.service.deleteById(id);
   }
@@ -102,21 +110,25 @@ export class MaterialRequestController {
   }
 
   @Post('sendBackToValidation')
+  @Permissions('write')
   async sendBackToValidation(@Body() payload: { id: number }) {
     return this.service.sendBackToValidation(Number(payload.id));
   }
 
   @Post('onPrint')
+  @Permissions('write')
   async onPrint(@Body() payload: { data: Array<Record<string, unknown>> }) {
     return this.service.onPrint(Array.isArray(payload.data) ? payload.data : []);
   }
 
   @Post('clearPrint')
+  @Permissions('write')
   async clearPrint(@Body() payload: { data: Array<Record<string, unknown>> }) {
     return this.service.clearPrint(Array.isArray(payload.data) ? payload.data : []);
   }
 
   @Post('completePicking')
+  @Permissions('write')
   async completePicking(
     @Body()
     payload: {
@@ -134,6 +146,7 @@ export class MaterialRequestController {
   }
 
   @Put('updateStatus')
+  @Permissions('write')
   async updateStatus(
     @Query('id', ParseIntPipe) id: number,
     @Body() payload: { status: string; updatedBy?: number },
@@ -142,11 +155,13 @@ export class MaterialRequestController {
   }
 
   @Delete('deleteLineItem')
+  @Permissions('delete')
   async deleteLineItem(@Query('id', ParseIntPipe) id: number) {
     return this.service.deleteLineItem(id);
   }
 
   @Post('automatedIGTTransfer')
+  @Permissions('write')
   async automatedIGTTransfer() {
     return {
       success: false,

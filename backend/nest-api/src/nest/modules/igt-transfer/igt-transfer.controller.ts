@@ -1,7 +1,9 @@
-import { Body, Controller, Get, Inject, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Post, Query, UseGuards } from '@nestjs/common';
+import { Permissions, RolePermissionGuard } from '../access-control';
 import { IgtTransferService } from './igt-transfer.service';
 
 @Controller('igt-transfer')
+@UseGuards(RolePermissionGuard)
 export class IgtTransferController {
   constructor(
     @Inject(IgtTransferService)
@@ -35,6 +37,7 @@ export class IgtTransferController {
   }
 
   @Post('automatedIGTTransfer')
+  @Permissions('write')
   async automatedIGTTransfer(
     @Query('id') idRaw?: string,
     @Body() payload?: unknown,

@@ -1,7 +1,9 @@
-import { Body, Controller, Delete, Get, Inject, Param, ParseIntPipe, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Inject, Param, ParseIntPipe, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Permissions, RolePermissionGuard } from '../access-control';
 import { EmailNotificationService } from './email-notification.service';
 
 @Controller('email-notification')
+@UseGuards(RolePermissionGuard)
 export class EmailNotificationController {
   constructor(
     @Inject(EmailNotificationService)
@@ -29,16 +31,19 @@ export class EmailNotificationController {
   }
 
   @Post()
+  @Permissions('write')
   create(@Body() body: Record<string, unknown>) {
     return this.service.create(body);
   }
 
   @Put(':id')
+  @Permissions('write')
   update(@Param('id', ParseIntPipe) id: number, @Body() body: Record<string, unknown>) {
     return this.service.update(id, body);
   }
 
   @Delete(':id')
+  @Permissions('delete')
   delete(@Param('id', ParseIntPipe) id: number) {
     return this.service.delete(id);
   }

@@ -1,7 +1,9 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Permissions, RolePermissionGuard } from '../access-control';
 import { WorkOrderService } from './work-order.service';
 
 @Controller('work-order')
+@UseGuards(RolePermissionGuard)
 export class WorkOrderController {
   constructor(private readonly service: WorkOrderService) {}
 
@@ -56,16 +58,19 @@ export class WorkOrderController {
   }
 
   @Post()
+  @Permissions('write')
   async create(@Body() payload: Record<string, unknown>) {
     return this.service.create(payload);
   }
 
   @Put(':id')
+  @Permissions('write')
   async updateById(@Param('id', ParseIntPipe) id: number, @Body() payload: Record<string, unknown>) {
     return this.service.updateById(id, payload);
   }
 
   @Put('billing-review/:id')
+  @Permissions('write')
   async updateByIdBillingReview(
     @Param('id', ParseIntPipe) id: number,
     @Body() payload: Record<string, unknown>,
@@ -74,6 +79,7 @@ export class WorkOrderController {
   }
 
   @Delete(':id')
+  @Permissions('delete')
   async deleteById(@Param('id', ParseIntPipe) id: number) {
     return this.service.deleteById(id);
   }

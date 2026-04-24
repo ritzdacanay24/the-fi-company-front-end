@@ -1,7 +1,9 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Permissions, RolePermissionGuard } from '../access-control';
 import { PartsOrderService } from './parts-order.service';
 
 @Controller('parts-order')
+@UseGuards(RolePermissionGuard)
 export class PartsOrderController {
   constructor(private readonly service: PartsOrderService) {}
 
@@ -26,21 +28,25 @@ export class PartsOrderController {
   }
 
   @Post()
+  @Permissions('write')
   async create(@Body() payload: Record<string, unknown>) {
     return this.service.create(payload);
   }
 
   @Put(':id')
+  @Permissions('write')
   async update(@Param('id', ParseIntPipe) id: number, @Body() payload: Record<string, unknown>) {
     return this.service.update(id, payload);
   }
 
   @Put('updateAndSendEmail/:id')
+  @Permissions('write')
   async updateAndSendEmail(@Param('id', ParseIntPipe) id: number, @Body() payload: Record<string, unknown>) {
     return this.service.updateAndSendEmail(id, payload);
   }
 
   @Delete(':id')
+  @Permissions('delete')
   async delete(@Param('id', ParseIntPipe) id: number) {
     return this.service.delete(id);
   }

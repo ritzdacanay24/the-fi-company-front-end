@@ -9,7 +9,6 @@ export class InspectionChecklistController {
   constructor(private readonly service: PhotoChecklistService) {}
 
   @Get('templates')
-  @Permissions('read')
   async getTemplates(@Query('include_inactive') includeInactive?: string, @Query('include_deleted') includeDeleted?: string) {
     return this.service.getTemplates({
       includeInactive: includeInactive === '1' || includeInactive === 'true',
@@ -60,7 +59,6 @@ export class InspectionChecklistController {
   }
 
   @Get('templates/history')
-  @Permissions('read')
   async getTemplateHistory(@Query('group_id') groupId?: string, @Query('template_id') templateId?: string) {
     return this.service.getTemplateHistory({
       groupId: groupId ? Number(groupId) : undefined,
@@ -69,13 +67,11 @@ export class InspectionChecklistController {
   }
 
   @Get('templates/compare')
-  @Permissions('read')
   async compareTemplates(@Query('source_id') sourceId: string, @Query('target_id') targetId: string) {
     return this.service.compareTemplates(Number(sourceId), Number(targetId));
   }
 
   @Get('templates/:id')
-  @Permissions('read')
   async getTemplateById(
     @Param('id', ParseIntPipe) id: number,
     @Query('include_inactive') includeInactive?: string,
@@ -88,13 +84,11 @@ export class InspectionChecklistController {
   }
 
   @Get('instances')
-  @Permissions('read')
   async getInstances(@Query('status') status?: string, @Query('work_order') workOrder?: string) {
     return this.service.getInstances({ status, workOrder });
   }
 
   @Get('instances/search')
-  @Permissions('read')
   async searchInstances(
     @Query('part_number') partNumber?: string,
     @Query('serial_number') serialNumber?: string,
@@ -118,7 +112,6 @@ export class InspectionChecklistController {
   }
 
   @Get('share-tokens')
-  @Permissions('read')
   async listShareTokens(@Query('instance_id') instanceId?: string) {
     return this.service.listShareTokens(Number(instanceId || 0));
   }
@@ -146,13 +139,11 @@ export class InspectionChecklistController {
   }
 
   @Get('share-report/:token')
-  @Permissions('read')
   async getPublicReport(@Param('token') token: string) {
     return this.service.getPublicReport(token);
   }
 
   @Get('instances/:id')
-  @Permissions('read')
   async getInstanceById(@Param('id', ParseIntPipe) id: number) {
     return this.service.getInstanceById(id);
   }
@@ -225,6 +216,7 @@ export class InspectionChecklistController {
   }
 
   @Delete('instances/:id')
+  @Permissions('delete')
   async deleteInstance(@Param('id', ParseIntPipe) id: number) {
     return this.service.deleteInstance(id);
   }
@@ -235,6 +227,7 @@ export class InspectionChecklistController {
   }
 
   @Post('config')
+  @Permissions('manage')
   async updateConfig(@Body() updates: Record<string, string>) {
     return this.service.updateConfig(updates);
   }

@@ -1,10 +1,13 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Domain, Permissions, RolePermissionGuard } from '../access-control';
 import { BulkCreateSgAssetDto } from './dto/bulk-create-sg-asset.dto';
 import { CreateSgAssetDto } from './dto/create-sg-asset.dto';
 import { UpdateSgAssetDto } from './dto/update-sg-asset.dto';
 import { SgAssetService } from './sg-asset.service';
 
 @Controller(['quality/sg-asset', 'Quality/sg-asset', 'sg-asset'])
+@UseGuards(RolePermissionGuard)
+@Domain('inventory')
 export class SgAssetController {
   constructor(private readonly sgAssetService: SgAssetService) {}
 
@@ -35,11 +38,13 @@ export class SgAssetController {
   }
 
   @Post()
+  @Permissions('write')
   async createOne(@Body() payload: CreateSgAssetDto) {
     return this.sgAssetService.create(payload);
   }
 
   @Put(':id')
+  @Permissions('manage')
   async updateOne(
     @Param('id', ParseIntPipe) id: number,
     @Body() payload: UpdateSgAssetDto,
@@ -48,11 +53,13 @@ export class SgAssetController {
   }
 
   @Delete(':id')
+  @Permissions('delete')
   async deleteOne(@Param('id', ParseIntPipe) id: number) {
     return this.sgAssetService.deleteById(id);
   }
 
   @Post('bulk')
+  @Permissions('write')
   async bulkCreateRest(@Body() payload: BulkCreateSgAssetDto) {
     return this.sgAssetService.bulkCreate(payload);
   }
@@ -99,16 +106,19 @@ export class SgAssetController {
   }
 
   @Post('create')
+  @Permissions('write')
   async create(@Body() payload: CreateSgAssetDto) {
     return this.sgAssetService.create(payload);
   }
 
   @Post('create.php')
+  @Permissions('write')
   async createPhp(@Body() payload: CreateSgAssetDto) {
     return this.sgAssetService.create(payload);
   }
 
   @Put('updateById/:id')
+  @Permissions('manage')
   async updateById(
     @Param('id', ParseIntPipe) id: number,
     @Body() payload: UpdateSgAssetDto,
@@ -117,6 +127,7 @@ export class SgAssetController {
   }
 
   @Put('updateById.php')
+  @Permissions('manage')
   async updateByIdPhp(
     @Query('id', ParseIntPipe) id: number,
     @Body() payload: UpdateSgAssetDto,
@@ -125,16 +136,19 @@ export class SgAssetController {
   }
 
   @Delete('deleteById/:id')
+  @Permissions('delete')
   async deleteById(@Param('id', ParseIntPipe) id: number) {
     return this.sgAssetService.deleteById(id);
   }
 
   @Delete('deleteById.php')
+  @Permissions('delete')
   async deleteByIdPhp(@Query('id', ParseIntPipe) id: number) {
     return this.sgAssetService.deleteById(id);
   }
 
   @Post('bulkCreate.php')
+  @Permissions('write')
   async bulkCreate(@Body() payload: BulkCreateSgAssetDto) {
     return this.sgAssetService.bulkCreate(payload);
   }

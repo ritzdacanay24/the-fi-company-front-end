@@ -5,18 +5,23 @@ import {
   Get,
   Inject,
   Param,
+  Patch,
   Post,
   Put,
   Query,
   Res,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
+import { Domain, Permissions, RolePermissionGuard } from '../access-control';
 import { UlLabelsService } from './ul-labels.service';
 
 @Controller('ul-labels')
+@UseGuards(RolePermissionGuard)
+@Domain('inventory')
 export class UlLabelsController {
   constructor(
     @Inject(UlLabelsService)
@@ -36,21 +41,31 @@ export class UlLabelsController {
   }
 
   @Post()
+  @Permissions('write')
   async createLabel(@Body() body: Record<string, unknown>) {
     return this.ulLabelsService.createLabel(body);
   }
 
   @Put(':id')
+  @Permissions('write')
   async updateLabel(@Param('id') idRaw?: string, @Body() body: Record<string, unknown> = {}) {
     return this.ulLabelsService.updateLabel(idRaw, body);
   }
 
+  @Patch(':id/archive')
+  @Permissions('write')
+  async archiveLabel(@Param('id') idRaw: string) {
+    return this.ulLabelsService.archiveLabel(idRaw);
+  }
+
   @Delete(':id')
+  @Permissions('delete')
   async deleteLabel(@Param('id') idRaw?: string) {
     return this.ulLabelsService.deleteLabel(idRaw);
   }
 
   @Post('bulk')
+  @Permissions('write')
   @UseInterceptors(FileInterceptor('file'))
   async bulkUpload(
     @UploadedFile() file?: { originalname?: string; buffer: Buffer },
@@ -81,21 +96,25 @@ export class UlLabelsController {
   }
 
   @Post('usages')
+  @Permissions('write')
   async createUsage(@Body() body: Record<string, unknown> = {}) {
     return this.ulLabelsService.createUsage(body);
   }
 
   @Put('usages/:id')
+  @Permissions('write')
   async updateUsage(@Param('id') idRaw?: string, @Body() body: Record<string, unknown> = {}) {
     return this.ulLabelsService.updateUsage(idRaw, body);
   }
 
   @Delete('usages/:id')
+  @Permissions('delete')
   async deleteUsage(@Param('id') idRaw?: string) {
     return this.ulLabelsService.deleteUsage(idRaw);
   }
 
   @Post('usages/:id/void')
+  @Permissions('write')
   async voidUsage(@Param('id') idRaw: string, @Body() body: Record<string, unknown> = {}) {
     return this.ulLabelsService.voidUsage(idRaw, body.void_reason as string | undefined);
   }
@@ -131,11 +150,13 @@ export class UlLabelsController {
   }
 
   @Post('audit-signoffs')
+  @Permissions('write')
   async submitAuditSignoff(@Body() body: Record<string, unknown> = {}) {
     return this.ulLabelsService.submitAuditSignoff(body);
   }
 
   @Post(':id/image')
+  @Permissions('write')
   @UseInterceptors(FileInterceptor('image'))
   async uploadImage(
     @Param('id') idRaw: string,

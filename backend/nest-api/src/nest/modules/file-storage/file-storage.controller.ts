@@ -1,12 +1,15 @@
-import { BadRequestException, Body, Controller, Delete, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Post, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Permissions, RolePermissionGuard } from '../access-control';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { FileStorageService } from './file-storage.service';
 
 @Controller('file-storage')
+@UseGuards(RolePermissionGuard)
 export class FileStorageController {
   constructor(private readonly service: FileStorageService) {}
 
   @Post('upload')
+  @Permissions('write')
   @UseInterceptors(FileInterceptor('file'))
   async upload(
     @Body('folder') folder?: string,
@@ -26,6 +29,7 @@ export class FileStorageController {
   }
 
   @Delete('delete')
+  @Permissions('delete')
   async delete(
     @Body('image_url') imageUrl?: string,
     @Body('url') url?: string,

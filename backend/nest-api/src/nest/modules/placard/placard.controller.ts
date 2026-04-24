@@ -1,7 +1,9 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Permissions, RolePermissionGuard } from '../access-control';
 import { PlacardService } from './placard.service';
 
 @Controller('placard')
+@UseGuards(RolePermissionGuard)
 export class PlacardController {
   constructor(private readonly service: PlacardService) {}
 
@@ -55,11 +57,13 @@ export class PlacardController {
   }
 
   @Post('create')
+  @Permissions('write')
   async create(@Body() payload: Record<string, unknown>) {
     return this.service.create(payload);
   }
 
   @Put('updateById')
+  @Permissions('write')
   async updateByIdQuery(
     @Query('id', ParseIntPipe) id: number,
     @Body() payload: Record<string, unknown>,
@@ -68,6 +72,7 @@ export class PlacardController {
   }
 
   @Put('updateById/:id')
+  @Permissions('write')
   async updateByIdPath(
     @Param('id', ParseIntPipe) id: number,
     @Body() payload: Record<string, unknown>,
@@ -76,11 +81,13 @@ export class PlacardController {
   }
 
   @Delete('deleteById')
+  @Permissions('delete')
   async deleteByIdQuery(@Query('id', ParseIntPipe) id: number) {
     return this.service.deleteById(id);
   }
 
   @Delete('deleteById/:id')
+  @Permissions('delete')
   async deleteByIdPath(@Param('id', ParseIntPipe) id: number) {
     return this.service.deleteById(id);
   }

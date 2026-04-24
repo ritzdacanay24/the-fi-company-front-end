@@ -1,7 +1,9 @@
-import { Body, Controller, Delete, Get, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Permissions, RolePermissionGuard } from '../access-control';
 import { FsQirService } from './fs-qir.service';
 
 @Controller('fs-qir')
+@UseGuards(RolePermissionGuard)
 export class FsQirController {
   constructor(private readonly service: FsQirService) {}
 
@@ -26,11 +28,13 @@ export class FsQirController {
   }
 
   @Post('create')
+  @Permissions('write')
   create(@Body() payload: Record<string, unknown>) {
     return this.service.create(payload);
   }
 
   @Put('updateById')
+  @Permissions('write')
   updateById(@Query('id') idRaw: string, @Body() payload: Record<string, unknown>) {
     const id = Number(idRaw);
     if (!Number.isFinite(id)) {
@@ -41,6 +45,7 @@ export class FsQirController {
   }
 
   @Delete('deleteById')
+  @Permissions('delete')
   deleteById(@Query('id') idRaw?: string) {
     const id = Number(idRaw);
     if (!Number.isFinite(id)) {

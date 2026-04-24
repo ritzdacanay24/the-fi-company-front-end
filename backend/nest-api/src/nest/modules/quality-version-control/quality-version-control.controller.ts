@@ -1,8 +1,10 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query, Res } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query, Res, UseGuards } from '@nestjs/common';
 import { Response } from 'express';
+import { Permissions, RolePermissionGuard } from '../access-control';
 import { QualityVersionControlService } from './quality-version-control.service';
 
 @Controller(['quality-version-control', 'Quality/quality-version-control'])
+@UseGuards(RolePermissionGuard)
 export class QualityVersionControlController {
   constructor(private readonly service: QualityVersionControlService) {}
 
@@ -34,16 +36,19 @@ export class QualityVersionControlController {
   }
 
   @Post('documents')
+  @Permissions('write')
   async createDocument(@Body() payload: Record<string, unknown>) {
     return this.service.createDocument(payload as any);
   }
 
   @Put('documents/:id')
+  @Permissions('write')
   async updateDocument(@Param('id', ParseIntPipe) id: number, @Body() updates: Record<string, unknown>) {
     return this.service.updateDocument(id, updates);
   }
 
   @Delete('documents/:id')
+  @Permissions('delete')
   async deleteDocument(@Param('id', ParseIntPipe) id: number) {
     return this.service.deleteDocument(id);
   }
@@ -77,16 +82,19 @@ export class QualityVersionControlController {
   }
 
   @Post('revisions')
+  @Permissions('write')
   async createRevision(@Body() payload: Record<string, unknown>) {
     return this.service.createRevision(payload as any);
   }
 
   @Put('revisions/:id')
+  @Permissions('write')
   async updateRevision(@Param('id', ParseIntPipe) id: number, @Body() updates: Record<string, unknown>) {
     return this.service.updateRevision(id, updates);
   }
 
   @Post('revisions/:id/approve')
+  @Permissions('manage')
   async approveRevision(
     @Param('id', ParseIntPipe) id: number,
     @Body() body: { approved_by?: string },
@@ -95,6 +103,7 @@ export class QualityVersionControlController {
   }
 
   @Post('revisions/:id/reject')
+  @Permissions('manage')
   async rejectRevision(
     @Param('id', ParseIntPipe) id: number,
     @Body() body: { rejected_by?: string; reason?: string },

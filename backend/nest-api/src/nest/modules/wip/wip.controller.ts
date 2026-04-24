@@ -1,7 +1,9 @@
-import { Controller, Get, Inject, InternalServerErrorException, Query } from '@nestjs/common';
+import { Controller, Get, Inject, InternalServerErrorException, Query, UseGuards } from '@nestjs/common';
+import { RolePermissionGuard } from '../access-control';
 import { WipService } from './wip.service';
 
 @Controller('wip-report')
+@UseGuards(RolePermissionGuard)
 export class WipController {
   constructor(
     @Inject(WipService)

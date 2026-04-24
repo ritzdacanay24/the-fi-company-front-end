@@ -1,8 +1,10 @@
-import { Controller, Get, Post, Put, Delete, Param, Query, Body, ParseIntPipe } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Permissions, RolePermissionGuard } from '../access-control';
 import { SchedulerEventService } from './scheduler-event.service';
 import { SchedulerEventRecord } from './scheduler-event.repository';
 
 @Controller('scheduler-event')
+@UseGuards(RolePermissionGuard)
 export class SchedulerEventController {
   constructor(private readonly schedulerEventService: SchedulerEventService) {}
 
@@ -30,16 +32,19 @@ export class SchedulerEventController {
   }
 
   @Post()
+  @Permissions('write')
   async create(@Body() payload: Record<string, unknown>): Promise<SchedulerEventRecord | null> {
     return this.schedulerEventService.create(payload);
   }
 
   @Put(':id')
+  @Permissions('write')
   async update(@Param('id', ParseIntPipe) id: number, @Body() payload: Record<string, unknown>): Promise<SchedulerEventRecord | null> {
     return this.schedulerEventService.update(id, payload);
   }
 
   @Delete(':id')
+  @Permissions('delete')
   async delete(@Param('id', ParseIntPipe) id: number): Promise<boolean> {
     return this.schedulerEventService.delete(id);
   }

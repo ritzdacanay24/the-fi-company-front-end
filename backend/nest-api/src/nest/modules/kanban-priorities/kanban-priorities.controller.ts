@@ -1,7 +1,9 @@
-import { BadRequestException, Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import { Permissions, RolePermissionGuard } from '../access-control';
 import { KanbanPrioritiesService } from './kanban-priorities.service';
 
 @Controller('kanban-priorities')
+@UseGuards(RolePermissionGuard)
 export class KanbanPrioritiesController {
   constructor(private readonly service: KanbanPrioritiesService) {}
 
@@ -11,6 +13,7 @@ export class KanbanPrioritiesController {
   }
 
   @Post()
+  @Permissions('write')
   async postAction(
     @Query('action') action?: string,
     @Body() payload: Record<string, unknown> = {},

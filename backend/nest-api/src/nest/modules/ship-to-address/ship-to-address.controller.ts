@@ -1,7 +1,9 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { RolePermissionGuard } from '../access-control';
 import { ShipToAddressService } from './ship-to-address.service';
 
 @Controller('ship-to-address')
+@UseGuards(RolePermissionGuard)
 export class ShipToAddressController {
   constructor(private readonly service: ShipToAddressService) {}
 

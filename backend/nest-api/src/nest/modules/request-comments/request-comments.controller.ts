@@ -1,7 +1,9 @@
-import { BadRequestException, Body, Controller, Get, Param, ParseIntPipe, Post, Put, Query } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Param, ParseIntPipe, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Permissions, RolePermissionGuard } from '../access-control';
 import { RequestCommentsService } from './request-comments.service';
 
 @Controller('request-comments')
+@UseGuards(RolePermissionGuard)
 export class RequestCommentsController {
   constructor(private readonly service: RequestCommentsService) {}
 
@@ -29,6 +31,7 @@ export class RequestCommentsController {
   }
 
   @Post()
+  @Permissions('write')
   async create(
     @Body() payload: Record<string, unknown>,
     @Query('token') token?: string,
@@ -38,6 +41,7 @@ export class RequestCommentsController {
   }
 
   @Post('createComment')
+  @Permissions('write')
   async createComment(
     @Query('token') token: string,
     @Query('toEmail') toEmail: string,
@@ -47,6 +51,7 @@ export class RequestCommentsController {
   }
 
   @Put(':id')
+  @Permissions('write')
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() payload: Record<string, unknown>,
@@ -55,6 +60,7 @@ export class RequestCommentsController {
   }
 
   @Put('updateById')
+  @Permissions('write')
   async updateById(
     @Query('id', ParseIntPipe) id: number,
     @Body() payload: Record<string, unknown>,

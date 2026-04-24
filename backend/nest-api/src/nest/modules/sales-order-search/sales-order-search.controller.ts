@@ -1,7 +1,9 @@
-import { BadRequestException, Controller, Get, Query } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { RolePermissionGuard } from '../access-control';
 import { SalesOrderSearchService } from './sales-order-search.service';
 
 @Controller('sales-order-search')
+@UseGuards(RolePermissionGuard)
 export class SalesOrderSearchController {
   constructor(private readonly service: SalesOrderSearchService) {}
 

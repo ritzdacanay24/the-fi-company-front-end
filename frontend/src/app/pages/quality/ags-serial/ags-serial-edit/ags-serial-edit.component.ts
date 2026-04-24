@@ -46,28 +46,13 @@ export class AgsSerialEditComponent {
     });
   };
 
-  get isFormDisabled() {
-    return this.form?.disabled || false;
-  }
-
   data: any;
 
   async getData() {
     try {
       this.data = await this.api.getById(this.id);
-      
-      // Lock critical fields that shouldn't be edited after creation
-      this.lockCriticalFields();
-      
       this.form.patchValue(this.data);
     } catch (err) {}
-  }
-
-  /**
-   * Disable the entire form to prevent any modifications
-   */
-  private lockCriticalFields() {
-    this.form.disable();
   }
 
   async onSubmit() {
@@ -77,9 +62,7 @@ export class AgsSerialEditComponent {
 
     try {
       this.isLoading = true;
-      
-      // Since form is disabled, get raw values for submission
-      const formData = this.form.getRawValue();
+      const formData = this.form.value;
       
       await this.api.update(this.id, formData);
       this.isLoading = false;
@@ -93,6 +76,32 @@ export class AgsSerialEditComponent {
   onCancel() {
     this.goBack();
   }
+
+  archiveDeleteAction = async () => {
+    if (!this.id) {
+      this.toastrService.error("No AGS serial selected");
+      return;
+    }
+
+    const confirmed = confirm(
+      "Soft Delete / Archive Delete this AGS serial record? This will mark it inactive."
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      this.isLoading = true;
+      await this.api.delete(this.id);
+      this.toastrService.success("AGS serial archived successfully");
+      this.goBack();
+    } catch (err) {
+      this.toastrService.error("Failed to archive AGS serial");
+    } finally {
+      this.isLoading = false;
+    }
+  };
 
   onPrint() {
     // Use the loaded data from server, not current form values with unsaved changes

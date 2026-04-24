@@ -6,6 +6,216 @@ import { MysqlService } from '@/shared/database/mysql.service';
 export class QualityVersionControlRepository {
   constructor(@Inject(MysqlService) private readonly mysqlService: MysqlService) {}
 
+  async createChecklistDocumentWithInitialRevision(payload: {
+    prefix: string;
+    title: string;
+    description?: string;
+    department: string;
+    category: string;
+    template_id: number;
+    created_by: string;
+    revision_description: string;
+  }): Promise<{ document_id: number; document_number: string; revision_id: number }> {
+    return this.mysqlService.withTransaction(async (connection) => {
+      const [sequenceRows] = await connection.query<RowDataPacket[]>(
+        `
+          SELECT current_number + 1 AS next_number
+          FROM quality_document_sequences
+          WHERE prefix = ?
+          FOR UPDATE
+        `,
+        [payload.prefix],
+      );
+
+      if (!sequenceRows.length || sequenceRows[0].next_number == null) {
+        throw new Error(`No sequence configured for prefix: ${payload.prefix}`);
+      }
+
+      const nextNumber = Number(sequenceRows[0].next_number);
+      await connection.query(
+        `
+          UPDATE quality_document_sequences
+          SET current_number = ?, updated_at = CURRENT_TIMESTAMP
+          WHERE prefix = ?
+        `,
+        [nextNumber, payload.prefix],
+      );
+
+      const documentNumber = `${payload.prefix}-${String(nextNumber).padStart(3, '0')}`;
+
+      const [documentResult] = await connection.query<ResultSetHeader>(
+        `
+          INSERT INTO quality_documents (
+            document_number,
+            prefix,
+            sequence_number,
+            title,
+            description,
+            department,
+            category,
+            status,
+            current_revision,
+            created_by
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', 1, ?)
+        `,
+        [
+          documentNumber,
+          payload.prefix,
+          nextNumber,
+          payload.title,
+          payload.description || null,
+          payload.department,
+          payload.category,
+          payload.created_by,
+        ],
+      );
+
+      const documentId = Number(documentResult.insertId);
+
+      const [revisionResult] = await connection.query<ResultSetHeader>(
+        `
+          INSERT INTO quality_revisions (
+            document_id,
+            revision_number,
+            description,
+            status,
+            is_current,
+            created_by,
+            template_id
+          ) VALUES (?, 1, ?, 'draft', 1, ?, ?)
+        `,
+        [documentId, payload.revision_description, payload.created_by, payload.template_id],
+      );
+
+      return {
+        document_id: documentId,
+        document_number: documentNumber,
+        revision_id: Number(revisionResult.insertId),
+      };
+    });
+  }
+
+  async createChecklistRevisionWithMetadata(payload: {
+    document_id: number;
+    template_id: number;
+    revision_description: string;
+    changes_summary: string;
+    items_added: number;
+    items_removed: number;
+    items_modified: number;
+    changes_detail?: unknown;
+    created_by: string;
+  }): Promise<{ revision_id: number; revision_number: number; document_number: string }> {
+    return this.mysqlService.withTransaction(async (connection) => {
+      const [docRows] = await connection.query<Array<RowDataPacket & { document_number: string }>>(
+        'SELECT document_number FROM quality_documents WHERE id = ? LIMIT 1',
+        [payload.document_id],
+      );
+
+      if (!docRows.length) {
+        throw new Error(`Quality document ${payload.document_id} not found`);
+      }
+
+      const [nextRows] = await connection.query<Array<RowDataPacket & { next_revision_number: number }>>(
+        `
+          SELECT COALESCE(MAX(revision_number), 0) + 1 AS next_revision_number
+          FROM quality_revisions
+          WHERE document_id = ?
+          FOR UPDATE
+        `,
+        [payload.document_id],
+      );
+
+      const nextRevisionNumber = Number(nextRows[0]?.next_revision_number ?? 1);
+
+      await connection.query(
+        'UPDATE quality_revisions SET is_current = 0 WHERE document_id = ?',
+        [payload.document_id],
+      );
+
+      const [result] = await connection.query<ResultSetHeader>(
+        `
+          INSERT INTO quality_revisions (
+            document_id,
+            template_id,
+            revision_number,
+            description,
+            changes_summary,
+            items_added,
+            items_removed,
+            items_modified,
+            changes_detail,
+            status,
+            is_current,
+            created_by
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', 1, ?)
+        `,
+        [
+          payload.document_id,
+          payload.template_id,
+          nextRevisionNumber,
+          payload.revision_description,
+          payload.changes_summary,
+          payload.items_added,
+          payload.items_removed,
+          payload.items_modified,
+          payload.changes_detail == null ? null : JSON.stringify(payload.changes_detail),
+          payload.created_by,
+        ],
+      );
+
+      await connection.query(
+        'UPDATE quality_documents SET current_revision = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        [nextRevisionNumber, payload.document_id],
+      );
+
+      return {
+        revision_id: Number(result.insertId),
+        revision_number: nextRevisionNumber,
+        document_number: String(docRows[0].document_number),
+      };
+    });
+  }
+
+  async getChecklistRevisionHistory(documentId: number): Promise<RowDataPacket[]> {
+    const sql = `
+      SELECT
+        qr.id AS revision_id,
+        qr.revision_number,
+        qr.description,
+        qr.changes_summary,
+        qr.items_added,
+        qr.items_removed,
+        qr.items_modified,
+        qr.changes_detail,
+        qr.status,
+        qr.is_current,
+        qr.created_by,
+        qr.created_at,
+        qr.approved_by,
+        qr.approved_at,
+        qr.template_id,
+        ct.name AS template_name
+      FROM quality_revisions qr
+      LEFT JOIN checklist_templates ct ON ct.id = qr.template_id
+      WHERE qr.document_id = ?
+      ORDER BY qr.revision_number DESC
+    `;
+
+    const rows = await this.mysqlService.query<RowDataPacket[]>(sql, [documentId]);
+    return rows.map((row) => {
+      const normalized = { ...row } as RowDataPacket & { changes_detail?: unknown };
+      if (typeof normalized.changes_detail === 'string') {
+        try {
+          normalized.changes_detail = JSON.parse(normalized.changes_detail);
+        } catch {
+          // Keep original value when JSON parsing fails.
+        }
+      }
+      return normalized;
+    });
+  }
+
   async getDocuments(filters?: {
     type?: string;
     category?: string;

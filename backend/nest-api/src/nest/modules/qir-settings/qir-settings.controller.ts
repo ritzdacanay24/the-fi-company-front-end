@@ -1,7 +1,9 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Permissions, RolePermissionGuard } from '../access-control';
 import { QirSettingsService } from './qir-settings.service';
 
 @Controller('qir-settings')
+@UseGuards(RolePermissionGuard)
 export class QirSettingsController {
   constructor(private readonly service: QirSettingsService) {}
 
@@ -21,11 +23,13 @@ export class QirSettingsController {
   }
 
   @Post('create')
+  @Permissions('write')
   async create(@Body() payload: Record<string, unknown>) {
     return this.service.create(payload);
   }
 
   @Put('updateById')
+  @Permissions('write')
   async updateByIdQuery(
     @Query('id', ParseIntPipe) id: number,
     @Body() payload: Record<string, unknown>,
@@ -34,6 +38,7 @@ export class QirSettingsController {
   }
 
   @Put('updateById/:id')
+  @Permissions('write')
   async updateByIdPath(
     @Param('id', ParseIntPipe) id: number,
     @Body() payload: Record<string, unknown>,
@@ -42,11 +47,13 @@ export class QirSettingsController {
   }
 
   @Delete('deleteById')
+  @Permissions('delete')
   async deleteByIdQuery(@Query('id', ParseIntPipe) id: number) {
     return this.service.deleteById(id);
   }
 
   @Delete('deleteById/:id')
+  @Permissions('delete')
   async deleteByIdPath(@Param('id', ParseIntPipe) id: number) {
     return this.service.deleteById(id);
   }

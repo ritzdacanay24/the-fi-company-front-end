@@ -1,7 +1,9 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { RolePermissionGuard } from '../access-control';
 import { GeoLocationTrackerService } from './geo-location-tracker.service';
 
 @Controller('geo-location-tracker')
+@UseGuards(RolePermissionGuard)
 export class GeoLocationTrackerController {
   constructor(private readonly service: GeoLocationTrackerService) {}
 

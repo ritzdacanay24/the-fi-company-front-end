@@ -1,7 +1,9 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Permissions, RolePermissionGuard } from '../access-control';
 import { JobConnectionService } from './job-connection.service';
 
 @Controller('job-connection')
+@UseGuards(RolePermissionGuard)
 export class JobConnectionController {
   constructor(private readonly service: JobConnectionService) {}
 
@@ -11,16 +13,19 @@ export class JobConnectionController {
   }
 
   @Post('createJobConnection')
+  @Permissions('write')
   async createJobConnection(@Body() payload: Record<string, unknown>) {
     return this.service.createJobConnection(payload as any);
   }
 
   @Delete('deleteJobConnection/:id')
+  @Permissions('delete')
   async deleteJobConnection(@Param('id', ParseIntPipe) id: number) {
     return this.service.deleteJobConnection(id);
   }
 
   @Put('updateJobConnection/:id')
+  @Permissions('write')
   async updateJobConnection(
     @Param('id', ParseIntPipe) id: number,
     @Body() payload: { relationship_type?: string; notes?: string },

@@ -1,7 +1,9 @@
-import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
+import { Controller, Get, Param, ParseIntPipe, Query, UseGuards } from '@nestjs/common';
+import { RolePermissionGuard } from '../access-control';
 import { NonBillableCodeService } from './non-billable-code.service';
 
 @Controller('non-billable-code')
+@UseGuards(RolePermissionGuard)
 export class NonBillableCodeController {
   constructor(private readonly service: NonBillableCodeService) {}
 

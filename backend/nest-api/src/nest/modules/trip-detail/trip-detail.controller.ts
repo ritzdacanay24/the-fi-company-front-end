@@ -1,7 +1,9 @@
-import { BadRequestException, Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Permissions, RolePermissionGuard } from '../access-control';
 import { TripDetailService } from './trip-detail.service';
 
 @Controller('trip-detail')
+@UseGuards(RolePermissionGuard)
 export class TripDetailController {
   constructor(private readonly service: TripDetailService) {}
 
@@ -24,16 +26,19 @@ export class TripDetailController {
   }
 
   @Post()
+  @Permissions('write')
   async create(@Body() payload: Record<string, unknown>) {
     return this.service.create(payload);
   }
 
   @Put(':id')
+  @Permissions('write')
   async update(@Param('id', ParseIntPipe) id: number, @Body() payload: Record<string, unknown>) {
     return this.service.update(id, payload);
   }
 
   @Delete(':id')
+  @Permissions('delete')
   async delete(@Param('id', ParseIntPipe) id: number) {
     return this.service.delete(id);
   }
@@ -54,6 +59,7 @@ export class TripDetailController {
   }
 
   @Put('emailTripDetails')
+  @Permissions('write')
   async emailTripDetails(
     @Query('fsId') fsId: string | number,
     @Body() payload?: Record<string, unknown>,

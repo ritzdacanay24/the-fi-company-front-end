@@ -8,13 +8,17 @@ import {
   Post,
   Put,
   Query,
+  UseGuards,
 } from '@nestjs/common';
+import { Domain, Permissions, RolePermissionGuard } from '../access-control';
 import { BulkCreateAgsSerialDto } from './dto/bulk-create-ags-serial.dto';
 import { CreateAgsSerialDto } from './dto/create-ags-serial.dto';
 import { UpdateAgsSerialDto } from './dto/update-ags-serial.dto';
 import { AgsSerialService } from './ags-serial.service';
 
 @Controller(['quality/ags-serial', 'Quality/ags-serial', 'ags-serial'])
+@UseGuards(RolePermissionGuard)
+@Domain('inventory')
 export class AgsSerialController {
   constructor(private readonly agsSerialService: AgsSerialService) {}
 
@@ -48,16 +52,19 @@ export class AgsSerialController {
   }
 
   @Post()
+  @Permissions('write')
   async createOne(@Body() payload: CreateAgsSerialDto) {
     return this.agsSerialService.create(payload);
   }
 
   @Post('bulk')
+  @Permissions('write')
   async bulkCreate(@Body() payload: BulkCreateAgsSerialDto) {
     return this.agsSerialService.bulkCreate(payload);
   }
 
   @Put(':id')
+  @Permissions('manage')
   async updateOne(
     @Param('id', ParseIntPipe) id: number,
     @Body() payload: UpdateAgsSerialDto,
@@ -66,6 +73,7 @@ export class AgsSerialController {
   }
 
   @Delete(':id')
+  @Permissions('delete')
   async deleteOne(@Param('id', ParseIntPipe) id: number) {
     return this.agsSerialService.deleteById(id);
   }

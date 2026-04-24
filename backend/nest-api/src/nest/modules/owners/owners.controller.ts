@@ -1,7 +1,9 @@
-import { Body, Controller, Delete, Get, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Permissions, RolePermissionGuard } from '../access-control';
 import { OwnersService } from './owners.service';
 
 @Controller('owners')
+@UseGuards(RolePermissionGuard)
 export class OwnersController {
   constructor(private readonly service: OwnersService) {}
 
@@ -64,6 +66,7 @@ export class OwnersController {
   }
 
   @Post()
+  @Permissions('write')
   async postOwners(
     @Body() body: Record<string, unknown>,
     @Body('action') action?: string,
@@ -143,6 +146,7 @@ export class OwnersController {
   }
 
   @Put()
+  @Permissions('write')
   async putOwners(@Body() body: Record<string, unknown>) {
     const id = body.id as string | number | undefined;
     if (!id) {
@@ -156,6 +160,7 @@ export class OwnersController {
   }
 
   @Delete()
+  @Permissions('delete')
   async deleteOwners(@Body() body: Record<string, unknown>) {
     const id = body.id as string | number | undefined;
     if (!id) {

@@ -32,6 +32,10 @@ export class ULLabelService {
     return this.http.delete(`${this.API_URL}/${id}`);
   }
 
+  archiveLabel(id: number): Observable<any> {
+    return this.http.patch(`${this.API_URL}/${id}/archive`, {});
+  }
+
   // Bulk create UL labels (for range uploads)
   createLabelsBulk(labels: Partial<ULLabel>[]): Observable<any> {
     return this.http.post(`${this.API_URL}/bulk`, { labels });

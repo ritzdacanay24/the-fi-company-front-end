@@ -342,7 +342,6 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       error: (error) => {
         console.error(`Error attempting to ${actionLabel} template:`, error);
         this.saving = false;
-        alert(error?.error?.error || error?.message || `Failed to ${actionLabel} template.`);
       }
     });
   }
@@ -594,7 +593,6 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       error: (error) => {
         console.error('Error creating major version draft:', error);
         this.saving = false;
-        alert(error?.error?.error || error?.message || 'An error occurred while starting the major version draft.');
       }
     });
   }
@@ -694,7 +692,6 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       error: (error) => {
         console.error('Error copying template as new parent:', error);
         this.copyingAsParent = false;
-        alert(error?.error?.error || error?.error?.message || error?.message || 'An error occurred while copying the template.');
       }
     });
   }
@@ -5148,19 +5145,6 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       error: (error) => {
         console.error('Error saving draft:', error);
         this.saving = false;
-
-        let errorMessage = 'Unknown error occurred';
-        if (error?.error?.error) {
-          errorMessage = error.error.error;
-        } else if (error?.error?.message) {
-          errorMessage = error.error.message;
-        } else if (error.message) {
-          errorMessage = error.message;
-        } else if (error.status) {
-          errorMessage = `HTTP ${error.status}: ${error.statusText || 'Unknown error'}`;
-        }
-
-        alert('Error saving draft: ' + errorMessage);
       }
     });
   }
@@ -5894,37 +5878,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       },
       error: (error) => {
         clearTimeout(timeoutId);
-        console.error('Error saving template:', error);
-        console.error('Full error object:', JSON.stringify(error, null, 2));
         this.saving = false;
-
-        if (error?.error?.code === 'UNSAFE_ITEM_ID_MUTATION_BLOCKED') {
-          const count = Number(error?.error?.instance_count || 0);
-          const suffix = count > 0 ? ` (${count} instance${count === 1 ? '' : 's'} detected).` : '.';
-          const createSubVersion = confirm(
-            'Save blocked to protect existing checklist progress. This reorder cannot be applied safely in-place' +
-            suffix +
-            ' Create a new sub-version draft now?'
-          );
-          if (createSubVersion) {
-            this.saveDraft();
-          }
-          return;
-        }
-
-        // Show more detailed error information
-        let errorMessage = 'Unknown error occurred';
-        if (error?.error?.error) {
-          errorMessage = error.error.error;
-        } else if (error?.error?.message) {
-          errorMessage = error.error.message;
-        } else if (error.message) {
-          errorMessage = error.message;
-        } else if (error.status) {
-          errorMessage = `HTTP ${error.status}: ${error.statusText || 'Unknown error'}`;
-        }
-
-        alert('Error saving template: ' + errorMessage);
       }
     });
   }
@@ -5983,8 +5937,6 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       error: (error) => {
         console.error('Error creating document:', error);
         this.saving = false;
-        alert('Template saved but failed to create document control entry: ' + (error.error?.error || error.message));
-        this.router.navigate(['/quality/checklist/template-manager']);
       }
     });
   }
@@ -6023,8 +5975,6 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       error: (error) => {
         console.error('Error creating revision:', error);
         this.saving = false;
-        alert('Template saved but failed to create revision: ' + (error.error?.error || error.message));
-        this.router.navigate(['/quality/checklist/template-manager']);
       }
     });
   }

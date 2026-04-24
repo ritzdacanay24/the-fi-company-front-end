@@ -1,7 +1,9 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Permissions, RolePermissionGuard } from '../access-control';
 import { ShortagesService } from './shortages.service';
 
 @Controller('shortages')
+@UseGuards(RolePermissionGuard)
 export class ShortagesController {
   constructor(private readonly service: ShortagesService) {}
 
@@ -32,21 +34,25 @@ export class ShortagesController {
   }
 
   @Post('create')
+  @Permissions('write')
   async create(@Body() payload: Record<string, unknown>) {
     return this.service.create(payload);
   }
 
   @Post('createShortages')
+  @Permissions('write')
   async createShortages(@Body() payload: { data?: Array<Record<string, unknown>> }) {
     return this.service.createShortages(payload?.data || []);
   }
 
   @Post('update')
+  @Permissions('write')
   async updateByPayload(@Body() payload: Record<string, unknown>) {
     return this.service.updateByPayload(payload);
   }
 
   @Put('updateById')
+  @Permissions('write')
   async updateByIdQuery(
     @Query('id', ParseIntPipe) id: number,
     @Body() payload: Record<string, unknown>,
@@ -55,6 +61,7 @@ export class ShortagesController {
   }
 
   @Put('updateById/:id')
+  @Permissions('write')
   async updateByIdPath(
     @Param('id', ParseIntPipe) id: number,
     @Body() payload: Record<string, unknown>,
@@ -63,11 +70,13 @@ export class ShortagesController {
   }
 
   @Delete('deleteById')
+  @Permissions('delete')
   async deleteByIdQuery(@Query('id', ParseIntPipe) id: number) {
     return this.service.deleteById(id);
   }
 
   @Delete('deleteById/:id')
+  @Permissions('delete')
   async deleteByIdPath(@Param('id', ParseIntPipe) id: number) {
     return this.service.deleteById(id);
   }

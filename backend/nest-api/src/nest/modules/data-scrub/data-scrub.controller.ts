@@ -1,7 +1,9 @@
-import { Controller, Get, Inject } from '@nestjs/common';
+import { Controller, Get, Inject, UseGuards } from '@nestjs/common';
+import { RolePermissionGuard } from '../access-control';
 import { DataScrubService } from './data-scrub.service';
 
 @Controller('data-scrub')
+@UseGuards(RolePermissionGuard)
 export class DataScrubController {
   constructor(
     @Inject(DataScrubService)

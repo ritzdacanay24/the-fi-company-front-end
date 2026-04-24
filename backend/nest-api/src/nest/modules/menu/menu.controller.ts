@@ -1,7 +1,9 @@
-import { Body, Controller, Get, Inject, Param, ParseIntPipe, Patch, Query } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Param, ParseIntPipe, Patch, Query, UseGuards } from '@nestjs/common';
+import { Permissions, RolePermissionGuard } from '../access-control';
 import { MenuService } from './menu.service';
 
 @Controller('menu')
+@UseGuards(RolePermissionGuard)
 export class MenuController {
   constructor(
     @Inject(MenuService)
@@ -27,6 +29,7 @@ export class MenuController {
   }
 
   @Patch(':id')
+  @Permissions('manage')
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() body: Record<string, unknown>,

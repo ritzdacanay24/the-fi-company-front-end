@@ -1,8 +1,10 @@
-import { Controller, Get, Post, Put, Delete, Param, Query, Body } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Permissions, RolePermissionGuard } from '../access-control';
 import { EventService } from './event.service';
 import { EventRecord } from './event.repository';
 
 @Controller('event')
+@UseGuards(RolePermissionGuard)
 export class EventController {
   constructor(private readonly eventService: EventService) {}
 
@@ -32,16 +34,19 @@ export class EventController {
   }
 
   @Post()
+  @Permissions('write')
   async create(@Body() payload: Record<string, unknown>): Promise<EventRecord | null> {
     return this.eventService.create(payload);
   }
 
   @Put(':id')
+  @Permissions('write')
   async update(@Param('id') id: number, @Body() payload: Record<string, unknown>): Promise<EventRecord | null> {
     return this.eventService.update(id, payload);
   }
 
   @Delete(':id')
+  @Permissions('delete')
   async delete(@Param('id') id: number): Promise<boolean> {
     return this.eventService.delete(id);
   }

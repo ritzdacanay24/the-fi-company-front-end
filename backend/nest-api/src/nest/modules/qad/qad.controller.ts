@@ -1,7 +1,9 @@
-import { Controller, Get, Inject, Query } from '@nestjs/common';
+import { Controller, Get, Inject, Query, UseGuards } from '@nestjs/common';
+import { RolePermissionGuard } from '../access-control';
 import { QadService } from './qad.service';
 
 @Controller('qad')
+@UseGuards(RolePermissionGuard)
 export class QadController {
   constructor(
     @Inject(QadService)

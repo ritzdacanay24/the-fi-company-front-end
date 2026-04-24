@@ -1,7 +1,9 @@
-import { Body, Controller, Get, ParseIntPipe, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Get, ParseIntPipe, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Permissions, RolePermissionGuard } from '../access-control';
 import { VehicleInspectionService } from './vehicle-inspection.service';
 
 @Controller('vehicle-inspection')
+@UseGuards(RolePermissionGuard)
 export class VehicleInspectionController {
   constructor(private readonly service: VehicleInspectionService) {}
 
@@ -11,11 +13,13 @@ export class VehicleInspectionController {
   }
 
   @Post('create')
+  @Permissions('write')
   async create(@Body() payload: Record<string, any>) {
     return this.service.create(payload);
   }
 
   @Post('createLegacy')
+  @Permissions('write')
   async createLegacy(@Body() payload: Record<string, any>) {
     return this.service.createLegacy(payload);
   }
@@ -33,11 +37,13 @@ export class VehicleInspectionController {
   }
 
   @Post('index')
+  @Permissions('write')
   async indexPost(@Body() payload: Record<string, any>) {
     return this.service.create(payload);
   }
 
   @Put('index')
+  @Permissions('write')
   async indexPut(
     @Query('id') id?: string,
     @Body() payload: Record<string, any> = {},
@@ -65,6 +71,7 @@ export class VehicleInspectionController {
   }
 
   @Put('saveDetailById')
+  @Permissions('write')
   async saveDetailById(
     @Query('id', ParseIntPipe) id: number,
     @Body() payload: Record<string, any> = {},

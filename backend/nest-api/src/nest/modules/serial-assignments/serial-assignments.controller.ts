@@ -9,11 +9,14 @@ import {
   ParseIntPipe,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
+import { Permissions, RolePermissionGuard } from '../access-control';
 import { SerialAssignmentsService } from './serial-assignments.service';
 import { AssignmentsFilterDto, VoidAssignmentDto, DeleteAssignmentDto, RestoreAssignmentDto, BulkVoidDto } from './dto';
 
 @Controller(['serial-assignments', 'serial-assignments/index.php'])
+@UseGuards(RolePermissionGuard)
 export class SerialAssignmentsController {
   constructor(private readonly service: SerialAssignmentsService) {}
 
@@ -79,6 +82,7 @@ export class SerialAssignmentsController {
 
   // POST /serial-assignments/bulk-void
   @Post('bulk-void')
+  @Permissions('write')
   async bulkVoid(@Body() dto: BulkVoidDto) {
     try {
       return await this.service.bulkVoid(dto);
@@ -112,6 +116,7 @@ export class SerialAssignmentsController {
 
   // POST /serial-assignments/:id/void
   @Post(':id/void')
+  @Permissions('write')
   async voidAssignment(@Param('id', ParseIntPipe) id: number, @Body() dto: VoidAssignmentDto) {
     try {
       return await this.service.voidAssignment(id, dto);
@@ -122,6 +127,7 @@ export class SerialAssignmentsController {
 
   // POST /serial-assignments/:id/restore
   @Post(':id/restore')
+  @Permissions('write')
   async restoreAssignment(@Param('id', ParseIntPipe) id: number, @Body() dto: RestoreAssignmentDto) {
     try {
       return await this.service.restoreAssignment(id, dto);
@@ -132,6 +138,7 @@ export class SerialAssignmentsController {
 
   // DELETE /serial-assignments/:id
   @Delete(':id')
+  @Permissions('delete')
   async deleteAssignment(@Param('id', ParseIntPipe) id: number, @Body() dto: DeleteAssignmentDto) {
     try {
       return await this.service.deleteAssignment(id, dto);

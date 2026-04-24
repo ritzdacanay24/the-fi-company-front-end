@@ -6,11 +6,11 @@
       <i class="mdi mdi-dots-vertical"></i>
     </button>
     <div ngbDropdownMenu class="dropdown-menu-end">
-      <button ngbDropdownItem (click)="onEdit()">
+      <button ngbDropdownItem *ngIf="canEditAction" (click)="onEdit()">
         <i class="mdi mdi-pencil me-2"></i>Edit
       </button>
-      <button ngbDropdownItem (click)="onToggle()">
-        <i class="mdi mdi-sync me-2"></i>Enable/Disable
+      <button ngbDropdownItem (click)="onArchive()">
+        <i class="mdi mdi-archive me-2"></i>Archive
       </button>
       <div class="dropdown-divider"></div>
       <button ngbDropdownItem class="text-danger" (click)="onDelete()">
