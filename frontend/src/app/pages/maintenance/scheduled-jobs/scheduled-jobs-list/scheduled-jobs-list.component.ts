@@ -1,93 +1,102 @@
-import { GridApi } from "ag-grid-community";
 import { Component, OnInit } from "@angular/core";
-import { ReactiveFormsModule } from "@angular/forms";
-import { NgSelectModule } from "@ng-select/ng-select";
-import { AgGridModule } from "ag-grid-angular";
-
-import { Router } from "@angular/router";
 import { SharedModule } from "@app/shared/shared.module";
 import {
-  _decompressFromEncodedURIComponent,
-  _compressToEncodedURIComponent,
-} from "src/assets/js/util/jslzString";
-import { EmailNotificationService } from "@app/core/api/email-notification/email-notification.component";
+  ScheduledJobRow,
+  ScheduledJobsService,
+} from "@app/core/api/scheduled-jobs/scheduled-jobs.service";
+import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
+import { EditCronJobModalComponent } from "../edit-cron-job-modal/edit-cron-job-modal.component";
 
 @Component({
   standalone: true,
-  imports: [SharedModule, ReactiveFormsModule, NgSelectModule, AgGridModule],
+  imports: [SharedModule],
   selector: "app-scheduled-jobs-list",
   templateUrl: "./scheduled-jobs-list.component.html",
 })
 export class ScheduledJobsListComponent implements OnInit {
-  constructor(public api: EmailNotificationService, public router: Router) {}
+  constructor(
+    private readonly scheduledJobsApi: ScheduledJobsService,
+    private readonly modalService: NgbModal
+  ) {}
 
-  ngOnInit(): void {}
+  runningJobIds = new Set<string>();
+  jobs: ScheduledJobRow[] = [];
 
-  selectedViewOptions = [
-    {
-      name: "Overdue Orders",
-      value: "https://dashboard.eye-fi.com/tasks/overDueOrders.php",
-    },
-    {
-      name: "Work Order Status Report",
-      value: "https://dashboard.eye-fi.com/tasks/completedProductionOrders.php",
-    },
-    {
-      name: "Graphics Production",
-      selected:
-        "https://dashboard.eye-fi.com/tasks/createGraphicsWorkOrder.class.php",
-    },
-    {
-      name: "Overdue Safety Incident's (Email)",
-      selected:
-        "https://dashboard.eye-fi.com/tasks/overdue_safety_incident.php",
-    },
-    {
-      name: "Overdue CAR's (Email)",
-      selected:
-        "https://dashboard.eye-fi.com/tasks/overdue_car.php",
-    },
-    {
-      name: "Overdue QIR's (Email)",
-      selected:
-        "https://dashboard.eye-fi.com/tasks/overdue_qir.php",
-    },
-    {
-      name: "Overdue Shipping Requests (Email)",
-      selected:
-        "https://dashboard.eye-fi.com/tasks/overdue_shipping_request.php",
-    },
-    {
-      name: "Overdue Shortages (Email)",
-      selected:
-        "https://dashboard.eye-fi.com/tasks/overdue_shortage_request.php",
-    },
-    {
-      name: "Overdue Field Service Work Orders's (Email)",
-      selected:
-        "https://dashboard.eye-fi.com/tasks/overdue_field_service_workorder.php",
-    },
-    {
-      name: "Overdue Field Service Invoices's (Email)",
-      selected:
-        "https://dashboard.eye-fi.com/tasks/overdue_field_service_open_invoice.php",
-    },
-    {
-      name: "Overdue RMA's (Email)",
-      selected:
-        "https://dashboard.eye-fi.com/tasks/overdue_rma.php",
-    },
-  ];
+  async ngOnInit(): Promise<void> {
+    try {
+      const data = await this.scheduledJobsApi.list();
+      if (Array.isArray(data) && data.length) {
+        this.jobs = data;
+      }
+    } catch {
+      this.jobs = [];
+    }
+  }
 
   title = "Scheduled Jobs";
 
-  gridApi: GridApi;
+  get activeCount(): number {
+    return this.jobs.filter((job) => job.active).length;
+  }
 
-  data: any[];
+  isRunning(id: string): boolean {
+    return this.runningJobIds.has(id);
+  }
 
-  id = null;
+  isExternalUrl(url: string): boolean {
+    return /^https?:\/\//i.test(url);
+  }
 
-  runJob(link) {
-    window.open(link, "_blank");
+  async runJob(job: ScheduledJobRow): Promise<void> {
+    if (!job?.id || this.isRunning(job.id)) {
+      return;
+    }
+
+    this.runningJobIds.add(job.id);
+    try {
+      const result = await this.scheduledJobsApi.run(job.id);
+      if (!result.ok) {
+        console.warn(`Scheduled job ${job.id} returned non-success:`, result);
+      }
+    } catch (error) {
+      console.warn(`Scheduled job ${job.id} run failed`, error);
+      if (this.isExternalUrl(job.url)) {
+        window.open(job.url, "_blank");
+      }
+    } finally {
+      this.runningJobIds.delete(job.id);
+    }
+  }
+
+  async openEditModal(job: ScheduledJobRow): Promise<void> {
+    const modalRef = this.modalService.open(EditCronJobModalComponent, {
+      size: "lg",
+      centered: true,
+    });
+
+    modalRef.componentInstance.job = job;
+
+    try {
+      const result = await modalRef.result;
+      await this.updateJob(job.id, result);
+    } catch {
+      // Modal dismissed, do nothing
+    }
+  }
+
+  private async updateJob(
+    id: string,
+    data: { cron: string; active: boolean; note?: string }
+  ): Promise<void> {
+    try {
+      const updated = await this.scheduledJobsApi.update(id, data);
+      const jobIndex = this.jobs.findIndex((j) => j.id === id);
+      if (jobIndex >= 0) {
+        this.jobs[jobIndex] = updated;
+      }
+      console.log(`Job ${id} updated successfully`);
+    } catch (error) {
+      console.error(`Failed to update job ${id}:`, error);
+    }
   }
 }

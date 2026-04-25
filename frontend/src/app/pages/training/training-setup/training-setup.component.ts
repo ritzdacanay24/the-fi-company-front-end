@@ -43,7 +43,7 @@ export class TrainingSetupComponent implements OnInit, OnDestroy {
   availableTemplates: TrainingTemplate[] = [];
   templateCategories: TrainingTemplateCategory[] = [];
   selectedTemplate: TrainingTemplate | null = null;
-  showTemplateSelection = true;
+  showTemplateSelection = false;
   
   // Form state
   showSuccessMessage = false;
@@ -418,31 +418,55 @@ export class TrainingSetupComponent implements OnInit, OnDestroy {
 
   // Form submission
   onSubmit(): void {
-    if (this.trainingForm.valid && this.selectedEmployees.length > 0) {
-      this.saveTrainingSession();
-    } else {
-      this.markFormGroupTouched();
-      
-      // Check for specific validation errors
-      if (this.selectedEmployees.length === 0) {
-        this.showMessage('Please select at least one attendee', 'error');
-      } else if (this.trainingForm.get('date')?.hasError('pastDate')) {
-        this.showMessage('Training session date cannot be in the past', 'error');
-      } else if (this.trainingForm.get('startTime')?.hasError('pastTime')) {
-        this.showMessage('Training session start time cannot be in the past', 'error');
-      } else if (this.trainingForm.get('endTime')?.hasError('pastTime')) {
-        this.showMessage('Training session end time cannot be in the past', 'error');
-      } else if (this.trainingForm.get('endTime')?.hasError('endTimeBeforeStart')) {
-        this.showMessage('Training session end time must be after start time', 'error');
-      } else if (this.trainingForm.get('endTime')?.hasError('minimumDuration')) {
-        this.showMessage('Training session must be at least 15 minutes long', 'error');
-      } else {
-        this.showMessage('Please correct the form errors before submitting', 'error');
-      }
+    if (!this.validateBeforeSave()) {
+      return;
     }
+
+    this.saveTrainingSession();
   }
 
-  private saveTrainingSession(): void {
+  onSubmitAndSaveAsTemplate(): void {
+    if (!this.validateBeforeSave()) {
+      return;
+    }
+
+    const defaultTemplateName = `${this.trainingForm.value.title || 'Training'} Template`;
+    const templateName = window.prompt('Template name', defaultTemplateName);
+
+    if (!templateName || !templateName.trim()) {
+      return;
+    }
+
+    this.saveTrainingSession(templateName.trim());
+  }
+
+  private validateBeforeSave(): boolean {
+    if (this.trainingForm.valid && this.selectedEmployees.length > 0) {
+      return true;
+    }
+
+    this.markFormGroupTouched();
+
+    if (this.selectedEmployees.length === 0) {
+      this.showMessage('Please select at least one attendee', 'error');
+    } else if (this.trainingForm.get('date')?.hasError('pastDate')) {
+      this.showMessage('Training session date cannot be in the past', 'error');
+    } else if (this.trainingForm.get('startTime')?.hasError('pastTime')) {
+      this.showMessage('Training session start time cannot be in the past', 'error');
+    } else if (this.trainingForm.get('endTime')?.hasError('pastTime')) {
+      this.showMessage('Training session end time cannot be in the past', 'error');
+    } else if (this.trainingForm.get('endTime')?.hasError('endTimeBeforeStart')) {
+      this.showMessage('Training session end time must be after start time', 'error');
+    } else if (this.trainingForm.get('endTime')?.hasError('minimumDuration')) {
+      this.showMessage('Training session must be at least 15 minutes long', 'error');
+    } else {
+      this.showMessage('Please correct the form errors before submitting', 'error');
+    }
+
+    return false;
+  }
+
+  private saveTrainingSession(templateNameToCreate?: string): void {
     this.isSaving = true;
     
     const formValue = this.trainingForm.value;
@@ -483,13 +507,17 @@ export class TrainingSetupComponent implements OnInit, OnDestroy {
           // Map the response to proper format
           const session = this.mapTrainingSessionData(rawSession);
           this.createdSession = session;
-          this.showMessage(`Training session "${session.title}" updated successfully!`, 'success');
-          this.isSaving = false;
-          
-          // Navigate back to sessions list
-          setTimeout(() => {
-            this.router.navigate(['/training/manage']);
-          }, 2000);
+          if (templateNameToCreate) {
+            this.createTemplateFromCurrentForm(templateNameToCreate, session, true);
+          } else {
+            this.showMessage(`Training session "${session.title}" updated successfully!`, 'success');
+            this.isSaving = false;
+
+            // Navigate back to sessions list
+            setTimeout(() => {
+              this.router.navigate(['/training/manage']);
+            }, 2000);
+          }
         },
         error: (error) => {
           console.error('Error updating training session:', error);
@@ -504,13 +532,17 @@ export class TrainingSetupComponent implements OnInit, OnDestroy {
           // Map the response to proper format
           const session = this.mapTrainingSessionData(rawSession);
           this.createdSession = session;
-          this.showMessage(`Training session "${session.title}" created successfully!`, 'success');
-          this.isSaving = false;
-          
-          // Optional: Auto-navigate after success
-          setTimeout(() => {
-            this.router.navigate(['/training/live']);
-          }, 2000);
+          if (templateNameToCreate) {
+            this.createTemplateFromCurrentForm(templateNameToCreate, session, false);
+          } else {
+            this.showMessage(`Training session "${session.title}" created successfully!`, 'success');
+            this.isSaving = false;
+
+            // Optional: Auto-navigate after success
+            setTimeout(() => {
+              this.router.navigate(['/training/live']);
+            }, 2000);
+          }
         },
         error: (error) => {
           console.error('Error creating training session:', error);
@@ -519,6 +551,68 @@ export class TrainingSetupComponent implements OnInit, OnDestroy {
         }
       });
     }
+  }
+
+  private createTemplateFromCurrentForm(
+    templateName: string,
+    savedSession: TrainingSession,
+    fromEditMode: boolean,
+  ): void {
+    const formValue = this.trainingForm.value;
+    const durationMinutes = this.calculateDurationMinutes(formValue.startTime, formValue.endTime);
+
+    const templatePayload: TrainingTemplate = {
+      name: templateName,
+      titleTemplate: formValue.title,
+      descriptionTemplate: formValue.description || '',
+      purposeTemplate: formValue.purpose || '',
+      defaultDurationMinutes: durationMinutes,
+      defaultLocation: formValue.location || '',
+      categoryId: this.selectedTemplate?.categoryId || this.templateCategories?.[0]?.id,
+      isActive: true,
+      createdBy: this.getCurrentUserId(),
+      createdDate: new Date().toISOString(),
+    };
+
+    this.templateService.createTemplate(templatePayload).subscribe({
+      next: (template) => {
+        this.showMessage(
+          `Training session "${savedSession.title}" saved and template "${template.name}" created successfully!`,
+          'success',
+        );
+        this.isSaving = false;
+
+        setTimeout(() => {
+          this.router.navigate([fromEditMode ? '/training/manage' : '/training/live']);
+        }, 2000);
+      },
+      error: (error) => {
+        console.error('Error creating template:', error);
+        this.showMessage(
+          `Training session saved, but template creation failed. You can create it later from Templates.`,
+          'error',
+        );
+        this.isSaving = false;
+
+        setTimeout(() => {
+          this.router.navigate([fromEditMode ? '/training/manage' : '/training/live']);
+        }, 2000);
+      },
+    });
+  }
+
+  private calculateDurationMinutes(startTime: string, endTime: string): number {
+    if (!startTime || !endTime) {
+      return 60;
+    }
+
+    const [startHours, startMinutes] = startTime.split(':').map(Number);
+    const [endHours, endMinutes] = endTime.split(':').map(Number);
+    const start = startHours * 60 + startMinutes;
+    const end = endHours * 60 + endMinutes;
+    const diff = end - start;
+
+    return diff > 0 ? diff : 60;
   }
 
   saveAttendeesOnly(): void {

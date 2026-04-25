@@ -1,0 +1,40 @@
+# Eye-Fi dashboard task cron jobs
+# Install with: crontab dashboard-tasks.cron
+# Uses wget to execute task endpoints and discards output in temp.txt
+
+#30 22 * * * /usr/bin/wget -q -O temp.txt "https://dashboard.eye-fi.com/tasks/graphicsDueTodayReport.php?runDaily=1"
+#*/30 * * * * /usr/bin/wget -q -O temp.txt "https://dashboard.eye-fi.com/tasks/dashPerformance.php"
+*/30 * * * 1-5 /usr/bin/wget -q -O temp.txt "https://dashboard.eye-fi.com/tasks/email_dropInWorkOrder.php"
+#0 0 * * * /usr/bin/wget -q -O temp.txt "https://dashboard.eye-fi.com/tasks/cleanDbSessions.php"
+*/5 * * * * /usr/bin/wget -q -O temp.txt "https://dashboard.eye-fi.com/tasks/cleanTokens.php"
+*/6 * * * * /usr/bin/wget -q -O temp.txt "https://dashboard.eye-fi.com/tasks/cleanUsers.php"
+#0 16 * * * 1-5 /usr/bin/wget -q -O temp.txt "https://dashboard.eye-fi.com/tasks/total_shipped_orders.php"
+
+#0 4 * * 1-5 /usr/bin/wget -q -O temp.txt "https://dashboard.eye-fi.com/tasks/shipping_changes.php?runShippingChanges=1"
+0 4 * * 1-5 /usr/bin/wget -q -O temp.txt "https://dashboard.eye-fi.com/tasks/overDueOrders.php"
+#* * * * * /usr/bin/wget > /dev/null "https://dashboard.eye-fi.com/tasks/overDueOrders.php"
+
+#0 9 * * * 1-5 /usr/bin/wget -q -O temp.txt "https://dashboard.eye-fi.com/tasks/fieldServiceOldWorkOrders.php"
+#0 2 * * * /usr/bin/wget -q -O temp.txt "https://dashboard.eye-fi.com/tasks/shippingChanges.php?runOpenShippingRequests=1"
+#0 5 * * * /usr/bin/wget -q -O temp.txt "https://dashboard.eye-fi.com/tasks/shippingChanges.php?runOpenShippingRequests=1"
+#* * * * * /usr/bin/wget > /dev/null "https://dashboard.eye-fi.com/tasks/shippingChanges.php?runOpenShippingRequests=1"
+*/20 * * * * /usr/bin/wget -q -O temp.txt "https://dashboard.eye-fi.com/tasks/createGraphicsWorkOrder.class.php"
+#20 15 * * * /usr/bin/wget -q -O temp.txt "https://dashboard.eye-fi.com/tasks/certificateOfCompliance.php"
+
+0 7 * * * /usr/bin/wget -q -O temp.txt "https://dashboard.eye-fi.com/tasks/VehicleExpirationEmail.php"
+
+0 16 * * 1-5 /usr/bin/wget -q -O temp.txt "https://dashboard.eye-fi.com/tasks/dailyReport.php?insert=1"
+
+0 4 * * 1-5 /usr/bin/wget -q -O temp.txt "https://dashboard.eye-fi.com/tasks/completedProductionOrders.php"
+
+0 14 * * 1-5 /usr/bin/wget -q -O temp.txt "https://dashboard.eye-fi.com/tasks/inspection/emailInspection.php"
+
+0 4 * * 1-5 /usr/bin/wget -q -O temp.txt "https://dashboard.eye-fi.com/tasks/fsJobReport.php"
+
+0 17 * * 1-5 /usr/bin/wget -q -O temp.txt "https://dashboard.eye-fi.com/tasks/fsJobReport.php"
+
+0 6 * * 1-5 /usr/bin/wget -q -O temp.txt "https://dashboard.eye-fi.com/tasks/fieldService/pastDueRequests.php"
+
+0 7 * * 1-5 /usr/bin/wget -q -O temp.txt "https://dashboard.eye-fi.com/tasks/lnwDelivery.php"
+
+0 4 * * 1-5 /usr/bin/wget -q -O temp.txt "https://dashboard.eye-fi.com/tasks/fieldService/fsJobNotice.php"

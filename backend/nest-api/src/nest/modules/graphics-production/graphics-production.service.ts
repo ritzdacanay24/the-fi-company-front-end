@@ -10,6 +10,15 @@ export class GraphicsProductionService {
     private readonly qadOdbcService: QadOdbcService,
   ) {}
 
+  async getDueTodayReport() {
+    const rows = await this.repository.getDueTodayOpenOrders();
+
+    return {
+      totalOrders: rows.length,
+      orders: rows,
+    };
+  }
+
   async getProductionOrders() {
     const [queues, openOrders] = await Promise.all([
       this.repository.getQueues(),

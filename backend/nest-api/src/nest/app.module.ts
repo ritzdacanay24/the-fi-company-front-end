@@ -73,6 +73,7 @@ import { MenuModule } from './modules/menu';
 import { PageAccessModule } from './modules/page-access';
 import { EmailNotificationModule } from './modules/email-notification';
 import { SchedulerModule } from './modules/scheduler';
+import { ScheduledJobsModule } from './modules/scheduled-jobs';
 import { SchedulerEventModule } from './modules/scheduler-event';
 import { CalendarEventModule } from './modules/calendar-event';
 import { EventModule } from './modules/event';
@@ -209,6 +210,7 @@ import { UrlModule } from '../shared/url/url.module';
     PageAccessModule,
     EmailNotificationModule,
     SchedulerModule,
+    ScheduledJobsModule,
     SchedulerEventModule,
     CalendarEventModule,
     EventModule,

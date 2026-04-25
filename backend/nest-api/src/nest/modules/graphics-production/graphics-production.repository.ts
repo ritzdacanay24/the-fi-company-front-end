@@ -9,6 +9,32 @@ export class GraphicsProductionRepository extends BaseRepository<RowDataPacket> 
     super('graphicsSchedule', mysqlService);
   }
 
+  async getDueTodayOpenOrders(): Promise<RowDataPacket[]> {
+    const sql = `
+      SELECT a.id
+        , a.orderNum
+        , a.itemNumber
+        , a.customer
+        , a.qty
+        , a.qtyShipped
+        , a.qty - a.qtyShipped AS openQty
+        , a.dueDate
+        , a.priority
+        , a.status
+        , a.graphicsWorkOrder
+        , a.createdDate
+        , c.name AS queueStatus
+      FROM eyefidb.graphicsSchedule a
+      LEFT JOIN eyefidb.graphicsQueues c ON c.queueStatus = a.status AND c.active = 1
+      WHERE a.active = 1
+        AND a.qty - a.qtyShipped != 0
+        AND DATE(a.dueDate) = DATE(NOW())
+      ORDER BY a.priority ASC, a.createdDate ASC
+    `;
+
+    return this.rawQuery<RowDataPacket>(sql);
+  }
+
   async getQueues(): Promise<RowDataPacket[]> {
     const sql = `
       SELECT a.id

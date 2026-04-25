@@ -63,16 +63,22 @@ export class EmailService {
     };
 
     if (this.isDevelopment) {
+      // In dev: send to Mailpit AND also include your email address to receive in inbox
+      const recipients = Array.isArray(payload.to)
+        ? [...payload.to, this.devEmailRerouteTo]
+        : [payload.to || '', this.devEmailRerouteTo].filter(Boolean);
+
       await this.transporter.sendMail({
         ...payload,
-        to: this.devEmailRerouteTo,
+        to: recipients,
         cc: undefined,
         bcc: undefined,
         headers: {
           ...(typeof payload.headers === 'object' && payload.headers ? payload.headers : {}),
-          'X-Original-To': this.recipientsToText(payload.to),
-          'X-Original-Cc': this.recipientsToText(payload.cc),
-          'X-Original-Bcc': this.recipientsToText(payload.bcc),
+          'X-Original-To': this.recipientsToText(options.to),
+          'X-Original-Cc': this.recipientsToText(options.cc),
+          'X-Original-Bcc': this.recipientsToText(options.bcc),
+          'X-Dev-Mode': `true (Mailpit: http://localhost:8025, Also sent to: ${this.devEmailRerouteTo})`,
         },
       });
       return;

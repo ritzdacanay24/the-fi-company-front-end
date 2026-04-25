@@ -36,7 +36,7 @@
           </div>
           
           <!-- Action Buttons -->
-          <div class="d-flex gap-2" *ngIf="!isEditMode && !showTemplateSelection">
+          <div class="d-flex gap-2" *ngIf="!isEditMode">
             <button type="button" class="btn btn-outline-primary" (click)="showTemplateSelection = true">
               <i class="mdi mdi-file-document-multiple me-2"></i>Use Template
             </button>
@@ -56,76 +56,75 @@
       </div>
 
       <!-- Template Selection (Only for new sessions) -->
-      <div *ngIf="!isLoading && !isEditMode && showTemplateSelection" class="card shadow-sm border-0 mb-4">
-        <div class="card-header bg-light">
-          <div class="d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">
-              <i class="mdi mdi-file-document-multiple me-2 text-primary"></i>
-              Start with Template
-            </h5>
-            <a href="#" class="btn btn-sm btn-outline-primary" (click)="$event.preventDefault(); goToTemplates()">
-              <i class="mdi mdi-plus me-1"></i>Manage Templates
-            </a>
-          </div>
-        </div>
-        <div class="card-body">
-          <p class="text-muted mb-3">Use an existing template to quickly set up your training session with pre-defined content.</p>
-          
-          <div class="row" *ngIf="availableTemplates && availableTemplates.length > 0; else noTemplates">
-            <div class="col-md-6 col-lg-4 mb-3" *ngFor="let template of availableTemplates.slice(0, 3)">
-              <div class="card border template-preview-card h-100" (click)="useTemplate(template)">
-                <div class="card-body p-3">
-                  <div class="d-flex justify-content-between align-items-start mb-2">
-                    <h6 class="card-title mb-1">{{ template.name }}</h6>
-                    <span class="badge rounded-pill" 
-                          [style.background-color]="getCategoryColor(template.category)"
-                          [style.color]="'white'">
-                      {{ template.category }}
-                    </span>
+      <div *ngIf="!isLoading && !isEditMode && showTemplateSelection" class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+          <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-light">
+              <h5 class="modal-title mb-0">
+                <i class="mdi mdi-file-document-multiple me-2 text-primary"></i>
+                Start with Template
+              </h5>
+              <button type="button" class="btn-close" aria-label="Close" (click)="showTemplateSelection = false"></button>
+            </div>
+            <div class="modal-body">
+              <p class="text-muted mb-3">Use an existing template to quickly set up your training session with pre-defined content.</p>
+
+              <div class="row" *ngIf="availableTemplates && availableTemplates.length > 0; else noTemplates">
+                <div class="col-md-6 col-lg-4 mb-3" *ngFor="let template of availableTemplates.slice(0, 6)">
+                  <div class="card border template-preview-card h-100" (click)="useTemplate(template)">
+                    <div class="card-body p-3">
+                      <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h6 class="card-title mb-1">{{ template.name }}</h6>
+                        <span class="badge rounded-pill"
+                              [style.background-color]="getCategoryColor(template.category)"
+                              [style.color]="'white'">
+                          {{ template.category }}
+                        </span>
+                      </div>
+                      <p class="card-text text-muted small mb-2">{{ template.descriptionTemplate }}</p>
+                      <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                          <i class="mdi mdi-clock-outline me-1"></i>{{ formatDuration(template.defaultDurationMinutes) }}
+                        </small>
+                        <button type="button" class="btn btn-sm btn-primary">
+                          <i class="mdi mdi-play me-1"></i>Use
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  <p class="card-text text-muted small mb-2">{{ template.descriptionTemplate }}</p>
-                  <div class="d-flex justify-content-between align-items-center">
-                    <small class="text-muted">
-                      <i class="mdi mdi-clock-outline me-1"></i>{{ formatDuration(template.defaultDurationMinutes) }}
-                    </small>
-                    <button type="button" class="btn btn-sm btn-primary">
-                      <i class="mdi mdi-play me-1"></i>Use
-                    </button>
+                </div>
+
+                <div class="col-12" *ngIf="availableTemplates.length > 6">
+                  <div class="text-center">
+                    <a href="#" class="btn btn-outline-primary" (click)="$event.preventDefault(); goToTemplates()">
+                      <i class="mdi mdi-eye me-2"></i>View All {{ availableTemplates.length }} Templates
+                    </a>
                   </div>
                 </div>
               </div>
+
+              <ng-template #noTemplates>
+                <div class="text-center py-4">
+                  <div class="text-muted mb-3">
+                    <i class="mdi mdi-file-document-plus fs-1"></i>
+                  </div>
+                  <p class="text-muted mb-3">No templates available yet.</p>
+                  <a href="#" class="btn btn-primary" (click)="$event.preventDefault(); goToTemplates()">
+                    <i class="mdi mdi-plus me-2"></i>Create First Template
+                  </a>
+                </div>
+              </ng-template>
             </div>
-            
-            <div class="col-12" *ngIf="availableTemplates.length > 3">
-              <div class="text-center">
-                <a href="#" class="btn btn-outline-primary" (click)="$event.preventDefault(); goToTemplates()">
-                  <i class="mdi mdi-eye me-2"></i>View All {{ availableTemplates.length }} Templates
-                </a>
-              </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-secondary" (click)="startFromScratch()">
+                <i class="mdi mdi-pencil me-2"></i>Start from Scratch
+              </button>
+              <button type="button" class="btn btn-outline-secondary" (click)="showTemplateSelection = false">Close</button>
             </div>
-          </div>
-          
-          <ng-template #noTemplates>
-            <div class="text-center py-4">
-              <div class="text-muted mb-3">
-                <i class="mdi mdi-file-document-plus fs-1"></i>
-              </div>
-              <p class="text-muted mb-3">No templates available yet.</p>
-              <a href="#" class="btn btn-primary" (click)="$event.preventDefault(); goToTemplates()">
-                <i class="mdi mdi-plus me-2"></i>Create First Template
-              </a>
-            </div>
-          </ng-template>
-          
-          <hr class="my-3">
-          
-          <div class="text-center">
-            <button type="button" class="btn btn-outline-secondary" (click)="startFromScratch()">
-              <i class="mdi mdi-pencil me-2"></i>Start from Scratch
-            </button>
           </div>
         </div>
       </div>
+      <div *ngIf="!isLoading && !isEditMode && showTemplateSelection" class="modal-backdrop fade show" (click)="showTemplateSelection = false"></div>
 
       <!-- Main Form -->
       <div *ngIf="!isLoading">
@@ -385,6 +384,13 @@
                 <button type="button" class="btn btn-outline-secondary me-2" [disabled]="isSaving"
                   (click)="goToSessions()">
                   <i class="mdi mdi-close me-1"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-outline-primary me-2"
+                  [disabled]="isSaving || trainingForm.invalid || selectedEmployees.length === 0"
+                  (click)="onSubmitAndSaveAsTemplate()">
+                  <span *ngIf="isSaving" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                  <i *ngIf="!isSaving" class="mdi mdi-content-save-settings-outline me-1"></i>
+                  {{ isSaving ? 'Saving...' : (isEditMode ? 'Update + Save as Template' : 'Create + Save as Template') }}
                 </button>
                 <button type="button" class="btn btn-primary ms-auto"
                   [disabled]="isSaving || trainingForm.invalid || selectedEmployees.length === 0"

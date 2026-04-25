@@ -1,0 +1,84 @@
+<div class="modal-header">
+  <h5 class="modal-title">Edit Cron Job</h5>
+  <button type="button" class="btn-close" aria-label="Close" (click)="onCancel()"></button>
+</div>
+
+<form [formGroup]="form">
+  <div class="modal-body">
+    <div class="mb-3">
+      <label for="jobName" class="form-label">Job Name</label>
+      <input 
+        type="text" 
+        class="form-control" 
+        id="jobName"
+        [value]="job?.name" 
+        disabled>
+      <small class="text-muted" *ngIf="job?.note">{{ job.note }}</small>
+    </div>
+
+    <div class="mb-3">
+      <label for="cron" class="form-label">
+        Cron Expression
+        <span class="badge bg-info ms-2" data-bs-toggle="tooltip" title="Click for cron help">?</span>
+      </label>
+      <input 
+        type="text" 
+        class="form-control"
+        id="cron"
+        formControlName="cron"
+        placeholder="0 9 * * 1-5"
+        [class.is-invalid]="isCronInvalid">
+      <div class="form-text" *ngIf="!isCronInvalid">
+        Format: <code>minute hour day month weekday</code>
+      </div>
+      <div class="invalid-feedback d-block" *ngIf="isCronInvalid">
+        {{ cronErrorMessage }}
+      </div>
+      <div class="alert alert-info mt-2 mb-0 small" role="alert">
+        <strong>Cron Help:</strong>
+        <ul class="mb-0 mt-1">
+          <li><code>0 9 * * 1-5</code> - Weekdays at 9:00 AM</li>
+          <li><code>0 */4 * * *</code> - Every 4 hours</li>
+          <li><code>0 0 * * 0</code> - Every Sunday at midnight</li>
+          <li><code>30 2 15 * *</code> - 15th of month at 2:30 AM</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <div class="form-check form-switch">
+        <input 
+          class="form-check-input" 
+          type="checkbox" 
+          id="active"
+          formControlName="active">
+        <label class="form-check-label" for="active">
+          Enable this job
+        </label>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label for="note" class="form-label">Notes (optional)</label>
+      <textarea 
+        class="form-control" 
+        id="note"
+        formControlName="note"
+        rows="3"
+        placeholder="Add any notes about this job..."></textarea>
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="onCancel()">
+      Cancel
+    </button>
+    <button 
+      type="button" 
+      class="btn btn-primary" 
+      (click)="onSubmit()"
+      [disabled]="form.invalid || isSubmitting">
+      {{ isSubmitting ? 'Saving...' : 'Save Changes' }}
+    </button>
+  </div>
+</form>
