@@ -19,7 +19,8 @@ import { TemporaryLoginComponent } from '../temporary-login/temporary-login.comp
     SharedHeaderComponent,
     TemporaryLoginComponent
   ],
-  templateUrl: './public-form-wrapper.component.html'
+  templateUrl: './public-form-wrapper.component.html',
+  styleUrls: ['./public-form-wrapper.component.scss']
 })
 export class PublicFormWrapperComponent implements OnInit, OnDestroy {
   @Input() pageTitle: string = 'Public Form';
@@ -27,6 +28,11 @@ export class PublicFormWrapperComponent implements OnInit, OnDestroy {
   @Input() pageIcon: string = 'mdi-form-select';
   @Input() formTitle: string = 'Temporary Login';
   @Input() formDescription: string = 'Enter your credentials for temporary access.';
+  @Input() showHeader: boolean = true;
+  @Input() showFooter: boolean = true;
+  @Input() useMenuBackground: boolean = false;
+  @Input() showPageIntro: boolean = true;
+  @Input() showLogoBranding: boolean = false;
 
   @Output() authenticationComplete = new EventEmitter<any>();
   @Output() userLoggedOut = new EventEmitter<void>();

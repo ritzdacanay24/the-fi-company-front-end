@@ -3,15 +3,20 @@
     pageTitle="EyeFi Serial Workflow"
     pageDescription="Manage EyeFi serial number assignments across multiple forms with a guided step-by-step process"
     pageIcon="mdi-timeline-check"
+  [showHeader]="false"
+  [showFooter]="false"
+  [useMenuBackground]="true"
+  [showPageIntro]="true"
+  [showLogoBranding]="true"
     formTitle="Access Required"
     formDescription="Please authenticate to access the EyeFi Serial Workflow. You can login using your username with password, or simply scan your employee card number."
     (authenticationComplete)="onAuthenticationComplete($event)"
     (userLoggedOut)="onUserLoggedOut()">
 
-  <!-- Debug Button (Top Right) -->
-  <div *ngIf="isAuthenticated" class="position-fixed" style="top: 80px; right: 20px; z-index: 1000;">
-    <button class="btn btn-outline-secondary btn-sm" (click)="openSequenceDebugModal()" title="Debug Serial Sequences">
-      <i class="mdi mdi-bug"></i> Debug Sequences
+  <div *ngIf="isAuthenticated" class="position-fixed" style="top: 24px; right: 24px; z-index: 1100;">
+    <button class="btn btn-outline-light btn-sm shadow-sm" (click)="logout()" title="Log out">
+      <i class="mdi mdi-logout me-1"></i>
+      Log out
     </button>
   </div>
 

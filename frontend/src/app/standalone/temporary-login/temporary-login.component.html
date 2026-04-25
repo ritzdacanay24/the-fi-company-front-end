@@ -1,6 +1,6 @@
 <!-- Authentication Required -->
 <div *ngIf="!isAuthenticated">
-  <div class="card border-0 shadow-lg">
+  <div class="card border-0">
     <div class="card-header border-bottom-0 pb-0">
       <h4 class="card-title fw-bold w-100 text-center">
         <i class="mdi mdi-login me-2"></i>
@@ -53,7 +53,7 @@
         <div class="mb-3" *ngIf="loginMethod === 'username'">
           <label class="form-label fw-semibold">Username</label>
           <div class="input-group">
-            <input type="text" class="form-control form-control-lg" name="username" ngModel required
+            <input type="text" class="form-control" name="username" ngModel required
               placeholder="first.lastname" #usernameInput>
             <span class="input-group-text">&#64;the-fi-company.com</span>
           </div>
@@ -70,7 +70,7 @@
             <span class="input-group-text">
               <i class="mdi mdi-credit-card"></i>
             </span>
-            <input type="password" class="form-control form-control-lg" name="cardNumber" ngModel required
+            <input type="password" class="form-control" name="cardNumber" ngModel required
               placeholder="Scan or enter your employee card number" maxlength="20" autocomplete="off"
               (keydown.enter)="onCardNumberEnter($any($event), loginForm)" #cardNumberInput>
           </div>
@@ -84,7 +84,7 @@
         <!-- Password field only for username login -->
         <div class="mb-4" *ngIf="loginMethod === 'username'">
           <label class="form-label fw-semibold">Password</label>
-          <input type="password" class="form-control form-control-lg" name="password" ngModel required
+          <input type="password" class="form-control" name="password" ngModel required
             placeholder="Enter your password">
         </div>
 

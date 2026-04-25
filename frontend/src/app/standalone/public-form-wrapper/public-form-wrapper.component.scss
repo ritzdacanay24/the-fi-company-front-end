@@ -1,0 +1,47 @@
+:host {
+  display: block;
+}
+
+.public-form-wrapper.menu-theme {
+  position: relative;
+  background-color: #d5dbe4;
+}
+
+.public-form-wrapper.menu-theme .auth-one-bg-position {
+  z-index: 0;
+}
+
+.public-form-wrapper.menu-theme .menu-bg {
+  background-image: none;
+  background-color: #1a3a6f;
+  background: linear-gradient(120deg, #173867 0%, #1a3a6f 52%, #2a62ad 100%);
+}
+
+.public-form-wrapper.menu-theme .menu-bg .bg-overlay {
+  background: linear-gradient(135deg, rgba(14, 38, 75, 0.96) 0%, rgba(26, 58, 111, 0.93) 52%, rgba(33, 71, 133, 0.86) 100%);
+  opacity: 0.58;
+}
+
+.public-form-wrapper.menu-theme .shape > svg {
+  fill: #d5dbe4;
+}
+
+.public-form-wrapper.menu-theme .form-content {
+  position: relative;
+  z-index: 2;
+  min-height: 100vh;
+}
+
+.public-form-wrapper.menu-theme .form-content > .container {
+  padding-top: 1.5rem !important;
+  padding-bottom: 1.5rem !important;
+}
+
+.public-form-wrapper.menu-theme .menu-hero-title {
+  color: #f4f8ff;
+  font-weight: 700;
+}
+
+.public-form-wrapper.menu-theme .menu-hero-subtitle {
+  color: #dbe8fb;
+}

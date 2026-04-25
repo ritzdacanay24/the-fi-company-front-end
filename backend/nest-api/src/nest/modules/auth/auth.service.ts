@@ -23,7 +23,8 @@ export interface LoginRequest {
 }
 
 export interface CardLoginRequest {
-  card_number: string | number;
+  card_number?: string | number;
+  cardNumber?: string | number;
 }
 
 export interface LoginResponse {
@@ -35,6 +36,7 @@ export interface LoginResponse {
   user: {
     id: number;
     email: string;
+    card_number?: string;
     first?: string;
     last?: string;
     admin?: boolean;
@@ -142,6 +144,7 @@ export class AuthService {
       user: {
         id: user.id,
         email: user.email,
+        card_number: user.card_number != null ? String(user.card_number) : undefined,
         first: user.first,
         last: user.last,
         admin: user.admin === 1,
@@ -169,7 +172,7 @@ export class AuthService {
 
     // Find user by email
     const users = await this.mysqlService.query<UserRow[]>(
-      `SELECT id, email, first, last, pass, active, admin, employeeType 
+      `SELECT id, email, first, last, pass, card_number, active, admin, employeeType 
        FROM db.users 
        WHERE LOWER(TRIM(email)) = LOWER(TRIM(?)) AND active = 1 
        LIMIT 1`,
@@ -196,7 +199,7 @@ export class AuthService {
   }
 
   async loginByCard(payload: CardLoginRequest): Promise<LoginResponse> {
-    const cardNumber = String(payload?.card_number || '').trim();
+    const cardNumber = String(payload?.card_number ?? payload?.cardNumber ?? '').trim();
     if (!cardNumber) {
       throw new UnauthorizedException('Card number is required');
     }

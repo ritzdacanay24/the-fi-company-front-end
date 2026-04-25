@@ -1,6 +1,15 @@
-<div class="public-form-wrapper d-flex flex-column min-vh-100">
+<div class="public-form-wrapper d-flex flex-column min-vh-100" [class.menu-theme]="useMenuBackground">
+    <div *ngIf="useMenuBackground" class="auth-one-bg-position auth-one-bg menu-bg">
+        <div class="bg-overlay"></div>
+        <div class="shape">
+            <svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1440 120">
+                <path d="M 0,36 C 144,53.6 432,123.2 720,124 C 1008,124.8 1296,56.8 1440,40L1440 140L0 140z"></path>
+            </svg>
+        </div>
+    </div>
+
     <!-- Shared Header -->
-    <app-shared-header [pageTitle]="pageTitle" [pageDescription]="pageDescription" [pageIcon]="pageIcon"
+    <app-shared-header *ngIf="showHeader" [pageTitle]="pageTitle" [pageDescription]="pageDescription" [pageIcon]="pageIcon"
         [isAuthenticated]="isAuthenticated" [currentUser]="currentUser" [hasValidUserImage]="hasValidUserImage"
         [sessionTimeRemaining]="getTimeRemainingFormatted()"
         [inactivityTimeRemaining]="getInactivityTimeRemainingFormatted()"
@@ -9,16 +18,19 @@
     </app-shared-header>
 
     <!-- Main Content -->
-    <div class="form-content flex-grow-1">
-        <div class="container py-5">
+    <div class="form-content flex-grow-1" [class.menu-content]="useMenuBackground" [class.position-relative]="useMenuBackground">
+        <div class="container position-relative" [ngClass]="useMenuBackground ? 'p-5 menu-content' : 'py-5'">
 
 
-            <div class=" border-bottom" style="margin-top: 56px;">
+            <div *ngIf="showPageIntro" [class.border-bottom]="!useMenuBackground" [style.margin-top.px]="showHeader ? 56 : 0">
                 <div class="container py-4">
                     <!-- Header Section -->
                     <div class="text-center">
-                        <h2 class="mb-2 text-primary">{{ pageTitle }}</h2>
-                        <p class="text-muted mb-0 lead">{{ pageDescription }}</p>
+                        <div *ngIf="showLogoBranding" class="mb-3">
+                            <img [src]="'assets/images/the-fi-cropped.png'" class="rounded" style="width: 200px; margin-bottom: 8px;" alt="The Fi Company logo" />
+                        </div>
+                        <h2 class="mb-2" [ngClass]="useMenuBackground ? 'menu-hero-title' : 'text-primary'">{{ pageTitle }}</h2>
+                        <p class="mb-0 lead" [ngClass]="useMenuBackground ? 'menu-hero-subtitle' : 'text-muted'">{{ pageDescription }}</p>
                     </div>
                 </div>
             </div>
@@ -42,7 +54,7 @@
     </div>
 
     <!-- Footer -->
-    <footer class="bg-dark text-white py-4 mt-auto">
+    <footer *ngIf="showFooter" class="bg-dark text-white py-4 mt-auto">
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-md-6">
