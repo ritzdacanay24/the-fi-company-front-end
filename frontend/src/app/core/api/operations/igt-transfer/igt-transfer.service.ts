@@ -18,6 +18,9 @@ export class IgtTransferService extends DataService<any> {
   getList = async (selectedViewType: string) =>
     await firstValueFrom(this.http.get<any[]>(`${igtTransferApiV2Url}/getList?selectedViewType=${selectedViewType}`));
 
+  override find = async (params: { igt_transfer_ID: number | string }) =>
+    await firstValueFrom(this.http.get<any[]>(`${igtTransferApiV2Url}/find?igt_transfer_ID=${params.igt_transfer_ID}`));
+
   getHeader = async (id) =>
     await firstValueFrom(this.http.get<any[]>(`${igtTransferApiV2Url}/getHeader?id=${id}`));
 

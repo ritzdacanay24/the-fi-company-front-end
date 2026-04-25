@@ -26,6 +26,11 @@ export class IgtTransferController {
     });
   }
 
+  @Get('find')
+  async find(@Query('igt_transfer_ID') igtTransferIdRaw?: string) {
+    return this.igtTransferService.find(igtTransferIdRaw);
+  }
+
   @Get('getHeader')
   async getHeader(@Query('id') idRaw?: string) {
     return this.igtTransferService.getHeader(idRaw);

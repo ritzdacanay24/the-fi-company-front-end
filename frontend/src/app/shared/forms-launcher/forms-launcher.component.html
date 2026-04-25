@@ -1,0 +1,30 @@
+<div class="header-item d-flex align-items-center" ngbDropdown #formsDropdown="ngbDropdown" placement="bottom-start">
+
+  <button type="button"
+    class="btn d-flex align-items-center gap-1 px-2 border-0"
+    style="background: transparent;"
+    ngbDropdownToggle>
+    <i class="mdi mdi-pencil-box-multiple fs-18"></i>
+    <span class="fs-13">EyeFi Workflow</span>
+  </button>
+
+  <div class="dropdown-menu p-3" ngbDropdownMenu style="min-width: 320px;">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <h6 class="mb-0 fw-semibold">Quick Forms</h6>
+      <small class="text-muted">Click to create</small>
+    </div>
+
+    <div class="row g-2">
+      <div class="col-4" *ngFor="let form of forms">
+        <button type="button"
+          class="btn btn-light w-100 p-2 d-flex flex-column align-items-center justify-content-center gap-1 border rounded"
+          style="height: 72px;"
+          (click)="navigate(form.route); formsDropdown.close()">
+          <i [class]="form.icon + ' fs-22 ' + form.color"></i>
+          <span class="text-center lh-sm" style="font-size: 0.7rem;">{{form.label}}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>

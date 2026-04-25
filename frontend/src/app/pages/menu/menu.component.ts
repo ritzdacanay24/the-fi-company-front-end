@@ -22,43 +22,38 @@ export class MenuComponent implements OnInit {
 
   data = [
     {
-      name: "Las Vegas",
-      children: [
-        { name: "Operations Dashboard", link: "/operations" },
-        { name: "Field Service Dashboard", link: "/field-service" },
-        { name: "Quality Dashboard", link: "/quality" },
-        // { name: "Inspection Checklist", link: "/inspection-checklist" },
-        // { name: "Unique Label Generator (Standalone)", link: "/standalone/unique-label-generator" },
-        // { name: "Training Management", link: "/training-management" },
-        // { name: "Install Quality Inspection App", link: "/checklist-app" },
-        {
-          name: "Shipping Request Form",
-          link: "/operations/forms/shipping-request/create",
-        },
-        { name: "Field Service Request Form", link: "/request" },
-        {
-          name: "Quality Incident Request Form",
-          link: "/quality-incident-request",
-        },
-        {
-          name: "Forms",
-          link: "/forms",
-        },
-        {
-          name: "Safety Incident Form",
-          link: "/operations/forms/safety-incident/create",
-        },
-        {
-          name: "FS App",
-          link: "https://dashboard.eye-fi.com/dist/fsm-mobile/assignments",
-        },
-        { name: "MRO", link: "https://mro.swstms.com/users/sign_in" },
-        { name: "Org Chart", link: "/operations/org-chart/org-chart-view" },
-      ],
+      section: 'Dashboards',
+      items: [
+        { name: 'Dashboard',           link: '/operations',    icon: 'las la-tachometer-alt', color: 'text-primary'   },
+        { name: 'Field Service',        link: '/field-service', icon: 'las la-tools',          color: 'text-success'   },
+      ]
     },
     {
-      name: "TJ",
-      children: [{ name: "SouthFi", link: "https://portal.southfi-apps.com/" }],
+      section: 'Forms',
+      items: [
+        { name: 'EyeFi Serial Workflow',   link: '/standalone/eyefi-workflow',                    icon: 'las la-barcode',          color: 'text-primary'   },
+        { name: 'Shipping Request',        link: '/operations/forms/shipping-request/create',     icon: 'las la-shipping-fast',    color: 'text-info'      },
+        { name: 'Safety Incident',         link: '/operations/forms/safety-incident/create',      icon: 'las la-shield-alt',       color: 'text-danger'    },
+        { name: 'Field Service Request',   link: '/request',                                      icon: 'las la-clipboard',        color: 'text-success'   },
+        { name: 'Quality Incident (QIR)',  link: '/quality-incident-request',                     icon: 'las la-exclamation-triangle', color: 'text-warning'},
+        { name: 'IGT Transfer',            link: '/operations/forms/igt-transfer/create',         icon: 'las la-exchange-alt',     color: 'text-info'      },
+        { name: 'Parts Order',             link: '/operations/parts-order/create',                icon: 'las la-box',              color: 'text-success'   },
+        { name: 'Material Request',        link: '/operations/material-request/create',           icon: 'las la-clipboard-list',   color: 'text-primary'   },
+        { name: 'RFQ',                     link: '/operations/forms/rfq/create',                  icon: 'las la-file-alt',         color: 'text-secondary' },
+        { name: 'RMA',                     link: '/quality/rma/create',                           icon: 'las la-undo-alt',         color: 'text-warning'   },
+        { name: 'Placard',                 link: '/operations/forms/placard/create',              icon: 'las la-tag',              color: 'text-dark'      },
+        { name: 'Forklift Inspection',     link: '/operations/forms/forklift-inspection/create',  icon: 'las la-truck-loading',    color: 'text-warning'   },
+        { name: 'Vehicle Inspection',      link: '/operations/forms/vehicle-inspection/create',   icon: 'las la-car',              color: 'text-secondary' },
+        { name: 'Training',                link: '/training/setup',                               icon: 'las la-graduation-cap',   color: 'text-primary'   },
+      ]
+    },
+    {
+      section: 'Apps & Tools',
+      items: [
+        { name: 'FS App',    link: 'https://dashboard.eye-fi.com/dist/fsm-mobile/assignments', icon: 'las la-mobile-alt', color: 'text-primary'  },
+        { name: 'MRO',       link: 'https://mro.swstms.com/users/sign_in',                    icon: 'las la-wrench',     color: 'text-secondary'},
+        { name: 'Labels',    link: '/operations/labels/list',                                  icon: 'las la-tags',       color: 'text-info'     },
+      ]
     },
   ];
 

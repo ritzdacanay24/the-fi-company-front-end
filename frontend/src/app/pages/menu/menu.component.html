@@ -10,30 +10,34 @@
 
 <div class="container p-5 position-relative menu-content">
   <div class="row justify-content-center">
-    <div class="col-sm-12 col-lg-8">
-      <div class="text-center">
+    <div class="col-sm-12 col-lg-10">
+      <div class="text-center mb-4">
         <img [src]="'assets/images/the-fi-cropped.png'" class="rounded"
-          style="width:200px;text-align: center;margin-bottom:10px;text-align: center;" />
+          style="width:200px;margin-bottom:8px;" />
+        <p class="text-white-50 mb-0">Operations Portal</p>
       </div>
-      <div class="card card-unset mt-3">
+
+      <div class="card card-unset">
         <div class="card-body">
-          <div class="row justify-content-center">
-            <div class="col-sm-6 col-lg-6" *ngFor="let row of data">
-              <h4 class="mb-3">{{row.name}}</h4>
-              <ul class="list-group list-group-flush">
-                <li class="list-group-item pointer" *ngFor="let item of row.children" (click)="isLink(item)">
-                  <a class="link-primary">{{item.name}}</a>
-                </li>
-              </ul>
+
+          <ng-container *ngFor="let section of data; let last = last">
+            <p class="text-muted small fw-semibold text-uppercase mb-2 mt-3">{{section.section}}</p>
+            <div class="row g-2 mb-2">
+              <div class="col-6 col-sm-4 col-md-3" *ngFor="let item of section.items">
+                <button type="button" class="btn btn-light border w-100 p-2 d-flex align-items-center gap-2"
+                  (click)="isLink(item)">
+                  <i [class]="item.icon + ' fs-18 ' + item.color"></i>
+                  <span class="text-start small lh-sm">{{item.name}}</span>
+                </button>
+              </div>
             </div>
-          </div>
+            <hr *ngIf="!last" class="my-2">
+          </ng-container>
+
         </div>
       </div>
-      <p class="my-1">
-        <a href="https://the-fi-company.atlassian.net/servicedesk/customer/portal/4/group/10/create/33" target="_blank">
-          <i class="mdi mdi-help-box fs-22"></i> Help Desk
-        </a>
-      </p>
+
+
     </div>
   </div>
 </div>

@@ -78,8 +78,6 @@ export class QirListComponent implements OnInit {
         onView: (data: any) => this.onView(data.id),
         onEdit: (data: any) => this.onEdit(data.id),
       },
-      maxWidth: 150,
-      minWidth: 150,
     },
     // --- Identifiers ---
     { field: "id",  headerName: "ID",    filter: "agMultiColumnFilter", hide: true },

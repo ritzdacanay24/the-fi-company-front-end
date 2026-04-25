@@ -109,6 +109,22 @@ export class IgtTransferService {
     return this.mysqlService.query<IgtTransferRow[]>(sql, values);
   }
 
+  async find(igtTransferIdRaw?: string): Promise<IgtTransferRow[]> {
+    const id = Number(igtTransferIdRaw);
+    if (!Number.isFinite(id) || id <= 0) {
+      return [];
+    }
+
+    const sql = `
+      select *
+      from igt_transfer_details
+      where igt_transfer_ID = ?
+      order by id asc
+    `;
+
+    return this.mysqlService.query<IgtTransferRow[]>(sql, [id]);
+  }
+
   async getHeader(idRaw?: string): Promise<IgtTransferRow | null> {
     const id = Number(idRaw);
     if (!Number.isFinite(id) || id <= 0) {
