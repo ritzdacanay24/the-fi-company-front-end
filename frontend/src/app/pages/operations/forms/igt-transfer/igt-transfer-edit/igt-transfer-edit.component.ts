@@ -73,9 +73,26 @@ export class IgtTransferEditComponent {
               size: landscape;
               padding: 5 !important;
             }
+            .igt-header {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              margin-bottom: 20px;
+              border-bottom: 2px solid #ccc;
+              padding-bottom: 15px;
+            }
+            .igt-header img {
+              max-height: 80px;
+              width: auto;
+            }
             </style>
           </head>
-          <body onload="window.print();window.close()">${printContents}</body>
+          <body onload="window.print();window.close()">
+            <div class="igt-header">
+              <img src="assets/app/igt.png" alt="IGT Logo">
+            </div>
+            ${printContents}
+          </body>
         </html>`);
 
       popupWin.document.close();
