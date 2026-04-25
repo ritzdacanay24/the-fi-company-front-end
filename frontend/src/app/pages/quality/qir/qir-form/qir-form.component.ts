@@ -12,7 +12,6 @@ import { NgSelectModule } from "@ng-select/ng-select";
 import { JobSearchComponent } from "@app/shared/components/job-search/job-search.component";
 import { QirSettingsService } from "@app/core/api/quality/qir-settings.service";
 import { IQirForm } from "./qir-form-type";
-import { QadCustomerNameSearchComponent } from "@app/shared/components/qad-customer-name-search/qad-customer-name-search.component";
 import { QadPartSearchComponent } from "@app/shared/components/qad-part-search/qad-part-search.component";
 import { QadCustomerPartSearchComponent } from "@app/shared/components/qad-customer-part-search/qad-customer-part-search.component";
 import { ControlsOf } from "src/assets/js/util/_formGroup";
@@ -25,7 +24,6 @@ import { QuillModule } from "ngx-quill";
     ReactiveFormsModule,
     NgSelectModule,
     JobSearchComponent,
-    QadCustomerNameSearchComponent,
     QadPartSearchComponent,
     QadCustomerPartSearchComponent,
     QuillModule,
@@ -113,6 +111,13 @@ export class QirFormComponent {
       }
       ObjMap[makeKey].push(element);
     });
+
+    Object.keys(ObjMap).forEach((key) => {
+      ObjMap[key].sort((a: any, b: any) => {
+        return String(a?.name ?? '').localeCompare(String(b?.name ?? ''));
+      });
+    });
+
     this.formData = ObjMap;
   }
 
@@ -183,10 +188,6 @@ export class QirFormComponent {
     return "";
   }
 
-  getCustomerName($event) {
-    this.form.patchValue({ customerName: $event.cm_addr });
-  }
-
   setQadPartNumber($event) {
     this.form.patchValue({ eyefiPartNumber: $event.pt_part });
   }
@@ -194,4 +195,5 @@ export class QirFormComponent {
   getCustomerPartNumber($event) {
     this.form.patchValue({ CustomerPartNumber: $event.cp_cust_part });
   }
+
 }

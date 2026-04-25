@@ -1,0 +1,10 @@
+:host ::ng-deep .qir-auto-height-editor .ql-container {
+	height: auto;
+	min-height: 220px;
+}
+
+:host ::ng-deep .qir-auto-height-editor .ql-editor {
+	min-height: 180px;
+	height: auto;
+	overflow-y: hidden;
+}

@@ -9,13 +9,13 @@ import {
 } from "@angular/forms";
 import { SharedModule } from "@app/shared/shared.module";
 import { NgSelectModule } from "@ng-select/ng-select";
-import { JobSearchComponent } from "@app/shared/components/job-search/job-search.component";
 import { QirSettingsService } from "@app/core/api/quality/qir-settings.service";
 import { ControlsOf } from "src/assets/js/util/_formGroup";
 import { IQirForm } from "../qir-form/qir-form-type";
 import { AddressSearchComponent } from "@app/shared/components/address-search/address-search.component";
 import { QuillModule } from "ngx-quill";
 import { validateEmail } from "src/assets/js/util/validateEmail";
+import { NgbTooltipModule } from "@ng-bootstrap/ng-bootstrap";
 import { AddTagFn } from "@ng-select/ng-select/lib/ng-select.component";
 
 @Component({
@@ -24,9 +24,9 @@ import { AddTagFn } from "@ng-select/ng-select/lib/ng-select.component";
     SharedModule,
     ReactiveFormsModule,
     NgSelectModule,
-    JobSearchComponent,
     AddressSearchComponent,
     QuillModule,
+    NgbTooltipModule,
   ],
   selector: "app-qir-public-form",
   templateUrl: "./qir-public-form.component.html",

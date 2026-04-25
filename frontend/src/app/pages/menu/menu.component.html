@@ -1,11 +1,21 @@
-<div class="container p-5">
+<div class="auth-one-bg-position auth-one-bg menu-bg">
+  <div class="bg-overlay"></div>
+  <div class="shape">
+    <svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink"
+      viewBox="0 0 1440 120">
+      <path d="M 0,36 C 144,53.6 432,123.2 720,124 C 1008,124.8 1296,56.8 1440,40L1440 140L0 140z"></path>
+    </svg>
+  </div>
+</div>
+
+<div class="container p-5 position-relative menu-content">
   <div class="row justify-content-center">
     <div class="col-sm-12 col-lg-8">
       <div class="text-center">
-        <img [src]="'assets/images/fi-color.png'" class="rounded"
+        <img [src]="'assets/images/the-fi-cropped.png'" class="rounded"
           style="width:200px;text-align: center;margin-bottom:10px;text-align: center;" />
       </div>
-      <div class="card card-unset">
+      <div class="card card-unset mt-3">
         <div class="card-body">
           <div class="row justify-content-center">
             <div class="col-sm-6 col-lg-6" *ngFor="let row of data">

@@ -1,0 +1,144 @@
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+
+      <!-- Card Header -->
+      <div class="card-header d-flex align-items-center gap-2 flex-wrap">
+        <ng-select
+          [dropdownPosition]="'bottom'"
+          [searchable]="false"
+          bindLabel="name"
+          bindValue="name"
+          [clearable]="false"
+          [items]="selectedViewOptions"
+          [(ngModel)]="selectedViewType"
+          (change)="getData()"
+          style="width: 130px"
+          [appendTo]="'body'">
+        </ng-select>
+
+        <h4 class="card-title mb-0 me-auto">{{ title }}</h4>
+
+        <button class="btn btn-primary btn-sm" (click)="openModal()">
+          <i class="mdi mdi-plus me-1"></i> Add Option
+        </button>
+      </div>
+
+      <!-- Category Tabs -->
+      <div class="card-body border-bottom pb-0 pt-0">
+        <ul class="nav nav-pills flex-wrap gap-1">
+          <li class="nav-item">
+            <button
+              class="nav-link btn btn-sm"
+              [class.active]="selectedCategory === null"
+              (click)="selectCategory(null)">
+              All
+            </button>
+          </li>
+          <li class="nav-item" *ngFor="let cat of categoryTabs">
+            <button
+              class="nav-link btn btn-sm"
+              [class.active]="selectedCategory === cat.slug"
+              (click)="selectCategory(cat.slug)">
+              {{ cat.label }}
+            </button>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Grid -->
+      <div class="card-body p-0">
+        <ag-grid-angular
+          class="ag-theme-quartz no-border"
+          style="height: calc(100vh - 230px);"
+          [gridOptions]="gridOptions"
+          [rowData]="filteredData"
+          [columnDefs]="columnDefs">
+        </ag-grid-angular>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Create / Edit Modal -->
+<ng-template #optionModal let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title">{{ modalTitle }}</h5>
+    <button type="button" class="btn-close" (click)="modal.dismiss()"></button>
+  </div>
+
+  <div class="modal-body">
+    <form [formGroup]="form" autocomplete="off">
+
+      <div class="mb-3">
+        <label class="form-label">Category <span class="text-danger">*</span></label>
+        <select class="form-select" formControlName="category_id"
+          [ngClass]="{ 'is-invalid': submitted && f['category_id'].errors }">
+          <option [ngValue]="null" disabled>-- Select --</option>
+          <option *ngFor="let c of categories" [ngValue]="c.id">{{ c.label }}</option>
+        </select>
+        <div class="invalid-feedback">Category is required.</div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Name <span class="text-danger">*</span></label>
+        <input class="form-control" type="text" formControlName="name"
+          [ngClass]="{ 'is-invalid': submitted && f['name'].errors }" />
+        <div class="invalid-feedback">Name is required.</div>
+      </div>
+
+      <div class="mb-3" *ngIf="selectedCategorySlug === 'customerName'">
+        <label class="form-label">Code</label>
+        <input class="form-control" type="text" formControlName="code" />
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Description</label>
+        <textarea class="form-control" formControlName="description" rows="3"></textarea>
+      </div>
+
+      <div class="row mb-3">
+        <div class="col-sm-4">
+          <label class="form-label">Sort Order</label>
+          <input class="form-control" type="number" formControlName="sort_order" min="0" />
+        </div>
+      </div>
+
+      <div class="mb-2">
+        <div class="form-check form-switch form-switch-md">
+          <input class="form-check-input" type="checkbox" id="show_in_public"
+            [checked]="form.value.show_in_public === 1"
+            (change)="form.patchValue({ show_in_public: $any($event.target).checked ? 1 : 0 })">
+          <label class="form-check-label" for="show_in_public">Show on Public Form</label>
+        </div>
+      </div>
+
+      <div class="mb-2">
+        <div class="form-check form-switch form-switch-md">
+          <input class="form-check-input" type="checkbox" id="active"
+            [checked]="form.value.active === 1"
+            (change)="form.patchValue({ active: $any($event.target).checked ? 1 : 0 })">
+          <label class="form-check-label" for="active">Active</label>
+        </div>
+      </div>
+
+    </form>
+  </div>
+
+  <div class="modal-footer d-flex justify-content-between">
+    <div class="d-flex gap-2">
+      <button class="btn btn-light" [disabled]="isSaving" (click)="modal.dismiss()">Cancel</button>
+      <button *ngIf="editingId && editingActive === 1" class="btn btn-outline-warning" [disabled]="isSaving" (click)="onToggleActive()">
+        <i class="mdi mdi-eye-off-outline me-1"></i> Deactivate
+      </button>
+      <button *ngIf="editingId && editingActive === 0" class="btn btn-outline-success" [disabled]="isSaving" (click)="onToggleActive()">
+        <i class="mdi mdi-eye-outline me-1"></i> Reactivate
+      </button>
+    </div>
+    <button class="btn btn-primary" [disabled]="isSaving" (click)="onSave()">
+      <span *ngIf="isSaving" class="spinner-border spinner-border-sm me-1"></span>
+      {{ editingId ? 'Save Changes' : 'Create' }}
+    </button>
+  </div>
+</ng-template>

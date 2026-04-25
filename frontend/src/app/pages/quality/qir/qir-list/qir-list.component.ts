@@ -66,6 +66,7 @@ export class QirListComponent implements OnInit {
   }
 
   columnDefs: ColDef[] = [
+    // --- Actions ---
     {
       field: "actions",
       headerName: "Actions",
@@ -80,96 +81,38 @@ export class QirListComponent implements OnInit {
       maxWidth: 150,
       minWidth: 150,
     },
-    { field: "id", headerName: "ID", filter: "agMultiColumnFilter", hide: true },
-    { field: "status", headerName: "Status", filter: "agMultiColumnFilter" },
-    {
-      field: "qir_response_id",
-      headerName: "QIR Reponse Found",
-      filter: "agMultiColumnFilter",
-    },
-    {
-      field: "CustomerPartNumber",
-      headerName: "Customer Part Number",
-      filter: "agTextColumnFilter",
-    },
-    {
-      field: "componentType",
-      headerName: "Component Type",
-      filter: "agTextColumnFilter",
-    },
-    {
-      field: "createdBy",
-      headerName: "Created By",
-      filter: "agTextColumnFilter",
-      hide: true,
-    },
-    {
-      field: "createdDate",
-      headerName: "Created Date",
-      filter: "agTextColumnFilter",
-    },
-    {
-      field: "customerName",
-      headerName: "Customer Name",
-      filter: "agTextColumnFilter",
-    },
-    {
-      field: "customerReportedDate",
-      headerName: "Customer Reported Date",
-      filter: "agTextColumnFilter",
-    },
-    {
-      field: "eyefiPartNumber",
-      headerName: "Eyefi Part Number",
-      filter: "agTextColumnFilter",
-    },
-    {
-      field: "eyefiSerialNumber",
-      headerName: "Eyefi Serial Number",
-      filter: "agTextColumnFilter",
-    },
-    {
-      field: "failureType",
-      headerName: "Failure Type",
-      filter: "agTextColumnFilter",
-    },
-    {
-      field: "platformType",
-      headerName: "Platform Type",
-      filter: "agTextColumnFilter",
-    },
-    { field: "ncr_id", headerName: "CAR ID", filter: "agTextColumnFilter" },
-    { field: "priority", headerName: "Priority", filter: "agTextColumnFilter" },
-    {
-      field: "purchaseOrder",
-      headerName: "Purchase Order",
-      filter: "agTextColumnFilter",
-    },
-    { field: "qir", headerName: "QIR Number", filter: "agTextColumnFilter" },
-    {
-      field: "qtyAffected",
-      headerName: "Qty Affected",
-      filter: "agTextColumnFilter",
-    },
-    {
-      field: "qtyAffected1",
-      headerName: "Qty Affected 1",
-      filter: "agTextColumnFilter",
-      hide: true,
-    },
-    {
-      field: "stakeholder",
-      headerName: "Stakeholder",
-      filter: "agTextColumnFilter",
-    },
-    {
-      field: "supplierName",
-      headerName: "Supplier Name",
-      filter: "agTextColumnFilter",
-    },
-    { field: "type", headerName: "Type", filter: "agTextColumnFilter" },
-    { field: "type1", headerName: "Type 1", filter: "agTextColumnFilter", hide: true },
-    { field: "active", headerName: "Active", filter: "agTextColumnFilter", hide: true },
+    // --- Identifiers ---
+    { field: "id",  headerName: "ID",    filter: "agMultiColumnFilter", hide: true },
+    { field: "qir", headerName: "QIR #", filter: "agTextColumnFilter",  maxWidth: 110 },
+    // --- Status & Priority ---
+    { field: "status",   headerName: "Status",   filter: "agMultiColumnFilter" },
+    { field: "priority", headerName: "Priority", filter: "agMultiColumnFilter" },
+    // --- Dates ---
+    { field: "createdDate",           headerName: "Created Date",           filter: "agTextColumnFilter" },
+    { field: "customerReportedDate",  headerName: "Customer Reported Date", filter: "agTextColumnFilter" },
+    // --- Classification ---
+    { field: "type",          headerName: "Incident Type",     filter: "agMultiColumnFilter" },
+    { field: "type1",         headerName: "Incident Sub-Type", filter: "agMultiColumnFilter", hide: true },
+    { field: "failureType",   headerName: "Failure Type",      filter: "agMultiColumnFilter" },
+    { field: "componentType", headerName: "Component Type",    filter: "agMultiColumnFilter" },
+    { field: "platformType",  headerName: "Platform Type",     filter: "agMultiColumnFilter" },
+    // --- Customer & Supplier ---
+    { field: "customerName",       headerName: "Customer Name",        filter: "agTextColumnFilter" },
+    { field: "supplierName",       headerName: "Supplier Name",        filter: "agTextColumnFilter" },
+    { field: "CustomerPartNumber", headerName: "Customer Part Number", filter: "agTextColumnFilter" },
+    { field: "purchaseOrder",      headerName: "Purchase Order",       filter: "agTextColumnFilter" },
+    // --- Product ---
+    { field: "eyefiPartNumber",   headerName: "EYE-Fi Part Number",   filter: "agTextColumnFilter" },
+    { field: "eyefiSerialNumber", headerName: "EYE-Fi Serial Number", filter: "agTextColumnFilter" },
+    // --- Quantities ---
+    { field: "qtyAffected",  headerName: "Qty Affected",   filter: "agNumberColumnFilter" },
+    { field: "qtyAffected1", headerName: "Qty Affected 2", filter: "agNumberColumnFilter", hide: true },
+    // --- People ---
+    { field: "stakeholder", headerName: "Stakeholder", filter: "agMultiColumnFilter" },
+    { field: "createdBy",   headerName: "Created By",  filter: "agTextColumnFilter", hide: true },
+    // --- Response / Misc ---
+    { field: "qir_response_id", headerName: "QIR Response Found", filter: "agMultiColumnFilter" },
+    { field: "active",          headerName: "Active",             filter: "agTextColumnFilter", hide: true },
   ];
 
   @Input() selectedViewType = "Open";

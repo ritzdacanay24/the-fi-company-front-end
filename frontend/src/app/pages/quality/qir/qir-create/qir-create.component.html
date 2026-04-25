@@ -22,6 +22,28 @@
 
       <!-- Main Form Card -->
       <div class="card border-0 shadow-sm">
+        <div class="card-header qir-card-header">
+          <h3 class="h5 mb-0">Quality Incident Report</h3>
+
+          <div class="btn-group qir-action-menu" ngbDropdown container="body" placement="bottom-end">
+            <button type="button" class="btn btn-outline-secondary btn-sm" ngbDropdownToggle title="Actions">
+              Actions
+            </button>
+
+            <div ngbDropdownMenu class="dropdown-menu-end">
+              <button ngbDropdownItem type="button" (click)="onActionMenuClick('archive')">
+                <i class="mdi mdi-archive-arrow-down me-2"></i>Archive
+              </button>
+              <button ngbDropdownItem type="button" (click)="onActionMenuClick('delete')">
+                <i class="mdi mdi-delete-outline me-2"></i>Delete
+              </button>
+              <button ngbDropdownItem type="button" (click)="onActionMenuClick('print')">
+                <i class="mdi mdi-printer-outline me-2"></i>Print
+              </button>
+            </div>
+          </div>
+        </div>
+
         <div class="card-body p-4">
 
           <!-- Form Section -->

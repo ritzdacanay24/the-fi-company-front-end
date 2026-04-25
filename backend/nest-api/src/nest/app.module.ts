@@ -46,6 +46,7 @@ import { QadTablesModule } from './modules/qad-tables/qad-tables.module';
 import { QirModule } from './modules/qir/qir.module';
 import { QirResponseModule } from './modules/qir-response/qir-response.module';
 import { QirSettingsModule } from './modules/qir-settings/qir-settings.module';
+import { QirOptionsModule } from './modules/qir-options/qir-options.module';
 import { QualityOverviewModule } from './modules/quality-overview/quality-overview.module';
 import { QualityVersionControlModule } from './modules/quality-version-control/quality-version-control.module';
 import { TableFilterSettingsModule } from './modules/table-filter-settings/table-filter-settings.module';
@@ -180,6 +181,7 @@ import { UrlModule } from '../shared/url/url.module';
     QirModule,
     QirResponseModule,
     QirSettingsModule,
+    QirOptionsModule,
     QualityOverviewModule,
     QualityVersionControlModule,
     TableFilterSettingsModule,

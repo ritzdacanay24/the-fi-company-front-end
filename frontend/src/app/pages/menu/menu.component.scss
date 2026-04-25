@@ -1,0 +1,18 @@
+:host {
+  --menu-theme-blue: var(--vz-primary, #1a3a6f);
+}
+
+:host .menu-bg {
+  background-image: none;
+  background-color: var(--menu-theme-blue);
+  background: linear-gradient(120deg, #173867 0%, var(--menu-theme-blue) 52%, #2a62ad 100%);
+}
+
+:host .menu-bg .bg-overlay {
+  background: linear-gradient(135deg, rgba(14, 38, 75, 0.96) 0%, rgba(26, 58, 111, 0.93) 52%, rgba(33, 71, 133, 0.86) 100%);
+  opacity: 0.58;
+}
+
+:host .menu-content {
+  z-index: 2;
+}

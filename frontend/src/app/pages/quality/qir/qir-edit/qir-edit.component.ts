@@ -1,5 +1,4 @@
 import {
-  ChangeDetectionStrategy,
   Component,
   ElementRef,
   HostListener,
@@ -28,7 +27,7 @@ import { FileViewerModalComponent } from "@app/shared/components/file-viewer-mod
   imports: [SharedModule, QirFormComponent],
   selector: "app-qir-edit",
   templateUrl: "./qir-edit.component.html",
-  styleUrls: ["./qir-edit.component.scss"]
+  styleUrls: ["./qir-edit.component.scss"],
 })
 export class QirEditComponent {
   constructor(
@@ -41,7 +40,9 @@ export class QirEditComponent {
     private qirResponseModalService: QirResponseModalService,
     private qirResponseService: QirResponseService,
     private modalService: NgbModal
-  ) { }
+  ) {}
+
+  @ViewChild("fileInput") fileInput?: ElementRef<HTMLInputElement>;
 
   ngOnInit(): void {
     this.activatedRoute.queryParams.subscribe((params) => {
@@ -58,22 +59,23 @@ export class QirEditComponent {
   id = null;
 
   isLoading = false;
+  isDragOver = false;
 
   submitted = false;
 
   statusOptions = [
-    { value: 'Open', label: 'Open', canEdit: true },
-    { value: 'In Process', label: 'In Process', canEdit: true },
-    { value: 'Awaiting Verification', label: 'Awaiting Verification', canEdit: true },
-    { value: 'Approved', label: 'Approved', canEdit: false },
-    { value: 'Rejected', label: 'Rejected', canEdit: false },
-    { value: 'Closed', label: 'Closed', canEdit: false },
-    { value: 'N/A', label: 'N/A', canEdit: true }
+    { value: "Open", label: "Open", canEdit: true },
+    { value: "In Process", label: "In Process", canEdit: true },
+    { value: "Awaiting Verification", label: "Awaiting Verification", canEdit: true },
+    { value: "Approved", label: "Approved", canEdit: false },
+    { value: "Rejected", label: "Rejected", canEdit: false },
+    { value: "Closed", label: "Closed", canEdit: false },
+    { value: "N/A", label: "N/A", canEdit: true },
   ];
 
   async openQirResponse() {
     const modalRef = this.qirResponseModalService.open(this.id);
-    modalRef.result.then(async (result: any) => { });
+    modalRef.result.then(async (result: any) => {});
   }
 
   @Input() goBack: Function = () => {
@@ -83,8 +85,9 @@ export class QirEditComponent {
   };
 
   get isQirClosed(): boolean {
-    // Check if QIR status allows editing based on canEdit property
-    const currentStatus = this.statusOptions.find(status => status.value === this.data?.status);
+    const currentStatus = this.statusOptions.find(
+      (status) => status.value === this.data?.status
+    );
     return currentStatus ? !currentStatus.canEdit : false;
   }
 
@@ -107,19 +110,17 @@ export class QirEditComponent {
       this.form.get("last_name").disable();
       this.form.get("email").disable();
 
-      // Disable entire form if QIR is closed
       if (this.isQirClosed) {
         this.form.disable();
       } else {
         this.form.enable();
-        // Re-disable these fields even when form is enabled
         this.form.get("first_name").disable();
         this.form.get("last_name").disable();
         this.form.get("email").disable();
       }
 
       this.getAttachments();
-    } catch (err) { }
+    } catch (err) {}
   }
 
   async onSubmit() {
@@ -127,7 +128,6 @@ export class QirEditComponent {
       this.submitted = true;
       getFormValidationErrors();
       return;
-    } else {
     }
 
     if (this.form.value?.status != "Open") {
@@ -142,7 +142,7 @@ export class QirEditComponent {
     try {
       this.isLoading = true;
       await this.api.update(this.id, this.form.getRawValue());
-      await this.onUploadAttachments()
+      await this.onUploadAttachments();
       this.isLoading = false;
       this.toastrService.success("Successfully Updated");
       this.form.markAsPristine();
@@ -159,8 +159,17 @@ export class QirEditComponent {
   onView() {
     this.router.navigate([NAVIGATION_ROUTE.VIEW], {
       queryParamsHandling: "merge",
-      queryParams: { id: this.id }
+      queryParams: { id: this.id },
     });
+  }
+
+  onActionMenuClick(action: "archive" | "delete" | "print") {
+    if (action === "print") {
+      this.onDownloadAsPdf();
+      return;
+    }
+
+    this.toastrService.info("This action is not available yet.");
   }
 
   attachments: any = [];
@@ -177,7 +186,7 @@ export class QirEditComponent {
 
   private openFileViewerModal(url: string, fileName: string): void {
     const modalRef = this.modalService.open(FileViewerModalComponent, {
-      size: 'xl',
+      size: "xl",
       centered: true,
       backdrop: true,
       keyboard: true,
@@ -192,17 +201,21 @@ export class QirEditComponent {
 
     try {
       const resolved = await this.attachmentsService.getViewById(row?.id);
-      const resolvedUrl = resolved?.url || row?.link || this.getLegacyAttachmentUrl(row?.fileName || '');
+      const resolvedUrl =
+        resolved?.url || row?.link || this.getLegacyAttachmentUrl(row?.fileName || "");
 
       if (!resolvedUrl) {
-        this.toastrService.warning('Attachment URL not available');
+        this.toastrService.warning("Attachment URL not available");
         return;
       }
 
-      this.openFileViewerModal(resolvedUrl, row?.fileName || resolved?.fileName || 'Attachment');
+      this.openFileViewerModal(
+        resolvedUrl,
+        row?.fileName || resolved?.fileName || "Attachment"
+      );
     } catch (error) {
-      console.error('Failed to resolve attachment URL:', error);
-      this.toastrService.error('Unable to open attachment');
+      console.error("Failed to resolve attachment URL:", error);
+      this.toastrService.error("Unable to open attachment");
     }
   }
 
@@ -211,17 +224,18 @@ export class QirEditComponent {
 
     try {
       const resolved = await this.attachmentsService.getViewById(row?.id);
-      const resolvedUrl = resolved?.url || row?.link || this.getLegacyAttachmentUrl(row?.fileName || '');
+      const resolvedUrl =
+        resolved?.url || row?.link || this.getLegacyAttachmentUrl(row?.fileName || "");
 
       if (!resolvedUrl) {
-        this.toastrService.warning('Attachment URL not available');
+        this.toastrService.warning("Attachment URL not available");
         return;
       }
 
-      window.open(resolvedUrl, '_blank');
+      window.open(resolvedUrl, "_blank");
     } catch (error) {
-      console.error('Failed to resolve attachment URL for download:', error);
-      this.toastrService.error('Unable to download attachment');
+      console.error("Failed to resolve attachment URL for download:", error);
+      this.toastrService.error("Unable to download attachment");
     }
   }
 
@@ -232,40 +246,100 @@ export class QirEditComponent {
   }
 
   file: File = null;
+  myFiles: File[] = [];
+  selectedFiles: File[] = [];
 
-  myFiles: string[] = [];
+  openFilePicker() {
+    if (this.isQirClosed) return;
+    this.fileInput?.nativeElement.click();
+  }
 
-  onFilechange(event: any) {
-    this.myFiles = [];
-    for (var i = 0; i < event.target.files.length; i++) {
-      this.myFiles.push(event.target.files[i]);
+  onFilechange(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const files = input.files ? Array.from(input.files) : [];
+    this.addFiles(files);
+    this.resetFileInput();
+  }
+
+  onDragOver(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (this.isQirClosed) return;
+    this.isDragOver = true;
+  }
+
+  onDragLeave(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragOver = false;
+  }
+
+  onDrop(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (this.isQirClosed) return;
+
+    this.isDragOver = false;
+    const files = event.dataTransfer?.files ? Array.from(event.dataTransfer.files) : [];
+    this.addFiles(files);
+  }
+
+  removeFile(index: number) {
+    this.selectedFiles.splice(index, 1);
+    this.myFiles = [...this.selectedFiles];
+    this.resetFileInput();
+  }
+
+  private addFiles(files: File[]) {
+    if (!files.length) return;
+
+    const dedupedFiles = new Map(
+      this.selectedFiles.map((file) => [this.getFileKey(file), file])
+    );
+
+    files.forEach((file) => {
+      dedupedFiles.set(this.getFileKey(file), file);
+    });
+
+    this.selectedFiles = Array.from(dedupedFiles.values());
+    this.myFiles = [...this.selectedFiles];
+  }
+
+  private getFileKey(file: File) {
+    return `${file.name}-${file.size}-${file.lastModified}`;
+  }
+
+  private resetFileInput() {
+    if (this.fileInput) {
+      this.fileInput.nativeElement.value = "";
     }
   }
 
-  @ViewChild("fileInput") fileInput: ElementRef;
   async onUploadAttachments() {
-    if (this.myFiles) {
-      let totalAttachments = 0;
-      this.isLoading = true;
-      const formData = new FormData();
-      for (var i = 0; i < this.myFiles.length; i++) {
-        formData.append("file", this.myFiles[i]);
-        formData.append("field", "Capa Request");
-        formData.append("uniqueData", `${this.id}`);
-        formData.append("folderName", "capa");
-        try {
-          await this.attachmentsService.uploadfile(formData);
-          totalAttachments++;
-        } catch (err) { }
-      }
-      this.fileInput.nativeElement.value = "";
-
-      this.isLoading = false;
-      try {
-        this.getAttachments();
-        this.myFiles = [];
-      } catch (err) { }
+    if (this.myFiles.length === 0) {
+      return;
     }
+
+    this.isLoading = true;
+    for (const file of this.myFiles) {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("field", "Capa Request");
+      formData.append("uniqueData", `${this.id}`);
+      formData.append("folderName", "capa");
+      try {
+        await this.attachmentsService.uploadfile(formData);
+      } catch (err) {}
+    }
+
+    this.resetFileInput();
+
+    this.isLoading = false;
+    try {
+      this.getAttachments();
+      this.myFiles = [];
+      this.selectedFiles = [];
+    } catch (err) {}
   }
 
   qirResponse;
@@ -294,15 +368,15 @@ export class QirEditComponent {
               size: portrait;
             }
             @media print {
-            body { 
-              font-family: Arial, sans-serif; 
-              margin: 20px; 
+            body {
+              font-family: Arial, sans-serif;
+              margin: 20px;
               line-height: 1.6;
             }
               .bg-grey {
                 background-color: lightgrey !important;
               }
-              .pagebreak { page-break-before: always; } /* page-break-after works, as well */
+              .pagebreak { page-break-before: always; }
 
               .table  td {
                 font-size:11px
@@ -313,7 +387,6 @@ export class QirEditComponent {
                 visibility:hidden;
               }
 
-              
               .print-pre {
                 white-space: pre-wrap;
                 word-break: break-word;

@@ -1,4 +1,4 @@
-<div class="auth-one-bg-position auth-one-bg" id="auth-particles">
+<div class="auth-one-bg-position auth-one-bg request-public-page" id="auth-particles">
   <div class="bg-overlay"></div>
   <div class="shape">
     <svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -9,14 +9,13 @@
 
   <div class="container py-4 position-relative" style="min-height: 100vh;">
     <div class="row justify-content-center">
-      <div class="col-12 col-lg-11 col-xl-10 col-xxl-9">
+      <div class="col-12 col-lg-12 col-xl-11 col-xxl-10">
 
         <!-- Header Section -->
-        <div class="text-center mb-4 p-4 rounded"
-          style="background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);">
-          <img src="assets/images/fi-color.png" style="width: 160px;" class="mb-3">
-          <h2 class="text-dark mb-2 fw-bold">{{title}}</h2>
-          <p class="text-muted mb-3">Submit service requests for installation, repair, maintenance, and technical
+        <div class="text-center mb-4 p-4 rounded request-public-header">
+          <img src="assets/images/the-fi-cropped.png" style="width: 190px;" class="mb-3" alt="The Fi Company Logo">
+          <h2 class="mb-2 fw-bold request-public-title">{{title}}</h2>
+          <p class="mb-3 request-public-subtitle">Submit service requests for installation, repair, maintenance, and technical
             support services for EYE-Fi digital signage products.</p>
           <button class="btn btn-primary btn-lg" (click)="onCreateNew()" *ngIf="data">
             <i class="mdi mdi-plus me-2"></i>Create New Request
@@ -58,8 +57,12 @@
         </div>
 
         <!-- Main Form -->
-        <app-request-form [disabled]="disabled" (setFormEmitter)="setFormEmitter($event)"
-          [submitted]="submitted"></app-request-form>
+        <div class="card shadow-sm border-0 mb-4">
+          <div class="card-body p-4">
+            <app-request-form [disabled]="disabled" (setFormEmitter)="setFormEmitter($event)"
+              [submitted]="submitted"></app-request-form>
+          </div>
+        </div>
 
         <!-- Contact Management Button -->
         <!-- <div class="card shadow-sm border-0 mb-4" *ngIf="!disabled">

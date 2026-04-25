@@ -137,6 +137,15 @@ export class QirCreateComponent {
     this.goBack();
   }
 
+  onActionMenuClick(action: "archive" | "delete" | "print") {
+    if (action === "print") {
+      window.print();
+      return;
+    }
+
+    this.toastrService.info("This action is available after the QIR is created.");
+  }
+
   file: File = null;
 
   myFiles: string[] = [];

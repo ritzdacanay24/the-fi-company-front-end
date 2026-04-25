@@ -9,7 +9,7 @@ import { environment } from "@environments/environment";
   imports: [SharedModule],
   selector: "app-menu",
   templateUrl: "./menu.component.html",
-  styleUrls: [],
+  styleUrls: ["./menu.component.scss"],
 })
 export class MenuComponent implements OnInit {
   constructor(

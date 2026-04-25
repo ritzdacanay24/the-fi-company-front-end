@@ -48,8 +48,39 @@ export class QirSettingsService extends DataService<any> {
     return { message: 'QIR setting deleted successfully' };
   };
 
-  async getFormSettings(params: any) {
-    return this.find(params);
+  /**
+   * @deprecated Use getFormSettings() with no args — now points to the new
+   * qir-options/form-settings endpoint backed by the normalized tables.
+   */
+  async getFormSettings(_params?: any) {
+    return firstValueFrom(
+      this.http.get<any[]>('apiV2/qir-options/form-settings'),
+    );
   }
+
+  // ── Admin / manage endpoints for the new normalized tables ────────────────
+
+  getCategories = async (): Promise<any[]> =>
+    firstValueFrom(this.http.get<any[]>('apiV2/qir-options/categories'));
+
+  getOptions = async (params: { category_id?: number; active?: number } = {}): Promise<any[]> => {
+    const qs = queryString(params);
+    return firstValueFrom(this.http.get<any[]>(`apiV2/qir-options${qs}`));
+  };
+
+  getOptionById = async (id: number): Promise<any> =>
+    firstValueFrom(this.http.get<any>(`apiV2/qir-options/${id}`));
+
+  createOption = async (payload: Record<string, unknown>): Promise<{ insertId: number }> =>
+    firstValueFrom(this.http.post<{ insertId: number }>('apiV2/qir-options', payload));
+
+  updateOption = async (id: number, payload: Record<string, unknown>): Promise<{ rowCount: number }> =>
+    firstValueFrom(this.http.put<{ rowCount: number }>(`apiV2/qir-options/${id}`, payload));
+
+  deleteOption = async (id: number): Promise<{ rowCount: number }> =>
+    firstValueFrom(this.http.delete<{ rowCount: number }>(`apiV2/qir-options/${id}`));
+
+  updateCategory = async (id: number, payload: Record<string, unknown>): Promise<{ rowCount: number }> =>
+    firstValueFrom(this.http.put<{ rowCount: number }>(`apiV2/qir-options/categories/${id}`, payload));
 
 }

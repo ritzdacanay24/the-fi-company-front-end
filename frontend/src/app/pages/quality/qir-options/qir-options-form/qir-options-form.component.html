@@ -1,0 +1,55 @@
+<form [formGroup]="form" autocomplete="off">
+
+  <div class="mb-3">
+    <label class="form-label">Category <span class="text-danger">*</span></label>
+    <select class="form-select" formControlName="category_id"
+      [ngClass]="{ 'is-invalid': submitted && f['category_id'].errors }">
+      <option [ngValue]="null" disabled>-- Select --</option>
+      <option *ngFor="let c of categories" [ngValue]="c.id">{{ c.label }}</option>
+    </select>
+    <div class="invalid-feedback">Category is required.</div>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Name <span class="text-danger">*</span></label>
+    <input class="form-control" type="text" formControlName="name"
+      [ngClass]="{ 'is-invalid': submitted && f['name'].errors }" />
+    <div class="invalid-feedback">Name is required.</div>
+  </div>
+
+  <div class="mb-3" *ngIf="selectedCategorySlug === 'customerName'">
+    <label class="form-label">Code</label>
+    <input class="form-control" type="text" formControlName="code" />
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Description</label>
+    <textarea class="form-control" formControlName="description" rows="4"></textarea>
+  </div>
+
+  <div class="row mb-3">
+    <div class="col-sm-6">
+      <label class="form-label d-block">Sort Order</label>
+      <input class="form-control" type="number" formControlName="sort_order" min="0" />
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <div class="form-check form-switch form-switch-md">
+      <input class="form-check-input" type="checkbox" id="show_in_public" formControlName="show_in_public"
+        [checked]="form.value.show_in_public === 1"
+        (change)="form.patchValue({ show_in_public: $any($event.target).checked ? 1 : 0 })">
+      <label class="form-check-label" for="show_in_public">Show on Public Form</label>
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <div class="form-check form-switch form-switch-md">
+      <input class="form-check-input" type="checkbox" id="active" formControlName="active"
+        [checked]="form.value.active === 1"
+        (change)="form.patchValue({ active: $any($event.target).checked ? 1 : 0 })">
+      <label class="form-check-label" for="active">Active</label>
+    </div>
+  </div>
+
+</form>

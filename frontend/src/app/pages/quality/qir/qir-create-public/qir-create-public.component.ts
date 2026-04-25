@@ -1,9 +1,8 @@
-import { Component, HostListener, Input } from "@angular/core";
+import { Component, ElementRef, HostListener, Input, ViewChild } from "@angular/core";
 import { SharedModule } from "@app/shared/shared.module";
 import { FormGroup } from "@angular/forms";
 import { ActivatedRoute, Router } from "@angular/router";
 import moment from "moment";
-import { QirFormComponent } from "../qir-form/qir-form.component";
 import { NAVIGATION_ROUTE } from "../qir-constant";
 import { QirService } from "@app/core/api/quality/qir.service";
 import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErrors";
@@ -14,7 +13,7 @@ import { LocationStrategy } from "@angular/common";
 
 @Component({
   standalone: true,
-  imports: [SharedModule, QirFormComponent, QirPublicFormComponent],
+  imports: [SharedModule, QirPublicFormComponent],
   selector: "app-qir-create-public",
   templateUrl: "./qir-create-public.component.html",
   styleUrls: ["./qir-create-public.component.scss"],
@@ -28,11 +27,12 @@ export class QirCreatePublicComponent {
     private location: LocationStrategy
   ) {
     history.pushState(null, null, window.location.href);
-    // check if back or forward button is pressed.
     this.location.onPopState(() => {
       history.pushState(null, null, window.location.href);
     });
   }
+
+  @ViewChild("fileInput") fileInput?: ElementRef<HTMLInputElement>;
 
   @HostListener("window:beforeunload")
   canDeactivate() {
@@ -59,6 +59,7 @@ export class QirCreatePublicComponent {
   fsId = null;
 
   isLoading = false;
+  isDragOver = false;
 
   submitted = false;
 
@@ -115,10 +116,10 @@ export class QirCreatePublicComponent {
       this.isLoading = true;
       let res: any = await this.api.createQir(this.form.value);
 
-      if (this.myFiles) {
-        const formData = new FormData();
-        for (var i = 0; i < this.myFiles.length; i++) {
-          formData.append("file", this.myFiles[i]);
+      if (this.myFiles.length > 0) {
+        for (const file of this.myFiles) {
+          const formData = new FormData();
+          formData.append("file", file);
           formData.append("field", "Capa Request");
           formData.append("uniqueData", `${res.insertId}`);
           formData.append("folderName", "capa");
@@ -138,10 +139,8 @@ export class QirCreatePublicComponent {
         showCancelButton: true,
       });
 
-      //user does not want to create new qir
       if (value.isConfirmed) {
         this.onCreateNew();
-        //create new qir
       } else if (value.isDismissed) {
         this.closeWindow = true;
         this.form.disable();
@@ -156,27 +155,74 @@ export class QirCreatePublicComponent {
   onCancel() {
     this.goBack();
   }
+
   file: File = null;
-
-  myFiles: string[] = [];
-
+  myFiles: File[] = [];
   selectedFiles: File[] = [];
 
-  onFilechange(event: any) {
-    const files = event.target.files;
-    if (files && files.length > 0) {
-      this.selectedFiles = Array.from(files);
-    }
+  openFilePicker() {
+    if (this.form?.disabled) return;
+    this.fileInput?.nativeElement.click();
+  }
+
+  onFilechange(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const files = input.files ? Array.from(input.files) : [];
+    this.addFiles(files);
+    this.resetFileInput();
+  }
+
+  onDragOver(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (this.form?.disabled) return;
+    this.isDragOver = true;
+  }
+
+  onDragLeave(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragOver = false;
+  }
+
+  onDrop(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (this.form?.disabled) return;
+
+    this.isDragOver = false;
+    const files = event.dataTransfer?.files ? Array.from(event.dataTransfer.files) : [];
+    this.addFiles(files);
   }
 
   removeFile(index: number) {
     this.selectedFiles.splice(index, 1);
-    // Reset the file input if no files remain
-    if (this.selectedFiles.length === 0) {
-      const fileInput = document.getElementById('file') as HTMLInputElement;
-      if (fileInput) {
-        fileInput.value = '';
-      }
+    this.myFiles = [...this.selectedFiles];
+    this.resetFileInput();
+  }
+
+  private addFiles(files: File[]) {
+    if (!files.length) return;
+
+    const dedupedFiles = new Map(
+      this.selectedFiles.map((file) => [this.getFileKey(file), file])
+    );
+
+    files.forEach((file) => {
+      dedupedFiles.set(this.getFileKey(file), file);
+    });
+
+    this.selectedFiles = Array.from(dedupedFiles.values());
+    this.myFiles = [...this.selectedFiles];
+  }
+
+  private getFileKey(file: File) {
+    return `${file.name}-${file.size}-${file.lastModified}`;
+  }
+
+  private resetFileInput() {
+    if (this.fileInput) {
+      this.fileInput.nativeElement.value = "";
     }
   }
 

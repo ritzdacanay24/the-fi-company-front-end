@@ -1,0 +1,20 @@
+.qir-card-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 0.875rem 1.5rem;
+	border-bottom: 1px solid #e5e7eb;
+	background: transparent;
+}
+
+.qir-action-menu {
+	justify-content: flex-end;
+}
+
+@media (max-width: 991.98px) {
+	.qir-card-header {
+		flex-direction: column;
+		align-items: stretch;
+	}
+}

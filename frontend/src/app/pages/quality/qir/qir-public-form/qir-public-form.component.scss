@@ -1,0 +1,10 @@
+.qir-auto-height-editor ::ng-deep .ql-container {
+	height: auto;
+	min-height: 220px;
+}
+
+.qir-auto-height-editor ::ng-deep .ql-editor {
+	min-height: 180px;
+	height: auto;
+	overflow-y: hidden;
+}

@@ -52,6 +52,14 @@ const routes: Routes = [
     canActivate: [AccessGuard],
     runGuardsAndResolvers: "always",
   },
+  {
+    path: "options",
+    loadChildren: () =>
+      import("../qir-options/qir-options-routing.module").then(
+        (m) => m.QirOptionsRoutingModule
+      ),
+    runGuardsAndResolvers: "always",
+  },
 ];
 
 @NgModule({

@@ -449,6 +449,13 @@ export const MENU_DATA: MenuItem[] = [
                 activatedRoutes: "/quality/qir/*"
             },
             {
+                label: "QIR Options",
+                link: "/quality/qir/options/list",
+                description: "Manage QIR dropdown options",
+                icon: "las la-sliders-h",
+                activatedRoutes: "/quality/qir/options/*"
+            },
+            {
                 badgeId: "permitChecklistOpen",
                 label: "Permit Checklists",
                 link: "/quality/permit-checklists",
