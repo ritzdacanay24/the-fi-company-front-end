@@ -123,7 +123,7 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
     },
     {
       id: 5,
-      title: 'Assign Serials & UL Numbers',
+      title: 'Serials & UL Numbers',
       description: 'Select serial numbers and assign UL labels',
       completed: false,
       active: false
@@ -2595,6 +2595,10 @@ H01FFE,gG01IFC,:gG01IF8,gG01IF,gG01FFE,gG01FFC,gG01FF8,gG01FE,gG01F8,gG01C,,::::
     // Keep for backward compatibility or remove if not needed
     console.log('Workflow completed');
     this.toastrService.success('Form submitted successfully!');
+  }
+
+  goToMenu(): void {
+    this.router.navigate(['/menu']);
   }
 
   logout(): void {

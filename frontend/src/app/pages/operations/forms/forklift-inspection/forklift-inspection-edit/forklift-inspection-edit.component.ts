@@ -171,6 +171,57 @@ export class ForkliftInspectionEditComponent {
     this.details = $event?.checklist;
   }
 
+  async archiveItem(): Promise<void> {
+    if (!this.id || this.isLoading) {
+      return;
+    }
+
+    const confirmed = window.confirm("Archive this inspection item?");
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      this.isLoading = true;
+
+      const payload = {
+        ...(this.form?.getRawValue?.() || this.data?.main || {}),
+        details: this.details || this.formValues?.checklist || [],
+        active: 0,
+      };
+
+      await this.api.update(Number(this.id), payload);
+      this.toastrService.success("Inspection item archived.");
+      this.router.navigate([NAVIGATION_ROUTE.LIST], { queryParamsHandling: "merge" });
+    } catch (err) {
+      this.toastrService.error("Failed to archive inspection item.");
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
+  async deleteItem(): Promise<void> {
+    if (!this.id || this.isLoading) {
+      return;
+    }
+
+    const confirmed = window.confirm("Delete this inspection item? This cannot be undone.");
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      this.isLoading = true;
+      await this.api.delete(Number(this.id));
+      this.toastrService.success("Inspection item deleted.");
+      this.router.navigate([NAVIGATION_ROUTE.LIST], { queryParamsHandling: "merge" });
+    } catch (err) {
+      this.toastrService.error("Failed to delete inspection item.");
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
   async onSubmit() {
     this.submitted = true;
     this.form.value.details = this.details;

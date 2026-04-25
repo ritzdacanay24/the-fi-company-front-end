@@ -66,17 +66,17 @@
             </button>
             <div ngbDropdownMenu>
               <h6 class="dropdown-header">Shipping Request Actions</h6>
-              <button ngbDropdownItem (click)="onPrint()" [disabled]="isLoading">
+              <button ngbDropdownItem (click)="onPrint()">
                 <i class="mdi mdi-printer-outline me-2 text-primary"></i>Print
               </button>
               <button ngbDropdownItem (click)="onEdit()" [disabled]="isLoading || !formDisabled">
                 <i class="mdi mdi-pencil-outline me-2 text-info"></i>Edit
               </button>
               <div class="dropdown-divider"></div>
-              <button ngbDropdownItem (click)="onArchive()" [disabled]="isLoading">
+              <button ngbDropdownItem (click)="onArchive()">
                 <i class="mdi mdi-archive-outline me-2 text-warning"></i>Archive
               </button>
-              <button ngbDropdownItem (click)="onDelete()" [disabled]="isLoading">
+              <button ngbDropdownItem (click)="onDelete()">
                 <i class="mdi mdi-delete-outline me-2 text-danger"></i>Delete
               </button>
             </div>

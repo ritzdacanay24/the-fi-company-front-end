@@ -185,4 +185,42 @@ export class IgtTransferEditComponent {
       }
     }
   }
+
+  async onArchive() {
+    if (!this.id || !this.form) return;
+    if (!confirm(`Archive IGT transfer #${this.id}?`)) return;
+
+    try {
+      this.isLoading = true;
+      const payload = this.form.getRawValue();
+      payload.main = {
+        ...payload.main,
+        active: 0,
+      };
+
+      await this.api.update(this.id, payload);
+      this.isLoading = false;
+      this.toastrService.success("IGT transfer archived successfully");
+      this.goBack();
+    } catch (err) {
+      this.isLoading = false;
+      this.toastrService.error("Failed to archive IGT transfer");
+    }
+  }
+
+  async onDelete() {
+    if (!this.id) return;
+    if (!confirm(`Delete IGT transfer #${this.id}? This cannot be undone.`)) return;
+
+    try {
+      this.isLoading = true;
+      await this.api.delete(this.id);
+      this.isLoading = false;
+      this.toastrService.success("IGT transfer deleted successfully");
+      this.goBack();
+    } catch (err) {
+      this.isLoading = false;
+      this.toastrService.error("Failed to delete IGT transfer");
+    }
+  }
 }

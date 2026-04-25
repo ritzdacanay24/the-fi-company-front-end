@@ -1,75 +1,132 @@
-<div class="row" *ngIf="!data && !id">
-  <div class="content-grid col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-10 col-xxxl-12">
-    <div class="card">
-      <div class="card-body" style="min-height:300px">
-        Please select from list.
-      </div>
-      <div class="card-footer d-flex  d-flex justify-content-between">
-        <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Go to list</button>
+<div class="container-fluid" *ngIf="!data && !id">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-10 col-xl-8 col-xxl-7">
+      <div class="card shadow-sm border-0">
+        <div class="card-body text-center p-5" style="min-height:300px">
+          <div class="mb-4">
+            <i class="mdi mdi-alert-circle-outline text-warning" style="font-size: 4rem;"></i>
+          </div>
+          <h4 class="text-muted mb-3">No Shortage Selected</h4>
+          <p class="text-muted mb-4">Please select a shortage from the list to view and edit details.</p>
+          <button class="btn btn-primary" (click)="onCancel()">
+            <i class="mdi mdi-format-list-bulleted me-2"></i>Go to Shortage List
+          </button>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
-<div class="row" [hidden]="!data && !id">
-  <div class="content-grid col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-10 col-xxxl-12">
-    <div class="card">
-      <div class="card-header d-flex align-items-center">
-        <button class="btn btn-light btn-sm shadow-none bg-light rounded border-0 me-2 me-auto" *ngIf="goBack"
-          (click)="goBack()"><i class="mdi mdi-arrow-left pointer text-muted"></i> Back</button>
-        <h4 class="card-title mb-0 flex-grow-1 text-end"> {{title}} </h4>
-      </div>
-      <div class="card-header text-center">
-        <div class="btn-toolbar" style="flex-wrap:unset">
-          <div class="btn-group me-2">
-            <button class="btn btn-primary" [disabled]="form?.value?.supplyCompleted"
-              (click)="onComplete('supplyCompleted', 'supplyCompletedBy')"
-              [ngClass]="{'btn-light shadow-none':form?.value?.supplyCompleted}">
-              <p>1</p>
-              <p>Supply Complete</p>
-              <!-- <small *ngIf="form?.value?.supplyCompleted">{{form?.value?.supplyCompleted}}</small> -->
-            </button>
+<div class="container-fluid" [hidden]="!data && !id">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-10 col-xl-8 col-xxl-7">
+
+      <!-- Page Header -->
+      <div class="mb-4">
+        <div class="d-flex align-items-center mb-3">
+          <button type="button" class="btn btn-outline-secondary me-3" (click)="goBack()" *ngIf="goBack"
+            title="Back to Shortage List">
+            <i class="mdi mdi-arrow-left me-2"></i>Back
+          </button>
+          <div class="bg-warning bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center"
+            style="width: 60px; height: 60px;">
+            <i class="mdi mdi-alert-circle text-white fs-4"></i>
           </div>
-          <div class="btn-group me-2">
-            <button class="btn btn-primary btn-sm"
-              [disabled]="!form?.value?.supplyCompleted || form?.value?.deliveredCompleted"
-              (click)="onComplete('deliveredCompleted', 'deliveredCompletedBy')"
-              [ngClass]="{'btn-light shadow-none':!form?.value?.supplyCompleted || form?.value?.deliveredCompleted}">
-              <p>2</p>
-              <p>Delivered Complete</p>
-              <!-- <small *ngIf="form?.value?.supplyCompleted">{{form?.value?.deliveredCompleted}}</small> -->
-            </button>
-          </div>
-          <div class="btn-group me-2">
-            <button class="btn btn-primary btn-sm"
-              [disabled]="!form?.value?.deliveredCompleted || form?.value?.receivingCompleted"
-              (click)="onComplete('receivingCompleted', 'receivingCompletedBy')"
-              [ngClass]="{'btn-light shadow-none':!form?.value?.deliveredCompleted || form?.value?.receivingCompleted}">
-              <p>3</p>
-              <p>Receiving Complete</p>
-              <!-- <small *ngIf="form?.value?.supplyCompleted">{{form?.value?.receivingCompleted}}</small> -->
-            </button>
-          </div>
-          <div class="btn-group me-2">
-            <button class="btn btn-primary btn-sm"
-              [disabled]="!form?.value?.receivingCompleted || form?.value?.productionIssuedDate"
-              (click)="onComplete('productionIssuedDate', 'productionIssuedBy')"
-              [ngClass]="{'btn-light shadow-none':!form?.value?.receivingCompleted || form?.value?.productionIssuedDate}">
-              <p>4</p>
-              <p>Production Issued</p>
-              <!-- <small *ngIf="form?.value?.supplyCompleted">{{form?.value?.productionIssuedDate}}</small> -->
-            </button>
+          <div>
+            <h2 class="mb-1 text-warning">{{ title }}</h2>
+            <p class="text-muted mb-0" *ngIf="id">Shortage record #{{ id }}</p>
           </div>
         </div>
       </div>
-      <div class="card-body" style="min-height:300px">
-        <app-shortages-form (setFormEmitter)="form = $event" [submitted]="submitted"></app-shortages-form>
+
+      <div class="card shadow-sm border-0">
+
+        <!-- Card Header: record label + Actions dropdown -->
+        <div class="card-header border-bottom d-flex align-items-center justify-content-between py-3 px-4" *ngIf="data && id">
+          <span class="fw-semibold text-dark">
+            <i class="mdi mdi-alert-circle-outline text-warning me-2"></i>
+            Shortage #{{ id }}
+          </span>
+          <div ngbDropdown placement="bottom-end" container="body">
+            <button type="button" class="btn btn-outline-secondary" ngbDropdownToggle>
+              Actions
+            </button>
+            <div ngbDropdownMenu class="dropdown-menu-end" style="z-index: 2000;">
+              <h6 class="dropdown-header">Shortage Actions</h6>
+              <button ngbDropdownItem type="button" (click)="onPrint()">
+                <i class="mdi mdi-printer-outline me-2 text-primary"></i>Print
+              </button>
+              <div class="dropdown-divider"></div>
+              <button ngbDropdownItem type="button" (click)="onArchive()" [disabled]="!id">
+                <i class="mdi mdi-archive-outline me-2 text-warning"></i>Archive
+              </button>
+              <button ngbDropdownItem type="button" (click)="onDelete()" [disabled]="!id">
+                <i class="mdi mdi-delete-outline me-2 text-danger"></i>Delete
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Workflow Steps -->
+        <div class="px-4 pt-4 pb-2" *ngIf="data && id">
+          <p class="text-muted small mb-2 fw-medium">
+            <i class="mdi mdi-progress-check me-1"></i>Workflow Progress
+          </p>
+          <div class="d-flex gap-2 flex-wrap">
+            <button class="btn btn-sm flex-fill"
+              [class.btn-success]="form?.value?.supplyCompleted"
+              [class.btn-outline-secondary]="!form?.value?.supplyCompleted"
+              [disabled]="form?.value?.supplyCompleted"
+              (click)="onComplete('supplyCompleted', 'supplyCompletedBy')">
+              <i class="mdi me-1" [class.mdi-check-circle]="form?.value?.supplyCompleted" [class.mdi-circle-outline]="!form?.value?.supplyCompleted"></i>
+              1. Supply Complete
+            </button>
+            <button class="btn btn-sm flex-fill"
+              [class.btn-success]="form?.value?.deliveredCompleted"
+              [class.btn-outline-secondary]="!form?.value?.deliveredCompleted"
+              [disabled]="!form?.value?.supplyCompleted || form?.value?.deliveredCompleted"
+              (click)="onComplete('deliveredCompleted', 'deliveredCompletedBy')">
+              <i class="mdi me-1" [class.mdi-check-circle]="form?.value?.deliveredCompleted" [class.mdi-circle-outline]="!form?.value?.deliveredCompleted"></i>
+              2. Delivered Complete
+            </button>
+            <button class="btn btn-sm flex-fill"
+              [class.btn-success]="form?.value?.receivingCompleted"
+              [class.btn-outline-secondary]="!form?.value?.receivingCompleted"
+              [disabled]="!form?.value?.deliveredCompleted || form?.value?.receivingCompleted"
+              (click)="onComplete('receivingCompleted', 'receivingCompletedBy')">
+              <i class="mdi me-1" [class.mdi-check-circle]="form?.value?.receivingCompleted" [class.mdi-circle-outline]="!form?.value?.receivingCompleted"></i>
+              3. Receiving Complete
+            </button>
+            <button class="btn btn-sm flex-fill"
+              [class.btn-success]="form?.value?.productionIssuedDate"
+              [class.btn-outline-secondary]="!form?.value?.productionIssuedDate"
+              [disabled]="!form?.value?.receivingCompleted || form?.value?.productionIssuedDate"
+              (click)="onComplete('productionIssuedDate', 'productionIssuedBy')">
+              <i class="mdi me-1" [class.mdi-check-circle]="form?.value?.productionIssuedDate" [class.mdi-circle-outline]="!form?.value?.productionIssuedDate"></i>
+              4. Production Issued
+            </button>
+          </div>
+        </div>
+
+        <div class="card-body p-4">
+          <app-shortages-form (setFormEmitter)="form = $event" [submitted]="submitted"></app-shortages-form>
+        </div>
+
+        <div class="card-footer bg-light border-top d-flex p-3" *ngIf="data && id">
+          <button type="button" class="btn btn-outline-secondary me-2" [disabled]="isLoading" (click)="onCancel()">
+            <i class="mdi mdi-close me-1"></i>Cancel
+          </button>
+          <button type="submit" class="btn btn-primary ms-auto" [disabled]="isLoading" (click)="onSubmit()">
+            @if (isLoading) {
+              <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+              Updating...
+            } @else {
+              <i class="mdi mdi-check-circle-outline me-1"></i>Update Shortage
+            }
+          </button>
+        </div>
       </div>
-      <div class="card-footer d-flex" *ngIf="data && id">
-        <button class="btn btn-light ms-auto me-2" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
-        <button class="btn btn-light me-2" [disabled]="isLoading" (click)="onPrint()"> Print</button>
-        <button class="btn btn-primary" [disabled]="isLoading" (click)="onSubmit()"> Submit</button>
-      </div>
+
     </div>
   </div>
 </div>

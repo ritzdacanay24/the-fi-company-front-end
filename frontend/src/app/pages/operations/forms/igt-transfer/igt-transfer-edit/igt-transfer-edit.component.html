@@ -40,23 +40,38 @@
               <p class="text-muted mb-0" *ngIf="id">Edit existing IGT transfer record #{{id}}</p>
             </div>
           </div>
-          
-          <!-- Action Buttons - Top Right -->
-          <div class="d-flex gap-2" *ngIf="data && id">
-            <button type="button" class="btn btn-outline-info" [disabled]="isLoading" (click)="onPrint()" 
-              title="Print Transfer Form">
-              <i class="mdi mdi-printer me-1"></i>Print
-            </button>
-            <button type="button" class="btn btn-outline-primary" [disabled]="isLoading" (click)="onSend()"
-              title="Send Email Notification">
-              <i class="mdi mdi-email-send me-1"></i>Send Email
-            </button>
-          </div>
         </div>
 
       </div>
 
       <div class="card shadow-sm border-0">
+        <div class="card-header border-bottom d-flex align-items-center justify-content-between py-3 px-4" *ngIf="data && id">
+          <span class="fw-semibold text-dark">
+            <i class="mdi mdi-clipboard-text-outline text-primary me-2"></i>
+            IGT Transfer #{{ id }}
+          </span>
+          <div ngbDropdown placement="bottom-end" container="body">
+            <button type="button" class="btn btn-outline-secondary" ngbDropdownToggle>
+              Actions
+            </button>
+            <div ngbDropdownMenu class="dropdown-menu-end" style="z-index: 2000;">
+              <h6 class="dropdown-header">IGT Transfer Actions</h6>
+              <button ngbDropdownItem type="button" (click)="onPrint()">
+                <i class="mdi mdi-printer-outline me-2 text-info"></i>Print
+              </button>
+              <button ngbDropdownItem type="button" (click)="onSend()">
+                <i class="mdi mdi-email-send-outline me-2 text-primary"></i>Send Email
+              </button>
+              <div class="dropdown-divider"></div>
+              <button ngbDropdownItem type="button" (click)="onArchive()" [disabled]="!id">
+                <i class="mdi mdi-archive-outline me-2 text-warning"></i>Archive
+              </button>
+              <button ngbDropdownItem type="button" (click)="onDelete()" [disabled]="!id">
+                <i class="mdi mdi-delete-outline me-2 text-danger"></i>Delete
+              </button>
+            </div>
+          </div>
+        </div>
         <div class="card-body p-4">
           <app-igt-transfer-form (setFormEmitter)="form = $event" [submitted]="submitted"
             [disableSearch]="true"></app-igt-transfer-form>

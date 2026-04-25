@@ -65,6 +65,26 @@
       </div>
 
       <div class="card shadow-sm border-0">
+        <div class="card-header border-bottom d-flex align-items-center justify-content-between py-3 px-4" *ngIf="data && id">
+          <span class="fw-semibold text-dark">
+            <i class="mdi mdi-clipboard-text-outline text-primary me-2"></i>
+            Forklift Inspection #{{ id }}
+          </span>
+          <div ngbDropdown placement="bottom-end" container="body">
+            <button type="button" class="btn btn-outline-secondary" ngbDropdownToggle>
+              Actions
+            </button>
+            <div ngbDropdownMenu class="dropdown-menu-end" style="z-index: 2000;">
+              <h6 class="dropdown-header">Forklift Inspection Actions</h6>
+              <button ngbDropdownItem type="button" (click)="archiveItem()" [disabled]="!id">
+                <i class="mdi mdi-archive-outline me-2 text-warning"></i>Archive Item
+              </button>
+              <button ngbDropdownItem type="button" (click)="deleteItem()" [disabled]="!id">
+                <i class="mdi mdi-trash-can-outline me-2 text-danger"></i>Delete Item
+              </button>
+            </div>
+          </div>
+        </div>
         <div class="card-body p-4">
           <app-forklift-inspection-form (setFormEmitter)="setFormEmitter($event)"
               (setDetailsFormEmitter)="setDetailsFormEmitter($event)" [formValues]="formValues"

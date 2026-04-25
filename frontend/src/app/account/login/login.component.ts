@@ -46,13 +46,13 @@ export class LoginComponent implements OnInit {
   ) {
     // redirect to home if already logged in
     if (this.authenticationService.currentUserValue) {
-      this.router.navigate(["/dashboard"]);
+      this.router.navigate(["/operations"]);
     }
   }
 
   ngOnInit(): void {
     if (localStorage.getItem(THE_FI_COMPANY_CURRENT_USER)) {
-      this.router.navigate(["/dashboard"]);
+      this.router.navigate(["/operations"]);
     }
     /**
      * Form Validatyion
@@ -63,7 +63,7 @@ export class LoginComponent implements OnInit {
     });
     // get return url from route parameters or default to '/'
     this.returnUrl =
-      this.route.snapshot.queryParams["returnUrl"] || "/dashboard";
+      this.route.snapshot.queryParams["returnUrl"] || "/operations";
   }
 
   // convenience getter for easy access to form fields

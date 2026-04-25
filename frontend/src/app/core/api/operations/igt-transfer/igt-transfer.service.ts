@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { DataService } from '../../DataService';
 import { firstValueFrom } from 'rxjs';
 
-let url = 'operations/igt_transfer';
+let url = 'apiV2/igt-transfer';
 const igtTransferApiV2Url = 'apiV2/igt-transfer';
 
 @Injectable({

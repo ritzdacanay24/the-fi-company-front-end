@@ -72,6 +72,14 @@ export class ForkliftInspectionCreateComponent {
     this.details = $event.checklist;
   }
 
+  archiveItem(): void {
+    this.toastrService.info("Create the inspection first before archiving.");
+  }
+
+  deleteItem(): void {
+    this.toastrService.info("Create the inspection first before deleting.");
+  }
+
   myFiles: string[] | any = [];
   onFileChange(event: any) {
     this.myFiles = [];

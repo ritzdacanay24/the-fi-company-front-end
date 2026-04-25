@@ -471,7 +471,28 @@ export class AccessControlRepository {
       return true;
     }
 
-    // 2) Check role permission + domain scope (scope_value = domain or '*')
+    // 2) Admin role bypass — admin with the required permission is always allowed,
+    //    regardless of domain scope entries.
+    const adminRows = await this.mysqlService.query<Array<RowDataPacket & { count: number }>>(
+      `
+        SELECT COUNT(*) AS count
+        FROM eyefidb.app_user_roles ur
+        INNER JOIN eyefidb.app_roles r ON r.id = ur.role_id
+        INNER JOIN eyefidb.app_role_permissions rp ON rp.role_id = ur.role_id
+        INNER JOIN eyefidb.app_permissions p ON p.id = rp.permission_id
+        WHERE ur.user_id = ?
+          AND r.name = 'admin'
+          AND p.name = ?
+          AND p.is_active = 1
+      `,
+      [userId, permissionName],
+    );
+
+    if (Number(adminRows[0]?.count || 0) > 0) {
+      return true;
+    }
+
+    // 3) Check role permission + domain scope (scope_value = domain or '*')
     const roleRows = await this.mysqlService.query<Array<RowDataPacket & { count: number }>>(
       `
         SELECT COUNT(*) AS count

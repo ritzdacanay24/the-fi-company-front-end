@@ -20,6 +20,10 @@ export class MenuComponent implements OnInit {
 
   ngOnInit(): void {}
 
+  goToMainApp(): void {
+    this.router.navigate(['/operations']);
+  }
+
   data = [
     {
       section: 'Dashboards',
@@ -31,7 +35,7 @@ export class MenuComponent implements OnInit {
     {
       section: 'Forms',
       items: [
-        { name: 'EyeFi Serial Workflow',   link: '/serial-management/eyefi-serials/workflow',     icon: 'las la-barcode',          color: 'text-primary'   },
+        { name: 'EyeFi Serial Workflow',   link: '/standalone/eyefi-workflow',     icon: 'las la-barcode',          color: 'text-primary'   },
         { name: 'Shipping Request',        link: '/operations/forms/shipping-request/create',     icon: 'las la-shipping-fast',    color: 'text-info'      },
         { name: 'Safety Incident',         link: '/operations/forms/safety-incident/create',      icon: 'las la-shield-alt',       color: 'text-danger'    },
         { name: 'Field Service Request',   link: '/request',                                      icon: 'las la-clipboard',        color: 'text-success'   },
