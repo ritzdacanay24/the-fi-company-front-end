@@ -88,6 +88,19 @@ export class VehicleInspectionService {
     return { rowCount };
   }
 
+  async deleteById(id: number) {
+    const main = await this.repository.getHeaderById(id);
+    if (!main) {
+      throw new NotFoundException({
+        code: 'RC_VEHICLE_INSPECTION_NOT_FOUND',
+        message: `Vehicle inspection with id ${id} not found`,
+      });
+    }
+
+    await this.repository.deleteById(id);
+    return { rowCount: 1 };
+  }
+
   async create(payload: Record<string, any>) {
     const notUsed = this.parseNotUsed(payload.not_used);
     const insertId = await this.repository.createHeader({

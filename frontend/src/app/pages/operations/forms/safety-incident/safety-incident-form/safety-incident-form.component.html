@@ -56,350 +56,263 @@
   <div class="mb-3 row">
     <div class="col-sm-12 text-uppercase">
       <p>{{'SAFETY_INCIDENT_FORM.DESCRIPTION_OF_INCIDENT' | translate}}: </p>
-      <textarea rows="10" class="form-control"></textarea>
+      <textarea rows="10" class="form-control" autosize [minRows]="6"></textarea>
     </div>
   </div>
 
   <div class="mb-3 row">
     <div class="col-sm-12 text-uppercase">
       <p>{{'SAFETY_INCIDENT_FORM.DETAILS_OF_ANY_DAMAGE_OR_PERSONAL_INJURY' | translate}}: </p>
-      <textarea rows="10" class="form-control"></textarea>
+      <textarea rows="10" class="form-control" autosize [minRows]="6"></textarea>
     </div>
   </div>
 
 </div>
 
 
-<form [formGroup]="form" class="settings-form" autocomplete="off">
+<div [formGroup]="form" class="settings-form">
 
   <!-- Form Lock Status Alert -->
   <div class="alert alert-warning d-flex align-items-center mb-4" *ngIf="isFormDisabled && id">
     <i class="mdi mdi-shield-lock me-2 fs-5"></i>
     <div>
-      <strong>Safety Compliance Mode:</strong> Core incident details are protected to maintain regulatory compliance. 
+      <strong>Safety Compliance Mode:</strong> Core incident details are protected to maintain regulatory compliance.
       Only administrative fields (investigation status, corrective actions) remain editable.
     </div>
   </div>
 
-  <div class="body">
+  <!-- Reporter Information Section -->
+  <div class="mb-4 pb-4 border-bottom">
+    <div class="mb-3">
+      <h3 class="h5 mb-1">Reporter Information</h3>
+      <p class="text-muted mb-0">Person reporting the safety incident (Optional).</p>
+    </div>
 
-    <!-- Reporter Information Section -->
-    <div class="mb-4 pb-4 border-bottom">
-      <div class="mb-3">
-        <h3 class="h5 mb-1">Reporter Information</h3>
-        <p class="text-muted mb-0">
-          Person reporting the safety incident (Optional).
-        </p>
-      </div>
-
-      <div class="row">
-        <div class="col-md-6 mb-3">
-          <label class="form-label">
-            First Name
-          </label>
-          <input class="form-control" type="text" formControlName="first_name"
-            [ngClass]="{ 'is-invalid': submitted && f.first_name.errors }" 
-            placeholder="Enter first name" />
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Reporter's first name for contact purposes.
+    <div class="row g-3">
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label">First Name</label>
+          <div class="col-12 col-lg-9">
+            <input class="form-control" type="text" formControlName="first_name"
+              [ngClass]="{ 'is-invalid': submitted && f.first_name.errors }" placeholder="Enter first name" />
           </div>
         </div>
+      </div>
 
-        <div class="col-md-6 mb-3">
-          <label class="form-label">
-            Last Name
-          </label>
-          <input class="form-control" type="text" formControlName="last_name"
-            [ngClass]="{ 'is-invalid': submitted && f.last_name.errors }" 
-            placeholder="Enter last name" />
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Reporter's last name for identification.
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label">Last Name</label>
+          <div class="col-12 col-lg-9">
+            <input class="form-control" type="text" formControlName="last_name"
+              [ngClass]="{ 'is-invalid': submitted && f.last_name.errors }" placeholder="Enter last name" />
           </div>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Incident Details Section -->
-    <div class="mb-4 pb-4 border-bottom">
-      <div class="mb-3">
-        <h3 class="h5 mb-1">Incident Details</h3>
-        <p class="text-muted mb-0">
-          When and where did the safety incident occur.
-        </p>
-      </div>
+  <!-- Incident Details Section -->
+  <div class="mb-4 pb-4 border-bottom">
+    <div class="mb-3">
+      <h3 class="h5 mb-1">Incident Details</h3>
+      <p class="text-muted mb-0">When, where, and what type of safety incident occurred.</p>
+    </div>
 
-      <div class="row">
-        <div class="col-md-6 mb-3">
-          <label class="form-label">
-            Date of Incident
-          </label>
-          <input class="form-control" type="date" formControlName="date_of_incident"
-            [ngClass]="{ 'is-invalid': submitted && f.date_of_incident.errors }" />
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            The date when the incident occurred.
+    <div class="row g-3">
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label">Date of Incident</label>
+          <div class="col-12 col-lg-9">
+            <input class="form-control" type="date" formControlName="date_of_incident"
+              [ngClass]="{ 'is-invalid': submitted && f.date_of_incident.errors }" />
           </div>
         </div>
+      </div>
 
-        <div class="col-md-6 mb-3">
-          <label class="form-label">
-            Time of Incident
-          </label>
-          <input class="form-control" type="time" formControlName="time_of_incident"
-            [ngClass]="{ 'is-invalid': submitted && f.time_of_incident.errors }" />
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            The approximate time when the incident occurred.
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label">Time of Incident</label>
+          <div class="col-12 col-lg-9">
+            <input class="form-control" type="time" formControlName="time_of_incident"
+              [ngClass]="{ 'is-invalid': submitted && f.time_of_incident.errors }" />
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label">Type of Incident</label>
+          <div class="col-12 col-lg-9">
+            <select formControlName="type_of_incident" class="form-select"
+              [ngClass]="{ 'is-invalid': submitted && f.type_of_incident.errors }">
+              <option disabled selected [value]="null">Select incident type</option>
+              <option *ngFor="let row of type_of_incident_options" [value]="row.name">{{row.name}}</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12" *ngIf="form.value.type_of_incident == 'Other'">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label">Please Specify Other Type</label>
+          <div class="col-12 col-lg-9">
+            <input class="form-control" type="text" formControlName="type_of_incident_other"
+              [ngClass]="{ 'is-invalid': submitted && f.type_of_incident_other.errors }"
+              placeholder="Specify other incident type" />
+            <div class="form-text">Describe the specific type of incident not listed.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label">Location of Incident</label>
+          <div class="col-12 col-lg-9">
+            <select formControlName="location_of_incident" class="form-select"
+              [ngClass]="{ 'is-invalid': submitted && f.location_of_incident.errors }"
+              (change)="onChangeLocationOfIncident()">
+              <option disabled selected [value]="null">Select incident location</option>
+              <option *ngFor="let row of location_of_incident_options" [value]="row.name">{{row.name}}</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12" *ngIf="form.value.location_of_incident == 'Las Vegas Facility'">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label">Specific Area</label>
+          <div class="col-12 col-lg-9">
+            <select formControlName="location_of_incident_other" class="form-select"
+              [ngClass]="{ 'is-invalid': submitted && f.location_of_incident_other.errors }">
+              <option disabled selected [value]="null">Select specific area</option>
+              <option *ngFor="let row of lasVegasFacilityOptions" [value]="row.name">{{row.name}}</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12" *ngIf="form.value.location_of_incident == 'Las Vegas Facility' && form.value.location_of_incident_other == 'Other'">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label">Please Specify Area</label>
+          <div class="col-12 col-lg-9">
+            <input class="form-control" type="text" formControlName="location_of_incident_other_other"
+              [ngClass]="{ 'is-invalid': submitted && f.location_of_incident_other_other.errors }" placeholder="Specify area" />
+            <div class="form-text">Describe the specific area not listed in the facility.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12" *ngIf="form.value.location_of_incident != 'Las Vegas Facility' && form.value.location_of_incident">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label">Please Specify Location</label>
+          <div class="col-12 col-lg-9">
+            <input class="form-control" type="text" formControlName="location_of_incident_other"
+              [ngClass]="{ 'is-invalid': submitted && f.location_of_incident_other.errors }"
+              placeholder="Specify location details" />
+            <div class="form-text">Provide specific details about the incident location.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="row g-2">
+          <label class="col-12 col-lg-3 col-form-label">Description of Incident</label>
+          <div class="col-12 col-lg-9">
+            <textarea class="form-control" formControlName="description_of_incident" autosize [minRows]="4"
+              [ngClass]="{ 'is-invalid': submitted && f.description_of_incident.errors }"
+              placeholder="Describe what happened, including sequence of events, conditions, and any contributing factors"
+              rows="5"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="row g-2">
+          <label class="col-12 col-lg-3 col-form-label">Details of Damage or Personal Injury</label>
+          <div class="col-12 col-lg-9">
+            <textarea class="form-control" formControlName="details_of_any_damage_or_personal_injury" autosize [minRows]="4"
+              [ngClass]="{ 'is-invalid': submitted && f.details_of_any_damage_or_personal_injury.errors }"
+              placeholder="Describe any injuries, property damage, or potential consequences"
+              rows="5"></textarea>
           </div>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Incident Classification Section -->
-    <div class="mb-4 pb-4 border-bottom">
-      <div class="mb-3">
-        <h3 class="h5 mb-1">Incident Classification</h3>
-        <p class="text-muted mb-0">
-          Categorize the type and location of the safety incident.
-        </p>
-      </div>
+  <!-- Administrative Section (Only shown when editing) -->
+  <div class="mb-4" *ngIf="id">
+    <div class="mb-3">
+      <h3 class="h5 mb-1">Administrative Section</h3>
+      <p class="text-muted mb-0">Management and corrective action details for incident follow-up.</p>
+    </div>
 
-      <div class="row">
-        <div class="col-md-6 mb-3">
-          <label class="form-label">
-            Type of Incident
-          </label>
-          <select formControlName="type_of_incident" class="form-select"
-            [ngClass]="{ 'is-invalid': submitted && f.type_of_incident.errors }">
-            <option disabled selected [value]="null">Select incident type</option>
-            <option *ngFor="let row of type_of_incident_options" [value]="row.name">{{row.name}}</option>
-          </select>
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Select the category that best describes the incident.
-          </div>
-        </div>
-
-        <div class="col-md-6 mb-3" *ngIf="form.value.type_of_incident == 'Other'">
-          <label class="form-label">
-            Please Specify Other Type
-          </label>
-          <input class="form-control" type="text" formControlName="type_of_incident_other"
-            [ngClass]="{ 'is-invalid': submitted && f.type_of_incident_other.errors }" 
-            placeholder="Specify other incident type" />
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Describe the specific type of incident not listed.
+    <div class="row g-3">
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label">Investigation Status</label>
+          <div class="col-12 col-lg-9">
+            <select formControlName="status" class="form-select" [ngClass]="{ 'is-invalid': submitted && f.status.errors }">
+              <option disabled selected [value]="null">Select status</option>
+              <option *ngFor="let row of ['Open', 'Closed', 'In Process']" [value]="row">{{row}}</option>
+            </select>
           </div>
         </div>
       </div>
 
-      <div class="row">
-        <div class="col-md-6 mb-3">
-          <label class="form-label">
-            Location of Incident
-          </label>
-          <select formControlName="location_of_incident" class="form-select" 
-            [ngClass]="{ 'is-invalid': submitted && f.location_of_incident.errors }"
-            (change)="onChangeLocationOfIncident()">
-            <option disabled selected [value]="null">Select incident location</option>
-            <option *ngFor="let row of location_of_incident_options" [value]="row.name">{{row.name}}</option>
-          </select>
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Select the general location where the incident occurred.
-          </div>
-        </div>
-
-        <div class="col-md-6 mb-3" *ngIf="form.value.location_of_incident == 'Las Vegas Facility'">
-          <label class="form-label">
-            Specific Area
-          </label>
-          <select formControlName="location_of_incident_other" class="form-select"
-            [ngClass]="{ 'is-invalid': submitted && f.location_of_incident_other.errors }">
-            <option disabled selected [value]="null">Select specific area</option>
-            <option *ngFor="let row of lasVegasFacilityOptions" [value]="row.name">{{row.name}}</option>
-          </select>
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Select the specific area within the Las Vegas facility.
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label">Corrective Action Owner</label>
+          <div class="col-12 col-lg-9">
+            <app-user-search (notifyParent)="notifyParent($event)" [value]="form.value['corrective_action_owner']"
+              [ngClass]="{ 'is-invalid': submitted && f.corrective_action_owner.errors }"
+              [form_label]="'Corrective Action Owner'" [showLabel]="false"
+              [disabled]="isFormDisabled"></app-user-search>
           </div>
         </div>
       </div>
 
-      <div class="row" *ngIf="form.value.location_of_incident == 'Las Vegas Facility' && form.value.location_of_incident_other == 'Other'">
-        <div class="col-md-12 mb-3">
-          <label class="form-label">
-            Please Specify Area
-          </label>
-          <input class="form-control" type="text" formControlName="location_of_incident_other_other"
-            [ngClass]="{ 'is-invalid': submitted && f.location_of_incident_other_other.errors }" 
-            placeholder="Specify area" />
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Describe the specific area not listed in the facility.
+      <div class="col-12">
+        <div class="row g-2">
+          <label class="col-12 col-lg-3 col-form-label">Proposed Corrective Action</label>
+          <div class="col-12 col-lg-9">
+            <textarea class="form-control" formControlName="proposed_corrective_action" autosize [minRows]="4"
+              [ngClass]="{ 'is-invalid': submitted && f.proposed_corrective_action.errors }"
+              placeholder="Describe proposed corrective actions to prevent recurrence" rows="5"></textarea>
           </div>
         </div>
       </div>
 
-      <div class="row" *ngIf="form.value.location_of_incident != 'Las Vegas Facility' && form.value.location_of_incident">
-        <div class="col-md-12 mb-3">
-          <label class="form-label">
-            Please Specify Location
-          </label>
-          <input class="form-control" type="text" formControlName="location_of_incident_other"
-            [ngClass]="{ 'is-invalid': submitted && f.location_of_incident_other.errors }" 
-            placeholder="Specify location details" />
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Provide specific details about the incident location.
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label">Proposed Completion Date</label>
+          <div class="col-12 col-lg-9">
+            <input class="form-control" type="date" formControlName="proposed_corrective_action_completion_date"
+              [ngClass]="{ 'is-invalid': submitted && f.proposed_corrective_action_completion_date.errors }" />
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label">Confirmed Completion Date</label>
+          <div class="col-12 col-lg-9">
+            <input class="form-control" type="date" formControlName="confirmed_corrective_action_completion_date"
+              [ngClass]="{ 'is-invalid': submitted && f.confirmed_corrective_action_completion_date.errors }" />
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="row g-2">
+          <label class="col-12 col-lg-3 col-form-label">Administrative Comments</label>
+          <div class="col-12 col-lg-9">
+            <textarea class="form-control" formControlName="comments" autosize [minRows]="3"
+              [ngClass]="{ 'is-invalid': submitted && f.comments.errors }"
+              placeholder="Additional comments from management or safety team" rows="5"></textarea>
           </div>
         </div>
       </div>
     </div>
-
-    <!-- Incident Description Section -->
-    <div class="mb-4 pb-4">
-      <div class="mb-3">
-        <h3 class="h5 mb-1">Incident Description</h3>
-        <p class="text-muted mb-0">
-          Detailed description of what happened and any resulting damage or injuries.
-        </p>
-      </div>
-
-      <div class="row">
-        <div class="col-md-12 mb-3">
-          <label class="form-label">
-            Description of Incident
-          </label>
-          <textarea class="form-control" formControlName="description_of_incident" 
-            [ngClass]="{ 'is-invalid': submitted && f.description_of_incident.errors }" 
-            placeholder="Describe what happened, including sequence of events, conditions, and any contributing factors"
-            rows="5"></textarea>
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Provide a detailed account of the incident including sequence of events and contributing factors.
-          </div>
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="col-md-12 mb-3">
-          <label class="form-label">
-            Details of Damage or Personal Injury
-          </label>
-          <textarea class="form-control" formControlName="details_of_any_damage_or_personal_injury"
-            [ngClass]="{ 'is-invalid': submitted && f.details_of_any_damage_or_personal_injury.errors }" 
-            placeholder="Describe any injuries, property damage, or potential consequences"
-            rows="5"></textarea>
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Detail any injuries sustained or property damage caused by the incident.
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Administrative Section (Only shown when editing) -->
-    <div class="mb-4" *ngIf="id">
-      <div class="mb-3">
-        <h3 class="h5 mb-1">Administrative Section</h3>
-        <p class="text-muted mb-0">
-          Management and corrective action details for incident follow-up.
-        </p>
-      </div>
-
-      <div class="row">
-        <div class="col-md-6 mb-3">
-          <label class="form-label">
-            Investigation Status
-          </label>
-          <select formControlName="status" class="form-select"
-            [ngClass]="{ 'is-invalid': submitted && f.status.errors }">
-            <option disabled selected [value]="null">Select status</option>
-            <option *ngFor="let row of ['Open', 'Closed', 'In Process']" [value]="row">{{row}}</option>
-          </select>
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Current status of the incident investigation.
-          </div>
-        </div>
-
-        <div class="col-md-6 mb-3">
-          <label class="form-label">
-            Corrective Action Owner
-          </label>
-          <app-user-search (notifyParent)="notifyParent($event)" [value]="form.value['corrective_action_owner']"
-            [ngClass]="{ 'is-invalid': submitted && f.corrective_action_owner.errors }"
-            [form_label]="'Corrective Action Owner'"
-            [disabled]="isFormDisabled"></app-user-search>
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Person responsible for implementing corrective actions.
-          </div>
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="col-md-12 mb-3">
-          <label class="form-label">
-            Proposed Corrective Action
-          </label>
-          <textarea class="form-control" formControlName="proposed_corrective_action"
-            [ngClass]="{ 'is-invalid': submitted && f.proposed_corrective_action.errors }" 
-            placeholder="Describe proposed corrective actions to prevent recurrence"
-            rows="5"></textarea>
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Detail the proposed actions to prevent similar incidents in the future.
-          </div>
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="col-md-6 mb-3">
-          <label class="form-label">
-            Proposed Completion Date
-          </label>
-          <input class="form-control" type="date" formControlName="proposed_corrective_action_completion_date"
-            [ngClass]="{ 'is-invalid': submitted && f.proposed_corrective_action_completion_date.errors }" />
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Target date for completing corrective actions.
-          </div>
-        </div>
-
-        <div class="col-md-6 mb-3">
-          <label class="form-label">
-            Confirmed Completion Date
-          </label>
-          <input class="form-control" type="date" formControlName="confirmed_corrective_action_completion_date"
-            [ngClass]="{ 'is-invalid': submitted && f.confirmed_corrective_action_completion_date.errors }" />
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Actual date when corrective actions were completed.
-          </div>
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="col-md-12 mb-3">
-          <label class="form-label">
-            Administrative Comments
-          </label>
-          <textarea class="form-control" formControlName="comments"
-            [ngClass]="{ 'is-invalid': submitted && f.comments.errors }" 
-            placeholder="Additional comments from management or safety team"
-            rows="5"></textarea>
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Additional comments from management or safety team.
-          </div>
-        </div>
-      </div>
-    </div>
-
-  </div> <!-- end body container -->
-</form>
+  </div>
+</div>

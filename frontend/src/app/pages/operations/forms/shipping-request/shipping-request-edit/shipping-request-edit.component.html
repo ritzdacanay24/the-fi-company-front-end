@@ -1,6 +1,6 @@
 <div class="container-fluid" *ngIf="!data && !id">
   <div class="row justify-content-center">
-    <div class="col-12 col-lg-11 col-xl-10 col-xxl-7">
+    <div class="col-12 col-lg-9 col-xl-8 col-xxl-7">
       <div class="card shadow-sm border-0">
         <div class="card-body text-center p-5" style="min-height:300px">
           <div class="mb-4">
@@ -19,7 +19,7 @@
 
 <div class="container-fluid" [hidden]="!data && !id">
   <div class="row justify-content-center">
-    <div class="col-12 col-lg-11 col-xl-10 col-xxl-8">
+    <div class="col-12 col-lg-9 col-xl-8 col-xxl-7">
 
       <!-- Breadcrumb -->
       <nav aria-label="breadcrumb" class="mb-3">
@@ -50,17 +50,38 @@
             <h2 class="mb-1 text-primary">{{title}}</h2>
             <p class="text-muted mb-0" *ngIf="id">Edit existing shipping request #{{id}}</p>
           </div>
-          <!-- Print button moved to header, aligned right -->
-          <div class="ms-auto">
-            <button type="button" class="btn btn-outline-primary" [disabled]="isLoading" (click)="onPrint()" title="Print Shipping Request">
-              <i class="mdi mdi-printer me-1"></i> Print
-            </button>
-          </div>
         </div>
 
       </div>
 
       <div class="card shadow-sm border-0">
+        <div class="card-header border-bottom d-flex align-items-center justify-content-between py-3 px-4" *ngIf="data && id">
+          <span class="fw-semibold text-dark">
+            <i class="mdi mdi-truck-delivery-outline text-primary me-2"></i>
+            Shipping Request #{{ id }}
+          </span>
+          <div ngbDropdown placement="bottom-end" [container]="'body'">
+            <button type="button" class="btn btn-outline-secondary" ngbDropdownToggle>
+              Actions
+            </button>
+            <div ngbDropdownMenu>
+              <h6 class="dropdown-header">Shipping Request Actions</h6>
+              <button ngbDropdownItem (click)="onPrint()" [disabled]="isLoading">
+                <i class="mdi mdi-printer-outline me-2 text-primary"></i>Print
+              </button>
+              <button ngbDropdownItem (click)="onEdit()" [disabled]="isLoading || !formDisabled">
+                <i class="mdi mdi-pencil-outline me-2 text-info"></i>Edit
+              </button>
+              <div class="dropdown-divider"></div>
+              <button ngbDropdownItem (click)="onArchive()" [disabled]="isLoading">
+                <i class="mdi mdi-archive-outline me-2 text-warning"></i>Archive
+              </button>
+              <button ngbDropdownItem (click)="onDelete()" [disabled]="isLoading">
+                <i class="mdi mdi-delete-outline me-2 text-danger"></i>Delete
+              </button>
+            </div>
+          </div>
+        </div>
         <div class="card-body p-4">
           <app-shipping-request-form (setFormEmitter)="onFormReady($event)" [submitted]="submitted"
             [updateTracking]="updateTracking" [showTrackingNumberField]="true"

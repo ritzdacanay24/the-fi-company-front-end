@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { PoolConnection } from 'mysql2/promise';
 import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { MysqlService } from '@/shared/database/mysql.service';
 
@@ -167,5 +168,44 @@ export class VehicleInspectionRepository {
     ]);
 
     return result.insertId;
+  }
+
+  async deleteById(id: number): Promise<number> {
+    return this.mysqlService.withTransaction(async (connection: PoolConnection) => {
+      await this.deleteDetailsByInspectionId(id, connection);
+      await this.deleteAttachmentsByInspectionId(id, connection);
+      return this.deleteHeaderById(id, connection);
+    });
+  }
+
+  private async deleteDetailsByInspectionId(
+    id: number,
+    connection: PoolConnection,
+  ): Promise<number> {
+    const sql = `DELETE FROM forms.vehicle_inspection_details WHERE forklift_checklist_id = ?`;
+    const [result] = await connection.execute<ResultSetHeader>(sql, [id]);
+    return result.affectedRows;
+  }
+
+  private async deleteAttachmentsByInspectionId(
+    id: number,
+    connection: PoolConnection,
+  ): Promise<number> {
+    const sql = `
+      DELETE FROM eyefidb.attachments
+      WHERE field = 'Vehicle Inspection'
+        AND uniqueId = ?
+    `;
+    const [result] = await connection.execute<ResultSetHeader>(sql, [id]);
+    return result.affectedRows;
+  }
+
+  private async deleteHeaderById(
+    id: number,
+    connection: PoolConnection,
+  ): Promise<number> {
+    const sql = `DELETE FROM forms.vehicle_inspection_header WHERE id = ?`;
+    const [result] = await connection.execute<ResultSetHeader>(sql, [id]);
+    return result.affectedRows;
   }
 }

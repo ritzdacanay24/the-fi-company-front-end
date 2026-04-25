@@ -199,6 +199,7 @@ export class SafetyIncidentEditComponent {
       
       // Clear the file selection and reset input
       this.myFiles = [];
+      this.clearSelectedImagePreviews();
       const fileInput = document.getElementById('file') as HTMLInputElement;
       if (fileInput) {
         fileInput.value = '';
@@ -247,11 +248,57 @@ export class SafetyIncidentEditComponent {
   }
 
   attachments: any = [];
+  selectedImagePreviews: Array<{ name: string; url: string }> = [];
+  private readonly imageExtensions = ["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg", "avif"];
+
+  private isImageAttachment(fileName: string): boolean {
+    if (!fileName) return false;
+    const extension = fileName.split(".").pop()?.toLowerCase();
+    return !!extension && this.imageExtensions.includes(extension);
+  }
+
+  get imageAttachments() {
+    return this.attachments.filter((row) => row?.isImage && row?.previewUrl && !row?.previewFailed);
+  }
+
+  onPreviewError(attachment: any) {
+    attachment.previewFailed = true;
+  }
+
+  private clearSelectedImagePreviews() {
+    for (const row of this.selectedImagePreviews) {
+      URL.revokeObjectURL(row.url);
+    }
+    this.selectedImagePreviews = [];
+  }
+
+  private async resolveAttachmentPreviewUrl(attachment: any): Promise<string | null> {
+    try {
+      const resolved = await this.attachmentsService.getViewById(attachment?.id);
+      return resolved?.url || attachment?.link || null;
+    } catch {
+      return attachment?.link || null;
+    }
+  }
+
   async getAttachments() {
-    this.attachments = await this.attachmentsService.find({
+    const rows = await this.attachmentsService.find({
       field: FILE.FIELD,
       uniqueId: this.id,
     });
+
+    this.attachments = await Promise.all(
+      (rows || []).map(async (row) => {
+        const isImage = this.isImageAttachment(row?.fileName);
+        const previewUrl = isImage ? await this.resolveAttachmentPreviewUrl(row) : null;
+        return {
+          ...row,
+          isImage,
+          previewUrl,
+          previewFailed: false,
+        };
+      })
+    );
   }
 
   async deleteAttachment(id, index) {
@@ -265,9 +312,17 @@ export class SafetyIncidentEditComponent {
   myFiles: File[] = [];
 
   onFileChange(event: any) {
+    this.clearSelectedImagePreviews();
     this.myFiles = [];
     for (var i = 0; i < event.target.files.length; i++) {
-      this.myFiles.push(event.target.files[i]);
+      const file = event.target.files[i] as File;
+      this.myFiles.push(file);
+      if (this.isImageAttachment(file?.name)) {
+        this.selectedImagePreviews.push({
+          name: file.name,
+          url: URL.createObjectURL(file),
+        });
+      }
     }
   }
 

@@ -31,9 +31,83 @@
 	box-shadow: inset 0 0 0 1px rgba(13, 110, 253, 0.12);
 }
 
+.qir-attachment-preview {
+	width: 100%;
+	height: 200px;
+	cursor: pointer;
+	object-fit: contain;
+	background: #fff;
+}
+
+// Tab Navigation Styles
+.nav-tabs {
+	background: white;
+	padding: 0 1.5rem;
+	margin: -0.875rem -1.5rem 0 -1.5rem;
+	border-bottom: 2px solid #e5e7eb;
+
+	.nav-link {
+		color: #6b7280;
+		border: 0;
+		padding: 1rem 1.25rem;
+		font-weight: 500;
+		transition: all 0.2s ease;
+		border-bottom: 3px solid transparent;
+		margin-bottom: -2px;
+
+		&:hover {
+			color: #0d6efd;
+			border-bottom-color: #e5e7eb;
+		}
+
+		&.active {
+			color: #0d6efd;
+			background: transparent;
+			border-bottom-color: #0d6efd;
+		}
+	}
+}
+
+.tab-pane {
+	animation: fadeIn 0.15s ease-in-out;
+}
+
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+.print-only {
+	display: none;
+}
+
+@media print {
+	.print-hide {
+		display: none !important;
+	}
+
+	.print-only {
+		display: block !important;
+	}
+}
+
 @media (max-width: 991.98px) {
 	.qir-card-header {
 		flex-direction: column;
 		align-items: stretch;
+	}
+
+	.nav-tabs {
+		padding: 0 1rem;
+		margin: -0.875rem -1rem 0 -1rem;
+
+		.nav-link {
+			padding: 0.875rem 1rem;
+			font-size: 0.9rem;
+		}
 	}
 }

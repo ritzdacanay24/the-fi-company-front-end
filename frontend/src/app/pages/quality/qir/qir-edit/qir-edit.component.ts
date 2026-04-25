@@ -19,17 +19,29 @@ import { AuthenticationService } from "@app/core/services/auth.service";
 import moment from "moment";
 import { QirResponseModalService } from "../qir-response/qir-repsonse-modal/qir-repsonse-modal.component";
 import { QirResponseService } from "@app/core/api/quality/qir-response.service";
+import { QirResponseFormComponent } from "../qir-response/qir-response-form/qir-response-form.component";
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { FileViewerModalComponent } from "@app/shared/components/file-viewer-modal/file-viewer-modal.component";
 
 @Component({
   standalone: true,
-  imports: [SharedModule, QirFormComponent],
+  imports: [SharedModule, QirFormComponent, QirResponseFormComponent],
   selector: "app-qir-edit",
   templateUrl: "./qir-edit.component.html",
   styleUrls: ["./qir-edit.component.scss"],
 })
 export class QirEditComponent {
+  private readonly imageExtensions = [
+    "jpg",
+    "jpeg",
+    "png",
+    "gif",
+    "webp",
+    "bmp",
+    "svg",
+    "avif",
+  ];
+
   constructor(
     private router: Router,
     private activatedRoute: ActivatedRoute,
@@ -63,6 +75,12 @@ export class QirEditComponent {
 
   submitted = false;
 
+  activeTab: "qir" | "response" = "qir";
+
+  qirResponseForm: any;
+  qirResponseSubmitted = false;
+  qirResponseId: string | null = null;
+
   statusOptions = [
     { value: "Open", label: "Open", canEdit: true },
     { value: "In Process", label: "In Process", canEdit: true },
@@ -73,10 +91,93 @@ export class QirEditComponent {
     { value: "N/A", label: "N/A", canEdit: true },
   ];
 
-  async openQirResponse() {
-    const modalRef = this.qirResponseModalService.open(this.id);
-    modalRef.result.then(async (result: any) => {});
+  async activateQirResponseTab() {
+    this.activeTab = "response";
+    await this.loadQirResponseData();
   }
+
+  async loadQirResponseData() {
+    try {
+      const data: any = await this.qirResponseService.findOne({ qir_number: this.id });
+      this.qirResponseId = data?.id || null;
+      if (this.qirResponseForm) {
+        if (!data) {
+          this.qirResponseForm.patchValue({
+            created_date: moment().format("YYYY-MM-DD HH:mm:ss"),
+            qir_number: this.id,
+          });
+        } else {
+          this.qirResponseForm.patchValue(data);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load QIR response data:", err);
+    }
+  }
+
+  async onQirResponseSubmit() {
+    if (this.qirResponseForm?.invalid) {
+      this.qirResponseSubmitted = true;
+      return;
+    }
+
+    try {
+      this.isLoading = true;
+      if (this.qirResponseId) {
+        await this.qirResponseService.update(this.qirResponseId, this.qirResponseForm.value);
+      } else {
+        const result = await this.qirResponseService.create(this.qirResponseForm.value);
+        this.qirResponseId = result?.insertId?.toString() || null;
+      }
+      this.isLoading = false;
+      this.toastrService.success("QIR Response Updated");
+      this.qirResponseForm.markAsPristine();
+    } catch (err) {
+      this.isLoading = false;
+      this.toastrService.error("Failed to update QIR Response");
+    }
+  }
+
+  async onQirResponsePrint() {
+    if (!this.qirResponseForm) {
+      this.toastrService.warning("QIR Response form not loaded");
+      return;
+    }
+
+    setTimeout(() => {
+      const printableArea = document.getElementById("qirResponsePrintableArea");
+      if (printableArea) {
+        const popupWin = window.open("", "_blank", "width=1000,height=600");
+        popupWin.document.open();
+        popupWin.document.write(`
+          <html>
+            <head>
+              <title>QIR Response Form</title>
+              <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+              <style>
+                @media print {
+                  body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+                  .print-hide { display: none !important; }
+                }
+              </style>
+            </head>
+            <body>
+              ${printableArea.innerHTML}
+            </body>
+          </html>
+        `);
+        popupWin.document.close();
+        popupWin.print();
+      }
+    }, 100);
+  }
+
+  setQirResponseFormElements = ($event) => {
+    this.qirResponseForm = $event;
+    if (this.id) {
+      this.loadQirResponseData();
+    }
+  };
 
   @Input() goBack: Function = () => {
     this.router.navigate([NAVIGATION_ROUTE.LIST], {
@@ -163,8 +264,15 @@ export class QirEditComponent {
     });
   }
 
-  onActionMenuClick(action: "archive" | "delete" | "print") {
-    if (action === "print") {
+  onActionMenuClick(
+    action: "archive" | "delete" | "qir-response" | "export-pdf"
+  ) {
+    if (action === "qir-response") {
+      this.activateQirResponseTab();
+      return;
+    }
+
+    if (action === "export-pdf") {
       this.onDownloadAsPdf();
       return;
     }
@@ -173,15 +281,65 @@ export class QirEditComponent {
   }
 
   attachments: any = [];
+
+  get imageAttachments() {
+    return this.attachments.filter(
+      (row) => row.isImage && row.previewUrl && !row.previewFailed
+    );
+  }
+
   async getAttachments() {
-    this.attachments = await this.attachmentsService.find({
+    const attachments = await this.attachmentsService.find({
       field: "Capa Request",
       uniqueId: this.id,
     });
+
+    this.attachments = await Promise.all(
+      attachments.map(async (attachment) => {
+        const isImage = this.isImageAttachment(attachment?.fileName);
+        const previewUrl = isImage
+          ? await this.resolveAttachmentUrl(attachment, false)
+          : null;
+
+        return {
+          ...attachment,
+          isImage,
+          previewUrl,
+          previewFailed: !previewUrl && isImage,
+        };
+      })
+    );
   }
 
   private getLegacyAttachmentUrl(fileName: string): string {
     return `https://dashboard.eye-fi.com/attachments/capa/${encodeURIComponent(fileName)}`;
+  }
+
+  private isImageAttachment(fileName?: string): boolean {
+    const extension = fileName?.split(".").pop()?.toLowerCase();
+    return !!extension && this.imageExtensions.includes(extension);
+  }
+
+  private async resolveAttachmentUrl(
+    row: any,
+    showError = true
+  ): Promise<string | null> {
+    try {
+      const resolved = await this.attachmentsService.getViewById(row?.id);
+      return (
+        resolved?.url ||
+        row?.previewUrl ||
+        row?.link ||
+        this.getLegacyAttachmentUrl(row?.fileName || "")
+      );
+    } catch (error) {
+      if (showError) {
+        console.error("Failed to resolve attachment URL:", error);
+        this.toastrService.error("Unable to open attachment");
+      }
+
+      return row?.link || null;
+    }
   }
 
   private openFileViewerModal(url: string, fileName: string): void {
@@ -199,44 +357,31 @@ export class QirEditComponent {
   async openAttachment(row: any, event?: Event): Promise<void> {
     event?.preventDefault();
 
-    try {
-      const resolved = await this.attachmentsService.getViewById(row?.id);
-      const resolvedUrl =
-        resolved?.url || row?.link || this.getLegacyAttachmentUrl(row?.fileName || "");
+    const resolvedUrl = await this.resolveAttachmentUrl(row);
 
-      if (!resolvedUrl) {
-        this.toastrService.warning("Attachment URL not available");
-        return;
-      }
-
-      this.openFileViewerModal(
-        resolvedUrl,
-        row?.fileName || resolved?.fileName || "Attachment"
-      );
-    } catch (error) {
-      console.error("Failed to resolve attachment URL:", error);
-      this.toastrService.error("Unable to open attachment");
+    if (!resolvedUrl) {
+      this.toastrService.warning("Attachment URL not available");
+      return;
     }
+
+    this.openFileViewerModal(resolvedUrl, row?.fileName || "Attachment");
   }
 
   async downloadAttachment(row: any, event?: Event): Promise<void> {
     event?.preventDefault();
 
-    try {
-      const resolved = await this.attachmentsService.getViewById(row?.id);
-      const resolvedUrl =
-        resolved?.url || row?.link || this.getLegacyAttachmentUrl(row?.fileName || "");
+    const resolvedUrl = await this.resolveAttachmentUrl(row);
 
-      if (!resolvedUrl) {
-        this.toastrService.warning("Attachment URL not available");
-        return;
-      }
-
-      window.open(resolvedUrl, "_blank");
-    } catch (error) {
-      console.error("Failed to resolve attachment URL for download:", error);
-      this.toastrService.error("Unable to download attachment");
+    if (!resolvedUrl) {
+      this.toastrService.warning("Attachment URL not available");
+      return;
     }
+
+    window.open(resolvedUrl, "_blank");
+  }
+
+  onPreviewError(row: any) {
+    row.previewFailed = true;
   }
 
   async deleteAttachment(id, index) {

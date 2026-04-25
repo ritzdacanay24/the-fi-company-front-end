@@ -433,13 +433,13 @@ export const MENU_DATA: MenuItem[] = [
                 icon: "las la-check-circle",
                 activatedRoutes: "/quality/car/*"
             },
-            {
-                label: "Material Review",
-                link: "/quality/mrb",
-                description: "Non-Conforming Materials",
-                icon: "las la-clipboard-check",
-                activatedRoutes: "/quality/mrb/*"
-            },
+            // {
+            //     label: "Material Review",
+            //     link: "/quality/mrb",
+            //     description: "Non-Conforming Materials",
+            //     icon: "las la-clipboard-check",
+            //     activatedRoutes: "/quality/mrb/*"
+            // },
             {
                 badgeId: "qualityIssuesOpen",
                 label: "Quality Issues",
@@ -471,13 +471,7 @@ export const MENU_DATA: MenuItem[] = [
             //     activatedRoutes: "/inspection/*"
             // },
         ],
-    },
-    {
-        id: 36,
-        label: "Admin & Maintenance",
-        isTitle: true,
-        hideCheckBox: true,
-    },
+    }
 ];
 
 // Function to recursively sort menu items by ID, then by label

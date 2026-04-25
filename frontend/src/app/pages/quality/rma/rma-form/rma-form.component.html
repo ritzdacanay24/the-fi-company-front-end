@@ -8,264 +8,236 @@
     </div>
   </div>
 
-  <div class="body">
+  <!-- RMA Information Section -->
+  <div class="mb-4 pb-4 border-bottom">
+    <div class="mb-3">
+      <h3 class="h5 mb-1">RMA Information</h3>
+      <p class="text-muted mb-0">Basic RMA details including production settings and current status.</p>
+    </div>
 
-    <!-- RMA Information Section -->
-    <div class="mb-4 pb-4 border-bottom">
-      <div class="mb-3">
-        <h3 class="h5 mb-1">RMA Information</h3>
-        <p class="text-muted mb-0">
-          Basic RMA details including production information and current status.
-        </p>
-      </div>
-
-      <div class="row">
-        <div class="col-md-4 mb-3">
-          <label class="form-label">Produce By</label>
-          <select class="form-select" formControlName="type" [ngClass]="{ 'is-invalid': submitted && f.type.errors }">
-            <option selected disabled value="">--Select--</option>
-            <option *ngFor="let row of formData.produceBy" [value]="row">{{row}}</option>
-          </select>
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Select the production method or source.
-          </div>
-        </div>
-        <div class="col-md-4 mb-3">
-          <label class="form-label">Date Issued</label>
-          <input class="form-control" type="date" formControlName="dateIssued"
-            [ngClass]="{ 'is-invalid': submitted && f.dateIssued.errors }" />
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Date when the RMA was issued.
-          </div>
-        </div>
-        <div class="col-md-4 mb-3">
-          <label class="form-label">Status</label>
-          <select class="form-select" formControlName="status" [ngClass]="{ 'is-invalid': submitted && f.status.errors }">
-            <option *ngFor="let row of formData.status" [value]="row.name">{{row.name}}</option>
-          </select>
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Current processing status of the RMA.
+    <div class="row g-3">
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label">Produce By</label>
+          <div class="col-12 col-lg-9">
+            <select class="form-select" formControlName="type" [ngClass]="{ 'is-invalid': submitted && f.type.errors }">
+              <option selected disabled value="">--Select--</option>
+              <option *ngFor="let row of formData.produceBy" [value]="row">{{row}}</option>
+            </select>
           </div>
         </div>
       </div>
 
-      <div class="row">
-        <div class="col mb-3">
-          <app-qir-search (notifyParent)="notifyParent($event)" [value]="f.qirNumber.value"
-            [ngClass]="{ 'is-invalid': submitted && f.qirNumber.errors }" [disabled]="form.disabled"></app-qir-search>
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Quality Inspection Report number reference.
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label">Date Issued</label>
+          <div class="col-12 col-lg-9">
+            <input class="form-control" type="date" formControlName="dateIssued"
+              [ngClass]="{ 'is-invalid': submitted && f.dateIssued.errors }" />
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label">Status</label>
+          <div class="col-12 col-lg-9">
+            <select class="form-select" formControlName="status" [ngClass]="{ 'is-invalid': submitted && f.status.errors }">
+              <option *ngFor="let row of formData.status" [value]="row.name">{{row.name}}</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label">Select QIR</label>
+          <div class="col-12 col-lg-9">
+            <app-qir-search (notifyParent)="notifyParent($event)" [value]="f.qirNumber.value" [showLabel]="false"
+              [ngClass]="{ 'is-invalid': submitted && f.qirNumber.errors }" [disabled]="form.disabled"></app-qir-search>
           </div>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Customer & Product Details Section -->
-    <div class="mb-4 pb-4 border-bottom">
-      <div class="mb-3">
-        <h3 class="h5 mb-1">Customer & Product Details</h3>
-        <p class="text-muted mb-0">
-          Customer information and product identification details.
-        </p>
-      </div>
-
-      <div class="row">
-        <div class="col-md-6 mb-3">
-          <app-qad-customer-name-search (notifyParent)="getCustomerName($event)"
-            [ngClass]="{ 'is-invalid': submitted && f.customer.errors }"
-            [value]="f.customer.value" [disabled]="form.disabled"></app-qad-customer-name-search>
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Customer associated with this RMA.
-          </div>
-        </div>
-        <div class="col-md-6 mb-3">
-          <label class="form-label">Tag QN Number</label>
-          <input class="form-control" type="text" formControlName="tag_qn_number" placeholder="Enter QN Number"
-            [ngClass]="{ 'is-invalid': submitted && f.tag_qn_number.errors }" />
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Quality notification tag number.
-          </div>
-        </div>
-      </div>
-
-      <div class="mb-3">
-        <app-qad-part-search (notifyParent)="setQadPartNumber($event)"
-          [ngClass]="{ 'is-invalid': submitted && f.partNumber.errors }" [value]="f.partNumber.value" [disabled]="form.disabled"></app-qad-part-search>
-        <div class="form-text">
-          <i class="mdi mdi-information-outline me-1"></i>
-          Part number for the item being returned.
-        </div>
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label">Description</label>
-        <input class="form-control" type="text" formControlName="partDescription" placeholder="Enter Part Description"
-          [ngClass]="{ 'is-invalid': submitted && f.partDescription.errors }" />
-        <div class="form-text">
-          <i class="mdi mdi-information-outline me-1"></i>
-          Detailed description of the part or product.
-        </div>
-      </div>
+  <!-- Customer & Product Details Section -->
+  <div class="mb-4 pb-4 border-bottom">
+    <div class="mb-3">
+      <h3 class="h5 mb-1">Customer & Product Details</h3>
+      <p class="text-muted mb-0">Customer information and product identification details.</p>
     </div>
 
-    <!-- Order & Quantity Information Section -->
-    <div class="mb-4 pb-4 border-bottom">
-      <div class="mb-3">
-        <h3 class="h5 mb-1">Order & Quantity Information</h3>
-        <p class="text-muted mb-0">
-          Order details and quantity specifications for the return.
-        </p>
-      </div>
-
-      <div class="row">
-        <div class="col-md-6 mb-3">
-          <label class="form-label">Order Number</label>
-          <input class="form-control" type="text" formControlName="orderNumber" placeholder="Enter Order Number"
-            [ngClass]="{ 'is-invalid': submitted && f.orderNumber.errors }" />
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Original order number for tracking.
+    <div class="row g-3">
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label">Select Customer Name</label>
+          <div class="col-12 col-lg-9">
+            <app-qad-customer-name-search (notifyParent)="getCustomerName($event)" [showLabel]="false"
+              [ngClass]="{ 'is-invalid': submitted && f.customer.errors }"
+              [value]="f.customer.value" [disabled]="form.disabled"></app-qad-customer-name-search>
           </div>
         </div>
-        <div class="col-md-6 mb-3">
-          <label class="form-label">Quantity</label>
-          <input class="form-control" type="number" formControlName="qty" placeholder="Enter Qty"
-            [ngClass]="{ 'is-invalid': submitted && f.qty.errors }" />
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Number of items being returned.
+      </div>
+
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label">Tag QN Number</label>
+          <div class="col-12 col-lg-9">
+            <input class="form-control" type="text" formControlName="tag_qn_number" placeholder="Enter QN Number"
+              [ngClass]="{ 'is-invalid': submitted && f.tag_qn_number.errors }" />
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label">Select Part Number</label>
+          <div class="col-12 col-lg-9">
+            <app-qad-part-search (notifyParent)="setQadPartNumber($event)" [showLabel]="false"
+              [ngClass]="{ 'is-invalid': submitted && f.partNumber.errors }" [value]="f.partNumber.value" [disabled]="form.disabled"></app-qad-part-search>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label">Description</label>
+          <div class="col-12 col-lg-9">
+            <input class="form-control" type="text" formControlName="partDescription" placeholder="Enter Part Description"
+              [ngClass]="{ 'is-invalid': submitted && f.partDescription.errors }" />
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label">Order Number</label>
+          <div class="col-12 col-lg-9">
+            <input class="form-control" type="text" formControlName="orderNumber" placeholder="Enter Order Number"
+              [ngClass]="{ 'is-invalid': submitted && f.orderNumber.errors }" />
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label">Quantity</label>
+          <div class="col-12 col-lg-9">
+            <input class="form-control" type="number" formControlName="qty" placeholder="Enter Qty"
+              [ngClass]="{ 'is-invalid': submitted && f.qty.errors }" />
           </div>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Return Processing Section -->
-    <div class="mb-4 pb-4 border-bottom">
-      <div class="mb-3">
-        <h3 class="h5 mb-1">Return Processing</h3>
-        <p class="text-muted mb-0">
-          Return method, type, and disposition settings.
-        </p>
-      </div>
+  <!-- Return Processing Section -->
+  <div class="mb-4 pb-4">
+    <div class="mb-3">
+      <h3 class="h5 mb-1">Return Processing</h3>
+      <p class="text-muted mb-0">Return method, type, and disposition settings.</p>
+    </div>
 
-      <div class="row">
-        <div class="col-md-4 mb-3">
-          <label class="form-label">Return Method</label>
-          <input class="form-control" type="text" formControlName="returnMethod" placeholder="Enter Return Method"
-            [ngClass]="{ 'is-invalid': submitted && f.returnMethod.errors }" />
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Method used for the return process.
-          </div>
-        </div>
-        <div class="col-md-4 mb-3">
-          <label class="form-label">Return Type</label>
-          <select formControlName="returnType" class="form-select"
-            [ngClass]="{ 'is-invalid': submitted && f.returnType.errors }">
-            <option selected disabled value="">--Select--</option>
-            <option *ngFor="let row of formData.returnType" [value]="row">{{row}}</option>
-          </select>
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Classification of the return type.
-          </div>
-        </div>
-        <div class="col-md-4 mb-3">
-          <label class="form-label">Disposition</label>
-          <select formControlName="disposition" class="form-select"
-            [ngClass]="{ 'is-invalid': submitted && f.disposition.errors }">
-            <option selected disabled value="">--Select--</option>
-            <option *ngFor="let row of formData.disposition" [value]="row.name">{{row.name}}</option>
-          </select>
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Final disposition of the returned item.
+    <div class="row g-3">
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label">Return Method</label>
+          <div class="col-12 col-lg-9">
+            <input class="form-control" type="text" formControlName="returnMethod" placeholder="Enter Return Method"
+              [ngClass]="{ 'is-invalid': submitted && f.returnMethod.errors }" />
           </div>
         </div>
       </div>
 
-      <div class="mb-3">
-        <label class="form-label">Failure Code</label>
-        <select formControlName="failureCode" class="form-select"
-          [ngClass]="{ 'is-invalid': submitted && f.failureCode.errors }">
-          <option selected disabled value="">--Select--</option>
-          <option *ngFor="let row of formData.failureCodes" [value]="row.failureCode">{{row.description}} -
-            {{row.failureCode}}</option>
-        </select>
-        <div class="form-text">
-          <i class="mdi mdi-information-outline me-1"></i>
-          Code identifying the reason for failure or return.
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label">Return Type</label>
+          <div class="col-12 col-lg-9">
+            <select formControlName="returnType" class="form-select"
+              [ngClass]="{ 'is-invalid': submitted && f.returnType.errors }">
+              <option selected disabled value="">--Select--</option>
+              <option *ngFor="let row of formData.returnType" [value]="row">{{row}}</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label">Disposition</label>
+          <div class="col-12 col-lg-9">
+            <select formControlName="disposition" class="form-select"
+              [ngClass]="{ 'is-invalid': submitted && f.disposition.errors }">
+              <option selected disabled value="">--Select--</option>
+              <option *ngFor="let row of formData.disposition" [value]="row.name">{{row.name}}</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label">Failure Code</label>
+          <div class="col-12 col-lg-9">
+            <select formControlName="failureCode" class="form-select"
+              [ngClass]="{ 'is-invalid': submitted && f.failureCode.errors }">
+              <option selected disabled value="">--Select--</option>
+              <option *ngFor="let row of formData.failureCodes" [value]="row.failureCode">{{row.description}} - {{row.failureCode}}</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="row g-2">
+          <label class="col-12 col-lg-3 col-form-label">Notes</label>
+          <div class="col-12 col-lg-9">
+            <textarea class="form-control" type="text" formControlName="notes" rows="5" autosize [minRows]="4"
+              placeholder="Enter notes" [ngClass]="{ 'is-invalid': submitted && f.notes.errors }"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="row g-2">
+          <label class="col-12 col-lg-3 col-form-label">Customer Comment</label>
+          <div class="col-12 col-lg-9">
+            <textarea class="form-control" type="text" formControlName="customerComment" rows="5" autosize [minRows]="4"
+              placeholder="Enter customer comments" [ngClass]="{ 'is-invalid': submitted && f.customerComment.errors }"></textarea>
+          </div>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Comments & Notes Section -->
-    <div class="mb-4 pb-4 border-bottom">
-      <div class="mb-3">
-        <h3 class="h5 mb-1">Comments & Notes</h3>
-        <p class="text-muted mb-0">
-          Additional information and customer feedback regarding the RMA.
-        </p>
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label">Notes</label>
-        <textarea class="form-control" type="text" formControlName="notes" rows="5" placeholder="Enter notes"
-          [ngClass]="{ 'is-invalid': submitted && f.notes.errors }"></textarea>
-        <div class="form-text">
-          <i class="mdi mdi-information-outline me-1"></i>
-          Internal notes and observations about the RMA.
-        </div>
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label">Customer Comment</label>
-        <textarea class="form-control" type="text" formControlName="customerComment" rows="5"
-          placeholder="Enter customer comments"
-          [ngClass]="{ 'is-invalid': submitted && f.customerComment.errors }"></textarea>
-        <div class="form-text">
-          <i class="mdi mdi-information-outline me-1"></i>
-          Customer feedback and comments regarding the return.
-        </div>
-      </div>
-    </div>
-
-    <!-- Status & Configuration Section -->
-    <div class="mb-4">
-      <div class="row">
-        <div class="col-md-12 mb-3">
-          <div class="d-flex justify-content-between align-items-center">
-            <div>
-              <label class="form-label">Record Status</label>
-              <div class="form-text">
-                <i class="mdi mdi-information-outline me-1"></i>
-                <ng-container *ngIf="isEditMode">
-                  {{ f.active.value ? 'This RMA record is active and available for use.' : 'This RMA record is inactive and hidden from normal operations.' }}
-                </ng-container>
-                <ng-container *ngIf="!isEditMode">
-                  {{ f.active.value ? 'New RMA will be created as active and available for use.' : 'New RMA will be created as inactive.' }}
-                </ng-container>
-              </div>
+  <!-- Status & Configuration Section -->
+  <!-- <div class="mb-4">
+    <div class="row">
+      <div class="col-md-12 mb-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <label class="form-label">Record Status</label>
+            <div class="form-text">
+              <ng-container *ngIf="isEditMode">
+                {{ f.active.value ? 'This RMA record is active and available for use.' : 'This RMA record is inactive and hidden from normal operations.' }}
+              </ng-container>
+              <ng-container *ngIf="!isEditMode">
+                {{ f.active.value ? 'New RMA will be created as active and available for use.' : 'New RMA will be created as inactive.' }}
+              </ng-container>
             </div>
-            <button type="button" 
-                    class="btn btn-sm ms-3"
-                    [class.btn-success]="f.active.value"
-                    [class.btn-outline-danger]="!f.active.value"
-                    (click)="toggleActiveState()">
-              <i class="mdi mdi-check-circle me-1" *ngIf="f.active.value"></i>
-              <i class="mdi mdi-circle-outline me-1" *ngIf="!f.active.value"></i>
-              {{ f.active.value ? 'Active' : 'Inactive' }}
-            </button>
           </div>
+          <button type="button"
+                  class="btn btn-sm ms-3"
+                  [class.btn-success]="f.active.value"
+                  [class.btn-outline-danger]="!f.active.value"
+                  (click)="toggleActiveState()">
+            <i class="mdi mdi-check-circle me-1" *ngIf="f.active.value"></i>
+            <i class="mdi mdi-circle-outline me-1" *ngIf="!f.active.value"></i>
+            {{ f.active.value ? 'Active' : 'Inactive' }}
+          </button>
         </div>
       </div>
     </div>
-
-  </div> <!-- end body container -->
+  </div> -->
 </form>

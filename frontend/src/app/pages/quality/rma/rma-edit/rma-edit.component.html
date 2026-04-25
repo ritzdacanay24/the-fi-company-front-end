@@ -1,6 +1,6 @@
 <div class="container-fluid" *ngIf="!data && !id">
   <div class="row justify-content-center">
-    <div class="col-12 col-lg-11 col-xl-10 col-xxl-7">
+    <div class="col-12 col-lg-9 col-xl-8 col-xxl-7">
       
       <div class="card shadow-sm border-0">
         <div class="card-body text-center p-5" style="min-height:300px">
@@ -21,7 +21,16 @@
 
 <div class="container-fluid" [hidden]="!data && !id">
   <div class="row justify-content-center">
-    <div class="col-12 col-lg-11 col-xl-10 col-xxl-8">
+    <div class="col-12 col-lg-9 col-xl-8 col-xxl-7">
+
+      <!-- Breadcrumb -->
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0">
+          <li class="breadcrumb-item"><a routerLink="/dashboard/quality">Quality</a></li>
+          <li class="breadcrumb-item"><a routerLink="/quality/rma/list">RMA List</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Edit</li>
+        </ol>
+      </nav>
       
       <!-- Page Header with Context -->
       <div class="mb-4">
@@ -57,6 +66,33 @@
       </div>
 
       <div class="card shadow-sm border-0">
+        <div class="card-header border-bottom d-flex align-items-center justify-content-between py-3 px-4" *ngIf="data && id">
+          <span class="fw-semibold text-dark">
+            <i class="mdi mdi-file-document-edit-outline text-primary me-2"></i>
+            RMA #{{ id }}
+          </span>
+          <div ngbDropdown placement="bottom-end" [container]="'body'">
+            <button type="button" class="btn btn-outline-secondary" ngbDropdownToggle>
+              Actions
+            </button>
+            <div ngbDropdownMenu>
+              <h6 class="dropdown-header">RMA Actions</h6>
+              <button ngbDropdownItem (click)="onPrintPage()">
+                <i class="mdi mdi-printer-outline me-2 text-primary"></i>Print
+              </button>
+              <button ngbDropdownItem (click)="onPrint()">
+                <i class="mdi mdi-printer me-2 text-info"></i>Print Label
+              </button>
+              <div class="dropdown-divider"></div>
+              <button ngbDropdownItem (click)="onArchive()" [disabled]="isLoading || isRmaClosed">
+                <i class="mdi mdi-archive-outline me-2 text-warning"></i>Archive RMA
+              </button>
+              <button ngbDropdownItem (click)="onDelete()" [disabled]="isLoading">
+                <i class="mdi mdi-delete-outline me-2 text-danger"></i>Delete RMA
+              </button>
+            </div>
+          </div>
+        </div>
         <div class="card-body p-4">
           <app-rma-form (setFormEmitter)="form = $event" [submitted]="submitted" [isEditMode]="true"></app-rma-form>
         </div>
@@ -64,9 +100,6 @@
         <div class="card-footer bg-light border-top d-flex p-3" *ngIf="data && id">
           <button type="button" class="btn btn-outline-secondary me-2" [disabled]="isLoading" (click)="onCancel()">
             <i class="mdi mdi-close me-1"></i>Cancel
-          </button>
-          <button type="button" class="btn btn-outline-info me-2" [disabled]="isLoading" (click)="onPrint()">
-            <i class="mdi mdi-printer me-1"></i>Print Label
           </button>
           <button type="submit" class="btn btn-primary ms-auto" [disabled]="isLoading || isRmaClosed" (click)="onSubmit()" *ngIf="!isRmaClosed">
             @if (isLoading) {

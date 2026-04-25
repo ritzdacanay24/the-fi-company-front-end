@@ -1,4 +1,4 @@
-import { Body, Controller, Get, ParseIntPipe, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, ParseIntPipe, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { Permissions, RolePermissionGuard } from '../access-control';
 import { VehicleInspectionService } from './vehicle-inspection.service';
 
@@ -82,5 +82,11 @@ export class VehicleInspectionController {
   @Get('getDetaliById')
   async getDetaliById(@Query('id', ParseIntPipe) id: number) {
     return this.service.getDetaliById(id);
+  }
+
+  @Delete('deleteById')
+  @Permissions('delete')
+  async deleteById(@Query('id', ParseIntPipe) id: number) {
+    return this.service.deleteById(id);
   }
 }

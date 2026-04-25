@@ -122,6 +122,7 @@ export class SafetyIncidentCreateComponent {
       },
       { emitEvent: false }
     );
+    this.clearImagePreviews();
     this.myInputVariable.nativeElement.value = "";
   }
 
@@ -130,10 +131,34 @@ export class SafetyIncidentCreateComponent {
   }
 
   myFiles: string[] | any = [];
+  imagePreviews: Array<{ name: string; url: string }> = [];
+
+  private isImageFile(file: File): boolean {
+    if (!file?.name) return false;
+    const imageExtensions = ["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg", "avif"];
+    const extension = file.name.split(".").pop()?.toLowerCase();
+    return !!extension && imageExtensions.includes(extension);
+  }
+
+  private clearImagePreviews() {
+    for (const row of this.imagePreviews) {
+      URL.revokeObjectURL(row.url);
+    }
+    this.imagePreviews = [];
+  }
+
   onFileChange(event: any) {
+    this.clearImagePreviews();
     this.myFiles = [];
     for (var i = 0; i < event.target.files.length; i++) {
-      this.myFiles.push(event.target.files[i]);
+      const file = event.target.files[i] as File;
+      this.myFiles.push(file);
+      if (this.isImageFile(file)) {
+        this.imagePreviews.push({
+          name: file.name,
+          url: URL.createObjectURL(file),
+        });
+      }
     }
   }
 

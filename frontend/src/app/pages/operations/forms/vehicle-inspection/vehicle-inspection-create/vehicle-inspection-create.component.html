@@ -28,9 +28,10 @@
           <app-vehicle-inspection-form (setFormEmitter)="setFormEmitter($event)"
               (setDetailsFormEmitter)="setDetailsFormEmitter($event)" [submitted]="submitted"
               (setFormErrorsEmitter)="setFormErrorsEmitter($event)"
-              (hasUnresolvedFailures)="setHasUnresolvedFailures($event)"></app-vehicle-inspection-form>
+              (hasUnresolvedFailures)="setHasUnresolvedFailures($event)"
+              [showInspectorName]="false"></app-vehicle-inspection-form>
 
-          <div class="mt-4 pt-4 border-top" *ngIf="!form?.value?.not_used">
+          <div class="mt-4 pt-4" *ngIf="!form?.value?.not_used">
             <div class="mb-3">
               <h5 class="mb-1"><i class="mdi mdi-camera me-2"></i>Vehicle Photos</h5>
               <p class="text-muted mb-0">Capture photos of the vehicle from all required angles</p>

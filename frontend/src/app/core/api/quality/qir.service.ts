@@ -59,4 +59,8 @@ export class QirService extends DataService<any> {
     return this.getById(id);
   }
 
+  async getCorrectiveActions(qirId: number): Promise<any[]> {
+    return await firstValueFrom(this.http.get<any[]>(`${url}/find?qir=${qirId}`));
+  }
+
 }

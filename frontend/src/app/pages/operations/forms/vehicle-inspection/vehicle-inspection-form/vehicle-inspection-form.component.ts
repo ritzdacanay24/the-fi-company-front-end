@@ -28,6 +28,7 @@ export class VehicleInspectionFormComponent implements OnInit {
   @Input() submitted: boolean;
   @Input() id: number | null = null; // ID of the vehicle inspection
   @Input() isSubmitted: boolean = false; // Track if inspection has been submitted
+  @Input() showInspectorName = true;
   @Output() setFormEmitter: EventEmitter<any> = new EventEmitter();
   @Output() setFormErrorsEmitter: EventEmitter<any> = new EventEmitter();
   @Output() hasUnresolvedFailures: EventEmitter<boolean> = new EventEmitter();

@@ -85,6 +85,30 @@
       </div>
 
       <div class="card shadow-sm border-0">
+        <div class="card-header border-bottom d-flex align-items-center justify-content-between py-3 px-4" *ngIf="data && id">
+          <span class="fw-semibold text-dark">
+            <i class="mdi mdi-clipboard-text-outline text-primary me-2"></i>
+            Vehicle Inspection #{{ id }}
+          </span>
+          <div ngbDropdown placement="bottom-end" [container]="'body'">
+            <button type="button" class="btn btn-outline-secondary" ngbDropdownToggle>
+              Actions
+            </button>
+            <div ngbDropdownMenu>
+              <h6 class="dropdown-header">Vehicle Inspection Actions</h6>
+              <button ngbDropdownItem (click)="onPrint()">
+                <i class="mdi mdi-printer-outline me-2 text-primary"></i>Print
+              </button>
+              <div class="dropdown-divider"></div>
+              <button ngbDropdownItem (click)="onArchive()" [disabled]="isLoading">
+                <i class="mdi mdi-archive-outline me-2 text-warning"></i>Archive
+              </button>
+              <button ngbDropdownItem (click)="onDelete()" [disabled]="isLoading">
+                <i class="mdi mdi-delete-outline me-2 text-danger"></i>Delete
+              </button>
+            </div>
+          </div>
+        </div>
         <div class="card-body p-4">
           <app-vehicle-inspection-form 
               (setFormEmitter)="setFormEmitter($event)"
@@ -105,111 +129,81 @@
             </div>
 
             <div class="row g-3" *ngIf="hasGroupedVehiclePhotos()">
-              <!-- Front -->
-              <div class="col-12" *ngIf="getVehiclePhotosBySide('front').length > 0">
-                <div class="mb-2 fw-semibold text-primary">Front</div>
-                <div class="row g-3">
-                  <div class="col-md-6 col-lg-3" *ngFor="let attachment of getVehiclePhotosBySide('front')">
-                    <div class="card h-100">
-                      <div class="card-body text-center">
-                        <div class="mb-2">
-                          <span class="badge bg-primary">{{attachment.title || 'Front View'}}</span>
-                        </div>
-                        <img [src]="getImageUrl(attachment)" class="img-thumbnail mb-2"
-                             style="max-height: 200px; width: 100%; object-fit: cover; cursor: pointer;"
-                             (click)="viewImage(attachment)">
-                        <div class="small text-muted">
-                          <i class="mdi mdi-file-image me-1"></i>{{attachment.fileSizeConv}}
-                        </div>
-                      </div>
+              <div class="col-6 col-md-4 col-lg-3" *ngFor="let attachment of getVehiclePhotosBySide('front')">
+                <div class="card h-100">
+                  <div class="card-body text-center">
+                    <div class="mb-2">
+                      <span class="badge bg-primary">Front</span>
+                    </div>
+                    <img [src]="getImageUrl(attachment)" class="img-thumbnail mb-2"
+                         style="max-height: 200px; width: 100%; object-fit: cover; cursor: pointer;"
+                         (click)="viewImage(attachment)">
+                    <div class="small text-muted">
+                      <i class="mdi mdi-file-image me-1"></i>{{attachment.fileSizeConv}}
                     </div>
                   </div>
                 </div>
               </div>
 
-              <!-- Rear -->
-              <div class="col-12" *ngIf="getVehiclePhotosBySide('rear').length > 0">
-                <div class="mb-2 fw-semibold text-primary">Rear</div>
-                <div class="row g-3">
-                  <div class="col-md-6 col-lg-3" *ngFor="let attachment of getVehiclePhotosBySide('rear')">
-                    <div class="card h-100">
-                      <div class="card-body text-center">
-                        <div class="mb-2">
-                          <span class="badge bg-primary">{{attachment.title || 'Rear View'}}</span>
-                        </div>
-                        <img [src]="getImageUrl(attachment)" class="img-thumbnail mb-2"
-                             style="max-height: 200px; width: 100%; object-fit: cover; cursor: pointer;"
-                             (click)="viewImage(attachment)">
-                        <div class="small text-muted">
-                          <i class="mdi mdi-file-image me-1"></i>{{attachment.fileSizeConv}}
-                        </div>
-                      </div>
+              <div class="col-6 col-md-4 col-lg-3" *ngFor="let attachment of getVehiclePhotosBySide('rear')">
+                <div class="card h-100">
+                  <div class="card-body text-center">
+                    <div class="mb-2">
+                      <span class="badge bg-primary">Rear</span>
+                    </div>
+                    <img [src]="getImageUrl(attachment)" class="img-thumbnail mb-2"
+                         style="max-height: 200px; width: 100%; object-fit: cover; cursor: pointer;"
+                         (click)="viewImage(attachment)">
+                    <div class="small text-muted">
+                      <i class="mdi mdi-file-image me-1"></i>{{attachment.fileSizeConv}}
                     </div>
                   </div>
                 </div>
               </div>
 
-              <!-- Left Side -->
-              <div class="col-12" *ngIf="getVehiclePhotosBySide('left').length > 0">
-                <div class="mb-2 fw-semibold text-primary">Left Side</div>
-                <div class="row g-3">
-                  <div class="col-md-6 col-lg-3" *ngFor="let attachment of getVehiclePhotosBySide('left')">
-                    <div class="card h-100">
-                      <div class="card-body text-center">
-                        <div class="mb-2">
-                          <span class="badge bg-primary">{{attachment.title || 'Left Side View'}}</span>
-                        </div>
-                        <img [src]="getImageUrl(attachment)" class="img-thumbnail mb-2"
-                             style="max-height: 200px; width: 100%; object-fit: cover; cursor: pointer;"
-                             (click)="viewImage(attachment)">
-                        <div class="small text-muted">
-                          <i class="mdi mdi-file-image me-1"></i>{{attachment.fileSizeConv}}
-                        </div>
-                      </div>
+              <div class="col-6 col-md-4 col-lg-3" *ngFor="let attachment of getVehiclePhotosBySide('left')">
+                <div class="card h-100">
+                  <div class="card-body text-center">
+                    <div class="mb-2">
+                      <span class="badge bg-primary">Left Side</span>
+                    </div>
+                    <img [src]="getImageUrl(attachment)" class="img-thumbnail mb-2"
+                         style="max-height: 200px; width: 100%; object-fit: cover; cursor: pointer;"
+                         (click)="viewImage(attachment)">
+                    <div class="small text-muted">
+                      <i class="mdi mdi-file-image me-1"></i>{{attachment.fileSizeConv}}
                     </div>
                   </div>
                 </div>
               </div>
 
-              <!-- Right Side -->
-              <div class="col-12" *ngIf="getVehiclePhotosBySide('right').length > 0">
-                <div class="mb-2 fw-semibold text-primary">Right Side</div>
-                <div class="row g-3">
-                  <div class="col-md-6 col-lg-3" *ngFor="let attachment of getVehiclePhotosBySide('right')">
-                    <div class="card h-100">
-                      <div class="card-body text-center">
-                        <div class="mb-2">
-                          <span class="badge bg-primary">{{attachment.title || 'Right Side View'}}</span>
-                        </div>
-                        <img [src]="getImageUrl(attachment)" class="img-thumbnail mb-2"
-                             style="max-height: 200px; width: 100%; object-fit: cover; cursor: pointer;"
-                             (click)="viewImage(attachment)">
-                        <div class="small text-muted">
-                          <i class="mdi mdi-file-image me-1"></i>{{attachment.fileSizeConv}}
-                        </div>
-                      </div>
+              <div class="col-6 col-md-4 col-lg-3" *ngFor="let attachment of getVehiclePhotosBySide('right')">
+                <div class="card h-100">
+                  <div class="card-body text-center">
+                    <div class="mb-2">
+                      <span class="badge bg-primary">Right Side</span>
+                    </div>
+                    <img [src]="getImageUrl(attachment)" class="img-thumbnail mb-2"
+                         style="max-height: 200px; width: 100%; object-fit: cover; cursor: pointer;"
+                         (click)="viewImage(attachment)">
+                    <div class="small text-muted">
+                      <i class="mdi mdi-file-image me-1"></i>{{attachment.fileSizeConv}}
                     </div>
                   </div>
                 </div>
               </div>
 
-              <!-- Additional Photos -->
-              <div class="col-12" *ngIf="getAdditionalVehiclePhotos().length > 0">
-                <div class="mb-2 fw-semibold text-primary">Additional Photos</div>
-                <div class="row g-3">
-                  <div class="col-md-6 col-lg-3" *ngFor="let attachment of getAdditionalVehiclePhotos()">
-                    <div class="card h-100">
-                      <div class="card-body text-center">
-                        <div class="mb-2">
-                          <span class="badge bg-primary">{{attachment.title || 'Additional Photo'}}</span>
-                        </div>
-                        <img [src]="getImageUrl(attachment)" class="img-thumbnail mb-2"
-                             style="max-height: 200px; width: 100%; object-fit: cover; cursor: pointer;"
-                             (click)="viewImage(attachment)">
-                        <div class="small text-muted">
-                          <i class="mdi mdi-file-image me-1"></i>{{attachment.fileSizeConv}}
-                        </div>
-                      </div>
+              <div class="col-6 col-md-4 col-lg-3" *ngFor="let attachment of getAdditionalVehiclePhotos()">
+                <div class="card h-100">
+                  <div class="card-body text-center">
+                    <div class="mb-2">
+                      <span class="badge bg-primary">Additional</span>
+                    </div>
+                    <img [src]="getImageUrl(attachment)" class="img-thumbnail mb-2"
+                         style="max-height: 200px; width: 100%; object-fit: cover; cursor: pointer;"
+                         (click)="viewImage(attachment)">
+                    <div class="small text-muted">
+                      <i class="mdi mdi-file-image me-1"></i>{{attachment.fileSizeConv}}
                     </div>
                   </div>
                 </div>

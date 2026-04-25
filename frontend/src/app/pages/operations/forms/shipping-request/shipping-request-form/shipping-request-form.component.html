@@ -8,230 +8,316 @@
     </div>
   </div>
 
-
-    <!-- Requestor Information -->
-    <div class="mb-4 pb-4 border-bottom">
-      <div class="mb-3">
-        <h3 class="h5 mb-1">Requestor Information</h3>
-        <p class="text-muted mb-0">Person submitting the shipping request.</p>
-      </div>
-
-      <div class="row">
-        <div class="col-lg-6 mb-3">
-          <label class="form-label" [ngClass]="formValidator('requestorName')">Requestor's Name</label>
-          <input type="text" class="form-control" name="requestorName" formControlName="requestorName"
-            placeholder="Enter your full name" [ngClass]="{ 'is-invalid': submitted && f.requestorName.errors }" />
-        </div>
-        <div class="col-lg-6 mb-3">
-          <label class="form-label" [ngClass]="formValidator('emailAddress')">Requestor's Email</label>
-          <input type="email" class="form-control" name="emailAddress" formControlName="emailAddress"
-            placeholder="Enter your email address" [ngClass]="{ 'is-invalid': submitted && f.emailAddress.errors }" />
-        </div>
-      </div>
+  <!-- Requestor Information -->
+  <div class="mb-4 pb-4 border-bottom">
+    <div class="mb-3">
+      <h3 class="h5 mb-1">Requestor Information</h3>
+      <p class="text-muted mb-0">Person submitting the shipping request.</p>
     </div>
 
-    <!-- Recipient / Address -->
-    <div class="mb-4 pb-4 border-bottom">
-      <div class="mb-3">
-        <h3 class="h5 mb-1">Recipient Information</h3>
-        <p class="text-muted mb-0">Delivery destination details.</p>
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label" [ngClass]="formValidator('companyName')">Company Name</label>
-        <input type="text" class="form-control" name="companyName" formControlName="companyName"
-          placeholder="Enter recipient company name" [ngClass]="{ 'is-invalid': submitted && f.companyName.errors }" />
-      </div>
-
-      <div class="row">
-        <div class="col-md-9 mb-3">
-          <label class="form-label">Street Address</label>
-          <app-address-search [addTag]="true" (notifyParent)="notifyParent($event)"
-            [ngClass]="{ 'is-invalid': submitted && f.streetAddress.value }" [value]="f.streetAddress.value"
-            [editableSearchTerm]="true" [disabled]="form.get('streetAddress')?.disabled"></app-address-search>
-          <div class="form-text"><i class="mdi mdi-information-outline me-1"></i>Start typing an address and select from suggestions to autofill city, state and zip.</div>
-        </div>
-        <div class="col-md-3 mb-3">
-          <label class="form-label">Suite / Unit #</label>
-          <input type="text" class="form-control" name="streetAddress1" formControlName="streetAddress1"
-            placeholder="Suite Number" [ngClass]="{ 'is-invalid': submitted && f.streetAddress1.errors }" />
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="col-md-4 mb-3">
-          <label class="form-label" [ngClass]="formValidator('city')">City</label>
-          <input type="text" class="form-control" name="city" formControlName="city" placeholder="Enter city"
-            [ngClass]="{ 'is-invalid': submitted && f.city.errors }" />
-        </div>
-        <div class="col-md-4 mb-3">
-          <label class="form-label" [ngClass]="formValidator('state')">State</label>
-          <select class="form-select" name="a4" formControlName="state"
-            [ngClass]="{ 'is-invalid': submitted && f.state.errors }">
-            <option disabled selected value="">Select State</option>
-            <option [value]="row.abbreviation" *ngFor="let row of states">{{ row.name }}</option>
-          </select>
-        </div>
-        <div class="col-md-4 mb-3">
-          <label class="form-label" [ngClass]="formValidator('zipCode')">Zip Code</label>
-          <input type="tel" class="form-control" name="a5" formControlName="zipCode" placeholder="Enter zip code"
-            pattern="^[0-9]{5}(?:[0-9]{4})?$" mask="00000" [showMaskTyped]="true"
-            [ngClass]="{ 'is-invalid': submitted && f.zipCode.errors }" />
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="col-md-6 mb-3">
-          <label class="form-label" [ngClass]="formValidator('contactName')">Contact Name</label>
-          <input type="text" class="form-control" name="contactName" formControlName="contactName"
-            placeholder="Enter contact person name" [ngClass]="{ 'is-invalid': submitted && f.contactName.errors }" />
-        </div>
-        <div class="col-md-6 mb-3">
-          <label class="form-label" [ngClass]="formValidator('phoneNumber')">Phone Number</label>
-          <input type="tel" class="form-control" name="phoneNumber" formControlName="phoneNumber"
-            placeholder="Enter contact phone number" [ngClass]="{ 'is-invalid': submitted && f.phoneNumber.errors }" />
-        </div>
-      </div>
-    </div>
-
-    <!-- Shipping Details -->
-    <div class="mb-4 pb-4 border-bottom">
-      <div class="mb-3">
-        <h3 class="h5 mb-1">Shipping Details</h3>
-        <p class="text-muted mb-0">Service type and delivery preferences.</p>
-      </div>
-
-      <div class="row">
-        <div class="col-md-6 mb-3">
-          <label class="form-label" [ngClass]="formValidator('freightCharges')">Freight Charges</label>
-          <select class="form-select" formControlName="freightCharges"
-            [ngClass]="{ 'is-invalid': submitted && f.freightCharges.errors }">
-            <option value="" disabled selected>Select billing option</option>
-            <option *ngFor="let row of formData.freightCharges" [value]="row">{{row}}</option>
-          </select>
-          <div class="form-text"><i class="mdi mdi-information-outline me-1"></i>Select who will be billed for freight. Choose 'Customer Account' to enter a third-party account number.</div>
-        </div>
-        <div class="col-md-6 mb-3" *ngIf="form.get('freightCharges').value == 'Customer Account'">
-          <label class="form-label" [ngClass]="formValidator('thridPartyAccountNumber')">Customer / Third Party Account</label>
-          <input type="text" class="form-control" name="thridPartyAccountNumber" formControlName="thridPartyAccountNumber"
-            placeholder="Enter account number" [ngClass]="{ 'is-invalid': submitted && f.thridPartyAccountNumber.errors }" />
-          <div class="form-text"><i class="mdi mdi-information-outline me-1"></i>Provide the carrier account number to bill freight to the customer or third-party.</div>
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="col-md-6 mb-3">
-          <label class="form-label" [ngClass]="formValidator('serviceType')">Service Type</label>
-          <select class="form-select" formControlName="serviceType"
-            [ngClass]="{ 'is-invalid': submitted && f.serviceType.errors }" (change)="f.serviceTypeName.setValue('');">
-            <option value="" disabled selected>Select carrier</option>
-            <option *ngFor="let row of formData.serviceType" [value]="row">{{row}}</option>
-          </select>
-          <div class="form-text"><i class="mdi mdi-information-outline me-1"></i>Select the carrier; additional service options will appear based on carrier selection.</div>
-        </div>
-
-        <div class="col-md-6 mb-3" *ngIf="form.get('serviceType').value == 'Fedex'">
-          <label class="form-label" [ngClass]="formValidator('serviceTypeName')">FedEx Service</label>
-          <select class="form-select" formControlName="serviceTypeName"
-            [ngClass]="{ 'is-invalid': submitted && f.serviceTypeName.errors }">
-            <option value="" disabled selected>Select FedEx service type</option>
-            <option *ngFor="let row of formData.serviceTypesFedex" [value]="row.name">{{row.name}}</option>
-          </select>
-        </div>
-
-        <div class="col-md-6 mb-3" *ngIf="form.get('serviceType').value == 'UPS'">
-          <label class="form-label" [ngClass]="formValidator('serviceTypeName')">UPS Service</label>
-          <select class="form-select" formControlName="serviceTypeName"
-            [ngClass]="{ 'is-invalid': submitted && f.serviceTypeName.errors }">
-            <option value="" disabled selected>Select UPS service type</option>
-            <option *ngFor="let row of formData.serviceTypesUps" [value]="row.name">{{row.name}}</option>
-          </select>
-        </div>
-
-        <div class="col-md-6 mb-3" *ngIf="form.get('serviceType').value == 'Other'">
-          <label class="form-label" [ngClass]="formValidator('serviceTypeName')">Custom Carrier</label>
-          <input type="text" class="form-control" id="serviceTypeName" name="serviceTypeName"
-            placeholder="Enter carrier name & account details" formControlName="serviceTypeName"
-            [ngClass]="{ 'is-invalid': submitted && f.serviceTypeName.errors }">
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="col-md-6 mb-3">
-          <label class="form-label" [ngClass]="formValidator('saturdayDelivery')">Saturday Delivery OK?</label>
-          <select class="form-select" formControlName="saturdayDelivery"
-            [ngClass]="{ 'is-invalid': submitted && f.saturdayDelivery.errors }">
-            <option value="" disabled selected>Select option</option>
-            <option *ngFor="let row of formData.saturdayDelivery" [value]="row">{{row}}</option>
-          </select>
-        </div>
-        <div class="col-md-6 mb-3">
-          <label class="form-label" [ngClass]="formValidator('cost')">Estimated Cost</label>
-          <div class="input-group">
-            <span class="input-group-text">$</span>
-            <input class="form-control" type="number" step="0.01" placeholder="0.00" formControlName="cost"
-              [ngClass]="{ 'is-invalid': submitted && f.cost.errors }">
+    <div class="row g-3">
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label" [ngClass]="formValidator('requestorName')">Requestor's Name</label>
+          <div class="col-12 col-lg-9">
+            <input type="text" class="form-control" name="requestorName" formControlName="requestorName"
+              placeholder="Enter your full name" [ngClass]="{ 'is-invalid': submitted && f.requestorName.errors }" />
           </div>
-          <div class="form-text"><i class="mdi mdi-information-outline me-1"></i>Estimate the shipping cost (optional). Use two decimal places for cents.</div>
         </div>
       </div>
 
-      <div class="mb-3">
-        <label class="form-label" [ngClass]="formValidator('sendTrackingNumberTo')">Send Tracking Information To</label>
-        <ng-select [addTag]="addTag" [hideSelected]="true" [multiple]="true" formControlName="sendTrackingNumberTo"
-          placeholder="Enter email addresses for tracking notifications" [disabled]="form.get('sendTrackingNumberTo')?.disabled">
-          <ng-template ng-option-tmp let-item="item" let-index="index" let-search="searchTerm">
-            {{item}}
-          </ng-template>
-        </ng-select>
-        <div class="form-text"><i class="mdi mdi-information-outline me-1"></i>Add multiple email addresses to receive tracking updates; press Enter after each address.</div>
-      </div>
-    </div>
-
-    <!-- Items & Comments -->
-    <div class="mb-4 pb-4 border-bottom">
-      <div class="mb-3">
-        <h3 class="h5 mb-1">Items & Additional Information</h3>
-        <p class="text-muted mb-0">Describe items being shipped and any special instructions.</p>
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label" [ngClass]="formValidator('comments')">Items Description & Comments</label>
-        <textarea class="form-control" id="comments" autosize [minRows]="3"
-          placeholder="Please list part numbers, descriptions, quantities, and any special handling instructions..."
-          formControlName="comments"></textarea>
-        <div class="form-text"><i class="mdi mdi-information-outline me-1"></i>Include part numbers, quantities, dimensions, and any special handling requirements.</div>
-      </div>
-
-      <div class="row">
-        <div class="col-md-6 mb-3">
-          <div class="form-check form-switch mt-2">
-            <input class="form-check-input" type="checkbox" id="active" formControlName="active">
-            <label class="form-check-label" for="active"><strong>Active Request</strong></label>
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label" [ngClass]="formValidator('emailAddress')">Requestor's Email</label>
+          <div class="col-12 col-lg-9">
+            <input type="email" class="form-control" name="emailAddress" formControlName="emailAddress"
+              placeholder="Enter your email address" [ngClass]="{ 'is-invalid': submitted && f.emailAddress.errors }" />
           </div>
-          <div class="form-text"><i class="mdi mdi-information-outline me-1"></i>Uncheck to save as draft.</div>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Tracking Information (conditional) -->
-    <div class="mb-4" *ngIf="showTrackingNumberField">
-      <div class="mb-3">
-        <h3 class="h5 mb-1">Tracking Information</h3>
-        <p class="text-muted mb-0">Update with tracking details once shipped.</p>
+  <!-- Recipient Information -->
+  <div class="mb-4 pb-4 border-bottom">
+    <div class="mb-3">
+      <h3 class="h5 mb-1">Recipient Information</h3>
+      <p class="text-muted mb-0">Delivery destination details.</p>
+    </div>
+
+    <div class="row g-3">
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label" [ngClass]="formValidator('companyName')">Company Name</label>
+          <div class="col-12 col-lg-9">
+            <input type="text" class="form-control" name="companyName" formControlName="companyName"
+              placeholder="Enter recipient company name" [ngClass]="{ 'is-invalid': submitted && f.companyName.errors }" />
+          </div>
+        </div>
       </div>
 
-      <div class="mb-3">
-        <label class="form-label" [ngClass]="formValidator('trackingNumber')">Tracking Number</label>
-        <div class="input-group">
-          <input class="form-control" type="text" placeholder="Enter tracking number" formControlName="trackingNumber"
-            [ngClass]="{ 'is-invalid': submitted && f.trackingNumber.errors }" [disabled]="form.get('trackingNumber')?.disabled">
-          <button class="btn btn-primary" type="button" (click)="updateTracking()">
-            <i class="mdi mdi-update me-1"></i>Update Tracking
-          </button>
+      <div class="col-12">
+        <div class="row g-2">
+          <label class="col-12 col-lg-3 col-form-label">Street Address</label>
+          <div class="col-12 col-lg-9">
+            <app-address-search [addTag]="true" (notifyParent)="notifyParent($event)"
+              [ngClass]="{ 'is-invalid': submitted && f.streetAddress.value }" [value]="f.streetAddress.value"
+              [editableSearchTerm]="true" [showLabel]="false" [disabled]="form.get('streetAddress')?.disabled"></app-address-search>
+            <div class="form-text"><i class="mdi mdi-information-outline me-1"></i>Start typing an address and select from suggestions to autofill city, state and zip.</div>
+          </div>
         </div>
-        <div class="form-text"><i class="mdi mdi-information-outline me-1"></i>Enter tracking number provided by the carrier. Click Update to save and notify recipients.</div>
+      </div>
+
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label">Suite / Unit #</label>
+          <div class="col-12 col-lg-9">
+            <input type="text" class="form-control" name="streetAddress1" formControlName="streetAddress1"
+              placeholder="Suite Number" [ngClass]="{ 'is-invalid': submitted && f.streetAddress1.errors }" />
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label" [ngClass]="formValidator('city')">City</label>
+          <div class="col-12 col-lg-9">
+            <input type="text" class="form-control" name="city" formControlName="city" placeholder="Enter city"
+              [ngClass]="{ 'is-invalid': submitted && f.city.errors }" />
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label" [ngClass]="formValidator('state')">State</label>
+          <div class="col-12 col-lg-9">
+            <select class="form-select" name="a4" formControlName="state"
+              [ngClass]="{ 'is-invalid': submitted && f.state.errors }">
+              <option disabled selected value="">Select State</option>
+              <option [value]="row.abbreviation" *ngFor="let row of states">{{ row.name }}</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label" [ngClass]="formValidator('zipCode')">Zip Code</label>
+          <div class="col-12 col-lg-9">
+            <input type="tel" class="form-control" name="a5" formControlName="zipCode" placeholder="Enter zip code"
+              pattern="^[0-9]{5}(?:[0-9]{4})?$" mask="00000" [showMaskTyped]="true"
+              [ngClass]="{ 'is-invalid': submitted && f.zipCode.errors }" />
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label" [ngClass]="formValidator('contactName')">Contact Name</label>
+          <div class="col-12 col-lg-9">
+            <input type="text" class="form-control" name="contactName" formControlName="contactName"
+              placeholder="Enter contact person name" [ngClass]="{ 'is-invalid': submitted && f.contactName.errors }" />
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label" [ngClass]="formValidator('phoneNumber')">Phone Number</label>
+          <div class="col-12 col-lg-9">
+            <input type="tel" class="form-control" name="phoneNumber" formControlName="phoneNumber"
+              placeholder="Enter contact phone number" [ngClass]="{ 'is-invalid': submitted && f.phoneNumber.errors }" />
+          </div>
+        </div>
       </div>
     </div>
+  </div>
+
+  <!-- Shipping Details -->
+  <div class="mb-4 pb-4 border-bottom">
+    <div class="mb-3">
+      <h3 class="h5 mb-1">Shipping Details</h3>
+      <p class="text-muted mb-0">Service type and delivery preferences.</p>
+    </div>
+
+    <div class="row g-3">
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label" [ngClass]="formValidator('freightCharges')">Freight Charges</label>
+          <div class="col-12 col-lg-9">
+            <select class="form-select" formControlName="freightCharges"
+              [ngClass]="{ 'is-invalid': submitted && f.freightCharges.errors }">
+              <option value="" disabled selected>Select billing option</option>
+              <option *ngFor="let row of formData.freightCharges" [value]="row">{{row}}</option>
+            </select>
+            <div class="form-text"><i class="mdi mdi-information-outline me-1"></i>Select who will be billed for freight. Choose 'Customer Account' to enter a third-party account number.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12" *ngIf="form.get('freightCharges').value == 'Customer Account'">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label" [ngClass]="formValidator('thridPartyAccountNumber')">Customer / Third Party Account</label>
+          <div class="col-12 col-lg-9">
+            <input type="text" class="form-control" name="thridPartyAccountNumber" formControlName="thridPartyAccountNumber"
+              placeholder="Enter account number" [ngClass]="{ 'is-invalid': submitted && f.thridPartyAccountNumber.errors }" />
+            <div class="form-text"><i class="mdi mdi-information-outline me-1"></i>Provide the carrier account number to bill freight to the customer or third-party.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label" [ngClass]="formValidator('serviceType')">Service Type</label>
+          <div class="col-12 col-lg-9">
+            <select class="form-select" formControlName="serviceType"
+              [ngClass]="{ 'is-invalid': submitted && f.serviceType.errors }" (change)="f.serviceTypeName.setValue('');">
+              <option value="" disabled selected>Select carrier</option>
+              <option *ngFor="let row of formData.serviceType" [value]="row">{{row}}</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12" *ngIf="form.get('serviceType').value == 'Fedex'">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label" [ngClass]="formValidator('serviceTypeName')">FedEx Service</label>
+          <div class="col-12 col-lg-9">
+            <select class="form-select" formControlName="serviceTypeName"
+              [ngClass]="{ 'is-invalid': submitted && f.serviceTypeName.errors }">
+              <option value="" disabled selected>Select FedEx service type</option>
+              <option *ngFor="let row of formData.serviceTypesFedex" [value]="row.name">{{row.name}}</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12" *ngIf="form.get('serviceType').value == 'UPS'">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label" [ngClass]="formValidator('serviceTypeName')">UPS Service</label>
+          <div class="col-12 col-lg-9">
+            <select class="form-select" formControlName="serviceTypeName"
+              [ngClass]="{ 'is-invalid': submitted && f.serviceTypeName.errors }">
+              <option value="" disabled selected>Select UPS service type</option>
+              <option *ngFor="let row of formData.serviceTypesUps" [value]="row.name">{{row.name}}</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12" *ngIf="form.get('serviceType').value == 'Other'">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label" [ngClass]="formValidator('serviceTypeName')">Custom Carrier</label>
+          <div class="col-12 col-lg-9">
+            <input type="text" class="form-control" id="serviceTypeName" name="serviceTypeName"
+              placeholder="Enter carrier name & account details" formControlName="serviceTypeName"
+              [ngClass]="{ 'is-invalid': submitted && f.serviceTypeName.errors }">
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label" [ngClass]="formValidator('saturdayDelivery')">Saturday Delivery OK?</label>
+          <div class="col-12 col-lg-9">
+            <select class="form-select" formControlName="saturdayDelivery"
+              [ngClass]="{ 'is-invalid': submitted && f.saturdayDelivery.errors }">
+              <option value="" disabled selected>Select option</option>
+              <option *ngFor="let row of formData.saturdayDelivery" [value]="row">{{row}}</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label" [ngClass]="formValidator('cost')">Estimated Cost</label>
+          <div class="col-12 col-lg-9">
+            <div class="input-group">
+              <span class="input-group-text">$</span>
+              <input class="form-control" type="number" step="0.01" placeholder="0.00" formControlName="cost"
+                [ngClass]="{ 'is-invalid': submitted && f.cost.errors }">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="row g-2">
+          <label class="col-12 col-lg-3 col-form-label" [ngClass]="formValidator('sendTrackingNumberTo')">Send Tracking Information To</label>
+          <div class="col-12 col-lg-9">
+            <ng-select [addTag]="addTag" [hideSelected]="true" [multiple]="true" formControlName="sendTrackingNumberTo"
+              placeholder="Enter email addresses for tracking notifications" [disabled]="form.get('sendTrackingNumberTo')?.disabled">
+              <ng-template ng-option-tmp let-item="item" let-index="index" let-search="searchTerm">
+                {{item}}
+              </ng-template>
+            </ng-select>
+            <div class="form-text"><i class="mdi mdi-information-outline me-1"></i>Add multiple email addresses to receive tracking updates; press Enter after each address.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Items & Additional Information -->
+  <div class="mb-4 pb-4 border-bottom">
+    <div class="mb-3">
+      <h3 class="h5 mb-1">Items & Additional Information</h3>
+      <p class="text-muted mb-0">Describe items being shipped and any special instructions.</p>
+    </div>
+
+    <div class="row g-3">
+      <div class="col-12">
+        <div class="row g-2">
+          <label class="col-12 col-lg-3 col-form-label" [ngClass]="formValidator('comments')">Items Description & Comments</label>
+          <div class="col-12 col-lg-9">
+            <textarea class="form-control" id="comments" autosize [minRows]="5"
+              placeholder="Please list part numbers, descriptions, quantities, and any special handling instructions..."
+              formControlName="comments"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label">Active Request</label>
+          <div class="col-12 col-lg-9">
+            <div class="form-check form-switch mt-1">
+              <input class="form-check-input" type="checkbox" id="active" formControlName="active">
+              <label class="form-check-label" for="active"><strong>Active Request</strong></label>
+            </div>
+            <div class="form-text"><i class="mdi mdi-information-outline me-1"></i>Uncheck to save as draft.</div>
+          </div>
+        </div>
+      </div> -->
+    </div>
+  </div>
+
+  <!-- Tracking Information -->
+  <div class="mb-4" *ngIf="showTrackingNumberField">
+    <div class="mb-3">
+      <h3 class="h5 mb-1">Tracking Information</h3>
+      <p class="text-muted mb-0">Update with tracking details once shipped.</p>
+    </div>
+
+    <div class="row g-3">
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label" [ngClass]="formValidator('trackingNumber')">Tracking Number</label>
+          <div class="col-12 col-lg-9">
+            <div class="input-group">
+              <input class="form-control" type="text" placeholder="Enter tracking number" formControlName="trackingNumber"
+                [ngClass]="{ 'is-invalid': submitted && f.trackingNumber.errors }" [disabled]="form.get('trackingNumber')?.disabled">
+              <button class="btn btn-primary" type="button" (click)="updateTracking()">
+                <i class="mdi mdi-update me-1"></i>Update Tracking
+              </button>
+            </div>
+            <div class="form-text"><i class="mdi mdi-information-outline me-1"></i>Enter tracking number provided by the carrier. Click Update to save and notify recipients.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
 </form>

@@ -1,9 +1,7 @@
 <form [formGroup]="form" class="settings-form" autocomplete="off">
 
-  <div class="body">
-
     <!-- Inspector Information Section -->
-    <div class="mb-4 pb-4 border-bottom">
+    <div class="mb-4 pb-4 border-bottom" *ngIf="showInspectorName">
       <div class="mb-3">
         <h3 class="h5 mb-1">Inspector Information</h3>
         <p class="text-muted mb-0">
@@ -11,34 +9,21 @@
         </p>
       </div>
 
-      <div class="row">
-        <div class="col-lg-6 mb-3">
-          <label for="created_by" class="form-label required">Inspector Name</label>
-          <input type="text" class="form-control" placeholder="Enter inspector's name" formControlName="created_by"
-            [ngClass]="{ 'is-invalid': submitted && f['created_by'].errors }">
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Full name of the person conducting the inspection.
-          </div>
-        </div>
-        <div class="col-lg-6 mb-3">
-          <label for="truck_license_plate" class="form-label required">Vehicle Selection</label>
-          <select class="form-select" formControlName="truck_license_plate" (change)="checkAnyFailures()">
-            <option disabled selected value="null">Select vehicle to inspect</option>
-            <option *ngFor="let row of vehicleList" [value]="row.licensePlate">
-              License Plate: {{row.licensePlate}} - {{row.vehicleNumber}}
-            </option>
-          </select>
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Choose the vehicle for inspection from the fleet list.
+      <div class="row g-3">
+        <div class="col-12">
+          <div class="row align-items-lg-center g-2">
+            <label for="created_by" class="col-12 col-lg-3 col-form-label required">Inspector Name</label>
+            <div class="col-12 col-lg-9">
+              <input type="text" class="form-control" placeholder="Enter inspector's name" formControlName="created_by"
+                [ngClass]="{ 'is-invalid': submitted && f['created_by'].errors }">
+            </div>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Vehicle Details Section -->
-    <div class="mb-4 pb-4 border-bottom" *ngIf="form?.value?.truck_license_plate">
+    <div class="mb-4 pb-4 border-bottom">
       <div class="mb-3">
         <h3 class="h5 mb-1">Vehicle Details</h3>
         <p class="text-muted mb-0">
@@ -46,29 +31,65 @@
         </p>
       </div>
 
-      <div class="row">
-        <div class="col-lg-4 mb-3">
-          <label class="form-label">Vehicle Usage Status</label>
-          <div class="form-check form-switch mt-2">
-            <input class="form-check-input" type="checkbox" id="not_used" formControlName="not_used">
-            <label class="form-check-label" for="not_used">
-              Vehicle Not Used Today
-            </label>
-          </div>
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Enable if vehicle was not operated today.
+      <div class="row g-3">
+        <div class="col-12">
+          <div class="row align-items-start g-2">
+            <label for="truck_license_plate" class="col-12 col-lg-3 col-form-label required">Vehicle Selection</label>
+            <div class="col-12 col-lg-9">
+              <div class="border rounded p-3">
+                <div class="form-check mb-2" *ngFor="let row of vehicleList; let i = index">
+                  <input
+                    class="form-check-input"
+                    type="radio"
+                    name="truck_license_plate"
+                    [id]="'truck-license-plate-' + i"
+                    formControlName="truck_license_plate"
+                    [value]="row.licensePlate"
+                    (change)="checkAnyFailures()"
+                  >
+                  <label class="form-check-label" [for]="'truck-license-plate-' + i">
+                    <span class="fw-medium">{{ row.licensePlate }}</span>
+                    <span class="text-muted ms-2">{{ row.vehicleNumber }}</span>
+                  </label>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="col-lg-4 mb-3">
-          <label for="mileage" class="form-label required">Current Mileage</label>
-          <input type="text" class="form-control" id="mileage" name="mileage" placeholder="Enter current mileage"
-            formControlName="mileage" [ngClass]="{ 'is-invalid': submitted && f['mileage'].errors }">
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Record the current odometer reading.
+        <ng-container *ngIf="form?.value?.truck_license_plate">
+        <div class="col-12">
+          <div class="row align-items-lg-center g-2">
+            <label class="col-12 col-lg-3 col-form-label">Vehicle Usage Status</label>
+            <div class="col-12 col-lg-9">
+              <div class="form-check form-switch mt-1">
+                <input class="form-check-input" type="checkbox" id="not_used" formControlName="not_used">
+                <label class="form-check-label" for="not_used">
+                  Vehicle Not Used Today
+                </label>
+              </div>
+            </div>
           </div>
         </div>
+        <div class="col-12">
+          <div class="row align-items-lg-center g-2">
+            <label for="mileage" class="col-12 col-lg-3 col-form-label required">Current Mileage</label>
+            <div class="col-12 col-lg-9">
+              <input type="text" class="form-control" id="mileage" name="mileage" placeholder="Enter current mileage"
+                formControlName="mileage" [ngClass]="{ 'is-invalid': submitted && f['mileage'].errors }">
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12">
+          <div class="row g-2">
+            <label class="col-12 col-lg-3 col-form-label">Comments</label>
+            <div class="col-12 col-lg-9">
+              <textarea class="form-control" rows="4" id="comments" formControlName="comments" autosize [minRows]="4"
+                placeholder="Enter any additional comments, observations, or maintenance notes..."></textarea>
+            </div>
+          </div>
+        </div>
+        </ng-container>
       </div>
     </div>
 
@@ -318,27 +339,4 @@
       </div>
     </div>
 
-    <!-- Additional Comments Section -->
-    <div class="mb-4">
-      <div class="mb-3">
-        <h3 class="h5 mb-1">Additional Comments</h3>
-        <p class="text-muted mb-0">
-          Any additional observations, maintenance notes, or safety concerns.
-        </p>
-      </div>
-
-      <div class="row">
-        <div class="col-12 mb-3">
-          <label class="form-label">Comments</label>
-          <textarea class="form-control" rows="4" id="comments" formControlName="comments" 
-            placeholder="Enter any additional comments, observations, or maintenance notes..."></textarea>
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Provide detailed notes about any issues found or general observations.
-          </div>
-        </div>
-      </div>
-    </div>
-
-  </div> <!-- end body container -->
 </form>

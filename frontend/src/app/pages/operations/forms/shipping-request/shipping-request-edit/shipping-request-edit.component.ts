@@ -119,6 +119,48 @@ export class ShippingRequestEditComponent {
     this.goBack();
   }
 
+  onEdit() {
+    this.formDisabled = false;
+    this.toastrService.info("Edit mode enabled");
+  }
+
+  async onArchive() {
+    if (!this.id || !this.form) return;
+    if (!confirm(`Archive shipping request #${this.id}?`)) return;
+
+    try {
+      this.isLoading = true;
+      const payload = {
+        ...this.form.getRawValue(),
+        active: 0,
+      };
+
+      await this.api.update(this.id, payload);
+      this.isLoading = false;
+      this.toastrService.success("Shipping request archived successfully");
+      this.goBack();
+    } catch (err) {
+      this.isLoading = false;
+      this.toastrService.error("Failed to archive shipping request");
+    }
+  }
+
+  async onDelete() {
+    if (!this.id) return;
+    if (!confirm(`Delete shipping request #${this.id}? This cannot be undone.`)) return;
+
+    try {
+      this.isLoading = true;
+      await this.api.delete(this.id);
+      this.isLoading = false;
+      this.toastrService.success("Shipping request deleted successfully");
+      this.goBack();
+    } catch (err) {
+      this.isLoading = false;
+      this.toastrService.error("Failed to delete shipping request");
+    }
+  }
+
   attachments: any = [];
   async getAttachments() {
     this.attachments = await this.attachmentsService.find({

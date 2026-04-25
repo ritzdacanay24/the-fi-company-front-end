@@ -303,6 +303,29 @@ export class VehicleInspectionEditComponent {
     this.goBack();
   }
 
+  onPrint() {
+    window.print();
+  }
+
+  async onArchive() {
+    this.toastrService.info("Archive is not available for Vehicle Inspection yet.");
+  }
+
+  async onDelete() {
+    if (!this.id) return;
+    if (!confirm(`Delete vehicle inspection #${this.id}? This cannot be undone.`)) return;
+
+    try {
+      this.isLoading = true;
+      await this.api.delete(this.id);
+      this.toastrService.success("Vehicle inspection deleted successfully");
+      this.goBack();
+    } catch (err) {
+      this.isLoading = false;
+      this.toastrService.error("Failed to delete vehicle inspection");
+    }
+  }
+
   hasFailedInspections(): boolean {
     const checklist = this.formValues?.checklist;
     if (!Array.isArray(checklist)) return false;

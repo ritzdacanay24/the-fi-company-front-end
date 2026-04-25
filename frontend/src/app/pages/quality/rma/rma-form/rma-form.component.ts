@@ -5,6 +5,7 @@ import { QirSearchComponent } from "@app/shared/components/qir-search/qir-search
 import { QadCustomerNameSearchComponent } from "@app/shared/components/qad-customer-name-search/qad-customer-name-search.component";
 import { QadPartSearchComponent } from "@app/shared/components/qad-part-search/qad-part-search.component";
 import { SharedModule } from "@app/shared/shared.module";
+import { AutosizeModule } from "ngx-autosize";
 
 @Component({
   standalone: true,
@@ -14,6 +15,7 @@ import { SharedModule } from "@app/shared/shared.module";
     QirSearchComponent,
     QadCustomerNameSearchComponent,
     QadPartSearchComponent,
+    AutosizeModule,
   ],
   selector: "app-rma-form",
   templateUrl: "./rma-form.component.html",

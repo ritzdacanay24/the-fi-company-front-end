@@ -25,6 +25,11 @@ export class VehicleInspectionService extends DataService<any> {
     return await firstValueFrom(this.http.get<any>(`${url}/getById?id=${id}`));
   }
 
+  override delete = async (id: number): Promise<{ message: string }> => {
+    await firstValueFrom(this.http.delete<any>(`${url}/deleteById?id=${id}`));
+    return { message: 'Successfully deleted' };
+  };
+
   async saveDetailById(id: number, params) {
     return await firstValueFrom(this.http.put<any>(`${url}/saveDetailById?id=${id}`, params));
   }

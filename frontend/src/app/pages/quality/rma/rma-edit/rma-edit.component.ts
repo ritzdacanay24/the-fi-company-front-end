@@ -89,6 +89,45 @@ export class RmaEditComponent {
     this.goBack();
   }
 
+  onPrintPage() {
+    window.print();
+  }
+
+  async onArchive() {
+    if (!this.id || !this.form) return;
+    if (!confirm(`Archive RMA #${this.id}?`)) return;
+
+    try {
+      this.isLoading = true;
+      const payload = {
+        ...this.form.getRawValue(),
+        status: "Archived",
+        active: 0,
+      };
+      await this.api.update(this.id, payload);
+      this.toastrService.success("RMA archived successfully");
+      this.goBack();
+    } catch (err) {
+      this.isLoading = false;
+      this.toastrService.error("Failed to archive RMA");
+    }
+  }
+
+  async onDelete() {
+    if (!this.id) return;
+    if (!confirm(`Delete RMA #${this.id}? This cannot be undone.`)) return;
+
+    try {
+      this.isLoading = true;
+      await this.api.delete(this.id);
+      this.toastrService.success("RMA deleted successfully");
+      this.goBack();
+    } catch (err) {
+      this.isLoading = false;
+      this.toastrService.error("Failed to delete RMA");
+    }
+  }
+
   onPrint() {
     let row = this.form.value;
 

@@ -15,6 +15,7 @@ import { QadWoSearchComponent } from "@app/shared/components/qad-wo-search/qad-w
 import { SoSearchComponent } from "@app/shared/components/so-search/so-search.component";
 import { UserSearchComponent } from "@app/shared/components/user-search/user-search.component";
 import { TranslateModule, TranslateService } from "@ngx-translate/core";
+import { AutosizeModule } from "ngx-autosize";
 
 interface SafetyIncidentOption {
   id: number;
@@ -34,6 +35,7 @@ interface SafetyIncidentOption {
     QadCustomerPartSearchComponent,
     UserSearchComponent,
     TranslateModule,
+    AutosizeModule,
   ],
   selector: "app-safety-incident-form",
   templateUrl: "./safety-incident-form.component.html",
