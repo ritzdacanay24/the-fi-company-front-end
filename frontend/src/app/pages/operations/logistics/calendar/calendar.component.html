@@ -1,150 +1,143 @@
-<!-- Enhanced Calendar Header -->
-<div class="row mb-3">
-    <div class="col-12">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-primary text-white border-0 calendar-header">
-                <div class="row align-items-center">
-                    <div class="col-lg-4 col-md-12 mb-2 mb-lg-0">
-                        <h4 class="mb-0 fw-bold text-white">
-                            <i class="mdi mdi-calendar text-white me-2"></i>
-                            Operations Calendar
-                        </h4>
-                    </div>
-                    <div class="col-lg-4 col-md-6 mb-2 mb-lg-0 text-center text-md-center">
-                        <!-- Quick Date Navigation -->
-                        <div class="btn-group" role="group">
-                            <button type="button" class="btn btn-outline-light btn-sm" (click)="navigateDate('prev')">
-                                <i class="mdi mdi-chevron-left"></i>
-                            </button>
-                            <button type="button" class="btn btn-outline-light btn-sm" (click)="goToToday()">
-                                Today
-                            </button>
-                            <button type="button" class="btn btn-outline-light btn-sm" (click)="navigateDate('next')">
-                                <i class="mdi mdi-chevron-right"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="col-lg-4 col-md-6 text-end text-md-end">
-                        <!-- View Switcher and Actions -->
-                        <div class="btn-group me-2" role="group">
-                            <button type="button" class="btn btn-outline-light btn-sm" 
-                                    [class.active]="currentView === 'month'"
-                                    (click)="switchView('month')">
-                                <span class="d-none d-sm-inline">Month</span>
-                                <i class="mdi mdi-calendar d-sm-none"></i>
-                            </button>
-                            <button type="button" class="btn btn-outline-light btn-sm" 
-                                    [class.active]="currentView === 'week'"
-                                    (click)="switchView('week')">
-                                <span class="d-none d-sm-inline">Week</span>
-                                <i class="mdi mdi-calendar-week d-sm-none"></i>
-                            </button>
-                            <button type="button" class="btn btn-outline-light btn-sm" 
-                                    [class.active]="currentView === 'day'"
-                                    (click)="switchView('day')">
-                                <span class="d-none d-sm-inline">Day</span>
-                                <i class="mdi mdi-calendar-today d-sm-none"></i>
-                            </button>
-                        </div>
-                        <button type="button" class="btn btn-light btn-sm" (click)="createEvent()">
-                            <i class="mdi mdi-plus me-1"></i><span class="d-none d-sm-inline">New Event</span>
+<div class="calendar-wrapper d-lg-flex gap-1 mx-n4 mt-n4 p-1">
+    <div class="calendar-leftsidebar minimal-border">
+        <div class="px-4 pt-4 mb-3">
+            <div class="d-flex align-items-start mb-4">
+                <div class="flex-grow-1">
+                    <h5 class="mb-0">Operations Calendar</h5>
+                    <small class="text-muted">Logistics scheduling</small>
+                </div>
+                <div class="flex-shrink-0">
+                    <div class="btn-group" role="group" aria-label="View switcher">
+                        <button type="button" class="btn btn-sm btn-outline-primary" title="List View" disabled>
+                            <i class="mdi mdi-format-list-checks align-bottom"></i>
                         </button>
-                        <div class="btn-group ms-2" ngbDropdown placement="bottom-right">
-                            <button class="btn btn-outline-light btn-sm" ngbDropdownToggle>
-                                <i class="mdi mdi-dots-vertical"></i>
-                            </button>
-                            <div class="dropdown-menu" ngbDropdownMenu>
-                                <h6 class="dropdown-header">Keyboard Shortcuts</h6>
-                                <div class="dropdown-item-text small">
-                                    <div class="d-flex justify-content-between">
-                                        <span>New Event:</span>
-                                        <kbd>Ctrl+N</kbd>
-                                    </div>
-                                    <div class="d-flex justify-content-between">
-                                        <span>Today:</span>
-                                        <kbd>T</kbd>
-                                    </div>
-                                    <div class="d-flex justify-content-between">
-                                        <span>Month View:</span>
-                                        <kbd>M</kbd>
-                                    </div>
-                                    <div class="d-flex justify-content-between">
-                                        <span>Week View:</span>
-                                        <kbd>W</kbd>
-                                    </div>
-                                    <div class="d-flex justify-content-between">
-                                        <span>Day View:</span>
-                                        <kbd>D</kbd>
-                                    </div>
-                                    <div class="d-flex justify-content-between">
-                                        <span>Navigate:</span>
-                                        <kbd>Ctrl+←/→</kbd>
-                                    </div>
-                                    <div class="d-flex justify-content-between">
-                                        <span>Refresh:</span>
-                                        <kbd>Ctrl+R</kbd>
-                                    </div>
-                                </div>
-                                <div class="dropdown-divider"></div>
-                                <button class="dropdown-item" (click)="exportCalendar()">
-                                    <i class="mdi mdi-download me-2"></i>Export Calendar
-                                </button>
-                                <button class="dropdown-item" (click)="printCalendar()">
-                                    <i class="mdi mdi-printer me-2"></i>Print Calendar
-                                </button>
-                            </div>
+                        <button type="button" class="btn btn-sm btn-outline-primary active" title="Calendar View">
+                            <i class="mdi mdi-calendar-month-outline align-bottom"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mini-calendar mb-4">
+                <div class="mini-calendar-header">
+                    <button class="btn btn-sm btn-ghost-secondary" (click)="previousMonth()">
+                        <i class="mdi mdi-chevron-left"></i>
+                    </button>
+                    <span class="fw-semibold">{{ currentMiniMonth() }}</span>
+                    <button class="btn btn-sm btn-ghost-secondary" (click)="nextMonth()">
+                        <i class="mdi mdi-chevron-right"></i>
+                    </button>
+                </div>
+                <div class="mini-calendar-grid">
+                    <div class="mini-calendar-weekdays">
+                        <div class="mini-calendar-weekday">Su</div>
+                        <div class="mini-calendar-weekday">Mo</div>
+                        <div class="mini-calendar-weekday">Tu</div>
+                        <div class="mini-calendar-weekday">We</div>
+                        <div class="mini-calendar-weekday">Th</div>
+                        <div class="mini-calendar-weekday">Fr</div>
+                        <div class="mini-calendar-weekday">Sa</div>
+                    </div>
+                    <div class="mini-calendar-days">
+                        <div class="mini-calendar-day"
+                            *ngFor="let day of miniCalendarDays()"
+                            [class.other-month]="!day.currentMonth"
+                            [class.today]="day.isToday"
+                            [class.selected]="day.isSelected"
+                            [class.has-events]="day.hasEvents"
+                            (click)="selectMiniDate(day)">
+                            {{ day.day }}
                         </div>
                     </div>
                 </div>
             </div>
-            
-            <!-- Calendar Stats and Filters -->
-            <div class="card-body p-3 bg-light">
-                <div class="row align-items-center">
-                    <div class="col-lg-6 col-md-12 mb-2 mb-lg-0">
-                        <div class="d-flex align-items-center gap-3 flex-wrap">
-                            <!-- Event Type Filters -->
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="checkbox" id="filterAll" 
-                                       [(ngModel)]="filters.showAll" (change)="onFilterChange('all')">
-                                <label class="form-check-label fw-semibold" for="filterAll">All Events</label>
-                            </div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="checkbox" id="filterScheduler" 
-                                       [(ngModel)]="filters.showScheduler" (change)="onFilterChange('scheduler')">
-                                <label class="form-check-label" for="filterScheduler">Field Service</label>
-                            </div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="checkbox" id="filterOther" 
-                                       [(ngModel)]="filters.showOther" (change)="onFilterChange('other')">
-                                <label class="form-check-label" for="filterOther">Other Events</label>
-                            </div>
-                        </div>
+
+            <div class="filters-section">
+                <h6 class="text-muted text-uppercase fs-11 mb-3">Filters</h6>
+                <div class="mb-3">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <label class="form-label mb-0 fw-semibold">Event Type</label>
                     </div>
-                    <div class="col-lg-6 col-md-12 text-lg-end">
-                        <!-- Quick Stats -->
-                        <div class="d-flex align-items-center justify-content-lg-end justify-content-center gap-2 flex-wrap calendar-stats">
-                            <div class="bg-primary bg-opacity-10 px-3 py-1 rounded stats-badge">
-                                <small class="text-primary fw-semibold">Total: {{totalEvents}}</small>
-                            </div>
-                            <div class="bg-warning bg-opacity-10 px-3 py-1 rounded stats-badge">
-                                <small class="text-warning fw-semibold">Pending: {{pendingEvents}}</small>
-                            </div>
-                            <div class="bg-success bg-opacity-10 px-3 py-1 rounded stats-badge">
-                                <small class="text-success fw-semibold">Completed: {{completedEvents}}</small>
-                            </div>
+                    <div class="filter-options">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="filterAll" [(ngModel)]="filters.showAll"
+                                (change)="onFilterChange('all')">
+                            <label class="form-check-label" for="filterAll">All Events</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="filterScheduler" [(ngModel)]="filters.showScheduler"
+                                (change)="onFilterChange('scheduler')">
+                            <label class="form-check-label" for="filterScheduler">Field Service</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="filterOther" [(ngModel)]="filters.showOther"
+                                (change)="onFilterChange('other')">
+                            <label class="form-check-label" for="filterOther">Other Events</label>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<div class="row">
-    <div class="col-xl-12">
-        <div class="card calendar-container">
-            <div class="card-body p-0" style="width: 100%;height: calc(100vh - 280px);">
+    <div class="calendar-main-content w-100 minimal-border">
+        <div class="p-3 calendar-topbar">
+            <div class="row align-items-center">
+                <div class="col-sm-8 col-8">
+                    <h4 class="mb-0">{{ currentViewTitle() }}</h4>
+                </div>
+                <div class="col-sm-4 col-4 text-end">
+                    <ul class="list-inline calendar-nav text-end mb-0">
+                        <li class="list-inline-item">
+                            <button class="btn btn-sm btn-primary" (click)="refreshCurrentView()">
+                                <i class="mdi mdi-refresh me-1"></i>
+                                Refresh
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="row align-items-center g-2 mt-2">
+                <div class="col-xl-4 col-md-6 text-xl-start">
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-sm btn-soft-primary" (click)="navigateDate('prev')">
+                            <i class="mdi mdi-chevron-left"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-soft-primary" (click)="goToToday()">Today</button>
+                        <button type="button" class="btn btn-sm btn-soft-primary" (click)="navigateDate('next')">
+                            <i class="mdi mdi-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="col-xl-8 col-md-6 text-xl-end">
+                    <div class="btn-group me-2" role="group">
+                        <button type="button" class="btn btn-sm btn-outline-primary" [class.active]="currentView === 'month'"
+                            (click)="switchView('month')">Month</button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" [class.active]="currentView === 'week'"
+                            (click)="switchView('week')">Week</button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" [class.active]="currentView === 'day'"
+                            (click)="switchView('day')">Day</button>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-primary me-2" (click)="createEvent()">
+                        <i class="mdi mdi-plus me-1"></i>New Event
+                    </button>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap mt-3">
+                <div class="bg-primary bg-opacity-10 px-3 py-1 rounded stats-badge">
+                    <small class="text-primary fw-semibold">Total: {{ totalEvents }}</small>
+                </div>
+                <div class="bg-warning bg-opacity-10 px-3 py-1 rounded stats-badge">
+                    <small class="text-warning fw-semibold">Pending: {{ pendingEvents }}</small>
+                </div>
+                <div class="bg-success bg-opacity-10 px-3 py-1 rounded stats-badge">
+                    <small class="text-success fw-semibold">Completed: {{ completedEvents }}</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="calendar-content p-0">
+            <div class="calendar-wrapper-inner" style="width: 100%; height: calc(100vh - 230px);">
                 <mbsc-eventcalendar [selectedDate]="start" #myTimeline [data]="filteredEvents" [options]="eventSettings"
                     [view]="calView"></mbsc-eventcalendar>
             </div>

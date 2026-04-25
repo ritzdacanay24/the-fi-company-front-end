@@ -18,6 +18,15 @@ import { CalendarModalCreateService } from "./calendar-modal-create/calendar-mod
 import { AuthenticationService } from "@app/core/services/auth.service";
 import { CalendarModalEditService } from "./calendar-modal-edit/calendar-modal-edit.component";
 
+interface MiniCalendarDay {
+  date: Date;
+  day: number;
+  currentMonth: boolean;
+  isToday: boolean;
+  isSelected: boolean;
+  hasEvents: boolean;
+}
+
 @Component({
   standalone: true,
   imports: [SharedModule, MbscModule],
@@ -54,6 +63,8 @@ export class CalendarComponent implements OnInit, AfterViewInit {
   filteredEvents: MbscCalendarEvent[] | any = [];
   view = "month";
   currentView = "month";
+  miniCalendarDate: Date = new Date();
+  selectedMiniDate: Date | null = null;
 
   // Event statistics
   totalEvents = 0;
@@ -515,6 +526,93 @@ export class CalendarComponent implements OnInit, AfterViewInit {
           break;
       }
     });
+  }
+
+  currentMiniMonth(): string {
+    return this.miniCalendarDate.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  }
+
+  miniCalendarDays(): MiniCalendarDay[] {
+    const currentMonth = this.miniCalendarDate.getMonth();
+    const currentYear = this.miniCalendarDate.getFullYear();
+    const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
+    const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0);
+    const firstDayWeekday = firstDayOfMonth.getDay();
+    const daysInMonth = lastDayOfMonth.getDate();
+    const days: MiniCalendarDay[] = [];
+
+    for (let i = firstDayWeekday - 1; i >= 0; i--) {
+      const prevDate = new Date(currentYear, currentMonth, -i);
+      days.push(this.createMiniCalendarDay(prevDate, false));
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(currentYear, currentMonth, day);
+      days.push(this.createMiniCalendarDay(date, true));
+    }
+
+    const remaining = 42 - days.length;
+    for (let day = 1; day <= remaining; day++) {
+      const nextDate = new Date(currentYear, currentMonth + 1, day);
+      days.push(this.createMiniCalendarDay(nextDate, false));
+    }
+
+    return days;
+  }
+
+  previousMonth(): void {
+    this.miniCalendarDate = new Date(
+      this.miniCalendarDate.getFullYear(),
+      this.miniCalendarDate.getMonth() - 1,
+      1
+    );
+  }
+
+  nextMonth(): void {
+    this.miniCalendarDate = new Date(
+      this.miniCalendarDate.getFullYear(),
+      this.miniCalendarDate.getMonth() + 1,
+      1
+    );
+  }
+
+  selectMiniDate(day: MiniCalendarDay): void {
+    this.selectedMiniDate = day.date;
+    this.start = moment(day.date).format("YYYY-MM-DD");
+    this.router.navigate(["/operations/logistics/calendar"], {
+      queryParamsHandling: "merge",
+      queryParams: {
+        start: this.start,
+      },
+    });
+  }
+
+  currentViewTitle(): string {
+    const date = moment(this.start || new Date()).format("MMM D, YYYY");
+    const viewLabel = this.currentView.charAt(0).toUpperCase() + this.currentView.slice(1);
+    return `${viewLabel} View - ${date}`;
+  }
+
+  private createMiniCalendarDay(date: Date, currentMonth: boolean): MiniCalendarDay {
+    const today = new Date();
+    const selectedDate = this.selectedMiniDate || (this.start ? new Date(this.start) : null);
+    const dayDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const isToday = dayDate.getTime() === new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+    const isSelected = !!selectedDate &&
+      dayDate.getTime() === new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate()).getTime();
+    const hasEvents = this.myEvents.some((event) => {
+      const eventDate = moment(event.start).toDate();
+      return new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate()).getTime() === dayDate.getTime();
+    });
+
+    return {
+      date: dayDate,
+      day: date.getDate(),
+      currentMonth,
+      isToday,
+      isSelected,
+      hasEvents,
+    };
   }
 
   exportCalendar() {
