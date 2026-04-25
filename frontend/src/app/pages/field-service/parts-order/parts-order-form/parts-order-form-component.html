@@ -1,251 +1,300 @@
-<form [formGroup]="form" autocomplete="off">
+<form [formGroup]="form" autocomplete="off" class="settings-form">
 
-    <div class="row" *ngIf="id">
-        <label class="form-label">SV Number</label>
-        <div class="input-group mb-3">
-            <input class="form-control" type="text" formControlName="so_number" placeholder="Enter SV Number"
+  <!-- Tracking Information (edit only) -->
+  <div class="mb-4 pb-4 border-bottom" *ngIf="id">
+    <div class="mb-3">
+      <h3 class="h5 mb-1">Tracking Information</h3>
+    </div>
+
+    <div class="row g-3">
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label">SV Number</label>
+          <div class="col-12 col-lg-9">
+            <div class="input-group">
+              <input class="form-control" type="text" formControlName="so_number" placeholder="Enter SV Number"
                 [ngClass]="{ 'is-invalid': submitted && f.so_number.errors }" readonly />
-            <button class="btn input-group-text btn-primary pointer" id="basic-addon2" (click)="addSVNumber()" [disabled]="f.so_number.disabled">
-                Add SV Number</button>
-        </div>
-    </div>
-
-    <div class="border border border-2 border-primary p-2 mb-3 rounded" *ngIf="id">
-        <h4 class="mb-2">Tracking Information</h4>
-
-        <div class="row" *ngIf="id">
-            <label class="form-label">Tracking Number</label>
-            <div class="input-group mb-3">
-                <select class="form-select" formControlName="tracking_number_carrier">
-                    <option selected disabled value="null">--SELECT CARRIER--</option>
-                    <option *ngFor="let row of ['BTX', 'FedEx', 'UPS']">{{row}}</option>
-                </select>
-                <input class="form-control" type="text" formControlName="tracking_number"
-                    placeholder="Enter Tracking Number"
-                    [ngClass]="{ 'is-invalid': submitted && f.tracking_number.errors }" />
+              <button class="btn btn-primary" type="button" (click)="addSVNumber()" [disabled]="f.so_number.disabled">
+                Add SV Number
+              </button>
             </div>
+          </div>
         </div>
+      </div>
 
-        <div *ngIf="form.value.tracking_number_carrier == 'FedEx'" class="mb-2">
-            Click <a class="link-primary" href="https://www.fedex.com/fedextrack/?trknbr={{form.value.tracking_number}}"
-                target="_blank"> <u>here</u>
-            </a> to view tracking.
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label">Carrier</label>
+          <div class="col-12 col-lg-9">
+            <div class="d-flex gap-3">
+              <div class="form-check" *ngFor="let row of ['BTX', 'FedEx', 'UPS']">
+                <input class="form-check-input" type="radio" name="tracking_number_carrier"
+                  [id]="'carrier_' + row" [value]="row" formControlName="tracking_number_carrier">
+                <label class="form-check-label" [for]="'carrier_' + row">{{row}}</label>
+              </div>
+            </div>
+          </div>
         </div>
+      </div>
 
-        <div *ngIf="form.value.tracking_number_carrier == 'UPS'" class="mb-2">
-            Click <a class="link-primary"
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label">Tracking Number</label>
+          <div class="col-12 col-lg-9">
+            <input class="form-control" type="text" formControlName="tracking_number"
+              placeholder="Enter Tracking Number"
+              [ngClass]="{ 'is-invalid': submitted && f.tracking_number.errors }" />
+            <div class="mt-1" *ngIf="form.value.tracking_number">
+              <a *ngIf="form.value.tracking_number_carrier == 'FedEx'" class="link-primary small"
+                href="https://www.fedex.com/fedextrack/?trknbr={{form.value.tracking_number}}" target="_blank">
+                <i class="mdi mdi-open-in-new me-1"></i>Track on FedEx
+              </a>
+              <a *ngIf="form.value.tracking_number_carrier == 'UPS'" class="link-primary small"
                 href="https://www.ups.com/track?track=yes&trackNums={{form.value.tracking_number}}" target="_blank">
-                <u>here</u>
-            </a> to view tracking.
-        </div>
-
-        <div *ngIf="form.value.tracking_number_carrier == 'BTX'" class="mb-2">
-            Click <a class="link-primary"
-                href="https://www.btxair.com/mybtx/track.asp?but.val=Details&airbill={{form.value.tracking_number}}"
-                target="_blank"> <u>here</u>
-            </a> to view tracking.
-        </div>
-
-
-        <div class="row" *ngIf="id">
-            <label class="form-label">Return Tracking Number</label>
-            <div class="input-group mb-3">
-                <select class="form-select" formControlName="return_tracking_number_carrier">
-                    <option selected disabled value="null">--SELECT CARRIER--</option>
-                    <option *ngFor="let row of ['BTX', 'FedEx', 'UPS']">{{row}}</option>
-                </select>
-                <input class="form-control" type="text" formControlName="return_tracking_number"
-                    placeholder="Enter Return Tracking Number"
-                    [ngClass]="{ 'is-invalid': submitted && f.return_tracking_number.errors }" />
+                <i class="mdi mdi-open-in-new me-1"></i>Track on UPS
+              </a>
+              <a *ngIf="form.value.tracking_number_carrier == 'BTX'" class="link-primary small"
+                href="https://www.btxair.com/mybtx/track.asp?but.val=Details&airbill={{form.value.tracking_number}}" target="_blank">
+                <i class="mdi mdi-open-in-new me-1"></i>Track on BTX
+              </a>
             </div>
+          </div>
         </div>
+      </div>
 
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label">Return Carrier</label>
+          <div class="col-12 col-lg-9">
+            <div class="d-flex gap-3">
+              <div class="form-check" *ngFor="let row of ['BTX', 'FedEx', 'UPS']">
+                <input class="form-check-input" type="radio" name="return_tracking_number_carrier"
+                  [id]="'ret_carrier_' + row" [value]="row" formControlName="return_tracking_number_carrier">
+                <label class="form-check-label" [for]="'ret_carrier_' + row">{{row}}</label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label">Return Tracking Number</label>
+          <div class="col-12 col-lg-9">
+            <input class="form-control" type="text" formControlName="return_tracking_number"
+              placeholder="Enter Return Tracking Number"
+              [ngClass]="{ 'is-invalid': submitted && f.return_tracking_number.errors }" />
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="row">
-        <div class="col mb-3">
-            <label class="form-label">OEM</label>
+  </div>
+
+  <!-- Order Details -->
+  <div class="mb-4 pb-4 border-bottom">
+    <div class="mb-3">
+      <h3 class="h5 mb-1">Order Details</h3>
+    </div>
+
+    <div class="row g-3">
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label">OEM</label>
+          <div class="col-12 col-lg-9">
             <ng-select [items]="customers" bindLabel="cm_addr" placeholder="--SELECT--" formControlName="oem"
-                [ngClass]="{ 'is-invalid': submitted && f.oem.errors }">
-                <ng-template ng-label-tmp let-item="item">
-                    [{{item.cm_addr}}] {{ item.cm_sort }}
-                </ng-template>
-                <ng-template ng-option-tmp let-item="item">
-                    [{{item.cm_addr}}] {{ item.cm_sort }}
-                </ng-template>
-
+              [ngClass]="{ 'is-invalid': submitted && f.oem.errors }">
+              <ng-template ng-label-tmp let-item="item">
+                [{{item.cm_addr}}] {{ item.cm_sort }}
+              </ng-template>
+              <ng-template ng-option-tmp let-item="item">
+                [{{item.cm_addr}}] {{ item.cm_sort }}
+              </ng-template>
             </ng-select>
+          </div>
+        </div>
+      </div>
 
-            <!-- <select class="form-select" formControlName="oem" [ngClass]="{ 'is-invalid': submitted && f.oem.errors }">
-                <option selected disabled [value]="null">--SELECT--</option>
-                <option *ngFor="let row of customers" [value]="row.cm_addr">[{{row.cm_addr}}] {{ row.cm_sort }}
-                </option>
-            </select> -->
-            <!-- <input class="form-control" type="text" formControlName="oem" placeholder="Enter OEM"
-                [ngClass]="{ 'is-invalid': submitted && f.oem.errors }" /> -->
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label">Arrival Date</label>
+          <div class="col-12 col-lg-9">
+            <input class="form-control" type="date" formControlName="arrival_date"
+              [ngClass]="{ 'is-invalid': submitted && f.arrival_date.errors }" />
+          </div>
         </div>
-    </div>
-    <div class="row">
-        <div class="col mb-3">
-            <label class="form-label">Arrival Date</label>
-            <input class="form-control" type="date" formControlName="arrival_date" placeholder="Enter Shipping Method"
-                [ngClass]="{ 'is-invalid': submitted && f.arrival_date.errors }" />
-        </div>
-    </div>
+      </div>
 
-    <div class="row">
-        <div class="col mb-3">
-            <label class="form-label">Ship via Account</label>
-            <select class="form-control" formControlName="ship_via_account">
-                <option disabled selected value="null"> --SELECT--</option>
-                <option *ngFor="let row of ['Eyefi', 'Customer', 'N/A']"> {{row}} </option>
-            </select>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col-md-12 mb-3">
-            <app-address-search (notifyParent)="notifyParent($event)" [value]="f.address.value"
-                [disabled]="this.form.get('address').disabled" [form_label]="'Destination Address'"
-                placeholder="Enter Address Information" [addTag]="addTag"></app-address-search>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col mb-3">
-            <label class="form-label">Casino Name</label>
-            <input class="form-control" type="text" formControlName="casino_name"
-                [ngClass]="{ 'is-invalid': submitted && f.casino_name.errors }" placeholder="Enter Casino Name" />
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col-md-6 mb-3">
-            <label class="form-label">Contact Name</label>
-            <input class="form-control" type="text" formControlName="contact_name"
-                [ngClass]="{ 'is-invalid': submitted && f.contact_name.errors }" placeholder="Enter Contact Name" />
-        </div>
-        <div class="col-md-6 mb-3">
-            <label class="form-label">Contact Email</label>
-            <input class="form-control" type="email" formControlName="contact_email"
-                [ngClass]="{ 'is-invalid': submitted && f.contact_email.errors }" placeholder="Enter Contact Email" />
-        </div>
-        <div class="col-md-6 mb-3">
-            <label class="form-label">Contact Phone Number</label>
-            <input class="form-control" type="text" formControlName="contact_phone_number"
-                placeholder="Enter Contact Phone Number"
-                [ngClass]="{ 'is-invalid': submitted && f.contact_phone_number.errors }" />
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col mb-3">
-            <label class="form-label">Serial Number</label>
-            <input class="form-control" type="text" formControlName="serial_number"
-                [ngClass]="{ 'is-invalid': submitted && f.serial_number.errors }" placeholder="Enter Serial Number" />
-        </div>
-    </div>
-
-    <!-- <div class="row">
-        <div class="col mb-3">
-            <label class="form-label">Billable</label>
-            <input class="form-control" type="text" formControlName="billable" placeholder="Enter Billable Information"
-                [ngClass]="{ 'is-invalid': submitted && f.billable.errors }" />
-        </div>
-    </div> -->
-
-    <div class="row">
-        <div class="col mb-3">
-            <label class="form-label">Instructions</label>
-            <textarea class="form-control" type="text" formControlName="instructions"
-                placeholder="Enter instructions if any" [ngClass]="{ 'is-invalid': submitted && f.instructions.errors }"
-                autosize [minRows]="3"></textarea>
-        </div>
-    </div>
-
-    <div class="card border" *ngIf="!disableAddToParts">
-        <div class="card-header bg-primary text-white">
-            Add parts to this request
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-4 mb-3">
-                    <label class="form-label">Part Number</label>
-                    <app-qad-part-search appendToBody="body" (notifyParent)="notifyQadParent($event)"
-                        [value]="part_number" [showLabel]="false" [virtualScroll]="false" [editableSearchTerm]="true"
-                        [hideSelected]="false" [className]="'custom1'" [disabled]="form.disabled" [matchCase]="true"
-                        [addTag]="true"></app-qad-part-search>
-                    <small class="m-0 p-0 text-start" *ngIf="description">{{description}}</small>
-                    <!-- <input class="form-control" type="text" [(ngModel)]="part_number" placeholder="Enter Part Number"
-                        [ngModelOptions]="{standalone: true}" /> -->
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label class="form-label">Billable</label>
-                    <input class="form-control" type="text" [(ngModel)]="billable" placeholder="Enter Billable"
-                        [ngModelOptions]="{standalone: true}" />
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label class="form-label">Qty</label>
-                    <input class="form-control" type="text" [(ngModel)]="qty" placeholder="Enter Qty"
-                        [ngModelOptions]="{standalone: true}" />
-                </div>
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label">Ship Via Account</label>
+          <div class="col-12 col-lg-9">
+            <div class="d-flex gap-3">
+              <div class="form-check" *ngFor="let row of ['Eyefi', 'Customer', 'N/A']">
+                <input class="form-check-input" type="radio" name="ship_via_account"
+                  [id]="'ship_' + row" [value]="row" formControlName="ship_via_account">
+                <label class="form-check-label" [for]="'ship_' + row">{{row}}</label>
+              </div>
             </div>
+          </div>
         </div>
-        <div class="card-footer text-muted">
-            <button class="btn btn-block btn btn-outline-primary pointer" (click)="addMoreItems()">Add To Cart</button>
+      </div>
+
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label">Destination Address</label>
+          <div class="col-12 col-lg-9">
+            <app-address-search (notifyParent)="notifyParent($event)" [value]="f.address.value"
+              [disabled]="this.form.get('address').disabled" [form_label]="'Destination Address'"
+              placeholder="Enter Address Information" [addTag]="addTag" [showLabel]="false"></app-address-search>
+          </div>
         </div>
+      </div>
+
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label">Casino Name</label>
+          <div class="col-12 col-lg-9">
+            <input class="form-control" type="text" formControlName="casino_name"
+              [ngClass]="{ 'is-invalid': submitted && f.casino_name.errors }" placeholder="Enter Casino Name" />
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label">Contact Name</label>
+          <div class="col-12 col-lg-9">
+            <input class="form-control" type="text" formControlName="contact_name"
+              [ngClass]="{ 'is-invalid': submitted && f.contact_name.errors }" placeholder="Enter Contact Name" />
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label">Contact Email</label>
+          <div class="col-12 col-lg-9">
+            <input class="form-control" type="email" formControlName="contact_email"
+              [ngClass]="{ 'is-invalid': submitted && f.contact_email.errors }" placeholder="Enter Contact Email" />
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label">Contact Phone</label>
+          <div class="col-12 col-lg-9">
+            <input class="form-control" type="text" formControlName="contact_phone_number"
+              placeholder="Enter Contact Phone Number"
+              [ngClass]="{ 'is-invalid': submitted && f.contact_phone_number.errors }" />
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label">Serial Number</label>
+          <div class="col-12 col-lg-9">
+            <input class="form-control" type="text" formControlName="serial_number"
+              [ngClass]="{ 'is-invalid': submitted && f.serial_number.errors }" placeholder="Enter Serial Number" />
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="row g-2">
+          <label class="col-12 col-lg-3 col-form-label">Instructions</label>
+          <div class="col-12 col-lg-9">
+            <textarea class="form-control" formControlName="instructions"
+              placeholder="Enter instructions if any"
+              [ngClass]="{ 'is-invalid': submitted && f.instructions.errors }"
+              autosize [minRows]="3"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Parts Cart -->
+  <div class="mb-4" *ngIf="!disableAddToParts">
+    <div class="mb-3">
+      <h3 class="h5 mb-1">Add Parts</h3>
     </div>
 
-    <h4 *ngIf="getDetails.length == 0">Your cart is empty.</h4>
-    <ng-container formGroupName="details" *ngIf="getDetails.length">
-        <div class="table-responsive">
-            <table class="table align-middle table-bordered">
-                <thead>
-                    <tr class="text-nowrap">
-                        <th></th>
-                        <th>Part Number</th>
-                        <th>Billable</th>
-                        <th>Qty</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody *ngFor="let row of getDetails.controls; let i=index" [formGroupName]="i">
-                    <tr class="p-0 m-0 align-middle text-center text-nowrap">
-                        <td>
-                            <button class="btn-sm btn btn-primary" (click)="copy(row.value.part_number)">Copy</button>
-                        </td>
-                        <td style="min-width:200px">
-
-                            <!-- <app-qad-part-search appendToBody="body" (notifyParent)="notifyQadParentRow($event, row)"
-                                [value]="row.value.part_number" [showLabel]="false" [virtualScroll]="false"
-                                [editableSearchTerm]="true" [hideSelected]="false" [className]="'custom1'"
-                                [disabled]="form.disabled"></app-qad-part-search> -->
-
-                            <input type="text" class="form-control border-0" formControlName="part_number" #userinput
-                                placeholder="Enter part number" readonly />
-                        </td>
-                        <td style="min-width:200px">
-                            <input type="text" class="form-control" formControlName="billable"
-                                placeholder="Enter billable" />
-                        </td>
-                        <td style="min-width:200px">
-                            <input type="text" class="form-control" formControlName="qty" placeholder="Enter qty" />
-                        </td>
-                        <td>
-                            <button class="btn btn-danger btn-sm" (click)="onDeleteItem(row.value, i)"
-                                [disabled]="this.form.get('details').disabled" [disabled]="form.disabled">
-                                <i class="ri-delete-bin-line"></i>
-                            </button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td colspan="5" class="py-1 bg-light" *ngIf="row.value.description">
-                            <p class="text-start text-wrap mb-0" title="{{row.value.description}}">
-                                Description: {{row.value.description || 'No Description Found'}}</p>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+    <div class="card border">
+      <div class="card-header bg-primary text-white">Add parts to this request</div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label">Part Number</label>
+            <app-qad-part-search appendToBody="body" (notifyParent)="notifyQadParent($event)"
+              [value]="part_number" [showLabel]="false" [virtualScroll]="false" [editableSearchTerm]="true"
+              [hideSelected]="false" [className]="'custom1'" [disabled]="form.disabled" [matchCase]="true"
+              [addTag]="true"></app-qad-part-search>
+            <small class="m-0 p-0 text-start" *ngIf="description">{{description}}</small>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Billable</label>
+            <input class="form-control" type="text" [(ngModel)]="billable" placeholder="Enter Billable"
+              [ngModelOptions]="{standalone: true}" />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Qty</label>
+            <input class="form-control" type="text" [(ngModel)]="qty" placeholder="Enter Qty"
+              [ngModelOptions]="{standalone: true}" />
+          </div>
         </div>
-    </ng-container>
+      </div>
+      <div class="card-footer">
+        <button class="btn btn-outline-primary" type="button" (click)="addMoreItems()">Add To Cart</button>
+      </div>
+    </div>
+  </div>
+
+  <h4 *ngIf="getDetails.length == 0">Your cart is empty.</h4>
+  <ng-container formGroupName="details" *ngIf="getDetails.length">
+    <div class="table-responsive">
+      <table class="table align-middle table-bordered">
+        <thead>
+          <tr class="text-nowrap">
+            <th></th>
+            <th>Part Number</th>
+            <th>Billable</th>
+            <th>Qty</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody *ngFor="let row of getDetails.controls; let i=index" [formGroupName]="i">
+          <tr class="p-0 m-0 align-middle text-center text-nowrap">
+            <td>
+              <button class="btn-sm btn btn-primary" (click)="copy(row.value.part_number)">Copy</button>
+            </td>
+            <td style="min-width:200px">
+              <input type="text" class="form-control border-0" formControlName="part_number" #userinput
+                placeholder="Enter part number" readonly />
+            </td>
+            <td style="min-width:200px">
+              <input type="text" class="form-control" formControlName="billable" placeholder="Enter billable" />
+            </td>
+            <td style="min-width:200px">
+              <input type="text" class="form-control" formControlName="qty" placeholder="Enter qty" />
+            </td>
+            <td>
+              <button class="btn btn-danger btn-sm" (click)="onDeleteItem(row.value, i)"
+                [disabled]="this.form.get('details').disabled" [disabled]="form.disabled">
+                <i class="ri-delete-bin-line"></i>
+              </button>
+            </td>
+          </tr>
+          <tr>
+            <td colspan="5" class="py-1 bg-light" *ngIf="row.value.description">
+              <p class="text-start text-wrap mb-0" title="{{row.value.description}}">
+                Description: {{row.value.description || 'No Description Found'}}</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </ng-container>
 
 </form>

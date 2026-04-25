@@ -1,26 +1,42 @@
-<div class="row">
-  <div class="content-grid col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-10 col-xxxl-12">
-    <div class="card">
-      <div class="card-header d-flex align-items-center">
-        <button class="btn btn-light btn-sm shadow-none bg-light rounded border-0 me-2 me-auto" *ngIf="goBack"
-          (click)="goBack()"><i class="mdi mdi-arrow-left pointer text-muted"></i> Back</button>
-        <h4 class="card-title mb-0 flex-grow-1 text-end"> {{title}} </h4>
-      </div>
-      <div class="card-body" style="min-height:300px">
-        <app-parts-order-form (setFormEmitter)="form = $event" [submitted]="submitted"></app-parts-order-form>
+<div class="container-fluid">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-9 col-xl-8 col-xxl-7">
 
-        <div class="mb-3 mt-3">
-          <div class="form-group">
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0">
+          <li class="breadcrumb-item"><a routerLink="/field-service">Field Service</a></li>
+          <li class="breadcrumb-item"><a routerLink="/operations/parts-order/list">Parts Orders</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Create</li>
+        </ol>
+      </nav>
+
+      <div class="mb-4">
+        <div class="d-flex align-items-center mb-3">
+          <button type="button" class="btn btn-outline-secondary me-3" (click)="goBack()" *ngIf="goBack" title="Back to Parts Order List">
+            <i class="mdi mdi-arrow-left me-2"></i>Back
+          </button>
+          <div>
+            <h2 class="mb-1">{{title}}</h2>
+          </div>
+        </div>
+      </div>
+
+      <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+          <app-parts-order-form (setFormEmitter)="form = $event" [submitted]="submitted"></app-parts-order-form>
+
+          <div class="mt-4 pt-4 border-top">
+            <label class="form-label">Upload Documents</label>
             <input (change)="this.onFilechange($event)" class="form-control" type="file" id="file" multiple name="file">
           </div>
         </div>
 
+        <div class="card-footer bg-light border-top d-flex justify-content-between p-3">
+          <button class="btn btn-outline-secondary" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
+          <button class="btn btn-primary" [disabled]="isLoading" (click)="onSubmit()">Submit</button>
+        </div>
+      </div>
 
-      </div>
-      <div class="card-footer d-flex  d-flex justify-content-between">
-        <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
-        <button class="btn btn-primary" [disabled]="isLoading" (click)="onSubmit()">Submit</button>
-      </div>
     </div>
   </div>
 </div>

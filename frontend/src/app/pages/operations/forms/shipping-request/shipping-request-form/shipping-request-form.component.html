@@ -146,12 +146,14 @@
         <div class="row align-items-lg-center g-2">
           <label class="col-12 col-lg-3 col-form-label" [ngClass]="formValidator('freightCharges')">Freight Charges</label>
           <div class="col-12 col-lg-9">
-            <select class="form-select" formControlName="freightCharges"
-              [ngClass]="{ 'is-invalid': submitted && f.freightCharges.errors }">
-              <option value="" disabled selected>Select billing option</option>
-              <option *ngFor="let row of formData.freightCharges" [value]="row">{{row}}</option>
-            </select>
-            <div class="form-text"><i class="mdi mdi-information-outline me-1"></i>Select who will be billed for freight. Choose 'Customer Account' to enter a third-party account number.</div>
+            <div class="d-flex gap-3">
+              <div class="form-check" *ngFor="let row of formData.freightCharges">
+                <input class="form-check-input" type="radio" name="freightCharges" [id]="'freight_' + row"
+                  [value]="row" formControlName="freightCharges"
+                  [ngClass]="{ 'is-invalid': submitted && f.freightCharges.errors }">
+                <label class="form-check-label" [for]="'freight_' + row">{{row}}</label>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -171,37 +173,47 @@
         <div class="row align-items-lg-center g-2">
           <label class="col-12 col-lg-3 col-form-label" [ngClass]="formValidator('serviceType')">Service Type</label>
           <div class="col-12 col-lg-9">
-            <select class="form-select" formControlName="serviceType"
-              [ngClass]="{ 'is-invalid': submitted && f.serviceType.errors }" (change)="f.serviceTypeName.setValue('');">
-              <option value="" disabled selected>Select carrier</option>
-              <option *ngFor="let row of formData.serviceType" [value]="row">{{row}}</option>
-            </select>
+            <div class="d-flex gap-3">
+              <div class="form-check" *ngFor="let row of formData.serviceType">
+                <input class="form-check-input" type="radio" name="serviceType" [id]="'svc_' + row"
+                  [value]="row" formControlName="serviceType"
+                  [ngClass]="{ 'is-invalid': submitted && f.serviceType.errors }"
+                  (change)="f.serviceTypeName.setValue('')">
+                <label class="form-check-label" [for]="'svc_' + row">{{row}}</label>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
       <div class="col-12" *ngIf="form.get('serviceType').value == 'Fedex'">
-        <div class="row align-items-lg-center g-2">
-          <label class="col-12 col-lg-3 col-form-label" [ngClass]="formValidator('serviceTypeName')">FedEx Service</label>
+        <div class="row align-items-lg-start g-2">
+          <label class="col-12 col-lg-3 col-form-label pt-lg-0" [ngClass]="formValidator('serviceTypeName')">FedEx Service</label>
           <div class="col-12 col-lg-9">
-            <select class="form-select" formControlName="serviceTypeName"
-              [ngClass]="{ 'is-invalid': submitted && f.serviceTypeName.errors }">
-              <option value="" disabled selected>Select FedEx service type</option>
-              <option *ngFor="let row of formData.serviceTypesFedex" [value]="row.name">{{row.name}}</option>
-            </select>
+            <div class="d-flex flex-column gap-2">
+              <div class="form-check" *ngFor="let row of formData.serviceTypesFedex">
+                <input class="form-check-input" type="radio" name="serviceTypeName" [id]="'fedex_' + row.name"
+                  [value]="row.name" formControlName="serviceTypeName"
+                  [ngClass]="{ 'is-invalid': submitted && f.serviceTypeName.errors }">
+                <label class="form-check-label" [for]="'fedex_' + row.name">{{row.name}}</label>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
       <div class="col-12" *ngIf="form.get('serviceType').value == 'UPS'">
-        <div class="row align-items-lg-center g-2">
-          <label class="col-12 col-lg-3 col-form-label" [ngClass]="formValidator('serviceTypeName')">UPS Service</label>
+        <div class="row align-items-lg-start g-2">
+          <label class="col-12 col-lg-3 col-form-label pt-lg-0" [ngClass]="formValidator('serviceTypeName')">UPS Service</label>
           <div class="col-12 col-lg-9">
-            <select class="form-select" formControlName="serviceTypeName"
-              [ngClass]="{ 'is-invalid': submitted && f.serviceTypeName.errors }">
-              <option value="" disabled selected>Select UPS service type</option>
-              <option *ngFor="let row of formData.serviceTypesUps" [value]="row.name">{{row.name}}</option>
-            </select>
+            <div class="d-flex flex-column gap-2">
+              <div class="form-check" *ngFor="let row of formData.serviceTypesUps">
+                <input class="form-check-input" type="radio" name="serviceTypeName" [id]="'ups_' + row.name"
+                  [value]="row.name" formControlName="serviceTypeName"
+                  [ngClass]="{ 'is-invalid': submitted && f.serviceTypeName.errors }">
+                <label class="form-check-label" [for]="'ups_' + row.name">{{row.name}}</label>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -221,11 +233,14 @@
         <div class="row align-items-lg-center g-2">
           <label class="col-12 col-lg-3 col-form-label" [ngClass]="formValidator('saturdayDelivery')">Saturday Delivery OK?</label>
           <div class="col-12 col-lg-9">
-            <select class="form-select" formControlName="saturdayDelivery"
-              [ngClass]="{ 'is-invalid': submitted && f.saturdayDelivery.errors }">
-              <option value="" disabled selected>Select option</option>
-              <option *ngFor="let row of formData.saturdayDelivery" [value]="row">{{row}}</option>
-            </select>
+            <div class="d-flex gap-3">
+              <div class="form-check" *ngFor="let row of formData.saturdayDelivery">
+                <input class="form-check-input" type="radio" name="saturdayDelivery" [id]="'sat_' + row"
+                  [value]="row" formControlName="saturdayDelivery"
+                  [ngClass]="{ 'is-invalid': submitted && f.saturdayDelivery.errors }">
+                <label class="form-check-label" [for]="'sat_' + row">{{row}}</label>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -257,17 +272,7 @@
           </div>
         </div>
       </div>
-    </div>
-  </div>
 
-  <!-- Items & Additional Information -->
-  <div class="mb-4 pb-4 border-bottom">
-    <div class="mb-3">
-      <h3 class="h5 mb-1">Items & Additional Information</h3>
-      <p class="text-muted mb-0">Describe items being shipped and any special instructions.</p>
-    </div>
-
-    <div class="row g-3">
       <div class="col-12">
         <div class="row g-2">
           <label class="col-12 col-lg-3 col-form-label" [ngClass]="formValidator('comments')">Items Description & Comments</label>
@@ -278,19 +283,6 @@
           </div>
         </div>
       </div>
-
-      <!-- <div class="col-12">
-        <div class="row align-items-lg-center g-2">
-          <label class="col-12 col-lg-3 col-form-label">Active Request</label>
-          <div class="col-12 col-lg-9">
-            <div class="form-check form-switch mt-1">
-              <input class="form-check-input" type="checkbox" id="active" formControlName="active">
-              <label class="form-check-label" for="active"><strong>Active Request</strong></label>
-            </div>
-            <div class="form-text"><i class="mdi mdi-information-outline me-1"></i>Uncheck to save as draft.</div>
-          </div>
-        </div>
-      </div> -->
     </div>
   </div>
 
