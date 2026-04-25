@@ -16,6 +16,7 @@ import { SoSearchComponent } from "@app/shared/components/so-search/so-search.co
 import { UserSearchComponent } from "@app/shared/components/user-search/user-search.component";
 import { TranslateModule, TranslateService } from "@ngx-translate/core";
 import { AutosizeModule } from "ngx-autosize";
+import { AuthenticationService } from "@app/core/services/auth.service";
 
 interface SafetyIncidentOption {
   id: number;
@@ -41,7 +42,7 @@ interface SafetyIncidentOption {
   templateUrl: "./safety-incident-form.component.html",
 })
 export class SafetyIncidentFormComponent {
-  constructor(private fb: FormBuilder, public translate: TranslateService) {}
+  constructor(private fb: FormBuilder, public translate: TranslateService, private authService: AuthenticationService) {}
 
   onChangeLocationOfIncident() {
     this.form.patchValue({ location_of_incident_other: null });
@@ -50,6 +51,15 @@ export class SafetyIncidentFormComponent {
   ngOnInit(): void {
     this.setFormEmitter.emit(this.form);
     this.setOnPrintEmitter.emit(this.onPrint);
+    if (!this.id) {
+      const user = this.authService.currentUserValue;
+      if (user) {
+        this.form.patchValue({
+          first_name: user.first || user.first_name || null,
+          last_name: user.last || user.last_name || null,
+        });
+      }
+    }
   }
 
   @Output() setFormEmitter: EventEmitter<any> = new EventEmitter();
@@ -178,7 +188,7 @@ export class SafetyIncidentFormComponent {
   ];
 
   form = this.fb.group({
-    date_of_incident: new FormControl(null),
+    date_of_incident: new FormControl(new Date().toISOString().split('T')[0]),
     time_of_incident: new FormControl(null),
 
     first_name: new FormControl(null),

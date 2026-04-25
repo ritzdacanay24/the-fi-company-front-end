@@ -225,11 +225,14 @@
               Warranty Status
             </label>
             <div class="col-12 col-lg-9">
-              <select class="form-select" formControlName="warranty_replacement"
-                [ngClass]="{ 'is-invalid': submitted && f.warranty_replacement.errors }">
-                <option selected disabled value="null">Select warranty status</option>
-                <option *ngFor="let row of ['Yes', 'No', 'N/A']" [value]="row">{{row}}</option>
-              </select>
+              <div class="d-flex gap-3">
+                <div class="form-check" *ngFor="let opt of ['Yes', 'No', 'N/A']">
+                  <input class="form-check-input" type="radio" [name]="'warranty_replacement'" [id]="'warranty_' + opt"
+                    [value]="opt" formControlName="warranty_replacement"
+                    [ngClass]="{ 'is-invalid': submitted && f.warranty_replacement.errors }">
+                  <label class="form-check-label" [for]="'warranty_' + opt">{{opt}}</label>
+                </div>
+              </div>
             </div>
           </div>
         </div>

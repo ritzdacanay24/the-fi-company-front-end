@@ -287,6 +287,49 @@ export class PlacardEditComponent implements OnInit, AfterViewInit, OnDestroy {
     this.goBack();
   }
 
+  onEdit() {
+    this.isFormDisabled = false;
+    this.form.enable();
+    this.title = "Edit Placard";
+    this.toastrService.info("Edit mode enabled");
+  }
+
+  async onArchive() {
+    if (!this.id || !this.form) return;
+    if (!confirm(`Archive placard #${this.id}?`)) return;
+
+    try {
+      this.isLoading = true;
+      const payload = {
+        ...this.form.getRawValue(),
+        active: 0,
+      };
+      await this.api.update(this.id, payload);
+      this.isLoading = false;
+      this.toastrService.success("Placard archived successfully");
+      this.goBack();
+    } catch (err) {
+      this.isLoading = false;
+      this.toastrService.error("Failed to archive placard");
+    }
+  }
+
+  async onDelete() {
+    if (!this.id) return;
+    if (!confirm(`Delete placard #${this.id}? This cannot be undone.`)) return;
+
+    try {
+      this.isLoading = true;
+      await this.api.delete(this.id);
+      this.isLoading = false;
+      this.toastrService.success("Placard deleted successfully");
+      this.goBack();
+    } catch (err) {
+      this.isLoading = false;
+      this.toastrService.error("Failed to delete placard");
+    }
+  }
+
   totalPrints = [];
   onPrint() {
     if (this.form.dirty) {
@@ -364,8 +407,8 @@ export class PlacardEditComponent implements OnInit, AfterViewInit, OnDestroy {
     // This method is no longer needed - code type is handled by the form component
   }
 
-  get codeType(): 'qr' | 'barcode' {
-    return this.placardFormComponent?.codeType || 'qr';
+  get codeType(): 'qr' | 'barcode' | 'none' {
+    return this.placardFormComponent?.codeType || 'none';
   }
 
   getSalesOrderValue(row: any): string {

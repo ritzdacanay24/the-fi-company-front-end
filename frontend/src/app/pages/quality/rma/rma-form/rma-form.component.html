@@ -20,10 +20,14 @@
         <div class="row align-items-lg-center g-2">
           <label class="col-12 col-lg-3 col-form-label">Produce By</label>
           <div class="col-12 col-lg-9">
-            <select class="form-select" formControlName="type" [ngClass]="{ 'is-invalid': submitted && f.type.errors }">
-              <option selected disabled value="">--Select--</option>
-              <option *ngFor="let row of formData.produceBy" [value]="row">{{row}}</option>
-            </select>
+            <div class="d-flex gap-3">
+              <div class="form-check" *ngFor="let row of formData.produceBy">
+                <input class="form-check-input" type="radio" name="type" [id]="'produceBy_' + row"
+                  [value]="row" formControlName="type"
+                  [ngClass]="{ 'is-invalid': submitted && f.type.errors }">
+                <label class="form-check-label" [for]="'produceBy_' + row">{{row}}</label>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -42,9 +46,14 @@
         <div class="row align-items-lg-center g-2">
           <label class="col-12 col-lg-3 col-form-label">Status</label>
           <div class="col-12 col-lg-9">
-            <select class="form-select" formControlName="status" [ngClass]="{ 'is-invalid': submitted && f.status.errors }">
-              <option *ngFor="let row of formData.status" [value]="row.name">{{row.name}}</option>
-            </select>
+            <div class="d-flex gap-3">
+              <div class="form-check" *ngFor="let row of formData.status">
+                <input class="form-check-input" type="radio" name="status" [id]="'status_' + row.name"
+                  [value]="row.name" formControlName="status"
+                  [ngClass]="{ 'is-invalid': submitted && f.status.errors }">
+                <label class="form-check-label" [for]="'status_' + row.name">{{row.name}}</label>
+              </div>
+            </div>
           </div>
         </div>
       </div>

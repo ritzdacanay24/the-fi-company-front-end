@@ -5,6 +5,7 @@ import {
   FormControl,
   FormGroup,
   ReactiveFormsModule,
+  Validators,
 } from "@angular/forms";
 import { states } from "@app/core/data/states";
 import { SharedModule } from "@app/shared/shared.module";
@@ -103,7 +104,7 @@ export class PlacardFormComponent implements AfterViewInit, OnDestroy {
   private formSubscription: any;
 
   // Code type toggle - default to QR code
-  codeType: 'qr' | 'barcode' = 'qr';
+  codeType: 'qr' | 'barcode' | 'none' = 'none';
 
   constructor(
     private placardService: PlacardService
@@ -288,25 +289,25 @@ export class PlacardFormComponent implements AfterViewInit, OnDestroy {
   states = states;
 
   form = new FormGroup<ControlsOf<IPlacardForm>>({
-    line_number: new FormControl(null),
-    customer_name: new FormControl(""),
+    line_number: new FormControl(null, Validators.required),
+    customer_name: new FormControl("", Validators.required),
     eyefi_wo_number: new FormControl(null),
-    po_number: new FormControl(""),
+    po_number: new FormControl("", Validators.required),
     eyefi_so_number: new FormControl(null),
-    customer_co_por_so: new FormControl(""),
-    description: new FormControl(""),
-    eyefi_part_number: new FormControl(""),
+    customer_co_por_so: new FormControl("", Validators.required),
+    description: new FormControl("", Validators.required),
+    eyefi_part_number: new FormControl("", Validators.required),
     customer_part_number: new FormControl(""),
-    location: new FormControl(""),
-    customer_serial_tag: new FormControl(""),
-    eyefi_serial_tag: new FormControl(""),
-    qty: new FormControl(null),
-    label_count: new FormControl(null),
+    location: new FormControl("", Validators.required),
+    customer_serial_tag: new FormControl("", Validators.required),
+    eyefi_serial_tag: new FormControl("", Validators.required),
+    qty: new FormControl(null, Validators.required),
+    label_count: new FormControl(null, Validators.required),
     total_label_count: new FormControl(null),
     created_date: new FormControl(null),
     created_by: new FormControl(null),
     active: new FormControl(1),
-    uom: new FormControl(null),
+    uom: new FormControl(null, Validators.required),
   });
 
   setBooleanToNumber(key) {
