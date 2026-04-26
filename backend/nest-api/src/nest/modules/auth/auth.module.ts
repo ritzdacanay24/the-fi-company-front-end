@@ -23,6 +23,7 @@ import { MysqlModule } from '@/shared/database/mysql.module';
  */
 @Module({
   imports: [
+    ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

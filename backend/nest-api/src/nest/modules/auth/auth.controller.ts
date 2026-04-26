@@ -36,4 +36,14 @@ export class AuthController {
     this.logger.debug(`Card login attempt`);
     return this.authService.loginByCard(payload);
   }
+
+  /**
+   * Exchange a refresh token for a new access token.
+   * POST /apiV2/auth/refresh
+   */
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  async refresh(@Body() body: { refresh_token: string }): Promise<{ access_token: string; refresh_token: string }> {
+    return this.authService.refreshAccessToken(body.refresh_token);
+  }
 }

@@ -1,9 +1,12 @@
 import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import { MysqlService } from '@/shared/database/mysql.service';
 import { PasswordUtil } from '@/shared/utils/password.util';
 import { RowDataPacket } from 'mysql2/promise';
 import { createHash } from 'crypto';
+
+const REFRESH_TOKEN_EXPIRY = '30d';
 
 interface UserRow extends RowDataPacket {
   id: number;
@@ -30,6 +33,7 @@ export interface CardLoginRequest {
 export interface LoginResponse {
   token: string;
   access_token: string;
+  refresh_token: string;
   message: string;
   status: 'success';
   status_code: 1;
@@ -61,6 +65,7 @@ export class AuthService {
   constructor(
     private readonly jwtService: JwtService,
     private readonly mysqlService: MysqlService,
+    private readonly configService: ConfigService,
   ) {}
 
   private verifyPassword(plainTextPassword: string, storedPasswordHash: string | null | undefined): boolean {
@@ -133,11 +138,22 @@ export class AuthService {
       },
     );
 
+    const refreshSecret =
+      this.configService.get<string>('JWT_REFRESH_SECRET') ||
+      this.configService.get<string>('JWT_SECRET') ||
+      'refresh-secret-change-in-production';
+
+    const refresh_token = this.jwtService.sign(
+      { id: user.id, email: user.email, type: 'refresh' },
+      { secret: refreshSecret, expiresIn: REFRESH_TOKEN_EXPIRY },
+    );
+
     const fullName = [user.first, user.last].filter(Boolean).join(' ').trim();
 
     return {
       token,
       access_token: token,
+      refresh_token,
       message: 'Successfully logged in',
       status: 'success',
       status_code: 1,
@@ -220,6 +236,40 @@ export class AuthService {
     const user = users[0];
     this.logger.debug(`User card login: ${user.email || user.id}`);
     return this.buildLoginResponse(user);
+  }
+
+  /**
+   * Exchange a valid refresh token for a new access token.
+   */
+  async refreshAccessToken(refreshToken: string): Promise<{ access_token: string; refresh_token: string }> {
+    const refreshSecret =
+      this.configService.get<string>('JWT_REFRESH_SECRET') ||
+      this.configService.get<string>('JWT_SECRET') ||
+      'refresh-secret-change-in-production';
+
+    let payload: any;
+    try {
+      payload = this.jwtService.verify(refreshToken, { secret: refreshSecret });
+    } catch {
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
+
+    if (payload?.type !== 'refresh') {
+      throw new UnauthorizedException('Invalid token type');
+    }
+
+    const newAccessToken = this.jwtService.sign(
+      { id: payload.id, email: payload.email },
+      { expiresIn: '24h' },
+    );
+
+    // Rotate the refresh token so each usage yields a fresh 30-day window
+    const newRefreshToken = this.jwtService.sign(
+      { id: payload.id, email: payload.email, type: 'refresh' },
+      { secret: refreshSecret, expiresIn: REFRESH_TOKEN_EXPIRY },
+    );
+
+    return { access_token: newAccessToken, refresh_token: newRefreshToken };
   }
 
   /**

@@ -121,6 +121,10 @@ export class LoginComponent implements OnInit {
 
             localStorage.setItem("token", data.access_token);
 
+            if (data.refresh_token) {
+              localStorage.setItem("refresh_token", data.refresh_token);
+            }
+
             localStorage.setItem(
               THE_FI_COMPANY_CURRENT_USER,
               JSON.stringify(data.user)

@@ -1,5 +1,270 @@
+.calendar-wrapper {
+    height: calc(100vh - 100px);
+
+    .minimal-border {
+        border: 1px solid var(--vz-border-color);
+        border-radius: 0.25rem;
+    }
+
+    .calendar-leftsidebar {
+        width: 320px;
+        background-color: var(--vz-card-bg);
+        flex-shrink: 0;
+        max-height: 100%;
+        overflow: auto;
+
+        h5 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--vz-heading-color);
+        }
+
+        .mini-calendar {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem;
+
+            .mini-calendar-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 0.75rem;
+
+                .btn-ghost-secondary {
+                    padding: 0.25rem 0.5rem;
+                    border: none;
+                    background: transparent;
+
+                    &:hover {
+                        background: rgba(0, 0, 0, 0.05);
+                    }
+                }
+            }
+
+            .mini-calendar-grid {
+                .mini-calendar-weekdays {
+                    display: grid;
+                    grid-template-columns: repeat(7, 1fr);
+                    gap: 2px;
+                    margin-bottom: 0.5rem;
+
+                    .mini-calendar-weekday {
+                        text-align: center;
+                        font-size: 0.7rem;
+                        font-weight: 600;
+                        color: #6c757d;
+                        padding: 0.25rem 0;
+                    }
+                }
+
+                .mini-calendar-days {
+                    display: grid;
+                    grid-template-columns: repeat(7, 1fr);
+                    gap: 2px;
+
+                    .mini-calendar-day {
+                        aspect-ratio: 1;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 0.75rem;
+                        border-radius: 4px;
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                        position: relative;
+
+                        &:hover {
+                            background-color: rgba(55, 136, 216, 0.1);
+                        }
+
+                        &.other-month {
+                            color: #adb5bd;
+                        }
+
+                        &.today,
+                        &.selected {
+                            background-color: #3788d8;
+                            color: white;
+                            font-weight: 600;
+                        }
+
+                        &.has-events::after {
+                            content: '';
+                            position: absolute;
+                            bottom: 2px;
+                            left: 50%;
+                            transform: translateX(-50%);
+                            width: 4px;
+                            height: 4px;
+                            border-radius: 50%;
+                            background-color: currentColor;
+                            opacity: 0.6;
+                        }
+                    }
+                }
+            }
+        }
+
+        .filters-section {
+            .fs-11 {
+                font-size: 0.6875rem;
+            }
+
+            .filter-options {
+                .form-check {
+                    margin-bottom: 0.5rem;
+                }
+
+                .form-check-label {
+                    cursor: pointer;
+                    font-size: 0.875rem;
+                }
+            }
+        }
+
+        .btn-group .btn.active {
+            background-color: var(--vz-primary);
+            border-color: var(--vz-primary);
+            color: #fff;
+        }
+
+        @media (max-width: 991.98px) {
+            display: none;
+        }
+    }
+
+    .calendar-main-content {
+        background-color: var(--vz-card-bg);
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+
+        .calendar-topbar {
+            background-color: var(--vz-card-bg);
+            border-bottom: 1px solid var(--vz-border-color);
+
+            h4 {
+                font-size: 1.25rem;
+                font-weight: 600;
+                color: var(--vz-heading-color);
+            }
+
+            .calendar-nav {
+                .btn {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                }
+            }
+        }
+
+        .calendar-content {
+            flex: 1;
+            min-height: 0;
+        }
+    }
+}
+
+.stats-badge {
+    border-radius: 1rem;
+    padding: 0.5rem 1rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
 .line-through {
     text-decoration: line-through !important;
-    text-decoration-thickness:2px !important;
+    text-decoration-thickness: 2px !important;
     text-decoration-color: initial !important;
+}
+
+:host-context([data-bs-theme="dark"]) {
+    .calendar-wrapper {
+        .calendar-leftsidebar {
+            background-color: #212529;
+
+            h5 {
+                color: #ced4da;
+            }
+
+            .mini-calendar {
+                background: #212529;
+
+                .mini-calendar-header {
+                    span {
+                        color: #adb5bd;
+                    }
+
+                    .btn-ghost-secondary {
+                        color: #adb5bd;
+
+                        &:hover {
+                            background: rgba(255, 255, 255, 0.05);
+                        }
+                    }
+                }
+
+                .mini-calendar-grid {
+                    .mini-calendar-weekday {
+                        color: #adb5bd;
+                    }
+
+                    .mini-calendar-days {
+                        .mini-calendar-day {
+                            color: #ced4da;
+
+                            &:hover {
+                                background-color: rgba(64, 81, 137, 0.2);
+                            }
+
+                            &.other-month {
+                                color: #6c757d;
+                            }
+
+                            &.today,
+                            &.selected {
+                                background-color: #405189;
+                                color: #fff;
+                            }
+                        }
+                    }
+                }
+            }
+
+            .filters-section {
+                h6 {
+                    color: #adb5bd !important;
+                }
+
+                label.form-label,
+                .form-check-label {
+                    color: #ced4da !important;
+                }
+
+                .form-check-input {
+                    background-color: #212529;
+                    border-color: #404656;
+
+                    &:checked {
+                        background-color: #405189;
+                        border-color: #405189;
+                    }
+                }
+            }
+        }
+
+        .calendar-main-content {
+            background-color: #212529;
+
+            .calendar-topbar {
+                background-color: #212529;
+                border-bottom-color: #404656;
+
+                h4 {
+                    color: #ced4da;
+                }
+            }
+        }
+    }
 }

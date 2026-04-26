@@ -12,11 +12,6 @@ export class MaterialRequestDetailController {
     return this.service.list();
   }
 
-  @Get(':id')
-  async getByIdRest(@Param('id', ParseIntPipe) id: number) {
-    return this.service.getById(id);
-  }
-
   @Get('find')
   async find(@Query() query: Record<string, unknown>) {
     return this.service.find(query);
@@ -77,6 +72,11 @@ export class MaterialRequestDetailController {
     return this.service.getAdminDashboard();
   }
 
+  @Get(':id')
+  async getByIdRest(@Param('id', ParseIntPipe) id: number) {
+    return this.service.getById(id);
+  }
+
   @Post('create')
   @Permissions('write')
   async create(@Body() payload: Record<string, unknown>) {
@@ -125,15 +125,6 @@ export class MaterialRequestDetailController {
     return this.service.updateById(id, payload);
   }
 
-  @Put(':id')
-  @Permissions('write')
-  async updateRest(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() payload: Record<string, unknown>,
-  ) {
-    return this.service.updateById(id, payload);
-  }
-
   @Put('reviews')
   @Permissions('write')
   async updateReviewQuery(
@@ -141,6 +132,15 @@ export class MaterialRequestDetailController {
     @Body() payload: Record<string, unknown>,
   ) {
     return this.service.updateReview(id, payload);
+  }
+
+  @Put(':id')
+  @Permissions('write')
+  async updateRest(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() payload: Record<string, unknown>,
+  ) {
+    return this.service.updateById(id, payload);
   }
 
   @Delete('deleteById')
@@ -155,12 +155,6 @@ export class MaterialRequestDetailController {
     return this.service.deleteById(id);
   }
 
-  @Delete(':id')
-  @Permissions('delete')
-  async deleteRest(@Param('id', ParseIntPipe) id: number) {
-    return this.service.deleteById(id);
-  }
-
   @Delete('reviews')
   @Permissions('delete')
   async deleteReview(
@@ -168,5 +162,11 @@ export class MaterialRequestDetailController {
     @Query('hard_delete') hardDelete?: string,
   ) {
     return this.service.deleteReview(id, hardDelete === 'true');
+  }
+
+  @Delete(':id')
+  @Permissions('delete')
+  async deleteRest(@Param('id', ParseIntPipe) id: number) {
+    return this.service.deleteById(id);
   }
 }

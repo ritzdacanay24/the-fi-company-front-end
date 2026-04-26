@@ -16,6 +16,7 @@ import { TokenStorageService } from "./token-storage.service";
 import { THE_FI_COMPANY_CURRENT_USER } from "../guards/admin.guard";
 
 const AUTH_API = "apiV2/";
+const REFRESH_TOKEN_KEY = 'refresh_token';
 
 const httpOptions = {
   headers: new HttpHeaders({ "Content-Type": "application/json" }),
@@ -156,9 +157,45 @@ export class AuthenticationService {
     // return getFirebaseBackend()!.logout();
     localStorage.removeItem(THE_FI_COMPANY_CURRENT_USER);
     localStorage.removeItem("token");
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
     this.currentUserSubject.next(null!);
 
     return of(undefined).pipe();
+  }
+
+  /**
+   * Exchange stored refresh token for a new access token.
+   * Updates localStorage with new tokens and returns the new access token.
+   */
+  refreshToken(): Observable<string> {
+    const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+    if (!refreshToken) {
+      return throwError(() => new Error('No refresh token stored'));
+    }
+    return this.http
+      .post<{ access_token: string; refresh_token: string }>(
+        AUTH_API + 'auth/refresh',
+        { refresh_token: refreshToken },
+        httpOptions,
+      )
+      .pipe(
+        map((response) => {
+          localStorage.setItem('token', response.access_token);
+          localStorage.setItem(REFRESH_TOKEN_KEY, response.refresh_token);
+          // Update the token stored in the current user object so the interceptor picks it up
+          const storedUser = localStorage.getItem(THE_FI_COMPANY_CURRENT_USER);
+          if (storedUser) {
+            try {
+              const user = JSON.parse(storedUser);
+              user.token = response.access_token;
+              localStorage.setItem(THE_FI_COMPANY_CURRENT_USER, JSON.stringify(user));
+            } catch {
+              // ignore parse errors
+            }
+          }
+          return response.access_token;
+        }),
+      );
   }
 
   /**

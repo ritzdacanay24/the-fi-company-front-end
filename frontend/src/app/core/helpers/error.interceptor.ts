@@ -5,8 +5,8 @@ import {
   HttpEvent,
   HttpInterceptor,
 } from "@angular/common/http";
-import { Observable, throwError } from "rxjs";
-import { catchError } from "rxjs/operators";
+import { BehaviorSubject, Observable, throwError } from "rxjs";
+import { catchError, filter, switchMap, take } from "rxjs/operators";
 import { AuthenticationService } from "../services/auth.service";
 import { ToastrService } from "ngx-toastr";
 import { THE_FI_COMPANY_TWOSTEP_TOKEN } from "../guards/admin.guard";
@@ -18,6 +18,8 @@ import { PermissionRequiredComponent, PermissionRequiredData } from "../../share
 @Injectable()
 export class ErrorInterceptor implements HttpInterceptor {
   private isPermissionModalOpen = false;
+  private isRefreshing = false;
+  private refreshTokenSubject = new BehaviorSubject<string | null>(null);
 
   constructor(
     private authenticationService: AuthenticationService,
@@ -124,6 +126,46 @@ export class ErrorInterceptor implements HttpInterceptor {
     }
   }
 
+  private handleTokenExpired(
+    request: HttpRequest<any>,
+    next: HttpHandler,
+  ): Observable<HttpEvent<any>> {
+    if (!this.isRefreshing) {
+      this.isRefreshing = true;
+      this.refreshTokenSubject.next(null);
+
+      return this.authenticationService.refreshToken().pipe(
+        switchMap((newToken) => {
+          this.isRefreshing = false;
+          this.refreshTokenSubject.next(newToken);
+          const retried = request.clone({
+            setHeaders: { Authorization: `Bearer ${newToken}` },
+          });
+          return next.handle(retried);
+        }),
+        catchError((err) => {
+          this.isRefreshing = false;
+          localStorage.removeItem(THE_FI_COMPANY_TWOSTEP_TOKEN);
+          this.authenticationService.logout();
+          this.router.navigateByUrl('/auth/login');
+          return throwError(err);
+        }),
+      );
+    }
+
+    // Another request already triggered a refresh — wait for the new token
+    return this.refreshTokenSubject.pipe(
+      filter((token) => token != null),
+      take(1),
+      switchMap((token) => {
+        const retried = request.clone({
+          setHeaders: { Authorization: `Bearer ${token}` },
+        });
+        return next.handle(retried);
+      }),
+    );
+  }
+
   intercept(
     request: HttpRequest<any>,
     next: HttpHandler
@@ -131,15 +173,17 @@ export class ErrorInterceptor implements HttpInterceptor {
     return next.handle(request).pipe(
       catchError((error) => {
         if (error.status === 401 || error.status === 900) {
-          // auto logout if 401 response returned from api
           if (error.url?.includes("api.mindee.net")) {
             // Mindee API error - don't trigger app logout
             console.warn('Mindee API authentication error:', error.error);
-          } else {
-            // Internal API error - trigger logout
+          } else if (error.url?.includes('/auth/refresh')) {
+            // Refresh call itself failed — give up and log out
             localStorage.removeItem(THE_FI_COMPANY_TWOSTEP_TOKEN);
             this.authenticationService.logout();
             this.router.navigateByUrl("/auth/login");
+          } else {
+            // Try to refresh silently before logging out
+            return this.handleTokenExpired(request, next);
           }
         }
 
