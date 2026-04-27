@@ -117,22 +117,17 @@ export class FileStorageService {
       };
     }
 
-    if (storageSource === 'legacy') {
-      if (existingLink) {
-        return {
-          ...row,
-          link: this.normalizeExistingLink(existingLink, fileName, subFolder),
-          storage_source: 'legacy',
-        };
-      }
-
+    // If file doesn't exist locally, it's a non-local attachment
+    // Always resolve to dashboard URL regardless of storage_source value
+    if (!fileExistsLocally) {
       return {
         ...row,
         link: `${this.remoteBaseUrl}/${subFolder}/${encodeURIComponent(fileName)}`,
-        storage_source: 'legacy',
+        storage_source: storageSource ?? 'legacy',
       };
     }
 
+    // File exists locally but storage_source isn't 'local'
     if (existingLink) {
       return {
         ...row,
@@ -372,24 +367,9 @@ export class FileStorageService {
       return existingLink;
     }
 
-    const normalizedPath = existingLink.replace(/\\/g, '/');
-    const attachmentsSegment = '/attachments/';
-    const attachmentsIndex = normalizedPath.toLowerCase().indexOf(attachmentsSegment);
-    if (attachmentsIndex >= 0) {
-      const remainder = normalizedPath.slice(attachmentsIndex + attachmentsSegment.length);
-      const parts = remainder.split('/').filter(Boolean);
-      if (parts.length >= 2) {
-        const normalizedSubFolder = parts.shift() as string;
-        const normalizedFileName = parts.join('/');
-        return `${this.remoteBaseUrl}/${normalizedSubFolder}/${encodeURIComponent(normalizedFileName)}`;
-      }
-    }
-
-    if (existingLink.startsWith('/uploads/') || existingLink.startsWith('uploads/')) {
-      return `${this.remoteBaseUrl}/${subFolder}/${encodeURIComponent(fileName)}`;
-    }
-
-    return existingLink;
+    // For any non-absolute URL, force dashboard URL resolution
+    // This ensures legacy/non-local sources always resolve properly
+    return `${this.remoteBaseUrl}/${subFolder}/${encodeURIComponent(fileName)}`;
   }
 
   private resolveStorageSource(
