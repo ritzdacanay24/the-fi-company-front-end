@@ -6,6 +6,7 @@ import {
   ExpenseChartRow,
   ExpenseReportRow,
   FutureRevenueByCustomerSummaryRow,
+  DailyReportConfigRow,
   InvoiceChartRow,
   InvoiceReportRow,
   JobByUserChartRow,
@@ -43,6 +44,16 @@ export class ReportsService {
     }
 
     return this.repository.getCustomerReport(from, to);
+  }
+
+  async getDailyReportConfig(userId?: string): Promise<DailyReportConfigRow | false> {
+    const normalizedUserId = String(userId || '').trim();
+    if (!normalizedUserId) {
+      return false;
+    }
+
+    const config = await this.repository.getDailyReportConfigByUserId(normalizedUserId);
+    return config ?? false;
   }
 
   async getExpenseReport(dateFrom?: string, dateTo?: string): Promise<ExpenseReportRow[]> {

@@ -16,7 +16,7 @@ export class LogisiticsDailyReportService {
 
 
     async getDailyReportConfig(userId) {
-        return await firstValueFrom(this.http.get<any[]>(`${url}/daily-report-config?user_id=${userId}`));
+        return await firstValueFrom(this.http.get<any[]>(`apiV2/${url}/daily-report-config?user_id=${userId}`));
     }
 
     async saveDailyReportConfig(params) {

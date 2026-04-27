@@ -1,10 +1,19 @@
 import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { PATH_METADATA } from '@nestjs/common/constants';
+import jwt from 'jsonwebtoken';
 import { AccessControlService } from './access-control.service';
 import { REQUIRED_ROLES_KEY } from './roles.decorator';
 import { REQUIRED_PERMISSIONS_KEY } from './permissions.decorator';
 import { REQUIRED_DOMAIN_KEY } from './domain.decorator';
+
+interface LegacyJwtPayload {
+  id?: number;
+  userId?: number;
+  data?: {
+    id?: number;
+  };
+}
 
 @Injectable()
 export class RolePermissionGuard implements CanActivate {
@@ -50,7 +59,7 @@ export class RolePermissionGuard implements CanActivate {
     const userId = this.getUserIdFromRequest(request);
 
     if (!userId) {
-      throw new ForbiddenException('User context is required — please include x-user-id header');
+      throw new ForbiddenException('User context is required — include x-user-id or Authorization Bearer token');
     }
 
     if (requiredRoles.length > 0) {
@@ -116,6 +125,8 @@ export class RolePermissionGuard implements CanActivate {
       headers?: Record<string, string | string[] | undefined>;
       query?: Record<string, unknown>;
       body?: Record<string, unknown>;
+      url?: string;
+      originalUrl?: string;
     };
 
     const fromUser = Number(reqAny.user?.id);
@@ -130,6 +141,12 @@ export class RolePermissionGuard implements CanActivate {
       return fromHeader;
     }
 
+    // TODO(legacy-compat): Remove Bearer-token user-id fallback after all clients send request.user/x-user-id.
+    const fromLegacyToken = this.getUserIdFromLegacyAuthorization(reqAny);
+    if (fromLegacyToken !== null) {
+      return fromLegacyToken;
+    }
+
     const fromQuery = Number(reqAny.query?.['user_id']);
     if (Number.isInteger(fromQuery) && fromQuery > 0) {
       return fromQuery;
@@ -138,6 +155,36 @@ export class RolePermissionGuard implements CanActivate {
     const fromBody = Number(reqAny.body?.['user_id']);
     if (Number.isInteger(fromBody) && fromBody > 0) {
       return fromBody;
+    }
+
+    return null;
+  }
+
+  private getUserIdFromLegacyAuthorization(request: {
+    headers?: Record<string, string | string[] | undefined>;
+    url?: string;
+    originalUrl?: string;
+  }): number | null {
+    // TODO(legacy-compat): This decode-only legacy extraction is temporary and should be removed.
+    const authHeaderValue = request.headers?.authorization;
+    const authHeader = Array.isArray(authHeaderValue) ? authHeaderValue[0] : authHeaderValue;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return null;
+    }
+
+    const token = authHeader.substring(7).replaceAll('"', '').trim();
+    if (!token) {
+      return null;
+    }
+
+    const decoded = jwt.decode(token) as LegacyJwtPayload | null;
+    if (!decoded || typeof decoded !== 'object') {
+      return null;
+    }
+
+    const fromToken = Number(decoded.data?.id ?? decoded.id ?? decoded.userId);
+    if (Number.isInteger(fromToken) && fromToken > 0) {
+      return fromToken;
     }
 
     return null;

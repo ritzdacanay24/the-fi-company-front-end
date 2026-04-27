@@ -168,6 +168,14 @@ export interface FutureRevenueByCustomerWeeklyRow extends RowDataPacket {
   net_revenue: number;
 }
 
+export interface DailyReportConfigRow extends RowDataPacket {
+  id: number;
+  user_id: number | null;
+  sort_column: string | null;
+  hidden_column: string | null;
+  'Column 5'?: number | null;
+}
+
 @Injectable()
 export class ReportsRepository extends BaseRepository<RowDataPacket> {
   constructor(
@@ -203,6 +211,20 @@ export class ReportsRepository extends BaseRepository<RowDataPacket> {
       `,
       [dateFrom, dateTo],
     );
+  }
+
+  async getDailyReportConfigByUserId(userId: string): Promise<DailyReportConfigRow | null> {
+    const rows = await this.rawQuery<DailyReportConfigRow>(
+      `
+        SELECT *
+        FROM daily_report_config
+        WHERE user_id = ?
+        LIMIT 1
+      `,
+      [userId],
+    );
+
+    return rows[0] ?? null;
   }
 
   async getTicketEventReportChartRows(dateFrom: string, dateTo: string): Promise<TicketEventChartRow[]> {

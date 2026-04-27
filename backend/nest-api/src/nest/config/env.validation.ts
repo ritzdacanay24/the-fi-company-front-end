@@ -67,6 +67,15 @@ export const envValidationSchema = Joi.object({
   IGT_TRANSFER_LOGO_URL: Joi.string().uri().allow('').optional(),
   MATERIAL_REQUEST_NOTIFY_TO: Joi.string().allow('').optional(),
   MATERIAL_REQUEST_NOTIFY_CC: Joi.string().allow('').optional(),
-  JWT_SECRET: Joi.string().trim().default('your-secret-key-change-in-production'),
+  // TODO(legacy-compat): These legacy auth defaults exist for old website compatibility.
+  // Remove/simplify APP_* and legacy fallback keys after full migration to the new website.
+  APP_HASH_PASS: Joi.string().trim().default('sha256'),
+  APP_SECRET_KEY: Joi.string().trim().default('w<$4c$Hmd%/*]`Oom>(hdXW|0M=X={we6;Mpvtg+V.o<$|#_}qG(GaVDEsn,~*4i'),
+  APP_PUBLIC_SECRET_KEY: Joi.string().trim().optional(),
+  APP_PRIVATE_POSTMAN: Joi.string().trim().optional(),
+  APP_NAME: Joi.string().trim().default('THE-FI-COMPANY'),
+  LEGACY_JWT_HS512_SECRET: Joi.string().trim().default('fne&9j^4kw1yxyyc)b-9qr9$7n#v2poa^ml!0b_5nut%z0hb)f'),
+  JWT_SECRET: Joi.string().trim().default('w<$4c$Hmd%/*]`Oom>(hdXW|0M=X={we6;Mpvtg+V.o<$|#_}qG(GaVDEsn,~*4i'),
+  JWT_REFRESH_SECRET: Joi.string().trim().optional(),
   JWT_EXPIRES_IN: Joi.string().default('24h'),
 });

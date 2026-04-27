@@ -128,10 +128,29 @@ export class AuthService {
   }
 
   private buildLoginResponse(user: UserRow): LoginResponse {
+    const fullName = [user.first, user.last].filter(Boolean).join(' ').trim();
+
+    // TODO(legacy-compat): Keep legacy-style JWT payload until frontend fully migrates.
+    // After migration, simplify token payload to the minimal new auth shape.
     const token = this.jwtService.sign(
       {
         id: user.id,
         email: user.email,
+        data: {
+          id: user.id,
+          full_name: fullName,
+          email: user.email,
+          image: '',
+          roles: user.admin === 1 ? ['Admin'] : [],
+          type: 0,
+          first_name: user.first,
+          last_name: user.last,
+          employeeType: user.employeeType ?? null,
+          workArea: [],
+          company_id: '1',
+          isAdmin: user.admin === 1 ? 1 : 0,
+          enableTwostep: 0,
+        },
       },
       {
         expiresIn: '24h',
@@ -147,8 +166,6 @@ export class AuthService {
       { id: user.id, email: user.email, type: 'refresh' },
       { secret: refreshSecret, expiresIn: REFRESH_TOKEN_EXPIRY },
     );
-
-    const fullName = [user.first, user.last].filter(Boolean).join(' ').trim();
 
     return {
       token,
