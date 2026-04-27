@@ -2,6 +2,7 @@ import { Component, OnInit } from "@angular/core";
 import { SharedModule } from "@app/shared/shared.module";
 import {
   ScheduledJobRow,
+  ScheduledJobLastRun,
   ScheduledJobsService,
 } from "@app/core/api/scheduled-jobs/scheduled-jobs.service";
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
@@ -47,6 +48,26 @@ export class ScheduledJobsListComponent implements OnInit {
     return /^https?:\/\//i.test(url);
   }
 
+  formatLastRunAt(lastRun?: ScheduledJobLastRun): string {
+    if (!lastRun?.startedAt) {
+      return "Never";
+    }
+
+    const parsed = new Date(lastRun.startedAt);
+    if (Number.isNaN(parsed.getTime())) {
+      return "Unknown";
+    }
+
+    return parsed.toLocaleString();
+  }
+
+  formatLastRunDuration(lastRun?: ScheduledJobLastRun): string {
+    if (!lastRun?.durationMs) return '';
+    const ms = lastRun.durationMs;
+    if (ms < 1000) return `${ms}ms`;
+    return `${(ms / 1000).toFixed(1)}s`;
+  }
+
   async runJob(job: ScheduledJobRow): Promise<void> {
     if (!job?.id || this.isRunning(job.id)) {
       return;
@@ -55,6 +76,14 @@ export class ScheduledJobsListComponent implements OnInit {
     this.runningJobIds.add(job.id);
     try {
       const result = await this.scheduledJobsApi.run(job.id);
+      const jobIndex = this.jobs.findIndex((row) => row.id === job.id);
+      if (jobIndex >= 0 && result.lastRun) {
+        this.jobs[jobIndex] = {
+          ...this.jobs[jobIndex],
+          lastRun: result.lastRun,
+        };
+      }
+
       if (!result.ok) {
         console.warn(`Scheduled job ${job.id} returned non-success:`, result);
       }

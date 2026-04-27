@@ -5,6 +5,32 @@ import { Subscription, interval, from } from 'rxjs';
 import { startWith, switchMap } from 'rxjs/operators';
 import { MaterialRequestService } from '@app/core/api/operations/material-request/material-request.service';
 
+const MR_ALARM_LOCK_KEY = 'mr-alarm-leader-lock-v1';
+const MR_ALARM_CHANNEL = 'mr-alarm-channel-v1';
+const POLL_INTERVAL_MS = 30000;
+const LEADER_HEARTBEAT_MS = 5000;
+const LEADER_STALE_MS = 15000;
+
+interface AlarmLeaderLock {
+  tabId: string;
+  timestamp: number;
+}
+
+interface AlarmMirrorState {
+  leaderTabId: string;
+  pendingPickingCount: number;
+  pendingValidationCount: number;
+  pickingItems: any[];
+  validationItems: any[];
+  alarmActive: boolean;
+  isLoading: boolean;
+}
+
+type AlarmChannelMessage =
+  | { type: 'state'; payload: AlarmMirrorState }
+  | { type: 'dismiss' }
+  | { type: 'refresh-request' };
+
 @Component({
   standalone: true,
   selector: 'app-mr-alarm-page',
@@ -72,7 +98,14 @@ import { MaterialRequestService } from '@app/core/api/operations/material-reques
             </div>
             <div>
               <h2 class="mb-0 fw-bold text-white" style="letter-spacing:-0.02em;">MR Alarm Monitor</h2>
-              <small style="color:rgba(255,255,255,0.75);">Live polling every 30s — picking &amp; validation queues</small>
+              <small style="color:rgba(255,255,255,0.75);">Live updates every 30s — picking &amp; validation queues</small>
+              <div class="mt-1">
+                <span class="badge px-2 py-1"
+                  [style.background]="isLeaderTab ? 'rgba(25,135,84,0.8)' : 'rgba(108,117,125,0.75)'"
+                  style="font-size:0.72rem; color:#fff; border:1px solid rgba(255,255,255,0.25);">
+                  {{ isLeaderTab ? 'ACTIVE MONITOR TAB' : 'PASSIVE MIRROR TAB' }}
+                </span>
+              </div>
             </div>
             <div class="ms-auto d-flex align-items-center gap-2">
               <span class="badge fs-6 px-3 py-2"
@@ -256,12 +289,16 @@ export class MrAlarmPageComponent implements OnInit, OnDestroy {
   alarmActive = false;
   isLoading = false;
   monitoring = false;
+  isLeaderTab = false;
 
   private pollSub: Subscription | null = null;
   private alarmAudio: HTMLAudioElement | null = null;
   private dismissed = false;
   private prevPickingCount = -1;
   private prevValidationCount = -1;
+  private readonly tabId = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  private coordinationTimer: number | null = null;
+  private channel: BroadcastChannel | null = null;
 
   constructor(private mrService: MaterialRequestService) {}
 
@@ -271,6 +308,7 @@ export class MrAlarmPageComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.pollSub?.unsubscribe();
+    this.stopCoordination();
     this.stopAlarm();
   }
 
@@ -280,23 +318,40 @@ export class MrAlarmPageComponent implements OnInit, OnDestroy {
     unlock.volume = 0;
     unlock.play().then(() => { unlock.pause(); unlock.src = ''; }).catch(() => {});
     this.monitoring = true;
-    this.startPolling();
+    this.startCoordination();
   }
 
   refresh(): void {
-    this.pollSub?.unsubscribe();
-    this.startPolling();
+    if (this.isLeaderTab) {
+      this.pollSub?.unsubscribe();
+      this.startPolling();
+      return;
+    }
+
+    // Passive tabs can request the active monitor tab to refresh immediately.
+    this.channel?.postMessage({ type: 'refresh-request' } as AlarmChannelMessage);
   }
 
   dismissAlarm(): void {
     this.dismissed = true;
     this.alarmActive = false;
     this.stopAlarm();
+    this.channel?.postMessage({ type: 'dismiss' } as AlarmChannelMessage);
+
+    if (this.isLeaderTab) {
+      this.broadcastState();
+    }
   }
 
   private startPolling(): void {
+    if (!this.isLeaderTab) {
+      return;
+    }
+
     this.isLoading = true;
-    this.pollSub = interval(30000).pipe(
+    this.broadcastState();
+
+    this.pollSub = interval(POLL_INTERVAL_MS).pipe(
       startWith(0),
       switchMap(() => from(
         Promise.all([
@@ -313,7 +368,6 @@ export class MrAlarmPageComponent implements OnInit, OnDestroy {
         const pickCount = this.pickingItems.length;
         const valCount = this.validationItems.length;
         const total = pickCount + valCount;
-        const prevTotal = Math.max(0, this.prevPickingCount) + Math.max(0, this.prevValidationCount);
         const isFirst = this.prevPickingCount === -1;
 
         this.pendingPickingCount = pickCount;
@@ -334,9 +388,145 @@ export class MrAlarmPageComponent implements OnInit, OnDestroy {
 
         this.prevPickingCount = pickCount;
         this.prevValidationCount = valCount;
+        this.broadcastState();
       },
-      error: () => { this.isLoading = false; }
+      error: () => {
+        this.isLoading = false;
+        this.broadcastState();
+      }
     });
+  }
+
+  private startCoordination(): void {
+    this.channel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel(MR_ALARM_CHANNEL) : null;
+
+    if (this.channel) {
+      this.channel.onmessage = (event: MessageEvent<AlarmChannelMessage>) => {
+        const message = event.data;
+
+        if (!message || typeof message !== 'object') {
+          return;
+        }
+
+        if (message.type === 'state' && !this.isLeaderTab) {
+          const state = message.payload;
+          this.pendingPickingCount = state.pendingPickingCount;
+          this.pendingValidationCount = state.pendingValidationCount;
+          this.pickingItems = Array.isArray(state.pickingItems) ? state.pickingItems : [];
+          this.validationItems = Array.isArray(state.validationItems) ? state.validationItems : [];
+          this.alarmActive = !!state.alarmActive;
+          this.isLoading = !!state.isLoading;
+
+          // Passive tabs never play alarm audio.
+          this.stopAlarm();
+        }
+
+        if (message.type === 'dismiss' && this.isLeaderTab) {
+          this.dismissed = true;
+          this.alarmActive = false;
+          this.stopAlarm();
+          this.broadcastState();
+        }
+
+        if (message.type === 'refresh-request' && this.isLeaderTab) {
+          this.pollSub?.unsubscribe();
+          this.startPolling();
+        }
+      };
+    }
+
+    this.tryBecomeLeader();
+    this.coordinationTimer = window.setInterval(() => this.tryBecomeLeader(), LEADER_HEARTBEAT_MS);
+  }
+
+  private stopCoordination(): void {
+    if (this.coordinationTimer != null) {
+      window.clearInterval(this.coordinationTimer);
+      this.coordinationTimer = null;
+    }
+
+    if (this.isLeaderTab) {
+      this.releaseLeaderLock();
+    }
+
+    this.channel?.close();
+    this.channel = null;
+    this.isLeaderTab = false;
+  }
+
+  private tryBecomeLeader(): void {
+    if (!this.monitoring) {
+      return;
+    }
+
+    const now = Date.now();
+    const raw = localStorage.getItem(MR_ALARM_LOCK_KEY);
+    let currentLock: AlarmLeaderLock | null = null;
+
+    if (raw) {
+      try {
+        currentLock = JSON.parse(raw) as AlarmLeaderLock;
+      } catch {
+        currentLock = null;
+      }
+    }
+
+    const lockIsStale = !currentLock || now - Number(currentLock.timestamp || 0) > LEADER_STALE_MS;
+    const lockOwnedByMe = currentLock?.tabId === this.tabId;
+
+    if (lockIsStale || lockOwnedByMe) {
+      const nextLock: AlarmLeaderLock = { tabId: this.tabId, timestamp: now };
+      localStorage.setItem(MR_ALARM_LOCK_KEY, JSON.stringify(nextLock));
+
+      if (!this.isLeaderTab) {
+        this.isLeaderTab = true;
+        this.startPolling();
+      }
+
+      return;
+    }
+
+    if (this.isLeaderTab) {
+      this.isLeaderTab = false;
+      this.pollSub?.unsubscribe();
+      this.pollSub = null;
+      this.isLoading = false;
+      this.stopAlarm();
+    }
+  }
+
+  private broadcastState(): void {
+    if (!this.channel || !this.isLeaderTab) {
+      return;
+    }
+
+    const payload: AlarmMirrorState = {
+      leaderTabId: this.tabId,
+      pendingPickingCount: this.pendingPickingCount,
+      pendingValidationCount: this.pendingValidationCount,
+      pickingItems: this.pickingItems,
+      validationItems: this.validationItems,
+      alarmActive: this.alarmActive,
+      isLoading: this.isLoading,
+    };
+
+    this.channel.postMessage({ type: 'state', payload } as AlarmChannelMessage);
+  }
+
+  private releaseLeaderLock(): void {
+    const raw = localStorage.getItem(MR_ALARM_LOCK_KEY);
+    if (!raw) {
+      return;
+    }
+
+    try {
+      const lock = JSON.parse(raw) as AlarmLeaderLock;
+      if (lock?.tabId === this.tabId) {
+        localStorage.removeItem(MR_ALARM_LOCK_KEY);
+      }
+    } catch {
+      localStorage.removeItem(MR_ALARM_LOCK_KEY);
+    }
   }
 
   private triggerAlarm(): void {

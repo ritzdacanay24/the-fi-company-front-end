@@ -12,6 +12,7 @@
               <th style="width: 120px;">Status</th>
               <th style="width: 140px;">Cron</th>
               <th>Job</th>
+              <th style="width: 220px;">Last Ran</th>
               <th>Endpoint</th>
               <th style="width: 120px;">Action</th>
             </tr>
@@ -29,6 +30,29 @@
               <td>
                 <div class="fw-semibold">{{ row.name }}</div>
                 <small class="text-muted" *ngIf="row.note">{{ row.note }}</small>
+              </td>
+              <td>
+                <ng-container *ngIf="row.lastRun; else neverRan">
+                  <div class="d-flex align-items-center gap-1 flex-wrap">
+                    <span class="badge"
+                      [ngClass]="row.lastRun.status === 'success' ? 'bg-success' : 'bg-danger'">
+                      {{ row.lastRun.status }}
+                    </span>
+                    <span class="badge bg-secondary">
+                      {{ row.lastRun.triggerType }}
+                    </span>
+                  </div>
+                  <small class="text-muted d-block mt-1">{{ formatLastRunAt(row.lastRun) }}</small>
+                  <small class="text-muted" *ngIf="formatLastRunDuration(row.lastRun)">
+                    {{ formatLastRunDuration(row.lastRun) }}
+                  </small>
+                  <small class="text-danger d-block" *ngIf="row.lastRun.errorMessage" [title]="row.lastRun.errorMessage">
+                    {{ row.lastRun.errorMessage | slice:0:60 }}{{ row.lastRun.errorMessage.length > 60 ? '...' : '' }}
+                  </small>
+                </ng-container>
+                <ng-template #neverRan>
+                  <span class="text-muted fst-italic">Never</span>
+                </ng-template>
               </td>
               <td class="text-break">
                 <a *ngIf="isExternalUrl(row.url)" [href]="row.url" target="_blank" rel="noopener noreferrer">{{ row.url }}</a>

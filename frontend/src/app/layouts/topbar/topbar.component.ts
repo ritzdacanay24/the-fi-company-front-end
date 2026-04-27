@@ -1,6 +1,7 @@
 import {
   Component,
   OnInit,
+  OnDestroy,
   EventEmitter,
   Output,
   Inject,
@@ -23,7 +24,7 @@ import { TranslateService } from "@ngx-translate/core";
 import { allNotification, messages } from "./data";
 import { CartModel } from "./topbar.model";
 import { cartData } from "./data";
-import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
+import { NgbModal, NgbOffcanvas } from "@ng-bootstrap/ng-bootstrap";
 import { RootReducerState } from "src/app/store";
 import { Store } from "@ngrx/store";
 import { changeMode } from "src/app/store/layouts/layout-action";
@@ -33,6 +34,8 @@ import { SearchModalService } from "@app/shared/search/search-modal.component";
 import { initialState } from "@app/store/layouts/layout-reducers";
 import { setThemeColor } from "@app/app.component";
 import { environment } from "@environments/environment";
+import { MrAlertTopbarFacadeService } from "@app/core/services/mr-alert-topbar.facade.service";
+import { MrPushNotificationService } from "@app/core/services/mr-push-notification.service";
 
 export const THE_FI_COMPANY_LAYOUT = "THE_FI_COMPANY_LAYOUT";
 
@@ -41,7 +44,7 @@ export const THE_FI_COMPANY_LAYOUT = "THE_FI_COMPANY_LAYOUT";
   templateUrl: "./topbar.component.html",
   styleUrls: ["./topbar.component.scss"],
 })
-export class TopbarComponent implements OnInit {
+export class TopbarComponent implements OnInit, OnDestroy {
   messages: any;
   element: any;
   mode: string | undefined;
@@ -60,6 +63,7 @@ export class TopbarComponent implements OnInit {
   readNotify: number = 0;
   isDropdownOpen = false;
   @ViewChild("removenotification") removenotification!: TemplateRef<any>;
+  @ViewChild("mrAlertsOffcanvas") mrAlertsOffcanvas!: TemplateRef<any>;
   notifyId: any;
   menuItems;
 
@@ -71,6 +75,18 @@ export class TopbarComponent implements OnInit {
     e.preventDefault();
     if (e.key === "k") {
       this.openSearch();
+    }
+  }
+
+  @HostListener("window:focus")
+  onWindowFocus(): void {
+    this.mrAlertFacade.onWindowFocus();
+  }
+
+  @HostListener("document:visibilitychange")
+  onVisibilityChange(): void {
+    if (document.visibilityState === "visible") {
+      this.mrAlertFacade.onVisibilityVisible();
     }
   }
 
@@ -98,7 +114,10 @@ export class TopbarComponent implements OnInit {
     private router: Router,
     private TokenStorageService: TokenStorageService,
     private store: Store<RootReducerState>,
-    private searchModalService: SearchModalService
+    private searchModalService: SearchModalService,
+    private offcanvasService: NgbOffcanvas,
+    private mrAlertFacade: MrAlertTopbarFacadeService,
+    private mrPushNotificationService: MrPushNotificationService,
   ) {}
 
   ngOnInit(): void {
@@ -140,6 +159,141 @@ export class TopbarComponent implements OnInit {
         setThemeColor(ee.LAYOUT_MODE);
       }
     });
+
+    this.mrAlertFacade.init();
+    this.mrPushNotificationService.init();
+  }
+
+  ngOnDestroy(): void {
+    this.mrAlertFacade.destroy();
+  }
+
+  refreshMrAlerts(): void {
+    this.mrAlertFacade.refreshMrAlerts();
+  }
+
+  openMrAlertCenter(): void {
+    this.unlockMrAudio();
+    this.offcanvasService.open(this.mrAlertsOffcanvas, {
+      position: "end",
+      panelClass: "mr-alert-offcanvas-panel",
+    });
+  }
+
+  dismissMrAlarm(minutes = 5): void {
+    this.mrAlertFacade.dismissMrAlarm(minutes);
+  }
+
+  clearMrSuppression(): void {
+    this.mrAlertFacade.clearMrSuppression();
+  }
+
+  toggleMrAlertEnabled(): void {
+    this.mrAlertFacade.toggleMrAlertEnabled();
+  }
+
+  toggleMrMonitorEnabled(): void {
+    this.mrAlertFacade.toggleMrMonitorEnabled();
+  }
+
+  toggleMrSoundEnabled(): void {
+    this.mrAlertFacade.toggleMrSoundEnabled();
+  }
+
+  setMrRepeatSeconds(seconds: number): void {
+    this.mrAlertFacade.setMrRepeatSeconds(seconds);
+  }
+
+  setMrQueueFilter(filter: "both" | "picking" | "validation"): void {
+    this.mrAlertFacade.setMrQueueFilter(filter);
+  }
+
+  unlockMrAudio(): void {
+    this.mrAlertFacade.unlockMrAudio();
+  }
+
+  get mrTotalPendingCount(): number {
+    return this.mrAlertFacade.mrTotalPendingCount;
+  }
+
+  get mrPendingPickingCount(): number {
+    return this.mrAlertFacade.mrPendingPickingCount;
+  }
+
+  get mrPendingValidationCount(): number {
+    return this.mrAlertFacade.mrPendingValidationCount;
+  }
+
+  get mrRecentItems(): any[] {
+    return this.mrAlertFacade.mrRecentItems;
+  }
+
+  get mrAlertEnabled(): boolean {
+    return this.mrAlertFacade.mrAlertEnabled;
+  }
+
+  get mrMonitorEnabled(): boolean {
+    return this.mrAlertFacade.mrMonitorEnabled;
+  }
+
+  get mrSoundEnabled(): boolean {
+    return this.mrAlertFacade.mrSoundEnabled;
+  }
+
+  get mrRepeatSeconds(): number {
+    return this.mrAlertFacade.mrRepeatSeconds;
+  }
+
+  get mrQueueFilter(): "both" | "picking" | "validation" {
+    return this.mrAlertFacade.mrQueueFilter;
+  }
+
+  get mrLoading(): boolean {
+    return this.mrAlertFacade.mrLoading;
+  }
+
+  get isMrLeaderTab(): boolean {
+    return this.mrAlertFacade.isMrLeaderTab;
+  }
+
+  get isMrSuppressed(): boolean {
+    return this.mrAlertFacade.isMrSuppressed;
+  }
+
+  get mrSuppressionLabel(): string {
+    return this.mrAlertFacade.mrSuppressionLabel;
+  }
+
+  get isPushSupported(): boolean {
+    return this.mrPushNotificationService.pushSupported;
+  }
+
+  get pushPermission(): string {
+    return this.mrPushNotificationService.pushPermission;
+  }
+
+  get isPushSubscribed(): boolean {
+    return this.mrPushNotificationService.pushSubscribed;
+  }
+
+  get isPushLoading(): boolean {
+    return this.mrPushNotificationService.pushLoading;
+  }
+
+  get pushStatusMessage(): string {
+    return this.mrPushNotificationService.pushStatusMessage;
+  }
+
+  enablePushNotifications(): void {
+    void this.mrPushNotificationService.enablePush();
+  }
+
+  disablePushNotifications(): void {
+    void this.mrPushNotificationService.disablePush();
+  }
+
+  sendTestPushNotification(): void {
+    void this.mrPushNotificationService.sendTestPush();
   }
 
   changeModeZoom(row) {

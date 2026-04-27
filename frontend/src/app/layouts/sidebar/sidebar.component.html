@@ -83,6 +83,9 @@
                     <ng-container *ngIf="getMenuBadge(subitem) as badge">
                       <span class="sidebar-count-badge"
                         [class.sidebar-count-badge--single]="(badge.text + '').length === 1"
+                        [ngbTooltip]="getBadgeTooltip(subitem)"
+                        container="body"
+                        placement="top"
                         [ngClass]="badge.variant">{{ badge.text }}</span>
                     </ng-container>
                   </a>
@@ -124,6 +127,9 @@
             <ng-container *ngIf="getMenuBadge(menu) as badge">
                 <span class="sidebar-count-badge sidebar-count-badge--parent"
                   [class.sidebar-count-badge--single]="(badge.text + '').length === 1"
+              [ngbTooltip]="getBadgeTooltip(menu)"
+              container="body"
+              placement="top"
                   [ngClass]="badge.variant">{{ badge.text }}</span>
             </ng-container>
             <i *ngIf="searchTerm()" class="bx bx-search-alt-2 ms-2 text-muted small" title="Search result"></i>
@@ -145,6 +151,9 @@
             <ng-container *ngIf="getMenuBadge(menu) as badge">
                 <span class="sidebar-count-badge"
                   [class.sidebar-count-badge--single]="(badge.text + '').length === 1"
+              [ngbTooltip]="getBadgeTooltip(menu)"
+              container="body"
+              placement="top"
                   [ngClass]="badge.variant">{{ badge.text }}</span>
             </ng-container>
 

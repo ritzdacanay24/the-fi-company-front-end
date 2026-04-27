@@ -10,6 +10,7 @@ export enum WebSocketMessageType {
   LEAVE_SIDEBAR_MENU_BADGE_ROOM = 'leave_sidebar_menu_badge_room',
   REQUEST_SIDEBAR_MENU_BADGE_COUNTS = 'request_sidebar_menu_badge_counts',
   SIDEBAR_MENU_BADGE_COUNTS = 'sidebar_menu_badge_counts',
+  MR_ALERT_REQUEST_SNAPSHOT = 'MR_ALERT_REQUEST_SNAPSHOT',
   PING = 'ping',
   PONG = 'pong',
 }
@@ -41,6 +42,8 @@ export class UnifiedWebSocketService implements OnModuleDestroy {
   private isBadgePolling = false;
 
   private httpServer: Server | null = null;
+
+  private mrAlertRequestHandler: ((clientId: string, userId: number) => Promise<void>) | null = null;
 
   constructor(private readonly menuBadgeService: MenuBadgeService) {}
 
@@ -149,10 +152,43 @@ export class UnifiedWebSocketService implements OnModuleDestroy {
         });
         break;
 
+      case WebSocketMessageType.MR_ALERT_REQUEST_SNAPSHOT:
+        if (this.mrAlertRequestHandler) {
+          this.mrAlertRequestHandler(clientId, client.userId).catch((error) => {
+            this.logger.error(`Error handling MR alert request for ${clientId}:`, error as Error);
+          });
+        }
+        break;
+
       default:
         this.broadcastChannelMessage(message);
         break;
     }
+  }
+
+  publishToChannel(
+    channel: string,
+    type: string,
+    data?: unknown,
+    message?: string,
+  ): void {
+    if (!channel || !type) {
+      return;
+    }
+
+    const payload: UnifiedWebSocketMessage = {
+      channel,
+      type,
+      data,
+      message,
+      timestamp: Date.now(),
+    };
+
+    this.clients.forEach((client, targetClientId) => {
+      if (client.channels.has(channel)) {
+        this.sendToClient(targetClientId, payload);
+      }
+    });
   }
 
   private broadcastChannelMessage(message: UnifiedWebSocketMessage): void {
@@ -246,6 +282,31 @@ export class UnifiedWebSocketService implements OnModuleDestroy {
       this.logger.error(`Error sending websocket message to ${clientId}:`, error as Error);
       return false;
     }
+  }
+
+  registerMrAlertRequestHandler(handler: (clientId: string, userId: number) => Promise<void>): void {
+    this.mrAlertRequestHandler = handler;
+  }
+
+  sendToClientInChannel(
+    clientId: string,
+    channel: string,
+    type: string,
+    data?: unknown,
+    message?: string,
+  ): void {
+    const client = this.clients.get(clientId);
+    if (!client || !client.channels.has(channel)) {
+      return;
+    }
+
+    this.sendToClient(clientId, {
+      channel,
+      type,
+      data,
+      message,
+      timestamp: Date.now(),
+    });
   }
 
   private generateClientId(): string {

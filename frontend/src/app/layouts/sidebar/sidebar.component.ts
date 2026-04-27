@@ -121,6 +121,9 @@ export class SidebarComponent implements OnInit {
   originalMenuItems: MenuItem[] = []; // Store original items
   currentMenuType: string = 'main'; // Track current menu type
   private menuBadgeSubscription?: Subscription;
+  private badgeTooltipRefreshTimerId?: ReturnType<typeof setInterval>;
+  private menuBadgeEmissionCount = 0;
+  menuBadgeLastUpdatedAt: Date | null = null;
   menuBadgeCounts: SidebarMenuBadgeCounts = {
     validationQueue: 0,
     pickingQueue: 0,
@@ -363,8 +366,17 @@ export class SidebarComponent implements OnInit {
   ngOnInit(): void {
     // Menu Items
     // this.menuItems = MENU;
+    this.badgeTooltipRefreshTimerId = setInterval(() => {
+      // Triggers change detection so relative tooltip text stays current while open.
+      this.menuBadgeLastUpdatedAt = this.menuBadgeLastUpdatedAt ? new Date(this.menuBadgeLastUpdatedAt) : null;
+    }, 30000);
+
     this.menuBadgeWebsocketService.init();
     this.menuBadgeSubscription = this.menuBadgeWebsocketService.counts$.subscribe((counts) => {
+      this.menuBadgeEmissionCount += 1;
+      if (this.menuBadgeEmissionCount > 1) {
+        this.menuBadgeLastUpdatedAt = new Date();
+      }
       this.menuBadgeCounts = counts;
     });
   }
@@ -373,6 +385,11 @@ export class SidebarComponent implements OnInit {
     if (this.menuBadgeSubscription) {
       this.menuBadgeSubscription.unsubscribe();
       this.menuBadgeSubscription = undefined;
+    }
+
+    if (this.badgeTooltipRefreshTimerId) {
+      clearInterval(this.badgeTooltipRefreshTimerId);
+      this.badgeTooltipRefreshTimerId = undefined;
     }
   }
 
@@ -457,6 +474,41 @@ export class SidebarComponent implements OnInit {
 
   private formatBadgeCount(count: number): string {
     return count > 99 ? '99+' : String(count);
+  }
+
+  getBadgeTooltip(menu: MenuItem): string {
+    const count = this.getBadgeCount(menu);
+    const updatedText = this.menuBadgeLastUpdatedAt
+      ? `${this.formatRelativeTime(this.menuBadgeLastUpdatedAt)} (${this.menuBadgeLastUpdatedAt.toLocaleString()})`
+      : 'waiting for first server update';
+
+    return `Count: ${count}\nLast update: ${updatedText}`;
+  }
+
+  private formatRelativeTime(date: Date): string {
+    const elapsedMs = Date.now() - date.getTime();
+    const elapsedSeconds = Math.max(0, Math.floor(elapsedMs / 1000));
+
+    if (elapsedSeconds < 10) {
+      return 'just now';
+    }
+
+    if (elapsedSeconds < 60) {
+      return `${elapsedSeconds}s ago`;
+    }
+
+    const elapsedMinutes = Math.floor(elapsedSeconds / 60);
+    if (elapsedMinutes < 60) {
+      return `${elapsedMinutes}m ago`;
+    }
+
+    const elapsedHours = Math.floor(elapsedMinutes / 60);
+    if (elapsedHours < 24) {
+      return `${elapsedHours}h ago`;
+    }
+
+    const elapsedDays = Math.floor(elapsedHours / 24);
+    return `${elapsedDays}d ago`;
   }
 
   /**

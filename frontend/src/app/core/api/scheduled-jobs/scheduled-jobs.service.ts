@@ -2,6 +2,17 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 
+export type ScheduledJobRunStatus = 'success' | 'failure';
+
+export interface ScheduledJobLastRun {
+  startedAt: string;
+  finishedAt: string | null;
+  durationMs: number | null;
+  status: ScheduledJobRunStatus;
+  triggerType: 'manual' | 'cron';
+  errorMessage: string | null;
+}
+
 export interface ScheduledJobRow {
   id: string;
   name: string;
@@ -9,6 +20,7 @@ export interface ScheduledJobRow {
   url: string;
   active: boolean;
   note?: string;
+  lastRun?: ScheduledJobLastRun;
   command?: string;
   source?: 'cron-file' | 'nest-cron';
   runnerEnabled?: boolean;
@@ -22,6 +34,7 @@ export interface ScheduledJobRunResult {
   statusCode: number;
   durationMs: number;
   message: string;
+  lastRun?: ScheduledJobLastRun;
   url?: string;
   responseSnippet?: string;
 }

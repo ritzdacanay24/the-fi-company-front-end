@@ -69,6 +69,293 @@
                     </button>
                 </div>
 
+                <div class="dropdown ms-1 header-item d-none d-sm-flex" ngbDropdown>
+                    <button type="button"
+                        class="btn btn-icon btn-topbar btn-ghost-secondary rounded-circle position-relative"
+                        ngbDropdownToggle
+                        (click)="unlockMrAudio()"
+                        aria-label="Material request alerts">
+                        <i class="bx bx-bell fs-22"></i>
+                        <span *ngIf="mrTotalPendingCount > 0"
+                            class="position-absolute topbar-badge fs-10 translate-middle badge rounded-pill bg-danger">
+                            {{ mrTotalPendingCount > 99 ? '99+' : mrTotalPendingCount }}
+                        </span>
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-end p-0" ngbDropdownMenu style="width: 360px;">
+                        <div class="p-3 border-bottom">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <h6 class="m-0">Material Request Alerts</h6>
+                                <span class="badge"
+                                    [class.bg-success]="mrMonitorEnabled && isMrLeaderTab"
+                                    [class.bg-secondary]="mrMonitorEnabled && !isMrLeaderTab"
+                                    [class.bg-dark]="!mrMonitorEnabled">
+                                    {{ mrMonitorEnabled ? (isMrLeaderTab ? 'Active Monitor' : 'Mirror Tab') : 'Monitoring Off' }}
+                                </span>
+                            </div>
+                            <small class="text-muted d-block mt-1">
+                                Picking: {{ mrPendingPickingCount }} | Validation: {{ mrPendingValidationCount }}
+                            </small>
+                        </div>
+
+                        <div class="p-3 border-bottom">
+                            <div class="d-flex flex-wrap gap-2 mb-2">
+                                <button class="btn btn-sm"
+                                    [class.btn-success]="mrMonitorEnabled"
+                                    [class.btn-outline-secondary]="!mrMonitorEnabled"
+                                    (click)="toggleMrMonitorEnabled()">
+                                    {{ mrMonitorEnabled ? 'Monitor On' : 'Monitor Off' }}
+                                </button>
+                                <button class="btn btn-sm"
+                                    [class.btn-success]="mrAlertEnabled"
+                                    [class.btn-outline-secondary]="!mrAlertEnabled"
+                                    [disabled]="!mrMonitorEnabled"
+                                    (click)="toggleMrAlertEnabled()">
+                                    {{ mrAlertEnabled ? 'Alerts On' : 'Alerts Off' }}
+                                </button>
+                                <button class="btn btn-sm"
+                                    [class.btn-success]="mrSoundEnabled"
+                                    [class.btn-outline-secondary]="!mrSoundEnabled"
+                                    [disabled]="!mrMonitorEnabled"
+                                    (click)="toggleMrSoundEnabled()">
+                                    {{ mrSoundEnabled ? 'Sound On' : 'Sound Off' }}
+                                </button>
+                            </div>
+
+                            <div *ngIf="isMrSuppressed" class="alert alert-warning py-2 px-3 mb-0">
+                                <div class="fw-semibold">{{ mrSuppressionLabel }}</div>
+                                <small class="text-muted">Use Alert Center to resume or change suppression.</small>
+                            </div>
+                        </div>
+
+                        <div class="p-2 border-bottom" style="max-height: 220px; overflow: auto;">
+                            <div *ngIf="mrRecentItems.length === 0" class="text-muted text-center py-3">
+                                No pending MR alerts.
+                            </div>
+                            <a *ngFor="let item of mrRecentItems"
+                                class="dropdown-item py-2"
+                                [routerLink]="item?.validated ? '/operations/material-request/picking' : '/operations/material-request/validate-list'">
+                                <div class="d-flex align-items-start justify-content-between gap-2">
+                                    <div>
+                                        <div class="fw-semibold">MR #{{ item?.id }}</div>
+                                        <small class="text-muted">{{ item?.requestor || 'Unknown requestor' }}</small>
+                                    </div>
+                                    <span class="badge"
+                                        [class.bg-danger]="!item?.validated"
+                                        [class.bg-warning]="item?.validated">
+                                        {{ item?.validated ? 'Picking' : 'Validation' }}
+                                    </span>
+                                </div>
+                            </a>
+                        </div>
+
+                        <div class="p-2 d-flex gap-2">
+                            <button class="btn btn-sm btn-primary flex-fill" (click)="openMrAlertCenter()">
+                                Alert Center
+                            </button>
+                            <a class="btn btn-sm btn-outline-danger flex-fill" routerLink="/operations/material-request/picking">Open Picking</a>
+                            <a class="btn btn-sm btn-outline-warning flex-fill" routerLink="/operations/material-request/validate-list">Open Validation</a>
+                            <button class="btn btn-sm btn-outline-secondary" (click)="refreshMrAlerts()" [disabled]="mrLoading">
+                                <i class="mdi mdi-refresh" [class.spin]="mrLoading"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <ng-template #mrAlertsOffcanvas let-offcanvas>
+                    <div class="offcanvas-header border-bottom">
+                        <div>
+                            <h5 class="offcanvas-title mb-1">Material Request Alert Center</h5>
+                            <small class="text-muted">Detailed controls, suppression state, and queue behavior.</small>
+                        </div>
+                        <button type="button" class="btn-close text-reset" aria-label="Close" (click)="offcanvas.close()"></button>
+                    </div>
+                    <div class="offcanvas-body">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <div>
+                                <div class="fw-semibold">Live status</div>
+                                <small class="text-muted">{{ isMrLeaderTab ? 'This tab is actively monitoring websocket alerts.' : 'This tab is mirroring the active monitor tab.' }}</small>
+                            </div>
+                            <span class="badge"
+                                [class.bg-success]="mrMonitorEnabled && isMrLeaderTab"
+                                [class.bg-secondary]="mrMonitorEnabled && !isMrLeaderTab"
+                                [class.bg-dark]="!mrMonitorEnabled">
+                                {{ mrMonitorEnabled ? (isMrLeaderTab ? 'Active Monitor' : 'Mirror Tab') : 'Monitoring Off' }}
+                            </span>
+                        </div>
+
+                        <div class="card border mb-3">
+                            <div class="card-body">
+                                <div class="d-flex flex-wrap gap-2 mb-3">
+                                    <button class="btn btn-sm"
+                                        [class.btn-success]="mrMonitorEnabled"
+                                        [class.btn-outline-secondary]="!mrMonitorEnabled"
+                                        (click)="toggleMrMonitorEnabled()">
+                                        {{ mrMonitorEnabled ? 'Monitor On' : 'Monitor Off' }}
+                                    </button>
+                                    <button class="btn btn-sm"
+                                        [class.btn-success]="mrAlertEnabled"
+                                        [class.btn-outline-secondary]="!mrAlertEnabled"
+                                        [disabled]="!mrMonitorEnabled"
+                                        (click)="toggleMrAlertEnabled()">
+                                        {{ mrAlertEnabled ? 'Alerts On' : 'Alerts Off' }}
+                                    </button>
+                                    <button class="btn btn-sm"
+                                        [class.btn-success]="mrSoundEnabled"
+                                        [class.btn-outline-secondary]="!mrSoundEnabled"
+                                        [disabled]="!mrMonitorEnabled"
+                                        (click)="toggleMrSoundEnabled()">
+                                        {{ mrSoundEnabled ? 'Sound On' : 'Sound Off' }}
+                                    </button>
+                                    <button class="btn btn-sm"
+                                        [class.btn-warning]="isMrSuppressed && mrSuppressionLabel.startsWith('Snoozed')"
+                                        [class.btn-outline-warning]="!isMrSuppressed || !mrSuppressionLabel.startsWith('Snoozed')"
+                                        [disabled]="!mrMonitorEnabled"
+                                        (click)="dismissMrAlarm(5)">
+                                        Snooze 5m
+                                    </button>
+                                    <button class="btn btn-sm"
+                                        [class.btn-danger]="isMrSuppressed && mrSuppressionLabel.startsWith('Muted')"
+                                        [class.btn-outline-danger]="!isMrSuppressed || !mrSuppressionLabel.startsWith('Muted')"
+                                        [disabled]="!mrMonitorEnabled"
+                                        (click)="dismissMrAlarm(60)">
+                                        Mute 1h
+                                    </button>
+                                </div>
+
+                                <div *ngIf="!mrMonitorEnabled" class="alert alert-secondary py-2 px-3 mb-0">
+                                    <div class="fw-semibold">Monitoring is off for this user.</div>
+                                    <small class="text-muted">No MR websocket subscription, no MR badge updates, and no alarm until Monitor On is enabled.</small>
+                                </div>
+
+                                <div *ngIf="isMrSuppressed" class="alert alert-warning py-2 px-3 mb-0">
+                                    <div class="d-flex align-items-center justify-content-between gap-2">
+                                        <div>
+                                            <div class="fw-semibold">{{ mrSuppressionLabel }}</div>
+                                            <small class="text-muted">Realtime updates stay active while sound is suppressed.</small>
+                                        </div>
+                                        <button class="btn btn-sm btn-outline-dark" (click)="clearMrSuppression()">
+                                            Resume Alerts
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card border mb-3">
+                            <div class="card-body">
+                                <div class="fw-semibold mb-2">Queues</div>
+                                <small class="text-muted d-block mb-3">Picking: {{ mrPendingPickingCount }} | Validation: {{ mrPendingValidationCount }}</small>
+                                <div class="d-flex flex-wrap gap-2 mb-3">
+                                    <button class="btn btn-sm"
+                                        [class.btn-primary]="mrQueueFilter === 'both'"
+                                        [class.btn-outline-primary]="mrQueueFilter !== 'both'"
+                                        (click)="setMrQueueFilter('both')">Both</button>
+                                    <button class="btn btn-sm"
+                                        [class.btn-primary]="mrQueueFilter === 'picking'"
+                                        [class.btn-outline-primary]="mrQueueFilter !== 'picking'"
+                                        (click)="setMrQueueFilter('picking')">Picking</button>
+                                    <button class="btn btn-sm"
+                                        [class.btn-primary]="mrQueueFilter === 'validation'"
+                                        [class.btn-outline-primary]="mrQueueFilter !== 'validation'"
+                                        (click)="setMrQueueFilter('validation')">Validation</button>
+                                </div>
+
+                                <div class="fw-semibold mb-2">Repeat interval</div>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <button class="btn btn-sm"
+                                        [class.btn-dark]="mrRepeatSeconds === 30"
+                                        [class.btn-outline-dark]="mrRepeatSeconds !== 30"
+                                        (click)="setMrRepeatSeconds(30)">30s</button>
+                                    <button class="btn btn-sm"
+                                        [class.btn-dark]="mrRepeatSeconds === 60"
+                                        [class.btn-outline-dark]="mrRepeatSeconds !== 60"
+                                        (click)="setMrRepeatSeconds(60)">60s</button>
+                                    <button class="btn btn-sm"
+                                        [class.btn-dark]="mrRepeatSeconds === 120"
+                                        [class.btn-outline-dark]="mrRepeatSeconds !== 120"
+                                        (click)="setMrRepeatSeconds(120)">120s</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card border mb-3">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <div>
+                                        <div class="fw-semibold">Closed-browser notifications</div>
+                                        <small class="text-muted">Uses web push and the system notification sound when the app is closed.</small>
+                                    </div>
+                                    <span class="badge"
+                                        [class.bg-success]="isPushSubscribed"
+                                        [class.bg-secondary]="!isPushSubscribed">
+                                        {{ isPushSubscribed ? 'Enabled' : 'Disabled' }}
+                                    </span>
+                                </div>
+
+                                <div class="alert alert-light border py-2 px-3 mb-3">
+                                    <div class="fw-semibold">Status</div>
+                                    <small class="text-muted d-block">{{ pushStatusMessage }}</small>
+                                    <small class="text-muted d-block">Permission: {{ pushPermission }}</small>
+                                </div>
+
+                                <div class="d-flex flex-wrap gap-2">
+                                    <button class="btn btn-sm btn-primary"
+                                        (click)="enablePushNotifications()"
+                                        [disabled]="isPushLoading || !isPushSupported || isPushSubscribed">
+                                        Enable Push
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary"
+                                        (click)="disablePushNotifications()"
+                                        [disabled]="isPushLoading || !isPushSubscribed">
+                                        Disable Push
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-success"
+                                        (click)="sendTestPushNotification()"
+                                        [disabled]="isPushLoading || !isPushSubscribed">
+                                        Send Test Push
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card border mb-3">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center justify-content-between mb-3">
+                                    <div>
+                                        <div class="fw-semibold">Recent items</div>
+                                        <small class="text-muted">Pending material requests currently driving the alert count.</small>
+                                    </div>
+                                    <button class="btn btn-sm btn-outline-secondary" (click)="refreshMrAlerts()" [disabled]="mrLoading">
+                                        <i class="mdi mdi-refresh" [class.spin]="mrLoading"></i>
+                                    </button>
+                                </div>
+
+                                <div *ngIf="mrRecentItems.length === 0" class="text-muted text-center py-3">
+                                    No pending MR alerts.
+                                </div>
+                                <div *ngFor="let item of mrRecentItems" class="border rounded p-2 mb-2">
+                                    <div class="d-flex align-items-start justify-content-between gap-2">
+                                        <div>
+                                            <div class="fw-semibold">MR #{{ item?.id }}</div>
+                                            <small class="text-muted d-block">{{ item?.requestor || 'Unknown requestor' }}</small>
+                                        </div>
+                                        <span class="badge"
+                                            [class.bg-danger]="!item?.validated"
+                                            [class.bg-warning]="item?.validated">
+                                            {{ item?.validated ? 'Picking' : 'Validation' }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <a class="btn btn-outline-danger flex-fill" routerLink="/operations/material-request/picking" (click)="offcanvas.close()">Open Picking</a>
+                            <a class="btn btn-outline-warning flex-fill" routerLink="/operations/material-request/validate-list" (click)="offcanvas.close()">Open Validation</a>
+                        </div>
+                    </div>
+                </ng-template>
+
                 
                 <div class="ms-1 header-item d-none d-sm-flex me-3">
                     <button type="button"

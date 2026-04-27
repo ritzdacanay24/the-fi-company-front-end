@@ -48,7 +48,7 @@ export class MenuBadgeRepository {
       SELECT 'pickingQueue' AS menu_id, COUNT(*) AS count
       FROM mrf m
       WHERE m.active = 1
-        AND m.queue_status NOT IN ('complete', 'cancelled')
+        AND m.validated IS NOT NULL
         AND m.pickedCompletedDate IS NULL
 
       UNION ALL

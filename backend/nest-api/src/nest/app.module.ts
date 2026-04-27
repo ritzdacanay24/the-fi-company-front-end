@@ -51,6 +51,8 @@ import { QualityOverviewModule } from './modules/quality-overview/quality-overvi
 import { QualityVersionControlModule } from './modules/quality-version-control/quality-version-control.module';
 import { TableFilterSettingsModule } from './modules/table-filter-settings/table-filter-settings.module';
 import { TableSettingsModule } from './modules/table-settings/table-settings.module';
+import { MrAlertPreferencesModule } from './modules/mr-alert-preferences/mr-alert-preferences.module';
+import { PushNotificationsModule } from './modules/push-notifications/push-notifications.module';
 import { RfqModule } from './modules/rfq/rfq.module';
 import { RmaModule } from './modules/rma/rma.module';
 import { SafetyIncidentModule } from './modules/safety-incident';
@@ -187,6 +189,8 @@ import { UrlModule } from '../shared/url/url.module';
     QualityVersionControlModule,
     TableFilterSettingsModule,
     TableSettingsModule,
+    MrAlertPreferencesModule,
+    PushNotificationsModule,
     RfqModule,
     RmaModule,
     SafetyIncidentModule,

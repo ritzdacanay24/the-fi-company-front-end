@@ -16,8 +16,8 @@ export class ScheduledJobsController {
   constructor(private readonly scheduledJobsService: ScheduledJobsService) {}
 
   @Get()
-  list(): ScheduledJobDto[] {
-    return this.scheduledJobsService.listJobs();
+  async list(): Promise<ScheduledJobDto[]> {
+    return await this.scheduledJobsService.listJobs();
   }
 
   @Post(':id/run')

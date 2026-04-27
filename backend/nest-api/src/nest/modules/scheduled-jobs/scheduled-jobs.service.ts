@@ -9,6 +9,17 @@ import { EmailService } from '@/shared/email/email.service';
 import { EmailTemplateService } from '@/shared/email/email-template.service';
 import { SCHEDULED_JOB_DEFINITIONS } from './scheduled-jobs.definitions';
 
+export type ScheduledJobRunStatus = 'success' | 'failure';
+
+export interface ScheduledJobLastRun {
+  startedAt: string;
+  finishedAt: string | null;
+  durationMs: number | null;
+  status: ScheduledJobRunStatus;
+  triggerType: 'manual' | 'cron';
+  errorMessage: string | null;
+}
+
 export interface ScheduledJobDto {
   id: string;
   name: string;
@@ -16,6 +27,7 @@ export interface ScheduledJobDto {
   url: string;
   active: boolean;
   note?: string;
+  lastRun?: ScheduledJobLastRun;
   command: string;
   source: 'nest-cron';
   runnerEnabled: boolean;
@@ -29,6 +41,7 @@ export interface ScheduledJobRunResultDto {
   statusCode: number;
   durationMs: number;
   message: string;
+  lastRun?: ScheduledJobLastRun;
   url?: string;
   responseSnippet?: string;
 }
@@ -81,15 +94,44 @@ export class ScheduledJobsService {
     return raw === '1' || raw === 'true' || raw === 'yes' || raw === 'on';
   }
 
-  listJobs(): ScheduledJobDto[] {
+  async listJobs(): Promise<ScheduledJobDto[]> {
     const runnerEnabled = this.isRunnerEnabled();
 
-    return SCHEDULED_JOB_DEFINITIONS.map((job) => ({
-      ...job,
-      command: 'NEST_LOCAL_HANDLER scheduledJobsService.runJobById(jobId)',
-      source: 'nest-cron' as const,
-      runnerEnabled,
-    }));
+    const rows = await this.mysqlService.query<RowDataPacket[]>(`
+      SELECT
+        r.job_name,
+        r.trigger_type,
+        r.status,
+        r.started_at,
+        r.finished_at,
+        r.duration_ms,
+        r.error_message
+      FROM scheduled_job_run r
+      INNER JOIN (
+        SELECT job_name, MAX(id) AS max_id
+        FROM scheduled_job_run
+        GROUP BY job_name
+      ) latest ON r.job_name = latest.job_name AND r.id = latest.max_id
+    `);
+
+    const lastRunByJobId = new Map<string, ScheduledJobLastRun>();
+    for (const row of rows) {
+      const startedAt = this.normalizeDbDateToIso(row['started_at']);
+      if (!startedAt) {
+        continue;
+      }
+
+      lastRunByJobId.set(row['job_name'] as string, {
+        startedAt,
+        finishedAt: this.normalizeDbDateToIso(row['finished_at']),
+        durationMs: row['duration_ms'] as number | null,
+        status: row['status'] as ScheduledJobRunStatus,
+        triggerType: row['trigger_type'] as 'manual' | 'cron',
+        errorMessage: row['error_message'] as string | null,
+      });
+    }
+
+    return SCHEDULED_JOB_DEFINITIONS.map((job) => this.toScheduledJobDto(job, runnerEnabled, lastRunByJobId.get(job.id)));
   }
 
   updateJob(
@@ -110,12 +152,7 @@ export class ScheduledJobsService {
     };
 
     const runnerEnabled = this.isRunnerEnabled();
-    return {
-      ...SCHEDULED_JOB_DEFINITIONS[jobIndex],
-      command: 'NEST_LOCAL_HANDLER scheduledJobsService.runJobById(jobId)',
-      source: 'nest-cron' as const,
-      runnerEnabled,
-    };
+    return this.toScheduledJobDto(SCHEDULED_JOB_DEFINITIONS[jobIndex], runnerEnabled, undefined);
   }
 
   async runJobById(
@@ -135,14 +172,49 @@ export class ScheduledJobsService {
       };
     }
 
-    const startedAt = Date.now();
+    const startedAtMs = Date.now();
+    const startedAtIso = new Date(startedAtMs).toISOString();
+    let runId: number | null = null;
+
+    try {
+      const [insertResult] = await this.mysqlService.query<RowDataPacket[]>(
+        `INSERT INTO scheduled_job_run (job_name, trigger_type, status, started_at) VALUES (?, ?, 'success', NOW())`,
+        [job.id, trigger],
+      ) as any;
+      runId = (insertResult as any)?.insertId ?? null;
+    } catch (dbErr) {
+      this.logger.warn(`[${trigger}] ${job.id} - could not insert run record: ${dbErr}`);
+    }
+
+    const finishRun = async (status: ScheduledJobRunStatus, durationMs: number, errorMessage?: string): Promise<ScheduledJobLastRun> => {
+      const finishedAtIso = new Date().toISOString();
+      if (runId !== null) {
+        try {
+          await this.mysqlService.query(
+            `UPDATE scheduled_job_run SET status = ?, finished_at = NOW(), duration_ms = ?, error_message = ? WHERE id = ?`,
+            [status, durationMs, errorMessage ?? null, runId],
+          );
+        } catch (dbErr) {
+          this.logger.warn(`[${trigger}] ${job.id} - could not update run record: ${dbErr}`);
+        }
+      }
+      return {
+        startedAt: startedAtIso,
+        finishedAt: finishedAtIso,
+        durationMs,
+        status,
+        triggerType: trigger,
+        errorMessage: errorMessage ?? null,
+      };
+    };
 
     try {
       if (job.id === 'graphics-due-today-report') {
         const dueToday = await this.graphicsProductionService.getDueTodayReport();
-        const durationMs = Date.now() - startedAt;
+        const durationMs = Date.now() - startedAtMs;
         const responseSnippet = `totalOrders=${dueToday.totalOrders}`;
         this.logger.log(`[${trigger}] ${job.id} -> local query in ${durationMs}ms (${responseSnippet})`);
+        const lastRun = await finishRun('success', durationMs);
 
         return {
           id: job.id,
@@ -152,6 +224,7 @@ export class ScheduledJobsService {
           statusCode: 200,
           durationMs,
           message: `Job ${job.name} completed locally in Nest (${responseSnippet}).`,
+          lastRun,
           url: 'nest://graphics-production/getDueTodayReport',
           responseSnippet,
         };
@@ -159,9 +232,10 @@ export class ScheduledJobsService {
 
       if (job.id === 'fs-job-report-morning' || job.id === 'fs-job-report-evening') {
         const sentTo = await this.sendFieldServiceJobReportEmail();
-        const durationMs = Date.now() - startedAt;
+        const durationMs = Date.now() - startedAtMs;
         const responseSnippet = `recipients=${sentTo.length}`;
         this.logger.log(`[${trigger}] ${job.id} -> local mail in ${durationMs}ms (${responseSnippet})`);
+        const lastRun = await finishRun('success', durationMs);
 
         return {
           id: job.id,
@@ -171,6 +245,7 @@ export class ScheduledJobsService {
           statusCode: 200,
           durationMs,
           message: `Job ${job.name} completed locally in Nest (${responseSnippet}).`,
+          lastRun,
           url: job.url,
           responseSnippet,
         };
@@ -178,9 +253,10 @@ export class ScheduledJobsService {
 
       if (job.id === 'fs-job-notice') {
         const noticesSent = await this.sendFieldServiceNoticeEmails();
-        const durationMs = Date.now() - startedAt;
+        const durationMs = Date.now() - startedAtMs;
         const responseSnippet = `notices=${noticesSent}`;
         this.logger.log(`[${trigger}] ${job.id} -> local mail in ${durationMs}ms (${responseSnippet})`);
+        const lastRun = await finishRun('success', durationMs);
 
         return {
           id: job.id,
@@ -190,6 +266,7 @@ export class ScheduledJobsService {
           statusCode: 200,
           durationMs,
           message: `Job ${job.name} completed locally in Nest (${responseSnippet}).`,
+          lastRun,
           url: job.url,
           responseSnippet,
         };
@@ -197,20 +274,23 @@ export class ScheduledJobsService {
 
       const targetUrl = LEGACY_ENDPOINT_BY_JOB_ID[job.id];
       if (!targetUrl) {
+        const durationMs = Date.now() - startedAtMs;
+        const lastRun = await finishRun('failure', durationMs, `No executor registered for ${job.id}.`);
         return {
           id: job.id,
           name: job.name,
           trigger,
           ok: false,
           statusCode: 501,
-          durationMs: Date.now() - startedAt,
+          durationMs,
           message: `No executor registered for ${job.id}.`,
+          lastRun,
           url: job.url,
         };
       }
 
       const { statusCode, responseSnippet } = await this.executeGet(targetUrl);
-      const durationMs = Date.now() - startedAt;
+      const durationMs = Date.now() - startedAtMs;
       const ok = statusCode >= 200 && statusCode < 300;
       const message = ok
         ? `Job ${job.name} completed successfully (${statusCode}).`
@@ -222,6 +302,8 @@ export class ScheduledJobsService {
         this.logger.warn(`[${trigger}] ${job.id} -> ${statusCode} in ${durationMs}ms`);
       }
 
+      const lastRun = await finishRun(ok ? 'success' : 'failure', durationMs, ok ? undefined : message);
+
       return {
         id: job.id,
         name: job.name,
@@ -230,13 +312,15 @@ export class ScheduledJobsService {
         statusCode,
         durationMs,
         message,
+        lastRun,
         url: job.url,
         responseSnippet,
       };
     } catch (error: unknown) {
-      const durationMs = Date.now() - startedAt;
+      const durationMs = Date.now() - startedAtMs;
       const message = error instanceof Error ? error.message : String(error);
       this.logger.error(`[${trigger}] ${job.id} failed in ${durationMs}ms: ${message}`);
+      const lastRun = await finishRun('failure', durationMs, message);
 
       return {
         id: job.id,
@@ -246,9 +330,41 @@ export class ScheduledJobsService {
         statusCode: 500,
         durationMs,
         message,
+        lastRun,
         url: job.url,
       };
     }
+  }
+
+  private toScheduledJobDto(
+    job: (typeof SCHEDULED_JOB_DEFINITIONS)[number],
+    runnerEnabled: boolean,
+    lastRun?: ScheduledJobLastRun,
+  ): ScheduledJobDto {
+    return {
+      ...job,
+      lastRun,
+      command: 'NEST_LOCAL_HANDLER scheduledJobsService.runJobById(jobId)',
+      source: 'nest-cron' as const,
+      runnerEnabled,
+    };
+  }
+
+  private normalizeDbDateToIso(value: unknown): string | null {
+    if (!value) {
+      return null;
+    }
+
+    if (value instanceof Date) {
+      return Number.isNaN(value.getTime()) ? null : value.toISOString();
+    }
+
+    if (typeof value === 'string' || typeof value === 'number') {
+      const parsed = new Date(value);
+      return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+    }
+
+    return null;
   }
 
   async runJobIfEnabled(id: string): Promise<void> {

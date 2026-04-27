@@ -7,6 +7,11 @@ import { EmailService } from '@/shared/email/email.service';
 import { EmailTemplateService } from '@/shared/email/email-template.service';
 import { UrlBuilder } from '@/shared/url/url-builder';
 import { EmailNotificationsService } from '../email-notifications';
+import { UnifiedWebSocketService } from '@/shared/services/unified-websocket.service';
+import { PushNotificationsService } from '../push-notifications/push-notifications.service';
+
+const MR_ALERT_CHANNEL = 'material-request-picking';
+const MR_ALERT_SNAPSHOT_TYPE = 'MR_ALERT_SNAPSHOT';
 
 type MaterialRequestPayload = {
   main?: Record<string, unknown>;
@@ -40,7 +45,13 @@ export class MaterialRequestService {
     private readonly configService: ConfigService,
     private readonly urlBuilder: UrlBuilder,
     private readonly emailNotificationsService: EmailNotificationsService,
-  ) {}
+    private readonly websocketService: UnifiedWebSocketService,
+    private readonly pushNotificationsService: PushNotificationsService,
+  ) {
+    this.websocketService.registerMrAlertRequestHandler((clientId, userId) =>
+      this.handleMrAlertRequest(clientId, userId),
+    );
+  }
 
   async getList(query: {
     selectedViewType?: string;
@@ -119,6 +130,7 @@ export class MaterialRequestService {
     });
 
     await this.sendCreateNotification(result.insertId, main);
+    await this.emitMrAlertSnapshot('created');
     return result;
   }
 
@@ -128,7 +140,7 @@ export class MaterialRequestService {
     const main = payload.main || payload;
     const details = Array.isArray(payload.details) ? payload.details : [];
 
-    return this.mysqlService.withTransaction(async (connection) => {
+    const result = await this.mysqlService.withTransaction(async (connection) => {
       const rowCount = await this.repository.updateHeader(id, {
         ...main,
         modifiedDate: new Date().toISOString().slice(0, 19).replace('T', ' '),
@@ -178,11 +190,20 @@ export class MaterialRequestService {
 
       return { rowCount };
     });
+
+    if ((result?.rowCount || 0) > 0) {
+      await this.emitMrAlertSnapshot('updated');
+    }
+
+    return result;
   }
 
   async deleteById(id: number) {
     await this.getById(id);
     const rowCount = await this.repository.deleteById(id);
+    if (rowCount > 0) {
+      await this.emitMrAlertSnapshot('deleted');
+    }
     return { rowCount };
   }
 
@@ -286,6 +307,9 @@ export class MaterialRequestService {
     }
 
     const rowCount = await this.repository.sendBackToValidation(id);
+    if (rowCount > 0) {
+      await this.emitMrAlertSnapshot('sent-back-to-validation');
+    }
     return { rowCount };
   }
 
@@ -345,6 +369,7 @@ export class MaterialRequestService {
 
     if (rowCount > 0) {
       await this.sendPickingCompleteNotification(id);
+      await this.emitMrAlertSnapshot('picking-complete');
     }
 
     return { rowCount };
@@ -370,6 +395,7 @@ export class MaterialRequestService {
     }
 
     const data = await this.repository.updateStatus(id, status, updatedBy);
+    await this.emitMrAlertSnapshot('status-updated');
     return {
       success: true,
       data,
@@ -492,5 +518,67 @@ export class MaterialRequestService {
   private getLookupNumber(row: MaterialValidationLookupRow, key: string): number {
     const value = Number(this.getLookupValue(row, key));
     return Number.isFinite(value) ? value : 0;
+  }
+
+  private async emitMrAlertSnapshot(reason: string): Promise<void> {
+    try {
+      const snapshot = await this.buildMrAlertSnapshot();
+      this.websocketService.publishToChannel(
+        MR_ALERT_CHANNEL,
+        MR_ALERT_SNAPSHOT_TYPE,
+        snapshot,
+        'material-request-alert-snapshot',
+      );
+
+      if (reason === 'created' || reason === 'sent-back-to-validation' || reason === 'status-updated') {
+        await this.pushNotificationsService.sendMaterialRequestAlert(reason, {
+          pendingPickingCount: Number((snapshot as Record<string, unknown>).pendingPickingCount ?? 0),
+          pendingValidationCount: Number((snapshot as Record<string, unknown>).pendingValidationCount ?? 0),
+        });
+      }
+    } catch (error) {
+      this.logger.warn(
+        `Failed to emit MR alert snapshot (${reason}): ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  private async handleMrAlertRequest(clientId: string, userId: number): Promise<void> {
+    try {
+      const snapshot = await this.buildMrAlertSnapshot();
+      this.websocketService.sendToClientInChannel(
+        clientId,
+        MR_ALERT_CHANNEL,
+        MR_ALERT_SNAPSHOT_TYPE,
+        snapshot,
+        'material-request-alert-snapshot-response',
+      );
+    } catch (error) {
+      this.logger.error(`Failed to handle MR alert request for client ${clientId}:`, error as Error);
+    }
+  }
+
+  private async buildMrAlertSnapshot(): Promise<unknown> {
+    const [pickingRows, validationRows] = await Promise.all([
+      this.repository.getPicking(),
+      this.repository.getValidation(),
+    ]);
+
+    const picking = Array.isArray(pickingRows) ? pickingRows : [];
+    const validation = Array.isArray(validationRows) ? validationRows : [];
+
+    const recentItems = [
+      ...picking.slice(0, 3).map((row) => ({ ...row, queue: 'picking', validated: true })),
+      ...validation.slice(0, 3).map((row) => ({ ...row, queue: 'validation', validated: false })),
+    ]
+      .sort((a, b) => Number((b as Record<string, unknown>)['id'] ?? 0) - Number((a as Record<string, unknown>)['id'] ?? 0))
+      .slice(0, 6);
+
+    return {
+      pendingPickingCount: picking.length,
+      pendingValidationCount: validation.length,
+      recentItems,
+      reason: 'on-request',
+    };
   }
 }
