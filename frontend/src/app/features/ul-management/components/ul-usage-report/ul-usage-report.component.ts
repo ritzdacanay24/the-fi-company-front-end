@@ -358,13 +358,16 @@ export class ULUsageReportComponent implements OnInit {
         type: 'area',
         height: 220,
         toolbar: { show: false },
+        foreColor: 'var(--bs-body-color)',
       },
       colors: ['#0ab39c'],
       xaxis: {
         categories: trendLabels,
+        labels: { style: { colors: ['var(--bs-body-color)'] } },
       },
       yaxis: {
-        title: { text: 'Quantity' },
+        title: { text: 'Quantity', style: { color: 'var(--bs-body-color)' } },
+        labels: { style: { colors: ['var(--bs-body-color)'] } },
       },
       stroke: {
         curve: 'smooth',
@@ -395,10 +398,12 @@ export class ULUsageReportComponent implements OnInit {
         type: 'bar',
         height: 220,
         toolbar: { show: false },
+        foreColor: 'var(--bs-body-color)',
       },
       colors: ['#405189'],
       xaxis: {
         categories: topUsers.map(([user]) => user),
+        labels: { style: { colors: ['var(--bs-body-color)'] } },
       },
       plotOptions: {
         bar: {
@@ -418,11 +423,13 @@ export class ULUsageReportComponent implements OnInit {
       chart: {
         type: 'donut',
         height: 220,
+        foreColor: 'var(--bs-body-color)',
       },
       labels: ['Active', 'Voided'],
       colors: ['#0ab39c', '#f06548'],
       legend: {
         position: 'bottom',
+        labels: { colors: 'var(--bs-body-color)' },
       },
       responsive: [
         {

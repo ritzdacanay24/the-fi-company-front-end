@@ -101,7 +101,7 @@
 
           <!-- Complete Session -->
           <div *ngIf="times?.length && !data?.completed_date" class="text-center mt-4">
-            <button class="btn btn-success" (click)="finish()">
+            <button class="btn btn-primary" (click)="finish()">
               Complete Session
             </button>
           </div>
@@ -719,7 +719,7 @@
       <div class="d-flex flex-column gap-2">
         <button 
           *ngIf="times.length > 0"
-          class="btn btn-success rounded-circle shadow" 
+          class="btn btn-primary rounded-circle shadow" 
           style="width: 56px; height: 56px;"
           (click)="finish()" 
           [disabled]="data?.completed_date"

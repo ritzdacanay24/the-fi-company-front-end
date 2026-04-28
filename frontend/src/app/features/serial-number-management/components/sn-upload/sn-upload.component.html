@@ -144,7 +144,7 @@
           </div>
 
           <div class="d-flex gap-2 pt-3 border-top">
-            <button class="btn btn-success" (click)="addRangeToDatabase()" [disabled]="isUploading">
+            <button class="btn btn-primary" (click)="addRangeToDatabase()" [disabled]="isUploading">
               @if (isUploading) {
               <span class="spinner-border spinner-border-sm me-2" role="status"></span>
               Adding to Database...
@@ -211,7 +211,7 @@
                   <i class="mdi mdi-plus me-1"></i> Add More Serial Numbers
                 </button>
 
-                <button class="btn btn-success" routerLink="../list" *ngIf="uploadResult.success">
+                <button class="btn btn-primary" routerLink="../list" *ngIf="uploadResult.success">
                   <i class="mdi mdi-view-list me-1"></i> View All Serial Numbers
                 </button>
               </div>

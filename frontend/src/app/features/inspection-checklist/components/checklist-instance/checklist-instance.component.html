@@ -389,7 +389,7 @@
         <div class="item-actions">
           <button 
             type="button" 
-            class="btn btn-success"
+            class="btn btn-primary"
             (click)="completeCurrentItem()"
             [disabled]="isSaving || getCurrentItem()?.status === 'completed'">
             <i class="fas fa-check"></i>
@@ -433,7 +433,7 @@
         </p>
         <button 
           type="button" 
-          class="btn btn-success btn-lg"
+          class="btn btn-primary btn-lg"
           (click)="submitInstance()"
           [disabled]="!canSubmitInstance()">
           <i class="fas fa-paper-plane"></i>
@@ -504,7 +504,7 @@
           </button>
           <button 
             type="button" 
-            class="btn btn-success"
+            class="btn btn-primary"
             (click)="capturePhoto()">
             <i class="fas fa-camera"></i>
             Capture
@@ -582,7 +582,7 @@
         </button>
         <button 
           type="button" 
-          class="btn btn-success"
+          class="btn btn-primary"
           (click)="finalizeSubmission()"
           [disabled]="signatureForm.invalid || isSubmitting">
           <i class="fas fa-paper-plane"></i>

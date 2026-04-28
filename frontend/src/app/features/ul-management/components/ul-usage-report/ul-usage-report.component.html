@@ -56,10 +56,10 @@
           </div>
         </div>
 
-        <div class="card-body border-bottom usage-analytics-strip" *ngIf="filteredData?.length">
+        <div class="card-body border-bottom bg-body-secondary" *ngIf="filteredData?.length">
           <div class="row g-3">
             <div class="col-12 col-lg-6">
-              <div class="analytics-card">
+              <div class="rounded-3 p-3 shadow-sm border bg-body h-100">
                 <h6 class="mb-2">Usage Trend</h6>
                 <apx-chart
                   [series]="usageTrendChart.series"
@@ -74,7 +74,7 @@
               </div>
             </div>
             <div class="col-12 col-lg-3">
-              <div class="analytics-card">
+              <div class="rounded-3 p-3 shadow-sm border bg-body h-100">
                 <h6 class="mb-2">Top Users</h6>
                 <apx-chart
                   [series]="topUsersChart.series"
@@ -88,7 +88,7 @@
               </div>
             </div>
             <div class="col-12 col-lg-3">
-              <div class="analytics-card">
+              <div class="rounded-3 p-3 shadow-sm border bg-body h-100">
                 <h6 class="mb-2">Record Status</h6>
                 <apx-chart
                   [series]="statusDonutChart.series"

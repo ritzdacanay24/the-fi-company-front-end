@@ -1401,7 +1401,7 @@
               </button> -->
               
               <!-- Real Submit Button -->
-              <button class="btn btn-success btn" 
+              <button class="btn btn-primary btn" 
                       type="button" 
                       (click)="submitEmbeddedForm()" 
                       [disabled]="isLoading || (getCustomerFormComponent() === 'other' && selectedCustomer === 'Other' && !customOtherCustomerName)">
@@ -1416,7 +1416,7 @@
 
             <!-- Step 6: After submission - Single "Start New Batch" button -->
             <button *ngIf="currentStep === 6 && submissionComplete"
-                    class="btn btn-success btn-lg"
+                    class="btn btn-primary btn-lg"
                     type="button"
                     (click)="resetWorkflow()">
               <i class="mdi mdi-refresh me-1"></i>
@@ -1567,7 +1567,7 @@
       <i class="mdi mdi-close-circle me-1"></i>
       Cancel
     </button>
-    <button type="button" class="btn btn-success btn" (click)="confirmAndSubmit()" [disabled]="isLoading">
+    <button type="button" class="btn btn-primary btn" (click)="confirmAndSubmit()" [disabled]="isLoading">
       <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2" role="status"></span>
       <span *ngIf="!isLoading">
         <i class="mdi mdi-check-all me-1"></i>

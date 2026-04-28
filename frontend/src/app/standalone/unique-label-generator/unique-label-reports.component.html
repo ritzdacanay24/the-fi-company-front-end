@@ -47,53 +47,53 @@
           <div class="spinner-border text-primary"></div>
         </div>
 
-        <div class="card-body border-bottom igt-analytics-strip" *ngIf="!isLoading && totals">
+        <div class="card-body border-bottom bg-body-secondary" *ngIf="!isLoading && totals">
           <div class="row g-3 mb-3">
             <div class="col-6 col-lg-3">
-              <div class="metric-card metric-card-with-pie">
+              <div class="rounded-3 p-3 shadow-sm border bg-body h-100 d-flex align-items-center justify-content-between gap-2">
                 <div>
-                  <small>Capacity Used</small>
-                  <h4 class="mb-0">{{ latestUsedCount() }}</h4>
-                  <small class="metric-subtext">{{ capacityUsedPct() }}% of capacity</small>
+                  <small class="text-uppercase text-body-secondary fw-semibold">Capacity Used</small>
+                  <h4 class="mb-0 fs-3 fw-bold text-body-emphasis">{{ latestUsedCount() }}</h4>
+                  <small class="text-body-secondary">{{ capacityUsedPct() }}% of capacity</small>
                 </div>
-                <div class="mini-pie" [style.background]="miniPieBackground(capacityUsedPct(), '#f06548')">
-                  <div class="mini-pie-inner">{{ capacityUsedPct() }}%</div>
+                <div class="mini-pie rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" [style.background]="miniPieBackground(capacityUsedPct(), '#f06548')">
+                  <div class="mini-pie-inner rounded-circle bg-body border d-flex align-items-center justify-content-center fw-bold text-body">{{ capacityUsedPct() }}%</div>
                 </div>
               </div>
             </div>
             <div class="col-6 col-lg-3">
-              <div class="metric-card metric-card-with-pie">
+              <div class="rounded-3 p-3 shadow-sm border bg-body h-100 d-flex align-items-center justify-content-between gap-2">
                 <div>
-                  <small>Capacity Remaining</small>
-                  <h4 class="mb-0">{{ latestRemainingCount() }}</h4>
-                  <small class="metric-subtext">{{ capacityRemainingPct() }}% available</small>
+                  <small class="text-uppercase text-body-secondary fw-semibold">Capacity Remaining</small>
+                  <h4 class="mb-0 fs-3 fw-bold text-body-emphasis">{{ latestRemainingCount() }}</h4>
+                  <small class="text-body-secondary">{{ capacityRemainingPct() }}% available</small>
                 </div>
-                <div class="mini-pie" [style.background]="miniPieBackground(capacityRemainingPct(), '#2e8b57')">
-                  <div class="mini-pie-inner">{{ capacityRemainingPct() }}%</div>
+                <div class="mini-pie rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" [style.background]="miniPieBackground(capacityRemainingPct(), '#2e8b57')">
+                  <div class="mini-pie-inner rounded-circle bg-body border d-flex align-items-center justify-content-center fw-bold text-body">{{ capacityRemainingPct() }}%</div>
                 </div>
               </div>
             </div>
             <div class="col-6 col-lg-3">
-              <div class="metric-card metric-card-with-pie">
+              <div class="rounded-3 p-3 shadow-sm border bg-body h-100 d-flex align-items-center justify-content-between gap-2">
                 <div>
-                  <small>WO Batches</small>
-                  <h4 class="mb-0">{{ totals.wo_batches ?? 0 }}</h4>
-                  <small class="metric-subtext">of total batches</small>
+                  <small class="text-uppercase text-body-secondary fw-semibold">WO Batches</small>
+                  <h4 class="mb-0 fs-3 fw-bold text-body-emphasis">{{ totals.wo_batches ?? 0 }}</h4>
+                  <small class="text-body-secondary">of total batches</small>
                 </div>
-                <div class="mini-pie" [style.background]="miniPieBackground(woBatchPct(), '#3b7ed4')">
-                  <div class="mini-pie-inner">{{ woBatchPct() }}%</div>
+                <div class="mini-pie rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" [style.background]="miniPieBackground(woBatchPct(), '#3b7ed4')">
+                  <div class="mini-pie-inner rounded-circle bg-body border d-flex align-items-center justify-content-center fw-bold text-body">{{ woBatchPct() }}%</div>
                 </div>
               </div>
             </div>
             <div class="col-6 col-lg-3">
-              <div class="metric-card metric-card-with-pie">
+              <div class="rounded-3 p-3 shadow-sm border bg-body h-100 d-flex align-items-center justify-content-between gap-2">
                 <div>
-                  <small>Weeks Remaining</small>
-                  <h4 class="mb-0">{{ estimatedWeeksRemainingLabel() }}</h4>
-                  <small class="metric-subtext">based on recent weekly burn</small>
+                  <small class="text-uppercase text-body-secondary fw-semibold">Weeks Remaining</small>
+                  <h4 class="mb-0 fs-3 fw-bold text-body-emphasis">{{ estimatedWeeksRemainingLabel() }}</h4>
+                  <small class="text-body-secondary">based on recent weekly burn</small>
                 </div>
-                <div class="mini-pie" [style.background]="miniPieBackground(weeksRemainingGaugePct(), '#3b7ed4')">
-                  <div class="mini-pie-inner">{{ weeksRemainingGaugePct() }}%</div>
+                <div class="mini-pie rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" [style.background]="miniPieBackground(weeksRemainingGaugePct(), '#3b7ed4')">
+                  <div class="mini-pie-inner rounded-circle bg-body border d-flex align-items-center justify-content-center fw-bold text-body">{{ weeksRemainingGaugePct() }}%</div>
                 </div>
               </div>
             </div>
@@ -101,7 +101,7 @@
 
           <div class="row g-3 mb-3">
             <div class="col-12 col-lg-8">
-              <div class="analytics-card">
+              <div class="rounded-3 p-3 shadow-sm border bg-body h-100">
                 <h6 class="mb-2">Weekly Sequence Utilization</h6>
                 <apx-chart
                   [series]="sequenceUtilizationChart.series"
@@ -120,7 +120,7 @@
             </div>
 
             <div class="col-12 col-lg-4">
-              <div class="analytics-card">
+              <div class="rounded-3 p-3 shadow-sm border bg-body h-100">
                 <h6 class="mb-2">Current Sequence Capacity</h6>
                 <apx-chart
                   [series]="remainingOverviewChart.series"
@@ -139,7 +139,7 @@
 
           <div class="row g-3">
             <div class="col-12 col-lg-6">
-              <div class="analytics-card">
+              <div class="rounded-3 p-3 shadow-sm border bg-body h-100">
                 <h6 class="mb-2">Top Parts</h6>
                 <ag-grid-angular
                   class="ag-theme-quartz no-border"
@@ -152,7 +152,7 @@
             </div>
 
             <div class="col-12 col-lg-6">
-              <div class="analytics-card">
+              <div class="rounded-3 p-3 shadow-sm border bg-body h-100">
                 <h6 class="mb-2">Week Usage Table</h6>
                 <ag-grid-angular
                   class="ag-theme-quartz no-border"

@@ -92,7 +92,7 @@ import { AuthenticationService } from '@app/core/services/auth.service';
                       <td>{{item.reviewNote || '-'}}</td>
                       <td>
                         <div class="btn-group">
-                          <button class="btn btn-success btn-sm" 
+                          <button class="btn btn-primary btn-sm" 
                                   (click)="approveItem(item)">
                             <i class="ri-check-line"></i> Approve
                           </button>

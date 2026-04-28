@@ -181,7 +181,7 @@
                     autocomplete="new-password" 
                     readonly 
                     style="font-size: 1.1rem;">
-                  <button class="btn btn-success btn-lg px-4" type="button" (click)="onBadgeScanned()"
+                  <button class="btn btn-primary btn-lg px-4" type="button" (click)="onBadgeScanned()"
                     [disabled]="isLoading || !badgeNumber.trim()">
                     <i class="mdi mdi-check me-2" *ngIf="!isLoading"></i>
                     <i class="mdi mdi-loading mdi-spin me-2" *ngIf="isLoading"></i>
@@ -355,7 +355,7 @@
     <button type="button" class="btn btn-outline-secondary" (click)="modal.dismiss()">
       <i class="mdi mdi-close me-2"></i>Cancel
     </button>
-    <button type="button" class="btn btn-success" (click)="confirmTrainingCompletion()" [disabled]="isLoading">
+    <button type="button" class="btn btn-primary" (click)="confirmTrainingCompletion()" [disabled]="isLoading">
       <i class="mdi mdi-check-circle me-2" *ngIf="!isLoading"></i>
       <i class="mdi mdi-loading mdi-spin me-2" *ngIf="isLoading"></i>
       Confirm Completion

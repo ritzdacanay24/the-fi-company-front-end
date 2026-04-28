@@ -201,7 +201,7 @@ export interface VersionChangesDialogResult {
       </button>
       
       <button type="button" 
-              class="btn btn-success"
+              class="btn btn-primary"
               (click)="onCreateVersion()"
               [disabled]="!revisionDescription || revisionDescription.trim() === ''">
         <i class="mdi mdi-plus-circle me-1"></i>

@@ -81,7 +81,7 @@
               </span>
               <button 
                 type="button"
-                class="btn btn-success btn-sm"
+                class="btn btn-primary btn-sm"
                 (click)="openSignoffModal()"
                 [disabled]="selectedItems.length === 0">
                 <i class="mdi mdi-clipboard-check me-1"></i>
@@ -216,7 +216,7 @@
     <button type="button" class="btn btn-secondary" (click)="closeSignoffModal()">Cancel</button>
     <button
       type="button"
-      class="btn btn-success"
+      class="btn btn-primary"
       (click)="submitSignoff()"
       [disabled]="!auditorName || !auditorSignature || !auditorEmail || !isValidEmail(auditorEmail)">
       <i class="mdi mdi-email-send me-1"></i>

@@ -359,12 +359,15 @@ export class ULLabelsReportComponent implements OnInit {
         type: 'bar',
         height: 240,
         toolbar: { show: false },
+        foreColor: 'var(--bs-body-color)',
       },
       xaxis: {
         categories: ['Q Series', 'T Series'],
+        labels: { style: { colors: ['var(--bs-body-color)'] } },
       },
       yaxis: {
-        title: { text: 'Count' },
+        title: { text: 'Count', style: { color: 'var(--bs-body-color)' } },
+        labels: { style: { colors: ['var(--bs-body-color)'] } },
       },
       plotOptions: {
         bar: {
@@ -383,11 +386,13 @@ export class ULLabelsReportComponent implements OnInit {
       chart: {
         type: 'donut',
         height: 240,
+        foreColor: 'var(--bs-body-color)',
       },
       labels: ['Active', 'Inactive', 'Expired'],
       colors: ['#2e8b57', '#6c757d', '#c43d3d'],
       legend: {
         position: 'bottom',
+        labels: { colors: 'var(--bs-body-color)' },
       },
       responsive: [
         {
@@ -426,12 +431,15 @@ export class ULLabelsReportComponent implements OnInit {
         type: 'area',
         height: 240,
         toolbar: { show: false },
+        foreColor: 'var(--bs-body-color)',
       },
       xaxis: {
         categories: monthly.map(([month]) => moment(month, 'YYYY-MM').format('MMM YY')),
+        labels: { style: { colors: ['var(--bs-body-color)'] } },
       },
       yaxis: {
-        title: { text: 'Labels Uploaded' },
+        title: { text: 'Labels Uploaded', style: { color: 'var(--bs-body-color)' } },
+        labels: { style: { colors: ['var(--bs-body-color)'] } },
       },
       stroke: {
         curve: 'smooth',

@@ -123,7 +123,8 @@ export class MenuBadgeRepository {
 
       SELECT 'safetyIncidentOpen' AS menu_id, COUNT(*) AS count
       FROM safety_incident si
-      WHERE si.status IN ('In Process', 'Open')
+      WHERE si.archived_at IS NULL
+        AND si.status IN ('In Process', 'Open')
 
       UNION ALL
 

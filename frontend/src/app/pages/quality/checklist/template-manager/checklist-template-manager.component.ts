@@ -268,7 +268,7 @@ interface FamilyNavNode {
                     <i class="mdi mdi-source-branch text-success mb-2" style="font-size: 2rem;"></i>
                     <h6 class="text-success">Create Revision</h6>
                     <p class="small text-muted mb-2">New version v{{getNextRevision(editingTemplate.version)}}</p>
-                    <button type="button" class="btn btn-success btn-sm" 
+                    <button type="button" class="btn btn-primary btn-sm" 
                             (click)="prepareNewRevision()">
                       <i class="mdi mdi-check me-1"></i>
                       Recommended

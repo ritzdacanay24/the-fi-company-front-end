@@ -505,7 +505,7 @@ import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-
                 </app-user-search-v1>
               </div>
               <div class="col-md-2 d-flex align-items-end">
-                <button class="btn btn-success w-100" 
+                <button class="btn btn-primary w-100" 
                         (click)="addAdminUser()"
                         [disabled]="!selectedAdminUserId || loadingAdmins">
                   <i class="mdi mdi-plus"></i>

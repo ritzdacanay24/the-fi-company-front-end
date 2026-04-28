@@ -27,7 +27,7 @@
                 <p class="mb-0">This NCR was submitted on {{this.form?.value?.submitted_date}}.</p>
               </div>
               <div>
-                <button type="button" class="btn btn-success btn-sm" (click)="reopen()">
+                <button type="button" class="btn btn-primary btn-sm" (click)="reopen()">
                   <i class="mdi mdi-lock-open-outline me-1"></i>Re-open
                 </button>
               </div>
@@ -42,7 +42,7 @@
             <button type="button" class="btn btn-primary" [disabled]="isLoading || this.form?.disabled" (click)="onSubmit()">
               <i class="mdi mdi-content-save me-1"></i>Update NCR
             </button>
-            <button type="button" class="btn btn-success" [disabled]="isLoading || this.form?.disabled" (click)="onSubmitAndClose()">
+            <button type="button" class="btn btn-primary" [disabled]="isLoading || this.form?.disabled" (click)="onSubmitAndClose()">
               <i class="mdi mdi-check-circle-outline me-1"></i>Update & Close NCR
             </button>
           </div>

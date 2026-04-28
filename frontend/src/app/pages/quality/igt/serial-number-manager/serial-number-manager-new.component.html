@@ -83,7 +83,7 @@
                 <p class="card-text text-muted small mb-3">
                   Generate sequential serial numbers with customizable prefix and range settings.
                 </p>
-                <button type="button" class="btn btn-success" (click)="showRangeGenerator = true">
+                <button type="button" class="btn btn-primary" (click)="showRangeGenerator = true">
                   <i class="mdi mdi-auto-fix me-1"></i>
                   Generate Range
                 </button>
@@ -231,7 +231,7 @@
               </button>
               <button
                 type="submit"
-                class="btn btn-success"
+                class="btn btn-primary"
                 [disabled]="!rangeForm.valid || isGenerating">
                 @if (isGenerating) {
                   <i class="mdi mdi-loading mdi-spin me-1"></i>

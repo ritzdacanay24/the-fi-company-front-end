@@ -70,6 +70,7 @@ export class SerialManagementDashboardComponent implements OnInit {
       type: 'donut',
       height: 210,
       toolbar: { show: false },
+      foreColor: 'var(--bs-body-color)',
     },
     labels: ['Available', 'Shortfall', 'Buffer'],
     plotOptions: {
@@ -105,6 +106,7 @@ export class SerialManagementDashboardComponent implements OnInit {
       show: true,
       position: 'bottom',
       fontSize: '11px',
+      labels: { colors: 'var(--bs-body-color)' },
     },
     stroke: {
       width: 1,

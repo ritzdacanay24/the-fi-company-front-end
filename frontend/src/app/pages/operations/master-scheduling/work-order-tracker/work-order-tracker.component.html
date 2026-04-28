@@ -240,7 +240,7 @@
             *ngIf="(!task?.wo_start_time || !task?.wo_end_time) && header?.enable_start_time">
             <div class="d-grid gap-2 d-md-block">
 
-                <button type="button" class="btn btn-success custom-toggle  btn-sm me-2 px-3" style="font-size:10px"
+                <button type="button" class="btn btn-primary custom-toggle  btn-sm me-2 px-3" style="font-size:10px"
                     (click)="onStart('start', task)" *ngIf="!task?.wo_start_time">
                     <span class="icon-on"><i class="ri-timer-line align-bottom me-1"></i> Start Timer</span>
                 </button>

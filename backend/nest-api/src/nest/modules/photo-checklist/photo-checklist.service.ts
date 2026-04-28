@@ -22,6 +22,8 @@ type ChecklistItemNode = Record<string, unknown> & {
 
 @Injectable()
 export class PhotoChecklistService {
+  private readonly checklistMediaPublicOrigin = this.resolveChecklistMediaPublicOrigin();
+
   constructor(
     private readonly repository: PhotoChecklistRepository,
     private readonly fileStorageService: FileStorageService,
@@ -151,7 +153,10 @@ export class PhotoChecklistService {
       });
     }
 
-    return instance;
+    return {
+      ...instance,
+      item_completion: this.normalizeInstanceItemCompletionMediaUrls(instance.item_completion),
+    };
   }
 
   async updateInstance(id: number, payload: Record<string, unknown>) {
@@ -172,7 +177,9 @@ export class PhotoChecklistService {
   ) {
     const subFolder = 'inspectionCheckList';
     const fileName = await this.fileStorageService.storeUploadedFile(file, subFolder);
-    const fileUrl = this.fileStorageService.resolveLink(fileName, subFolder) || `/attachments/${subFolder}/${encodeURIComponent(fileName)}`;
+    const baseLink = this.fileStorageService.resolveLink(fileName, subFolder)
+      || `/uploads/${subFolder}/${encodeURIComponent(fileName)}`;
+    const fileUrl = this.normalizeChecklistMediaUrl(baseLink, { fileName, subFolder });
     const fileType = String(file?.mimetype || '').toLowerCase().includes('video') ? 'video' : 'image';
     const captureSource = this.normalizeCaptureSource(options?.captureSource);
 
@@ -200,7 +207,7 @@ export class PhotoChecklistService {
       media: {
         id: Number(media?.id || resolvedId || insertId || 0),
         item_id: Number(media?.item_id || itemId),
-        file_url: String(media?.file_url || fileUrl),
+        file_url: this.normalizeChecklistMediaUrl(String(media?.file_url || fileUrl), { fileName, subFolder }),
         file_type: (String(media?.file_type || fileType) === 'video' ? 'video' : 'image') as 'video' | 'image',
         file_name: String(media?.file_name || fileName),
         created_at: (media?.created_at as string | null) ?? null,
@@ -389,11 +396,11 @@ export class PhotoChecklistService {
         photos: photos.map((photo) => {
           const meta = this.safeParseJson<Record<string, unknown> | null>(photo.photo_metadata, null);
           return {
-            url: photo.file_url,
+            url: this.normalizeChecklistMediaUrl(String(photo.file_url || ''), { subFolder: 'inspectionCheckList' }),
             source: meta && typeof meta === 'object' ? (meta['capture_source'] as string | null) : null,
           };
         }),
-        videos: videos.map((video) => video.file_url),
+        videos: videos.map((video) => this.normalizeChecklistMediaUrl(String(video.file_url || ''), { subFolder: 'inspectionCheckList' })),
         notes: completion?.notes || '',
         completed: isCompleted,
         completed_at: completion?.completedAt || null,
@@ -545,6 +552,135 @@ export class PhotoChecklistService {
     }
 
     return null;
+  }
+
+  private resolveChecklistMediaPublicOrigin(): string {
+    const candidates = [
+      process.env.ATTACHMENTS_PUBLIC_ORIGIN,
+      process.env.DASHBOARD_WEB_BASE_URL,
+      process.env.ATTACHMENTS_FS_REMOTE_BASE_URL,
+    ];
+
+    for (const candidate of candidates) {
+      const value = String(candidate || '').trim();
+      if (!value) {
+        continue;
+      }
+
+      try {
+        const parsed = new URL(value);
+        return `${parsed.protocol}//${parsed.host}`;
+      } catch {
+        // Ignore malformed values and continue.
+      }
+    }
+
+    return '';
+  }
+
+  private normalizeChecklistMediaUrl(
+    rawUrl: string,
+    options?: { fileName?: string; subFolder?: string },
+  ): string {
+    const raw = String(rawUrl || '').trim();
+
+    if (!raw && options?.fileName) {
+      const fallback = this.fileStorageService.resolveLink(options.fileName, options.subFolder || 'inspectionCheckList');
+      if (fallback) {
+        return this.normalizeChecklistMediaUrl(fallback);
+      }
+      return '';
+    }
+
+    if (!raw) {
+      return '';
+    }
+
+    if (/^https?:\/\//i.test(raw)) {
+      return raw;
+    }
+
+    const normalizedPath = raw.startsWith('/') ? raw : `/${raw}`;
+    if (!this.checklistMediaPublicOrigin) {
+      return normalizedPath;
+    }
+
+    return `${this.checklistMediaPublicOrigin}${normalizedPath}`;
+  }
+
+  private normalizeInstanceItemCompletionMediaUrls(rawCompletion: unknown): unknown {
+    if (rawCompletion == null || rawCompletion === '') {
+      return rawCompletion;
+    }
+
+    const isStringPayload = typeof rawCompletion === 'string';
+    const parsed = this.safeParseJson<unknown>(rawCompletion, rawCompletion);
+
+    if (!Array.isArray(parsed)) {
+      return rawCompletion;
+    }
+
+    const normalizedEntries = parsed.map((entry) => this.normalizeCompletionEntryMediaUrls(entry));
+    return isStringPayload ? JSON.stringify(normalizedEntries) : normalizedEntries;
+  }
+
+  private normalizeCompletionEntryMediaUrls(entry: unknown): unknown {
+    if (!entry || typeof entry !== 'object') {
+      return entry;
+    }
+
+    const data = { ...(entry as Record<string, unknown>) };
+    data.photos = this.normalizeCompletionMediaArray(data.photos);
+    data.videos = this.normalizeCompletionMediaArray(data.videos);
+    data.photoUrls = this.normalizeCompletionMediaArray(data.photoUrls);
+    data.videoUrls = this.normalizeCompletionMediaArray(data.videoUrls);
+    data.photoMeta = this.normalizeCompletionMediaMeta(data.photoMeta);
+    data.videoMeta = this.normalizeCompletionMediaMeta(data.videoMeta);
+
+    return data;
+  }
+
+  private normalizeCompletionMediaArray(value: unknown): unknown {
+    if (!Array.isArray(value)) {
+      return value;
+    }
+
+    return value.map((item) => {
+      if (typeof item === 'string') {
+        return this.normalizeChecklistMediaUrl(item, { subFolder: 'inspectionCheckList' });
+      }
+
+      if (!item || typeof item !== 'object') {
+        return item;
+      }
+
+      const record = { ...(item as Record<string, unknown>) };
+
+      if (typeof record.file_url === 'string') {
+        record.file_url = this.normalizeChecklistMediaUrl(record.file_url, { subFolder: 'inspectionCheckList' });
+      }
+
+      if (typeof record.url === 'string') {
+        record.url = this.normalizeChecklistMediaUrl(record.url, { subFolder: 'inspectionCheckList' });
+      }
+
+      return record;
+    });
+  }
+
+  private normalizeCompletionMediaMeta(value: unknown): unknown {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      return value;
+    }
+
+    const normalized: Record<string, unknown> = {};
+
+    for (const [rawKey, metaValue] of Object.entries(value as Record<string, unknown>)) {
+      const normalizedKey = this.normalizeChecklistMediaUrl(rawKey, { subFolder: 'inspectionCheckList' });
+      normalized[normalizedKey] = metaValue;
+    }
+
+    return normalized;
   }
 
   private extractStorageInfo(

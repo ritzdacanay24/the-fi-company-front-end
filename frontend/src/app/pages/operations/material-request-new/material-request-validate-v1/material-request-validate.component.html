@@ -63,7 +63,7 @@
             <!-- Submit to Picking Button -->
             <div class="d-flex gap-2">
               <button type="button" 
-                      class="btn btn-success"
+                      class="btn btn-primary"
                       (click)="submitToPicking()"
                       [disabled]="header?.validated || isSubmittingToPicking">
                 <span *ngIf="!isSubmittingToPicking">
@@ -98,7 +98,7 @@
           
           <!-- Primary Bulk Actions -->
           <div class="btn-group me-3" role="group" *ngIf="hasSelectedItems()">
-            <button type="button" class="btn btn-success btn-sm" 
+            <button type="button" class="btn btn-primary btn-sm" 
                     [disabled]="!hasSelectedItems()"
                     (click)="bulkApproveItems()"
                     title="Approve all selected items">
@@ -678,7 +678,7 @@
 
                     <!-- Action Buttons -->
                     <div class="d-flex gap-2 flex-wrap">
-                      <button class="btn btn-success btn-sm" 
+                      <button class="btn btn-primary btn-sm" 
                               [disabled]="header?.validated || getItemStatus(i) === 'approved'" 
                               (click)="approvePart(data[i], i)">
                         <i class="mdi mdi-check me-1"></i>Approve

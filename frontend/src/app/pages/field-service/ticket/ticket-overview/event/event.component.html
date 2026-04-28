@@ -123,7 +123,7 @@
                 </button>
               </div>
             </div>
-            <button class="btn btn-success btn-sm" (click)="addWorkDetail()" [disabled]="loading">
+            <button class="btn btn-primary btn-sm" (click)="addWorkDetail()" [disabled]="loading">
               <i class="mdi mdi-plus me-1"></i>Add Event
             </button>
             <button class="btn btn-warning btn-sm" (click)="openCopyFromTicketModal()">
@@ -200,7 +200,7 @@
                           <span *ngIf="g.minMissing && g.minMissing.length > 0" class="badge bg-danger ms-2">
                             <i class="mdi mdi-timer-sand-empty me-1"></i>Missing {{g.minutes}} mins
                           </span>
-                          <button class="btn btn-success btn-sm position-absolute end-0 top-50 translate-middle-y me-3" 
+                          <button class="btn btn-primary btn-sm position-absolute end-0 top-50 translate-middle-y me-3" 
                                   (click)="addWorkDetail(g.dateRaw, g)"
                                   title="Add new work detail for this date">
                             <i class="mdi mdi-plus me-1"></i>Add Event

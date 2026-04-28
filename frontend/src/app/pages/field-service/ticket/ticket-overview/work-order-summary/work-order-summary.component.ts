@@ -224,7 +224,7 @@ export class WorkOrderSummaryComponent implements OnInit {
         confirmButtonColor: '#059669',
         customClass: {
           popup: 'swal2-modern',
-          confirmButton: 'btn btn-success'
+          confirmButton: 'btn btn-primary'
         }
       });
 

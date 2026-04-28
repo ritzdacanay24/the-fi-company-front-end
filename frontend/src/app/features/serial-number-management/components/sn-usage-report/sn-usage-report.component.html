@@ -65,53 +65,53 @@
         </div>
 
         <!-- Analytics Strip -->
-        <div class="card-body border-bottom igt-analytics-strip" *ngIf="!loading && allData.length">
+        <div class="card-body border-bottom bg-body-secondary" *ngIf="!loading && allData.length">
           <div class="row g-3 mb-3">
             <div class="col-6 col-lg-3">
-              <div class="metric-card metric-card-with-pie">
+              <div class="rounded-3 p-3 shadow-sm border bg-body h-100 d-flex align-items-center justify-content-between gap-2">
                 <div>
-                  <small>Available</small>
-                  <h4 class="mb-0">{{ inventoryInsights.available }}</h4>
-                  <small class="metric-subtext">of total ({{ inventoryInsights.total }})</small>
+                  <small class="text-uppercase text-body-secondary fw-semibold">Available</small>
+                  <h4 class="mb-0 fs-3 fw-bold text-body-emphasis">{{ inventoryInsights.available }}</h4>
+                  <small class="text-body-secondary">of total ({{ inventoryInsights.total }})</small>
                 </div>
-                <div class="mini-pie" [style.background]="miniPieBackground(inventoryInsights.availablePct, '#2e8b57')">
-                  <div class="mini-pie-inner">{{ inventoryInsights.availablePct }}%</div>
+                <div class="mini-pie rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" [style.background]="miniPieBackground(inventoryInsights.availablePct, '#2e8b57')">
+                  <div class="mini-pie-inner rounded-circle bg-body border d-flex align-items-center justify-content-center fw-bold text-body">{{ inventoryInsights.availablePct }}%</div>
                 </div>
               </div>
             </div>
             <div class="col-6 col-lg-3">
-              <div class="metric-card metric-card-with-pie">
+              <div class="rounded-3 p-3 shadow-sm border bg-body h-100 d-flex align-items-center justify-content-between gap-2">
                 <div>
-                  <small>Assigned</small>
-                  <h4 class="mb-0">{{ inventoryInsights.assigned }}</h4>
-                  <small class="metric-subtext">of total ({{ inventoryInsights.total }})</small>
+                  <small class="text-uppercase text-body-secondary fw-semibold">Assigned</small>
+                  <h4 class="mb-0 fs-3 fw-bold text-body-emphasis">{{ inventoryInsights.assigned }}</h4>
+                  <small class="text-body-secondary">of total ({{ inventoryInsights.total }})</small>
                 </div>
-                <div class="mini-pie" [style.background]="miniPieBackground(inventoryInsights.assignedPct, '#3b7ed4')">
-                  <div class="mini-pie-inner">{{ inventoryInsights.assignedPct }}%</div>
+                <div class="mini-pie rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" [style.background]="miniPieBackground(inventoryInsights.assignedPct, '#3b7ed4')">
+                  <div class="mini-pie-inner rounded-circle bg-body border d-flex align-items-center justify-content-center fw-bold text-body">{{ inventoryInsights.assignedPct }}%</div>
                 </div>
               </div>
             </div>
             <div class="col-6 col-lg-3">
-              <div class="metric-card metric-card-with-pie">
+              <div class="rounded-3 p-3 shadow-sm border bg-body h-100 d-flex align-items-center justify-content-between gap-2">
                 <div>
-                  <small>Shipped</small>
-                  <h4 class="mb-0">{{ inventoryInsights.shipped }}</h4>
-                  <small class="metric-subtext">of total ({{ inventoryInsights.total }})</small>
+                  <small class="text-uppercase text-body-secondary fw-semibold">Shipped</small>
+                  <h4 class="mb-0 fs-3 fw-bold text-body-emphasis">{{ inventoryInsights.shipped }}</h4>
+                  <small class="text-body-secondary">of total ({{ inventoryInsights.total }})</small>
                 </div>
-                <div class="mini-pie" [style.background]="miniPieBackground(inventoryInsights.shippedPct, '#17a2b8')">
-                  <div class="mini-pie-inner">{{ inventoryInsights.shippedPct }}%</div>
+                <div class="mini-pie rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" [style.background]="miniPieBackground(inventoryInsights.shippedPct, '#17a2b8')">
+                  <div class="mini-pie-inner rounded-circle bg-body border d-flex align-items-center justify-content-center fw-bold text-body">{{ inventoryInsights.shippedPct }}%</div>
                 </div>
               </div>
             </div>
             <div class="col-6 col-lg-3">
-              <div class="metric-card metric-card-with-pie">
+              <div class="rounded-3 p-3 shadow-sm border bg-body h-100 d-flex align-items-center justify-content-between gap-2">
                 <div>
-                  <small>Active Health</small>
-                  <h6 class="mb-1">{{ inventoryInsights.lastAddedDisplay }}</h6>
-                  <small class="metric-subtext">Last Added</small>
+                  <small class="text-uppercase text-body-secondary fw-semibold">Active Health</small>
+                  <h6 class="mb-1 text-body-emphasis">{{ inventoryInsights.lastAddedDisplay }}</h6>
+                  <small class="text-body-secondary">Last Added</small>
                 </div>
-                <div class="mini-pie" [style.background]="miniPieBackground(inventoryInsights.activePct, '#2e8b57')">
-                  <div class="mini-pie-inner">{{ inventoryInsights.activePct }}%</div>
+                <div class="mini-pie rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" [style.background]="miniPieBackground(inventoryInsights.activePct, '#2e8b57')">
+                  <div class="mini-pie-inner rounded-circle bg-body border d-flex align-items-center justify-content-center fw-bold text-body">{{ inventoryInsights.activePct }}%</div>
                 </div>
               </div>
             </div>
@@ -119,7 +119,7 @@
 
           <div class="row g-3">
             <div class="col-12 col-lg-4">
-              <div class="analytics-card">
+              <div class="rounded-3 p-3 shadow-sm border bg-body h-100">
                 <h6 class="mb-2">Status Breakdown</h6>
                 <apx-chart
                   [series]="statusBarChart.series!"
@@ -135,7 +135,7 @@
             </div>
 
             <div class="col-12 col-lg-4">
-              <div class="analytics-card">
+              <div class="rounded-3 p-3 shadow-sm border bg-body h-100">
                 <h6 class="mb-2">Status Distribution</h6>
                 <apx-chart
                   [series]="statusDistributionChart.series!"
@@ -149,7 +149,7 @@
             </div>
 
             <div class="col-12 col-lg-4">
-              <div class="analytics-card">
+              <div class="rounded-3 p-3 shadow-sm border bg-body h-100">
                 <h6 class="mb-2">Serial Addition Trend (Last 8 Months)</h6>
                 <apx-chart
                   [series]="uploadTrendChart.series!"

@@ -210,7 +210,7 @@
                                                     selected</span>
                                             </div>
                                             <div class="btn-group btn-group-sm">
-                                                <button class="btn btn-success" (click)="openBatchModal(batchModal)">
+                                                <button class="btn btn-primary" (click)="openBatchModal(batchModal)">
                                                     <i class="fas fa-edit me-1"></i>Record Batch Usage
                                                 </button>
                                                 <button class="btn btn-outline-secondary" (click)="clearSelection()">
@@ -558,7 +558,7 @@
                                         {{ showRangeForm ? 'Cancel' : 'Add UL Range' }}
                                     </button>
                                     @if(showRangeForm){
-                                    <button type="submit" (click)="onRangeSubmit()" class="btn btn-success"
+                                    <button type="submit" (click)="onRangeSubmit()" class="btn btn-primary"
                                         [disabled]="rangeForm.invalid || isProcessingRange">
                                         <i class="mdi mdi-plus me-2"></i>
                                         Add Range
@@ -997,7 +997,7 @@
     </div>
 
     <div class="modal-footer border-top-0 pt-0">
-        <button type="button" class="btn btn-success d-flex align-items-center" (click)="submitBatchUsage()">
+        <button type="button" class="btn btn-primary d-flex align-items-center" (click)="submitBatchUsage()">
             <i class="fas fa-save me-2"></i>
             Record All Usage
         </button>

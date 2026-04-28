@@ -172,9 +172,15 @@ export class IgtUsageReportComponent implements OnInit {
 
     this.statusBarChart = {
       series: [{ name: 'Serials', data: [available, used, reserved] }],
-      chart: { type: 'bar', height: 240, toolbar: { show: false } },
-      xaxis: { categories: ['Available', 'Used', 'Reserved'] },
-      yaxis: { title: { text: 'Count' } },
+      chart: { type: 'bar', height: 240, toolbar: { show: false }, foreColor: 'var(--bs-body-color)' },
+      xaxis: {
+        categories: ['Available', 'Used', 'Reserved'],
+        labels: { style: { colors: ['var(--bs-body-color)'] } },
+      },
+      yaxis: {
+        title: { text: 'Count', style: { color: 'var(--bs-body-color)' } },
+        labels: { style: { colors: ['var(--bs-body-color)'] } },
+      },
       plotOptions: { bar: { horizontal: false, borderRadius: 6, columnWidth: '45%' } },
       colors: ['#0ab39c'],
       dataLabels: { enabled: true },
@@ -183,11 +189,11 @@ export class IgtUsageReportComponent implements OnInit {
 
     this.statusDistributionChart = {
       series: [available, used, reserved, inactive],
-      chart: { type: 'donut', height: 240 },
+      chart: { type: 'donut', height: 240, foreColor: 'var(--bs-body-color)' },
       labels: ['Available', 'Used', 'Reserved', 'Inactive'],
       colors: ['#2e8b57', '#c43d3d', '#f7b84b', '#6c757d'],
-      dataLabels: { enabled: false },
-      legend: { position: 'bottom' },
+      dataLabels: { enabled: true, style: { colors: ['#ffffff'] }, dropShadow: { enabled: false } },
+      legend: { position: 'bottom', labels: { colors: 'var(--bs-body-color)' } },
       responsive: [{ breakpoint: 480, options: { chart: { height: 220 } } }],
     };
 
@@ -209,14 +215,18 @@ export class IgtUsageReportComponent implements OnInit {
 
     this.uploadTrendChart = {
       series: [{ name: 'Serials Uploaded', data: monthly.map(([, v]) => v) }],
-      chart: { type: 'area', height: 240, toolbar: { show: false } },
+      chart: { type: 'area', height: 240, toolbar: { show: false }, foreColor: 'var(--bs-body-color)' },
       xaxis: {
         categories: monthly.map(([m]) => {
           const [y, mo] = m.split('-');
           return new Date(Number(y), Number(mo) - 1).toLocaleString('default', { month: 'short', year: '2-digit' });
         }),
+        labels: { style: { colors: ['var(--bs-body-color)'] } },
       },
-      yaxis: { title: { text: 'Serials Uploaded' } },
+      yaxis: {
+        title: { text: 'Serials Uploaded', style: { color: 'var(--bs-body-color)' } },
+        labels: { style: { colors: ['var(--bs-body-color)'] } },
+      },
       stroke: { curve: 'smooth', width: 2 },
       dataLabels: { enabled: false },
       colors: ['#117a8b'],

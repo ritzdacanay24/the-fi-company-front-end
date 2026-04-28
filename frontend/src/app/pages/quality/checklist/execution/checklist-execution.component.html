@@ -120,7 +120,7 @@
                       <i class="mdi mdi-format-list-checks me-1"></i>
                       {{template.items?.length || 0}} items
                     </div>
-                    <button class="btn btn-success btn-sm" 
+                    <button class="btn btn-primary btn-sm" 
                             (click)="createChecklistInstance(template.id)"
                             [disabled]="loading || !woNumber">
                       <i class="mdi mdi-play me-1" *ngIf="!loading"></i>

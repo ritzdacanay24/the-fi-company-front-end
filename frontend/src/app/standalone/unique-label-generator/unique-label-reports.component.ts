@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { AgGridModule } from 'ag-grid-angular';
@@ -55,7 +55,7 @@ type RemainingOverviewChartOptions = {
   templateUrl: './unique-label-reports.component.html',
   styleUrls: ['./unique-label-reports.component.scss'],
 })
-export class UniqueLabelReportsComponent implements OnInit {
+export class UniqueLabelReportsComponent implements OnInit, OnDestroy {
   private readonly api = inject(UniqueLabelGeneratorApiService);
   private readonly toastr = inject(ToastrService);
 
@@ -64,6 +64,7 @@ export class UniqueLabelReportsComponent implements OnInit {
   totals: any = null;
   topParts: any[] = [];
   weekUsage: any[] = [];
+  private themeObserver: MutationObserver | null = null;
 
   readonly defaultColDef: ColDef = {
     sortable: true,
@@ -94,6 +95,7 @@ export class UniqueLabelReportsComponent implements OnInit {
       height: 280,
       toolbar: { show: false },
       zoom: { enabled: false },
+      foreColor: 'var(--bs-body-color)',
     },
     colors: ['#0ab39c', '#405189', '#f06548'],
     stroke: {
@@ -106,15 +108,23 @@ export class UniqueLabelReportsComponent implements OnInit {
     grid: { strokeDashArray: 4 },
     xaxis: {
       categories: [],
-      title: { text: 'Week' },
+      title: { text: 'Week', style: { color: 'var(--bs-body-color)' } },
+      labels: {
+        style: {
+          colors: ['var(--bs-body-color)'],
+        },
+      },
     },
     yaxis: {
       max: 100,
       min: 0,
       tickAmount: 5,
-      title: { text: 'Sequence Utilization %' },
+      title: { text: 'Sequence Utilization %', style: { color: 'var(--bs-body-color)' } },
       labels: {
         formatter: (value: number) => `${Math.round(value)}%`,
+        style: {
+          colors: ['var(--bs-body-color)'],
+        },
       },
     },
     tooltip: {
@@ -126,6 +136,9 @@ export class UniqueLabelReportsComponent implements OnInit {
     legend: {
       position: 'top',
       horizontalAlign: 'left',
+      labels: {
+        colors: 'var(--bs-body-color)',
+      },
     },
   };
 
@@ -134,6 +147,7 @@ export class UniqueLabelReportsComponent implements OnInit {
     chart: {
       type: 'donut',
       height: 320,
+      foreColor: 'var(--bs-body-color)',
     },
     labels: ['Used', 'Remaining'],
     colors: ['#f06548', '#3b7ed4'],
@@ -144,9 +158,15 @@ export class UniqueLabelReportsComponent implements OnInit {
     dataLabels: {
       enabled: true,
       formatter: (val: number) => `${Math.round(val)}%`,
+      style: {
+        colors: ['var(--bs-body-color)'],
+      },
     },
     legend: {
       position: 'bottom',
+      labels: {
+        colors: 'var(--bs-body-color)',
+      },
     },
     tooltip: {
       y: {
@@ -159,10 +179,17 @@ export class UniqueLabelReportsComponent implements OnInit {
           size: '68%',
           labels: {
             show: true,
+            name: {
+              color: 'var(--bs-secondary-color)',
+            },
+            value: {
+              color: 'var(--bs-body-color)',
+            },
             total: {
               show: true,
               showAlways: true,
               label: 'Capacity',
+              color: 'var(--bs-secondary-color)',
               formatter: () => {
                 const total = this.remainingOverviewChart.series.reduce((sum, v) => sum + Number(v || 0), 0);
                 return `${Math.round(total).toLocaleString()}`;
@@ -175,7 +202,14 @@ export class UniqueLabelReportsComponent implements OnInit {
   };
 
   async ngOnInit(): Promise<void> {
+    this.applyChartThemeColors();
+    this.observeThemeChanges();
     await this.loadReport();
+  }
+
+  ngOnDestroy(): void {
+    this.themeObserver?.disconnect();
+    this.themeObserver = null;
   }
 
   async loadReport(): Promise<void> {
@@ -239,6 +273,130 @@ export class UniqueLabelReportsComponent implements OnInit {
         { name: 'Remaining %', data: remainingPctSeries },
         { name: 'Warning Threshold %', data: labels.map(() => 85) },
       ],
+    };
+  }
+
+  private observeThemeChanges(): void {
+    if (typeof document === 'undefined') {
+      return;
+    }
+
+    this.themeObserver = new MutationObserver(() => {
+      this.applyChartThemeColors();
+    });
+
+    this.themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-bs-theme'],
+    });
+  }
+
+  private applyChartThemeColors(): void {
+    const colors = this.getThemeColors();
+
+    this.sequenceUtilizationChart = {
+      ...this.sequenceUtilizationChart,
+      chart: {
+        ...this.sequenceUtilizationChart.chart,
+        foreColor: colors.body,
+      },
+      xaxis: {
+        ...this.sequenceUtilizationChart.xaxis,
+        title: {
+          ...this.sequenceUtilizationChart.xaxis.title,
+          style: { color: colors.body },
+        },
+        labels: {
+          ...this.sequenceUtilizationChart.xaxis.labels,
+          style: {
+            colors: [colors.body],
+          },
+        },
+      },
+      yaxis: {
+        ...this.sequenceUtilizationChart.yaxis,
+        title: {
+          ...this.sequenceUtilizationChart.yaxis.title,
+          style: { color: colors.body },
+        },
+        labels: {
+          ...this.sequenceUtilizationChart.yaxis.labels,
+          style: {
+            colors: [colors.body],
+          },
+        },
+      },
+      legend: {
+        ...this.sequenceUtilizationChart.legend,
+        labels: {
+          colors: colors.body,
+        },
+      },
+    };
+
+    this.remainingOverviewChart = {
+      ...this.remainingOverviewChart,
+      chart: {
+        ...this.remainingOverviewChart.chart,
+        foreColor: colors.body,
+      },
+      dataLabels: {
+        ...this.remainingOverviewChart.dataLabels,
+        style: {
+          colors: [colors.body],
+        },
+      },
+      legend: {
+        ...this.remainingOverviewChart.legend,
+        labels: {
+          colors: colors.body,
+        },
+      },
+      plotOptions: {
+        ...this.remainingOverviewChart.plotOptions,
+        pie: {
+          ...this.remainingOverviewChart.plotOptions?.pie,
+          donut: {
+            ...this.remainingOverviewChart.plotOptions?.pie?.donut,
+            labels: {
+              ...this.remainingOverviewChart.plotOptions?.pie?.donut?.labels,
+              name: {
+                color: colors.secondary,
+              },
+              value: {
+                color: colors.body,
+              },
+              total: {
+                ...this.remainingOverviewChart.plotOptions?.pie?.donut?.labels?.total,
+                color: colors.secondary,
+              },
+            },
+          },
+        },
+      },
+    };
+  }
+
+  private getThemeColors(): { body: string; secondary: string } {
+    if (typeof document === 'undefined') {
+      return { body: '#212529', secondary: '#6c757d' };
+    }
+
+    const htmlTheme = document.documentElement.getAttribute('data-bs-theme')?.toLowerCase();
+    const bodyTheme = document.body?.getAttribute('data-bs-theme')?.toLowerCase();
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const isDark = htmlTheme === 'dark' || bodyTheme === 'dark' || (!htmlTheme && !bodyTheme && prefersDark);
+
+    if (isDark) {
+      return {
+        body: '#e9ecef',
+        secondary: '#adb5bd',
+      };
+    }
+
+    return {
+      body: '#212529',
+      secondary: '#6c757d',
     };
   }
 

@@ -86,7 +86,7 @@
       Save Changes
     </button>
     <button type="button" 
-            class="btn btn-success" 
+            class="btn btn-primary" 
             (click)="onValidateRequest()"
             [disabled]="!requestId || validateComponent?.isLoading || isValidating">
       <i class="ri-check-line me-1" *ngIf="!validateComponent?.isLoading && !isValidating"></i>

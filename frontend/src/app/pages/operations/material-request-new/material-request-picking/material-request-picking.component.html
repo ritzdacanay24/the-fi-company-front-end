@@ -72,7 +72,7 @@
                     title="Quick Print">
               <i class="ri-printer-line"></i>
             </button>
-            <button class="btn btn-success btn-sm" 
+            <button class="btn btn-primary btn-sm" 
                     (click)="onComplete(row)"
                     [disabled]="!row.printedDate || row.disabled"
                     *ngIf="row.printedDate && !row.pickedCompletedDate"

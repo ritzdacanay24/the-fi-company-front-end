@@ -72,7 +72,7 @@
       <div class="editor-header">
         <h2>{{ isCreating ? 'Create New Template' : 'Edit Template' }}</h2>
         <div class="editor-actions">
-          <button class="btn btn-success" (click)="saveTemplate()" [disabled]="templateForm.invalid">
+          <button class="btn btn-primary" (click)="saveTemplate()" [disabled]="templateForm.invalid">
             <i class="fas fa-save"></i> Save
           </button>
           <button class="btn btn-secondary" (click)="cancelEdit()">

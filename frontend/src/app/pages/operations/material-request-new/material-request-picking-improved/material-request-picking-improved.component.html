@@ -138,7 +138,7 @@
           
           <!-- Bulk Actions for Quantity Entry Mode -->
           <div class="d-flex gap-2" *ngIf="focusOnQuantities && !viewMode">
-            <button class="btn btn-success btn-sm" 
+            <button class="btn btn-primary btn-sm" 
                     (click)="pickAllComplete(request)"
                     [disabled]="request.disabled"
                     title="Pick all items complete (fill all required quantities)">
@@ -304,7 +304,7 @@
       <div class="d-flex gap-2 mt-3" *ngIf="id">
         <!-- Quantity Entry Mode Buttons -->
         <div *ngIf="focusOnQuantities" class="d-flex gap-2 w-100">
-          <button class="btn btn-success" 
+          <button class="btn btn-primary" 
                   (click)="onSaveQuantities(request)">
             <i class="ri-save-line me-1"></i>Save Picked Quantities
           </button>

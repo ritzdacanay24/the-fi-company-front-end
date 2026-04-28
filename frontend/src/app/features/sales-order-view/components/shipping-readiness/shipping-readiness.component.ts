@@ -67,7 +67,7 @@ interface ShippingReadinessRow {
                   autocorrect="off"
                   autocapitalize="off"
                   spellcheck="false">
-                <button class="btn btn-success" type="button" (click)="searchSalesOrder()" [disabled]="!scannedBarcode?.trim()">
+                <button class="btn btn-primary" type="button" (click)="searchSalesOrder()" [disabled]="!scannedBarcode?.trim()">
                   <i class="fas fa-search me-1"></i>
                   Check
                 </button>

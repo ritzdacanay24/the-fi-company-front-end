@@ -1,15 +1,4 @@
 .serial-dashboard {
-  .dashboard-header h2 {
-    letter-spacing: 0.2px;
-    font-weight: 700;
-  }
-
-  .summary-strip {
-    background: linear-gradient(135deg, #f8fbff 0%, #ffffff 60%, #f7f9fc 100%);
-    border: 1px solid #e9eef6;
-    box-shadow: none;
-  }
-
   .summary-value {
     font-size: 1.4rem;
     line-height: 1.2;
@@ -25,39 +14,30 @@
   }
 
   .dashboard-card {
-    border-left: 4px solid transparent;
-    border: 1px solid #e9eef6;
-    box-shadow: none;
     transition: border-color 0.2s ease;
-
-    &:hover {
-      box-shadow: none;
-      border-color: #d8e0ea;
-    }
   }
 
   .dashboard-card.status-critical {
-    border-left-color: #dc3545;
+    border-left: 4px solid #dc3545;
   }
 
   .dashboard-card.status-low {
-    border-left-color: #fd7e14;
+    border-left: 4px solid #fd7e14;
   }
 
   .dashboard-card.status-healthy {
-    border-left-color: #198754;
+    border-left: 4px solid #198754;
   }
 
   .stock-pie-wrap {
-    border: 1px solid #ecf0f5;
+    border: 1px solid var(--bs-border-color);
     border-radius: 0.75rem;
-    background: #fff;
+    background: var(--bs-body-bg);
     padding: 0.35rem;
   }
 
   .progress {
     height: 8px;
     border-radius: 999px;
-    background-color: #edf1f7;
   }
 }

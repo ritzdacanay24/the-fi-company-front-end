@@ -29,7 +29,7 @@
       <div class="row">
         <div class="col-12 col-lg-8 col-xl-7">
           <div class="card border-0 shadow-sm mb-3" style="min-height: 420px;">
-            <div class="card-header bg-white">
+            <div class="card-header">
               <h2 class="h5 mb-0">Create Batch</h2>
             </div>
             <div class="card-body">
@@ -72,20 +72,20 @@
                 </div>
               </form>
             </div>
-            <div class="card-footer bg-white d-flex justify-content-end">
-              <button class="btn btn-success" type="submit" form="generateForm" [disabled]="isGenerating">
+            <div class="card-footer d-flex justify-content-end">
+              <button class="btn btn-primary" type="submit" form="generateForm" [disabled]="isGenerating">
                 {{ isGenerating ? 'Generating...' : 'Generate Labels' }}
               </button>
             </div>
           </div>
 
-          <div class="card border-0 shadow-sm mb-3" *ngIf="generatedIdentifiers.length > 0">
-            <div class="card-header bg-white d-flex justify-content-between align-items-center gap-2">
+          <div class="card border-0 mb-3" *ngIf="generatedIdentifiers.length > 0">
+            <div class="card-header d-flex justify-content-between align-items-center gap-2">
               <h2 class="h5 mb-0">Generated Labels (Batch {{ generatedBatchId }})</h2>
               <div class="d-flex align-items-center gap-2">
-                <button class="btn btn-outline-secondary btn-sm" type="button" (click)="printGenerated()">Print
+                <button class="btn btn-outline-secondary" type="button" (click)="printGenerated()">Print
                   View</button>
-                <button class="btn btn-outline-primary btn-sm" type="button" (click)="printGeneratedZpl()">Print
+                <button class="btn btn-outline-primary" type="button" (click)="printGeneratedZpl()">Print
                   Zebra</button>
               </div>
             </div>

@@ -94,7 +94,7 @@ import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
         <i class="mdi mdi-close me-1"></i>
         Cancel
       </button>
-      <button type="button" class="btn btn-success" (click)="confirm()">
+      <button type="button" class="btn btn-primary" (click)="confirm()">
         <i class="mdi mdi-check-circle me-1"></i>
         Create Version {{ nextVersion }}
       </button>

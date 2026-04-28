@@ -121,7 +121,7 @@ import { ToastrService } from 'ngx-toastr';
       <button type="button" class="btn btn-outline-secondary" (click)="dismiss()">
         <i class="mdi mdi-close me-1"></i>Cancel
       </button>
-      <button type="button" class="btn btn-success" (click)="downloadZpl()" [disabled]="!printForm.valid">
+      <button type="button" class="btn btn-primary" (click)="downloadZpl()" [disabled]="!printForm.valid">
         <i class="mdi mdi-download me-1"></i>Download ZPL
       </button>
       <button type="button" class="btn btn-primary" (click)="printLabels()" [disabled]="!printForm.valid">

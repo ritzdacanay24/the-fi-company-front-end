@@ -113,7 +113,7 @@
                 
                 <!-- Export Options -->
                 <div class="btn-group btn-group-sm" role="group">
-                  <button class="btn btn-success" (click)="exportToExcel()">
+                  <button class="btn btn-primary" (click)="exportToExcel()">
                     <i class="mdi mdi-file-excel me-1"></i>
                     Excel
                   </button>
@@ -149,10 +149,10 @@
                       <strong>{{result.instance.work_order_number}}</strong>
                     </td>
                     <td class="p-3">
-                      <code class="bg-light text-dark">{{result.instance.part_number}}</code>
+                      <code class=" text-dark">{{result.instance.part_number}}</code>
                     </td>
                     <td class="p-3">
-                      <code class="bg-light text-dark">{{result.instance.serial_number}}</code>
+                      <code class=" text-dark">{{result.instance.serial_number}}</code>
                     </td>
                     <td class="p-3">
                       <div>{{result.templateInfo.name}}</div>
@@ -296,7 +296,7 @@
                       
                       <div *ngIf="photo.notes" class="mb-2">
                         <label class="form-label small fw-bold">Notes</label>
-                        <div class="bg-light p-2 rounded small">
+                        <div class=" p-2 rounded small">
                           {{photo.notes}}
                         </div>
                       </div>
@@ -442,7 +442,7 @@
                       </div>
                     </div>
                     <ng-template #noPhotos>
-                      <div class="text-center p-4 border border-dashed rounded bg-light">
+                      <div class="text-center p-4 border border-dashed rounded ">
                         <i class="mdi mdi-camera-off text-muted mb-2" style="font-size: 2rem;"></i>
                         <p class="text-muted mb-0">No photos taken for this item</p>
                       </div>
@@ -451,7 +451,7 @@
                   
                   <div *ngIf="photo.notes" class="mb-3">
                     <label class="form-label fw-bold">Notes</label>
-                    <div class="bg-light p-3 rounded">
+                    <div class=" p-3 rounded">
                       {{photo.notes}}
                     </div>
                   </div>
@@ -510,7 +510,7 @@
         </div>
 
         <!-- Card Footer with Actions -->
-        <div class="card-footer bg-light border-top d-flex align-items-center" *ngIf="!loading && searchPerformed && auditResults.length > 0">
+        <div class="card-footer  border-top d-flex align-items-center" *ngIf="!loading && searchPerformed && auditResults.length > 0">
           <i class="mdi mdi-information me-2"></i>
           <span>Use the view toggle to switch between summary and gallery views, or export data for reporting</span>
           <div class="ms-auto">
@@ -618,7 +618,6 @@
   }
   
   .card-header {
-    background-color: #f8f9fa !important;
     color: #212529 !important;
   }
   
@@ -631,7 +630,6 @@
   }
   
   .bg-primary {
-    background-color: #f8f9fa !important;
   }
   
   img {

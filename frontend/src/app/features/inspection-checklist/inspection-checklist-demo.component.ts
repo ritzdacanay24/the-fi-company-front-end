@@ -79,7 +79,7 @@ import { InspectionChecklistService } from './inspection-checklist.service';
             <div class="card-body">
               <div class="row g-3">
                 <div class="col-md-6">
-                  <button class="btn btn-success w-100" 
+                  <button class="btn btn-primary w-100" 
                           (click)="validateChecklist()"
                           [disabled]="!currentChecklist">
                     <i class="mdi mdi-check-circle me-2"></i>Validate Checklist

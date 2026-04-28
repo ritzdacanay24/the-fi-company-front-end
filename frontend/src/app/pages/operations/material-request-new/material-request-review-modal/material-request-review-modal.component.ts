@@ -238,7 +238,7 @@ interface ReviewItem {
                 <!-- Quick Action Buttons -->
                 <div class="d-flex gap-2 mb-3">
                   <button type="button" 
-                          class="btn btn-success btn-sm"
+                          class="btn btn-primary btn-sm"
                           (click)="submitReview(item, 'approved')"
                           [disabled]="isSubmitting">
                     <i class="mdi mdi-check me-1"></i>
