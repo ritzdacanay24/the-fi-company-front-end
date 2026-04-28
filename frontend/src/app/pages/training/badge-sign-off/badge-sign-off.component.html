@@ -221,6 +221,49 @@
               </div>
             </div>
 
+            <!-- Management Manual Sign-off Fallback -->
+            <div class="mb-4" *ngIf="isManagement">
+              <div class="alert alert-warning border-warning border-opacity-25 bg-warning bg-opacity-10 mb-3" role="alert">
+                <div class="d-flex align-items-start">
+                  <i class="mdi mdi-shield-account text-warning me-2 mt-1"></i>
+                  <div>
+                    <h6 class="mb-1">Management Manual Sign-Off</h6>
+                    <small class="text-muted">If badge scan fails, management can select an expected attendee and mark training completed.</small>
+                  </div>
+                </div>
+              </div>
+
+              <div class="row g-2 align-items-end">
+                <div class="col-md-8">
+                  <label class="form-label">Select employee</label>
+                  <select class="form-select"
+                    [(ngModel)]="manualSelectedEmployeeId"
+                    [disabled]="isLoading || manualSelectableEmployees.length === 0">
+                    <option [ngValue]="null">Choose an attendee...</option>
+                    <option *ngFor="let employee of manualSelectableEmployees" [ngValue]="employee.id">
+                      {{ getEmployeeLabel(employee) }}
+                    </option>
+                  </select>
+                </div>
+
+                <div class="col-md-4 d-flex">
+                  <button class="btn btn-warning"
+                    style="height: 38px;"
+                    type="button"
+                    (click)="markAttendanceManually()"
+                    [disabled]="isLoading || !manualSelectedEmployeeId">
+                    <i class="mdi mdi-account-check me-2" *ngIf="!isLoading"></i>
+                    <i class="mdi mdi-loading mdi-spin me-2" *ngIf="isLoading"></i>
+                    Mark Attended
+                  </button>
+                </div>
+              </div>
+
+              <div class="mt-1" *ngIf="manualSelectableEmployees.length === 0">
+                <small class="text-muted">All expected attendees are already signed off.</small>
+              </div>
+            </div>
+
             <hr>
 
             <!-- Recent Sign-offs (Moved Below) -->

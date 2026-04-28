@@ -4,6 +4,7 @@ import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { Subscription, interval } from 'rxjs';
 import { TrainingService } from '../services/training.service';
 import { TrainingSession } from '../models/training.model';
+import { TokenStorageService } from '../../../core/services/token-storage.service';
 
 @Component({
   selector: 'app-live-sessions',
@@ -16,10 +17,12 @@ export class LiveSessionsComponent implements OnInit, OnDestroy {
   
   liveSessions: any[] = []; // Changed to any[] to handle backend response
   upcomingSessions: any[] = []; // Changed to any[] to handle backend response
+  overdueSessions: any[] = []; // Sessions past end/start time that are still open
   isLoading = false;
   currentTime = new Date();
   isProcessing = false;
   isTrainer = true; // TODO: Get from user service/auth
+  isAdmin = false;
   
   private refreshSubscription?: Subscription;
   private timeSubscription?: Subscription;
@@ -27,10 +30,13 @@ export class LiveSessionsComponent implements OnInit, OnDestroy {
   constructor(
     private trainingService: TrainingService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private tokenStorageService: TokenStorageService
   ) {}
 
   ngOnInit(): void {
+    const currentUser = this.tokenStorageService.getUser();
+    this.isAdmin = currentUser?.isAdmin == 1;
     this.loadSessions();
     this.startAutoRefresh();
     this.startTimeUpdater();
@@ -86,12 +92,25 @@ export class LiveSessionsComponent implements OnInit, OnDestroy {
         }
       });
     });
+
+    // Load attendance counts for overdue sessions
+    this.overdueSessions.forEach(session => {
+      this.trainingService.getSessionAttendance(session.id).subscribe({
+        next: (attendance) => {
+          session.actualAttendanceCount = attendance.length;
+        },
+        error: (error) => {
+          console.error(`Error loading attendance for session ${session.id}:`, error);
+        }
+      });
+    });
   }
 
   private categorizeSessionsByStatus(sessions: any[]): void {
     const now = new Date();
     this.liveSessions = [];
     this.upcomingSessions = [];
+    this.overdueSessions = [];
 
     console.log('Categorizing sessions:', sessions);
     console.log('Current time:', now);
@@ -114,6 +133,7 @@ export class LiveSessionsComponent implements OnInit, OnDestroy {
         status: mappedSession.status,
         isLive: (now >= startTime && now <= endTime) || mappedSession.status === 'in-progress',
         isUpcoming: startTime > now && (startTime.getTime() - now.getTime()) <= 4 * 60 * 60 * 1000,
+        isOverdue: now > endTime && mappedSession.status !== 'completed' && mappedSession.status !== 'cancelled',
         timeDiff: (startTime.getTime() - now.getTime()) / (1000 * 60 * 60) // hours
       });
       
@@ -136,6 +156,11 @@ export class LiveSessionsComponent implements OnInit, OnDestroy {
         // Temporarily add to upcoming for debugging
         this.upcomingSessions.push(mappedSession);
       }
+      // Session is overdue if end time already passed but session is still open.
+      else if (now > endTime && mappedSession.status !== 'completed' && mappedSession.status !== 'cancelled') {
+        console.log('Adding to overdue sessions:', mappedSession.title);
+        this.overdueSessions.push(mappedSession);
+      }
       else {
         console.log('Session is in the past or completed:', mappedSession.title, 'Status:', mappedSession.status);
       }
@@ -149,6 +174,7 @@ export class LiveSessionsComponent implements OnInit, OnDestroy {
     // Sort by start time
     this.liveSessions.sort((a, b) => a.startTime.localeCompare(b.startTime));
     this.upcomingSessions.sort((a, b) => a.startTime.localeCompare(b.startTime));
+    this.overdueSessions.sort((a, b) => a.startTime.localeCompare(b.startTime));
   }
 
   private mapSessionFromBackend(backendSession: any): any {
@@ -235,6 +261,28 @@ export class LiveSessionsComponent implements OnInit, OnDestroy {
     } else {
       return `${minutes}m remaining`;
     }
+  }
+
+  getTimeOverdue(session: any): string {
+    const now = new Date();
+    const endTime = new Date(`${session.date}T${session.endTime}`);
+    const diffMs = now.getTime() - endTime.getTime();
+
+    if (diffMs <= 0) return 'Not overdue';
+
+    const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+    if (days > 0) {
+      return `${days}d ${hours}h ${minutes}m overdue`;
+    }
+
+    if (hours > 0) {
+      return `${hours}h ${minutes}m overdue`;
+    }
+
+    return `${minutes}m overdue`;
   }
 
   formatTime(time: string): string {
@@ -354,5 +402,13 @@ export class LiveSessionsComponent implements OnInit, OnDestroy {
 
   editSession(session: any): void {
     this.router.navigate(['../setup', session.id], { relativeTo: this.route });
+  }
+
+  deleteSession(session: any): void {
+    if (!confirm(`Delete "${session.title}"? This cannot be undone.`)) return;
+    this.trainingService.deleteTrainingSession(session.id).subscribe({
+      next: () => this.loadSessions(),
+      error: (err) => console.error('Error deleting session:', err)
+    });
   }
 }

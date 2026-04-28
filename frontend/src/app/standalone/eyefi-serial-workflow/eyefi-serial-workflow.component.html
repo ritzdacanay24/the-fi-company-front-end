@@ -3,6 +3,8 @@
     pageTitle="EyeFi Serial Workflow"
     pageDescription="Manage EyeFi serial number assignments across multiple forms with a guided step-by-step process"
     pageIcon="mdi-timeline-check"
+  [enableSessionTimeout]="false"
+  [showLoginBackToMenu]="true"
   [showHeader]="false"
   [showFooter]="false"
   [useMenuBackground]="true"
@@ -14,11 +16,11 @@
     (userLoggedOut)="onUserLoggedOut()">
 
   <div *ngIf="isAuthenticated" class="position-fixed eyefi-logout-button d-flex gap-2" style="top: 24px; right: 24px; z-index: 1100;">
-    <button class="btn btn-outline-light btn-sm shadow-sm" (click)="goToMenu()" title="Go to menu">
+    <button class="btn btn-outline-light btn-sm" (click)="goToMenu()" title="Go to menu">
       <i class="mdi mdi-view-grid me-1"></i>
       Go to Menu
     </button>
-    <button class="btn btn-outline-light btn-sm shadow-sm" (click)="logout()" title="Log out">
+    <button class="btn btn-danger" (click)="logout()" title="Log out">
       <i class="mdi mdi-logout me-1"></i>
       Log out
     </button>

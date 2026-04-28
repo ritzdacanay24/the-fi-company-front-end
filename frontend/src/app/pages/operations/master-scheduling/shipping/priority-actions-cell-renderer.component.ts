@@ -14,7 +14,7 @@ export interface PriorityActionsCellRendererParams extends ICellRendererParams {
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="d-flex align-items-center justify-content-center gap-1">
+    <div class="d-flex align-items-center justify-content-center gap-1 w-100 h-100">
       <ng-container *ngIf="!hasPriority">
         <!-- Add to Priority Button -->
         <button 
@@ -50,10 +50,20 @@ export interface PriorityActionsCellRendererParams extends ICellRendererParams {
     </div>
   `,
   styles: [`
+    :host {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+    }
+
     .priority-toggle-btn {
       font-size: 11px;
       padding: 2px 6px;
       border-radius: 4px;
+      height: 24px;
+      line-height: 1;
       transition: all 0.2s ease;
     }
     .priority-toggle-btn:hover {

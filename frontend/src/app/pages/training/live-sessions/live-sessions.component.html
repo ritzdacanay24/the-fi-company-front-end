@@ -26,7 +26,7 @@
                         </div>
                         <div>
                             <h2 class="mb-1 text-primary">Live Training Sessions</h2>
-                            <p class="text-muted mb-0">Join active sessions or view upcoming • {{ currentTime |
+                            <p class="text-muted mb-0">Join active, upcoming, or past-due sessions • {{ currentTime |
                                 date:'short' }}</p>
                         </div>
                     </div>
@@ -35,7 +35,7 @@
                             <i class="mdi mdi-refresh" [class.mdi-spin]="isLoading"></i>
                             Refresh
                         </button>
-                        <button class="btn btn-secondary" [routerLink]="'../setup'">
+                        <button class="btn btn-secondary" *ngIf="isAdmin" [routerLink]="'../setup'">
                             <i class="mdi mdi-cog me-2"></i>Create Session
                         </button>
                         <button class="btn btn-outline-secondary" routerLink="/training/manage">
@@ -47,12 +47,137 @@
             </div>
 
             <!-- Loading State -->
-            <div *ngIf="isLoading && liveSessions.length === 0 && upcomingSessions.length === 0"
+            <div *ngIf="isLoading && liveSessions.length === 0 && upcomingSessions.length === 0 && overdueSessions.length === 0"
                 class="text-center py-5">
                 <div class="spinner-border text-primary" role="status">
                     <span class="visually-hidden">Loading...</span>
                 </div>
                 <p class="mt-2 text-muted">Loading training sessions...</p>
+            </div>
+
+            <!-- Overdue Sessions -->
+            <div *ngIf="overdueSessions.length > 0" class="overdue-sessions-section mb-5">
+                <div class="section-header mb-3">
+                    <h4 class="text-danger mb-0">
+                        <i class="mdi mdi-alert-circle-outline text-danger me-2"></i>
+                        Past Due Sessions ({{ overdueSessions.length }})
+                    </h4>
+                    <p class="text-muted small mb-0">Sessions that passed scheduled end time and still need closeout.</p>
+                </div>
+
+                <div class="row">
+                    <div *ngFor="let session of overdueSessions" class="col-lg-6 col-xl-4 mb-3">
+                        <div class="training-session-card overdue-session">
+                            <div class="card h-100 border-danger">
+                                <div class="card-header bg-danger text-white">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="mb-1 fw-bold text-white">{{ session.title }}</h6>
+                                            <small class="opacity-75 text-white">{{ session.facilitatorName }}</small>
+                                        </div>
+                                        <div class="text-end">
+                                            <div class="badge bg-light text-danger fw-bold">PAST DUE</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <p class="text-muted small mb-2">{{ session.description }}</p>
+                                        <div class="session-details">
+                                            <div class="detail-item">
+                                                <i class="mdi mdi-calendar-outline text-muted me-1"></i>
+                                                <span>{{ formatDate(session.date) }}</span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <i class="mdi mdi-clock-outline text-muted me-1"></i>
+                                                <span>{{ formatTime(session.startTime) }} - {{
+                                                    formatTime(session.endTime) }}</span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <i class="mdi mdi-map-marker-outline text-muted me-1"></i>
+                                                <span>{{ session.location }}</span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <i class="mdi mdi-alert text-danger me-1"></i>
+                                                <span class="text-danger fw-bold">{{ getTimeOverdue(session)
+                                                    }}</span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <i class="mdi mdi-calendar-clock text-danger me-1"></i>
+                                                <span class="text-danger">Past due since {{ formatDate(session.date) }} {{ formatTime(session.endTime) }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="attendance-info mb-3">
+                                        <div class="row text-center">
+                                            <div class="col-6">
+                                                <div class="stat-item">
+                                                    <div class="stat-number text-primary">{{ getCompletedCount(session)
+                                                        }}</div>
+                                                    <div class="stat-label">Signed In</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="stat-item">
+                                                    <div class="stat-number text-muted">{{ getExpectedCount(session) }}
+                                                    </div>
+                                                    <div class="stat-label">Expected</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-footer bg-light">
+                                    <!-- Trainer Controls (if user has trainer permissions) -->
+                                    <div class="trainer-controls mb-2" *ngIf="isTrainer">
+                                        <div class="d-flex gap-2 mb-2">
+                                            <button *ngIf="session.status !== 'in-progress'"
+                                                class="btn btn-sm btn-primary" (click)="startSession(session)"
+                                                [disabled]="isProcessing">
+                                                <i class="mdi mdi-play"></i>
+                                                Start Session
+                                            </button>
+                                            <button *ngIf="session.status === 'in-progress'"
+                                                class="btn btn-sm btn-warning" (click)="endSession(session)"
+                                                [disabled]="isProcessing">
+                                                <i class="mdi mdi-stop"></i>
+                                                End Session
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-info"
+                                                (click)="viewAttendanceSheet(session)">
+                                                <i class="mdi mdi-clipboard-list"></i>
+                                                Attendance
+                                            </button>
+                                            <button *ngIf="isAdmin" class="btn btn-sm btn-outline-secondary"
+                                                (click)="editSession(session)">
+                                                <i class="mdi mdi-pencil"></i>
+                                                Edit
+                                            </button>
+                                            <button *ngIf="isAdmin" class="btn btn-sm btn-outline-danger"
+                                                (click)="deleteSession(session)">
+                                                <i class="mdi mdi-delete"></i>
+                                                Delete
+                                            </button>
+                                        </div>
+                                        <hr class="my-2">
+                                    </div>
+
+                                    <!-- User Controls -->
+                                    <div class="d-flex gap-2">
+                                        <button class="btn btn-danger flex-fill" (click)="joinSession(session)">
+                                            <i class="mdi mdi-account-check"></i>
+                                            Join & Sign Off
+                                        </button>
+                                        <button class="btn btn-outline-secondary" (click)="viewSessionDetails(session)">
+                                            <i class="mdi mdi-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Upcoming Sessions (Starting Soon) -->
@@ -139,10 +264,15 @@
                                                 <i class="mdi mdi-clipboard-list"></i>
                                                 Attendance
                                             </button>
-                                            <button class="btn btn-sm btn-outline-secondary"
+                                            <button *ngIf="isAdmin" class="btn btn-sm btn-outline-secondary"
                                                 (click)="editSession(session)">
                                                 <i class="mdi mdi-pencil"></i>
                                                 Edit
+                                            </button>
+                                            <button *ngIf="isAdmin" class="btn btn-sm btn-outline-danger"
+                                                (click)="deleteSession(session)">
+                                                <i class="mdi mdi-delete"></i>
+                                                Delete
                                             </button>
                                         </div>
                                         <hr class="my-2">
@@ -251,6 +381,16 @@
                                                 <i class="mdi mdi-clipboard-list"></i>
                                                 Attendance
                                             </button>
+                                            <button *ngIf="isAdmin" class="btn btn-sm btn-outline-secondary"
+                                                (click)="editSession(session)">
+                                                <i class="mdi mdi-pencil"></i>
+                                                Edit
+                                            </button>
+                                            <button *ngIf="isAdmin" class="btn btn-sm btn-outline-danger"
+                                                (click)="deleteSession(session)">
+                                                <i class="mdi mdi-delete"></i>
+                                                Delete
+                                            </button>
                                         </div>
                                         <hr class="my-2">
                                     </div>
@@ -273,7 +413,7 @@
             </div>
 
             <!-- No Sessions State -->
-            <div *ngIf="!isLoading && liveSessions.length === 0 && upcomingSessions.length === 0"
+            <div *ngIf="!isLoading && liveSessions.length === 0 && upcomingSessions.length === 0 && overdueSessions.length === 0"
                 class="no-sessions-state">
                 <div class="text-center py-5">
                     <div class="empty-state-icon mb-3">

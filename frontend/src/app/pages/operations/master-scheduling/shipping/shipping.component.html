@@ -1,6 +1,6 @@
 <div class="row">
     <div class="col-12 col-xl-12">
-        
+
         <!-- API Mode Banner - Development Only -->
         <!-- Priority Management Help -->
         <!-- <div class="alert alert-light border mb-3" role="alert">
@@ -17,13 +17,14 @@
                 </div>
             </div>
         </div> -->
-        
+
         <div class="card">
             <div class="card-header d-flex align-items-center">
-                
+
                 <!-- Priority Tab Navigation -->
                 <div class="me-3">
-                    <select class="form-select form-select-sm" [(ngModel)]="activeTab" (ngModelChange)="switchTab($event)" style="min-width: 180px;">
+                    <select class="form-select " [(ngModel)]="activeTab" (ngModelChange)="switchTab($event)"
+                        style="min-width: 180px;">
                         <option value="all">📋 All Orders ({{allOrdersCount}})</option>
                         <option value="priority">⭐ Priority Orders ({{priorityOrdersCount}})</option>
                     </select>
@@ -31,48 +32,52 @@
 
                 <!-- Search -->
                 <div class="form-icon me-2">
-                    <input type="search" class="form-control form-control-icon form-control-sm" style="width:200px"
-                        (ngModelChange)="onFilterTextBoxChanged($event)" [value]="searchName"
-                        [(ngModel)]="searchName" placeholder="Search">
+                    <input type="search" class="form-control form-control-icon " style="width:200px"
+                        (ngModelChange)="onFilterTextBoxChanged($event)" [value]="searchName" [(ngModel)]="searchName"
+                        placeholder="Search">
                     <i class="ri-search-2-line"></i>
                 </div>
 
                 <!-- Action Buttons -->
-                <button class="btn btn-light btn-sm me-2" (click)="getData()" title="Refresh">
+                <button class="btn btn-light me-2" (click)="getData()" title="Refresh">
                     <i class="mdi mdi-refresh"></i>
                 </button>
-                
-                <button class="btn btn-primary btn-sm me-3" (click)="openPriorityDisplay()" title="Open Full Screen Priority Display">
+
+                <button class="btn btn-primary me-3" (click)="openPriorityDisplay()"
+                    title="Open Full Screen Priority Display">
                     <i class="mdi mdi-monitor-dashboard me-1"></i>
                     Priority Display
                 </button>
-                
-                <button class="btn btn-outline-secondary btn-sm me-3" (click)="openOwnerManagement()" title="Manage Owners">
+
+                <button class="btn btn-outline-secondary me-3" (click)="openOwnerManagement()" title="Manage Owners">
                     <i class="mdi mdi-account-cog me-1"></i>
                     Manage Owners
                 </button>
-                
+
                 <!-- Grid Tools -->
                 <div class="me-2">
-                    <app-grid-settings [data]="tableList?.data" [gridApi]="gridApi"
-                        [pageId]="pageId" [value]="gridViewId" (emitGrid)="emitGrid($event)"></app-grid-settings>
+                    <app-grid-settings [data]="tableList?.data" [gridApi]="gridApi" [pageId]="pageId"
+                        [value]="gridViewId" (emitGrid)="emitGrid($event)"></app-grid-settings>
                 </div>
 
                 <div class="me-3">
-                    <app-grid-filters [data]="defaultFilters" [gridApi]="gridApi"
-                        [pageId]="pageId" [value]="gridFilterId" [dataRenderered]="dataRenderered"
+                    <app-grid-filters [data]="defaultFilters" [gridApi]="gridApi" [pageId]="pageId"
+                        [value]="gridFilterId" [dataRenderered]="dataRenderered"
                         (emitFilter)="emitFilter($event)"></app-grid-filters>
                 </div>
 
                 <!-- Status Badges - Right aligned -->
                 <div class="ms-auto d-flex align-items-center gap-1">
-                    <span class="badge bg-danger-subtle text-danger pointer" style="font-size: 11px;" (click)="pastDue()">
+                    <span class="badge bg-danger-subtle text-danger pointer" style="font-size: 11px;"
+                        (click)="pastDue()">
                         {{statusCount.pastDue}} Past Due
                     </span>
-                    <span class="badge bg-warning-subtle text-warning pointer" style="font-size: 11px;" (click)="dueToday()">
+                    <span class="badge bg-warning-subtle text-warning pointer" style="font-size: 11px;"
+                        (click)="dueToday()">
                         {{statusCount.todayDue}} Due Today
                     </span>
-                    <span class="badge bg-success-subtle text-success pointer" style="font-size: 11px;" (click)="future()">
+                    <span class="badge bg-success-subtle text-success pointer" style="font-size: 11px;"
+                        (click)="future()">
                         {{statusCount.futureDue}} Future
                     </span>
                     <span class="badge bg-light text-body pointer" style="font-size: 11px;" (click)="all()">
@@ -81,29 +86,25 @@
                 </div>
             </div>
             <div class="card-body p-0">
-                
+
                 <!-- Priority Management Instructions - Only show in priority tab -->
                 <div *ngIf="activeTab === 'priority'" class="alert alert-info m-3">
                     <i class="mdi mdi-information me-2"></i>
-                    <strong>🎯 Priority Management:</strong> 
+                    <strong>🎯 Priority Management:</strong>
                     Drag and drop rows to reorder priorities. Position determines priority number (top = Priority 1).
                     <ul class="mb-0 mt-2 small">
                         <li>🖱️ <strong>Drag rows</strong> to reorder priorities</li>
-                        <li>🔢 <strong>Position = Priority</strong> (1st row = Priority 1, 2nd row = Priority 2, etc.)</li>
+                        <li>🔢 <strong>Position = Priority</strong> (1st row = Priority 1, 2nd row = Priority 2, etc.)
+                        </li>
                         <li>⚡ <strong>Auto-save</strong> on every reorder</li>
                         <li>🗑️ <strong>Remove</strong> priority to send back to main list</li>
                     </ul>
                 </div>
 
                 <!-- Single Grid for Both Tabs -->
-                <ag-grid-angular 
-                    [gridOptions]="gridOptions" 
-                    class="ag-theme-quartz no-border"
+                <ag-grid-angular [gridOptions]="gridOptions" class="ag-theme-quartz no-border"
                     [style.height]="activeTab === 'priority' ? 'calc(100vh - 332px)' : 'calc(100vh - 170px)'"
-                    style="width: 100%;" 
-                    [rowData]="data" 
-                    [columnDefs]="columnDefs"
-                    (gridReady)="onGridReady($event)">
+                    style="width: 100%;" [rowData]="data" [columnDefs]="columnDefs" (gridReady)="onGridReady($event)">
                 </ag-grid-angular>
 
             </div>

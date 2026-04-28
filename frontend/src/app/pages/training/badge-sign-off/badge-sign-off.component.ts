@@ -33,6 +33,8 @@ export class BadgeSignOffComponent implements OnInit, OnDestroy {
   isLoading = false;
   lastScanResult: BadgeScanResult | null = null;
   recentSignOffs: TrainingAttendance[] = [];
+  manualSelectedEmployeeId: number | null = null;
+  manualSelectableEmployees: Employee[] = [];
   
   // Confirmation dialog state
   selectedEmployee: Employee | null = null;
@@ -50,6 +52,7 @@ export class BadgeSignOffComponent implements OnInit, OnDestroy {
   showErrorMessage = false;
   messageText = '';
   isInputFocused = false;
+  isManagement = true; // TODO: Replace with real role/permission check
   
   private modalService = inject(NgbModal);
   
@@ -135,11 +138,68 @@ export class BadgeSignOffComponent implements OnInit, OnDestroy {
           new Date(b.signInTime).getTime() - new Date(a.signInTime).getTime()
         );
         this.recentSignOffs = this.completedAttendees.slice(0, 8);
+        this.updateManualSelectableEmployees();
       },
       error: (error) => {
         console.error('Error loading completions:', error);
       }
     });
+  }
+
+  private updateManualSelectableEmployees(): void {
+    if (!this.session?.expectedAttendees?.length) {
+      this.manualSelectableEmployees = [];
+      this.manualSelectedEmployeeId = null;
+      return;
+    }
+
+    const completedEmployeeIds = new Set(this.completedAttendees.map(a => a.employeeId));
+    this.manualSelectableEmployees = this.session.expectedAttendees
+      .map(attendee => attendee.employee)
+      .filter(employee => employee?.id && !completedEmployeeIds.has(employee.id))
+      .sort((a, b) => `${a.lastName} ${a.firstName}`.localeCompare(`${b.lastName} ${b.firstName}`));
+
+    if (
+      this.manualSelectedEmployeeId &&
+      !this.manualSelectableEmployees.some(employee => employee.id === this.manualSelectedEmployeeId)
+    ) {
+      this.manualSelectedEmployeeId = null;
+    }
+  }
+
+  markAttendanceManually(): void {
+    if (!this.session || !this.manualSelectedEmployeeId) {
+      return;
+    }
+
+    const employee = this.manualSelectableEmployees.find(e => e.id === this.manualSelectedEmployeeId);
+    if (!employee) {
+      this.showMessage('Selected employee is not available for manual sign-off.', 'error');
+      return;
+    }
+
+    this.isLoading = true;
+    this.trainingService.markAttendanceManually(this.session.id, employee.id).subscribe({
+      next: (result) => {
+        this.lastScanResult = result;
+        this.handleScanResult(result);
+        this.manualSelectedEmployeeId = null;
+        this.loadCompletions();
+        this.loadMetrics();
+        this.isLoading = false;
+        setTimeout(() => this.focusBadgeInput(), 300);
+      },
+      error: (error) => {
+        console.error('Error marking attendance manually:', error);
+        this.showMessage('Error marking attendance manually. Please try again.', 'error');
+        this.isLoading = false;
+      }
+    });
+  }
+
+  getEmployeeLabel(employee: Employee): string {
+    const badge = employee.badgeNumber || employee.badgeId || 'No badge';
+    return `${employee.lastName}, ${employee.firstName} - ${employee.position || 'No position'} (${badge})`;
   }
 
   private loadMetrics(): void {

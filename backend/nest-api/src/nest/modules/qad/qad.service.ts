@@ -31,6 +31,9 @@ interface WoSearchRow {
   wo_routing: string;
   wo_line: string | number;
   description: string;
+  cp_cust_part?: string;
+  DESCRIPTION?: string;
+  CP_CUST_PART?: string;
 }
 
 interface CustomerPartSearchRow {
@@ -169,16 +172,35 @@ export class QadService {
              wo_qty_ord,
              wo_routing,
              wo_line,
+             c.cp_cust_part,
              pt_desc1 || ' ' || pt_desc2 AS description
       FROM wo_mstr
       LEFT JOIN pt_mstr b ON b.pt_part = wo_part
+      LEFT JOIN cp_mstr c ON c.cp_part = wo_part AND c.cp_domain = wo_domain
       WHERE (wo_part LIKE ? OR wo_nbr LIKE ?)
         AND wo_domain = 'EYE'
       ORDER BY wo_due_date DESC
     `;
 
     const search = `%${term}%`;
-    return this.qadOdbcService.queryWithParams<WoSearchRow[]>(sql, [search, search]);
+    const rows = await this.qadOdbcService.queryWithParams<Record<string, unknown>[]>(sql, [search, search]);
+
+    return rows.map((row) => {
+      const description = String(row.description ?? row.DESCRIPTION ?? '');
+
+      return {
+        wo_nbr: String(row.wo_nbr ?? row.WO_NBR ?? ''),
+        wo_due_date: String(row.wo_due_date ?? row.WO_DUE_DATE ?? ''),
+        wo_part: String(row.wo_part ?? row.WO_PART ?? ''),
+        wo_qty_ord: (row.wo_qty_ord ?? row.WO_QTY_ORD ?? '') as number | string,
+        wo_routing: String(row.wo_routing ?? row.WO_ROUTING ?? ''),
+        wo_line: (row.wo_line ?? row.WO_LINE ?? '') as string | number,
+        cp_cust_part: String(row.cp_cust_part ?? row.CP_CUST_PART ?? ''),
+        description,
+        CP_CUST_PART: String(row.cp_cust_part ?? row.CP_CUST_PART ?? ''),
+        DESCRIPTION: description,
+      };
+    });
   }
 
   async searchCustomerPartNumber(text?: string): Promise<CustomerPartSearchRow[]> {

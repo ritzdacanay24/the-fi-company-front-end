@@ -101,6 +101,12 @@ export class TrainingService {
     return this.scanBadgeForCompletion(sessionId, badgeNumber);
   }
 
+  markAttendanceManually(sessionId: number, employeeId: number): Observable<BadgeScanResult> {
+    return this.http.post<BadgeScanResult>(`${this.apiUrl}/sessions/${sessionId}/attendance/manual`, {
+      employeeId
+    });
+  }
+
   getSessionAttendance(sessionId: number): Observable<TrainingAttendance[]> {
     return this.http.get<TrainingAttendance[]>(`${this.apiUrl}/sessions/${sessionId}/attendance`);
   }

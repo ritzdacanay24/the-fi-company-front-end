@@ -48,7 +48,6 @@ export class AttendanceDashboardComponent implements OnInit, OnDestroy {
     const sessionId = Number(this.route.snapshot.paramMap.get('sessionId'));
     if (sessionId) {
       this.loadDashboardData(sessionId);
-      this.startAutoRefresh();
     } else {
       this.router.navigate(['/training/live']);
     }
@@ -69,6 +68,7 @@ export class AttendanceDashboardComponent implements OnInit, OnDestroy {
         this.session = this.mapSessionData(rawSession);
         this.loadAttendanceData();
         this.loadMetrics();
+        this.startAutoRefresh();
         this.isLoading = false;
       },
       error: (error) => {
@@ -218,8 +218,15 @@ export class AttendanceDashboardComponent implements OnInit, OnDestroy {
   }
 
   private startAutoRefresh(): void {
+    if (this.session?.status === 'completed' || this.session?.status === 'cancelled') {
+      return;
+    }
     this.refreshSubscription = interval(this.REFRESH_INTERVAL).subscribe(() => {
       if (this.session && !this.isLoading) {
+        if (this.session.status === 'completed' || this.session.status === 'cancelled') {
+          this.stopAutoRefresh();
+          return;
+        }
         this.loadAttendanceData();
         this.loadMetrics();
       }
@@ -274,6 +281,124 @@ export class AttendanceDashboardComponent implements OnInit, OnDestroy {
         console.error('Error exporting attendance sheet:', error);
       }
     });
+  }
+
+  printAttendanceReport(): void {
+    if (!this.session) return;
+
+    const completedRows = this.getFilteredCompletedAttendees()
+      .map(att => `
+        <tr>
+          <td>${att.employee.firstName} ${att.employee.lastName}</td>
+          <td>${att.employee.department || att.employee.title || 'N/A'}</td>
+          <td>${this.formatTime(att.signInTime)}</td>
+        </tr>
+      `)
+      .join('');
+
+    const pendingRows = this.getFilteredPendingAttendees()
+      .map(emp => `
+        <tr>
+          <td>${emp.firstName} ${emp.lastName}</td>
+          <td>${emp.department || emp.title || 'N/A'}</td>
+          <td>Pending</td>
+        </tr>
+      `)
+      .join('');
+
+    const printWindow = window.open('', '_blank', 'width=1000,height=800');
+    if (!printWindow) {
+      console.error('Unable to open print window. Pop-up may be blocked.');
+      return;
+    }
+
+    const reportHtml = `
+      <!doctype html>
+      <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>Training Attendance Report</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 24px; color: #1f2937; }
+          .report-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+          .report-header img { height: 42px; object-fit: contain; }
+          h1 { margin: 0 0 6px; font-size: 24px; }
+          .sub { margin: 0 0 18px; color: #4b5563; }
+          .meta { margin-bottom: 20px; }
+          .meta div { margin: 2px 0; }
+          .stats { display: flex; gap: 20px; margin: 12px 0 20px; }
+          .stats .item { border: 1px solid #d1d5db; padding: 10px 12px; border-radius: 6px; min-width: 120px; }
+          .stats .label { font-size: 12px; color: #6b7280; }
+          .stats .value { font-size: 20px; font-weight: 700; }
+          h2 { margin: 20px 0 8px; font-size: 16px; }
+          table { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
+          th, td { border: 1px solid #d1d5db; padding: 8px; text-align: left; font-size: 13px; }
+          th { background: #f3f4f6; }
+          .muted { color: #6b7280; font-size: 12px; margin-top: 20px; }
+          @media print { body { margin: 12px; } }
+        </style>
+      </head>
+      <body>
+        <div class="report-header">
+          <h1>Training Attendance Report</h1>
+          <img src="${window.location.origin}/assets/images/fi-color.png" alt="The Fi Company" />
+        </div>
+        <p class="sub">${this.session.title}</p>
+
+        <div class="meta">
+          <div><strong>Date:</strong> ${this.formatDate(this.session.date)}</div>
+          <div><strong>Time:</strong> ${this.formatTime(this.session.date + 'T' + this.session.startTime)} - ${this.formatTime(this.session.date + 'T' + this.session.endTime)}</div>
+          <div><strong>Location:</strong> ${this.session.location || 'N/A'}</div>
+          <div><strong>Facilitator:</strong> ${this.session.facilitatorName || 'N/A'}</div>
+          ${this.session.description ? `<div><strong>Description:</strong> ${this.session.description}</div>` : ''}
+          <div><strong>Generated:</strong> ${new Date().toLocaleString()}</div>
+        </div>
+
+        <div class="stats">
+          <div class="item"><div class="label">Expected</div><div class="value">${this.metrics?.totalExpected ?? this.session.expectedAttendees.length}</div></div>
+          <div class="item"><div class="label">Completed</div><div class="value">${this.metrics?.completedCount ?? this.completedAttendees.length}</div></div>
+          <div class="item"><div class="label">Pending</div><div class="value">${Math.max((this.metrics?.totalExpected ?? this.session.expectedAttendees.length) - (this.metrics?.completedCount ?? this.completedAttendees.length), 0)}</div></div>
+          <div class="item"><div class="label">Attendance Rate</div><div class="value">${this.getCompletionRate()}%</div></div>
+        </div>
+
+        <h2>Completed Attendees (${this.getFilteredCompletedAttendees().length})</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Employee</th>
+              <th>Department</th>
+              <th>Sign-off Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${completedRows || '<tr><td colspan="3">No completed attendees.</td></tr>'}
+          </tbody>
+        </table>
+
+        <h2>Pending Attendees (${this.getFilteredPendingAttendees().length})</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Employee</th>
+              <th>Department</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${pendingRows || '<tr><td colspan="3">No pending attendees.</td></tr>'}
+          </tbody>
+        </table>
+
+        <p class="muted">This report was generated from the Attendance Dashboard.</p>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(reportHtml);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
   }
 
   // Navigation

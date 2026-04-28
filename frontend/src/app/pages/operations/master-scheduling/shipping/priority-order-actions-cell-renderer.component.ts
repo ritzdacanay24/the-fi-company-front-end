@@ -13,7 +13,7 @@ export interface PriorityOrderActionsCellRendererParams extends ICellRendererPar
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="d-flex align-items-center justify-content-center">
+    <div class="d-flex align-items-center justify-content-center w-100 h-100">
       <ng-container *ngIf="!hasPriority && showAddButton">
         <button 
           class="btn btn-sm btn-outline-success priority-toggle-btn"
@@ -38,10 +38,20 @@ export interface PriorityOrderActionsCellRendererParams extends ICellRendererPar
     </div>
   `,
   styles: [`
+    :host {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+    }
+
     .priority-toggle-btn {
       font-size: 11px;
       padding: 2px 6px;
       border-radius: 4px;
+      height: 24px;
+      line-height: 1;
       transition: all 0.2s ease;
     }
     .priority-toggle-btn:hover {

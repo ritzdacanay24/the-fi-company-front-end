@@ -57,6 +57,14 @@
               title="Export attendance sheet">
               <i class="mdi mdi-download me-2"></i>Export
             </button>
+
+            <button 
+              class="btn btn-outline-dark" 
+              (click)="printAttendanceReport()"
+              *ngIf="session"
+              title="Print attendance report">
+              <i class="mdi mdi-printer me-2"></i>Print
+            </button>
             
             <button 
               class="btn btn-primary" 

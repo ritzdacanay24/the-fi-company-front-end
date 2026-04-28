@@ -32,6 +32,7 @@ import { LateReasonCodeModalService } from "@app/shared/components/last-reason-c
 import { PriorityActionsCellRendererComponent } from './priority-actions-cell-renderer.component';
 import { PriorityDisplayCellRendererComponent } from './priority-display-cell-renderer.component';
 import { PriorityOrderActionsCellRendererComponent } from './priority-order-actions-cell-renderer.component';
+import { ShippingActionsMenuCellRendererComponent } from './shipping-actions-menu-cell-renderer.component';
 import { NotesModalService } from "@app/shared/components/notes-modal/notes-modal.component";
 import { RfqModalService } from "@app/shared/components/rfq-modal/rfq-modal.component";
 import { ShippingMiscModalService } from "@app/shared/components/shipping-misc-modal/shipping-misc-modal.component";
@@ -545,6 +546,82 @@ export class ShippingComponent implements OnInit, OnDestroy {
         // Handle modal dismiss
       }
     );
+  };
+
+  openSalesOrderModalFromMenu = (rowData: any) => {
+    if (rowData?.SOD_NBR) {
+      this.salesOrderInfoModalService.open(rowData.SOD_NBR);
+    }
+  };
+
+  openShipToModalFromMenu = (rowData: any) => {
+    if (rowData?.SO_SHIP) {
+      this.addressInfoModalService.open(rowData.SO_SHIP);
+    }
+  };
+
+  openBomModalFromMenu = (rowData: any) => {
+    const partNumber = rowData?.SOD_PART;
+    if (!partNumber) {
+      return;
+    }
+
+    this.viewBom({
+      partNumber,
+      soNumber: rowData?.SOD_NBR,
+      rowData,
+    });
+  };
+
+  openGeneratePlacardModalFromMenu = (rowData: any) => {
+    if (rowData?.SOD_NBR && rowData?.SOD_LINE && rowData?.SOD_PART) {
+      this.viewPlacard(rowData.SOD_NBR, rowData.SOD_LINE, rowData.SOD_PART);
+    }
+  };
+
+  openNotesModalFromMenu = (rowData: any) => {
+    this.viewNotes({ rowData });
+  };
+
+  openRfqModalFromMenu = (rowData: any) => {
+    this.vewRfq({ rowData });
+  };
+
+  openLateReasonCodeModalFromMenu = (rowData: any) => {
+    this.viewReasonCode(
+      'lateReasonCode',
+      rowData?.misc || {},
+      `${rowData?.SOD_NBR}-${rowData?.SOD_LINE}`,
+      rowData
+    );
+  };
+
+  openPartsOrderRequestModalFromMenu = (rowData: any) => {
+    if (rowData?.SOD_NBR) {
+      this.viewPartsOrder(rowData.SOD_NBR);
+    }
+  };
+
+  openSoJobModalFromMenu = (rowData: any) => {
+    if (rowData?.WO_NBR) {
+      this.workOrderInfoModalService.open(rowData.WO_NBR);
+    }
+  };
+
+  openWorkOrderRoutingModalFromMenu = (rowData: any) => {
+    if (rowData?.SOD_PART) {
+      this.viewRouting(rowData.SOD_PART);
+    }
+  };
+
+  openCommentsModalFromMenu = (rowData: any) => {
+    this.viewComment(rowData?.sales_order_line_number, rowData?.id, rowData?.SOD_NBR);
+  };
+
+  openPartNumberModalFromMenu = (rowData: any) => {
+    if (rowData?.SOD_PART) {
+      this.itemInfoModalService.open(rowData.SOD_PART);
+    }
   };
 
   viewRouting = (partNumber) => {
@@ -1894,6 +1971,28 @@ export class ShippingComponent implements OnInit, OnDestroy {
         onRemovePriority: (orderId: string) => this.removePriorityFromList(orderId)
       },
       headerTooltip: 'Quick priority management actions',
+    },
+    {
+      headerName: "Actions",
+      filter: false,
+      sortable: false,
+      maxWidth: 130,
+      cellRenderer: ShippingActionsMenuCellRendererComponent,
+      cellRendererParams: {
+        onViewBom: (rowData: any) => this.openBomModalFromMenu(rowData),
+        onViewSalesOrder: (rowData: any) => this.openSalesOrderModalFromMenu(rowData),
+        onViewShipTo: (rowData: any) => this.openShipToModalFromMenu(rowData),
+        onGeneratePlacard: (rowData: any) => this.openGeneratePlacardModalFromMenu(rowData),
+        onViewNotes: (rowData: any) => this.openNotesModalFromMenu(rowData),
+        onViewRfq: (rowData: any) => this.openRfqModalFromMenu(rowData),
+        onViewLateReasonCode: (rowData: any) => this.openLateReasonCodeModalFromMenu(rowData),
+        onViewPartsOrderRequest: (rowData: any) => this.openPartsOrderRequestModalFromMenu(rowData),
+        onViewSoJob: (rowData: any) => this.openSoJobModalFromMenu(rowData),
+        onViewWorkOrderRouting: (rowData: any) => this.openWorkOrderRoutingModalFromMenu(rowData),
+        onViewComments: (rowData: any) => this.openCommentsModalFromMenu(rowData),
+        onViewPartNumber: (rowData: any) => this.openPartNumberModalFromMenu(rowData),
+      },
+      headerTooltip: 'Quick actions menu',
     },
     // Shared columns
     {

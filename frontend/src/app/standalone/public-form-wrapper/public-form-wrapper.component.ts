@@ -33,6 +33,8 @@ export class PublicFormWrapperComponent implements OnInit, OnDestroy {
   @Input() useMenuBackground: boolean = false;
   @Input() showPageIntro: boolean = true;
   @Input() showLogoBranding: boolean = false;
+  @Input() enableSessionTimeout: boolean = true;
+  @Input() showLoginBackToMenu: boolean = false;
 
   @Output() authenticationComplete = new EventEmitter<any>();
   @Output() userLoggedOut = new EventEmitter<void>();
@@ -46,10 +48,10 @@ export class PublicFormWrapperComponent implements OnInit, OnDestroy {
   currentUser: any = null;
   hasValidUserImage = false;
 
-  // Session management - 15 minute inactivity timer
+  // Session management - inactivity timer
   inactivityTimer: Subscription | null = null;
   lastActivity = Date.now();
-  readonly INACTIVITY_TIMEOUT = 20 * 60 * 1000; // 15 minutes
+  readonly INACTIVITY_TIMEOUT = 20 * 60 * 1000;
   private readonly LAST_ACTIVITY_KEY = 'temp_last_activity';
   
   // Modal state
@@ -89,7 +91,7 @@ export class PublicFormWrapperComponent implements OnInit, OnDestroy {
             
             // Check if session already expired
             const timeSinceLastActivity = Date.now() - this.lastActivity;
-            if (timeSinceLastActivity >= this.INACTIVITY_TIMEOUT) {
+            if (this.enableSessionTimeout && timeSinceLastActivity >= this.INACTIVITY_TIMEOUT) {
               console.log('Session expired before refresh, showing timeout modal');
               // Don't reset timer - show modal immediately after view init
               setTimeout(() => this.showSessionTimeoutModal(), 0);
@@ -97,13 +99,15 @@ export class PublicFormWrapperComponent implements OnInit, OnDestroy {
             }
           }
           
-          // Start 15-minute inactivity timer
-          this.setupInactivityTracking();
+          // Start inactivity timer when enabled.
+          if (this.enableSessionTimeout) {
+            this.setupInactivityTracking();
+          }
           
           // Emit authentication event to parent component
           this.authenticationComplete.emit(user);
           
-          console.log('Found existing valid session, starting 15-minute inactivity timer');
+          console.log('Found existing valid session');
           return;
         }
       }
@@ -126,8 +130,10 @@ export class PublicFormWrapperComponent implements OnInit, OnDestroy {
     this.currentUser = user;
     this.hasValidUserImage = !!(user?.image);
     
-    // Start 15-minute inactivity timer
-    this.setupInactivityTracking();
+    // Start inactivity timer when enabled.
+    if (this.enableSessionTimeout) {
+      this.setupInactivityTracking();
+    }
     
     this.authenticationComplete.emit(user);
   }
@@ -137,6 +143,10 @@ export class PublicFormWrapperComponent implements OnInit, OnDestroy {
   }
 
   onSessionExpired(): void {
+    if (!this.enableSessionTimeout) {
+      return;
+    }
+
     // Show modal instead of auto-logout
     this.showSessionTimeoutModal();
   }
@@ -164,7 +174,7 @@ export class PublicFormWrapperComponent implements OnInit, OnDestroy {
   }
 
   goToFormsMenu(): void {
-    this.router.navigate(['/forms']);
+    this.router.navigate(['/menu']);
   }
 
   onUserImageError(event: any): void {
@@ -312,6 +322,10 @@ export class PublicFormWrapperComponent implements OnInit, OnDestroy {
   }
 
   getTimeRemainingFormatted(): string {
+    if (!this.enableSessionTimeout) {
+      return 'Manual logout';
+    }
+
     if (this.isSessionTimeoutModalOpen) {
       return 'Session Paused';
     }

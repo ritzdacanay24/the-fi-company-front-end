@@ -92,6 +92,19 @@ export class TrainingController {
     return this.trainingService.removeAttendance(id);
   }
 
+  @Post('sessions/:id/attendance/manual')
+  @Permissions('manage')
+  async markAttendanceManually(
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown> = {},
+    @Headers('x-forwarded-for') forwardedFor?: string,
+    @Headers('user-agent') userAgent?: string,
+    @CurrentUserId() userId?: number,
+  ) {
+    const ipAddress = forwardedFor?.split(',')[0]?.trim();
+    return this.trainingService.markAttendanceManually(id, body, ipAddress, userAgent, userId);
+  }
+
   @Post('badge-scans')
   @Permissions('write')
   async scanBadge(

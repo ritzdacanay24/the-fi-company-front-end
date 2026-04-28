@@ -234,6 +234,11 @@ export class TrainingService {
       return this.getSession(String(sessionId));
     }
 
+    const isAdmin = await this.accessControlService.userHasRoles(userId, ['admin']);
+    if (!isAdmin) {
+      throw new ForbiddenException('Only admins can modify session details (duration, schedule, and metadata)');
+    }
+
     const title = String(body.title || '').trim();
     const description = String(body.description || '').trim();
     const purpose = String(body.purpose || '').trim();
@@ -768,6 +773,127 @@ export class TrainingService {
     return { message: 'Attendance record removed successfully' };
   }
 
+  async markAttendanceManually(
+    sessionIdRaw: string,
+    body: Dict,
+    ipAddress?: string,
+    userAgent?: string,
+    markedByUserId?: number,
+  ) {
+    const sessionId = this.toPositiveInt(sessionIdRaw);
+    const employeeId = this.toPositiveInt(body.employeeId);
+
+    if (!sessionId || !employeeId) {
+      return {
+        success: false,
+        message: 'Missing sessionId or employeeId',
+        alreadySignedIn: false,
+        isExpectedAttendee: false,
+      };
+    }
+
+    const employeeRows = await this.mysqlService.query<RowDataPacket[]>(
+      `
+        SELECT id, card_number, first, last, title, department, email, image
+        FROM db.users
+        WHERE id = :employee_id
+          AND active = 1
+      `,
+      { employee_id: employeeId },
+    );
+
+    const employee = employeeRows[0];
+    if (!employee) {
+      return {
+        success: false,
+        message: 'Employee not found',
+        alreadySignedIn: false,
+        isExpectedAttendee: false,
+      };
+    }
+
+    const sessionRows = await this.mysqlService.query<RowDataPacket[]>(
+      'SELECT id, status FROM training_sessions WHERE id = :id',
+      { id: sessionId },
+    );
+    const session = sessionRows[0];
+
+    if (!session) {
+      return {
+        success: false,
+        message: 'Training session not found',
+        alreadySignedIn: false,
+        isExpectedAttendee: false,
+      };
+    }
+
+    if (!['scheduled', 'in-progress', 'completed'].includes(String(session.status))) {
+      return {
+        success: false,
+        message: `Training session is not active (status: ${String(session.status)})`,
+        alreadySignedIn: false,
+        isExpectedAttendee: false,
+      };
+    }
+
+    const expectedRows = await this.mysqlService.query<RowDataPacket[]>(
+      'SELECT id FROM training_attendees WHERE session_id = :session_id AND employee_id = :employee_id',
+      {
+        session_id: sessionId,
+        employee_id: Number(employee.id),
+      },
+    );
+    const isExpectedAttendee = expectedRows.length > 0;
+
+    const attendanceRows = await this.mysqlService.query<RowDataPacket[]>(
+      'SELECT id FROM training_attendance WHERE session_id = :session_id AND employee_id = :employee_id',
+      {
+        session_id: sessionId,
+        employee_id: Number(employee.id),
+      },
+    );
+
+    if (attendanceRows.length > 0) {
+      return {
+        success: false,
+        message: 'Employee already signed in for this session',
+        alreadySignedIn: true,
+        isExpectedAttendee,
+        employee: this.mapEmployeeRow(employee),
+      };
+    }
+
+    const badgeScanned = String(employee.card_number || '').trim() || `MANUAL-${employee.id}`;
+    await this.mysqlService.execute(
+      `
+        INSERT INTO training_attendance
+        (session_id, employee_id, sign_in_time, badge_scanned, ip_address, device_info)
+        VALUES
+        (:session_id, :employee_id, NOW(), :badge_scanned, :ip_address, :device_info)
+      `,
+      {
+        session_id: sessionId,
+        employee_id: Number(employee.id),
+        badge_scanned: badgeScanned,
+        ip_address: ipAddress || null,
+        device_info: JSON.stringify({
+          user_agent: userAgent || 'Unknown',
+          timestamp: new Date().toISOString(),
+          manual_signoff: true,
+          marked_by_user_id: markedByUserId || null,
+        }),
+      },
+    );
+
+    return {
+      success: true,
+      message: `${String(employee.first || '')} ${String(employee.last || '')}`.trim() + ' manually marked as attended',
+      alreadySignedIn: false,
+      isExpectedAttendee,
+      employee: this.mapEmployeeRow(employee),
+    };
+  }
+
   async scanBadge(body: Dict, ipAddress?: string, userAgent?: string) {
     const sessionId = this.toPositiveInt(body.sessionId);
     const badgeNumber = String(body.badgeNumber || '').trim();
@@ -1127,7 +1253,9 @@ export class TrainingService {
 
   private mapEmployeeRow(row: RowDataPacket) {
     return {
-      id: Number(row.id || 0),
+      // Joined training rows often include both row.id (attendance/attendee id)
+      // and row.employee_id (actual user id). Prefer employee_id for employee identity.
+      id: Number(row.employee_id || row.user_id || row.id || 0),
       badgeNumber: String(row.badge_number || row.card_number || ''),
       badgeId: String(row.badge_id || row.badge_number || row.card_number || ''),
       firstName: String(row.first_name || row.first || ''),

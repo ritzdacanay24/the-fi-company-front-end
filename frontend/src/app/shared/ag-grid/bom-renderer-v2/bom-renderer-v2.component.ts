@@ -5,17 +5,27 @@ import { ICellRendererParams } from 'ag-grid-community';
 @Component({
   selector: 'app-bom-renderer-v2',
   template: `
-    <button 
-      type="button" 
-      class="btn btn-outline-info btn-xs d-flex align-items-center justify-content-center"
-      (click)="onClick()"
-      [title]="getTooltip()"
-      [disabled]="!hasPartNumber()">
-      <i class="mdi mdi-sitemap" style="font-size: 0.75rem;"></i>
-      <span class="d-none d-md-inline ms-1" style="font-size: 0.75rem;">BOM</span>
-    </button>
+    <div class="w-100 h-100 d-flex align-items-center justify-content-center">
+      <button 
+        type="button" 
+        class="btn btn-outline-info btn-xs d-flex align-items-center justify-content-center"
+        (click)="onClick()"
+        [title]="getTooltip()"
+        [disabled]="!hasPartNumber()">
+        <i class="mdi mdi-sitemap" style="font-size: 0.75rem;"></i>
+        <span class="d-none d-md-inline ms-1" style="font-size: 0.75rem;">BOM</span>
+      </button>
+    </div>
   `,
   styles: [`
+    :host {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+    }
+
     .btn {
       transition: all 0.2s ease;
       border-radius: 3px;

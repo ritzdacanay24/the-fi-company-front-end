@@ -300,6 +300,7 @@ export class PermitChecklistsComponent implements OnInit {
   ];
 
   draftFormType: PermitChecklistType = "seismic";
+  homeSearchQuery = "";
   tickets: PermitChecklistTicket[] = [];
   recentTickets: PermitChecklistTicket[] = [];
   transactions: PermitChecklistTransaction[] = [];
@@ -406,11 +407,11 @@ export class PermitChecklistsComponent implements OnInit {
         const percent = Math.max(0, Math.min(100, metrics.percent));
         const tone = percent >= 100 ? "#198754" : percent >= 60 ? "#0d6efd" : "#f59e0b";
         return `
-          <div style="display:flex;align-items:center;gap:8px;min-width:190px;">
-            <div style="flex:1;height:8px;background:#e9ecef;border-radius:999px;overflow:hidden;">
-              <div style="width:${percent}%;height:100%;background:${tone};"></div>
+          <div class="completion-cell">
+            <div class="completion-track">
+              <div class="completion-fill" style="width:${percent}%;background:${tone};"></div>
             </div>
-            <span style="font-size:12px;font-weight:600;white-space:nowrap;">${percent}% (${metrics.completed}/${metrics.total})</span>
+            <span class="completion-label">${percent}% (${metrics.completed}/${metrics.total})</span>
           </div>
         `;
       },
@@ -444,7 +445,6 @@ export class PermitChecklistsComponent implements OnInit {
       resizable: true,
       floatingFilter: true,
     },
-    rowHeight: 44,
     animateRows: true,
     suppressMenuHide: true,
     onCellClicked: (params: any) => {
@@ -755,6 +755,56 @@ export class PermitChecklistsComponent implements OnInit {
       })
       .filter((row) => row.approvedAmount > 0)
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  }
+
+  get filteredRecentTickets(): PermitChecklistTicket[] {
+    const term = this.homeSearchQuery.trim().toLowerCase();
+    if (!term) {
+      return this.recentTickets;
+    }
+
+    return this.recentTickets.filter((ticket) => {
+      const customer = ticket.values?.["customer"] || "";
+      return [
+        ticket.ticketId,
+        ticket.formType,
+        ticket.status,
+        ticket.createdBy,
+        customer,
+        ticket.updatedAt,
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(term);
+    });
+  }
+
+  get filteredAuditLogRows(): PermitChecklistAuditRow[] {
+    const term = this.homeSearchQuery.trim().toLowerCase();
+    if (!term) {
+      return this.auditLogRows;
+    }
+
+    return this.auditLogRows.filter((row) =>
+      [row.ticketId, row.type, row.fieldKey, row.oldValue, row.newValue, row.source, row.timestamp]
+        .join(" ")
+        .toLowerCase()
+        .includes(term)
+    );
+  }
+
+  get filteredApprovedReportRows(): PermitChecklistApprovedRow[] {
+    const term = this.homeSearchQuery.trim().toLowerCase();
+    if (!term) {
+      return this.approvedReportRows;
+    }
+
+    return this.approvedReportRows.filter((row) =>
+      [row.ticketId, row.formType, row.customer, row.status, String(row.approvedAmount), row.approvalDate]
+        .join(" ")
+        .toLowerCase()
+        .includes(term)
+    );
   }
 
   get totalApprovedAmount(): number {
@@ -2219,6 +2269,12 @@ export class PermitChecklistsComponent implements OnInit {
     if (this.viewMode === "home") {
       this.syncUrlState();
     }
+  }
+
+  refreshHomeGridData(): void {
+    this.refreshRecentTickets();
+    this.refreshAuditLogRows();
+    this.statusMessage = "Home data refreshed.";
   }
 
   saveCurrent(): void {
