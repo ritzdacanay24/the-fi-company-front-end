@@ -11,6 +11,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Response } from 'express';
+import { CurrentUserId } from '@/nest/decorators/current-user-id.decorator';
 import { Permissions, RolePermissionGuard } from '../access-control';
 import { EyeFiSerialService } from './eyefi-serial.service';
 import { UpdateEyeFiSerialStatusDto } from './dto/update-eyefi-serial-status.dto';
@@ -81,6 +82,15 @@ export class EyeFiSerialController {
   @Permissions('write')
   async createAssignment(@Body() dto: CreateAssignmentDto) {
     return this.eyeFiSerialService.createAssignment(dto);
+  }
+
+  @Post('send-report')
+  @Permissions('write')
+  async sendWorkflowReport(
+    @Body() body: Record<string, unknown>,
+    @CurrentUserId() userId: number,
+  ) {
+    return this.eyeFiSerialService.sendWorkflowReportToCurrentUser(body, userId);
   }
 
   // ── List / search ─────────────────────────────────────────────────────────

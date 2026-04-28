@@ -47,18 +47,13 @@ export class SerialReportPrintService {
 
   constructor() { }
 
-  /**
-   * Print Serial Number Report
-   * @param data Report data to print
-   */
-  printSerialReport(data: PrintReportData): void {
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      alert('Please allow pop-ups to print the report');
-      return;
-    }
+  buildSerialReportFilename(data: PrintReportData): string {
+    const workOrderNumber = String(data.workOrder.number || 'unknown').trim().replace(/[^a-zA-Z0-9_-]+/g, '-');
+    return `serial-number-report-${workOrderNumber}.html`;
+  }
 
-    const reportHtml = `
+  buildSerialReportHtml(data: PrintReportData): string {
+    return `
       <!DOCTYPE html>
       <html>
       <head>
@@ -149,6 +144,20 @@ export class SerialReportPrintService {
       </body>
       </html>
     `;
+  }
+
+  /**
+   * Print Serial Number Report
+   * @param data Report data to print
+   */
+  printSerialReport(data: PrintReportData): void {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('Please allow pop-ups to print the report');
+      return;
+    }
+
+    const reportHtml = this.buildSerialReportHtml(data);
 
     printWindow.document.write(reportHtml);
     printWindow.document.close();

@@ -276,6 +276,23 @@ export class EyeFiSerialRepository extends BaseRepository<EyeFiSerialRecord> {
     return rows[0] ?? null;
   }
 
+  async getActiveUserEmailById(userId: number): Promise<string | null> {
+    const rows = await this.rawQuery<RowDataPacket>(
+      `
+        SELECT email
+        FROM db.users
+        WHERE id = ?
+          AND active = 1
+          AND COALESCE(TRIM(email), '') <> ''
+        LIMIT 1
+      `,
+      [userId],
+    );
+
+    const email = String(rows[0]?.email || '').trim();
+    return email || null;
+  }
+
   async updateAssignment(id: number, dto: UpdateAssignmentDto): Promise<number> {
     const fields: string[] = [];
     const values: unknown[] = [];

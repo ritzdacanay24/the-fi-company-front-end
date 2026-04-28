@@ -306,6 +306,7 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
   submissionComplete = false;
   successSummary: any = null;
   isTestMode = false; // Track if current success is from test
+  emailReportToCurrentUser = true;
 
   // ⚠️⚠️⚠️ TESTING MODE TOGGLE ⚠️⚠️⚠️
   // Set to FALSE before production to use FIRST serials/ULs (normal behavior)
@@ -1953,6 +1954,10 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
         timestamp: new Date(),
         result: result
       };
+
+      if (this.emailReportToCurrentUser) {
+        await this.sendSerialWorkflowReportToCurrentUser();
+      }
       
       // Mark submission as complete (shows success on page)
       this.submissionComplete = true;
@@ -2262,6 +2267,31 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
       timestamp: this.successSummary.timestamp,
       createdBy: userFullName
     });
+  }
+
+  private async sendSerialWorkflowReportToCurrentUser(): Promise<void> {
+    if (!this.successSummary) {
+      return;
+    }
+
+    const currentUser = this.authenticationService.currentUserValue;
+    const userFullName = currentUser?.full_name || 'System';
+    const reportData = {
+      workOrder: this.successSummary.workOrder,
+      batch: this.successSummary.batch,
+      customer: this.successSummary.customer,
+      assets: this.successSummary.createdAssets,
+      timestamp: this.successSummary.timestamp,
+      createdBy: userFullName,
+    };
+
+    try {
+      await this.serialNumberService.sendSerialWorkflowReport(reportData);
+      this.toastrService.success('Serial workflow report PDF emailed to your account.', 'Email Sent');
+    } catch (error) {
+      console.error('Failed to email serial workflow report:', error);
+      this.toastrService.warning('Assets were created, but the report email could not be sent.', 'Email Not Sent');
+    }
   }
 
   /**

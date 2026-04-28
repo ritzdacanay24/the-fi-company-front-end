@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, firstValueFrom } from 'rxjs';
 import { SerialNumber, SerialNumberAssignment, SerialNumberReport, SerialNumberUsageReport, SerialNumberStats, SerialNumberBatch } from '../models/serial-number.model';
+import { PrintReportData } from '@app/shared/services/serial-report-print.service';
 
 @Injectable({
   providedIn: 'root'
@@ -134,6 +135,9 @@ export class SerialNumberService {
     return await firstValueFrom(this.http.get<SerialNumberReport[]>(`${this.API_URL}`, { params }));
   }
 
+    async sendSerialWorkflowReport(reportData: PrintReportData): Promise<any> {
+      return await firstValueFrom(this.http.post(`${this.API_URL}/send-report`, reportData));
+    }
   async getUsageReport(filters?: any): Promise<SerialNumberUsageReport[]> {
     let params = new HttpParams();
     if (filters) {

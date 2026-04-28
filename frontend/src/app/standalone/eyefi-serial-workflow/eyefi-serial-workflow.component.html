@@ -1390,7 +1390,18 @@
             </button>
             
             <!-- Step 6: Submit buttons (only shown before submission) -->
-            <div *ngIf="currentStep === 6 && !submissionComplete" class="d-flex gap-2">
+            <div *ngIf="currentStep === 6 && !submissionComplete" class="d-flex gap-3 align-items-center flex-wrap">
+              <div class="form-check mb-0 me-2">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="email-report-to-current-user"
+                  [(ngModel)]="emailReportToCurrentUser"
+                  [disabled]="isLoading">
+                <label class="form-check-label small fw-semibold" for="email-report-to-current-user">
+                  Email me a PDF copy after submit
+                </label>
+              </div>
               <!-- Test Submit Button -->
               <!-- <button class="btn btn-warning" 
                       type="button" 
