@@ -223,13 +223,18 @@ export class MultiCardViewComponent implements OnInit, OnDestroy {
     return null;
   }
 
+  /** Dynamic font size per card — fills the card width based on part number length */
+  getPartNumberFontSize(partNumber: string): string {
+    const len = (partNumber || '').length || 1;
+    const cqi = Math.min(20, Math.max(4, Math.round(154 / len)));
+    return `clamp(1rem, ${cqi}cqi, 10rem)`;
+  }
+
   getPriorityRankClass(index: number): string {
-    if (index === 0) return 'priority-gold';      // #1 - Gold
-    if (index === 1) return 'priority-silver';    // #2 - Silver  
-    if (index === 2) return 'priority-bronze';    // #3 - Bronze
-    if (index <= 4) return 'priority-high';       // #4-5 - High priority
-    if (index <= 9) return 'priority-medium';     // #6-10 - Medium priority
-    return 'priority-standard';                   // #11+ - Standard
+    if (index === 0) return 'priority-gold';      // #1
+    if (index === 1) return 'priority-silver';    // #2
+    if (index === 2) return 'priority-bronze';    // #3
+    return 'priority-rest';                       // #4+ — same color
   }
 
   /**

@@ -14,7 +14,6 @@ import { DisplayUtilsService } from './services/display-utils.service';
 import { ThemeManagementService, ThemeSettings } from './services/theme-management.service';
 
 // Components
-import { SinglePriorityViewComponent } from './components/single-priority-view/single-priority-view.component';
 import { MultiCardViewComponent } from './components/multi-card-view/multi-card-view.component';
 import { PrioritySettingsComponent } from './components/priority-settings/priority-settings.component';
 
@@ -25,7 +24,6 @@ import { PrioritySettingsComponent } from './components/priority-settings/priori
     CommonModule,
     FormsModule,
     SlickCarouselModule,
-    SinglePriorityViewComponent,
     MultiCardViewComponent,
     PrioritySettingsComponent
   ],
@@ -33,6 +31,8 @@ import { PrioritySettingsComponent } from './components/priority-settings/priori
   styleUrls: ['./shipping-priority-display.component.scss']
 })
 export class StandaloneShippingPriorityDisplayComponent implements OnInit, AfterViewInit, OnDestroy {
+  private readonly BREAK_ALERT_STATE_KEY = 'shipping-priority-break-alert-state';
+  private readonly BREAK_ALERT_TRIGGERED_KEY = 'shipping-priority-break-alert-triggered';
   
   // Reactive data stream
   displayData$ = this.priorityDisplayService.displayData$;
@@ -45,7 +45,7 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, After
   refreshCountdown: string = '';
   
   // Display mode options
-  displayMode: 'single' | 'top3' | 'top6' | 'grid' = 'top6';
+  displayMode: 'top6' | 'grid' = 'top6';
   
   // Card layout options
   cardLayout: 'traditional' | 'production' | 'salesorder' | 'compact' | 'detailed' | 'minimal' | 'dashboard' = 'salesorder';
@@ -60,6 +60,28 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, After
   
   // Combined view setting
   showCombinedView: boolean = false;
+
+  // Break schedule configuration
+  firstBreakTime: string = '09:15';
+  lunchTime: string = '11:30';
+  secondBreakTime: string = '13:30';
+  autoCloseBreakAlertOnComplete: boolean = true;
+  breakNotificationsEnabled: boolean = true;
+
+  // Break alert modal state
+  showBreakAlertModal: boolean = false;
+  breakAlertTitle: string = '';
+  breakAlertMessage: string = '';
+  breakAlertEmoji: string = '';
+  breakCountdownLabel: string = '';
+  breakCountdownDisplay: string = '00:00';
+  breakCountdownProgress: number = 0;
+  breakCountdownComplete: boolean = false;
+  private breakCountdownTotalSeconds: number = 0;
+  private breakCountdownRemainingSeconds: number = 0;
+  private currentBreakAlertKey: 'firstBreak' | 'lunch' | 'secondBreak' | 'manualTest' | null = null;
+  private triggeredBreakAlerts = new Set<string>();
+  private breakCountdownSubscription?: Subscription;
   
   // Slick Carousel configuration - optimized for smooth auto-scrolling
   slickConfig = {
@@ -251,6 +273,7 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, After
     this.timeSubscription?.unsubscribe();
     this.refreshSubscription?.unsubscribe();
     this.themeSubscription?.unsubscribe();
+    this.breakCountdownSubscription?.unsubscribe();
     
     // Clean up theme service
     this.themeService.destroy();
@@ -271,6 +294,8 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, After
     
     // Load settings from localStorage
     this.loadSettingsFromStorage();
+    this.loadTriggeredBreakAlerts();
+    this.restoreBreakAlertState();
     
     // Setup query parameter subscription for reactive updates (keep for backward compatibility)
     this.setupQueryParamSubscription();
@@ -295,17 +320,17 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, After
     this.route.queryParams
       .pipe(takeUntil(this.destroy$))
       .subscribe(params => {
-        const viewParam = params['view'] as 'single' | 'top3' | 'top6' | 'grid';
+        const viewParam = params['view'] as 'top6' | 'grid';
         const refreshParam = params['refresh'];
         console.log('🔗 Query params changed:', params);
         
         // Handle display mode
-        if (viewParam && ['single', 'top3', 'top6', 'grid'].includes(viewParam)) {
+        if (viewParam && ['top6', 'grid'].includes(viewParam)) {
           this.displayMode = viewParam;
           console.log(`🔗 Display mode set from URL: ${this.displayMode}`);
         } else {
-          this.displayMode = 'top3'; // default
-          console.log('🔗 No valid view parameter, using default: top3');
+          this.displayMode = 'top6'; // default
+          console.log('🔗 No valid view parameter, using default: top6');
         }
         
         // Handle refresh interval
@@ -333,7 +358,191 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, After
       .subscribe(() => {
         this.currentTime = this.displayUtils.formatCurrentTime();
         this.updateRefreshCountdown();
+        this.checkBreakScheduleAlerts();
       });
+  }
+
+  /**
+   * Trigger break schedule alerts at configured times.
+   * Each alert fires only once per day.
+   */
+  private checkBreakScheduleAlerts(): void {
+    if (!this.breakNotificationsEnabled) {
+      return;
+    }
+
+    const now = new Date();
+    const today = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+    const currentTimeKey = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+
+    const alerts = [
+      { key: 'firstBreak', time: this.firstBreakTime, title: 'Break Time', message: "It's break time.", emoji: '☕', minutes: 15 },
+      { key: 'lunch', time: this.lunchTime, title: 'Lunch Time', message: "It's lunch time.", emoji: '🍔', minutes: 30 },
+      { key: 'secondBreak', time: this.secondBreakTime, title: 'Almost Home Time', message: "It's almost home time :)", emoji: '🏁', minutes: 15 }
+    ] as const;
+
+    alerts.forEach(alert => {
+      const alertKey = `${today}:${alert.key}`;
+      if (alert.time === currentTimeKey && !this.triggeredBreakAlerts.has(alertKey)) {
+        this.triggeredBreakAlerts.add(alertKey);
+        this.saveTriggeredBreakAlerts();
+        this.showBreakAlert(alert.key, alert.title, alert.message, alert.emoji, alert.minutes);
+      }
+    });
+
+    // Keep only today's alert keys.
+    let removedOldKey = false;
+    this.triggeredBreakAlerts.forEach(key => {
+      if (!key.startsWith(`${today}:`)) {
+        this.triggeredBreakAlerts.delete(key);
+        removedOldKey = true;
+      }
+    });
+    if (removedOldKey) {
+      this.saveTriggeredBreakAlerts();
+    }
+  }
+
+  private showBreakAlert(
+    alertKey: 'firstBreak' | 'lunch' | 'secondBreak' | 'manualTest',
+    title: string,
+    message: string,
+    emoji: string = '',
+    durationMinutes: number = 15,
+    endTimestamp?: number
+  ): void {
+    this.currentBreakAlertKey = alertKey;
+    this.breakAlertTitle = title;
+    this.breakAlertMessage = message;
+    this.breakAlertEmoji = emoji;
+    this.startBreakCountdown(durationMinutes, endTimestamp);
+    this.showBreakAlertModal = true;
+  }
+
+  closeBreakAlertModal(): void {
+    this.showBreakAlertModal = false;
+    this.breakAlertEmoji = '';
+    this.currentBreakAlertKey = null;
+    this.breakCountdownSubscription?.unsubscribe();
+    localStorage.removeItem(this.BREAK_ALERT_STATE_KEY);
+  }
+
+  private startBreakCountdown(durationMinutes: number, endTimestamp?: number): void {
+    this.breakCountdownSubscription?.unsubscribe();
+
+    this.breakCountdownLabel = `${durationMinutes} minute timer`;
+    this.breakCountdownTotalSeconds = Math.max(1, durationMinutes * 60);
+    const nowMs = Date.now();
+    const targetEnd = endTimestamp ?? (nowMs + this.breakCountdownTotalSeconds * 1000);
+    this.breakCountdownRemainingSeconds = Math.max(0, Math.ceil((targetEnd - nowMs) / 1000));
+    this.breakCountdownComplete = false;
+    this.persistBreakAlertState(targetEnd, durationMinutes);
+    this.updateBreakCountdownUi();
+
+    this.breakCountdownSubscription = timer(1000, 1000)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.breakCountdownRemainingSeconds = Math.max(0, this.breakCountdownRemainingSeconds - 1);
+        this.breakCountdownComplete = this.breakCountdownRemainingSeconds === 0;
+        this.updateBreakCountdownUi();
+
+        if (this.breakCountdownRemainingSeconds === 0) {
+          this.breakCountdownSubscription?.unsubscribe();
+          localStorage.removeItem(this.BREAK_ALERT_STATE_KEY);
+          if (this.autoCloseBreakAlertOnComplete && this.showBreakAlertModal) {
+            this.closeBreakAlertModal();
+          }
+        }
+      });
+  }
+
+  private persistBreakAlertState(endTimestamp: number, durationMinutes: number): void {
+    const state = {
+      key: this.currentBreakAlertKey,
+      title: this.breakAlertTitle,
+      message: this.breakAlertMessage,
+      emoji: this.breakAlertEmoji,
+      durationMinutes,
+      endTimestamp,
+      savedAt: Date.now()
+    };
+    localStorage.setItem(this.BREAK_ALERT_STATE_KEY, JSON.stringify(state));
+  }
+
+  private restoreBreakAlertState(): void {
+    try {
+      const raw = localStorage.getItem(this.BREAK_ALERT_STATE_KEY);
+      if (!raw) {
+        return;
+      }
+
+      const state = JSON.parse(raw);
+      if (!state?.key || !state?.endTimestamp || !state?.durationMinutes) {
+        localStorage.removeItem(this.BREAK_ALERT_STATE_KEY);
+        return;
+      }
+
+      if (Date.now() >= Number(state.endTimestamp)) {
+        localStorage.removeItem(this.BREAK_ALERT_STATE_KEY);
+        return;
+      }
+
+      this.showBreakAlert(
+        state.key,
+        state.title || 'Break Time',
+        state.message || "It's break time.",
+        state.emoji || '',
+        Number(state.durationMinutes),
+        Number(state.endTimestamp)
+      );
+    } catch (error) {
+      console.warn('⚠️ Failed to restore break alert state:', error);
+      localStorage.removeItem(this.BREAK_ALERT_STATE_KEY);
+    }
+  }
+
+  private loadTriggeredBreakAlerts(): void {
+    try {
+      const raw = localStorage.getItem(this.BREAK_ALERT_TRIGGERED_KEY);
+      if (!raw) {
+        return;
+      }
+      const keys: string[] = JSON.parse(raw);
+      this.triggeredBreakAlerts = new Set(Array.isArray(keys) ? keys : []);
+    } catch (error) {
+      console.warn('⚠️ Failed to load triggered break alerts:', error);
+      this.triggeredBreakAlerts = new Set<string>();
+    }
+  }
+
+  private saveTriggeredBreakAlerts(): void {
+    localStorage.setItem(this.BREAK_ALERT_TRIGGERED_KEY, JSON.stringify(Array.from(this.triggeredBreakAlerts)));
+  }
+
+  private updateBreakCountdownUi(): void {
+    const remaining = this.breakCountdownRemainingSeconds;
+    const minutes = Math.floor(remaining / 60);
+    const seconds = remaining % 60;
+    this.breakCountdownDisplay = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+    const elapsed = this.breakCountdownTotalSeconds - remaining;
+    this.breakCountdownProgress = Math.max(0, Math.min(100, (elapsed / this.breakCountdownTotalSeconds) * 100));
+  }
+
+  onBreakAlertTestRequested(type: 'firstBreak' | 'lunch' | 'secondBreak'): void {
+    if (!this.breakNotificationsEnabled) {
+      return;
+    }
+
+    if (type === 'firstBreak') {
+      this.showBreakAlert('manualTest', 'Break Time', "It's break time.", '☕', 15);
+      return;
+    }
+    if (type === 'lunch') {
+      this.showBreakAlert('manualTest', 'Lunch Time', "It's lunch time.", '🍔', 30);
+      return;
+    }
+    this.showBreakAlert('manualTest', 'Almost Home Time', "It's almost home time :)", '🏁', 15);
   }
 
   /**
@@ -491,24 +700,9 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, After
    */
   toggleDisplayMode(): void {
     const oldMode = this.displayMode;
-    
-    // Cycle through all display modes
-    switch (this.displayMode) {
-      case 'single':
-        this.displayMode = 'top3';
-        break;
-      case 'top3':
-        this.displayMode = 'top6';
-        break;
-      case 'top6':
-        this.displayMode = 'grid';
-        break;
-      case 'grid':
-        this.displayMode = 'single';
-        break;
-      default:
-        this.displayMode = 'single';
-    }
+
+    // Toggle between allowed modes only.
+    this.displayMode = this.displayMode === 'top6' ? 'grid' : 'top6';
     
     console.log(`🔄 Display mode changed from ${oldMode} to: ${this.displayMode}`);
     
@@ -546,17 +740,17 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, After
    */
   private restoreDisplayMode(): void {
     try {
-      const viewParam = this.route.snapshot.queryParams['view'] as 'single' | 'top3' | 'top6' | 'grid';
-      if (viewParam && (viewParam === 'single' || viewParam === 'top3')) {
+      const viewParam = this.route.snapshot.queryParams['view'] as 'top6' | 'grid';
+      if (viewParam && (viewParam === 'top6' || viewParam === 'grid')) {
         this.displayMode = viewParam;
         console.log(`� Display mode restored from URL: ${this.displayMode}`);
       } else {
-        this.displayMode = 'single'; // default
-        console.log('� No view parameter found in URL, using default: single');
+        this.displayMode = 'top6'; // default
+        console.log('� No view parameter found in URL, using default: top6');
       }
     } catch (error) {
       console.warn('⚠️ Failed to restore display mode from URL:', error);
-      this.displayMode = 'single'; // fallback to default
+      this.displayMode = 'top6'; // fallback to default
     }
   }
 
@@ -724,11 +918,9 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, After
    */
   getDisplayModeName(): string {
     switch (this.displayMode) {
-      case 'single': return 'Single View';
-      case 'top3': return 'Top 3';
       case 'top6': return 'Top 6';
       case 'grid': return 'Grid View';
-      default: return 'Single View';
+      default: return 'Top 6';
     }
   }
 
@@ -737,11 +929,9 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, After
    */
   getNextDisplayModeName(): string {
     switch (this.displayMode) {
-      case 'single': return 'Top 3';
-      case 'top3': return 'Top 6';
       case 'top6': return 'Grid View';
-      case 'grid': return 'Single View';
-      default: return 'Top 3';
+      case 'grid': return 'Top 6';
+      default: return 'Grid View';
     }
   }
 
@@ -794,7 +984,7 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, After
         const settings = JSON.parse(savedSettings);
         
         // Load display mode (only if valid, otherwise keep component default)
-        if (settings.displayMode && ['single', 'top3', 'top6', 'grid'].includes(settings.displayMode)) {
+        if (settings.displayMode && ['top6', 'grid'].includes(settings.displayMode)) {
           this.displayMode = settings.displayMode;
         }
         // If no saved displayMode, component default (top6) will be used
@@ -805,10 +995,8 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, After
         }
         
         // Load card layout (only if valid, otherwise keep component default)
-        if (settings.cardLayout && ['traditional', 'production', 'salesorder', 'compact', 'detailed', 'minimal', 'dashboard'].includes(settings.cardLayout)) {
-          this.cardLayout = settings.cardLayout;
-        }
-        // If no saved cardLayout, component default (salesorder) will be used
+        // Part number layout style is enforced.
+        this.cardLayout = 'salesorder';
         
         // Load coming up next settings
         if (settings.showComingUpNext !== undefined) {
@@ -836,6 +1024,23 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, After
         if (settings.showCombinedView !== undefined) {
           this.showCombinedView = settings.showCombinedView;
         }
+
+        // Load break schedule settings
+        if (settings.firstBreakTime) {
+          this.firstBreakTime = settings.firstBreakTime;
+        }
+        if (settings.lunchTime) {
+          this.lunchTime = settings.lunchTime;
+        }
+        if (settings.secondBreakTime) {
+          this.secondBreakTime = settings.secondBreakTime;
+        }
+        if (settings.autoCloseBreakAlertOnComplete !== undefined) {
+          this.autoCloseBreakAlertOnComplete = settings.autoCloseBreakAlertOnComplete;
+        }
+        if (settings.breakNotificationsEnabled !== undefined) {
+          this.breakNotificationsEnabled = settings.breakNotificationsEnabled;
+        }
         
         console.log('✅ Settings loaded from localStorage:', settings);
         console.log('📊 Final applied settings - displayMode:', this.displayMode, 'cardLayout:', this.cardLayout, 'priorityType:', this.priorityType, 'showCombinedView:', this.showCombinedView);
@@ -862,6 +1067,11 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, After
         showRefreshOverlay: this.showRefreshOverlay,
         priorityType: this.priorityType,
         showCombinedView: this.showCombinedView,
+        firstBreakTime: this.firstBreakTime,
+        lunchTime: this.lunchTime,
+        secondBreakTime: this.secondBreakTime,
+        autoCloseBreakAlertOnComplete: this.autoCloseBreakAlertOnComplete,
+        breakNotificationsEnabled: this.breakNotificationsEnabled,
         lastUpdated: new Date().toISOString()
       };
       
@@ -876,8 +1086,8 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, After
    * Change display mode from settings panel
    */
   changeDisplayMode(mode: string): void {
-    if (['single', 'top3', 'top6', 'grid'].includes(mode)) {
-      this.displayMode = mode as 'single' | 'top3' | 'top6' | 'grid';
+    if (['top6', 'grid'].includes(mode)) {
+      this.displayMode = mode as 'top6' | 'grid';
       this.priorityDisplayService.updateDisplayMode(this.displayMode);
       this.saveSettingsToStorage();
     }
@@ -886,7 +1096,7 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, After
   /**
    * Handle display mode change from settings component
    */
-  onDisplayModeChange(mode: 'single' | 'top3' | 'top6' | 'grid'): void {
+  onDisplayModeChange(mode: 'top6' | 'grid'): void {
     this.displayMode = mode;
     this.priorityDisplayService.updateDisplayMode(this.displayMode);
     this.saveSettingsToStorage();
@@ -1006,15 +1216,25 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, After
   /**
    * Handle settings applied from settings component
    */
-  onSettingsApplied(settings: { displayMode: 'single' | 'top3' | 'top6' | 'grid'; refreshInterval: number; cardLayout: 'traditional' | 'production' | 'salesorder' | 'compact' | 'detailed' | 'minimal' | 'dashboard'; showComingUpNext: boolean; autoScrollEnabled: boolean; scrollSpeed: number; showRefreshOverlay: boolean; showCombinedView: boolean }): void {
+  onSettingsApplied(settings: { displayMode: 'top6' | 'grid'; refreshInterval: number; cardLayout: 'traditional' | 'production' | 'salesorder' | 'compact' | 'detailed' | 'minimal' | 'dashboard'; showComingUpNext: boolean; autoScrollEnabled: boolean; scrollSpeed: number; showRefreshOverlay: boolean; showCombinedView: boolean; firstBreakTime: string; lunchTime: string; secondBreakTime: string; autoCloseBreakAlertOnComplete: boolean; breakNotificationsEnabled: boolean }): void {
     this.displayMode = settings.displayMode;
     this.refreshInterval = settings.refreshInterval;
-    this.cardLayout = settings.cardLayout;
+    this.cardLayout = 'salesorder';
     this.showComingUpNext = settings.showComingUpNext;
     this.autoScrollEnabled = settings.autoScrollEnabled;
     this.scrollSpeed = settings.scrollSpeed;
     this.showRefreshOverlay = settings.showRefreshOverlay;
     this.showCombinedView = settings.showCombinedView;
+    this.firstBreakTime = settings.firstBreakTime || '09:15';
+    this.lunchTime = settings.lunchTime || '11:30';
+    this.secondBreakTime = settings.secondBreakTime || '13:30';
+    this.autoCloseBreakAlertOnComplete = settings.autoCloseBreakAlertOnComplete !== undefined ? settings.autoCloseBreakAlertOnComplete : true;
+    this.breakNotificationsEnabled = settings.breakNotificationsEnabled !== undefined ? settings.breakNotificationsEnabled : true;
+
+    if (!this.breakNotificationsEnabled && this.showBreakAlertModal) {
+      this.closeBreakAlertModal();
+    }
+
     this.priorityDisplayService.updateDisplayMode(this.displayMode);
     this.startAutoRefresh();
     this.saveSettingsToStorage();
@@ -1046,9 +1266,8 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, After
    */
   getCardColumnClass(): string {
     switch (this.displayMode) {
-      case 'top3': return 'col-lg-4 col-md-6'; // 3 cards per row on large screens
-      case 'top6': return 'col-lg-4 col-md-6'; // 3 cards per row, showing 6 total (2 rows)
-      case 'grid': return 'col-lg-3 col-md-4 col-sm-6'; // 4 cards per row on large screens, more dense
+      case 'top6': return 'col-lg-4 col-md-6';
+      case 'grid': return 'col-lg-3 col-md-4 col-sm-6';
       default: return 'col-lg-4 col-md-6';
     }
   }
@@ -1123,20 +1342,14 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, After
     let currentlyDisplayedCount = 0;
     
     switch (this.displayMode) {
-      case 'single':
-        currentlyDisplayedCount = 1;
-        break;
-      case 'top3':
-        currentlyDisplayedCount = 3;
-        break;
       case 'top6':
         currentlyDisplayedCount = 6;
         break;
       case 'grid':
-        currentlyDisplayedCount = 12; // Grid shows up to 12
+        currentlyDisplayedCount = 12;
         break;
       default:
-        currentlyDisplayedCount = 1;
+        currentlyDisplayedCount = 6;
         break;
     }
     

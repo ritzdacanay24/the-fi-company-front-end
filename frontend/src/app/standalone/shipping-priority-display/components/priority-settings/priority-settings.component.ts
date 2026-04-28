@@ -12,7 +12,7 @@ export interface RefreshInterval {
 }
 
 export interface DisplaySettings {
-  displayMode: 'single' | 'top3' | 'top6' | 'grid';
+  displayMode: 'top6' | 'grid';
   refreshInterval: number;
   cardLayout: 'traditional' | 'production' | 'salesorder' | 'compact' | 'detailed' | 'minimal' | 'dashboard';
   showComingUpNext: boolean;
@@ -25,6 +25,11 @@ export interface DisplaySettings {
   autoSwitchEnabled: boolean;
   switchIntervalMinutes: number;
   zoomLevel: number;
+  firstBreakTime: string;
+  lunchTime: string;
+  secondBreakTime: string;
+  autoCloseBreakAlertOnComplete: boolean;
+  breakNotificationsEnabled: boolean;
 }
 
 export interface CardLayout {
@@ -42,7 +47,7 @@ export interface CardLayout {
   styleUrls: ['./priority-settings.component.scss']
 })
 export class PrioritySettingsComponent implements OnInit, OnDestroy {
-  @Input() displayMode: 'single' | 'top3' | 'top6' | 'grid' = 'single';
+  @Input() displayMode: 'top6' | 'grid' = 'top6';
   @Input() refreshInterval: number = 300000; // 5 minutes
   @Input() refreshCountdown: string = '';
   @Input() cardLayout: 'traditional' | 'production' | 'salesorder' | 'compact' | 'detailed' | 'minimal' | 'dashboard' = 'traditional';
@@ -53,6 +58,11 @@ export class PrioritySettingsComponent implements OnInit, OnDestroy {
   @Input() showRefreshOverlay: boolean = false;
   @Input() priorityType: 'kanban' | 'shipping' = 'kanban';
   @Input() showCombinedView: boolean = false;
+  @Input() firstBreakTime: string = '09:15';
+  @Input() lunchTime: string = '11:30';
+  @Input() secondBreakTime: string = '13:30';
+  @Input() autoCloseBreakAlertOnComplete: boolean = true;
+  @Input() breakNotificationsEnabled: boolean = true;
 
   // Theme-related properties
   currentTheme: 'light' | 'dark' | 'dark-vibrant' | 'midnight' | 'neon' | 'bootstrap-dark' = 'light';
@@ -73,7 +83,7 @@ export class PrioritySettingsComponent implements OnInit, OnDestroy {
   private themeSubscription?: Subscription;
   private countdownSubscription?: Subscription;
 
-  @Output() displayModeChange = new EventEmitter<'single' | 'top3' | 'top6' | 'grid'>();
+  @Output() displayModeChange = new EventEmitter<'top6' | 'grid'>();
   @Output() refreshIntervalChange = new EventEmitter<number>();
   @Output() cardLayoutChange = new EventEmitter<'traditional' | 'production' | 'salesorder' | 'compact' | 'detailed' | 'minimal' | 'dashboard'>();
   @Output() refreshRequested = new EventEmitter<void>();
@@ -84,6 +94,7 @@ export class PrioritySettingsComponent implements OnInit, OnDestroy {
   @Output() themeSettingsChanged = new EventEmitter<ThemeSettings>();
   @Output() priorityTypeChange = new EventEmitter<'kanban' | 'shipping'>();
   @Output() showCombinedViewChange = new EventEmitter<boolean>();
+  @Output() breakAlertTestRequested = new EventEmitter<'firstBreak' | 'lunch' | 'secondBreak'>();
 
   private offcanvasRef: any;
 
@@ -98,18 +109,6 @@ export class PrioritySettingsComponent implements OnInit, OnDestroy {
   ];
 
   displayModes = [
-    { 
-      value: 'single', 
-      label: 'Single View', 
-      icon: 'mdi-view-agenda', 
-      description: 'Focus on one priority with sidebar queue' 
-    },
-    { 
-      value: 'top3', 
-      label: 'Top 3', 
-      icon: 'mdi-view-column', 
-      description: 'Show top 3 priorities in cards' 
-    },
     { 
       value: 'top6', 
       label: 'Top 6', 
@@ -176,6 +175,11 @@ export class PrioritySettingsComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadSettingsFromStorage();
+    // Dark-only mode for this display.
+    this.currentTheme = 'bootstrap-dark';
+    this.autoSwitchEnabled = false;
+    this.themeService.setTheme('bootstrap-dark', true);
+    this.themeService.setAutoSwitchEnabled(false);
     this.initializeThemeSubscriptions();
   }
 
@@ -189,7 +193,7 @@ export class PrioritySettingsComponent implements OnInit, OnDestroy {
   }
 
   onDisplayModeChange(mode: string): void {
-    const validMode = mode as 'single' | 'top3' | 'top6' | 'grid';
+    const validMode = mode as 'top6' | 'grid';
     this.displayMode = validMode;
     this.displayModeChange.emit(validMode);
     this.saveSettingsToStorage();
@@ -235,7 +239,12 @@ export class PrioritySettingsComponent implements OnInit, OnDestroy {
       currentTheme: this.currentTheme,
       autoSwitchEnabled: this.autoSwitchEnabled,
       switchIntervalMinutes: this.switchIntervalMinutes,
-      zoomLevel: this.zoomLevel
+      zoomLevel: this.zoomLevel,
+      firstBreakTime: this.firstBreakTime,
+      lunchTime: this.lunchTime,
+      secondBreakTime: this.secondBreakTime,
+      autoCloseBreakAlertOnComplete: this.autoCloseBreakAlertOnComplete,
+      breakNotificationsEnabled: this.breakNotificationsEnabled
     });
   }
 
@@ -267,6 +276,18 @@ export class PrioritySettingsComponent implements OnInit, OnDestroy {
     this.saveSettingsToStorage();
   }
 
+  onBreakScheduleChange(): void {
+    this.saveSettingsToStorage();
+  }
+
+  onAutoCloseBreakAlertChange(): void {
+    this.saveSettingsToStorage();
+  }
+
+  onBreakNotificationsEnabledChange(): void {
+    this.saveSettingsToStorage();
+  }
+
   onApplyAndRefresh(): void {
     const settings: DisplaySettings = {
       displayMode: this.displayMode,
@@ -280,10 +301,20 @@ export class PrioritySettingsComponent implements OnInit, OnDestroy {
       currentTheme: this.currentTheme,
       autoSwitchEnabled: this.autoSwitchEnabled,
       switchIntervalMinutes: this.switchIntervalMinutes,
-      zoomLevel: this.zoomLevel
+      zoomLevel: this.zoomLevel,
+      firstBreakTime: this.firstBreakTime,
+      lunchTime: this.lunchTime,
+      secondBreakTime: this.secondBreakTime,
+      autoCloseBreakAlertOnComplete: this.autoCloseBreakAlertOnComplete,
+      breakNotificationsEnabled: this.breakNotificationsEnabled
     };
     this.settingsApplied.emit(settings);
     this.onRefreshData();
+  }
+
+  onSaveAndTestBreakAlert(type: 'firstBreak' | 'lunch' | 'secondBreak'): void {
+    this.onApplyAndRefresh();
+    this.breakAlertTestRequested.emit(type);
   }
 
   onResetToDefaults(): void {
@@ -302,6 +333,11 @@ export class PrioritySettingsComponent implements OnInit, OnDestroy {
       this.switchIntervalMinutes = 30;
       this.zoomLevel = 100;
       this.showCombinedView = false;
+      this.firstBreakTime = '09:15';
+      this.lunchTime = '11:30';
+      this.secondBreakTime = '13:30';
+      this.autoCloseBreakAlertOnComplete = true;
+      this.breakNotificationsEnabled = true;
 
       // Clear localStorage
       localStorage.removeItem('shippingPriorityDisplaySettings');
@@ -318,7 +354,7 @@ export class PrioritySettingsComponent implements OnInit, OnDestroy {
       this.priorityTypeChange.emit(this.priorityType);
       
       // Apply theme
-      this.themeService.setTheme(this.currentTheme);
+      this.themeService.setTheme('bootstrap-dark', true);
       this.themeService.setAutoSwitchEnabled(this.autoSwitchEnabled);
       this.themeService.setAutoSwitchInterval(this.switchIntervalMinutes);
       this.themeService.setZoomLevel(this.zoomLevel);
@@ -342,7 +378,12 @@ export class PrioritySettingsComponent implements OnInit, OnDestroy {
         currentTheme: this.currentTheme,
         autoSwitchEnabled: this.autoSwitchEnabled,
         switchIntervalMinutes: this.switchIntervalMinutes,
-        zoomLevel: this.zoomLevel
+        zoomLevel: this.zoomLevel,
+        firstBreakTime: this.firstBreakTime,
+        lunchTime: this.lunchTime,
+        secondBreakTime: this.secondBreakTime,
+        autoCloseBreakAlertOnComplete: this.autoCloseBreakAlertOnComplete,
+        breakNotificationsEnabled: this.breakNotificationsEnabled
       };
       this.settingsApplied.emit(defaultSettings);
       
@@ -438,7 +479,7 @@ export class PrioritySettingsComponent implements OnInit, OnDestroy {
       const saved = localStorage.getItem('priority-display-settings');
       if (saved) {
         const settings = JSON.parse(saved);
-        if (settings.displayMode) {
+        if (settings.displayMode && (settings.displayMode === 'top6' || settings.displayMode === 'grid')) {
           this.displayMode = settings.displayMode;
         }
         if (settings.refreshInterval !== undefined) {
@@ -460,12 +501,9 @@ export class PrioritySettingsComponent implements OnInit, OnDestroy {
           this.showRefreshOverlay = settings.showRefreshOverlay;
         }
         // Load theme settings
-        if (settings.currentTheme) {
-          this.currentTheme = settings.currentTheme;
-        }
-        if (settings.autoSwitchEnabled !== undefined) {
-          this.autoSwitchEnabled = settings.autoSwitchEnabled;
-        }
+        // Dark-only mode: ignore saved theme and auto-switch values.
+        this.currentTheme = 'bootstrap-dark';
+        this.autoSwitchEnabled = false;
         if (settings.switchIntervalMinutes !== undefined) {
           this.switchIntervalMinutes = settings.switchIntervalMinutes;
         }
@@ -475,13 +513,28 @@ export class PrioritySettingsComponent implements OnInit, OnDestroy {
         if (settings.showCombinedView !== undefined) {
           this.showCombinedView = settings.showCombinedView;
         }
+        if (settings.firstBreakTime) {
+          this.firstBreakTime = settings.firstBreakTime;
+        }
+        if (settings.lunchTime) {
+          this.lunchTime = settings.lunchTime;
+        }
+        if (settings.secondBreakTime) {
+          this.secondBreakTime = settings.secondBreakTime;
+        }
+        if (settings.autoCloseBreakAlertOnComplete !== undefined) {
+          this.autoCloseBreakAlertOnComplete = settings.autoCloseBreakAlertOnComplete;
+        }
+        if (settings.breakNotificationsEnabled !== undefined) {
+          this.breakNotificationsEnabled = settings.breakNotificationsEnabled;
+        }
       }
     } catch (error) {
       console.warn('Failed to load settings from localStorage:', error);
     }
   }
 
-  private saveSettingsToStorage(): void {
+  saveSettingsToStorage(): void {
     try {
       const settings = {
         displayMode: this.displayMode,
@@ -496,6 +549,11 @@ export class PrioritySettingsComponent implements OnInit, OnDestroy {
         autoSwitchEnabled: this.autoSwitchEnabled,
         switchIntervalMinutes: this.switchIntervalMinutes,
         zoomLevel: this.zoomLevel,
+        firstBreakTime: this.firstBreakTime,
+        lunchTime: this.lunchTime,
+        secondBreakTime: this.secondBreakTime,
+        autoCloseBreakAlertOnComplete: this.autoCloseBreakAlertOnComplete,
+        breakNotificationsEnabled: this.breakNotificationsEnabled,
         lastUpdated: new Date().toISOString()
       };
       localStorage.setItem('priority-display-settings', JSON.stringify(settings));

@@ -440,13 +440,19 @@ export class PriorityDisplayService {
   private async loadPriorities(): Promise<PriorityData[]> {
     try {
       const response = await this.api.getShippingPriorities();
-      
-      if (!response?.data) {
+
+      const priorities = Array.isArray(response?.data)
+        ? response.data
+        : Array.isArray(response)
+          ? response
+          : [];
+
+      if (priorities.length === 0) {
         console.warn('⚠️ No priority data received from API');
         return [];
       }
 
-      return response.data;
+      return priorities;
     } catch (error) {
       console.error('❌ Error loading priorities:', error);
       throw error;
@@ -459,13 +465,19 @@ export class PriorityDisplayService {
   private async loadKanbanPriorities(): Promise<PriorityData[]> {
     try {
       const response = await this.api.getKanbanPriorities();
-      
-      if (!response?.data) {
+
+      const priorities = Array.isArray(response?.data)
+        ? response.data
+        : Array.isArray(response)
+          ? response
+          : [];
+
+      if (priorities.length === 0) {
         console.warn('⚠️ No kanban priority data received from API');
         return [];
       }
 
-      return response.data;
+      return priorities;
     } catch (error) {
       console.error('❌ Error loading kanban priorities:', error);
       throw error;
@@ -760,7 +772,17 @@ export class PriorityDisplayService {
    * Check if priority is active
    */
   private isActive(isActive: string | boolean): boolean {
-    return isActive === true || isActive === "1";
+    // Accept common backend truthy formats: true, 1, "1", "true", "y", "yes".
+    if (isActive === true) {
+      return true;
+    }
+
+    if (typeof isActive === 'string') {
+      const normalized = isActive.trim().toLowerCase();
+      return normalized === '1' || normalized === 'true' || normalized === 'y' || normalized === 'yes';
+    }
+
+    return (isActive as unknown as number) === 1;
   }
 
   /**

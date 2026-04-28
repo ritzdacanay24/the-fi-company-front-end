@@ -32,8 +32,8 @@
            [ngClass]="[getPriorityCardColor(i), isOwnerInProduction(item) ? 'in-production' : '']"
            [class.refreshing]="isRefreshing && showRefreshOverlay">
         
-        <!-- Production Status Banner (shown at top of card when owner is working) -->
-        <div class="production-banner" *ngIf="isOwnerInProduction(item)">
+        <!-- Production Status Banner - always rendered to keep card alignment; hidden when not in production -->
+        <div class="production-banner" [style.visibility]="isOwnerInProduction(item) ? 'visible' : 'hidden'">
           <i class="mdi mdi-hammer-wrench me-2"></i>
           <span class="fw-bold">IN PRODUCTION</span>
           <span class="ms-2" *ngIf="getProductionOwnerName(item)">- {{ getProductionOwnerName(item) }}</span>
@@ -207,7 +207,8 @@
           <div *ngIf="cardLayout === 'salesorder'" class="salesorder-layout">
             <div class="so-header">
               <!-- <div class="so-label text-uppercase text-muted fw-bold mb-3">PART NUMBER</div> -->
-              <h2 class="part-number-large fw-bold mb-1 text-primary">{{ item.partNumber }}</h2>
+              <h2 class="part-number-large fw-bold mb-1 text-primary"
+                  [style.font-size]="getPartNumberFontSize(item.partNumber)">{{ item.partNumber }}</h2>
               <p class="part-description mb-0">{{ getPartDescription(item) }}</p>
             </div>
             

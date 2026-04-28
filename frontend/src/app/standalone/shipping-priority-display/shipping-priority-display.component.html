@@ -75,19 +75,8 @@
         </div>
       </div>
 
-      <!-- Single Priority Display Mode with Sidebar Queue -->
-      <app-single-priority-view 
-        *ngIf="displayMode === 'single'"
-        [currentGroupedItem]="displayData.currentGroupedItem"
-        [nextGroupedItems]="displayData.nextGroupedItems"
-        [currentTime]="currentTime"
-        [lastUpdated]="displayData.lastUpdated"
-        (refreshRequested)="refreshData()">
-      </app-single-priority-view>
-
-      <!-- Multi-Card Priority Display Mode (Top 3, Top 6, Grid) -->
+      <!-- Multi-Card Priority Display Mode (Top 6, Grid) -->
       <app-multi-card-view 
-        *ngIf="displayMode !== 'single'"
         [groupedItems]="displayData.topThreeGroupedItems"
         [displayMode]="displayMode"
         [cardLayout]="cardLayout"
@@ -258,14 +247,52 @@
     [showRefreshOverlay]="showRefreshOverlay"
     [priorityType]="priorityType"
     [showCombinedView]="showCombinedView"
+    [firstBreakTime]="firstBreakTime"
+    [lunchTime]="lunchTime"
+    [secondBreakTime]="secondBreakTime"
+    [autoCloseBreakAlertOnComplete]="autoCloseBreakAlertOnComplete"
+    [breakNotificationsEnabled]="breakNotificationsEnabled"
     (displayModeChange)="onDisplayModeChange($event)"
     (refreshIntervalChange)="onRefreshIntervalChange($event)"
     (cardLayoutChange)="onCardLayoutChange($event)"
     (comingUpNextSettingsChange)="onComingUpNextSettingsChange($event)"
     (priorityTypeChange)="togglePriorityType($event)"
     (showCombinedViewChange)="toggleCombinedView($event)"
+    (breakAlertTestRequested)="onBreakAlertTestRequested($event)"
     (refreshRequested)="refreshData()"
     (settingsApplied)="onSettingsApplied($event); offcanvas.close()"
     (closed)="offcanvas.close()">
   </app-priority-settings>
 </ng-template>
+
+<!-- Break Alert Modal -->
+<div *ngIf="showBreakAlertModal" class="break-alert-backdrop">
+  <div class="break-alert-panel">
+    <div class="break-alert-header">
+      <div class="break-alert-pill">
+        <i class="mdi mdi-bell-ring-outline me-2"></i>
+        Scheduled Alert
+      </div>
+      <button type="button" class="btn btn-outline-light btn-lg" (click)="closeBreakAlertModal()">Dismiss</button>
+    </div>
+
+    <div class="break-alert-body text-center">
+      <div *ngIf="breakAlertEmoji" class="break-alert-emoji">{{ breakAlertEmoji }}</div>
+      <h2 class="break-alert-title">{{ breakAlertTitle }}</h2>
+      <p class="break-alert-message">{{ breakAlertMessage }}</p>
+
+      <div class="break-alert-progress-wrap mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="break-alert-progress-label">{{ breakCountdownLabel }}</span>
+          <span class="break-alert-progress-time">{{ breakCountdownDisplay }}</span>
+        </div>
+        <div class="progress break-alert-progress" role="progressbar" aria-label="Break countdown" [attr.aria-valuenow]="breakCountdownProgress" aria-valuemin="0" aria-valuemax="100">
+          <div class="progress-bar" [style.width.%]="breakCountdownProgress"></div>
+        </div>
+        <div class="break-alert-complete mt-2" *ngIf="breakCountdownComplete">Timer complete.</div>
+      </div>
+
+      <div class="break-alert-time">{{ currentTime }}</div>
+    </div>
+  </div>
+</div>
