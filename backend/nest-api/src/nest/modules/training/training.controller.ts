@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, Headers, Inject, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { CurrentUserId } from '@/nest/decorators/current-user-id.decorator';
 import { Permissions, RolePermissionGuard } from '../access-control';
 import { TrainingService } from './training.service';
 
@@ -28,8 +29,12 @@ export class TrainingController {
 
   @Put('sessions/:id')
   @Permissions('write')
-  async updateSession(@Param('id') id: string, @Body() body: Record<string, unknown> = {}) {
-    return this.trainingService.updateSession(id, body);
+  async updateSession(
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown> = {},
+    @CurrentUserId() userId: number,
+  ) {
+    return this.trainingService.updateSession(id, body, userId);
   }
 
   @Delete('sessions/:id')

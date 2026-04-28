@@ -1,14 +1,25 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { ForbiddenException, Inject, Injectable, Logger } from '@nestjs/common';
 import { PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { MysqlService } from '@/shared/database/mysql.service';
+import { AccessControlService } from '../access-control';
+import { EmailService } from '@/shared/email/email.service';
+import { EmailTemplateService } from '@/shared/email/email-template.service';
 
 type Dict = Record<string, unknown>;
 
 @Injectable()
 export class TrainingService {
+  private readonly logger = new Logger(TrainingService.name);
+
   constructor(
     @Inject(MysqlService)
     private readonly mysqlService: MysqlService,
+    @Inject(AccessControlService)
+    private readonly accessControlService: AccessControlService,
+    @Inject(EmailService)
+    private readonly emailService: EmailService,
+    @Inject(EmailTemplateService)
+    private readonly emailTemplateService: EmailTemplateService,
   ) {}
 
   async getSessions() {
@@ -163,13 +174,37 @@ export class TrainingService {
       return sessionId;
     });
 
+    await this.notifySessionCreatedAttendees(createdId);
+
     return this.getSession(String(createdId));
   }
 
-  async updateSession(idRaw: string, body: Dict) {
+  async updateSession(idRaw: string, body: Dict, userId: number) {
     const sessionId = this.toPositiveInt(idRaw);
     if (!sessionId) {
       return { error: 'Session id is required' };
+    }
+
+    const existingSession = await this.mysqlService.query<RowDataPacket[]>(
+      `
+        SELECT id, created_by, status
+        FROM training_sessions
+        WHERE id = :id
+        LIMIT 1
+      `,
+      { id: sessionId },
+    );
+
+    const session = existingSession[0];
+    if (!session) {
+      return { error: 'Session not found' };
+    }
+
+    const isCreator = Number(session.created_by) === userId;
+    const canManageAnySession = await this.accessControlService.userHasRoles(userId, ['manager', 'admin']);
+
+    if (!isCreator && !canManageAnySession) {
+      throw new ForbiddenException('Only the training session creator or a manager can modify this session');
     }
 
     if (typeof body.status === 'string' && Object.keys(body).length === 1) {
@@ -177,6 +212,8 @@ export class TrainingService {
       if (!['scheduled', 'in-progress', 'completed', 'cancelled'].includes(status)) {
         return { error: 'Invalid session status' };
       }
+
+      const previousStatus = String(session.status || '').trim().toLowerCase();
 
       await this.mysqlService.execute(
         `
@@ -189,6 +226,10 @@ export class TrainingService {
           id: sessionId,
         },
       );
+
+      if (status === 'cancelled' && previousStatus !== 'cancelled') {
+        await this.notifySessionCancelledAttendees(sessionId);
+      }
 
       return this.getSession(String(sessionId));
     }
@@ -631,6 +672,33 @@ export class TrainingService {
       return { error: 'sessionId and employeeId are required' };
     }
 
+    const attendeeRows = await this.mysqlService.query<RowDataPacket[]>(
+      `
+        SELECT
+          u.id,
+          u.first,
+          u.last,
+          u.email,
+          ts.title,
+          ts.date,
+          ts.start_time,
+          ts.end_time,
+          ts.location
+        FROM training_attendees ta
+        JOIN db.users u ON u.id = ta.employee_id
+        JOIN training_sessions ts ON ts.id = ta.session_id
+        WHERE ta.session_id = :session_id
+          AND ta.employee_id = :employee_id
+        LIMIT 1
+      `,
+      {
+        session_id: sessionId,
+        employee_id: employeeId,
+      },
+    );
+
+    const removedAttendee = attendeeRows[0];
+
     await this.mysqlService.execute(
       'DELETE FROM training_attendees WHERE session_id = :session_id AND employee_id = :employee_id',
       {
@@ -638,6 +706,10 @@ export class TrainingService {
         employee_id: employeeId,
       },
     );
+
+    if (removedAttendee) {
+      await this.notifySessionAttendeeRemoved(removedAttendee);
+    }
 
     return { message: 'Expected attendee removed successfully' };
   }
@@ -1113,4 +1185,143 @@ export class TrainingService {
     }
     return this.toPositiveInt(value);
   }
+
+  private async notifySessionCreatedAttendees(sessionId: number): Promise<void> {
+    try {
+      const attendeeRows = await this.mysqlService.query<RowDataPacket[]>(
+        `
+          SELECT
+            u.id,
+            u.first,
+            u.last,
+            u.email,
+            ts.title,
+            ts.date,
+            ts.start_time,
+            ts.end_time,
+            ts.location
+          FROM training_attendees ta
+          JOIN db.users u ON u.id = ta.employee_id
+          JOIN training_sessions ts ON ts.id = ta.session_id
+          WHERE ta.session_id = :session_id
+            AND u.active = 1
+            AND COALESCE(TRIM(u.email), '') <> ''
+        `,
+        { session_id: sessionId },
+      );
+
+      for (const attendee of attendeeRows) {
+        const email = String(attendee.email || '').trim();
+        if (!email) {
+          continue;
+        }
+
+        const fullName = `${String(attendee.first || '').trim()} ${String(attendee.last || '').trim()}`.trim() || 'Team Member';
+        const subject = `Training Session Assigned: ${String(attendee.title || 'Training Session').trim()}`;
+        const html = this.emailTemplateService.render('training-session-assigned', {
+          fullName,
+          title: String(attendee.title || '').trim(),
+          date: String(attendee.date || '').trim(),
+          startTime: String(attendee.start_time || '').trim(),
+          endTime: String(attendee.end_time || '').trim(),
+          location: String(attendee.location || '').trim(),
+        });
+
+        await this.emailService.sendMail({
+          to: email,
+          subject,
+          html,
+        });
+      }
+    } catch (error) {
+      this.logger.warn(
+        `Failed to send training session creation notifications for session ${sessionId}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  private async notifySessionAttendeeRemoved(attendee: RowDataPacket): Promise<void> {
+    try {
+      const email = String(attendee.email || '').trim();
+      if (!email) {
+        return;
+      }
+
+      const fullName = `${String(attendee.first || '').trim()} ${String(attendee.last || '').trim()}`.trim() || 'Team Member';
+      const subject = `Training Session Update: Removed from ${String(attendee.title || 'Training Session').trim()}`;
+      const html = this.emailTemplateService.render('training-session-removed', {
+        fullName,
+        title: String(attendee.title || '').trim(),
+        date: String(attendee.date || '').trim(),
+        startTime: String(attendee.start_time || '').trim(),
+        endTime: String(attendee.end_time || '').trim(),
+        location: String(attendee.location || '').trim(),
+      });
+
+      await this.emailService.sendMail({
+        to: email,
+        subject,
+        html,
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Failed to send attendee removal notification for session ${String(attendee.session_id || '')}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  private async notifySessionCancelledAttendees(sessionId: number): Promise<void> {
+    try {
+      const attendeeRows = await this.mysqlService.query<RowDataPacket[]>(
+        `
+          SELECT
+            u.id,
+            u.first,
+            u.last,
+            u.email,
+            ts.title,
+            ts.date,
+            ts.start_time,
+            ts.end_time,
+            ts.location
+          FROM training_attendees ta
+          JOIN db.users u ON u.id = ta.employee_id
+          JOIN training_sessions ts ON ts.id = ta.session_id
+          WHERE ta.session_id = :session_id
+            AND u.active = 1
+            AND COALESCE(TRIM(u.email), '') <> ''
+        `,
+        { session_id: sessionId },
+      );
+
+      for (const attendee of attendeeRows) {
+        const email = String(attendee.email || '').trim();
+        if (!email) {
+          continue;
+        }
+
+        const fullName = `${String(attendee.first || '').trim()} ${String(attendee.last || '').trim()}`.trim() || 'Team Member';
+        const subject = `Training Session Cancelled: ${String(attendee.title || 'Training Session').trim()}`;
+        const html = this.emailTemplateService.render('training-session-cancelled', {
+          fullName,
+          title: String(attendee.title || '').trim(),
+          date: String(attendee.date || '').trim(),
+          startTime: String(attendee.start_time || '').trim(),
+          endTime: String(attendee.end_time || '').trim(),
+          location: String(attendee.location || '').trim(),
+        });
+
+        await this.emailService.sendMail({
+          to: email,
+          subject,
+          html,
+        });
+      }
+    } catch (error) {
+      this.logger.warn(
+        `Failed to send training session cancellation notifications for session ${sessionId}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
 }
+

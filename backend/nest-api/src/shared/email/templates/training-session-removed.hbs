@@ -1,0 +1,30 @@
+<html>
+  <body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f4f6f8; color: #1f2933;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 620px; background-color: #ffffff; border: 1px solid #dde3ea; border-radius: 10px; overflow: hidden;">
+            {{> email-header}}
+            <tr>
+              <td style="padding: 20px 24px; background-color: #8b1e3f; color: #ffffff;">
+                <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Training Session Update</h2>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 24px; font-size: 14px; line-height: 1.6;">
+                <p style="margin-top: 0;">Hello {{fullName}},</p>
+                <p>You have been removed from the following training session:</p>
+                <p style="margin: 0 0 10px 0;"><strong>Session:</strong> {{title}}</p>
+                <p style="margin: 0 0 10px 0;"><strong>Date:</strong> {{date}}</p>
+                <p style="margin: 0 0 10px 0;"><strong>Time:</strong> {{startTime}} - {{endTime}}</p>
+                <p style="margin: 0 0 16px 0;"><strong>Location:</strong> {{location}}</p>
+                <p style="margin: 0;">If you believe this was a mistake, please contact the training coordinator.</p>
+              </td>
+            </tr>
+            {{> email-footer}}
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
