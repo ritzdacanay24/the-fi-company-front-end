@@ -84,13 +84,15 @@ export class ShippingService {
     return toJsonSafe(mapped) as GenericRow[];
   }
 
-  async saveMisc(payload: Record<string, unknown>): Promise<GenericRow> {
+  async saveMisc(payload: Record<string, unknown>, currentUserId?: number): Promise<GenericRow> {
     const so = String(payload.so || '').trim();
     if (!so) {
       throw new Error('So not provided');
     }
 
-    const userId = Number(payload.lastModUser || payload.createdBy || 0) || 0;
+    // Always prefer authenticated requester identity for audit attribution.
+    const payloadUserId = Number(payload.lastModUser || payload.createdBy || 0) || 0;
+    const userId = Number(currentUserId || 0) > 0 ? Number(currentUserId) : payloadUserId;
 
     return this.mysqlService.withTransaction(async (connection: PoolConnection) => {
       const oldRow = await this.workOrderOwnerService.getBySo(so, connection);
