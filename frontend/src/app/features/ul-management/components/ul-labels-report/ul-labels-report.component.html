@@ -24,12 +24,38 @@
       <div class="card shadow-sm border-0">
         <div class="card-header">
           <div class="d-flex align-items-center">
-            <button class="btn btn-outline-secondary me-3" (click)="getData()" title="Refresh data">
-              <i class="mdi mdi-refresh me-1"></i>Refresh
-            </button>
-            <button class="btn btn-outline-warning me-3" (click)="clearAllFilters()" title="Clear all filters">
-              <i class="mdi mdi-filter-remove me-1"></i>Clear Filters
-            </button>
+            <ul class="nav nav-pills me-3">
+              <li class="nav-item">
+                <button
+                  type="button"
+                  class="nav-link"
+                  [class.active]="selectedCategoryTab === 'all'"
+                  (click)="onCategoryTabChange('all')">
+                  All
+                  <span class="badge bg-light text-dark ms-1">{{ getCategoryInventoryCount('all') }}</span>
+                </button>
+              </li>
+              <li class="nav-item ms-2">
+                <button
+                  type="button"
+                  class="nav-link"
+                  [class.active]="selectedCategoryTab === 'New'"
+                  (click)="onCategoryTabChange('New')">
+                  New
+                  <span class="badge bg-light text-dark ms-1">{{ getCategoryInventoryCount('New') }}</span>
+                </button>
+              </li>
+              <li class="nav-item ms-2">
+                <button
+                  type="button"
+                  class="nav-link"
+                  [class.active]="selectedCategoryTab === 'Used'"
+                  (click)="onCategoryTabChange('Used')">
+                  Used
+                  <span class="badge bg-light text-dark ms-1">{{ getCategoryInventoryCount('Used') }}</span>
+                </button>
+              </li>
+            </ul>
             <div class="ms-auto d-flex align-items-center">
               <div class="me-3 d-flex align-items-center flex-wrap gap-2">
                 <span class="badge bg-light text-dark border">Inactive: {{ getStatusSummary().inactive }}</span>
@@ -146,7 +172,7 @@
 
         <div class="card-body p-0">
           <ag-grid-angular class="ag-theme-quartz no-border" [rowData]="data()" [gridOptions]="gridOptions"
-            style="width: 100%;height: calc(100vh - 400px);">
+            style="width: 100%;height: calc(100vh - 118px);">
           </ag-grid-angular>
         </div>
 
@@ -201,3 +227,153 @@
     </button>
   </div>
 </ng-template>
+
+<ng-template #writeOffModal>
+  <div class="modal-header">
+    <h5 class="modal-title"><i class="mdi mdi-alert-circle-outline text-danger me-2"></i>Write Off UL Label</h5>
+    <button type="button" class="btn-close" aria-label="Close" (click)="closeWriteOffModal()"></button>
+  </div>
+  <div class="modal-body">
+    <p class="text-muted mb-3">Label <strong class="text-dark">{{ selectedWriteOffUlNumber }}</strong> will be removed from available inventory and cannot be assigned.</p>
+    <div class="mb-3">
+      <label class="form-label fw-semibold">Reason <span class="text-danger">*</span></label>
+      <select class="form-select" [(ngModel)]="writeOffReason">
+        <option value="Damaged">Damaged</option>
+        <option value="Lost">Lost</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+    <div class="mb-2">
+      <label class="form-label fw-semibold">Notes <span class="text-muted fw-normal">(optional)</span></label>
+      <textarea class="form-control" rows="2" [(ngModel)]="writeOffNotes" placeholder="e.g. torn during installation"></textarea>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline-secondary" (click)="closeWriteOffModal()" [disabled]="isWritingOff">Cancel</button>
+    <button type="button" class="btn btn-danger" (click)="confirmWriteOff()" [disabled]="isWritingOff">
+      <span *ngIf="isWritingOff" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+      Write Off
+    </button>
+  </div>
+</ng-template>
+
+<ng-template #markAsUsedModal>
+  <div class="modal-header">
+    <h5 class="modal-title"><i class="mdi mdi-check-circle-outline text-success me-2"></i>Mark as Used</h5>
+    <button type="button" class="btn-close" aria-label="Close" (click)="closeMarkAsUsedModal()"></button>
+  </div>
+  <div class="modal-body">
+    <p class="text-muted mb-3">Label <strong class="text-dark">{{ selectedMarkAsUsedUlNumber }}</strong> will be removed from available inventory.</p>
+    <div class="alert alert-info mb-3" role="alert">
+      <div class="fw-semibold mb-1">When to use manual Mark as Used</div>
+      <ul class="mb-0 ps-3">
+        <li>Label was physically used, but assignment was not recorded in system.</li>
+        <li>Offline/fallback production consumed the label and needs inventory correction.</li>
+        <li>Internal sample, demo, or in-house testing consumed the label.</li>
+      </ul>
+    </div>
+    <div class="alert alert-warning mb-3" role="alert">
+      Damaged or lost labels should use <strong>Write Off</strong>, not Mark as Used.
+    </div>
+    <div class="alert alert-secondary d-flex align-items-center gap-2 mb-3" role="status" *ngIf="isCheckingMarkAsUsedHistory">
+      <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+      Checking prior usage history...
+    </div>
+    <div class="alert alert-warning mb-3" role="alert" *ngIf="!isCheckingMarkAsUsedHistory && markAsUsedHistoryCount > 0">
+      <div class="fw-semibold mb-1">Prior usage history found</div>
+      This UL appears in <strong>{{ markAsUsedHistoryCount }}</strong> historical record(s).
+      Proceed only if this is a new physical consumption event.
+    </div>
+    <div class="alert alert-danger mb-3" role="alert" *ngIf="!isCheckingMarkAsUsedHistory && markAsUsedAssignmentConflictCount > 0">
+      <div class="fw-semibold mb-1">Active assignment found</div>
+      This UL has <strong>{{ markAsUsedAssignmentConflictCount }}</strong> non-voided serial assignment record(s).
+      Resolve the assignment first. Manual Mark as Used is blocked for this label.
+    </div>
+    <div class="alert alert-light border mb-3" role="alert" *ngIf="!isCheckingMarkAsUsedHistory && !markAsUsedHistoryError && markAsUsedHistoryCount === 0">
+      No prior usage history found for this UL.
+    </div>
+    <div class="alert alert-danger mb-3" role="alert" *ngIf="!isCheckingMarkAsUsedHistory && markAsUsedHistoryError">
+      {{ markAsUsedHistoryError }}
+    </div>
+    <div class="mb-2">
+      <label class="form-label fw-semibold">Reason <span class="text-danger">*</span></label>
+      <select class="form-select" [(ngModel)]="markAsUsedReason">
+        <option value="Used in Production">Used in Production</option>
+        <option value="Sample/Demo">Sample / Demo</option>
+        <option value="In-house Testing">In-house Testing</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+    <div class="form-check mt-3">
+      <input
+        class="form-check-input"
+        type="checkbox"
+        id="markAsUsedAcknowledged"
+        [(ngModel)]="markAsUsedAcknowledged"
+      >
+      <label class="form-check-label" for="markAsUsedAcknowledged">
+        I confirm this UL label was physically consumed and should be removed from available inventory.
+      </label>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline-secondary" (click)="closeMarkAsUsedModal()" [disabled]="isMarkingAsUsed">Cancel</button>
+    <button type="button" class="btn btn-success" (click)="confirmMarkAsUsed()" [disabled]="isMarkingAsUsed || !markAsUsedAcknowledged || markAsUsedAssignmentConflictCount > 0">
+      <span *ngIf="isMarkingAsUsed" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+      Mark as Used
+    </button>
+  </div>
+</ng-template>
+
+<ng-template #restoreModal>
+  <div class="modal-header">
+    <h5 class="modal-title"><i class="mdi mdi-backup-restore text-primary me-2"></i>Restore to Available</h5>
+    <button type="button" class="btn-close" aria-label="Close" (click)="closeRestoreModal()"></button>
+  </div>
+  <div class="modal-body">
+    <p class="text-muted mb-3">Label <strong class="text-dark">{{ selectedRestoreUlNumber }}</strong> will be returned to available inventory.</p>
+    <div class="alert alert-warning mb-3" role="alert">
+      Use this only for mistaken manual actions. Labels actively linked to serial assignments should have their assignment resolved first.
+    </div>
+    <div class="alert alert-secondary d-flex align-items-center gap-2 mb-3" role="status" *ngIf="isCheckingRestoreAssignments">
+      <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+      Checking serial assignment records...
+    </div>
+    <div class="alert alert-danger mb-3" role="alert" *ngIf="!isCheckingRestoreAssignments && restoreAssignmentConflictCount > 0">
+      <div class="fw-semibold mb-1">Active assignment conflict</div>
+      This UL has <strong>{{ restoreAssignmentConflictCount }}</strong> non-voided serial assignment record(s).
+      Resolve the assignment before restoring. Restore is blocked for this label.
+    </div>
+    <div class="alert alert-danger mb-3" role="alert" *ngIf="!isCheckingRestoreAssignments && restoreAssignmentError">
+      {{ restoreAssignmentError }}
+    </div>
+    <div class="mb-2" *ngIf="!isCheckingRestoreAssignments && restoreAssignmentConflictCount === 0 && !restoreAssignmentError">
+      <label class="form-label fw-semibold">Reason <span class="text-danger">*</span></label>
+      <select class="form-select" [(ngModel)]="restoreReason">
+        <option value="Manual correction">Manual correction</option>
+        <option value="Wrong action selected">Wrong action selected</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+    <div class="form-check mt-3" *ngIf="!isCheckingRestoreAssignments && restoreAssignmentConflictCount === 0 && !restoreAssignmentError">
+      <input
+        class="form-check-input"
+        type="checkbox"
+        id="restoreAcknowledged"
+        [(ngModel)]="restoreAcknowledged"
+      >
+      <label class="form-check-label" for="restoreAcknowledged">
+        I confirm this UL label is not tied to an active serial assignment and should be restored to available.
+      </label>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline-secondary" (click)="closeRestoreModal()" [disabled]="isRestoring">Cancel</button>
+    <button type="button" class="btn btn-primary" (click)="confirmRestore()"
+      [disabled]="isRestoring || !restoreAcknowledged || isCheckingRestoreAssignments || restoreAssignmentConflictCount > 0 || !!restoreAssignmentError">
+      <span *ngIf="isRestoring" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+      Restore to Available
+    </button>
+  </div>
+</ng-template>
+

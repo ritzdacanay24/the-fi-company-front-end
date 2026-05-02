@@ -8,10 +8,27 @@ import {
   GridApi, 
   GridReadyEvent, 
   ColDef, 
-  SelectionChangedEvent 
+  SelectionChangedEvent,
 } from 'ag-grid-community';
 import { ToastrService } from 'ngx-toastr';
+import {
+  ApexAxisChartSeries,
+  ApexChart,
+  ApexDataLabels,
+  ApexLegend,
+  ApexNonAxisChartSeries,
+  ApexPlotOptions,
+  ApexResponsive,
+  ApexStroke,
+  ApexTooltip,
+  ApexXAxis,
+  ApexYAxis,
+  NgApexchartsModule,
+} from 'ng-apexcharts';
 import { SerialNumberService } from '../services/serial-number.service';
+import { IgtManageExistingActionDropdownRendererComponent } from '@app/pages/quality/igt/igt-manage-existing/igt-manage-existing-action-dropdown-renderer.component';
+import { SerialAssignmentUsageDetailsModalService } from '@app/shared/components/serial-assignment-usage-details-modal/serial-assignment-usage-details-modal.component';
+import { SerialAssignmentsService } from '@app/features/serial-assignments/services/serial-assignments.service';
 
 export interface IgtSerial {
   id: number;
@@ -30,6 +47,21 @@ export interface IgtSerial {
   used_in_asset_number?: string;
 }
 
+type ChartOptions = {
+  series: ApexAxisChartSeries | ApexNonAxisChartSeries;
+  chart: ApexChart;
+  xaxis?: ApexXAxis;
+  yaxis?: ApexYAxis;
+  dataLabels?: ApexDataLabels;
+  stroke?: ApexStroke;
+  tooltip?: ApexTooltip;
+  legend?: ApexLegend;
+  plotOptions?: ApexPlotOptions;
+  labels?: string[];
+  colors?: string[];
+  responsive?: ApexResponsive[];
+};
+
 @Component({
   selector: 'app-igt-manage-existing',
   standalone: true,
@@ -39,12 +71,16 @@ export interface IgtSerial {
     ReactiveFormsModule,
     AgGridModule,
     RouterModule,
+    NgApexchartsModule,
   ],
   templateUrl: './igt-manage-existing.component.html',
   styleUrls: ['./igt-manage-existing.component.scss']
 })
 export class IgtManageExistingComponent implements OnInit {
   @ViewChild('editSerialModal', { static: false }) editSerialModal!: TemplateRef<any>;
+  @ViewChild('restoreModal', { static: false }) restoreModal!: TemplateRef<any>;
+  @ViewChild('writeOffModal', { static: false }) writeOffModal!: TemplateRef<any>;
+  @ViewChild('markAsUsedModal', { static: false }) markAsUsedModal!: TemplateRef<any>;
 
   // Grid
   gridApi!: GridApi;
@@ -73,6 +109,29 @@ export class IgtManageExistingComponent implements OnInit {
   editModalRef?: NgbModalRef;
   serialToEdit: Partial<IgtSerial> = {};
 
+  // Restore Modal
+  restoreModalRef?: NgbModalRef;
+  serialToRestore: IgtSerial | null = null;
+  isCheckingRestoreAssignments = false;
+  restoreAssignmentConflictCount = 0;
+  restoreAssignmentError = '';
+  restoreAcknowledged = false;
+  isRestoring = false;
+
+  // Write-Off Modal
+  writeOffModalRef?: NgbModalRef;
+  serialToWriteOff: IgtSerial | null = null;
+  writeOffReason = 'Damaged';
+  writeOffAcknowledged = false;
+  isWritingOff = false;
+
+  // Mark-as-Used Modal
+  markAsUsedModalRef?: NgbModalRef;
+  serialToMarkUsed: IgtSerial | null = null;
+  markAsUsedReason = 'Used in Production';
+  markAsUsedAcknowledged = false;
+  isMarkingAsUsed = false;
+
   // Loading states
   isLoading = false;
 
@@ -88,12 +147,18 @@ export class IgtManageExistingComponent implements OnInit {
     inactive: 0
   };
 
+  statusBarChart: Partial<ChartOptions> = {};
+  statusDistributionChart: Partial<ChartOptions> = {};
+  uploadTrendChart: Partial<ChartOptions> = {};
+
   constructor(
     private fb: FormBuilder,
     private modal: NgbModal,
     private toastr: ToastrService,
     private router: Router,
-    private serialNumberService: SerialNumberService
+    private serialNumberService: SerialNumberService,
+    private serialAssignmentUsageDetailsModalService: SerialAssignmentUsageDetailsModalService,
+    private serialAssignmentsService: SerialAssignmentsService,
   ) {
     this.editForm = this.fb.group({
       serial_number: [''],
@@ -267,6 +332,25 @@ export class IgtManageExistingComponent implements OnInit {
         cellRenderer: (params: any) => {
           return params.value ? new Date(params.value).toLocaleDateString() : '-';
         }
+      },
+      {
+        headerName: 'Actions',
+        field: 'actions',
+        width: 130,
+        pinned: 'right',
+        sortable: false,
+        filter: false,
+        floatingFilter: false,
+        resizable: false,
+        cellRenderer: IgtManageExistingActionDropdownRendererComponent,
+        cellRendererParams: {
+          canManage: this.canManageSerials,
+          onViewAssignmentDetails: (serial: IgtSerial) => this.openAssignmentDetails(serial),
+          onEdit: (serial: IgtSerial) => this.editSerial(serial),
+          onMarkUsed: (serial: IgtSerial) => this.markSerialAsUsed(serial),
+          onRestoreAvailable: (serial: IgtSerial) => this.restoreSerialToAvailable(serial),
+          onWriteOff: (serial: IgtSerial) => this.writeOffSerial(serial),
+        },
       }
     ];
   }
@@ -283,17 +367,17 @@ export class IgtManageExistingComponent implements OnInit {
   getRowId = (params: any) => params.data.id;
 
   private updateStatistics(allData?: IgtSerial[], totalCount?: number): void {
-    // Now that we have all data loaded at once, calculate accurate statistics
-    if (allData && Array.isArray(allData)) {
+    const sourceData = Array.isArray(allData) ? allData : this.rowData;
+
+    if (sourceData.length > 0) {
       this.statistics = {
-        total: totalCount || allData.length,
-        available: allData.filter(s => s.status === 'available' && s.is_active === 1).length,
-        reserved: allData.filter(s => s.status === 'reserved' && s.is_active === 1).length,
-        used: allData.filter(s => s.status === 'used' && s.is_active === 1).length,
-        inactive: allData.filter(s => s.is_active === 0).length
+        total: totalCount || sourceData.length,
+        available: sourceData.filter(s => s.status === 'available' && s.is_active === 1).length,
+        reserved: sourceData.filter(s => s.status === 'reserved' && s.is_active === 1).length,
+        used: sourceData.filter(s => s.status === 'used' && s.is_active === 1).length,
+        inactive: sourceData.filter(s => s.is_active === 0).length
       };
     } else {
-      // Fallback for empty data
       this.statistics = {
         total: 0,
         available: 0,
@@ -302,6 +386,100 @@ export class IgtManageExistingComponent implements OnInit {
         inactive: 0
       };
     }
+
+    this.updateInventoryCharts(sourceData);
+  }
+
+  private updateInventoryCharts(allData: IgtSerial[]): void {
+    const available = allData.filter((r) => r.status === 'available' && r.is_active === 1).length;
+    const used = allData.filter((r) => r.status === 'used' && r.is_active === 1).length;
+    const reserved = allData.filter((r) => r.status === 'reserved' && r.is_active === 1).length;
+    const inactive = allData.filter((r) => r.is_active === 0).length;
+
+    const barCategories = ['Available', 'Used'];
+    const barData = [available, used];
+    if (reserved > 0) {
+      barCategories.push('Reserved');
+      barData.push(reserved);
+    }
+
+    const donutLabels = ['Available', 'Used'];
+    const donutSeries = [available, used];
+    const donutColors = ['#2e8b57', '#3b7ed4'];
+    if (reserved > 0) {
+      donutLabels.push('Reserved');
+      donutSeries.push(reserved);
+      donutColors.push('#f7b84b');
+    }
+    if (inactive > 0) {
+      donutLabels.push('Inactive');
+      donutSeries.push(inactive);
+      donutColors.push('#6c757d');
+    }
+
+    this.statusBarChart = {
+      series: [{ name: 'Serials', data: barData }],
+      chart: { type: 'bar', height: 240, toolbar: { show: false }, foreColor: 'var(--bs-body-color)' },
+      xaxis: {
+        categories: barCategories,
+        labels: { style: { colors: ['var(--bs-body-color)'] } },
+      },
+      yaxis: {
+        title: { text: 'Count', style: { color: 'var(--bs-body-color)' } },
+        labels: { style: { colors: ['var(--bs-body-color)'] } },
+      },
+      plotOptions: { bar: { horizontal: false, borderRadius: 6, columnWidth: '45%' } },
+      colors: ['#0ab39c'],
+      dataLabels: { enabled: true },
+      tooltip: { enabled: true },
+    };
+
+    this.statusDistributionChart = {
+      series: donutSeries,
+      chart: { type: 'donut', height: 240, foreColor: 'var(--bs-body-color)' },
+      labels: donutLabels,
+      colors: donutColors,
+      dataLabels: { enabled: true, style: { colors: ['#ffffff'] }, dropShadow: { enabled: false } },
+      legend: { position: 'bottom', labels: { colors: 'var(--bs-body-color)' } },
+      responsive: [{ breakpoint: 480, options: { chart: { height: 220 } } }],
+    };
+
+    const monthMap = new Map<string, number>();
+    allData.forEach((r) => {
+      if (!r.used_at) return;
+      const d = new Date(r.used_at);
+      if (Number.isNaN(d.getTime())) return;
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      monthMap.set(key, (monthMap.get(key) ?? 0) + 1);
+    });
+
+    const now = new Date();
+    const last8Months: string[] = [];
+    for (let i = 7; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      last8Months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+    }
+    const monthly = last8Months.map((key) => [key, monthMap.get(key) ?? 0] as [string, number]);
+
+    this.uploadTrendChart = {
+      series: [{ name: 'Serials Used', data: monthly.map(([, v]) => v) }],
+      chart: { type: 'area', height: 240, toolbar: { show: false }, foreColor: 'var(--bs-body-color)' },
+      xaxis: {
+        categories: monthly.map(([m]) => {
+          const [y, mo] = m.split('-');
+          return new Date(Number(y), Number(mo) - 1).toLocaleString('default', { month: 'short', year: '2-digit' });
+        }),
+        labels: { style: { colors: ['var(--bs-body-color)'] } },
+      },
+      yaxis: {
+        title: { text: 'Serials Used', style: { color: 'var(--bs-body-color)' } },
+        labels: { style: { colors: ['var(--bs-body-color)'] } },
+      },
+      stroke: { curve: 'smooth', width: 2 },
+      dataLabels: { enabled: false },
+      colors: ['#117a8b'],
+      tooltip: { enabled: true },
+    };
   }
 
   // Filter methods
@@ -331,6 +509,15 @@ export class IgtManageExistingComponent implements OnInit {
 
   getFilteredCount(): number {
     return this.gridApi?.getDisplayedRowCount() || 0;
+  }
+
+  openAssignmentDetails(serial: IgtSerial): void {
+    if (!serial?.serial_number) {
+      this.toastr.warning('IGT serial number is missing.');
+      return;
+    }
+
+    this.serialAssignmentUsageDetailsModalService.openByIgtSerialNumber(serial.serial_number);
   }
 
   refreshData(): void {
@@ -419,6 +606,150 @@ export class IgtManageExistingComponent implements OnInit {
     if (confirm(`Are you sure you want to delete serial number "${serial.serial_number}"?`)) {
       this.performDelete([serial]);
     }
+  }
+
+  private normalizeSerialStatus(status: unknown): string {
+    return String(status ?? '').trim().toLowerCase();
+  }
+
+  markSerialAsUsed(serial: IgtSerial): void {
+    if (this.normalizeSerialStatus(serial.status) === 'used') {
+      this.toastr.info('This serial is already marked as used.');
+      return;
+    }
+
+    this.serialToMarkUsed = serial;
+    this.markAsUsedReason = 'Used in Production';
+    this.markAsUsedAcknowledged = false;
+    this.markAsUsedModalRef = this.modal.open(this.markAsUsedModal, { centered: true, backdrop: 'static' });
+  }
+
+  closeMarkAsUsedModal(): void {
+    this.markAsUsedModalRef?.dismiss();
+    this.serialToMarkUsed = null;
+    this.markAsUsedAcknowledged = false;
+  }
+
+  confirmMarkAsUsed(): void {
+    if (!this.serialToMarkUsed || !this.markAsUsedAcknowledged) return;
+
+    this.isMarkingAsUsed = true;
+    this.serialNumberService.update(this.serialToMarkUsed.id, { status: 'used' })
+      .then(() => {
+        this.toastr.success(`Serial ${this.serialToMarkUsed!.serial_number} marked as used`);
+        this.markAsUsedModalRef?.close();
+        this.serialToMarkUsed = null;
+        this.refreshData();
+      })
+      .catch((error: any) => {
+        const msg = error?.error?.message || error?.message || 'Failed to mark serial as used';
+        this.toastr.error(msg);
+      })
+      .finally(() => {
+        this.isMarkingAsUsed = false;
+      });
+  }
+
+  restoreSerialToAvailable(serial: IgtSerial): void {
+    const status = this.normalizeSerialStatus(serial.status);
+    if (status === 'available') {
+      this.toastr.info('This serial is already available.');
+      return;
+    }
+
+    if (status !== 'used' && status !== 'reserved') {
+      this.toastr.warning('Only used or reserved serials can be restored to available.');
+      return;
+    }
+
+    this.serialToRestore = serial;
+    this.restoreAcknowledged = false;
+    this.restoreAssignmentConflictCount = 0;
+    this.restoreAssignmentError = '';
+    this.isCheckingRestoreAssignments = true;
+
+    this.restoreModalRef = this.modal.open(this.restoreModal, { centered: true, backdrop: 'static' });
+
+    this.serialAssignmentsService.getAssignmentsByIgtSerialNumber(serial.serial_number)
+      .then((response: any) => {
+        const rows: any[] = Array.isArray(response?.data) ? response.data : [];
+        this.restoreAssignmentConflictCount = rows.filter((r: any) => !r.is_voided).length;
+      })
+      .catch(() => {
+        this.restoreAssignmentError = 'Could not check serial assignment records.';
+      })
+      .finally(() => {
+        this.isCheckingRestoreAssignments = false;
+      });
+  }
+
+  closeRestoreModal(): void {
+    this.restoreModalRef?.dismiss();
+    this.serialToRestore = null;
+    this.restoreAcknowledged = false;
+  }
+
+  confirmRestore(): void {
+    if (!this.serialToRestore || !this.restoreAcknowledged || this.restoreAssignmentConflictCount > 0) return;
+
+    this.isRestoring = true;
+    this.serialNumberService.update(this.serialToRestore.id, { status: 'available', is_active: 1 })
+      .then(() => {
+        this.toastr.success(`Serial ${this.serialToRestore!.serial_number} restored to available`);
+        this.restoreModalRef?.close();
+        this.serialToRestore = null;
+        this.refreshData();
+      })
+      .catch((error: any) => {
+        const msg = error?.error?.message || error?.message || 'Failed to restore serial to available';
+        this.toastr.error(msg);
+      })
+      .finally(() => {
+        this.isRestoring = false;
+      });
+  }
+
+  writeOffSerial(serial: IgtSerial): void {
+    const status = this.normalizeSerialStatus(serial.status);
+    if (status === 'used') {
+      this.toastr.info('Used serials cannot be written off. Use Restore to Available first if this was a mistake.');
+      return;
+    }
+
+    this.serialToWriteOff = serial;
+    this.writeOffReason = 'Damaged';
+    this.writeOffAcknowledged = false;
+    this.writeOffModalRef = this.modal.open(this.writeOffModal, { centered: true, backdrop: 'static' });
+  }
+
+  closeWriteOffModal(): void {
+    this.writeOffModalRef?.dismiss();
+    this.serialToWriteOff = null;
+    this.writeOffAcknowledged = false;
+  }
+
+  confirmWriteOff(): void {
+    if (!this.serialToWriteOff || !this.writeOffAcknowledged) return;
+
+    const existingNotes = (this.serialToWriteOff.notes || '').trim();
+    const writeOffNote = `Write-off: ${this.writeOffReason}`;
+    const mergedNotes = existingNotes ? `${existingNotes}\n${writeOffNote}` : writeOffNote;
+
+    this.isWritingOff = true;
+    this.serialNumberService.update(this.serialToWriteOff.id, { is_active: 0, notes: mergedNotes })
+      .then(() => {
+        this.toastr.success(`Serial ${this.serialToWriteOff!.serial_number} written off`);
+        this.writeOffModalRef?.close();
+        this.serialToWriteOff = null;
+        this.refreshData();
+      })
+      .catch((error: any) => {
+        const msg = error?.error?.message || error?.message || 'Failed to write off serial';
+        this.toastr.error(msg);
+      })
+      .finally(() => {
+        this.isWritingOff = false;
+      });
   }
 
   bulkDelete(): void {

@@ -30,11 +30,6 @@ export class SerialAvailabilityService {
     return { success: true, data, count: data.length };
   }
 
-  async getRecentlyUsedUlLabels(limit?: number) {
-    const data = await this.repo.getRecentlyUsedUlLabels(limit ?? 10);
-    return { success: true, data, count: data.length };
-  }
-
   async getRecentlyUsedIgtSerials(limit?: number) {
     const data = await this.repo.getRecentlyUsedIgtSerials(limit ?? 10);
     return { success: true, data, count: data.length };

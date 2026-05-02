@@ -96,18 +96,37 @@ export class PhotoChecklistService {
   }
 
   async hardDeleteTemplate(id: number) {
-    await this.repository.hardDeleteTemplate(id);
+    const result = await this.repository.hardDeleteTemplate(id);
+    if (!result.success) {
+      return result;
+    }
     return { success: true };
   }
 
   async discardDraft(id: number) {
-    await this.repository.discardDraft(id);
+    const result = await this.repository.discardDraft(id);
+    if (!result.success) {
+      return result;
+    }
     return { success: true, template_id: id };
   }
 
   async restoreTemplate(id: number) {
     await this.repository.restoreTemplate(id);
     return { success: true, template_id: id };
+  }
+
+  async publishTemplate(id: number) {
+    const result = await this.repository.publishTemplate(id);
+    if (!result.success) {
+      return result;
+    }
+    const template = await this.getTemplateById(id, { includeInactive: true });
+    return { success: true, template_id: id, template };
+  }
+
+  async deleteMajorVersion(groupId: number, major: number) {
+    return this.repository.deleteMajorVersion(groupId, major);
   }
 
   async createParentVersion(sourceTemplateId: number) {
@@ -275,7 +294,10 @@ export class PhotoChecklistService {
   }
 
   async deleteInstance(id: number) {
-    await this.repository.deleteInstance(id);
+    const result = await this.repository.deleteInstance(id);
+    if (!result.success) {
+      return result;
+    }
     return { success: true };
   }
 

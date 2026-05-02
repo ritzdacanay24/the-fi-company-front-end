@@ -50,15 +50,84 @@
                             <i class="mdi mdi-magnify"></i>
                         </div>
 
-                        <button class="btn btn-outline-secondary" (click)="refreshData()" title="Refresh data">
-                            <i class="mdi mdi-refresh me-1"></i>Refresh
-                        </button>
-
                         <div class="ms-auto d-flex gap-2 align-items-center">
                             <span class="badge bg-light text-dark border px-2 py-1" *ngIf="hasActiveFilters()">
                                 <i class="mdi mdi-filter me-1 text-primary"></i>
                                 <strong>{{getFilteredCount()}} Filtered</strong>
                             </span>
+                            <span class="badge bg-light text-dark border px-2 py-1">
+                                Total: {{ statistics.total }}
+                            </span>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                                Available: {{ statistics.available }}
+                            </span>
+                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1">
+                                Reserved: {{ statistics.reserved }}
+                            </span>
+                            <span class="badge bg-info-subtle text-info border border-info-subtle px-2 py-1">
+                                Used: {{ statistics.used }}
+                            </span>
+                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1">
+                                Inactive: {{ statistics.inactive }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body border-bottom bg-body-secondary" *ngIf="!isLoading">
+                    <div class="row g-3">
+                        <div class="col-12 col-xl-4">
+                            <div class="rounded-3 p-3 shadow-sm border bg-body h-100">
+                                <h6 class="mb-2">Status Breakdown</h6>
+                                <div>
+                                    <apx-chart
+                                        *ngIf="statusBarChart.series"
+                                        [series]="statusBarChart.series"
+                                        [chart]="statusBarChart.chart"
+                                        [xaxis]="statusBarChart.xaxis"
+                                        [yaxis]="statusBarChart.yaxis"
+                                        [plotOptions]="statusBarChart.plotOptions"
+                                        [colors]="statusBarChart.colors"
+                                        [dataLabels]="statusBarChart.dataLabels"
+                                        [tooltip]="statusBarChart.tooltip">
+                                    </apx-chart>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-xl-4">
+                            <div class="rounded-3 p-3 shadow-sm border bg-body h-100">
+                                <h6 class="mb-2">Inventory Distribution</h6>
+                                <div>
+                                    <apx-chart
+                                        *ngIf="statusDistributionChart.series"
+                                        [series]="statusDistributionChart.series"
+                                        [chart]="statusDistributionChart.chart"
+                                        [labels]="statusDistributionChart.labels"
+                                        [colors]="statusDistributionChart.colors"
+                                        [dataLabels]="statusDistributionChart.dataLabels"
+                                        [legend]="statusDistributionChart.legend"
+                                        [responsive]="statusDistributionChart.responsive">
+                                    </apx-chart>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-xl-4">
+                            <div class="rounded-3 p-3 shadow-sm border bg-body h-100">
+                                <h6 class="mb-2">Used At Trend (Last 8 Months)</h6>
+                                <div>
+                                    <apx-chart
+                                        *ngIf="uploadTrendChart.series"
+                                        [series]="uploadTrendChart.series"
+                                        [chart]="uploadTrendChart.chart"
+                                        [xaxis]="uploadTrendChart.xaxis"
+                                        [yaxis]="uploadTrendChart.yaxis"
+                                        [stroke]="uploadTrendChart.stroke"
+                                        [colors]="uploadTrendChart.colors"
+                                        [dataLabels]="uploadTrendChart.dataLabels"
+                                        [tooltip]="uploadTrendChart.tooltip">
+                                    </apx-chart>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -313,6 +382,168 @@
             </button>
         </div>
     </div>
+</ng-template>
+
+<!-- Restore to Available Modal -->
+<ng-template #restoreModal>
+  <div class="modal-header">
+    <h5 class="modal-title"><i class="mdi mdi-backup-restore text-primary me-2"></i>Restore to Available</h5>
+    <button type="button" class="btn-close" aria-label="Close" (click)="closeRestoreModal()"></button>
+  </div>
+  <div class="modal-body">
+    <p class="text-muted mb-3">
+      Serial <strong class="text-dark">{{ serialToRestore?.serial_number }}</strong> will be returned to available inventory.
+    </p>
+
+    <div class="alert alert-secondary d-flex align-items-center gap-2 mb-3" role="status" *ngIf="isCheckingRestoreAssignments">
+      <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+      Checking serial assignment records...
+    </div>
+
+    <div class="alert alert-danger mb-3" role="alert" *ngIf="!isCheckingRestoreAssignments && restoreAssignmentConflictCount > 0">
+      <div class="fw-semibold mb-1">Active assignment found — restore blocked</div>
+      This IGT serial has <strong>{{ restoreAssignmentConflictCount }}</strong> non-voided serial assignment record(s).
+      Void or resolve the assignment first before restoring this serial to available.
+      <div class="mt-2">
+        <a class="text-decoration-underline" role="button" style="cursor:pointer;" (click)="closeRestoreModal(); openAssignmentDetails(serialToRestore!)">
+          View assignment details
+        </a>
+      </div>
+    </div>
+
+    <div class="alert alert-warning mb-3" role="alert" *ngIf="!isCheckingRestoreAssignments && restoreAssignmentConflictCount === 0 && !restoreAssignmentError">
+      Use this only to correct a mistaken manual action. Ensure no active assignment is using this serial.
+    </div>
+
+    <div class="alert alert-danger mb-3" role="alert" *ngIf="!isCheckingRestoreAssignments && restoreAssignmentError">
+      {{ restoreAssignmentError }}
+    </div>
+
+    <div class="form-check mt-3" *ngIf="!isCheckingRestoreAssignments && restoreAssignmentConflictCount === 0">
+      <input
+        class="form-check-input"
+        type="checkbox"
+        id="restoreIgtAcknowledged"
+        [(ngModel)]="restoreAcknowledged"
+      >
+      <label class="form-check-label" for="restoreIgtAcknowledged">
+        I confirm this IGT serial is not tied to an active serial assignment and should be restored to available.
+      </label>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline-secondary" (click)="closeRestoreModal()" [disabled]="isRestoring">Cancel</button>
+    <button
+      type="button"
+      class="btn btn-primary"
+      (click)="confirmRestore()"
+      [disabled]="isRestoring || !restoreAcknowledged || restoreAssignmentConflictCount > 0 || isCheckingRestoreAssignments">
+      <span *ngIf="isRestoring" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+      Restore to Available
+    </button>
+  </div>
+</ng-template>
+
+<!-- Write Off Modal -->
+<ng-template #writeOffModal>
+  <div class="modal-header">
+    <h5 class="modal-title"><i class="mdi mdi-alert-circle-outline text-danger me-2"></i>Write Off Serial</h5>
+    <button type="button" class="btn-close" aria-label="Close" (click)="closeWriteOffModal()"></button>
+  </div>
+  <div class="modal-body">
+    <p class="text-muted mb-3">
+      Serial <strong class="text-dark">{{ serialToWriteOff?.serial_number }}</strong> will be marked inactive and removed from inventory.
+    </p>
+    <div class="alert alert-warning mb-3" role="alert">
+      <strong>This action cannot be easily undone.</strong> Write off is for serials that are <strong>damaged, lost, or defective</strong> before being used. If this serial is linked to an active assignment, the write-off will be rejected — resolve the assignment first.
+    </div>
+    <div class="mb-3">
+      <label class="form-label fw-semibold">Reason <span class="text-danger">*</span></label>
+      <select class="form-select" [(ngModel)]="writeOffReason">
+        <option value="Damaged">Damaged</option>
+        <option value="Lost">Lost</option>
+        <option value="Defective">Defective</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+    <div class="form-check">
+      <input
+        class="form-check-input"
+        type="checkbox"
+        id="writeOffIgtAcknowledged"
+        [(ngModel)]="writeOffAcknowledged"
+      >
+      <label class="form-check-label" for="writeOffIgtAcknowledged">
+        I confirm this IGT serial should be permanently written off and removed from active inventory.
+      </label>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline-secondary" (click)="closeWriteOffModal()" [disabled]="isWritingOff">Cancel</button>
+    <button
+      type="button"
+      class="btn btn-danger"
+      (click)="confirmWriteOff()"
+      [disabled]="isWritingOff || !writeOffAcknowledged">
+      <span *ngIf="isWritingOff" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+      Write Off
+    </button>
+  </div>
+</ng-template>
+
+<!-- Mark as Used Modal -->
+<ng-template #markAsUsedModal>
+  <div class="modal-header">
+    <h5 class="modal-title"><i class="mdi mdi-check-circle-outline text-success me-2"></i>Mark as Used</h5>
+    <button type="button" class="btn-close" aria-label="Close" (click)="closeMarkAsUsedModal()"></button>
+  </div>
+  <div class="modal-body">
+    <p class="text-muted mb-3">
+      Serial <strong class="text-dark">{{ serialToMarkUsed?.serial_number }}</strong> will be marked as used and removed from available inventory.
+    </p>
+    <div class="alert alert-info mb-3" role="alert">
+      <div class="fw-semibold mb-1">When to use manual Mark as Used</div>
+      <ul class="mb-0 ps-3">
+        <li>Serial was physically used but not recorded through a serial assignment.</li>
+        <li>Offline or fallback production consumed this serial.</li>
+        <li>Internal sample, demo, or in-house testing.</li>
+      </ul>
+    </div>
+    <div class="alert alert-warning mb-3" role="alert">
+      Damaged or lost serials should use <strong>Write Off</strong>, not Mark as Used.
+    </div>
+    <div class="mb-3">
+      <label class="form-label fw-semibold">Reason <span class="text-danger">*</span></label>
+      <select class="form-select" [(ngModel)]="markAsUsedReason">
+        <option value="Used in Production">Used in Production</option>
+        <option value="Sample/Demo">Sample / Demo</option>
+        <option value="In-house Testing">In-house Testing</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+    <div class="form-check">
+      <input
+        class="form-check-input"
+        type="checkbox"
+        id="markIgtAsUsedAcknowledged"
+        [(ngModel)]="markAsUsedAcknowledged"
+      >
+      <label class="form-check-label" for="markIgtAsUsedAcknowledged">
+        I confirm this IGT serial was physically consumed and should be removed from available inventory.
+      </label>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline-secondary" (click)="closeMarkAsUsedModal()" [disabled]="isMarkingAsUsed">Cancel</button>
+    <button
+      type="button"
+      class="btn btn-success"
+      (click)="confirmMarkAsUsed()"
+      [disabled]="isMarkingAsUsed || !markAsUsedAcknowledged">
+      <span *ngIf="isMarkingAsUsed" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+      Mark as Used
+    </button>
+  </div>
 </ng-template>
 
 <style>

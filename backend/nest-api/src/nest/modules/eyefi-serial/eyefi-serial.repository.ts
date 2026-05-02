@@ -30,14 +30,23 @@ export class EyeFiSerialRepository extends BaseRepository<EyeFiSerialRecord> {
     let sql = `
       SELECT
         esn.*,
-        COALESCE(ags.id, ul.id, sg.id) AS assigned_to_id,
+        sa.id AS serial_assignment_id,
+        COALESCE(sa.id, ags.id, ul.id, sg.id) AS assigned_to_id,
         CASE
+          WHEN sa.id  IS NOT NULL THEN 'serial_assignments'
           WHEN ags.id IS NOT NULL THEN 'agsSerialGenerator'
           WHEN ul.id  IS NOT NULL THEN 'ul_label_usages'
           WHEN sg.id  IS NOT NULL THEN 'sgAssetGenerator'
           ELSE NULL
         END AS assigned_to_table
       FROM \`${TABLE}\` esn
+      LEFT JOIN (
+        SELECT eyefi_serial_id, MAX(id) AS latest_assignment_id
+        FROM serial_assignments
+        WHERE eyefi_serial_id IS NOT NULL
+        GROUP BY eyefi_serial_id
+      ) sa_latest ON esn.id = sa_latest.eyefi_serial_id
+      LEFT JOIN serial_assignments sa ON sa.id = sa_latest.latest_assignment_id
       LEFT JOIN agsSerialGenerator ags ON esn.serial_number = ags.serialNumber
       LEFT JOIN ul_label_usages    ul  ON esn.serial_number = ul.eyefi_serial_number
       LEFT JOIN sgAssetGenerator   sg  ON esn.serial_number = sg.serialNumber
@@ -128,6 +137,17 @@ export class EyeFiSerialRepository extends BaseRepository<EyeFiSerialRecord> {
     if (newStatus === 'defective' && reason) {
       setClauses.push('defective_reason = ?');
       values.push(reason);
+    }
+
+    if (newStatus === 'assigned') {
+      setClauses.push('assigned_at = NOW()');
+    }
+
+    if (newStatus === 'available') {
+      setClauses.push('assigned_at = NULL');
+      setClauses.push('assigned_by = NULL');
+      setClauses.push('assigned_to_table = NULL');
+      setClauses.push('assigned_to_id = NULL');
     }
 
     values.push(serialNumber);

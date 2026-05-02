@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, TemplateRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -29,6 +29,11 @@ export class UniqueLabelAdminComponent implements OnInit {
   private readonly modalService = inject(NgbModal);
   private readonly toastr = inject(ToastrService);
 
+  @ViewChild('archiveModal') archiveModal!: TemplateRef<unknown>;
+  @ViewChild('softDeleteModal') softDeleteModal!: TemplateRef<unknown>;
+  @ViewChild('restoreModal') restoreModal!: TemplateRef<unknown>;
+  @ViewChild('hardDeleteModal') hardDeleteModal!: TemplateRef<unknown>;
+
   isLoadingBatches = false;
   isSavingEdit = false;
   lifecycleStatus: 'active' | 'archived' | 'deleted' | 'all' = 'active';
@@ -37,6 +42,13 @@ export class UniqueLabelAdminComponent implements OnInit {
   batches: UniqueLabelBatch[] = [];
   selectedBatchId: number | null = null;
   private editModalRef: NgbModalRef | null = null;
+
+  // Lifecycle action modal state
+  batchForAction: UniqueLabelBatch | null = null;
+  actionReason = '';
+  actionAcknowledged = false;
+  isProcessingAction = false;
+  private lifecycleModalRef: NgbModalRef | null = null;
 
   readonly defaultColDef: ColDef = {
     sortable: true,
@@ -70,10 +82,10 @@ export class UniqueLabelAdminComponent implements OnInit {
       floatingFilter: false,
       cellRenderer: UniqueLabelAdminActionDropdownRendererComponent,
       cellRendererParams: {
-        onArchive: (batch: UniqueLabelBatch) => this.archiveBatch(batch),
-        onSoftDelete: (batch: UniqueLabelBatch) => this.softDeleteBatch(batch),
-        onRestore: (batch: UniqueLabelBatch) => this.restoreBatch(batch),
-        onHardDelete: (batch: UniqueLabelBatch) => this.hardDeleteBatch(batch),
+        onArchive: (batch: UniqueLabelBatch) => this.openArchiveModal(batch),
+        onSoftDelete: (batch: UniqueLabelBatch) => this.openSoftDeleteModal(batch),
+        onRestore: (batch: UniqueLabelBatch) => this.openRestoreModal(batch),
+        onHardDelete: (batch: UniqueLabelBatch) => this.openHardDeleteModal(batch),
       },
     },
   ];
@@ -181,62 +193,119 @@ export class UniqueLabelAdminComponent implements OnInit {
     }
   }
 
-  async archiveBatch(batch: UniqueLabelBatch): Promise<void> {
-    const reason = prompt(`Archive reason for batch ${batch.id}:`, 'Archived by admin');
-    if (!reason) {
-      return;
-    }
-
-    const response = await this.api.archiveBatch(batch.id, this.actorName.trim() || 'Admin', reason.trim());
-    if (!response.success) {
-      this.toastr.error(response.message || 'Failed to archive batch.');
-      return;
-    }
-
-    this.toastr.success('Batch archived.');
-    await this.loadBatches();
+  openArchiveModal(batch: UniqueLabelBatch): void {
+    this.batchForAction = batch;
+    this.actionReason = 'Archived by admin';
+    this.actionAcknowledged = false;
+    this.lifecycleModalRef = this.modalService.open(this.archiveModal, { centered: true, size: 'md' });
   }
 
-  async softDeleteBatch(batch: UniqueLabelBatch): Promise<void> {
-    const reason = prompt(`Soft delete reason for batch ${batch.id}:`, 'Deleted by admin');
-    if (!reason) {
-      return;
-    }
-
-    const response = await this.api.softDeleteBatch(batch.id, this.actorName.trim() || 'Admin', reason.trim());
-    if (!response.success) {
-      this.toastr.error(response.message || 'Failed to soft delete batch.');
-      return;
-    }
-
-    this.toastr.success('Batch soft deleted.');
-    await this.loadBatches();
+  closeLifecycleModal(): void {
+    this.lifecycleModalRef?.close();
+    this.lifecycleModalRef = null;
+    this.batchForAction = null;
+    this.actionReason = '';
+    this.actionAcknowledged = false;
   }
 
-  async restoreBatch(batch: UniqueLabelBatch): Promise<void> {
-    const response = await this.api.restoreBatch(batch.id, this.actorName.trim() || 'Admin');
-    if (!response.success) {
-      this.toastr.error(response.message || 'Failed to restore batch.');
-      return;
+  async confirmArchive(): Promise<void> {
+    if (!this.batchForAction || !this.actionReason.trim()) return;
+    this.isProcessingAction = true;
+    try {
+      const response = await this.api.archiveBatch(this.batchForAction.id, this.actorName.trim() || 'Admin', this.actionReason.trim());
+      if (!response.success) {
+        this.toastr.error(response.message || 'Failed to archive batch.');
+        return;
+      }
+      this.toastr.success('Batch archived.');
+      this.closeLifecycleModal();
+      await this.loadBatches();
+    } catch (error) {
+      this.toastr.error('Failed to archive batch.');
+      console.error(error);
+    } finally {
+      this.isProcessingAction = false;
     }
-
-    this.toastr.success('Batch restored to active.');
-    await this.loadBatches();
   }
 
-  async hardDeleteBatch(batch: UniqueLabelBatch): Promise<void> {
-    const confirmed = confirm(`Permanently delete batch ${batch.id}? This cannot be undone.`);
-    if (!confirmed) {
-      return;
-    }
+  openSoftDeleteModal(batch: UniqueLabelBatch): void {
+    this.batchForAction = batch;
+    this.actionReason = 'Deleted by admin';
+    this.actionAcknowledged = false;
+    this.lifecycleModalRef = this.modalService.open(this.softDeleteModal, { centered: true, size: 'md' });
+  }
 
-    const response = await this.api.hardDeleteBatch(batch.id);
-    if (!response.success) {
-      this.toastr.error(response.message || 'Failed to hard delete batch.');
-      return;
+  async confirmSoftDelete(): Promise<void> {
+    if (!this.batchForAction || !this.actionReason.trim()) return;
+    this.isProcessingAction = true;
+    try {
+      const response = await this.api.softDeleteBatch(this.batchForAction.id, this.actorName.trim() || 'Admin', this.actionReason.trim());
+      if (!response.success) {
+        this.toastr.error(response.message || 'Failed to soft delete batch.');
+        return;
+      }
+      this.toastr.success('Batch soft deleted.');
+      this.closeLifecycleModal();
+      await this.loadBatches();
+    } catch (error) {
+      this.toastr.error('Failed to soft delete batch.');
+      console.error(error);
+    } finally {
+      this.isProcessingAction = false;
     }
+  }
 
-    this.toastr.success('Batch hard deleted.');
-    await this.loadBatches();
+  openRestoreModal(batch: UniqueLabelBatch): void {
+    this.batchForAction = batch;
+    this.actionReason = '';
+    this.actionAcknowledged = false;
+    this.lifecycleModalRef = this.modalService.open(this.restoreModal, { centered: true, size: 'md' });
+  }
+
+  async confirmRestore(): Promise<void> {
+    if (!this.batchForAction) return;
+    this.isProcessingAction = true;
+    try {
+      const response = await this.api.restoreBatch(this.batchForAction.id, this.actorName.trim() || 'Admin');
+      if (!response.success) {
+        this.toastr.error(response.message || 'Failed to restore batch.');
+        return;
+      }
+      this.toastr.success('Batch restored to active.');
+      this.closeLifecycleModal();
+      await this.loadBatches();
+    } catch (error) {
+      this.toastr.error('Failed to restore batch.');
+      console.error(error);
+    } finally {
+      this.isProcessingAction = false;
+    }
+  }
+
+  openHardDeleteModal(batch: UniqueLabelBatch): void {
+    this.batchForAction = batch;
+    this.actionReason = '';
+    this.actionAcknowledged = false;
+    this.lifecycleModalRef = this.modalService.open(this.hardDeleteModal, { centered: true, size: 'md' });
+  }
+
+  async confirmHardDelete(): Promise<void> {
+    if (!this.batchForAction) return;
+    this.isProcessingAction = true;
+    try {
+      const response = await this.api.hardDeleteBatch(this.batchForAction.id);
+      if (!response.success) {
+        this.toastr.error(response.message || 'Failed to hard delete batch.');
+        return;
+      }
+      this.toastr.success('Batch hard deleted.');
+      this.closeLifecycleModal();
+      await this.loadBatches();
+    } catch (error) {
+      this.toastr.error('Failed to hard delete batch.');
+      console.error(error);
+    } finally {
+      this.isProcessingAction = false;
+    }
   }
 }

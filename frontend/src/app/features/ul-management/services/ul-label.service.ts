@@ -32,8 +32,16 @@ export class ULLabelService {
     return this.http.delete(`${this.API_URL}/${id}`);
   }
 
-  archiveLabel(id: number): Observable<any> {
-    return this.http.patch(`${this.API_URL}/${id}/archive`, {});
+  voidLabel(id: number, reason?: string, performedBy?: string): Observable<any> {
+    return this.http.patch(`${this.API_URL}/${id}/void`, { reason, performed_by: performedBy });
+  }
+
+  writeOffLabel(id: number, reason: 'Damaged' | 'Lost' | 'Other', notes: string, performedBy: string): Observable<any> {
+    return this.http.post(`${this.API_URL}/${id}/write-off`, { reason, notes, performed_by: performedBy });
+  }
+
+  restoreLabelAvailability(id: number, reason?: string, performedBy?: string): Observable<any> {
+    return this.http.patch(`${this.API_URL}/${id}/restore-available`, { reason, performed_by: performedBy });
   }
 
   // Bulk create UL labels (for range uploads)

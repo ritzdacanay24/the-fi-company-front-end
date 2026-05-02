@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { MysqlService } from '@/shared/database/mysql.service';
 import { QadOdbcService } from '@/shared/database/qad-odbc.service';
+import { SCHEDULED_JOB_DEFINITIONS } from '../scheduled-jobs/scheduled-jobs.definitions';
 
 type CountRow = {
   pick_and_stage_open: number | string;
@@ -24,11 +25,15 @@ export class MenuBadgeCacheRefreshService implements OnModuleInit {
     await this.refreshCachedBadgeCounts();
   }
 
-  @Cron('*/2 * * * *', {
+  @Cron('0 0 * * * *', {
     name: 'refresh-cached-menu-badge-counts',
     timeZone: 'America/Los_Angeles',
   })
   async refreshCachedBadgeCountsCron(): Promise<void> {
+    const jobDef = SCHEDULED_JOB_DEFINITIONS.find((j) => j.id === 'menu-badge-cache-refresh');
+    if (jobDef && !jobDef.active) {
+      return;
+    }
     await this.refreshCachedBadgeCounts();
   }
 

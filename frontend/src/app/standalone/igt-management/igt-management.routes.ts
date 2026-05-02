@@ -16,14 +16,6 @@ export const IGT_MANAGEMENT_ROUTES: Routes = [
           ),
       },
       {
-        path: 'usage-report',
-        title: 'IGT Usage Report',
-        loadComponent: () =>
-          import('./igt-usage-report.component').then(
-            (c) => c.IgtUsageReportComponent,
-          ),
-      },
-      {
         path: 'upload',
         title: 'Upload IGT Serials',
         loadComponent: () =>

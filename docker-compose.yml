@@ -4,7 +4,7 @@ services:
       context: ./backend/nest-api
       dockerfile: ${NEST_API_DOCKERFILE:-Dockerfile.dev}
     container_name: eyefi-nest-api
-    command: ${NEST_API_COMMAND:-npm run dev}
+    command: npm run dev:docker-fast
     env_file:
       - ${BACKEND_ENV_FILE:-./backend/.env.development}
     ports:

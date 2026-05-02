@@ -8,9 +8,12 @@ export interface ActionCellParams extends ICellRendererParams {
   onPrint: (data: any) => void;
   onVoid: (data: any) => void;
   onDelete: (data: any) => void;
+  onReassign: (data: any) => void;
   onRestore: (data: any) => void;
   onVerify: (data: any) => void;
   requiresVerification: (data: any) => boolean;
+  canHardDelete: (data: any) => boolean;
+  getLinkedAssetNumber: (data: any) => string;
 }
 
 @Component({
@@ -26,6 +29,8 @@ export class ActionCellRendererComponent implements ICellRendererAngularComp {
   isVoided = false;
   verificationStatus = '';
   requiresVerif = false;
+  canHardDelete = false;
+  linkedAssetNumber = '';
 
   agInit(params: ActionCellParams): void {
     this.params = params;
@@ -44,6 +49,8 @@ export class ActionCellRendererComponent implements ICellRendererAngularComp {
       this.isVoided = false;
       this.verificationStatus = '';
       this.requiresVerif = false;
+      this.canHardDelete = false;
+      this.linkedAssetNumber = '';
       return;
     }
     
@@ -51,6 +58,8 @@ export class ActionCellRendererComponent implements ICellRendererAngularComp {
     this.isVoided = this.params.data.is_voided == 1 || this.params.data.is_voided === true;
     this.verificationStatus = this.params.data.verification_status;
     this.requiresVerif = this.params.requiresVerification(this.params.data);
+    this.canHardDelete = this.params.canHardDelete(this.params.data);
+    this.linkedAssetNumber = this.params.getLinkedAssetNumber(this.params.data);
   }
 
   onPrint(): void {
@@ -63,6 +72,10 @@ export class ActionCellRendererComponent implements ICellRendererAngularComp {
 
   onDelete(): void {
     this.params.onDelete(this.params.data);
+  }
+
+  onReassign(): void {
+    this.params.onReassign(this.params.data);
   }
 
   onRestore(): void {

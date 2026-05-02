@@ -6,7 +6,7 @@ export const envValidationSchema = Joi.object({
   DASHBOARD_WEB_BASE_URL: Joi.alternatives().conditional('NODE_ENV', {
     is: 'development',
     then: Joi.string().trim().uri().default('http://localhost:4200'),
-    otherwise: Joi.string().trim().uri().default('https://dashboard.eye-fi.com/dist/web'),
+    otherwise: Joi.string().trim().uri().default('https://dashboard.eye-fi.com'),
   }),
   CORS_ORIGIN: Joi.string().allow('').optional(),
   ATTACHMENTS_FS_REMOTE_BASE_URL: Joi.string()

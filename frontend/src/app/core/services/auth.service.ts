@@ -103,8 +103,7 @@ export class AuthenticationService {
           return user;
         }),
         catchError((error: any) => {
-          const errorMessage = "Login failed"; // Customize the error message as needed
-          return throwError(errorMessage);
+          return throwError(() => error);
         })
       );
   }

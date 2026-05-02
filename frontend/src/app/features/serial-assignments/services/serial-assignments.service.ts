@@ -26,6 +26,14 @@ export class SerialAssignmentsService {
     return firstValueFrom(this.http.get(`${this.API_URL}/${id}`));
   }
 
+  async getAssignmentsByUlNumber(ulNumber: string): Promise<any> {
+    return firstValueFrom(this.http.get(`${this.API_URL}/by-ul/${encodeURIComponent(ulNumber)}`));
+  }
+
+  async getAssignmentsByIgtSerialNumber(serialNumber: string): Promise<any> {
+    return firstValueFrom(this.http.get(`${this.API_URL}/by-igt/${encodeURIComponent(serialNumber)}`));
+  }
+
   async getAssignmentsByWorkOrder(workOrderNumber: string): Promise<any> {
     const params = new HttpParams().set('wo_number', workOrderNumber);
     return firstValueFrom(this.http.get(this.API_URL, { params }));
@@ -81,6 +89,16 @@ export class SerialAssignmentsService {
   async restoreAssignment(id: number, performedBy: string): Promise<any> {
     return firstValueFrom(
       this.http.post(`${this.API_URL}/${id}/restore`, { performed_by: performedBy })
+    );
+  }
+
+  async reassignAssignment(id: number, newWoNumber: string, reason: string, performedBy: string): Promise<any> {
+    return firstValueFrom(
+      this.http.post(`${this.API_URL}/${id}/reassign`, {
+        new_wo_number: newWoNumber,
+        reason,
+        performed_by: performedBy,
+      })
     );
   }
 

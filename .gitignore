@@ -64,3 +64,5 @@ backend/qad-driver/
 # backend runtime logs
 /backend/nest-api/logs/
 /backend/nest-api/*.log
+
+/node_modules

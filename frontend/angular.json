@@ -23,7 +23,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:browser",
           "options": {
-            "outputPath": "dist/web",
+            "outputPath": "dist/frontend",
             "index": "src/index.html",
             "main": "src/main.ts",
             "polyfills": "src/polyfills.ts",
@@ -126,7 +126,7 @@
                   "with": "src/environments/environment.prod.ts"
                 }
               ],
-              "baseHref": "/dist/web/",
+              "baseHref": "/",
               "outputHashing": "all",
               "optimization": {
                 "scripts": true,
@@ -137,6 +137,15 @@
               }
             },
             "development": {
+              "buildOptimizer": false,
+              "optimization": false,
+              "vendorChunk": false,
+              "extractLicenses": false,
+              "sourceMap": false,
+              "namedChunks": false
+            },
+            "dev-fast": {
+              "tsConfig": "tsconfig.dev.json",
               "buildOptimizer": false,
               "optimization": false,
               "vendorChunk": false,
@@ -155,9 +164,12 @@
             },
             "development": {
               "buildTarget": "fi:build:development"
+            },
+            "dev-fast": {
+              "buildTarget": "fi:build:dev-fast"
             }
           },
-          "defaultConfiguration": "development"
+          "defaultConfiguration": "dev-fast"
         },
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",

@@ -185,7 +185,7 @@ export const agGridOptions: GridOptions = {
       // },
     ],
   },
-  enableCharts: true,
+  enableCharts: false,
   statusBar: {
     statusPanels: [
       { statusPanel: "agTotalAndFilteredRowCountComponent", align: "left" },

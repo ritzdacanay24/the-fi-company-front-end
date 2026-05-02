@@ -8,8 +8,10 @@ export interface ULLabelActionCellParams extends ICellRendererParams {
   canEdit?: boolean;
   onEdit: (id: number) => void;
   onToggle: (id: number, status: string) => void;
-  onArchive: (id: number) => void;
-  onDelete: (id: number) => void;
+  onVoid: (id: number) => void;
+  onWriteOff: (id: number) => void;
+  onRestore: (id: number) => void;
+  onViewUsage: (id: number) => void;
 }
 
 @Component({
@@ -31,12 +33,17 @@ export class ULLabelActionDropdownRendererComponent implements ICellRendererAngu
   }
 
   get isUsed(): boolean {
-    const raw = this.params?.data?.is_used;
+    const raw = this.params?.data?.is_consumed;
     return raw === true || raw === 1 || raw === '1';
   }
 
   get canEditAction(): boolean {
     return !!(this.params as any)?.canEdit;
+  }
+
+  get hasUlNumber(): boolean {
+    const ulNumber = this.params?.data?.ul_number;
+    return typeof ulNumber === 'string' && ulNumber.trim().length > 0;
   }
 
   onEdit(): void {
@@ -54,17 +61,31 @@ export class ULLabelActionDropdownRendererComponent implements ICellRendererAngu
     }
   }
 
-  onArchive(): void {
+  onVoid(): void {
     const id = this.params?.data?.id;
     if (id != null) {
-      this.params.onArchive(Number(id));
+      this.params.onVoid(Number(id));
     }
   }
 
-  onDelete(): void {
+  onWriteOff(): void {
     const id = this.params?.data?.id;
     if (id != null) {
-      this.params.onDelete(Number(id));
+      this.params.onWriteOff(Number(id));
+    }
+  }
+
+  onRestore(): void {
+    const id = this.params?.data?.id;
+    if (id != null) {
+      this.params.onRestore(Number(id));
+    }
+  }
+
+  onViewUsage(): void {
+    const id = this.params?.data?.id;
+    if (id != null) {
+      this.params.onViewUsage(Number(id));
     }
   }
 }

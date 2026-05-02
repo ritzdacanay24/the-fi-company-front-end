@@ -2870,7 +2870,7 @@ export class ShippingComponent implements OnInit, OnDestroy {
     animateRows: true,
     tooltipShowDelay: 0,
     columnDefs: this.columnDefs,
-    enableCharts: true,
+    enableCharts: false,
     enableAdvancedFilter: false,
     enableBrowserTooltips: true,
     suppressColumnMoveAnimation: true,

@@ -1,8 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SRC_DIR="${1:-/var/www/html/frontend/dist/web}"
+DEFAULT_SRC_DIR="/var/www/html/frontend/dist/frontend"
+LEGACY_SRC_DIR="/var/www/html/frontend/dist/web"
+SRC_DIR="${1:-$DEFAULT_SRC_DIR}"
 DEST_DIR="/var/www/html/portal/web"
+
+if [[ $# -eq 0 && ! -d "$SRC_DIR" && -d "$LEGACY_SRC_DIR" ]]; then
+  SRC_DIR="$LEGACY_SRC_DIR"
+fi
 
 if [[ ! -d "$SRC_DIR" ]]; then
   echo "Source build folder not found: $SRC_DIR"

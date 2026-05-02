@@ -172,6 +172,10 @@ export class ErrorInterceptor implements HttpInterceptor {
   ): Observable<HttpEvent<any>> {
     return next.handle(request).pipe(
       catchError((error) => {
+        if (request.url.includes('/auth/login') || request.url.includes('/auth/login/card')) {
+          return throwError(() => error);
+        }
+
         if (error.status === 401 || error.status === 900) {
           if (error.url?.includes("api.mindee.net")) {
             // Mindee API error - don't trigger app logout

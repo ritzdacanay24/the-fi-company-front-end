@@ -24,7 +24,8 @@ export class SerialAvailabilityRepository extends BaseRepository<RowDataPacket> 
       `SELECT ul.id, ul.ul_number, ul.description, ul.category, ul.manufacturer, ul.part_number, ul.status, ul.created_at
        FROM ul_labels ul
        LEFT JOIN ul_label_usages ulu ON ul.id = ulu.ul_label_id
-       WHERE ul.status = 'active' AND ulu.id IS NULL
+       LEFT JOIN serial_assignments sa ON ul.id = sa.ul_label_id
+       WHERE ul.status = 'active' AND ulu.id IS NULL AND sa.id IS NULL
        ORDER BY ul.ul_number ASC
        LIMIT ${Math.max(1, Math.floor(limit))}`,
     );
@@ -46,17 +47,6 @@ export class SerialAvailabilityRepository extends BaseRepository<RowDataPacket> 
        FROM eyefi_serial_numbers esn
        WHERE esn.is_consumed = 1
        ORDER BY esn.consumed_at DESC, esn.id DESC
-       LIMIT ${Math.max(1, Math.floor(limit))}`,
-    );
-  }
-
-  async getRecentlyUsedUlLabels(limit = 10): Promise<RowDataPacket[]> {
-    return this.rawQuery<RowDataPacket>(
-      `SELECT ulu.id, ulu.ul_number, ulu.eyefi_serial_number, ulu.wo_nbr AS work_order_number,
-              ulu.date_used, ulu.user_name, ul.category, ul.status
-       FROM ul_label_usages ulu
-       LEFT JOIN ul_labels ul ON ulu.ul_label_id = ul.id
-       ORDER BY ulu.date_used DESC, ulu.id DESC
        LIMIT ${Math.max(1, Math.floor(limit))}`,
     );
   }
@@ -108,21 +98,15 @@ export class SerialAvailabilityRepository extends BaseRepository<RowDataPacket> 
         (
           SELECT COUNT(*)
           FROM ul_labels ul
-          WHERE ul.status = 'active'
-            AND NOT EXISTS (
-              SELECT 1
-              FROM serial_assignments sa
-              WHERE sa.ul_label_id = ul.id
-                AND COALESCE(sa.is_voided, 0) = 0
-                AND COALESCE(sa.status, '') <> 'voided'
-            )
-            AND NOT EXISTS (
-              SELECT 1
-              FROM ul_label_usages ulu
-              WHERE ulu.ul_label_id = ul.id
-                AND COALESCE(ulu.is_voided, 0) = 0
-            )
-        ) AS ul_available,
+          WHERE LOWER(COALESCE(ul.category, '')) = 'new'
+            AND COALESCE(ul.is_consumed, 0) = 0
+        ) AS ul_new_available,
+        (
+          SELECT COUNT(*)
+          FROM ul_labels ul
+          WHERE LOWER(COALESCE(ul.category, '')) = 'used'
+            AND COALESCE(ul.is_consumed, 0) = 0
+        ) AS ul_used_available,
         (
           SELECT COUNT(*)
           FROM igt_serial_numbers igt
@@ -162,22 +146,17 @@ export class SerialAvailabilityRepository extends BaseRepository<RowDataPacket> 
             )
         ) AS eyefi_recently_used,
         (
-          SELECT COUNT(DISTINCT ul.id)
+          SELECT COUNT(*)
           FROM ul_labels ul
-          WHERE EXISTS (
-            SELECT 1
-            FROM serial_assignments sa
-            WHERE sa.ul_label_id = ul.id
-              AND COALESCE(sa.is_voided, 0) = 0
-              AND COALESCE(sa.status, '') <> 'voided'
-          )
-          OR EXISTS (
-            SELECT 1
-            FROM ul_label_usages ulu
-            WHERE ulu.ul_label_id = ul.id
-              AND COALESCE(ulu.is_voided, 0) = 0
-          )
-        ) AS ul_recently_used,
+          WHERE LOWER(COALESCE(ul.category, '')) = 'new'
+            AND COALESCE(ul.is_consumed, 0) = 1
+        ) AS ul_new_recently_used,
+        (
+          SELECT COUNT(*)
+          FROM ul_labels ul
+          WHERE LOWER(COALESCE(ul.category, '')) = 'used'
+            AND COALESCE(ul.is_consumed, 0) = 1
+        ) AS ul_used_recently_used,
         (
           SELECT COUNT(*)
           FROM igt_serial_numbers igt
@@ -221,24 +200,19 @@ export class SerialAvailabilityRepository extends BaseRepository<RowDataPacket> 
             )
         ) AS eyefi_used_last_7_days,
         (
-          SELECT COUNT(DISTINCT ul.id)
+          SELECT COUNT(*)
           FROM ul_labels ul
-          WHERE EXISTS (
-            SELECT 1
-            FROM serial_assignments sa
-            WHERE sa.ul_label_id = ul.id
-              AND COALESCE(sa.is_voided, 0) = 0
-              AND COALESCE(sa.status, '') <> 'voided'
-              AND sa.consumed_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-          )
-          OR EXISTS (
-            SELECT 1
-            FROM ul_label_usages ulu
-            WHERE ulu.ul_label_id = ul.id
-              AND COALESCE(ulu.is_voided, 0) = 0
-              AND COALESCE(ulu.date_used, DATE(ulu.created_at)) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
-          )
-        ) AS ul_used_last_7_days,
+          WHERE LOWER(COALESCE(ul.category, '')) = 'new'
+            AND COALESCE(ul.is_consumed, 0) = 1
+            AND ul.updated_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+        ) AS ul_new_used_last_7_days,
+        (
+          SELECT COUNT(*)
+          FROM ul_labels ul
+          WHERE LOWER(COALESCE(ul.category, '')) = 'used'
+            AND COALESCE(ul.is_consumed, 0) = 1
+            AND ul.updated_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+        ) AS ul_used_used_last_7_days,
         (
           SELECT COUNT(*)
           FROM igt_serial_numbers igt
@@ -249,13 +223,16 @@ export class SerialAvailabilityRepository extends BaseRepository<RowDataPacket> 
 
     return rows[0] ?? {
       eyefi_available: 0,
-      ul_available: 0,
+      ul_new_available: 0,
+      ul_used_available: 0,
       igt_available: 0,
       eyefi_recently_used: 0,
-      ul_recently_used: 0,
+      ul_new_recently_used: 0,
+      ul_used_recently_used: 0,
       igt_recently_used: 0,
       eyefi_used_last_7_days: 0,
-      ul_used_last_7_days: 0,
+      ul_new_used_last_7_days: 0,
+      ul_used_used_last_7_days: 0,
       igt_used_last_7_days: 0,
     };
   }

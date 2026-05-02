@@ -1,4 +1,4 @@
-<div class="auth-one-bg-position auth-one-bg" id="auth-particles" *ngIf="closeWindow">
+<div class="auth-one-bg-position auth-one-bg" id="auth-particles" *ngIf="!isAuthenticated && closeWindow">
   <div class="bg-overlay"></div>
   <div class="shape">
     <svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -23,7 +23,44 @@
   </div>
 </div>
 
-<div class="auth-one-bg-position auth-one-bg" id="auth-particles" *ngIf="!closeWindow">
+<div class="auth-one-bg-position auth-one-bg" id="auth-particles" *ngIf="isAuthenticated">
+  <div class="bg-overlay"></div>
+  <div class="shape">
+    <svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink"
+      viewBox="0 0 1440 120">
+      <path d="M 0,36 C 144,53.6 432,123.2 720,124 C 1008,124.8 1296,56.8 1440,40L1440 140L0 140z"></path>
+    </svg>
+  </div>
+
+  <div class="container py-4 position-relative" style="min-height: 100vh;">
+    <div class="row justify-content-center">
+      <div class="col-12 col-lg-8 col-xl-6">
+
+        <div class="text-center mb-4 p-4 rounded qir-public-header">
+          <img src="assets/images/the-fi-cropped.png" style="width: 190px;" class="mb-3" alt="The Fi Company Logo">
+          <h2 class="mb-2 fw-bold qir-public-title">Quality Incident Report</h2>
+          <p class="mb-0 qir-public-subtitle">This is a public form for external users only.</p>
+        </div>
+
+        <div class="card shadow-sm border-0">
+          <div class="card-body p-5 text-center">
+            <div class="mb-4">
+              <i class="mdi mdi-account-lock text-warning" style="font-size: 5rem;"></i>
+            </div>
+            <h4 class="text-warning mb-3 fw-bold">You're Already Signed In</h4>
+            <p class="text-muted mb-4">Since you have an account, please use the internal QIR form instead.</p>
+            <button class="btn btn-primary" (click)="goToInternalForm()">
+              <i class="mdi mdi-file-document-edit me-2"></i>Go to Internal QIR Form
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="auth-one-bg-position auth-one-bg" id="auth-particles" *ngIf="!isAuthenticated && !closeWindow">
   <div class="bg-overlay"></div>
   <div class="shape">
     <svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink"

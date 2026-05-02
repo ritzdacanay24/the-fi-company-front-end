@@ -125,6 +125,106 @@ export class SerialAssignmentsRepository extends BaseRepository<RowDataPacket> {
     return rows[0] ?? null;
   }
 
+  async findByUlNumber(ulNumber: string): Promise<RowDataPacket[]> {
+    return this.rawQuery<RowDataPacket>(
+      `SELECT
+         v.source_id AS id,
+         v.source_table,
+         v.source_type,
+         sa.eyefi_serial_id,
+         v.eyefi_serial_number,
+         v.ul_label_id,
+         v.ul_number,
+         v.wo_number,
+         v.po_number,
+         v.batch_id,
+         v.used_date,
+         v.used_by,
+         v.used_by AS consumed_by,
+         v.status,
+         v.created_at,
+         v.is_voided,
+         v.voided_by,
+         v.voided_at,
+         v.void_reason,
+         v.part_number,
+         v.wo_description,
+         sa.wo_qty_ord AS qty_ordered,
+         sa.wo_due_date AS due_date,
+         sa.wo_routing AS routing,
+         sa.wo_line AS line_number,
+         v.customer_part_number,
+         v.customer_name,
+         COALESCE(sa.inspector_name, v.inspector_name, v.used_by) AS performed_by,
+         sa.customer_type_id,
+         sa.customer_asset_id,
+         COALESCE(sa.generated_asset_number, v.customer_part_number) AS generated_asset_number,
+         sa.verification_status,
+         sa.verified_at,
+         sa.verified_by,
+         v.igt_serial_number,
+         v.ags_serial_number,
+         v.sg_asset_number,
+         v.ul_category
+       FROM ${VIEW} v
+       LEFT JOIN \`${TABLE}\` sa
+         ON v.source_table = 'serial_assignments' AND sa.id = v.source_id
+       WHERE v.ul_number = ?
+       ORDER BY v.used_date DESC, v.unique_id DESC`,
+      [ulNumber],
+    );
+  }
+
+  async findByIgtSerialNumber(igtSerialNumber: string): Promise<RowDataPacket[]> {
+    return this.rawQuery<RowDataPacket>(
+      `SELECT
+         v.source_id AS id,
+         v.source_table,
+         v.source_type,
+         sa.eyefi_serial_id,
+         v.eyefi_serial_number,
+         v.ul_label_id,
+         v.ul_number,
+         v.wo_number,
+         v.po_number,
+         v.batch_id,
+         v.used_date,
+         v.used_by,
+         v.used_by AS consumed_by,
+         v.status,
+         v.created_at,
+         v.is_voided,
+         v.voided_by,
+         v.voided_at,
+         v.void_reason,
+         v.part_number,
+         v.wo_description,
+         sa.wo_qty_ord AS qty_ordered,
+         sa.wo_due_date AS due_date,
+         sa.wo_routing AS routing,
+         sa.wo_line AS line_number,
+         v.customer_part_number,
+         v.customer_name,
+         COALESCE(sa.inspector_name, v.inspector_name, v.used_by) AS performed_by,
+         sa.customer_type_id,
+         sa.customer_asset_id,
+         COALESCE(sa.generated_asset_number, v.customer_part_number) AS generated_asset_number,
+         sa.verification_status,
+         sa.verified_at,
+         sa.verified_by,
+         v.igt_serial_number,
+         v.ags_serial_number,
+         v.sg_asset_number,
+         v.ul_category
+       FROM ${VIEW} v
+       LEFT JOIN \`${TABLE}\` sa
+         ON v.source_table = 'serial_assignments' AND sa.id = v.source_id
+       WHERE v.igt_serial_number = ?
+       ORDER BY v.used_date DESC, v.unique_id DESC`,
+      [igtSerialNumber],
+    );
+  }
+
   async getStatistics(): Promise<RowDataPacket | null> {
     const rows = await this.rawQuery<RowDataPacket>(
       `SELECT
@@ -210,7 +310,7 @@ export class SerialAssignmentsRepository extends BaseRepository<RowDataPacket> {
     id: number,
     reason: string,
     performedBy: string,
-  ): Promise<{ freed_serial: string | null }> {
+  ): Promise<{ freed_serial: string | null; freed_ul_label: string | null }> {
     return this.mysqlService.withTransaction(async (conn: PoolConnection) => {
       const [rows] = await conn.execute<RowDataPacket[]>(
         `SELECT * FROM \`${TABLE}\` WHERE id = ? LIMIT 1`,
@@ -219,10 +319,27 @@ export class SerialAssignmentsRepository extends BaseRepository<RowDataPacket> {
       const assignment = rows[0];
       if (!assignment) throw new Error('Assignment not found');
 
+      const isAssetLinked = Boolean(
+        assignment['customer_asset_id'] ||
+          assignment['generated_asset_number'] ||
+          assignment['part_number'] ||
+          assignment['customer_type_id'],
+      );
+      if (isAssetLinked) {
+        throw new Error('Hard delete is blocked for asset-linked assignments. Use void instead.');
+      }
+
       await conn.execute(
         `UPDATE eyefi_serial_numbers SET status = 'available' WHERE id = ?`,
         [assignment['eyefi_serial_id']],
       );
+
+      if (assignment['ul_label_id']) {
+        await conn.execute(
+          `UPDATE ul_labels SET status = 'available', is_consumed = 0 WHERE id = ?`,
+          [assignment['ul_label_id']],
+        );
+      }
 
       await conn.execute(
         `INSERT INTO \`${AUDIT_TABLE}\` (assignment_id, action, reason, performed_by, performed_at)
@@ -232,7 +349,10 @@ export class SerialAssignmentsRepository extends BaseRepository<RowDataPacket> {
 
       await conn.execute(`DELETE FROM \`${TABLE}\` WHERE id = ?`, [id]);
 
-      return { freed_serial: (assignment['eyefi_serial_number'] as string) ?? null };
+      return {
+        freed_serial: (assignment['eyefi_serial_number'] as string) ?? null,
+        freed_ul_label: (assignment['ul_number'] as string) ?? null,
+      };
     });
   }
 
@@ -270,6 +390,54 @@ export class SerialAssignmentsRepository extends BaseRepository<RowDataPacket> {
          VALUES (?, 'restored', 'Assignment restored', ?, NOW())`,
         [id, performedBy],
       );
+    });
+  }
+
+  async reassignOne(
+    id: number,
+    newWoNumber: string,
+    reason: string,
+    performedBy: string,
+  ): Promise<{ old_wo_number: string | null; new_wo_number: string; eyefi_serial_number: string | null }> {
+    const targetWo = String(newWoNumber || '').trim();
+    if (!targetWo) {
+      throw new Error('New work order number is required');
+    }
+
+    return this.mysqlService.withTransaction(async (conn: PoolConnection) => {
+      const [rows] = await conn.execute<RowDataPacket[]>(
+        `SELECT * FROM \`${TABLE}\` WHERE id = ? LIMIT 1`,
+        [id],
+      );
+
+      const assignment = rows[0];
+      if (!assignment) throw new Error('Assignment not found');
+      if (assignment['is_voided']) throw new Error('Cannot reassign a voided assignment');
+
+      const oldWo = (assignment['wo_number'] as string) ?? null;
+      if (oldWo && String(oldWo).trim().toUpperCase() === targetWo.toUpperCase()) {
+        throw new Error('Assignment is already under the target work order');
+      }
+
+      await conn.execute(
+        `UPDATE \`${TABLE}\`
+         SET wo_number = ?, po_number = ?
+         WHERE id = ?`,
+        [targetWo, targetWo, id],
+      );
+
+      const auditReason = `Reassigned WO ${oldWo || 'N/A'} -> ${targetWo}. ${reason}`.trim();
+      await conn.execute(
+        `INSERT INTO \`${AUDIT_TABLE}\` (assignment_id, action, reason, performed_by, performed_at)
+         VALUES (?, 'reassigned', ?, ?, NOW())`,
+        [id, auditReason, performedBy],
+      );
+
+      return {
+        old_wo_number: oldWo,
+        new_wo_number: targetWo,
+        eyefi_serial_number: (assignment['eyefi_serial_number'] as string) ?? null,
+      };
     });
   }
 

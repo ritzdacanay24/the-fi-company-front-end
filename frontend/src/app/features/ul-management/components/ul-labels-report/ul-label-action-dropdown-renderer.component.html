@@ -1,20 +1,25 @@
 <ng-container *ngIf="params?.data">
-  <span class="text-muted small" *ngIf="isUsed">Used</span>
+  <!-- <span class="text-muted small me-2" *ngIf="isUsed">Used</span> -->
 
-  <div class="btn-group" ngbDropdown container="body" placement="bottom-end" *ngIf="!isUsed">
+  <div class="btn-group" ngbDropdown container="body" placement="bottom-end" *ngIf="canEditAction || hasUlNumber">
     <button type="button" class="btn btn-outline-secondary btn-sm" ngbDropdownToggle title="Actions">
       <i class="mdi mdi-dots-vertical"></i>
     </button>
     <div ngbDropdownMenu class="dropdown-menu-end">
-      <button ngbDropdownItem *ngIf="canEditAction" (click)="onEdit()">
+      <button ngbDropdownItem *ngIf="!isUsed && canEditAction" (click)="onEdit()">
         <i class="mdi mdi-pencil me-2"></i>Edit
       </button>
-      <button ngbDropdownItem (click)="onArchive()">
-        <i class="mdi mdi-archive me-2"></i>Archive
+      <button ngbDropdownItem *ngIf="!isUsed && canEditAction" class="text-success" (click)="onVoid()">
+        <i class="mdi mdi-check-circle-outline me-2"></i>Mark as Used
       </button>
-      <div class="dropdown-divider"></div>
-      <button ngbDropdownItem class="text-danger" (click)="onDelete()">
-        <i class="mdi mdi-delete me-2"></i>Delete
+      <button ngbDropdownItem *ngIf="!isUsed && canEditAction" class="text-danger" (click)="onWriteOff()">
+        <i class="mdi mdi-alert-circle-outline me-2"></i>Write Off
+      </button>
+      <button ngbDropdownItem *ngIf="isUsed && canEditAction" class="text-primary" (click)="onRestore()">
+        <i class="mdi mdi-backup-restore me-2"></i>Restore to Available
+      </button>
+      <button ngbDropdownItem *ngIf="hasUlNumber" class="text-info" (click)="onViewUsage()">
+        <i class="mdi mdi-information-outline me-2"></i>View Usage Details
       </button>
     </div>
   </div>

@@ -32,8 +32,10 @@ interface WoSearchRow {
   wo_line: string | number;
   description: string;
   cp_cust_part?: string;
+  customer?: string;
   DESCRIPTION?: string;
   CP_CUST_PART?: string;
+  CUSTOMER?: string;
 }
 
 interface CustomerPartSearchRow {
@@ -173,7 +175,8 @@ export class QadService {
              wo_routing,
              wo_line,
              c.cp_cust_part,
-             pt_desc1 || ' ' || pt_desc2 AS description
+             pt_desc1 || ' ' || pt_desc2 AS description,
+             c.cp_cust as customer
       FROM wo_mstr
       LEFT JOIN pt_mstr b ON b.pt_part = wo_part
       LEFT JOIN cp_mstr c ON c.cp_part = wo_part AND c.cp_domain = wo_domain
@@ -187,6 +190,7 @@ export class QadService {
 
     return rows.map((row) => {
       const description = String(row.description ?? row.DESCRIPTION ?? '');
+      const customer = String(row.customer ?? row.CUSTOMER ?? '');
 
       return {
         wo_nbr: String(row.wo_nbr ?? row.WO_NBR ?? ''),
@@ -197,8 +201,11 @@ export class QadService {
         wo_line: (row.wo_line ?? row.WO_LINE ?? '') as string | number,
         cp_cust_part: String(row.cp_cust_part ?? row.CP_CUST_PART ?? ''),
         description,
+        customer,
         CP_CUST_PART: String(row.cp_cust_part ?? row.CP_CUST_PART ?? ''),
         DESCRIPTION: description,
+        CUSTOMER: customer,
+        cp_cust: String(customer ?? row.CP_CUST ?? ''),
       };
     });
   }

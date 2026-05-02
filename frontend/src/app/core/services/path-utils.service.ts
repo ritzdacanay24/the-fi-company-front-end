@@ -40,11 +40,18 @@ export class PathUtilsService {
    * Build a URL relative to the current base path
    */
   buildUrl(relativePath: string): string {
-    if (relativePath.startsWith('/')) {
-      relativePath = relativePath.substring(1);
+    if (relativePath.startsWith('http://') || relativePath.startsWith('https://')) {
+      return relativePath;
     }
-    
-    return `${this.baseHref}/${relativePath}`;
+
+    const normalizedBaseHref = this.baseHref && this.baseHref !== '/'
+      ? this.baseHref.replace(/\/+$/, '')
+      : '';
+    const normalizedRelativePath = relativePath.startsWith('/')
+      ? relativePath
+      : `/${relativePath}`;
+
+    return `${normalizedBaseHref}${normalizedRelativePath}`;
   }
 
   /**

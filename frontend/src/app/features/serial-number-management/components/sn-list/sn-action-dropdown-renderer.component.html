@@ -1,0 +1,18 @@
+<ng-container *ngIf="params?.data">
+  <div class="btn-group" ngbDropdown container="body" placement="bottom-end">
+    <button type="button" class="btn btn-outline-secondary btn-sm" ngbDropdownToggle title="Actions">
+      <i class="mdi mdi-dots-vertical"></i>
+    </button>
+    <div ngbDropdownMenu class="dropdown-menu-end">
+      <button ngbDropdownItem *ngIf="status !== 'used'" class="text-success" (click)="onMarkUsed()">
+        <i class="mdi mdi-check-circle-outline me-2"></i>Mark as Used
+      </button>
+      <button ngbDropdownItem *ngIf="status !== 'available'" class="text-primary" (click)="onRestoreAvailable()">
+        <i class="mdi mdi-backup-restore me-2"></i>Restore to Available
+      </button>
+      <button ngbDropdownItem *ngIf="status !== 'voided'" class="text-danger" (click)="onMarkVoided()">
+        <i class="mdi mdi-alert-circle-outline me-2"></i>Mark as Voided
+      </button>
+    </div>
+  </div>
+</ng-container>

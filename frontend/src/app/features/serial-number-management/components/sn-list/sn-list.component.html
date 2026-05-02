@@ -48,6 +48,7 @@
             </button> -->
           </div>
         </div>
+
       </div>
 
       <div class="card shadow-sm border-0">
@@ -63,7 +64,7 @@
                   class="form-control border-start-0"
                   [(ngModel)]="quickSearchTerm"
                   (input)="onQuickSearchChange()"
-                  placeholder="Search serials, status, model, assignee..."
+                  placeholder="Search serials, status, created/updated by..."
                 />
                 <button
                   *ngIf="quickSearchTerm"
@@ -85,6 +86,97 @@
           </div>
         </div>
 
+        <div class="card-body border-bottom bg-body-secondary" *ngIf="!isLoading">
+          <div class="row g-3 mb-3">
+            <div class="col-6 col-lg-3 col-xl">
+              <div class="rounded-3 p-3 shadow-sm border bg-body h-100">
+                <small class="text-uppercase text-body-secondary fw-semibold">Total</small>
+                <h4 class="mb-0 fs-3 fw-bold text-body-emphasis">{{ getSummary().total }}</h4>
+              </div>
+            </div>
+            <div class="col-6 col-lg-3 col-xl">
+              <div class="rounded-3 p-3 shadow-sm border bg-body h-100">
+                <small class="text-uppercase text-body-secondary fw-semibold">Available</small>
+                <h4 class="mb-0 fs-3 fw-bold text-success">{{ getSummary().available }}</h4>
+              </div>
+            </div>
+            <div class="col-6 col-lg-3 col-xl">
+              <div class="rounded-3 p-3 shadow-sm border bg-body h-100">
+                <small class="text-uppercase text-body-secondary fw-semibold">Used</small>
+                <h4 class="mb-0 fs-3 fw-bold text-warning">{{ getSummary().used }}</h4>
+              </div>
+            </div>
+            <div class="col-6 col-lg-3 col-xl">
+              <div class="rounded-3 p-3 shadow-sm border bg-body h-100">
+                <small class="text-uppercase text-body-secondary fw-semibold">Voided</small>
+                <h4 class="mb-0 fs-3 fw-bold text-secondary">{{ getSummary().voided }}</h4>
+              </div>
+            </div>
+            <div class="col-6 col-lg-3 col-xl">
+              <div class="rounded-3 p-3 shadow-sm border bg-body h-100">
+                <small class="text-uppercase text-body-secondary fw-semibold">Models</small>
+                <h4 class="mb-0 fs-3 fw-bold text-primary">{{ getSummary().uniqueModels }}</h4>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-12 col-xl-4">
+              <div class="rounded-3 p-3 shadow-sm border bg-body h-100">
+                <h6 class="mb-2">Status Breakdown</h6>
+                <div>
+                  <apx-chart
+                    *ngIf="statusBarChart.series"
+                    [series]="statusBarChart.series"
+                    [chart]="statusBarChart.chart"
+                    [xaxis]="statusBarChart.xaxis"
+                    [yaxis]="statusBarChart.yaxis"
+                    [plotOptions]="statusBarChart.plotOptions"
+                    [colors]="statusBarChart.colors"
+                    [dataLabels]="statusBarChart.dataLabels"
+                    [tooltip]="statusBarChart.tooltip">
+                  </apx-chart>
+                </div>
+              </div>
+            </div>
+            <div class="col-12 col-xl-4">
+              <div class="rounded-3 p-3 shadow-sm border bg-body h-100">
+                <h6 class="mb-2">Inventory Distribution</h6>
+                <div>
+                  <apx-chart
+                    *ngIf="statusDistributionChart.series"
+                    [series]="statusDistributionChart.series"
+                    [chart]="statusDistributionChart.chart"
+                    [labels]="statusDistributionChart.labels"
+                    [colors]="statusDistributionChart.colors"
+                    [dataLabels]="statusDistributionChart.dataLabels"
+                    [legend]="statusDistributionChart.legend"
+                    [responsive]="statusDistributionChart.responsive">
+                  </apx-chart>
+                </div>
+              </div>
+            </div>
+            <div class="col-12 col-xl-4">
+              <div class="rounded-3 p-3 shadow-sm border bg-body h-100">
+                <h6 class="mb-2">Last Used Trend (Last 8 Months)</h6>
+                <div>
+                  <apx-chart
+                    *ngIf="uploadTrendChart.series"
+                    [series]="uploadTrendChart.series"
+                    [chart]="uploadTrendChart.chart"
+                    [xaxis]="uploadTrendChart.xaxis"
+                    [yaxis]="uploadTrendChart.yaxis"
+                    [stroke]="uploadTrendChart.stroke"
+                    [colors]="uploadTrendChart.colors"
+                    [dataLabels]="uploadTrendChart.dataLabels"
+                    [tooltip]="uploadTrendChart.tooltip">
+                  </apx-chart>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Bulk Actions -->
         <div class="card-body border-top" *ngIf="selectedCount > 0">
           <div class="d-flex align-items-center justify-content-between bg-light p-3 rounded">
@@ -101,17 +193,11 @@
                   <button class="dropdown-item" (click)="bulkUpdateStatus('available')">
                     <i class="mdi mdi-check-circle text-success me-2"></i>Available
                   </button>
-                  <button class="dropdown-item" (click)="bulkUpdateStatus('assigned')">
-                    <i class="mdi mdi-clock text-warning me-2"></i>Assigned
+                  <button class="dropdown-item" (click)="bulkUpdateStatus('used')">
+                    <i class="mdi mdi-clock text-warning me-2"></i>Used
                   </button>
-                  <button class="dropdown-item" (click)="bulkUpdateStatus('shipped')">
-                    <i class="mdi mdi-truck text-info me-2"></i>Shipped
-                  </button>
-                  <button class="dropdown-item" (click)="bulkUpdateStatus('returned')">
-                    <i class="mdi mdi-undo text-secondary me-2"></i>Returned
-                  </button>
-                  <button class="dropdown-item" (click)="bulkUpdateStatus('defective')">
-                    <i class="mdi mdi-alert text-danger me-2"></i>Defective
+                  <button class="dropdown-item" (click)="bulkUpdateStatus('voided')">
+                    <i class="mdi mdi-cancel text-secondary me-2"></i>Voided
                   </button>
                 </div>
               </div>

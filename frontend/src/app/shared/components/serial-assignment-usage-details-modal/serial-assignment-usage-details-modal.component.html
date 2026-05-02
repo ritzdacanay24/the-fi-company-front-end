@@ -1,0 +1,173 @@
+<div class="modal-header border-0 pb-0">
+  <div class="d-flex align-items-center gap-2">
+    <div class="bg-info bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width:40px;height:40px;">
+      <i class="mdi mdi-certificate text-info fs-5"></i>
+    </div>
+    <div>
+      <h5 class="modal-title mb-0">Serial Assignment Usage Details</h5>
+      <small class="text-muted">{{ usageContextLabel }}: {{ selectedUsageDetailsIdentifier }}</small>
+    </div>
+  </div>
+  <button type="button" class="btn-close" aria-label="Close" (click)="close()"></button>
+</div>
+
+<div class="modal-body pt-3">
+
+  <!-- Loading -->
+  <div *ngIf="isLoadingUsageDetails" class="d-flex align-items-center gap-2 text-muted py-4 justify-content-center">
+    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+    Loading usage details...
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="!isLoadingUsageDetails && usageDetailsError" class="alert alert-warning mb-0" role="alert">
+    <i class="mdi mdi-alert-outline me-2"></i>{{ usageDetailsError }}
+  </div>
+
+  <!-- Multiple assignments notice -->
+  <div *ngIf="!isLoadingUsageDetails && usageDetailsRows.length > 1" class="alert alert-info py-2 mb-3" role="alert">
+    <i class="mdi mdi-information-outline me-1"></i>
+    This UL label appears in <strong>{{ usageDetailsRows.length }}</strong> assignment records (e.g. reused after restore).
+  </div>
+
+  <!-- Assignment Cards -->
+  <div *ngIf="!isLoadingUsageDetails && usageDetailsRows.length">
+    <div *ngFor="let row of usageDetailsRows; let i = index" class="card border mb-3 shadow-sm">
+
+      <!-- Card Header: status + date -->
+      <div class="card-header d-flex align-items-center justify-content-between py-2">
+        <div class="d-flex align-items-center gap-2">
+          <span *ngIf="usageDetailsRows.length > 1" class="text-muted small fw-semibold">Assignment {{ i + 1 }} of {{ usageDetailsRows.length }}</span>
+          <span class="badge" [ngClass]="badgeClass(row)">{{ badgeLabel(row) }}</span>
+        </div>
+        <small class="text-muted">
+          <i class="mdi mdi-clock-outline me-1"></i>{{ assignedDate(row) }}
+        </small>
+      </div>
+
+      <div class="card-body py-3">
+        <div class="row g-3">
+
+          <!-- Work Order / PO -->
+          <div class="col-12 col-md-6">
+            <div class="rounded-2 border bg-body-secondary p-3 h-100">
+              <div class="text-uppercase text-muted small fw-semibold mb-2">
+                <i class="mdi mdi-briefcase-outline me-1"></i>Work Order / PO
+              </div>
+              <div class="row g-2">
+                <div class="col-6">
+                  <div class="small text-muted">WO Number</div>
+                  <div class="fw-semibold">{{ row.wo_number || '—' }}</div>
+                </div>
+                <div class="col-6">
+                  <div class="small text-muted">PO Number</div>
+                  <div class="fw-semibold">{{ row.po_number || '—' }}</div>
+                </div>
+                <div class="col-12" *ngIf="row.wo_description">
+                  <div class="small text-muted">Description</div>
+                  <div class="text-body-secondary small">{{ row.wo_description }}</div>
+                </div>
+                <div class="col-6" *ngIf="row.routing">
+                  <div class="small text-muted">Routing</div>
+                  <div class="fw-semibold">{{ row.routing }}</div>
+                </div>
+                <div class="col-6" *ngIf="row.qty_ordered !== undefined && row.qty_ordered !== null">
+                  <div class="small text-muted">Qty Ordered</div>
+                  <div class="fw-semibold">{{ row.qty_ordered }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Customer -->
+          <div class="col-12 col-md-6">
+            <div class="rounded-2 border bg-body-secondary p-3 h-100">
+              <div class="text-uppercase text-muted small fw-semibold mb-2">
+                <i class="mdi mdi-domain me-1"></i>Customer
+              </div>
+              <div class="row g-2">
+                <div class="col-12">
+                  <div class="small text-muted">Name</div>
+                  <div class="fw-semibold">{{ row.customer_name || row.source_type || '—' }}</div>
+                </div>
+                <div class="col-12" *ngIf="row.performed_by || row.consumed_by">
+                  <div class="small text-muted">Performed By</div>
+                  <div class="fw-semibold">{{ row.performed_by || row.consumed_by }}</div>
+                </div>
+                <div class="col-6" *ngIf="row.line_number">
+                  <div class="small text-muted">Line</div>
+                  <div class="fw-semibold">{{ row.line_number }}</div>
+                </div>
+                <div class="col-6" *ngIf="row.due_date">
+                  <div class="small text-muted">Due Date</div>
+                  <div class="fw-semibold">{{ formatDate(row.due_date) }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Serial Numbers -->
+          <div class="col-12">
+            <div class="rounded-2 border bg-body-secondary p-3">
+              <div class="text-uppercase text-muted small fw-semibold mb-2">
+                <i class="mdi mdi-barcode me-1"></i>Serial Numbers
+              </div>
+              <div class="row g-2">
+                <div class="col-6 col-md-4 col-lg-2">
+                  <div class="small text-muted">EyeFi Serial</div>
+                  <div class="fw-semibold font-monospace">{{ row.eyefi_serial_number || '—' }}</div>
+                </div>
+                <div class="col-6 col-md-4 col-lg-2">
+                  <div class="small text-muted">IGT</div>
+                  <div class="fw-semibold font-monospace">{{ row.igt_serial_number || '—' }}</div>
+                </div>
+                <div class="col-6 col-md-4 col-lg-2">
+                  <div class="small text-muted">AGS</div>
+                  <div class="fw-semibold font-monospace">{{ row.ags_serial_number || '—' }}</div>
+                </div>
+                <div class="col-6 col-md-4 col-lg-2">
+                  <div class="small text-muted">SG Asset</div>
+                  <div class="fw-semibold font-monospace">{{ row.sg_asset_number || '—' }}</div>
+                </div>
+                <div class="col-6 col-md-4 col-lg-4">
+                  <div class="small text-muted">Generated Label</div>
+                  <div class="fw-semibold font-monospace">{{ row.generated_asset_number || '—' }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Void Info (if voided) -->
+          <div class="col-12" *ngIf="row.is_voided">
+            <div class="rounded-2 border border-warning-subtle bg-warning-subtle p-3">
+              <div class="text-uppercase text-warning-emphasis small fw-semibold mb-2">
+                <i class="mdi mdi-cancel me-1"></i>Void Information
+              </div>
+              <div class="row g-2">
+                <div class="col-6 col-md-4" *ngIf="row.void_reason">
+                  <div class="small text-muted">Reason</div>
+                  <div class="fw-semibold">{{ row.void_reason }}</div>
+                </div>
+                <div class="col-6 col-md-4" *ngIf="row.voided_by">
+                  <div class="small text-muted">Voided By</div>
+                  <div class="fw-semibold">{{ row.voided_by }}</div>
+                </div>
+                <div class="col-6 col-md-4" *ngIf="row.voided_at">
+                  <div class="small text-muted">Voided At</div>
+                  <div class="fw-semibold">{{ voidedDate(row) }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<div class="modal-footer border-0 pt-0">
+  <button type="button" class="btn btn-outline-secondary" (click)="close()">Close</button>
+</div>

@@ -1,12 +1,18 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { IgtSerialNumbersRepository } from './igt-serial-numbers.repository';
 import { CreateIgtSerialDto } from './dto/create-igt-serial.dto';
 import { UpdateIgtSerialDto } from './dto/update-igt-serial.dto';
 import { BulkUploadOptionsDto } from './dto/bulk-create-igt-serial.dto';
+import { SerialAssignmentLinkService } from '@/shared/services/serial-assignment-link.service';
+
+const IGT_CUSTOMER_TYPE_ID = 1;
 
 @Injectable()
 export class IgtSerialNumbersService {
-  constructor(private readonly repo: IgtSerialNumbersRepository) {}
+  constructor(
+    private readonly repo: IgtSerialNumbersRepository,
+    private readonly serialAssignmentLinkService: SerialAssignmentLinkService,
+  ) {}
 
   async findAll(params: {
     search?: string;
@@ -49,6 +55,23 @@ export class IgtSerialNumbersService {
   }
 
   async update(id: number, dto: UpdateIgtSerialDto) {
+    const hasActiveAssignment = await this.serialAssignmentLinkService.hasActiveAssignmentByCustomerAsset(
+      IGT_CUSTOMER_TYPE_ID,
+      id,
+    );
+
+    if (dto.is_active === 0 && hasActiveAssignment) {
+      throw new BadRequestException(
+        'Cannot write off IGT serial because it is linked to an active serial assignment. Resolve the assignment first.',
+      );
+    }
+
+    if (dto.status === 'available' && hasActiveAssignment) {
+      throw new BadRequestException(
+        'Cannot restore IGT serial to available because it is linked to an active serial assignment. Void or resolve the assignment first.',
+      );
+    }
+
     await this.repo.update(id, dto);
     return { success: true };
   }

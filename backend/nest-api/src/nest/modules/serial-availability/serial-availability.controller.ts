@@ -32,11 +32,6 @@ export class SerialAvailabilityController {
     return this.serialAvailabilityService.getRecentlyUsedEyefiSerials(limit ? Number(limit) : undefined);
   }
 
-  @Get('recently-used/ul-labels')
-  async recentUlLabels(@Query('limit') limit?: string) {
-    return this.serialAvailabilityService.getRecentlyUsedUlLabels(limit ? Number(limit) : undefined);
-  }
-
   @Get('recently-used/igt-serials')
   async recentIgt(@Query('limit') limit?: string) {
     return this.serialAvailabilityService.getRecentlyUsedIgtSerials(limit ? Number(limit) : undefined);

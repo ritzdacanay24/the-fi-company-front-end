@@ -25,13 +25,16 @@ type StockPieChartOptions = {
 
 interface SerialAvailabilitySummaryData {
   eyefi_available: number;
-  ul_available: number;
+  ul_new_available: number;
+  ul_used_available: number;
   igt_available: number;
   eyefi_recently_used: number;
-  ul_recently_used: number;
+  ul_new_recently_used: number;
+  ul_used_recently_used: number;
   igt_recently_used: number;
   eyefi_used_last_7_days: number;
-  ul_used_last_7_days: number;
+  ul_new_used_last_7_days: number;
+  ul_used_used_last_7_days: number;
   igt_used_last_7_days: number;
 }
 
@@ -41,7 +44,7 @@ interface SerialAvailabilitySummaryResponse {
 }
 
 interface SerialHealthCard {
-  key: 'ul' | 'igt' | 'eyefi';
+  key: 'ul_new' | 'ul_used' | 'igt' | 'eyefi';
   title: string;
   route: string;
   available: number;
@@ -121,12 +124,22 @@ export class SerialManagementDashboardComponent implements OnInit {
 
   cards: SerialHealthCard[] = [
     {
-      key: 'ul',
-      title: 'UL Labels',
+      key: 'ul_new',
+      title: 'UL Labels (New)',
       route: '/serial-management/ul-labels',
       available: 0,
       recentlyUsed: 0,
-      threshold: 250,
+      threshold: 150,
+      pieSeries: [0, 0, 0],
+      pieColors: ['#0ab39c', '#f06548', '#405189'],
+    },
+    {
+      key: 'ul_used',
+      title: 'UL Labels (Used)',
+      route: '/serial-management/ul-labels',
+      available: 0,
+      recentlyUsed: 0,
+      threshold: 100,
       pieSeries: [0, 0, 0],
       pieColors: ['#0ab39c', '#f06548', '#405189'],
     },
@@ -167,7 +180,8 @@ export class SerialManagementDashboardComponent implements OnInit {
       const summary = await this.serialNumberService.getAvailabilitySummaryFromAPI();
       const parsedSummary = this.extractSummary(summary);
 
-      this.updateCard('ul', parsedSummary.ul_available, parsedSummary.ul_used_last_7_days);
+      this.updateCard('ul_new', parsedSummary.ul_new_available, parsedSummary.ul_new_used_last_7_days);
+      this.updateCard('ul_used', parsedSummary.ul_used_available, parsedSummary.ul_used_used_last_7_days);
       this.updateCard('igt', parsedSummary.igt_available, parsedSummary.igt_used_last_7_days);
       this.updateCard('eyefi', parsedSummary.eyefi_available, parsedSummary.eyefi_used_last_7_days);
       this.lastUpdated = new Date().toLocaleString();
@@ -259,26 +273,32 @@ export class SerialManagementDashboardComponent implements OnInit {
     if (parsed?.success !== true || !parsed.data) {
       return {
         eyefi_available: 0,
-        ul_available: 0,
+        ul_new_available: 0,
+        ul_used_available: 0,
         igt_available: 0,
         eyefi_recently_used: 0,
-        ul_recently_used: 0,
+        ul_new_recently_used: 0,
+        ul_used_recently_used: 0,
         igt_recently_used: 0,
         eyefi_used_last_7_days: 0,
-        ul_used_last_7_days: 0,
+        ul_new_used_last_7_days: 0,
+        ul_used_used_last_7_days: 0,
         igt_used_last_7_days: 0,
       };
     }
 
     return {
       eyefi_available: Number(parsed.data.eyefi_available ?? 0),
-      ul_available: Number(parsed.data.ul_available ?? 0),
+      ul_new_available: Number(parsed.data.ul_new_available ?? 0),
+      ul_used_available: Number(parsed.data.ul_used_available ?? 0),
       igt_available: Number(parsed.data.igt_available ?? 0),
       eyefi_recently_used: Number(parsed.data.eyefi_recently_used ?? 0),
-      ul_recently_used: Number(parsed.data.ul_recently_used ?? 0),
+      ul_new_recently_used: Number(parsed.data.ul_new_recently_used ?? 0),
+      ul_used_recently_used: Number(parsed.data.ul_used_recently_used ?? 0),
       igt_recently_used: Number(parsed.data.igt_recently_used ?? 0),
       eyefi_used_last_7_days: Number(parsed.data.eyefi_used_last_7_days ?? 0),
-      ul_used_last_7_days: Number(parsed.data.ul_used_last_7_days ?? 0),
+      ul_new_used_last_7_days: Number(parsed.data.ul_new_used_last_7_days ?? 0),
+      ul_used_used_last_7_days: Number(parsed.data.ul_used_used_last_7_days ?? 0),
       igt_used_last_7_days: Number(parsed.data.igt_used_last_7_days ?? 0),
     };
   }

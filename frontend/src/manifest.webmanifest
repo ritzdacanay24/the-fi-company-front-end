@@ -20,12 +20,6 @@
     {
       "origin": "https://dashboard.eye-fi.com"
     },
-    {
-      "origin": "https://dashboard.eye-fi.com/dist/web"
-    },
-    {
-      "origin": "https://dashboard.eye-fi.com/portal/web"
-    }
   ],
   "icons": [
     {

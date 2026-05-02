@@ -571,7 +571,7 @@ export class ScheduledJobsService {
         const token = job['token'] as string;
 
         try {
-          const link = `https://dashboard.eye-fi.com/dist/web/request?token=${token}`;
+          const link = `https://dashboard.eye-fi.com/request?token=${token}`;
           const message = `
             Request ID: ${requestId} <br/>
             View Request: <a href="${link}" target="_blank">Request</a> <br/><br/>

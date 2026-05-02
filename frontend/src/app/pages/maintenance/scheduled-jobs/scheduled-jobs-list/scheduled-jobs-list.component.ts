@@ -128,4 +128,70 @@ export class ScheduledJobsListComponent implements OnInit {
       console.error(`Failed to update job ${id}:`, error);
     }
   }
+
+  cronToHuman(cron: string): string {
+    if (!cron) return '';
+    const parts = cron.trim().split(/\s+/);
+
+    // Normalize: if 6 fields (with seconds), drop seconds field
+    const f = parts.length === 6 ? parts.slice(1) : parts;
+    if (f.length !== 5) return cron;
+
+    const [min, hour, dom, , dow] = f;
+
+    const DAYS: Record<string, string> = {
+      '0': 'Sun', '1': 'Mon', '2': 'Tue', '3': 'Wed',
+      '4': 'Thu', '5': 'Fri', '6': 'Sat',
+    };
+
+    const fmtTime = (h: string, m: string): string => {
+      const hh = parseInt(h, 10);
+      const mm = parseInt(m, 10);
+      const period = hh >= 12 ? 'PM' : 'AM';
+      const h12 = hh % 12 === 0 ? 12 : hh % 12;
+      return `${h12}:${mm.toString().padStart(2, '0')} ${period}`;
+    };
+
+    const fmtDow = (d: string): string => {
+      if (d === '*') return 'every day';
+      if (d === '1-5') return 'Mon–Fri';
+      if (d === '0-4') return 'Sun–Thu';
+      return d.split(',').map(x => DAYS[x] ?? x).join(', ');
+    };
+
+    // Every N minutes: */N * * * *
+    if (min.startsWith('*/') && hour === '*' && dom === '*' && dow === '*') {
+      const n = min.slice(2);
+      return `Every ${n} minute${n === '1' ? '' : 's'}`;
+    }
+
+    // Every N hours at minute 0: 0 */N * * *
+    if (min === '0' && hour.startsWith('*/') && dom === '*' && dow === '*') {
+      const n = hour.slice(2);
+      return `Every ${n} hour${n === '1' ? '' : 's'}`;
+    }
+
+    // Every hour: 0 * * * *
+    if (min === '0' && hour === '*' && dom === '*' && dow === '*') {
+      return 'Every hour';
+    }
+
+    // Every N minutes on specific days: */N * * * 1-5
+    if (min.startsWith('*/') && hour === '*' && dom === '*') {
+      const n = min.slice(2);
+      return `Every ${n} min${n === '1' ? '' : 's'}, ${fmtDow(dow)}`;
+    }
+
+    // Daily at specific time: M H * * *
+    if (!min.includes('*') && !min.includes('/') && !hour.includes('*') && !hour.includes('/') && dow === '*') {
+      return `Daily at ${fmtTime(hour, min)}`;
+    }
+
+    // Specific time on weekdays: M H * * 1-5 or M H * * N
+    if (!min.includes('*') && !min.includes('/') && !hour.includes('*') && !hour.includes('/')) {
+      return `${fmtTime(hour, min)}, ${fmtDow(dow)}`;
+    }
+
+    return cron;
+  }
 }

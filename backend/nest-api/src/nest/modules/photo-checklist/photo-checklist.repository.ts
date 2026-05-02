@@ -6,62 +6,191 @@ import { MysqlService } from '@/shared/database/mysql.service';
 export class PhotoChecklistRepository {
   constructor(@Inject(MysqlService) private readonly mysqlService: MysqlService) {}
 
+  private _hasIsDeleted: boolean | null = null;
+
+  private async hasIsDeletedColumn(): Promise<boolean> {
+    if (this._hasIsDeleted !== null) return this._hasIsDeleted;
+    try {
+      const rows = await this.mysqlService.query<RowDataPacket[]>(
+        `SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'checklist_templates' AND COLUMN_NAME = 'is_deleted'`,
+      );
+      this._hasIsDeleted = Number(rows?.[0]?.cnt || 0) > 0;
+    } catch {
+      this._hasIsDeleted = false;
+    }
+    return this._hasIsDeleted;
+  }
+
   async getTemplates(options?: { includeInactive?: boolean; includeDeleted?: boolean }): Promise<RowDataPacket[]> {
+    const includeDeleted = !!options?.includeDeleted;
     const includeInactive = !!options?.includeInactive;
+    const hasDeleted = await this.hasIsDeletedColumn();
+
+    let whereClause: string;
+    if (includeDeleted) {
+      whereClause = '1=1';
+    } else if (includeInactive) {
+      whereClause = hasDeleted ? 't.is_deleted = 0' : '1=1';
+    } else {
+      whereClause = hasDeleted ? '(t.is_active = 1 OR t.is_draft = 1) AND t.is_deleted = 0' : '(t.is_active = 1 OR t.is_draft = 1)';
+    }
+
     const sql = `
       SELECT t.*,
-        COALESCE(i.item_count, 0) AS item_count,
-        COALESCE(i.pending_media_items, 0) AS pending_media_items,
-        COALESCE(a.active_instances, 0) AS active_instances
+        qd.id AS qd_id,
+        qd.document_number,
+        qd.title AS qd_title,
+        qr.id AS qr_id,
+        qr.revision_number AS qr_revision_number,
+        COALESCE(ic.item_count, 0) AS item_count,
+        COALESCE(ac.active_instances, 0) AS active_instances
       FROM checklist_templates t
+      LEFT JOIN quality_documents qd ON qd.id = t.quality_document_id
+      LEFT JOIN quality_revisions qr ON qr.id = t.quality_revision_id
       LEFT JOIN (
-        SELECT template_id,
-               COUNT(*) AS item_count,
-               SUM(CASE WHEN needs_media_upload = 1 THEN 1 ELSE 0 END) AS pending_media_items
-        FROM checklist_items
-        GROUP BY template_id
-      ) i ON i.template_id = t.id
+        SELECT template_id, COUNT(*) AS item_count
+        FROM checklist_items GROUP BY template_id
+      ) ic ON ic.template_id = t.id
       LEFT JOIN (
         SELECT template_id, COUNT(*) AS active_instances
-        FROM checklist_instances
-        WHERE status IN ('draft', 'in_progress', 'review')
+        FROM checklist_instances WHERE status != 'completed'
         GROUP BY template_id
-      ) a ON a.template_id = t.id
-      ${includeInactive ? '' : 'WHERE t.is_active = 1'}
+      ) ac ON ac.template_id = t.id
+      WHERE ${whereClause}
       ORDER BY t.updated_at DESC
     `;
 
-    return this.mysqlService.query<RowDataPacket[]>(sql);
+    const rows = await this.mysqlService.query<RowDataPacket[]>(sql);
+
+    const results = rows.map((row) => {
+      const r = { ...row };
+      if (r.qd_id) {
+        r.quality_document_metadata = {
+          document_id: Number(r.qd_id),
+          revision_id: Number(r.qr_id),
+          document_number: r.document_number,
+          revision_number: Number(r.qr_revision_number),
+          title: r.qd_title,
+          version_string: `${r.document_number}, Rev ${r.qr_revision_number}`,
+        };
+      } else {
+        r.quality_document_metadata = null;
+      }
+      delete r.qd_id;
+      delete r.document_number;
+      delete r.qd_title;
+      delete r.qr_id;
+      delete r.qr_revision_number;
+      r.is_active = !!r.is_active;
+      r.is_draft = !!r.is_draft;
+      if ('is_deleted' in r) r.is_deleted = !!r.is_deleted;
+      r.active_instances = Number(r.active_instances || 0);
+      r.item_count = Number(r.item_count || 0);
+      return r;
+    });
+
+    // Build edit_target_template_id for each published template
+    const publishedIds = results
+      .filter((r) => !r.is_draft)
+      .map((r) => Number(r.id))
+      .filter((id) => id > 0);
+
+    const bestDraftByParent = new Map<number, number>();
+    if (publishedIds.length > 0) {
+      const placeholders = publishedIds.map(() => '?').join(',');
+      const draftRows = await this.mysqlService.query<RowDataPacket[]>(
+        `SELECT parent_template_id, id FROM checklist_templates
+         WHERE is_draft = 1 AND parent_template_id IN (${placeholders})
+         ORDER BY parent_template_id ASC, is_active DESC, updated_at DESC, id DESC`,
+        publishedIds,
+      );
+      for (const dr of draftRows) {
+        const parentId = Number(dr.parent_template_id || 0);
+        if (parentId > 0 && !bestDraftByParent.has(parentId)) {
+          bestDraftByParent.set(parentId, Number(dr.id));
+        }
+      }
+    }
+
+    return results.map((r) => {
+      const id = Number(r.id || 0);
+      r.edit_target_template_id = r.is_draft ? (id > 0 ? id : null) : (bestDraftByParent.get(id) ?? null);
+      return r;
+    }) as RowDataPacket[];
   }
 
   async getTemplateById(id: number, options?: { includeInactive?: boolean; includeDeleted?: boolean }): Promise<RowDataPacket | null> {
+    const includeDeleted = !!options?.includeDeleted;
     const includeInactive = !!options?.includeInactive;
+    const hasDeleted = await this.hasIsDeletedColumn();
+
+    let extraCondition: string;
+    if (includeDeleted) {
+      extraCondition = '';
+    } else if (includeInactive) {
+      extraCondition = hasDeleted ? 'AND t.is_deleted = 0' : '';
+    } else {
+      extraCondition = hasDeleted ? 'AND (t.is_active = 1 OR t.is_draft = 1) AND t.is_deleted = 0' : 'AND (t.is_active = 1 OR t.is_draft = 1)';
+    }
+
     const sql = `
       SELECT t.*,
-        COALESCE(i.item_count, 0) AS item_count,
-        COALESCE(i.pending_media_items, 0) AS pending_media_items,
-        COALESCE(a.active_instances, 0) AS active_instances
+        qd.id AS qd_id,
+        qd.document_number,
+        qd.title AS qd_title,
+        qr.id AS qr_id,
+        qr.revision_number AS qr_revision_number
       FROM checklist_templates t
-      LEFT JOIN (
-        SELECT template_id,
-               COUNT(*) AS item_count,
-               SUM(CASE WHEN needs_media_upload = 1 THEN 1 ELSE 0 END) AS pending_media_items
-        FROM checklist_items
-        GROUP BY template_id
-      ) i ON i.template_id = t.id
-      LEFT JOIN (
-        SELECT template_id, COUNT(*) AS active_instances
-        FROM checklist_instances
-        WHERE status IN ('draft', 'in_progress', 'review')
-        GROUP BY template_id
-      ) a ON a.template_id = t.id
-      WHERE t.id = ?
-      ${includeInactive ? '' : 'AND t.is_active = 1'}
+      LEFT JOIN quality_documents qd ON qd.id = t.quality_document_id
+      LEFT JOIN quality_revisions qr ON qr.id = t.quality_revision_id
+      WHERE t.id = ? ${extraCondition}
       LIMIT 1
     `;
 
     const rows = await this.mysqlService.query<RowDataPacket[]>(sql, [id]);
-    return rows[0] || null;
+    const row = rows[0];
+    if (!row) return null;
+
+    const r = { ...row };
+    if (r.qd_id) {
+      r.quality_document_metadata = {
+        document_id: Number(r.qd_id),
+        revision_id: Number(r.qr_id),
+        document_number: r.document_number,
+        revision_number: Number(r.qr_revision_number),
+        title: r.qd_title,
+        version_string: `${r.document_number}, Rev ${r.qr_revision_number}`,
+      };
+    } else {
+      r.quality_document_metadata = null;
+    }
+    delete r.qd_id;
+    delete r.document_number;
+    delete r.qd_title;
+    delete r.qr_id;
+    delete r.qr_revision_number;
+
+    r.is_active = !!r.is_active;
+    r.is_draft = !!r.is_draft;
+    if ('is_deleted' in r) r.is_deleted = !!r.is_deleted;
+    if (r.template_group_id != null) r.template_group_id = Number(r.template_group_id);
+    if (r.parent_template_id != null) r.parent_template_id = Number(r.parent_template_id);
+
+    const templateId = Number(r.id || 0);
+    if (r.is_draft) {
+      r.edit_target_template_id = templateId > 0 ? templateId : null;
+    } else {
+      const draftRows = await this.mysqlService.query<RowDataPacket[]>(
+        `SELECT id FROM checklist_templates WHERE parent_template_id = ? AND is_draft = 1
+         ORDER BY is_active DESC, updated_at DESC, id DESC LIMIT 1`,
+        [templateId],
+      );
+      const draftId = Number(draftRows[0]?.id || 0);
+      r.edit_target_template_id = draftId > 0 ? draftId : null;
+    }
+
+    return r as RowDataPacket;
   }
 
   async getTemplateItems(templateId: number): Promise<RowDataPacket[]> {
@@ -92,12 +221,21 @@ export class PhotoChecklistRepository {
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
     const sql = `
-      SELECT ci.*, t.name AS template_name, t.description AS template_description,
-        t.version AS template_version, t.category AS template_category
+      SELECT ci.id, ci.template_id, ci.work_order_number, ci.part_number, ci.serial_number,
+             ci.operator_id, ci.operator_name, ci.status, ci.progress_percentage,
+             ci.created_at, ci.updated_at, ci.started_at, ci.completed_at, ci.submitted_at,
+             ct.name AS template_name, ct.category, ct.version AS template_version,
+             (SELECT COUNT(*) FROM photo_submissions ps2
+              WHERE ps2.instance_id = ci.id) AS photo_count,
+             (SELECT COUNT(*) FROM checklist_items citm2
+              WHERE citm2.template_id = ci.template_id AND citm2.is_required = 1) AS required_items,
+             (SELECT COUNT(DISTINCT ps3.id) FROM photo_submissions ps3
+              INNER JOIN checklist_items citm3 ON ps3.item_id = citm3.id
+              WHERE ps3.instance_id = ci.id AND citm3.is_required = 1) AS completed_required
       FROM checklist_instances ci
-      INNER JOIN checklist_templates t ON t.id = ci.template_id
+      INNER JOIN checklist_templates ct ON ci.template_id = ct.id
       ${whereClause}
-      ORDER BY ci.updated_at DESC
+      ORDER BY ci.created_at DESC
     `;
 
     return this.mysqlService.query<RowDataPacket[]>(sql, params);
@@ -253,34 +391,114 @@ export class PhotoChecklistRepository {
   }
 
   async deleteTemplate(id: number): Promise<{ activeInstances: number }> {
-    const activeInstancesRows = await this.mysqlService.query<RowDataPacket[]>(
-      `SELECT COUNT(*) AS count
-       FROM checklist_instances
-       WHERE template_id = ? AND status IN ('draft', 'in_progress', 'review')`,
+    const rows = await this.mysqlService.query<RowDataPacket[]>(
+      `SELECT COUNT(*) AS count FROM checklist_instances WHERE template_id = ?`,
       [id],
     );
-
-    const activeInstances = Number(activeInstancesRows?.[0]?.count || 0);
-    if (activeInstances > 0) {
-      return { activeInstances };
+    const instanceCount = Number(rows?.[0]?.count || 0);
+    if (instanceCount > 0) {
+      return { activeInstances: instanceCount };
     }
 
-    await this.mysqlService.execute('UPDATE checklist_templates SET is_active = 0 WHERE id = ?', [id]);
+    try {
+      await this.mysqlService.execute(
+        `UPDATE checklist_templates SET is_active = 0, is_draft = 0, is_deleted = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+        [id],
+      );
+    } catch {
+      await this.mysqlService.execute(
+        `UPDATE checklist_templates SET is_active = 0, is_draft = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+        [id],
+      );
+    }
     return { activeInstances: 0 };
   }
 
-  async hardDeleteTemplate(id: number): Promise<{ success: boolean }> {
-    await this.mysqlService.execute('DELETE FROM checklist_templates WHERE id = ?', [id]);
+  async hardDeleteTemplate(id: number): Promise<{ success: boolean; error?: string; [key: string]: unknown }> {
+    const templateId = Number(id);
+
+    const instanceRows = await this.mysqlService.query<RowDataPacket[]>(
+      `SELECT COUNT(*) AS count FROM checklist_instances WHERE template_id = ?`, [templateId]);
+    if (Number(instanceRows[0]?.count || 0) > 0) {
+      return { success: false, error: 'Cannot hard delete template with existing instances.' };
+    }
+
+    const submissionRows = await this.mysqlService.query<RowDataPacket[]>(
+      `SELECT COUNT(*) AS count FROM photo_submissions ps
+       INNER JOIN checklist_items ci ON ps.item_id = ci.id WHERE ci.template_id = ?`, [templateId]);
+    if (Number(submissionRows[0]?.count || 0) > 0) {
+      return { success: false, error: 'Cannot hard delete template because photo submissions reference its items.' };
+    }
+
+    const childRows = await this.mysqlService.query<RowDataPacket[]>(
+      `SELECT COUNT(*) AS count FROM checklist_templates WHERE parent_template_id = ?`, [templateId]);
+    if (Number(childRows[0]?.count || 0) > 0) {
+      return { success: false, error: 'Cannot hard delete template because other versions/drafts reference it as a parent.' };
+    }
+
+    await this.mysqlService.withTransaction<void>(async (connection) => {
+      await connection.execute('DELETE FROM checklist_items WHERE template_id = ?', [templateId]);
+      await connection.execute('DELETE FROM checklist_templates WHERE id = ?', [templateId]);
+    });
+
     return { success: true };
   }
 
-  async discardDraft(id: number): Promise<{ success: boolean }> {
-    await this.mysqlService.execute('DELETE FROM checklist_templates WHERE id = ? AND is_draft = 1', [id]);
-    return { success: true };
+  async discardDraft(id: number): Promise<{ success: boolean; error?: string; template_id?: number }> {
+    const templateId = Number(id);
+    const rows = await this.mysqlService.query<RowDataPacket[]>(
+      `SELECT id, is_draft, parent_template_id FROM checklist_templates WHERE id = ? LIMIT 1`,
+      [templateId],
+    );
+    const template = rows[0];
+    if (!template) return { success: false, error: 'Template not found' };
+    if (!template.is_draft) return { success: false, error: 'Only draft templates can be discarded' };
+
+    const instanceRows = await this.mysqlService.query<RowDataPacket[]>(
+      `SELECT COUNT(*) AS count FROM checklist_instances WHERE template_id = ?`, [templateId]);
+    if (Number(instanceRows[0]?.count || 0) > 0) {
+      return { success: false, error: 'Cannot discard draft because it has existing checklist instances.' };
+    }
+
+    await this.mysqlService.withTransaction<void>(async (connection) => {
+      await connection.execute('DELETE FROM checklist_items WHERE template_id = ?', [templateId]);
+      await connection.execute('DELETE FROM checklist_templates WHERE id = ? AND is_draft = 1', [templateId]);
+      const parentId = Number(template.parent_template_id || 0);
+      if (parentId > 0) {
+        await connection.execute(
+          `UPDATE checklist_templates
+           SET is_active = 1, is_draft = 0,
+               published_at = COALESCE(published_at, CURRENT_TIMESTAMP),
+               updated_at = CURRENT_TIMESTAMP
+           WHERE id = ? AND is_draft = 0`,
+          [parentId],
+        );
+      }
+    });
+
+    return { success: true, template_id: templateId };
   }
 
   async restoreTemplate(id: number): Promise<{ success: boolean }> {
-    await this.mysqlService.execute('UPDATE checklist_templates SET is_active = 1 WHERE id = ?', [id]);
+    try {
+      await this.mysqlService.execute(
+        `UPDATE checklist_templates
+         SET is_active = 1, is_draft = 0, is_deleted = 0,
+             published_at = COALESCE(published_at, CURRENT_TIMESTAMP),
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = ?`,
+        [id],
+      );
+    } catch {
+      await this.mysqlService.execute(
+        `UPDATE checklist_templates
+         SET is_active = 1, is_draft = 0,
+             published_at = COALESCE(published_at, CURRENT_TIMESTAMP),
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = ?`,
+        [id],
+      );
+    }
     return { success: true };
   }
 
@@ -291,11 +509,44 @@ export class PhotoChecklistRepository {
         [sourceTemplateId],
       );
       const source = rows[0];
-      if (!source) {
-        return 0;
+      if (!source) return 0;
+
+      const groupId = Number(source.template_group_id || source.id);
+
+      // Compute next major based on max major across ALL published templates in the family
+      const [versionRows] = await connection.query<RowDataPacket[]>(
+        `SELECT version FROM checklist_templates WHERE template_group_id = ? AND is_draft = 0`,
+        [groupId],
+      );
+      let maxMajor = 1;
+      for (const vr of versionRows) {
+        const major = Number(String(vr.version || '1').split('.')[0]) || 1;
+        if (major > maxMajor) maxMajor = major;
+      }
+      const nextMajorVersion = `${maxMajor + 1}.0`;
+
+      // Reuse existing draft for this next major if one already exists
+      const [existingDraftRows] = await connection.query<RowDataPacket[]>(
+        `SELECT id FROM checklist_templates
+         WHERE template_group_id = ? AND is_draft = 1 AND parent_template_id IS NULL AND version = ?
+         ORDER BY is_active DESC, updated_at DESC, id DESC LIMIT 1`,
+        [groupId, nextMajorVersion],
+      );
+      if (existingDraftRows[0]) {
+        await connection.execute(
+          `UPDATE checklist_templates SET is_active = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+          [Number(existingDraftRows[0].id)],
+        );
+        return Number(existingDraftRows[0].id);
       }
 
-      const nextVersion = this.incrementVersion(source.version);
+      // Deactivate other root major drafts in this family
+      await connection.execute(
+        `UPDATE checklist_templates SET is_active = 0, updated_at = CURRENT_TIMESTAMP
+         WHERE template_group_id = ? AND is_draft = 1 AND parent_template_id IS NULL`,
+        [groupId],
+      );
+
       const [insertResult] = await connection.execute<ResultSetHeader>(
         `INSERT INTO checklist_templates (
           quality_document_id, quality_revision_id, name, description, part_number,
@@ -303,7 +554,7 @@ export class PhotoChecklistRepository {
           revision_number, revision_details, revised_by, product_type, category,
           version, parent_template_id, is_active, created_by, template_group_id,
           is_draft, published_at, last_autosave_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)` ,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, 1, ?, ?, 1, NULL, NULL)`,
         [
           source.quality_document_id ?? null,
           source.quality_revision_id ?? null,
@@ -320,13 +571,9 @@ export class PhotoChecklistRepository {
           source.revised_by ?? null,
           source.product_type ?? null,
           source.category || 'inspection',
-          nextVersion,
-          source.id,
-          1,
+          nextMajorVersion,
           source.created_by ?? null,
-          source.template_group_id || source.id,
-          null,
-          null,
+          groupId,
         ],
       );
 
@@ -340,13 +587,77 @@ export class PhotoChecklistRepository {
         SELECT ?, order_index, parent_id, level, title, description, submission_type,
                is_required, validation_rules, photo_requirements, sample_image_url, sample_images,
                video_requirements, sample_video_url, sample_videos, needs_media_upload, links
-        FROM checklist_items
-        WHERE template_id = ?`,
+        FROM checklist_items WHERE template_id = ?`,
         [newTemplateId, sourceTemplateId],
       );
 
       return newTemplateId;
     });
+  }
+
+  async publishTemplate(id: number): Promise<{ success: boolean; error?: string; template_id?: number }> {
+    const rows = await this.mysqlService.query<RowDataPacket[]>(
+      `SELECT id FROM checklist_templates WHERE id = ? LIMIT 1`, [Number(id)]);
+    if (!rows[0]) return { success: false, error: 'Template not found' };
+
+    await this.mysqlService.execute(
+      `UPDATE checklist_templates
+       SET is_draft = 0, is_active = 1,
+           published_at = COALESCE(published_at, CURRENT_TIMESTAMP),
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = ?`,
+      [Number(id)],
+    );
+    return { success: true, template_id: Number(id) };
+  }
+
+  async deleteMajorVersion(groupId: number, major: number): Promise<{ success: boolean; error?: string; [key: string]: unknown }> {
+    const rows = await this.mysqlService.query<RowDataPacket[]>(
+      `SELECT id FROM checklist_templates
+       WHERE template_group_id = ?
+         AND CAST(SUBSTRING_INDEX(version, '.', 1) AS UNSIGNED) = ?`,
+      [groupId, major],
+    );
+    if (!rows.length) return { success: false, error: 'No templates found for that major' };
+
+    const templateIds = rows.map((r) => Number(r.id)).filter((id) => id > 0);
+    const placeholders = templateIds.map(() => '?').join(',');
+
+    const instanceRows = await this.mysqlService.query<RowDataPacket[]>(
+      `SELECT COUNT(*) AS count FROM checklist_instances WHERE template_id IN (${placeholders})`,
+      templateIds,
+    );
+    if (Number(instanceRows[0]?.count || 0) > 0) {
+      return { success: false, error: 'Cannot delete major version because one or more versions have checklist instances.' };
+    }
+
+    const submissionRows = await this.mysqlService.query<RowDataPacket[]>(
+      `SELECT COUNT(*) AS count FROM photo_submissions ps
+       INNER JOIN checklist_items ci ON ps.item_id = ci.id
+       WHERE ci.template_id IN (${placeholders})`,
+      templateIds,
+    );
+    if (Number(submissionRows[0]?.count || 0) > 0) {
+      return { success: false, error: 'Cannot delete major version because photo submissions reference its items.' };
+    }
+
+    try {
+      await this.mysqlService.execute(
+        `UPDATE checklist_templates
+         SET is_active = 0, is_draft = 0, is_deleted = 1, updated_at = CURRENT_TIMESTAMP
+         WHERE id IN (${placeholders})`,
+        templateIds,
+      );
+    } catch {
+      await this.mysqlService.execute(
+        `UPDATE checklist_templates
+         SET is_active = 0, is_draft = 0, updated_at = CURRENT_TIMESTAMP
+         WHERE id IN (${placeholders})`,
+        templateIds,
+      );
+    }
+
+    return { success: true, message: 'Major version deleted (soft)', template_ids: templateIds };
   }
 
   async getTemplateHistory(options: { groupId?: number; templateId?: number }): Promise<RowDataPacket[]> {
@@ -725,8 +1036,29 @@ export class PhotoChecklistRepository {
     );
   }
 
-  async deleteInstance(id: number): Promise<void> {
-    await this.mysqlService.execute('DELETE FROM checklist_instances WHERE id = ?', [id]);
+  async deleteInstance(id: number): Promise<{ success: boolean; error?: string }> {
+    const instanceId = Number(id);
+    const rows = await this.mysqlService.query<RowDataPacket[]>(
+      `SELECT id, status FROM checklist_instances WHERE id = ? LIMIT 1`, [instanceId]);
+    const instance = rows[0];
+    if (!instance) return { success: false, error: 'Instance not found' };
+
+    const status = String(instance.status || '');
+    if (status === 'completed' || status === 'submitted') {
+      return { success: false, error: 'Cannot delete a completed/submitted inspection' };
+    }
+
+    await this.mysqlService.withTransaction<void>(async (connection) => {
+      await connection.execute('DELETE FROM photo_submissions WHERE instance_id = ?', [instanceId]);
+      try {
+        await connection.execute('DELETE FROM checklist_audit_log WHERE instance_id = ?', [instanceId]);
+      } catch {
+        // audit log table may not exist in all environments
+      }
+      await connection.execute('DELETE FROM checklist_instances WHERE id = ?', [instanceId]);
+    });
+
+    return { success: true };
   }
 
   private async replaceTemplateItemsInTransaction(connection: any, templateId: number, items: any[]): Promise<void> {

@@ -78,6 +78,7 @@ export class LoginComponent implements OnInit {
    */
   onSubmit() {
     this.submitted = true;
+    this.error = '';
 
     if (this.loginForm.invalid) {
       return;
@@ -86,37 +87,9 @@ export class LoginComponent implements OnInit {
     // Login Api
     this.authenticationService
       .login(this.f["email"].value, this.f["password"].value)
-      .subscribe(async (data: any) => {
-        
-        if (data.status == "success") {
-          let twostep = localStorage.getItem(THE_FI_COMPANY_TWOSTEP_TOKEN);
-
-          let isTwostepEnabled = await this.twostepService.isTwostepEnabled();
-
-          //if twostep is enabled
-          if (!twostep && isTwostepEnabled == 1 && data?.user?.enableTwostep == 1) {
-            try {
-              let { passCode } = await this.twostepService.twoStepGenerateCode({
-                email: data.user.email,
-              });
-
-              this.toastrService.clear();
-              
-              this.router.navigate(["auth/twostep/basic"], {
-                state: {
-                  email: data.user.email,
-                  passCode,
-                  returnUrl: this.returnUrl,
-                  data: data,
-                },
-                queryParams: { passCode, returnUrl: this.returnUrl },
-              });
-              return;
-            } catch (err) {
-              return;
-            }
-          } else {
-
+      .subscribe({
+        next: async (data: any) => {
+          if (data.status == "success") {
             localStorage.setItem("toast", "true");
 
             localStorage.setItem("token", data.access_token);
@@ -131,16 +104,18 @@ export class LoginComponent implements OnInit {
             );
 
             this.toastrService.clear();
-
-            //this.router.navigate([this.returnUrl]);
             this.router.navigateByUrl(this.returnUrl);
+            return;
           }
-        } else {
-          this.toastservice.show(data?.message, {
-            classname: "bg-danger text-white",
-            delay: 15000,
-          });
-        }
+
+          this.error = data?.message || 'Invalid email or password.';
+        },
+        error: (error: any) => {
+          this.error =
+            error?.error?.message ||
+            error?.message ||
+            'Invalid email or password.';
+        },
       });
   }
 

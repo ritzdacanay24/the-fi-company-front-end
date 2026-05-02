@@ -4,9 +4,13 @@
   "private": true,
   "main": "dist/index.js",
   "scripts": {
-     "dev": "cross-env NODE_ENV=development nodemon --watch src --ext ts --exec \"ts-node -r tsconfig-paths/register src/index.ts\"",
+    "dev": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true nodemon --watch src --ext ts --exec \"node -r ts-node/register/transpile-only -r tsconfig-paths/register src/index.ts\"",
+    "dev:docker-fast": "cross-env NODE_ENV=development tsx watch src/index.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
     "build": "tsc -p tsconfig.json && tsc-alias -p tsconfig.json && node scripts/copy-email-templates.js",
-    "start": "npm run build && node dist/index.js",
+    "start": "npm run build && cross-env NODE_ENV=development node dist/index.js",
+    "start:dev": "npm run build && cross-env NODE_ENV=development node dist/index.js",
+    "start:prod": "npm run build && cross-env NODE_ENV=production node dist/index.js",
     "logs:tail": "node scripts/tail-log.js latest.log",
     "logs:tail:once": "node scripts/tail-log.js latest.log --once"
   },

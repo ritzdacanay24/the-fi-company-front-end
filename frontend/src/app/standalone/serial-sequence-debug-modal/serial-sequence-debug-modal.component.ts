@@ -210,14 +210,13 @@ export class SerialSequenceDebugModalComponent implements OnInit {
     this.recentlyUsedUl.error = null;
     
     try {
-      const response = await this.serialNumberService.getRecentlyUsedUlLabelsFromAPI(this.recentLimit);
-      
-      if (response.success) {
-        this.recentlyUsedUl.data = response.data || [];
-        this.recentlyUsedUl.count = response.count || 0;
-      } else {
-        this.recentlyUsedUl.error = response.error || 'Unknown error';
-      }
+      const response = await this.serialNumberService.getAvailabilitySummaryFromAPI();
+      const summary = response?.data ?? {};
+      const ulNewUsed = Number(summary.ul_new_used_last_7_days ?? 0);
+      const ulUsedUsed = Number(summary.ul_used_used_last_7_days ?? 0);
+
+      this.recentlyUsedUl.data = [];
+      this.recentlyUsedUl.count = ulNewUsed + ulUsedUsed;
     } catch (error: any) {
       this.recentlyUsedUl.error = error.message || 'Failed to load recently used UL labels';
       console.error('Recently used UL error:', error);

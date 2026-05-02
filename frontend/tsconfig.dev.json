@@ -1,0 +1,12 @@
+/* Development-only compiler profile for faster incremental rebuilds. */
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "sourceMap": true
+  },
+  "angularCompilerOptions": {
+    "strictTemplates": false,
+    "strictInjectionParameters": false,
+    "strictInputAccessModifiers": false
+  }
+}

@@ -3,6 +3,9 @@ import { RowDataPacket } from 'mysql2/promise';
 export interface EyeFiSerialRecord extends RowDataPacket {
   id: number;
   serial_number: string;
+  serial_assignment_id?: number | null;
+  assigned_to_id?: number | null;
+  assigned_to_table?: string | null;
   product_model?: string;
   status?: string;
   is_consumed?: boolean;

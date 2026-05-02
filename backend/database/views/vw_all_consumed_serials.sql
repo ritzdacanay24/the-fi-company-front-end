@@ -4,14 +4,21 @@
 -- Purpose: UNION all consumed/used serial numbers from all sources
 -- Sources:
 --   1. serial_assignments (new system - includes UL labels)
---   2. agsSerialGenerator (legacy) - EXCLUDED if already in serial_assignments
---   3. sgAssetGenerator (legacy) - EXCLUDED if already in serial_assignments
---   4. igt_serial_numbers (only 'used' status)
+--   2. ul_label_usages (legacy - standalone, not linked to AGS/SG)
+--   3. agsSerialGenerator (legacy) - EXCLUDED if already in serial_assignments
+--   4. sgAssetGenerator (legacy) - EXCLUDED if already in serial_assignments
+--   5. igt_serial_numbers (only 'used' status)
 --
 -- Deduplication Strategy:
 --   - During transition, same serial may exist in both new and legacy tables
 --   - Legacy records are excluded if serial already exists in serial_assignments
 --   - This prevents duplicates without complex queries
+--
+-- Prerequisites:
+--   Run migration 2026-04-29-convert-legacy-serial-tables-to-utf8mb4.sql first.
+--   Run migration 2026-04-29-align-all-serial-tables-collation-to-unicode-ci.sql.
+--   Run migration 2026-04-29-align-db-users-collation-to-unicode-ci.sql.
+--   All joined tables (including db.users) must be utf8mb4_unicode_ci.
 -- ========================================
 -- Note: Run this in the eyefidb database
 -- ========================================
@@ -29,36 +36,36 @@ SELECT
     'New System' as source_type,
     sa.id as source_id,
     sa.eyefi_serial_id,
-    CAST(sa.eyefi_serial_number AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as eyefi_serial_number,
+    sa.eyefi_serial_number,
     sa.ul_label_id,
-    CAST(sa.ul_number AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as ul_number,
+    sa.ul_number,
     NULL as igt_serial_id,
     NULL as igt_serial_number,
     NULL as ags_serial_id,
     NULL as ags_serial_number,
     NULL as sg_asset_id,
     NULL as sg_asset_number,
-    CAST(sa.wo_number AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as wo_number,
-    CAST(sa.batch_id AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as batch_id,
+    sa.wo_number,
+    sa.batch_id,
     sa.consumed_at as used_date,
-    CAST(sa.consumed_by AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as used_by,
-    CAST(sa.status AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as status,
+    sa.consumed_by as used_by,
+    sa.status,
     sa.is_voided,
     sa.voided_at,
-    CAST(sa.voided_by AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as voided_by,
-    CAST(sa.void_reason AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as void_reason,
+    sa.voided_by,
+    sa.void_reason,
     sa.created_at,
     -- Additional details
-    CAST(COALESCE(sa.cp_cust_part, sa.wo_part) AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as part_number,
-    CAST(sa.wo_description AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as wo_description,
-    CAST(sa.generated_asset_number AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as customer_part_number,
+    COALESCE(sa.cp_cust_part, sa.wo_part) as part_number,
+    sa.wo_description,
+    sa.generated_asset_number as customer_part_number,
     NULL as property_site,
     NULL as inspector_name,
-    CAST(sa.cp_cust AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as customer_name,
-    CAST(sa.po_number AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as po_number,
-    CAST(ul.category AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as ul_category
+    sa.cp_cust as customer_name,
+    sa.po_number,
+    ul.category as ul_category
 FROM eyefidb.serial_assignments sa
-LEFT JOIN eyefidb.ul_labels ul ON BINARY sa.ul_number = BINARY ul.ul_number
+LEFT JOIN eyefidb.ul_labels ul ON sa.ul_number = ul.ul_number
 WHERE sa.is_voided = 0 -- Only active assignments
 
 UNION ALL
@@ -73,50 +80,50 @@ SELECT
     'Legacy - UL Label' as source_type,
     ulu.id as source_id,
     NULL as eyefi_serial_id,
-    CAST(ulu.eyefi_serial_number AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as eyefi_serial_number,
+    ulu.eyefi_serial_number,
     ulu.ul_label_id,
-    CAST(ulu.ul_number AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as ul_number,
+    ulu.ul_number,
     NULL as igt_serial_id,
     NULL as igt_serial_number,
     NULL as ags_serial_id,
     NULL as ags_serial_number,
     NULL as sg_asset_id,
     NULL as sg_asset_number,
-    CAST(ulu.wo_nbr AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as wo_number,
+    ulu.wo_nbr as wo_number,
     NULL as batch_id,
     ulu.date_used as used_date,
-    CAST(ulu.user_name AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as used_by,
+    ulu.user_name as used_by,
     'active' as status,
     CAST(ulu.is_voided AS UNSIGNED) as is_voided,
     ulu.void_date as voided_at,
     NULL as voided_by,
-    CAST(ulu.void_reason AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as void_reason,
+    ulu.void_reason,
     ulu.created_at,
     -- Additional details
     NULL as part_number,
-    CAST(ulu.wo_description AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as wo_description,
-    CAST(ulu.wo_part AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as customer_part_number,
+    ulu.wo_description,
+    ulu.wo_part as customer_part_number,
     NULL as property_site,
     NULL as inspector_name,
-    CAST(ulu.customer_name AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as customer_name,
+    ulu.customer_name,
     NULL as po_number,
-    CAST(ul.category AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as ul_category
+    ul.category as ul_category
 FROM eyefidb.ul_label_usages ulu
 LEFT JOIN eyefidb.ul_labels ul ON ulu.ul_label_id = ul.id
 WHERE NOT EXISTS (
       -- Exclude if already in new system
       SELECT 1 FROM eyefidb.serial_assignments sa 
-      WHERE BINARY sa.ul_number = BINARY ulu.ul_number
+      WHERE sa.ul_number = ulu.ul_number
   )
   AND NOT EXISTS (
       -- Exclude if already linked via AGS
       SELECT 1 FROM eyefidb.agsSerialGenerator ags
-      WHERE BINARY ags.serialNumber = BINARY ulu.eyefi_serial_number
+      WHERE ags.serialNumber = ulu.eyefi_serial_number
   )
   AND NOT EXISTS (
       -- Exclude if already linked via SG
       SELECT 1 FROM eyefidb.sgAssetGenerator sg
-      WHERE BINARY sg.serialNumber = BINARY ulu.eyefi_serial_number
+      WHERE sg.serialNumber = ulu.eyefi_serial_number
   )
 
 UNION ALL
@@ -130,42 +137,42 @@ SELECT
     'Legacy - AGS' as source_type,
     ags.id as source_id,
     NULL as eyefi_serial_id,
-    CAST(ags.serialNumber AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as eyefi_serial_number,
+    ags.serialNumber as eyefi_serial_number,
     ulu.ul_label_id,
-    CAST(ulu.ul_number AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as ul_number,
+    ulu.ul_number,
     NULL as igt_serial_id,
     NULL as igt_serial_number,
     ags.id as ags_serial_id,
-    CAST(ags.generated_SG_asset AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as ags_serial_number,
+    ags.generated_SG_asset as ags_serial_number,
     NULL as sg_asset_id,
     NULL as sg_asset_number,
     NULL as wo_number,
     NULL as batch_id,
     ags.timeStamp as used_date,
-    CAST(COALESCE(CONCAT(u.first, ' ', u.last), ags.inspectorName, CONCAT('User ID: ', ags.created_by), 'Unknown') AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as used_by,
-    CAST(CASE WHEN ags.active = 1 THEN 'active' ELSE 'inactive' END AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as status,
+    COALESCE(CONCAT(u.first, ' ', u.last), ags.inspectorName, CONCAT('User ID: ', ags.created_by), 'Unknown') as used_by,
+    CASE WHEN ags.active = 1 THEN 'active' ELSE 'inactive' END as status,
     0 as is_voided,
     NULL as voided_at,
     NULL as voided_by,
     NULL as void_reason,
     ags.timeStamp as created_at,
     -- Additional details
-    CAST(ags.generated_SG_asset AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as part_number,
+    ags.generated_SG_asset as part_number,
     NULL as wo_description,
-    CAST(ags.sgPartNumber AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as customer_part_number,
-    CAST(ags.property_site AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as property_site,
-    CAST(ags.inspectorName AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as inspector_name,
+    ags.sgPartNumber as customer_part_number,
+    ags.property_site,
+    ags.inspectorName as inspector_name,
     'AGS' as customer_name,
-    CAST(ags.poNumber AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as po_number,
-    CAST(ul.category AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as ul_category
+    ags.poNumber as po_number,
+    ul.category as ul_category
 FROM eyefidb.agsSerialGenerator ags
-LEFT JOIN db.users u ON BINARY ags.created_by = BINARY u.id
-LEFT JOIN eyefidb.ul_label_usages ulu ON BINARY ags.serialNumber = BINARY ulu.eyefi_serial_number
+LEFT JOIN db.users u ON ags.created_by = u.id
+LEFT JOIN eyefidb.ul_label_usages ulu ON ags.serialNumber = ulu.eyefi_serial_number
 LEFT JOIN eyefidb.ul_labels ul ON ulu.ul_label_id = ul.id
 WHERE ags.active = 1 
   AND NOT EXISTS (
       SELECT 1 FROM eyefidb.serial_assignments sa 
-      WHERE BINARY sa.eyefi_serial_number = BINARY ags.serialNumber
+      WHERE sa.eyefi_serial_number = ags.serialNumber
   ) -- Exclude if already in new system
 
 UNION ALL
@@ -179,42 +186,42 @@ SELECT
     'Legacy - SG' as source_type,
     sg.id as source_id,
     NULL as eyefi_serial_id,
-    CAST(sg.serialNumber AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as eyefi_serial_number,
+    sg.serialNumber as eyefi_serial_number,
     ulu.ul_label_id,
-    CAST(ulu.ul_number AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as ul_number,
+    ulu.ul_number,
     NULL as igt_serial_id,
     NULL as igt_serial_number,
     NULL as ags_serial_id,
     NULL as ags_serial_number,
     sg.id as sg_asset_id,
-    CAST(sg.generated_SG_asset AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as sg_asset_number,
+    sg.generated_SG_asset as sg_asset_number,
     NULL as wo_number,
     NULL as batch_id,
     sg.timeStamp as used_date,
-    CAST(COALESCE(CONCAT(u.first, ' ', u.last), sg.inspectorName, CONCAT('User ID: ', sg.created_by), 'Unknown') AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as used_by,
-    CAST(CASE WHEN sg.active = 1 THEN 'active' ELSE 'inactive' END AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as status,
+    COALESCE(CONCAT(u.first, ' ', u.last), sg.inspectorName, CONCAT('User ID: ', sg.created_by), 'Unknown') as used_by,
+    CASE WHEN sg.active = 1 THEN 'active' ELSE 'inactive' END as status,
     0 as is_voided,
     NULL as voided_at,
     NULL as voided_by,
     NULL as void_reason,
     sg.timeStamp as created_at,
     -- Additional details
-    CAST(sg.generated_SG_asset AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as part_number,
+    sg.generated_SG_asset as part_number,
     NULL as wo_description,
-    CAST(sg.sgPartNumber AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as customer_part_number,
-    CAST(sg.property_site AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as property_site,
-    CAST(sg.inspectorName AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as inspector_name,
+    sg.sgPartNumber as customer_part_number,
+    sg.property_site,
+    sg.inspectorName as inspector_name,
     'L&W' customer_name,
-    CAST(sg.poNumber AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as po_number,
-    CAST(ul.category AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as ul_category
+    sg.poNumber as po_number,
+    ul.category as ul_category
 FROM eyefidb.sgAssetGenerator sg
-LEFT JOIN db.users u ON BINARY sg.created_by = BINARY u.id
-LEFT JOIN eyefidb.ul_label_usages ulu ON BINARY sg.serialNumber = BINARY ulu.eyefi_serial_number
+LEFT JOIN db.users u ON sg.created_by = u.id
+LEFT JOIN eyefidb.ul_label_usages ulu ON sg.serialNumber = ulu.eyefi_serial_number
 LEFT JOIN eyefidb.ul_labels ul ON ulu.ul_label_id = ul.id
 WHERE sg.active = 1 
   AND NOT EXISTS (
       SELECT 1 FROM eyefidb.serial_assignments sa 
-      WHERE BINARY sa.eyefi_serial_number = BINARY sg.serialNumber
+      WHERE sa.eyefi_serial_number = sg.serialNumber
   ) -- Exclude if already in new system
 
 UNION ALL
@@ -232,7 +239,7 @@ SELECT
     NULL as ul_label_id,
     NULL as ul_number,
     igt.id as igt_serial_id,
-    CAST(igt.serial_number AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as igt_serial_number,
+    igt.serial_number as igt_serial_number,
     NULL as ags_serial_id,
     NULL as ags_serial_number,
     NULL as sg_asset_id,
@@ -240,15 +247,15 @@ SELECT
     NULL as wo_number,
     NULL as batch_id,
     igt.used_at as used_date,
-    CAST(igt.used_by AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as used_by,
-    CAST(igt.status AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as status,
+    igt.used_by,
+    igt.status,
     0 as is_voided,
     NULL as voided_at,
     NULL as voided_by,
     NULL as void_reason,
     igt.created_at,
     -- Additional details
-    CAST(igt.serial_number AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as part_number,
+    igt.serial_number as part_number,
     NULL as wo_description,
     NULL as customer_part_number,
     NULL as property_site,

@@ -1,0 +1,29 @@
+<ng-container *ngIf="params?.data">
+  <div class="btn-group" ngbDropdown container="body" placement="bottom-end" *ngIf="canManageActions">
+    <button type="button" class="btn btn-outline-secondary btn-sm" ngbDropdownToggle title="Actions">
+      <i class="mdi mdi-dots-vertical"></i>
+    </button>
+
+    <div ngbDropdownMenu class="dropdown-menu-end">
+      <button ngbDropdownItem class="text-info" (click)="onViewAssignmentDetails()">
+        <i class="mdi mdi-information-outline me-2"></i>View Assignment Details
+      </button>
+
+      <button ngbDropdownItem (click)="onEdit()">
+        <i class="mdi mdi-pencil me-2"></i>Edit
+      </button>
+
+      <button ngbDropdownItem class="text-success" [disabled]="!canMarkUsed" (click)="onMarkUsed()">
+        <i class="mdi mdi-check-circle-outline me-2"></i>Mark as Used
+      </button>
+
+      <button ngbDropdownItem class="text-primary" [disabled]="!canRestoreAvailable" (click)="onRestoreAvailable()">
+        <i class="mdi mdi-backup-restore me-2"></i>Restore to Available
+      </button>
+
+      <button ngbDropdownItem class="text-danger" [disabled]="!canWriteOff" (click)="onWriteOff()">
+        <i class="mdi mdi-alert-circle-outline me-2"></i>Write Off
+      </button>
+    </div>
+  </div>
+</ng-container>

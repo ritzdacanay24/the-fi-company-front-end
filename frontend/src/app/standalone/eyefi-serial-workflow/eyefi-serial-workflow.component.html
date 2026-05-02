@@ -20,6 +20,13 @@
       <i class="mdi mdi-view-grid me-1"></i>
       Go to Menu
     </button>
+    <button *ngIf="currentStep > 1 && !submissionComplete"
+            class="btn btn-outline-warning btn-sm"
+            (click)="confirmStartOver()"
+            title="Discard current session and start over">
+      <i class="mdi mdi-refresh me-1"></i>
+      Start Over
+    </button>
     <button class="btn btn-danger" (click)="logout()" title="Log out">
       <i class="mdi mdi-logout me-1"></i>
       Log out

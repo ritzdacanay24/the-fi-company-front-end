@@ -193,12 +193,6 @@ export class SerialNumberService {
     return await firstValueFrom(this.http.get(`${this.AVAILABILITY_URL}/recently-used/eyefi-serials`, { params }));
   }
 
-  async getRecentlyUsedUlLabelsFromAPI(limit?: number): Promise<any> {
-    let params = new HttpParams();
-    if (limit) params = params.set('limit', limit.toString());
-    return await firstValueFrom(this.http.get(`${this.AVAILABILITY_URL}/recently-used/ul-labels`, { params }));
-  }
-
   async getRecentlyUsedIgtSerialsFromAPI(limit?: number): Promise<any> {
     let params = new HttpParams();
     if (limit) params = params.set('limit', limit.toString());

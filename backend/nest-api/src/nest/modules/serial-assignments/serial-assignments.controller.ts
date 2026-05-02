@@ -13,7 +13,14 @@ import {
 } from '@nestjs/common';
 import { Permissions, RolePermissionGuard } from '../access-control';
 import { SerialAssignmentsService } from './serial-assignments.service';
-import { AssignmentsFilterDto, VoidAssignmentDto, DeleteAssignmentDto, RestoreAssignmentDto, BulkVoidDto } from './dto';
+import {
+  AssignmentsFilterDto,
+  VoidAssignmentDto,
+  DeleteAssignmentDto,
+  RestoreAssignmentDto,
+  BulkVoidDto,
+  ReassignAssignmentDto,
+} from './dto';
 
 @Controller('serial-assignments')
 @UseGuards(RolePermissionGuard)
@@ -91,6 +98,26 @@ export class SerialAssignmentsController {
     }
   }
 
+  // GET /serial-assignments/by-ul/:ulNumber
+  @Get('by-ul/:ulNumber')
+  async getByUlNumber(@Param('ulNumber') ulNumber: string) {
+    try {
+      return await this.service.getAssignmentsByUlNumber(ulNumber);
+    } catch (err) {
+      throw new HttpException((err as Error).message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  // GET /serial-assignments/by-igt/:serialNumber
+  @Get('by-igt/:serialNumber')
+  async getByIgtSerialNumber(@Param('serialNumber') serialNumber: string) {
+    try {
+      return await this.service.getAssignmentsByIgtSerialNumber(serialNumber);
+    } catch (err) {
+      throw new HttpException((err as Error).message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
   // GET /serial-assignments/:id
   @Get(':id')
   async getById(@Param('id', ParseIntPipe) id: number) {
@@ -131,6 +158,17 @@ export class SerialAssignmentsController {
   async restoreAssignment(@Param('id', ParseIntPipe) id: number, @Body() dto: RestoreAssignmentDto) {
     try {
       return await this.service.restoreAssignment(id, dto);
+    } catch (err) {
+      throw new HttpException((err as Error).message, HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  // POST /serial-assignments/:id/reassign
+  @Post(':id/reassign')
+  @Permissions('write')
+  async reassignAssignment(@Param('id', ParseIntPipe) id: number, @Body() dto: ReassignAssignmentDto) {
+    try {
+      return await this.service.reassignAssignment(id, dto);
     } catch (err) {
       throw new HttpException((err as Error).message, HttpStatus.BAD_REQUEST);
     }

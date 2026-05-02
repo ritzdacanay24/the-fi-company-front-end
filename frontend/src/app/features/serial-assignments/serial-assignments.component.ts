@@ -202,10 +202,26 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
   // Action modals
   showVoidModal: boolean = false;
   showDeleteModal: boolean = false;
+  showReassignModal: boolean = false;
   voidReason: string = '';
+  voidReasonTemplate: string = '';
+  voidReasonNotes: string = '';
   deleteReason: string = '';
+  reassignReason: string = '';
+  newWoNumber: string = '';
   assignmentToVoid?: SerialAssignment;
   assignmentToDelete?: SerialAssignment;
+  assignmentToReassign?: SerialAssignment;
+
+  readonly voidReasonTemplates: Array<{ value: string; label: string }> = [
+    { value: 'wrong_wo', label: 'Wrong work order assigned' },
+    { value: 'qty_reduced', label: 'WO quantity reduced / unit no longer needed' },
+    { value: 'duplicate', label: 'Duplicate assignment created' },
+    { value: 'wrong_ul', label: 'Wrong UL label paired' },
+    { value: 'wrong_serial', label: 'Wrong EyeFi serial paired' },
+    { value: 'customer_request', label: 'Customer/production request correction' },
+    { value: 'other', label: 'Other (specify in notes)' },
+  ];
 
   // Current user (get from your auth service)
   currentUser: string = 'current_user'; // TODO: Replace with actual user from auth service
@@ -397,9 +413,12 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
           onPrint: (data: any) => this.printSingleAssignment(data),
           onVoid: (data: any) => this.openVoidModal(data),
           onDelete: (data: any) => this.openDeleteModal(data),
+          onReassign: (data: any) => this.openReassignModal(data),
           onRestore: (data: any) => this.restoreAssignment(data),
           onVerify: (data: any) => this.startSerialVerification(data),
-          requiresVerification: (data: any) => this.requiresVerification(data)
+          requiresVerification: (data: any) => this.requiresVerification(data),
+          canHardDelete: (data: any) => this.canHardDeleteAssignment(data),
+          getLinkedAssetNumber: (data: any) => this.getLinkedAssetNumber(data)
         }
       }
     ];
@@ -414,7 +433,6 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
     this.error = null;
 
     try {
-      // Load ALL records without pagination
       const response = await this.serialAssignmentsService.getAllConsumedSerials({
         ...this.filters,
       });
@@ -522,6 +540,8 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
   openVoidModal(assignment: SerialAssignment): void {
     this.assignmentToVoid = assignment;
     this.voidReason = '';
+    this.voidReasonTemplate = '';
+    this.voidReasonNotes = '';
     this.showVoidModal = true;
   }
 
@@ -529,11 +549,29 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
     this.showVoidModal = false;
     this.assignmentToVoid = undefined;
     this.voidReason = '';
+    this.voidReasonTemplate = '';
+    this.voidReasonNotes = '';
+  }
+
+  getVoidReasonTemplateLabel(): string {
+    const selected = this.voidReasonTemplates.find((template) => template.value === this.voidReasonTemplate);
+    return selected?.label || this.voidReasonTemplate;
+  }
+
+  getVoidReasonPreview(): string {
+    const label = this.getVoidReasonTemplateLabel();
+    const notes = this.voidReasonNotes?.trim() || '';
+    return notes ? `${label}: ${notes}` : label;
   }
 
   async confirmVoid(): Promise<void> {
-    if (!this.assignmentToVoid || !this.voidReason.trim()) {
-      alert('Please provide a reason for voiding this assignment');
+    if (!this.assignmentToVoid || !this.voidReasonTemplate) {
+      alert('Please select a reason template for voiding this assignment');
+      return;
+    }
+
+    if (this.voidReasonTemplate === 'other' && !this.voidReasonNotes.trim()) {
+      alert('Please add notes when selecting Other');
       return;
     }
 
@@ -545,6 +583,8 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
 
     this.loading = true;
     try {
+      this.voidReason = this.getVoidReasonPreview();
+
       const response = await this.serialAssignmentsService.voidAssignment(
         this.getAssignmentId(this.assignmentToVoid),
         this.voidReason,
@@ -598,9 +638,7 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
 
   // Delete operations
   openDeleteModal(assignment: SerialAssignment): void {
-    this.assignmentToDelete = assignment;
-    this.deleteReason = '';
-    this.showDeleteModal = true;
+    alert('Hard delete is disabled. Use Void Assignment or Reassign Work Order instead.');
   }
 
   closeDeleteModal(): void {
@@ -610,38 +648,89 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
   }
 
   async confirmDelete(): Promise<void> {
-    if (!this.assignmentToDelete || !this.deleteReason.trim()) {
-      alert('Please provide a reason for deleting this assignment');
+    alert('Hard delete is disabled. Use Void Assignment or Reassign Work Order instead.');
+  }
+
+  canHardDeleteAssignment(assignment: SerialAssignment): boolean {
+    return !this.isAssetLinkedAssignment(assignment);
+  }
+
+  isAssetLinkedAssignment(assignment: SerialAssignment): boolean {
+    return Boolean(
+      assignment.customer_asset_id ||
+      assignment.generated_asset_number ||
+      assignment.sg_asset_id ||
+      assignment.ags_serial_id ||
+      assignment.igt_serial_id ||
+      assignment.sg_asset_number ||
+      assignment.ags_serial_number ||
+      assignment.igt_serial_number
+    );
+  }
+
+  getLinkedAssetNumber(assignment: SerialAssignment): string {
+    return (
+      assignment.generated_asset_number ||
+      assignment.sg_asset_number ||
+      assignment.ags_serial_number ||
+      assignment.igt_serial_number ||
+      assignment.part_number ||
+      'N/A'
+    );
+  }
+
+  // Reassign operations
+  openReassignModal(assignment: SerialAssignment): void {
+    if (assignment.source_table !== 'serial_assignments') {
+      alert('Can only reassign assignments from the new system. Legacy data cannot be reassigned.');
       return;
     }
 
-    // Only allow deleting from serial_assignments (new system)
-    if (this.assignmentToDelete.source_table !== 'serial_assignments') {
-      alert('Can only delete assignments from the new system. Legacy data cannot be deleted.');
+    this.assignmentToReassign = assignment;
+    this.newWoNumber = '';
+    this.reassignReason = '';
+    this.showReassignModal = true;
+  }
+
+  closeReassignModal(): void {
+    this.showReassignModal = false;
+    this.assignmentToReassign = undefined;
+    this.newWoNumber = '';
+    this.reassignReason = '';
+  }
+
+  async confirmReassign(): Promise<void> {
+    if (!this.assignmentToReassign || !this.newWoNumber.trim() || !this.reassignReason.trim()) {
+      alert('Please enter both the new work order and reassignment reason');
       return;
     }
 
-    if (!confirm('Are you sure you want to permanently delete this assignment? This cannot be undone.')) {
+    const targetWo = this.newWoNumber.trim();
+    const currentWo = (this.assignmentToReassign.wo_number || this.assignmentToReassign.po_number || '').trim();
+
+    if (currentWo && currentWo.toUpperCase() === targetWo.toUpperCase()) {
+      alert('New work order must be different from current work order');
       return;
     }
 
     this.loading = true;
     try {
-      const response = await this.serialAssignmentsService.deleteAssignment(
-        this.getAssignmentId(this.assignmentToDelete),
-        this.deleteReason,
+      const response = await this.serialAssignmentsService.reassignAssignment(
+        this.getAssignmentId(this.assignmentToReassign),
+        targetWo,
+        this.reassignReason,
         this.currentUser
       );
 
       if (response.success) {
-        alert('Assignment deleted successfully');
-        this.closeDeleteModal();
+        alert(`Assignment reassigned to WO ${targetWo}`);
+        this.closeReassignModal();
         this.refresh();
       } else {
         alert('Error: ' + response.error);
       }
     } catch (error: any) {
-      alert('Error deleting assignment: ' + error.message);
+      alert('Error reassigning assignment: ' + error.message);
     } finally {
       this.loading = false;
     }

@@ -14,19 +14,23 @@ import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-
   standalone: true,
   imports: [CommonModule, FormsModule, UserSearchV1Component, DragDropModule],
   template: `
-    <div class="modal-header bg-primary text-white">
-      <h4 class="modal-title text-white">
-        <i class="mdi mdi-account-group me-2"></i>
-        Manage Owners
-      </h4>
-      <button type="button" class="btn-close btn-close-white" aria-label="Close" (click)="activeModal.dismiss()"></button>
+    <div class="owner-modal-shell">
+    <div class="modal-header owner-modal-header">
+      <div>
+        <div class="owner-modal-eyebrow">Administration</div>
+        <h4 class="modal-title owner-modal-title">
+          <i class="mdi mdi-account-group me-2"></i>
+          Manage Owners
+        </h4>
+      </div>
+      <button type="button" class="btn-close" aria-label="Close" (click)="activeModal.dismiss()"></button>
     </div>
 
-    <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+    <div class="modal-body owner-modal-body" style="max-height: 70vh; overflow-y: auto;">
       <!-- Tab Navigation -->
-      <ul class="nav nav-tabs mb-3">
+      <ul class="nav nav-tabs owner-modal-tabs mb-4">
         <li class="nav-item">
-          <a class="nav-link" 
+          <a class="nav-link owner-modal-tab" 
              [class.active]="activeTab === 'owners'" 
              (click)="activeTab = 'owners'"
              style="cursor: pointer;">
@@ -35,7 +39,7 @@ import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" 
+          <a class="nav-link owner-modal-tab" 
              [class.active]="activeTab === 'assignments'" 
              (click)="activeTab = 'assignments'"
              style="cursor: pointer;">
@@ -44,7 +48,7 @@ import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" 
+          <a class="nav-link owner-modal-tab" 
              [class.active]="activeTab === 'admins'" 
              (click)="switchToAdminTab()"
              style="cursor: pointer;">
@@ -53,7 +57,7 @@ import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" 
+          <a class="nav-link owner-modal-tab" 
              [class.active]="activeTab === 'settings'" 
              (click)="switchToSettingsTab()"
              style="cursor: pointer;">
@@ -66,8 +70,8 @@ import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-
       <!-- Owners Tab -->
       <div *ngIf="activeTab === 'owners'">
       <!-- Add New Owner Section -->
-      <div class="card mb-3">
-        <div class="card-header bg-light">
+      <div class="card owner-card mb-3">
+        <div class="card-header owner-card-header">
           <h5 class="mb-0">
             <i class="mdi mdi-plus-circle me-2"></i>
             {{ editingOwner ? 'Edit Owner' : 'Add New Owner' }}
@@ -163,7 +167,7 @@ import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-
       </div>
 
       <!-- Search and Filter -->
-      <div class="card mb-3">
+      <div class="card owner-card owner-card-soft mb-3">
         <div class="card-body">
           <div class="row g-2">
             <div class="col-md-8">
@@ -190,8 +194,8 @@ import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-
       </div>
 
       <!-- Owners List -->
-      <div class="card">
-        <div class="card-header bg-light">
+      <div class="card owner-card">
+        <div class="card-header owner-card-header">
           <div class="d-flex justify-content-between align-items-center">
             <div>
               <h5 class="mb-0">
@@ -203,7 +207,7 @@ import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-
                 Drag rows to reorder
               </small>
             </div>
-            <button class="btn btn-sm btn-outline-primary" (click)="refreshOwners()">
+            <button class="btn btn-sm btn-outline-secondary owner-btn-secondary" (click)="refreshOwners()">
               <i class="mdi mdi-refresh" [ngClass]="{'mdi-spin': loading}"></i>
               Refresh
             </button>
@@ -222,7 +226,7 @@ import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-
 
           <div *ngIf="!loading && filteredOwners.length > 0" class="table-responsive">
             <table class="table table-hover mb-0">
-              <thead class="table-light">
+              <thead class="table-light owner-table-head">
                 <tr>
                   <th style="width: 50px;">
                     <i class="mdi mdi-drag-vertical text-muted" title="Drag to reorder"></i>
@@ -312,8 +316,8 @@ import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-
       <!-- User Assignments Tab -->
       <div *ngIf="activeTab === 'assignments'">
         <!-- User Selection -->
-        <div class="card mb-3">
-          <div class="card-header bg-light">
+        <div class="card owner-card mb-3">
+          <div class="card-header owner-card-header">
             <h5 class="mb-0">
               <i class="mdi mdi-account-search me-2"></i>
               Select User to Manage Assignments
@@ -336,8 +340,8 @@ import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-
         </div>
 
         <!-- Assigned Owners List -->
-        <div class="card mb-3" *ngIf="selectedUserId">
-          <div class="card-header bg-light d-flex justify-content-between align-items-center">
+        <div class="card owner-card mb-3" *ngIf="selectedUserId">
+          <div class="card-header owner-card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">
               <i class="mdi mdi-check-circle me-2"></i>
               Currently Assigned Owners ({{ userAssignments.length }})
@@ -394,8 +398,8 @@ import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-
         </div>
 
         <!-- All Owners with Checkboxes -->
-        <div class="card" *ngIf="selectedUserId">
-          <div class="card-header bg-light">
+        <div class="card owner-card" *ngIf="selectedUserId">
+          <div class="card-header owner-card-header">
             <h5 class="mb-0">
               <i class="mdi mdi-account-multiple-check me-2"></i>
               All Owners - Check to Assign ({{ allOwnersForAssignment.length }})
@@ -416,7 +420,7 @@ import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-
             <div *ngIf="!loadingAssignments && allOwnersForAssignment.length > 0">
               <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
                 <table class="table table-hover mb-0">
-                  <thead class="table-light sticky-top">
+                  <thead class="table-light sticky-top owner-table-head">
                     <tr>
                       <th style="width: 60px;">
                         <i class="mdi mdi-check-box-outline"></i>
@@ -479,14 +483,14 @@ import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-
 
       <!-- Admin Users Tab -->
       <div *ngIf="activeTab === 'admins'">
-        <div class="alert alert-info mb-3">
+        <div class="alert alert-info owner-alert owner-alert-info mb-3">
           <i class="mdi mdi-information-outline me-2"></i>
           <strong>Admin Users</strong> have permission to manage owners and assign them to users.
         </div>
 
         <!-- Add Admin User -->
-        <div class="card mb-3">
-          <div class="card-header bg-light">
+        <div class="card owner-card mb-3">
+          <div class="card-header owner-card-header">
             <h5 class="mb-0">
               <i class="mdi mdi-account-plus me-2"></i>
               Add Admin User
@@ -505,7 +509,7 @@ import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-
                 </app-user-search-v1>
               </div>
               <div class="col-md-2 d-flex align-items-end">
-                <button class="btn btn-primary w-100" 
+                <button class="btn btn-primary owner-btn-primary w-100" 
                         (click)="addAdminUser()"
                         [disabled]="!selectedAdminUserId || loadingAdmins">
                   <i class="mdi mdi-plus"></i>
@@ -517,13 +521,13 @@ import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-
         </div>
 
         <!-- Admin Users List -->
-        <div class="card">
-          <div class="card-header bg-light d-flex justify-content-between align-items-center">
+        <div class="card owner-card">
+          <div class="card-header owner-card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">
               <i class="mdi mdi-shield-account me-2"></i>
               Current Admin Users ({{ adminUsers.length }})
             </h5>
-            <button class="btn btn-sm btn-outline-primary" (click)="loadAdminUsers()">
+            <button class="btn btn-sm btn-outline-secondary owner-btn-secondary" (click)="loadAdminUsers()">
               <i class="mdi mdi-refresh" [ngClass]="{'mdi-spin': loadingAdmins}"></i>
               Refresh
             </button>
@@ -582,22 +586,22 @@ import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-
 
       <!-- Settings Tab -->
       <div *ngIf="activeTab === 'settings'">
-        <div class="card">
-          <div class="card-header bg-light">
+        <div class="card owner-card">
+          <div class="card-header owner-card-header">
             <h5 class="mb-0">
               <i class="mdi mdi-cog me-2"></i>
               Owner Feature Settings
             </h5>
           </div>
           <div class="card-body">
-            <div class="alert alert-info mb-4">
+            <div class="alert alert-info owner-alert owner-alert-info mb-4">
               <i class="mdi mdi-information-outline me-2"></i>
               Control whether the owner dropdown/input field appears on forms throughout the application.
             </div>
 
             <div class="row">
               <div class="col-md-12">
-                <div class="card border-primary">
+                <div class="card owner-card owner-card-soft border-0">
                   <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                       <div>
@@ -636,7 +640,7 @@ import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-
               </div>
             </div>
 
-            <div class="alert alert-warning mt-4">
+            <div class="alert alert-warning owner-alert owner-alert-warning mt-4">
               <i class="mdi mdi-alert me-2"></i>
               <strong>Note:</strong> Disabling this feature will hide the owner dropdown/input on all forms. 
               Users will not be able to assign or change owners until this is re-enabled.
@@ -646,16 +650,222 @@ import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-
       </div><!-- End Settings Tab -->
     </div>
 
-    <div class="modal-footer">
+    <div class="modal-footer owner-modal-footer">
       <button type="button" class="btn btn-secondary" (click)="activeModal.close()">
         <i class="mdi mdi-close me-1"></i>
         Close
       </button>
     </div>
+    </div>
   `,
   styles: [`
+    .owner-modal-shell {
+      --owner-border: #d9e1ea;
+      --owner-border-strong: #c9d2dc;
+      --owner-surface: #ffffff;
+      --owner-surface-muted: #f6f8fb;
+      --owner-surface-soft: #fafbfd;
+      --owner-text: #1f2937;
+      --owner-text-muted: #667085;
+      --owner-accent: #244a73;
+      --owner-accent-soft: #e9eff6;
+      --owner-success-bg: #edf7f1;
+      --owner-success-text: #296244;
+      --owner-neutral-bg: #eef2f6;
+      --owner-neutral-text: #526273;
+      --owner-warning-bg: #f8f1e7;
+      --owner-warning-text: #8a5b1c;
+      color: var(--owner-text);
+      background: linear-gradient(180deg, #fbfcfe 0%, #f5f7fa 100%);
+    }
+
+    .owner-modal-header {
+      align-items: flex-start;
+      padding: 1.25rem 1.5rem 1rem;
+      border-bottom: 1px solid var(--owner-border);
+      background: var(--owner-surface);
+    }
+
+    .owner-modal-eyebrow {
+      margin-bottom: 0.2rem;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--owner-text-muted);
+    }
+
+    .owner-modal-title {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--owner-text);
+    }
+
+    .owner-modal-body {
+      padding: 1.25rem 1.5rem 1.5rem;
+      background: transparent;
+    }
+
+    .owner-modal-footer {
+      padding: 1rem 1.5rem 1.25rem;
+      border-top: 1px solid var(--owner-border);
+      background: var(--owner-surface);
+    }
+
+    .owner-modal-tabs {
+      gap: 0.5rem;
+      border-bottom: 1px solid var(--owner-border);
+    }
+
+    .owner-modal-tab {
+      margin-bottom: -1px;
+      padding: 0.7rem 0.95rem;
+      border: 1px solid transparent;
+      border-radius: 0.65rem 0.65rem 0 0;
+      color: var(--owner-text-muted);
+      font-weight: 600;
+    }
+
+    .owner-modal-tab:hover {
+      color: var(--owner-text);
+      background: var(--owner-surface-soft);
+      border-color: var(--owner-border);
+    }
+
+    .owner-modal-tab.active {
+      color: var(--owner-accent);
+      background: var(--owner-surface);
+      border-color: var(--owner-border) var(--owner-border) var(--owner-surface);
+    }
+
+    .owner-card {
+      border: 1px solid var(--owner-border);
+      border-radius: 0.9rem;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+      background: var(--owner-surface);
+      overflow: hidden;
+    }
+
+    .owner-card-soft {
+      background: var(--owner-surface-soft);
+    }
+
+    .owner-card-header {
+      padding: 0.95rem 1.1rem;
+      border-bottom: 1px solid var(--owner-border);
+      background: var(--owner-surface-muted);
+    }
+
+    .owner-card-header h5,
+    .owner-card-header h6 {
+      font-weight: 700;
+      color: var(--owner-text);
+    }
+
+    .owner-table-head {
+      background: #f7f9fc;
+    }
+
     .table-hover tbody tr:hover {
       cursor: default;
+      background: #f8fafc;
+    }
+
+    .table > :not(caption) > * > * {
+      padding-top: 0.8rem;
+      padding-bottom: 0.8rem;
+      border-color: var(--owner-border);
+      vertical-align: middle;
+    }
+
+    .table thead th {
+      font-size: 0.76rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: var(--owner-text-muted);
+    }
+
+    .form-label {
+      margin-bottom: 0.4rem;
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: var(--owner-text);
+    }
+
+    .form-control,
+    .form-select,
+    .input-group-text {
+      border-color: var(--owner-border-strong);
+      background: #fff;
+    }
+
+    .form-control,
+    .form-select {
+      min-height: 2.7rem;
+      border-radius: 0.65rem;
+      box-shadow: none;
+    }
+
+    .input-group-text {
+      border-radius: 0.65rem 0 0 0.65rem;
+      color: var(--owner-text-muted);
+    }
+
+    .input-group .form-control {
+      border-left: 0;
+      border-radius: 0 0.65rem 0.65rem 0;
+    }
+
+    .form-control:focus,
+    .form-select:focus,
+    .form-check-input:focus {
+      border-color: #9eb4ca;
+      box-shadow: 0 0 0 0.2rem rgba(36, 74, 115, 0.12);
+    }
+
+    .btn {
+      border-radius: 0.65rem;
+      font-weight: 600;
+    }
+
+    .btn-primary,
+    .owner-btn-primary {
+      border-color: #244a73;
+      background: #244a73;
+    }
+
+    .btn-primary:hover,
+    .owner-btn-primary:hover {
+      border-color: #1c3958;
+      background: #1c3958;
+    }
+
+    .btn-outline-primary,
+    .btn-outline-secondary,
+    .owner-btn-secondary {
+      border-color: var(--owner-border-strong);
+      color: var(--owner-text);
+    }
+
+    .btn-outline-primary:hover,
+    .btn-outline-secondary:hover,
+    .owner-btn-secondary:hover {
+      border-color: var(--owner-border-strong);
+      background: var(--owner-surface-muted);
+      color: var(--owner-text);
+    }
+
+    .btn-outline-danger {
+      border-color: #d7dde5;
+      color: #8a4851;
+    }
+
+    .btn-outline-danger:hover {
+      border-color: #c8d0da;
+      background: #f7f1f2;
+      color: #7a3942;
     }
     
     .btn-group-sm .btn {
@@ -664,6 +874,60 @@ import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-
     
     .badge {
       font-size: 0.75rem;
+      padding: 0.35rem 0.55rem;
+      border-radius: 999px;
+      font-weight: 600;
+    }
+
+    .badge.bg-success,
+    .badge.text-bg-success {
+      background: var(--owner-success-bg) !important;
+      color: var(--owner-success-text) !important;
+    }
+
+    .badge.bg-secondary,
+    .badge.text-bg-secondary,
+    .badge.bg-info {
+      background: var(--owner-neutral-bg) !important;
+      color: var(--owner-neutral-text) !important;
+    }
+
+    .badge.bg-warning {
+      background: var(--owner-warning-bg) !important;
+      color: var(--owner-warning-text) !important;
+    }
+
+    .alert.owner-alert {
+      border: 1px solid var(--owner-border);
+      border-radius: 0.8rem;
+      color: var(--owner-text);
+    }
+
+    .alert.owner-alert-info {
+      background: #f4f7fb;
+    }
+
+    .alert.owner-alert-warning {
+      background: #fbf7f1;
+    }
+
+    .table-secondary,
+    .table-warning,
+    .table-success {
+      --bs-table-bg: transparent;
+    }
+
+    tr.table-secondary {
+      background: #f8fafc;
+      color: #7a8696;
+    }
+
+    tr.table-warning {
+      background: #fff9ef;
+    }
+
+    tr.table-success {
+      background: #f4f9f6;
     }
 
     /* Drag and drop styles */
@@ -687,10 +951,29 @@ import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-
 
     [cdkDragHandle] {
       cursor: move;
+      color: #94a3b8;
     }
 
     tr[cdkDrag]:hover {
-      background-color: rgba(0, 123, 255, 0.05);
+      background-color: #f8fafc;
+    }
+
+    @media (max-width: 767.98px) {
+      .owner-modal-body,
+      .owner-modal-header,
+      .owner-modal-footer {
+        padding-left: 1rem;
+        padding-right: 1rem;
+      }
+
+      .owner-modal-tabs {
+        gap: 0.25rem;
+      }
+
+      .owner-modal-tab {
+        padding: 0.55rem 0.7rem;
+        font-size: 0.9rem;
+      }
     }
   `]
 })

@@ -10,6 +10,7 @@ import { AttachmentsService } from "@app/core/api/attachments/attachments.servic
 import { QirPublicFormComponent } from "../qir-public-form/qir-public-form.component";
 import { SweetAlert } from "@app/shared/sweet-alert/sweet-alert.service";
 import { LocationStrategy } from "@angular/common";
+import { AuthenticationService } from "@app/core/services/auth.service";
 
 @Component({
   standalone: true,
@@ -24,7 +25,8 @@ export class QirCreatePublicComponent {
     private activatedRoute: ActivatedRoute,
     private api: QirService,
     private attachmentsService: AttachmentsService,
-    private location: LocationStrategy
+    private location: LocationStrategy,
+    private authService: AuthenticationService
   ) {
     history.pushState(null, null, window.location.href);
     this.location.onPopState(() => {
@@ -42,7 +44,19 @@ export class QirCreatePublicComponent {
     return true;
   }
 
+  isAuthenticated = false;
+
+  goToInternalForm(): void {
+    this.router.navigate([NAVIGATION_ROUTE.CREATE]);
+  }
+
   ngOnInit(): void {
+    const currentUser = this.authService.currentUserValue;
+    if (currentUser) {
+      this.isAuthenticated = true;
+      return;
+    }
+
     this.activatedRoute.queryParams.subscribe((params) => {
       this.id = params["id"];
       this.fsId = params["fsId"];

@@ -216,4 +216,5 @@ export class IgtSerialNumbersRepository extends BaseRepository<RowDataPacket> {
     );
     return rows.map((r) => r['serial_number'] as string);
   }
+
 }

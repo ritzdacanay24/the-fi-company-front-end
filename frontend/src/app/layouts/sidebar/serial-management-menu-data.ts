@@ -32,14 +32,6 @@ export const SERIAL_MANAGEMENT_MENU: MenuItem[] = [
         activatedRoutes: "/serial-management/ul-labels*"
     },
     {
-        id: 12,
-        label: "UL Usage Report",
-        link: "/serial-management/ul-usage",
-        icon: "mdi mdi-chart-line",
-        hideCheckBox: true,
-        activatedRoutes: "/serial-management/ul-usage*"
-    },
-    {
         id: 13,
         label: "UL Audit Sign-Off",
         link: "/serial-management/ul-audit-signoff",
@@ -77,14 +69,6 @@ export const SERIAL_MANAGEMENT_MENU: MenuItem[] = [
         icon: "mdi mdi-chip",
         hideCheckBox: true,
         activatedRoutes: "/serial-management/igt-inventory*"
-    },
-    {
-        id: 22,
-        label: "IGT Usage Report",
-        link: "/serial-management/igt-usage",
-        icon: "mdi mdi-chart-bar",
-        hideCheckBox: true,
-        activatedRoutes: "/serial-management/igt-usage*"
     },
     {
         id: 23,
@@ -131,14 +115,6 @@ export const SERIAL_MANAGEMENT_MENU: MenuItem[] = [
         icon: "las la-microchip",
         hideCheckBox: true,
         activatedRoutes: "/serial-management/eyefi-serials"
-    },
-    {
-        id: 42,
-        label: "EyeFi Usage Report",
-        link: "/serial-management/eyefi-serials/usage-report",
-        icon: "mdi mdi-chart-line",
-        hideCheckBox: true,
-        activatedRoutes: "/serial-management/eyefi-serials/usage-report*"
     },
     {
         id: 43,

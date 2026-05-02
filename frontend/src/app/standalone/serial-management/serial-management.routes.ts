@@ -67,14 +67,6 @@ export const SERIAL_MANAGEMENT_ROUTES: Routes = [
       ),
   },
   {
-    path: 'igt-usage',
-    title: 'IGT Usage Report',
-    loadComponent: () =>
-      import('../igt-management/igt-usage-report.component').then(
-        (c) => c.IgtUsageReportComponent,
-      ),
-  },
-  {
     path: 'igt-upload',
     title: 'Upload IGT Serials',
     loadComponent: () =>

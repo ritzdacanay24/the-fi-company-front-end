@@ -186,6 +186,8 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
   customerOptions: string[] = [
     'IGT',
     'Light and Wonder',
+    'Bally',
+    'Scientific Games',
     'AGS',
     'AINGAM',
     'AMEGAM',
@@ -469,8 +471,22 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
       
       // Auto-select customer based on cp_cust if it matches our customer list
       if (workOrder.cp_cust) {
+        const cpCust = String(workOrder.cp_cust).trim();
+
+        // Normalize L&W aliases so they always follow the SG/L&W workflow path.
+        if (['BALLY', 'SCIENTIFIC GAMES', 'L&W', 'SG'].includes(cpCust.toUpperCase())) {
+          this.selectedCustomer = 'Light and Wonder';
+          console.log('✅ Auto-selected customer alias:', cpCust, '→ Light and Wonder');
+          this.toastrService.info('Customer auto-selected: Light and Wonder', 'Auto-Selection');
+
+          if (this.currentStep === 2) {
+            this.scrollToSelectedCustomer();
+          }
+          return;
+        }
+
         const matchedCustomer = this.customerOptions.find(
-          customer => customer.toUpperCase() === workOrder.cp_cust.toUpperCase()
+          customer => customer.toUpperCase() === cpCust.toUpperCase()
         );
         
         if (matchedCustomer) {
@@ -1170,6 +1186,12 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
     return this.generatedAssets.filter(a => a.assetNumber && a.assetNumber.trim().length > 0).length;
   }
 
+  confirmStartOver(): void {
+    if (confirm('Are you sure you want to start over? All current progress will be lost.')) {
+      this.resetWorkflow();
+    }
+  }
+
   resetWorkflow(): void {
     // Reset step navigation
     this.currentStep = 1;
@@ -1792,6 +1814,12 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
       case 'IGT_CAN':
         return 'igt';
       case 'Light and Wonder':
+      case 'Bally':
+      case 'Scientific Games':
+      case 'BALLY':
+      case 'SCIENTIFIC GAMES':
+      case 'L&W':
+      case 'SG':
       case 'BALTEC':
       case 'BalGam':
         return 'sg';
@@ -1817,6 +1845,12 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
       case 'IGT_CAN':
         return 'IGT';
       case 'Light and Wonder':
+      case 'Bally':
+      case 'Scientific Games':
+      case 'BALLY':
+      case 'SCIENTIFIC GAMES':
+      case 'L&W':
+      case 'SG':
       case 'BALTEC':
       case 'BalGam':
         return 'Light and Wonder';
