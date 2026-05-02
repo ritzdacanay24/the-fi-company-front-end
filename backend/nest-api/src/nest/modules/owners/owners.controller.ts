@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { CurrentUserId } from '@/nest/decorators/current-user-id.decorator';
 import { Permissions, RolePermissionGuard } from '../access-control';
 import { OwnersService } from './owners.service';
 
@@ -69,10 +70,12 @@ export class OwnersController {
   @Permissions('write')
   async postOwners(
     @Body() body: Record<string, unknown>,
+    @CurrentUserId() currentUserId: number,
     @Body('action') action?: string,
     @Body('enabled') enabled?: boolean,
     @Body('updated_by') updatedBy?: string,
   ) {
+    const actorId = String(currentUserId);
     if (action === 'set-dropdown-setting') {
       return this.service.setOwnerDropdownSetting(Boolean(enabled), updatedBy || 'system');
     }
@@ -80,7 +83,7 @@ export class OwnersController {
     if (action === 'reorder') {
       return this.service.reorderOwners(
         (body.orders as Array<{ id: number; display_order: number }>) || [],
-        String(body.user_id || 'system'),
+        actorId,
       );
     }
 
@@ -97,7 +100,7 @@ export class OwnersController {
       return this.service.assignOwnerToUser(
         userId,
         ownerId,
-        String(body.admin_user_id || 'system'),
+        actorId,
       );
     }
 
@@ -114,7 +117,7 @@ export class OwnersController {
       return this.service.removeOwnerFromUser(
         userId,
         ownerId,
-        String(body.admin_user_id || 'system'),
+        actorId,
       );
     }
 
@@ -127,7 +130,7 @@ export class OwnersController {
         };
       }
 
-      return this.service.addAdminUser(userId, String(body.created_by || body.user_id || 'system'));
+      return this.service.addAdminUser(userId, actorId);
     }
 
     if (action === 'remove-admin-user') {
@@ -142,12 +145,16 @@ export class OwnersController {
       return this.service.removeAdminUser(userId);
     }
 
-    return this.service.createOwner(body, String(body.user_id || 'system'));
+    return this.service.createOwner(body, actorId);
   }
 
   @Put()
   @Permissions('write')
-  async putOwners(@Body() body: Record<string, unknown>) {
+  async putOwners(
+    @Body() body: Record<string, unknown>,
+    @CurrentUserId() currentUserId: number,
+  ) {
+    const actorId = String(currentUserId);
     const id = body.id as string | number | undefined;
     if (!id) {
       return {
@@ -156,12 +163,16 @@ export class OwnersController {
       };
     }
 
-    return this.service.updateOwner(id, body, String(body.user_id || 'system'));
+    return this.service.updateOwner(id, body, actorId);
   }
 
   @Delete()
   @Permissions('delete')
-  async deleteOwners(@Body() body: Record<string, unknown>) {
+  async deleteOwners(
+    @Body() body: Record<string, unknown>,
+    @CurrentUserId() currentUserId: number,
+  ) {
+    const actorId = String(currentUserId);
     const id = body.id as string | number | undefined;
     if (!id) {
       return {
@@ -170,6 +181,6 @@ export class OwnersController {
       };
     }
 
-    return this.service.deleteOwner(id, String(body.user_id || 'system'));
+    return this.service.deleteOwner(id, actorId);
   }
 }

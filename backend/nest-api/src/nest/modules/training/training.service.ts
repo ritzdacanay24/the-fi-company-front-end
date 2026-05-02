@@ -111,7 +111,7 @@ export class TrainingService {
     };
   }
 
-  async createSession(body: Dict) {
+  async createSession(body: Dict, currentUserId?: number) {
     const title = String(body.title || '').trim();
     const description = String(body.description || '').trim();
     const purpose = String(body.purpose || '').trim();
@@ -121,7 +121,8 @@ export class TrainingService {
     const location = String(body.location || '').trim();
     const facilitatorName = String(body.facilitatorName || '').trim();
     const categoryId = this.toNullableInt(body.categoryId);
-    const createdBy = this.toPositiveInt(body.createdBy) || 1;
+    const payloadCreatedBy = this.toPositiveInt(body.createdBy) || 1;
+    const createdBy = Number(currentUserId) > 0 ? Number(currentUserId) : payloadCreatedBy;
     const expectedAttendeeIds = Array.isArray(body.expectedAttendeeIds)
       ? body.expectedAttendeeIds.map((id) => this.toPositiveInt(id)).filter((id): id is number => Boolean(id))
       : [];

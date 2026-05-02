@@ -23,8 +23,11 @@ export class TrainingController {
 
   @Post('sessions')
   @Permissions('write')
-  async createSession(@Body() body: Record<string, unknown> = {}) {
-    return this.trainingService.createSession(body);
+  async createSession(
+    @Body() body: Record<string, unknown> = {},
+    @CurrentUserId() userId: number,
+  ) {
+    return this.trainingService.createSession(body, userId);
   }
 
   @Put('sessions/:id')
