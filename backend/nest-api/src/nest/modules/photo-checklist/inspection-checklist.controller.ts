@@ -1,5 +1,6 @@
 import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { CurrentUserId } from '@/nest/decorators/current-user-id.decorator';
 import { Permissions, RolePermissionGuard } from '../access-control';
 import { PhotoChecklistService } from './photo-checklist.service';
 
@@ -18,8 +19,11 @@ export class InspectionChecklistController {
 
   @Post('templates')
   @Permissions('write')
-  async createTemplate(@Body() payload: Record<string, unknown>) {
-    return this.service.createTemplate(payload);
+  async createTemplate(
+    @Body() payload: Record<string, unknown>,
+    @CurrentUserId() currentUserId: number,
+  ) {
+    return this.service.createTemplate({ ...payload, created_by: currentUserId });
   }
 
   @Put('templates/:id')
@@ -40,6 +44,12 @@ export class InspectionChecklistController {
     return this.service.hardDeleteTemplate(id);
   }
 
+  @Post('templates/:id/publish')
+  @Permissions('write')
+  async publishTemplate(@Param('id', ParseIntPipe) id: number) {
+    return this.service.publishTemplate(id);
+  }
+
   @Post('templates/:id/discard-draft')
   @Permissions('write')
   async discardDraft(@Param('id', ParseIntPipe) id: number) {
@@ -50,6 +60,12 @@ export class InspectionChecklistController {
   @Permissions('write')
   async createParentVersion(@Param('id', ParseIntPipe) id: number) {
     return this.service.createParentVersion(id);
+  }
+
+  @Post('templates/delete-major-version')
+  @Permissions('delete')
+  async deleteMajorVersion(@Body() body: { group_id: number; major: number }) {
+    return this.service.deleteMajorVersion(Number(body.group_id), Number(body.major));
   }
 
   @Post('templates/:id/restore')
@@ -128,8 +144,9 @@ export class InspectionChecklistController {
       created_by?: number | null;
       created_by_name?: string | null;
     },
+    @CurrentUserId() currentUserId: number,
   ) {
-    return this.service.createShareToken(payload);
+    return this.service.createShareToken({ ...payload, created_by: currentUserId });
   }
 
   @Delete('share-tokens/:id')
