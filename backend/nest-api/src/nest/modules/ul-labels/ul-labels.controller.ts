@@ -16,7 +16,8 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
-import { Domain, Permissions, RolePermissionGuard } from '../access-control';
+import { CurrentUserId } from '@/nest/decorators/current-user-id.decorator';
+import { Domain, Permissions, Roles, RolePermissionGuard } from '../access-control';
 import { UlLabelsService } from './ul-labels.service';
 
 @Controller('ul-labels')
@@ -42,26 +43,51 @@ export class UlLabelsController {
 
   @Post()
   @Permissions('write')
-  async createLabel(@Body() body: Record<string, unknown>) {
-    return this.ulLabelsService.createLabel(body);
+  async createLabel(
+    @Body() body: Record<string, unknown>,
+    @CurrentUserId() currentUserId: number,
+  ) {
+    return this.ulLabelsService.createLabel(body, currentUserId);
   }
 
   @Put(':id')
+  @Roles('admin')
   @Permissions('write')
-  async updateLabel(@Param('id') idRaw?: string, @Body() body: Record<string, unknown> = {}) {
-    return this.ulLabelsService.updateLabel(idRaw, body);
+  async updateLabel(
+    @Param('id') idRaw?: string,
+    @Body() body: Record<string, unknown> = {},
+    @CurrentUserId() currentUserId: number = 0,
+  ) {
+    return this.ulLabelsService.updateLabel(idRaw, body, currentUserId);
   }
 
-  @Patch(':id/archive')
+  @Patch(':id/void')
+  @Roles('admin')
   @Permissions('write')
-  async archiveLabel(@Param('id') idRaw: string) {
-    return this.ulLabelsService.archiveLabel(idRaw);
+  async voidLabel(
+    @Param('id') idRaw: string,
+    @Body() body: { reason?: string; performed_by?: string } = {},
+  ) {
+    return this.ulLabelsService.voidLabel(idRaw, body.reason, body.performed_by);
   }
 
-  @Delete(':id')
-  @Permissions('delete')
-  async deleteLabel(@Param('id') idRaw?: string) {
-    return this.ulLabelsService.deleteLabel(idRaw);
+  @Post(':id/write-off')
+  @Permissions('write')
+  async writeOffLabel(
+    @Param('id') idRaw: string,
+    @Body() body: { reason: 'Damaged' | 'Lost' | 'Other'; notes?: string; performed_by: string },
+  ) {
+    return this.ulLabelsService.writeOffLabel(idRaw, body.reason, body.notes, body.performed_by ?? 'system');
+  }
+
+  @Patch(':id/restore-available')
+  @Roles('admin')
+  @Permissions('write')
+  async restoreLabelAvailability(
+    @Param('id') idRaw: string,
+    @Body() body: { reason?: string; performed_by?: string } = {},
+  ) {
+    return this.ulLabelsService.restoreLabelAvailability(idRaw, body.reason, body.performed_by ?? 'system');
   }
 
   @Post('bulk')
@@ -97,14 +123,21 @@ export class UlLabelsController {
 
   @Post('usages')
   @Permissions('write')
-  async createUsage(@Body() body: Record<string, unknown> = {}) {
-    return this.ulLabelsService.createUsage(body);
+  async createUsage(
+    @Body() body: Record<string, unknown> = {},
+    @CurrentUserId() currentUserId: number,
+  ) {
+    return this.ulLabelsService.createUsage(body, currentUserId);
   }
 
   @Put('usages/:id')
   @Permissions('write')
-  async updateUsage(@Param('id') idRaw?: string, @Body() body: Record<string, unknown> = {}) {
-    return this.ulLabelsService.updateUsage(idRaw, body);
+  async updateUsage(
+    @Param('id') idRaw?: string,
+    @Body() body: Record<string, unknown> = {},
+    @CurrentUserId() currentUserId: number = 0,
+  ) {
+    return this.ulLabelsService.updateUsage(idRaw, body, currentUserId);
   }
 
   @Delete('usages/:id')

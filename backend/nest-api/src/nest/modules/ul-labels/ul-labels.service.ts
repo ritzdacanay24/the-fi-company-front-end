@@ -45,7 +45,7 @@ export class UlLabelsService {
     }
   }
 
-  async createLabel(body: Record<string, unknown>): Promise<ApiResponse<{ id: number }>> {
+  async createLabel(body: Record<string, unknown>, currentUserId?: number): Promise<ApiResponse<{ id: number }>> {
     const ulNumber = String(body.ul_number || '').trim();
     if (!ulNumber) {
       return { success: false, message: 'ul_number is required' };
@@ -58,7 +58,7 @@ export class UlLabelsService {
     const certificationDate = this.toNullableString(body.certification_date);
     const expiryDate = this.toNullableString(body.expiry_date);
     const status = String(body.status || 'active');
-    const createdBy = Number(body.created_by || 1);
+    const createdBy = Number(currentUserId) > 0 ? Number(currentUserId) : Number(body.created_by || 1);
 
     try {
       const result = await this.mysqlService.execute<ResultSetHeader>(
@@ -93,7 +93,7 @@ export class UlLabelsService {
     }
   }
 
-  async updateLabel(idRaw: string | undefined, body: Record<string, unknown>): Promise<ApiResponse> {
+  async updateLabel(idRaw: string | undefined, body: Record<string, unknown>, currentUserId?: number): Promise<ApiResponse> {
     const id = Number(idRaw);
     if (!Number.isFinite(id) || id <= 0) {
       return { success: false, message: 'ID is required for update' };
@@ -121,10 +121,8 @@ export class UlLabelsService {
     }
 
     assignments.push('updated_at = NOW()');
-    if (Object.prototype.hasOwnProperty.call(body, 'updated_by')) {
-      assignments.push('updated_by = ?');
-      values.push(Number(body.updated_by || 1));
-    }
+    assignments.push('updated_by = ?');
+    values.push(Number(currentUserId) > 0 ? Number(currentUserId) : Number(body.updated_by || 1));
 
     if (assignments.length === 1) {
       return { success: false, message: 'No updatable fields provided' };
@@ -154,27 +152,158 @@ export class UlLabelsService {
     }
   }
 
-  async archiveLabel(idRaw?: string): Promise<ApiResponse> {
+  async voidLabel(idRaw?: string, reason?: string, performedBy?: string): Promise<ApiResponse> {
     const id = Number(idRaw);
     if (!Number.isFinite(id) || id <= 0) {
-      return { success: false, message: 'ID is required for archive' };
+      return { success: false, message: 'ID is required' };
     }
 
     try {
-      const result = await this.mysqlService.execute<ResultSetHeader>(
-        `UPDATE ul_labels SET status = 'archived' WHERE id = ?`,
+      const assignmentRows = await this.mysqlService.query<Array<RowDataPacket & { id: number }>>(
+        'SELECT id FROM serial_assignments WHERE ul_label_id = ? LIMIT 1',
         [id],
       );
-
-      if (result.affectedRows === 0) {
-        return { success: false, message: 'UL label not found' };
+      if (assignmentRows.length > 0) {
+        return {
+          success: false,
+          message: 'Cannot mark as used. UL label is already linked to a serial assignment.',
+        };
       }
-
-      return { success: true, message: 'UL label archived successfully' };
     } catch (error) {
       return {
         success: false,
-        message: `Error archiving UL label: ${this.getErrorMessage(error)}`,
+        message: `Error validating serial assignment link: ${this.getErrorMessage(error)}`,
+      };
+    }
+
+    const consumedBy = reason
+      ? `${reason} (${performedBy ?? 'system'})`
+      : (performedBy ?? null);
+
+    try {
+      const result = await this.mysqlService.execute<ResultSetHeader>(
+        `UPDATE ul_labels SET is_consumed = 1, consumed_at = NOW(), consumed_by = ? WHERE id = ? AND COALESCE(is_consumed, 0) = 0`,
+        [consumedBy, id],
+      );
+
+      if (result.affectedRows === 0) {
+        return { success: false, message: 'UL label not found or already consumed' };
+      }
+
+      return { success: true, message: 'UL label marked as used' };
+    } catch (error) {
+      return {
+        success: false,
+        message: `Error marking UL label as used: ${this.getErrorMessage(error)}`,
+      };
+    }
+  }
+
+  async writeOffLabel(
+    idRaw: string,
+    reason: 'Damaged' | 'Lost' | 'Other',
+    notes: string | undefined,
+    performedBy: string,
+  ): Promise<ApiResponse> {
+    const id = Number(idRaw);
+    if (!Number.isFinite(id) || id <= 0) {
+      return { success: false, message: 'ID is required' };
+    }
+    if (!reason) {
+      return { success: false, message: 'Reason is required' };
+    }
+
+    try {
+      const assignmentRows = await this.mysqlService.query<Array<RowDataPacket & { id: number }>>(
+        'SELECT id FROM serial_assignments WHERE ul_label_id = ? LIMIT 1',
+        [id],
+      );
+      if (assignmentRows.length > 0) {
+        return {
+          success: false,
+          message: 'Cannot write off. UL label is already linked to a serial assignment.',
+        };
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: `Error validating serial assignment link: ${this.getErrorMessage(error)}`,
+      };
+    }
+
+    const consumedBy = notes?.trim()
+      ? `WRITE-OFF:${reason} - ${notes.trim()} (${performedBy})`
+      : `WRITE-OFF:${reason} (${performedBy})`;
+
+    try {
+      const result = await this.mysqlService.execute<ResultSetHeader>(
+        `UPDATE ul_labels
+         SET is_consumed = 1, consumed_at = NOW(), consumed_by = ?
+         WHERE id = ? AND COALESCE(is_consumed, 0) = 0`,
+        [consumedBy, id],
+      );
+
+      if (result.affectedRows === 0) {
+        return { success: false, message: 'UL label not found or already consumed' };
+      }
+
+      return { success: true, message: `UL label written off: ${reason}` };
+    } catch (error) {
+      return {
+        success: false,
+        message: `Error writing off UL label: ${this.getErrorMessage(error)}`,
+      };
+    }
+  }
+
+  async restoreLabelAvailability(idRaw: string, reason?: string, performedBy?: string): Promise<ApiResponse> {
+    const id = Number(idRaw);
+    if (!Number.isFinite(id) || id <= 0) {
+      return { success: false, message: 'ID is required' };
+    }
+
+    try {
+      const assignmentRows = await this.mysqlService.query<Array<RowDataPacket & { id: number }>>(
+        'SELECT id FROM serial_assignments WHERE ul_label_id = ? LIMIT 1',
+        [id],
+      );
+      if (assignmentRows.length > 0) {
+        return {
+          success: false,
+          message: 'Cannot restore. UL label is linked to a serial assignment.',
+        };
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: `Error validating serial assignment link: ${this.getErrorMessage(error)}`,
+      };
+    }
+
+    const restoredBy = reason
+      ? `RESTORED:${reason} (${performedBy ?? 'system'})`
+      : `RESTORED (${performedBy ?? 'system'})`;
+
+    try {
+      const result = await this.mysqlService.execute<ResultSetHeader>(
+        `UPDATE ul_labels
+         SET is_consumed = 0,
+             consumed_at = NULL,
+             consumed_by = ?,
+             status = 'active'
+         WHERE id = ? AND COALESCE(is_consumed, 0) = 1`,
+        [restoredBy, id],
+      );
+
+      if (result.affectedRows === 0) {
+        return { success: false, message: 'UL label not found or already available' };
+      }
+
+      return { success: true, message: 'UL label restored to available' };
+    } catch (error) {
+      return {
+        success: false,
+        message: `Error restoring UL label: ${this.getErrorMessage(error)}`,
       };
     }
   }
@@ -383,7 +512,7 @@ export class UlLabelsService {
     }
   }
 
-  async createUsage(body: Record<string, unknown>): Promise<ApiResponse<{ id: number }>> {
+  async createUsage(body: Record<string, unknown>, currentUserId?: number): Promise<ApiResponse<{ id: number }>> {
     const required = ['ul_label_id', 'ul_number', 'eyefi_serial_number', 'date_used', 'user_signature', 'user_name'];
     for (const field of required) {
       const value = body[field];
@@ -433,7 +562,7 @@ export class UlLabelsService {
           this.toNullableString(body.wo_routing),
           this.toNullableString(body.wo_line),
           this.toNullableString(body.wo_description),
-          this.toNullableNumber(body.created_by) || 1,
+          Number(currentUserId) > 0 ? Number(currentUserId) : (this.toNullableNumber(body.created_by) || 1),
         ],
       );
 
@@ -451,7 +580,7 @@ export class UlLabelsService {
     }
   }
 
-  async updateUsage(idRaw: string | undefined, body: Record<string, unknown>): Promise<ApiResponse<{ id: number }>> {
+  async updateUsage(idRaw: string | undefined, body: Record<string, unknown>, currentUserId?: number): Promise<ApiResponse<{ id: number }>> {
     const id = Number(idRaw);
     if (!Number.isFinite(id) || id <= 0) {
       return { success: false, message: 'ID required for update', error: 'INVALID_REQUEST' };
@@ -493,7 +622,7 @@ export class UlLabelsService {
           this.toNullableString(body.wo_routing),
           this.toNullableString(body.wo_line),
           this.toNullableString(body.wo_description),
-          this.toNullableNumber(body.updated_by) || 1,
+          Number(currentUserId) > 0 ? Number(currentUserId) : (this.toNullableNumber(body.updated_by) || 1),
           id,
         ],
       );
@@ -1049,24 +1178,14 @@ export class UlLabelsService {
     const params: unknown[] = [];
     const where: string[] = ['1=1'];
 
-    const useLeftJoin = String(filters.available).toLowerCase() === 'true';
+    const filterAvailable = String(filters.available).toLowerCase() === 'true';
     let sql = `
-      SELECT
-        ul.*,
-        COALESCE((
-          SELECT SUM(quantity_used)
-          FROM ul_label_usages
-          WHERE ul_number = ul.ul_number
-            AND (status IS NULL OR status != 'deleted')
-            AND (is_voided IS NULL OR is_voided = 0)
-        ), 0) AS total_used
+      SELECT ul.*
       FROM ul_labels ul
     `;
 
-    if (useLeftJoin) {
-      sql += ' LEFT JOIN ul_label_usages ulu ON ul.id = ulu.ul_label_id AND (ulu.is_voided IS NULL OR ulu.is_voided = 0)';
-      where.push("ul.status = 'active'");
-      where.push('ulu.id IS NULL');
+    if (filterAvailable) {
+      where.push('COALESCE(ul.is_consumed, 0) = 0');
     }
 
     const id = Number(filters.id);
