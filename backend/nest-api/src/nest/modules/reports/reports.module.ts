@@ -11,6 +11,6 @@ import { DailyReportRepository } from './daily-report.repository';
   imports: [MysqlModule],
   controllers: [ReportsController, OperationsLogisticsController],
   providers: [ReportsService, ReportsRepository, DailyReportService, DailyReportRepository],
-  exports: [ReportsService],
+  exports: [ReportsService, DailyReportService],
 })
 export class ReportsModule {}

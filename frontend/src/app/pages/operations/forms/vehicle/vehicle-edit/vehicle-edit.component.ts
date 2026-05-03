@@ -161,6 +161,30 @@ export class VehicleEditComponent {
     { field: "date_of_service", headerName: "Date of Service", filter: "agMultiColumnFilter", editable: true, cellEditor: 'agDateStringCellEditor', },
     { field: "type_of_work_completed", headerName: "Type of Work Completed", filter: "agMultiColumnFilter", editable: true },
     { field: "createdDate", headerName: "Created Date", filter: "agMultiColumnFilter" },
+    {
+      headerName: "Delete",
+      field: "delete",
+      pinned: "right",
+      maxWidth: 120,
+      minWidth: 120,
+      sortable: false,
+      filter: false,
+      cellRenderer: (params: any) => {
+        if (!params?.data?.id) {
+          return "";
+        }
+
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "btn btn-sm btn-outline-danger";
+        btn.innerHTML = '<i class="mdi mdi-delete-outline me-1"></i>Delete';
+        btn.addEventListener("click", (event) => {
+          event.stopPropagation();
+          this.deleteAttachment(params.data.id);
+        });
+        return btn;
+      },
+    },
   ]
 
 
@@ -229,17 +253,20 @@ export class VehicleEditComponent {
       field: "Vehicle Information",
       uniqueId: this.id,
     });
+    this.gridApi?.setGridOption("rowData", this.attachments || []);
+    this.ref.detectChanges();
   }
 
-  async deleteAttachment(id, index) {
+  async deleteAttachment(id) {
     if (!confirm("Are you sure you want to remove attachment?")) return;
     await this.attachmentsService.delete(id);
-    this.attachments.splice(index, 1);
+    await this.getAttachments();
+    this.toastrService.success("Attachment deleted");
   }
 
   file: File = null;
 
-  myFiles: string[] = [];
+  myFiles: File[] = [];
 
   onFilechange(event: any) {
     this.myFiles = [];
@@ -253,11 +280,12 @@ export class VehicleEditComponent {
   @ViewChild("userPhoto") userPhoto!: ElementRef;
   clearFile() {
     this.file = null;
+    this.myFiles = [];
     this.userPhoto.nativeElement.value = null;
   }
 
   async onUploadAttachments() {
-    if (this.myFiles) {
+    if (this.myFiles?.length) {
       let totalAttachments = 0;
       this.isLoading = true;
       for (var i = 0; i < this.myFiles.length; i++) {
@@ -273,8 +301,11 @@ export class VehicleEditComponent {
         } catch (err) { }
       }
       this.isLoading = false;
-      this.clearFile()
+      this.clearFile();
       await this.getAttachments();
+      if (totalAttachments > 0) {
+        this.toastrService.success(`Uploaded ${totalAttachments} attachment${totalAttachments > 1 ? "s" : ""}`);
+      }
     }
   }
 }

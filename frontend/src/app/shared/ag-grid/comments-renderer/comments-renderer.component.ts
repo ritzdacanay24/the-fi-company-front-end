@@ -71,7 +71,8 @@ export class CommentsRendererComponent implements ICellRendererAngularComp {
               -webkit-line-clamp: 4;
               overflow: hidden;
               text-overflow: ellipsis;
-              white-space: normal;"  
+              white-space: normal;
+              max-width: 500px;"  
               class="blockquote p-0 ps-2 mb-0">
                 <p>${this.recent_comments?.comments}</p>
                 </div>

@@ -51,6 +51,9 @@ export class PermitChecklistsService extends DataService<any> {
       })
     );
 
+  removeAttachment = async (ticketId: string, attachmentId: string): Promise<any> =>
+    await firstValueFrom(this.http.post(`${url}/remove-attachment`, { ticketId, attachmentId }));
+
   syncTransactions = async (transactions: any[]): Promise<any> =>
     await firstValueFrom(this.http.post(`${url}/sync-transactions`, { transactions }));
 }

@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import { CurrentUserId } from '@/nest/decorators/current-user-id.decorator';
 import { Permissions, RolePermissionGuard } from '../access-control';
 import { CommentsService } from './comments.service';
 
@@ -19,11 +20,11 @@ export class CommentsController {
   @Post('create')
   @Permissions('write')
   async create(
+    @CurrentUserId() currentUserId: number,
     @Body()
     payload: {
       comments?: string;
       orderNum?: string;
-      userId?: number | string;
       type?: string;
       locationPath?: string;
       pageName?: string;
@@ -31,12 +32,15 @@ export class CommentsController {
       pid?: string | number | null;
     },
   ) {
-    return this.service.create(payload);
+    return this.service.create(payload, currentUserId);
   }
 
   @Post('delete')
-  @Permissions('delete')
-  async delete(@Body() payload: { id?: number | string; active?: number | string }) {
-    return this.service.delete(payload);
+  @Permissions('write')
+  async delete(
+    @CurrentUserId() currentUserId: number,
+    @Body() payload: { id?: number | string; active?: number | string },
+  ) {
+    return this.service.delete(payload, currentUserId);
   }
 }

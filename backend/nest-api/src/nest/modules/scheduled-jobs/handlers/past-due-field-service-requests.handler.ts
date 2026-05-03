@@ -151,7 +151,11 @@ export class PastDueFieldServiceRequestsHandler implements ScheduledJobHandler {
     } catch (error: unknown) {
       const durationMs = Date.now() - startedAtMs;
       const message = error instanceof Error ? error.message : String(error);
+      const odbcErrors = (error as Record<string, unknown>)?.odbcErrors;
       this.logger.error(`[${trigger}] past-due-field-service-requests failed in ${durationMs}ms: ${message}`);
+      if (odbcErrors) {
+        this.logger.error(`[${trigger}] past-due-field-service-requests ODBC errors: ${JSON.stringify(odbcErrors, null, 2)}`);
+      }
 
       return {
         id: 'past-due-field-service-requests',

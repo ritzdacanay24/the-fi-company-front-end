@@ -254,8 +254,6 @@ export class MasterControlService {
       `;
     }
 
-    sql += ' WITH (NOLOCK)';
-
     return this.qadOdbcService.query<MasterRow[]>(sql, { keyCase: 'upper' });
   }
 

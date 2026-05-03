@@ -1,4 +1,4 @@
-import { Component, Input } from "@angular/core";
+import { Component, Input, ChangeDetectorRef } from "@angular/core";
 import { SharedModule } from "@app/shared/shared.module";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ToastrService } from "ngx-toastr";
@@ -25,7 +25,8 @@ export class VehicleInspectionCreateComponent {
     private api: VehicleInspectionService,
     private toastrService: ToastrService,
     private authenticationService: AuthenticationService,
-    private uploadService: UploadService
+    private uploadService: UploadService,
+    private cdr: ChangeDetectorRef
   ) {
 
     this.activatedRoute.queryParams.subscribe((params) => {
@@ -89,6 +90,31 @@ export class VehicleInspectionCreateComponent {
 
   useSplitSidePhotos = false;
 
+  selectedPhotoSlot: 'front' | 'rear' | 'left' | 'right' | 'left_front' | 'left_rear' | 'right_front' | 'right_rear' = 'front';
+
+  get photoSlots(): { key: 'front' | 'rear' | 'left' | 'right' | 'left_front' | 'left_rear' | 'right_front' | 'right_rear'; label: string }[] {
+    if (this.useSplitSidePhotos) {
+      return [
+        { key: 'front', label: 'Front View' },
+        { key: 'rear', label: 'Rear View' },
+        { key: 'left_front', label: 'Left Side (Front)' },
+        { key: 'left_rear', label: 'Left Side (Rear)' },
+        { key: 'right_front', label: 'Right Side (Front)' },
+        { key: 'right_rear', label: 'Right Side (Rear)' },
+      ];
+    }
+    return [
+      { key: 'front', label: 'Front View' },
+      { key: 'rear', label: 'Rear View' },
+      { key: 'left', label: 'Left Side View' },
+      { key: 'right', label: 'Right Side View' },
+    ];
+  }
+
+  get anyCaptured(): boolean {
+    return this.photoSlots.some(s => !!this.vehiclePhotos[s.key]);
+  }
+
   vehiclePhotos: {
     front: File | null,
     rear: File | null,
@@ -138,20 +164,38 @@ export class VehicleInspectionCreateComponent {
   ) {
     const file = event.target.files[0];
     if (file) {
-      this.vehiclePhotos[position] = file;
-      
+      this.vehiclePhotos = { ...this.vehiclePhotos, [position]: file };
+
       // Create preview
       const reader = new FileReader();
       reader.onload = (e: any) => {
-        this.vehiclePhotoPreviews[position] = e.target.result;
+        this.vehiclePhotoPreviews = { ...this.vehiclePhotoPreviews, [position]: e.target.result };
       };
       reader.readAsDataURL(file);
+
+      // Clear the input so the same angle can be re-captured
+      event.target.value = '';
+
+      // Auto-advance to next uncaptured slot
+      const nextEmpty = this.photoSlots.find(s => s.key !== position && !this.vehiclePhotos[s.key]);
+      if (nextEmpty) {
+        this.selectedPhotoSlot = nextEmpty.key;
+      }
     }
   }
 
+  onSplitModeChange(): void {
+    this.selectedPhotoSlot = 'front';
+  }
+
+  trackBySlotKey(_: number, slot: { key: string }): string {
+    return slot.key;
+  }
+
   removeVehiclePhoto(position: 'front' | 'rear' | 'left' | 'right' | 'left_front' | 'left_rear' | 'right_front' | 'right_rear') {
-    this.vehiclePhotos[position] = null;
-    this.vehiclePhotoPreviews[position] = null;
+    this.vehiclePhotos = { ...this.vehiclePhotos, [position]: null };
+    this.vehiclePhotoPreviews = { ...this.vehiclePhotoPreviews, [position]: null };
+    this.cdr.detectChanges();
   }
 
   onAdditionalVehiclePhotosChange(event: any) {

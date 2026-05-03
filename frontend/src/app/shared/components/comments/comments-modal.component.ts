@@ -120,6 +120,14 @@ export class DateAgoPipe implements PipeTransform {
 })
 export class CommentsModalComponent implements OnInit {
 
+  canDeleteComment(row: { userId?: number | string } | undefined): boolean {
+    const rowUserId = Number(row?.userId);
+    const currentUserId = Number(this.userInfo?.id);
+    const isOwner = Number.isInteger(rowUserId) && Number.isInteger(currentUserId) && rowUserId === currentUserId;
+    const isAdmin = !!this.userInfo?.isAdmin;
+    return isOwner || isAdmin;
+  }
+
   onResizeEnd(event: ResizeEvent): void {
   }
 
@@ -272,6 +280,7 @@ export class CommentsModalComponent implements OnInit {
       deleteComment: 1,
       active: 0,
       id: id,
+      user_id: this.userInfo?.id,
     };
     this.commentsService.deleteComment(params, this.type).subscribe(
       (data: any) => {

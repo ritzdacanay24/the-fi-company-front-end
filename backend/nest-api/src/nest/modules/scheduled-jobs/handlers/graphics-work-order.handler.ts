@@ -84,7 +84,11 @@ export class GraphicsWorkOrderHandler implements ScheduledJobHandler {
     } catch (error: unknown) {
       const durationMs = Date.now() - startedAtMs;
       const message = error instanceof Error ? error.message : String(error);
+      const odbcErrors = (error as Record<string, unknown>)?.odbcErrors;
       this.logger.error(`[${trigger}] graphics-work-order failed in ${durationMs}ms: ${message}`);
+      if (odbcErrors) {
+        this.logger.error(`[${trigger}] graphics-work-order ODBC errors: ${JSON.stringify(odbcErrors, null, 2)}`);
+      }
 
       return {
         id: 'graphics-work-order',

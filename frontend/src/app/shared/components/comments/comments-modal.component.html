@@ -46,7 +46,7 @@
         </div>
         <span class="ms-auto">{{row.createdDate | dateAgo}} </span>
         <i class="mdi mdi-trash-can-outline text-danger pointer ms-3" (click)="deleteComment(row.id)"
-          *ngIf="row.userId == userInfo?.id"></i>
+          *ngIf="canDeleteComment(row)"></i>
       </div>
     </div>
     <div class="card-body">
@@ -72,11 +72,11 @@
               <p class="text-muted mb-0" [class.text-success]="row1.insert">{{row1.createdDate | dateAgo}}</p>
             </div>
             <i class="mdi mdi-trash-can-outline text-danger pointer ms-3" (click)="deleteComment(row1.id, row.childs)"
-              *ngIf="row1.userId == userInfo?.id"></i>
+              *ngIf="canDeleteComment(row1)"></i>
           </div>
 
           <i class="mdi mdi-trash-can-outline-2 text-danger mr-3 float-right pointer"
-            (click)="deleteComment(row1.id, row.childs)" *ngIf="row1.userId == userInfo?.id"></i>
+            (click)="deleteComment(row1.id, row.childs)" *ngIf="canDeleteComment(row1)"></i>
         </li>
       </ul>
       <span *ngIf="row.childs?.length > 0" class="text-muted">{{row.childs?.length}}

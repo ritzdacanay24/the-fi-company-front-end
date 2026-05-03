@@ -65,12 +65,17 @@ export class WorkOrderOwnerService {
     userId: number,
     connection: PoolConnection,
   ): Promise<void> {
+    const so = String(payload.so || '').trim();
+    if (!so) {
+      throw new Error('SO (Sales Order) is required to create new owner record');
+    }
+
     const fields = this.extractFields(payload);
     const now = this.nowDateTime();
 
     const row: GenericRow = {
       ...fields,
-      so: String(payload.so || ''),
+      so: so,
       createdDate: now,
       createdBy: userId,
     };
@@ -79,7 +84,7 @@ export class WorkOrderOwnerService {
 
     const transactions: Array<Record<string, unknown>> = [
       this.userTransactionsService.buildNewRecordTransaction(
-        String(payload.so || ''),
+        so,
         userId,
         'Sales Order Shipping',
       ),
@@ -90,7 +95,7 @@ export class WorkOrderOwnerService {
         field: 'Updated Owner',
         o: '',
         n: fields.userName,
-        so: String(payload.so || ''),
+        so: so,
         type: 'Sales Order Shipping',
         userId,
         comment: '',

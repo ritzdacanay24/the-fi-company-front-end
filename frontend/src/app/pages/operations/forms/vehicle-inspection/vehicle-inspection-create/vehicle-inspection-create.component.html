@@ -39,7 +39,7 @@
 
             <div class="mb-3">
               <div class="form-check form-switch">
-                <input class="form-check-input" type="checkbox" id="splitSidePhotos" [(ngModel)]="useSplitSidePhotos" [ngModelOptions]="{standalone: true}">
+                <input class="form-check-input" type="checkbox" id="splitSidePhotos" [(ngModel)]="useSplitSidePhotos" [ngModelOptions]="{standalone: true}" (ngModelChange)="onSplitModeChange()">
                 <label class="form-check-label" for="splitSidePhotos">
                   Long vehicle (capture two photos per side)
                 </label>
@@ -47,172 +47,54 @@
               <div class="form-text">Enable this for box trucks or long vehicles that need front/rear side shots.</div>
             </div>
             
-            <div class="row g-3">
-              <!-- Front View -->
-              <div class="col-md-6">
-                <div class="card h-100">
-                  <div class="card-body">
-                    <label class="form-label fw-semibold">
-                      <i class="mdi mdi-car-front text-primary me-2"></i>Front View
-                      <span class="text-danger">*</span>
-                    </label>
-                          <input type="file" accept="image/*" capture="environment" class="form-control mb-2" 
-                           (change)="onVehiclePhotoChange($event, 'front')">
-                    <div *ngIf="vehiclePhotos.front" class="mt-2">
-                      <img [src]="vehiclePhotoPreviews.front" class="img-thumbnail" style="max-height: 150px; max-width: 100%;">
-                      <button type="button" class="btn btn-sm btn-outline-danger mt-1" (click)="removeVehiclePhoto('front')">
-                        <i class="mdi mdi-close"></i> Remove
-                      </button>
-                    </div>
-                  </div>
-                </div>
+            <!-- Angle selector + capture row -->
+            <div class="row g-2 mb-3 align-items-end">
+              <div class="col-12 col-sm-6">
+                <label class="form-label fw-semibold mb-1">
+                  <i class="mdi mdi-camera-outline me-1"></i>Select View Angle
+                </label>
+                <select class="form-select" [(ngModel)]="selectedPhotoSlot" [ngModelOptions]="{standalone: true}">
+                  <option *ngFor="let slot of photoSlots" [ngValue]="slot.key">
+                    {{ vehiclePhotos[slot.key] ? '\u2713 ' : '' }}{{ slot.label }}
+                  </option>
+                </select>
               </div>
-
-              <!-- Rear View -->
-              <div class="col-md-6">
-                <div class="card h-100">
-                  <div class="card-body">
-                    <label class="form-label fw-semibold">
-                      <i class="mdi mdi-car-back text-primary me-2"></i>Rear View
-                      <span class="text-danger">*</span>
-                    </label>
-                          <input type="file" accept="image/*" capture="environment" class="form-control mb-2" 
-                           (change)="onVehiclePhotoChange($event, 'rear')">
-                    <div *ngIf="vehiclePhotos.rear" class="mt-2">
-                      <img [src]="vehiclePhotoPreviews.rear" class="img-thumbnail" style="max-height: 150px; max-width: 100%;">
-                      <button type="button" class="btn btn-sm btn-outline-danger mt-1" (click)="removeVehiclePhoto('rear')">
-                        <i class="mdi mdi-close"></i> Remove
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Left Side View (Single) -->
-              <div class="col-md-6" *ngIf="!useSplitSidePhotos">
-                <div class="card h-100">
-                  <div class="card-body">
-                    <label class="form-label fw-semibold">
-                      <i class="mdi mdi-car-side text-primary me-2"></i>Left Side View
-                      <span class="text-danger">*</span>
-                    </label>
-                          <input type="file" accept="image/*" capture="environment" class="form-control mb-2" 
-                           (change)="onVehiclePhotoChange($event, 'left')">
-                    <div *ngIf="vehiclePhotos.left" class="mt-2">
-                      <img [src]="vehiclePhotoPreviews.left" class="img-thumbnail" style="max-height: 150px; max-width: 100%;">
-                      <button type="button" class="btn btn-sm btn-outline-danger mt-1" (click)="removeVehiclePhoto('left')">
-                        <i class="mdi mdi-close"></i> Remove
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Right Side View (Single) -->
-              <div class="col-md-6" *ngIf="!useSplitSidePhotos">
-                <div class="card h-100">
-                  <div class="card-body">
-                    <label class="form-label fw-semibold">
-                      <i class="mdi mdi-car-side text-primary me-2" style="transform: scaleX(-1); display: inline-block;"></i>Right Side View
-                      <span class="text-danger">*</span>
-                    </label>
-                          <input type="file" accept="image/*" capture="environment" class="form-control mb-2" 
-                           (change)="onVehiclePhotoChange($event, 'right')">
-                    <div *ngIf="vehiclePhotos.right" class="mt-2">
-                      <img [src]="vehiclePhotoPreviews.right" class="img-thumbnail" style="max-height: 150px; max-width: 100%;">
-                      <button type="button" class="btn btn-sm btn-outline-danger mt-1" (click)="removeVehiclePhoto('right')">
-                        <i class="mdi mdi-close"></i> Remove
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Left Side View (Front) -->
-              <div class="col-md-6" *ngIf="useSplitSidePhotos">
-                <div class="card h-100">
-                  <div class="card-body">
-                    <label class="form-label fw-semibold">
-                      <i class="mdi mdi-car-side text-primary me-2"></i>Left Side (Front)
-                      <span class="text-danger">*</span>
-                    </label>
-                          <input type="file" accept="image/*" capture="environment" class="form-control mb-2" 
-                           (change)="onVehiclePhotoChange($event, 'left_front')">
-                    <div *ngIf="vehiclePhotos.left_front" class="mt-2">
-                      <img [src]="vehiclePhotoPreviews.left_front" class="img-thumbnail" style="max-height: 150px; max-width: 100%;">
-                      <button type="button" class="btn btn-sm btn-outline-danger mt-1" (click)="removeVehiclePhoto('left_front')">
-                        <i class="mdi mdi-close"></i> Remove
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Left Side View (Rear) -->
-              <div class="col-md-6" *ngIf="useSplitSidePhotos">
-                <div class="card h-100">
-                  <div class="card-body">
-                    <label class="form-label fw-semibold">
-                      <i class="mdi mdi-car-side text-primary me-2"></i>Left Side (Rear)
-                      <span class="text-danger">*</span>
-                    </label>
-                          <input type="file" accept="image/*" capture="environment" class="form-control mb-2" 
-                           (change)="onVehiclePhotoChange($event, 'left_rear')">
-                    <div *ngIf="vehiclePhotos.left_rear" class="mt-2">
-                      <img [src]="vehiclePhotoPreviews.left_rear" class="img-thumbnail" style="max-height: 150px; max-width: 100%;">
-                      <button type="button" class="btn btn-sm btn-outline-danger mt-1" (click)="removeVehiclePhoto('left_rear')">
-                        <i class="mdi mdi-close"></i> Remove
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Right Side View (Front) -->
-              <div class="col-md-6" *ngIf="useSplitSidePhotos">
-                <div class="card h-100">
-                  <div class="card-body">
-                    <label class="form-label fw-semibold">
-                      <i class="mdi mdi-car-side text-primary me-2" style="transform: scaleX(-1); display: inline-block;"></i>Right Side (Front)
-                      <span class="text-danger">*</span>
-                    </label>
-                          <input type="file" accept="image/*" capture="environment" class="form-control mb-2" 
-                           (change)="onVehiclePhotoChange($event, 'right_front')">
-                    <div *ngIf="vehiclePhotos.right_front" class="mt-2">
-                      <img [src]="vehiclePhotoPreviews.right_front" class="img-thumbnail" style="max-height: 150px; max-width: 100%;">
-                      <button type="button" class="btn btn-sm btn-outline-danger mt-1" (click)="removeVehiclePhoto('right_front')">
-                        <i class="mdi mdi-close"></i> Remove
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Right Side View (Rear) -->
-              <div class="col-md-6" *ngIf="useSplitSidePhotos">
-                <div class="card h-100">
-                  <div class="card-body">
-                    <label class="form-label fw-semibold">
-                      <i class="mdi mdi-car-side text-primary me-2" style="transform: scaleX(-1); display: inline-block;"></i>Right Side (Rear)
-                      <span class="text-danger">*</span>
-                    </label>
-                          <input type="file" accept="image/*" capture="environment" class="form-control mb-2" 
-                           (change)="onVehiclePhotoChange($event, 'right_rear')">
-                    <div *ngIf="vehiclePhotos.right_rear" class="mt-2">
-                      <img [src]="vehiclePhotoPreviews.right_rear" class="img-thumbnail" style="max-height: 150px; max-width: 100%;">
-                      <button type="button" class="btn btn-sm btn-outline-danger mt-1" (click)="removeVehiclePhoto('right_rear')">
-                        <i class="mdi mdi-close"></i> Remove
-                      </button>
-                    </div>
-                  </div>
-                </div>
+              <div class="col-12 col-sm-6">
+                <label class="form-label fw-semibold mb-1">Capture / Upload</label>
+                <input type="file" accept="image/*" capture="environment" class="form-control"
+                       (change)="onVehiclePhotoChange($event, selectedPhotoSlot)">
               </div>
             </div>
-            
-            <div class="alert alert-info mt-3">
-              <i class="mdi mdi-information-outline me-2"></i>
-              <small *ngIf="!useSplitSidePhotos">All four vehicle photos are required to complete the inspection.</small>
-              <small *ngIf="useSplitSidePhotos">All six vehicle photos are required to complete the inspection.</small>
+
+            <!-- Slot status badges -->
+            <div class="d-flex flex-wrap gap-2 mb-3">
+              <span *ngFor="let slot of photoSlots"
+                    class="badge rounded-pill px-3 py-2"
+                    style="font-size:0.8rem; cursor:pointer; user-select:none;"
+                    [ngClass]="vehiclePhotos[slot.key] ? 'bg-success' : 'bg-light text-dark border'"
+                    (click)="selectedPhotoSlot = slot.key">
+                <i class="mdi me-1" [ngClass]="vehiclePhotos[slot.key] ? 'mdi-check-circle-outline' : 'mdi-circle-outline'"></i>
+                {{ slot.label }}
+              </span>
+            </div>
+
+            <!-- Captured thumbnails -->
+            <div class="row g-2 mb-3" *ngIf="anyCaptured">
+              <ng-container *ngFor="let slot of photoSlots; trackBy: trackBySlotKey">
+                <div class="col-6 col-sm-4 col-md-3" *ngIf="vehiclePhotos[slot.key]">
+                  <div class="card border-success">
+                    <img [src]="vehiclePhotoPreviews[slot.key]" class="card-img-top"
+                         style="height:90px; object-fit:cover;">
+                    <div class="card-body p-2 text-center">
+                      <small class="d-block fw-semibold mb-1" style="font-size:0.7rem; line-height:1.2;">{{ slot.label }}</small>
+                      <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2"
+                              (click)="removeVehiclePhoto(slot.key)">
+                        <i class="mdi mdi-close me-1"></i>Remove
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </ng-container>
             </div>
 
             <div class="mt-4 pt-3 border-top">

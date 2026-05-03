@@ -6,7 +6,6 @@ import { EmailService } from '@/shared/email/email.service';
 import { SCHEDULED_JOB_DEFINITIONS } from './scheduled-jobs.definitions';
 import { ScheduledJobHandler } from './handlers/scheduled-job.handler';
 import {
-  CleanTokensHandler,
   CleanUsersHandler,
   FieldServiceOldWorkOrdersHandler,
   PastDueFieldServiceRequestsHandler,
@@ -14,15 +13,12 @@ import {
   VehicleExpirationEmailHandler,
   LnwDeliveryHandler,
   InspectionEmailHandler,
-  CertificateOfComplianceHandler,
   CompletedProductionOrdersHandler,
   OverdueOrdersHandler,
   GraphicsWorkOrderHandler,
   MenuBadgeCacheRefreshHandler,
-  CleanDbSessionsHandler,
   DashboardPerformanceHandler,
   TotalShippedOrdersHandler,
-  ShippingChangesHandler,
   DailyReportInsertHandler,
   OpenShippingRequestsHandler,
   GraphicsDueTodayReportHandler,
@@ -78,7 +74,6 @@ export class ScheduledJobsService {
     private readonly mysqlService: MysqlService,
     private readonly emailService: EmailService,
     private readonly configService: ConfigService,
-    private readonly cleanTokensHandler: CleanTokensHandler,
     private readonly cleanUsersHandler: CleanUsersHandler,
     private readonly fieldServiceOldWorkOrdersHandler: FieldServiceOldWorkOrdersHandler,
     private readonly pastDueFieldServiceRequestsHandler: PastDueFieldServiceRequestsHandler,
@@ -86,15 +81,12 @@ export class ScheduledJobsService {
     private readonly vehicleExpirationEmailHandler: VehicleExpirationEmailHandler,
     private readonly lnwDeliveryHandler: LnwDeliveryHandler,
     private readonly inspectionEmailHandler: InspectionEmailHandler,
-    private readonly certificateOfComplianceHandler: CertificateOfComplianceHandler,
     private readonly completedProductionOrdersHandler: CompletedProductionOrdersHandler,
     private readonly overdueOrdersHandler: OverdueOrdersHandler,
     private readonly graphicsWorkOrderHandler: GraphicsWorkOrderHandler,
     private readonly menuBadgeCacheRefreshHandler: MenuBadgeCacheRefreshHandler,
-    private readonly cleanDbSessionsHandler: CleanDbSessionsHandler,
     private readonly dashboardPerformanceHandler: DashboardPerformanceHandler,
     private readonly totalShippedOrdersHandler: TotalShippedOrdersHandler,
-    private readonly shippingChangesHandler: ShippingChangesHandler,
     private readonly dailyReportInsertHandler: DailyReportInsertHandler,
     private readonly openShippingRequestsHandler: OpenShippingRequestsHandler,
     private readonly graphicsDueTodayReportHandler: GraphicsDueTodayReportHandler,
@@ -108,7 +100,6 @@ export class ScheduledJobsService {
   }
 
   private registerHandlers(): void {
-    this.handlerMap.set('clean-tokens', this.cleanTokensHandler);
     this.handlerMap.set('clean-users', this.cleanUsersHandler);
     this.handlerMap.set('field-service-old-workorders', this.fieldServiceOldWorkOrdersHandler);
     this.handlerMap.set('past-due-field-service-requests', this.pastDueFieldServiceRequestsHandler);
@@ -116,15 +107,12 @@ export class ScheduledJobsService {
     this.handlerMap.set('vehicle-expiration-email', this.vehicleExpirationEmailHandler);
     this.handlerMap.set('lnw-delivery', this.lnwDeliveryHandler);
     this.handlerMap.set('inspection-email', this.inspectionEmailHandler);
-    this.handlerMap.set('certificate-of-compliance', this.certificateOfComplianceHandler);
     this.handlerMap.set('completed-production-orders', this.completedProductionOrdersHandler);
     this.handlerMap.set('overdue-orders', this.overdueOrdersHandler);
     this.handlerMap.set('graphics-work-order', this.graphicsWorkOrderHandler);
     this.handlerMap.set('menu-badge-cache-refresh', this.menuBadgeCacheRefreshHandler);
-    this.handlerMap.set('clean-db-sessions', this.cleanDbSessionsHandler);
     this.handlerMap.set('dashboard-performance', this.dashboardPerformanceHandler);
     this.handlerMap.set('total-shipped-orders', this.totalShippedOrdersHandler);
-    this.handlerMap.set('shipping-changes', this.shippingChangesHandler);
     this.handlerMap.set('daily-report-insert', this.dailyReportInsertHandler);
     this.handlerMap.set('open-shipping-requests', this.openShippingRequestsHandler);
     this.handlerMap.set('graphics-due-today-report', this.graphicsDueTodayReportHandler);

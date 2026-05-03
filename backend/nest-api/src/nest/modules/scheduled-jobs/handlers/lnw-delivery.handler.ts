@@ -5,12 +5,14 @@ import { EmailService } from '@/shared/email/email.service';
 import { EmailNotificationService } from '@/nest/modules/email-notification/email-notification.service';
 import { ScheduledJobHandler, ScheduledJobRunResultDto } from './scheduled-job.handler';
 
-interface LNWShipment extends RowDataPacket {
-  order_number: string;
-  reference: string;
-  due_date: string;
-  quantity: number;
-  customer_name: string;
+interface LnwRow extends RowDataPacket {
+  sod_nbr: string;
+  sod_contr_id: string;
+  sod_part: string;
+  sod_custpart: string;
+  openqty: number;
+  fulldesc: string;
+  cmt_cmmt: string;
 }
 
 @Injectable()
@@ -27,75 +29,66 @@ export class LnwDeliveryHandler implements ScheduledJobHandler {
     const startedAtMs = Date.now();
 
     try {
-      // Calculate the next 3 weekdays (skip weekends)
-      const weekdayDates = this.getNext3Weekdays();
+      const next3Weekdays = this.getNext3Weekdays();
 
-      // Build the SQL WHERE clause for the 3 weekdays
-      const dateConditions = weekdayDates.map((date) => `DATE(so.due_date) = '${date}'`).join(' OR ');
+      const grouped = [] as Array<{ date: string; rows: LnwRow[] }>;
+      for (const dueDate of next3Weekdays) {
+        const rows = await this.qadOdbcService.queryWithParams<LnwRow[]>(`
+          SELECT
+            a.sod_nbr,
+            a.sod_part,
+            a.sod_contr_id,
+            CASE WHEN a.sod_custpart = '' THEN a.sod_part ELSE a.sod_custpart END AS sod_custpart,
+            CAST(a.sod_qty_ord-a.sod_qty_ship AS NUMERIC(36,0)) AS openQty,
+            b.fullDesc,
+            f.cmt_cmmt
+          FROM sod_det a
+          LEFT JOIN (
+            SELECT
+              pt_part,
+              MAX(CONCAT(pt_desc1, pt_desc2)) AS fullDesc
+            FROM pt_mstr
+            WHERE pt_domain = 'EYE'
+            GROUP BY pt_part
+          ) b ON b.pt_part = a.sod_part
+          LEFT JOIN (
+            SELECT cmt_cmmt, cmt_indx
+            FROM cmt_det
+            WHERE cmt_domain = 'EYE'
+          ) f ON f.cmt_indx = a.sod_cmtindx
+          JOIN so_mstr g ON g.so_nbr = a.sod_nbr
+            AND g.so_domain = 'EYE'
+            AND g.so_cust = 'BALTEC'
+            AND g.so_ship IN ('NV.PILOT', 'NV.PECOS')
+            AND a.sod_order_category != 'JIT'
+          WHERE a.sod_domain = 'EYE'
+            AND a.sod_due_date = ?
+            AND CAST(a.sod_qty_ord-a.sod_qty_ship AS NUMERIC(36,0)) > 0
+            AND a.sod_prodline NOT IN ('TAR', 'FEES')
+        `, [dueDate], { keyCase: 'lower' });
+        grouped.push({ date: dueDate, rows });
+      }
 
-      // Query QAD for shipments to Baltec locations (NV.PILOT, NV.PECOS) due on the next 3 weekdays
-      const shipments = await this.qadOdbcService.query<LNWShipment[]>(`
-        SELECT 
-          so.order_number,
-          so.reference,
-          so.due_date,
-          SUM(sol.quantity_ordered) as quantity,
-          c.name as customer_name
-        FROM shipping_order so
-        JOIN shipping_order_line sol ON sol.shipping_order_id = so.id
-        JOIN customer c ON c.id = so.customer_id
-        WHERE (c.code = 'NV.PILOT' OR c.code = 'NV.PECOS')
-        AND (${dateConditions})
-        AND so.status IN ('Open', 'Scheduled')
-        GROUP BY so.order_number, so.reference, so.due_date, c.name
-        ORDER BY so.due_date ASC, so.order_number ASC
-      `);
+      const total = grouped.reduce((sum, g) => sum + g.rows.length, 0);
 
-      if (shipments.length > 0) {
+      if (total > 0) {
         const recipientRows = await this.emailNotificationService.find({ location: 'lnw_shipping_report_notification' });
         const to = (recipientRows as Array<{ email?: string }>)
           .map((r) => r.email)
           .filter((e): e is string => typeof e === 'string' && e.trim().length > 0);
 
-        let tableRows = '';
-        for (const shipment of shipments) {
-          tableRows += `<tr>
-            <td>${shipment.order_number}</td>
-            <td>${shipment.reference}</td>
-            <td>${shipment.due_date}</td>
-            <td>${shipment.quantity}</td>
-            <td>${shipment.customer_name}</td>
-          </tr>`;
+        if (to.length > 0) {
+          const html = this.buildEmail(grouped);
+          await this.emailService.sendMail({
+            to,
+            subject: `LNW DELIVERY ${next3Weekdays.join(', ')}`,
+            html,
+          });
         }
-
-        const dateRange = `${weekdayDates[0]} - ${weekdayDates[2]}`;
-
-        const html = `
-          <p>The following shipments are scheduled for delivery to Baltec locations in the next 3 weekdays (${dateRange}):</p>
-          <table rules="all" style="border-color:#666" cellpadding="5" border="1">
-            <tr style="background:#eee">
-              <th>Order #</th>
-              <th>Reference</th>
-              <th>Due Date</th>
-              <th>Quantity</th>
-              <th>Customer</th>
-            </tr>
-            ${tableRows}
-          </table>
-          <p style="font-size:12px;color:#999">
-            This is an automated message. Total shipments: ${shipments.length}
-          </p>
-        `;
-
-        await this.emailService.sendMail({
-          to,
-          subject: `LNW Delivery Schedule - ${shipments.length} shipments (${dateRange})`,
-          html,
-        });
       }
 
       const durationMs = Date.now() - startedAtMs;
-      this.logger.log(`[${trigger}] lnw-delivery -> ${shipments.length} shipments in ${durationMs}ms`);
+      this.logger.log(`[${trigger}] lnw-delivery -> ${total} rows in ${durationMs}ms`);
 
       return {
         id: 'lnw-delivery',
@@ -104,7 +97,7 @@ export class LnwDeliveryHandler implements ScheduledJobHandler {
         ok: true,
         statusCode: 200,
         durationMs,
-        message: `${shipments.length} shipments scheduled for Baltec locations in next 3 weekdays.`,
+        message: `${total} LNW delivery lines processed.`,
         lastRun: {
           startedAt: new Date(startedAtMs).toISOString(),
           finishedAt: new Date().toISOString(),
@@ -117,7 +110,11 @@ export class LnwDeliveryHandler implements ScheduledJobHandler {
     } catch (error: unknown) {
       const durationMs = Date.now() - startedAtMs;
       const message = error instanceof Error ? error.message : String(error);
+      const odbcErrors = (error as Record<string, unknown>)?.odbcErrors;
       this.logger.error(`[${trigger}] lnw-delivery failed in ${durationMs}ms: ${message}`);
+      if (odbcErrors) {
+        this.logger.error(`[${trigger}] lnw-delivery ODBC errors: ${JSON.stringify(odbcErrors, null, 2)}`);
+      }
 
       return {
         id: 'lnw-delivery',
@@ -139,32 +136,40 @@ export class LnwDeliveryHandler implements ScheduledJobHandler {
     }
   }
 
-  /**
-   * Returns the next 3 weekday dates (Monday-Friday), excluding weekends.
-   * Starts from tomorrow.
-   */
   private getNext3Weekdays(): string[] {
-    const weekdays: string[] = [];
-    let currentDate = new Date();
-    currentDate.setDate(currentDate.getDate() + 1); // Start from tomorrow
-
-    while (weekdays.length < 3) {
-      const dayOfWeek = currentDate.getDay();
-      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-        // 0 = Sunday, 6 = Saturday
-        weekdays.push(this.formatDate(currentDate));
+    const dates: string[] = [];
+    let i = 1;
+    while (dates.length < 3) {
+      const d = new Date();
+      d.setDate(d.getDate() + i);
+      const day = d.getDay();
+      if (day !== 0 && day !== 6) {
+        dates.push(d.toISOString().slice(0, 10));
       }
-      currentDate.setDate(currentDate.getDate() + 1);
+      i++;
+    }
+    return dates;
+  }
+
+  private buildEmail(grouped: Array<{ date: string; rows: LnwRow[] }>): string {
+    let html = 'Hello Team,<br><br>Below is what we have on schedule for the next 3 weekdays.<br><br>';
+
+    for (const group of grouped) {
+      html += `<strong>Scheduled for ${group.date}</strong><br/>`;
+      html += '<table rules="all" style="border-color:#666" cellpadding="5" border="1">';
+      html += '<tr style="background:#eee"><th>SO #</th><th>PO #</th><th>Part</th><th>Cust Part #</th><th>Qty Open</th><th>Description</th><th>QAD Comments</th></tr>';
+
+      if (group.rows.length === 0) {
+        html += '<tr><td colspan="7" style="text-align:center">No orders found.</td></tr>';
+      } else {
+        for (const row of group.rows) {
+          html += `<tr><td>${row.sod_nbr}</td><td>${row.sod_contr_id || ''}</td><td>${row.sod_part || ''}</td><td>${row.sod_custpart || ''}</td><td>${row.openqty || 0}</td><td>${row.fulldesc || ''}</td><td>${String(row.cmt_cmmt || '').replace(/;/g, '')}</td></tr>`;
+        }
+      }
+
+      html += '</table><br><hr>';
     }
 
-    return weekdays;
+    return html;
   }
-
-  private formatDate(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  }
-
 }

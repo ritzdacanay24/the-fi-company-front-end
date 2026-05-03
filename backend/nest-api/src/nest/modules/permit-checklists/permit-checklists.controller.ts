@@ -19,6 +19,12 @@ export class PermitChecklistsController {
     return this.service.upsertTicket(payload?.ticket);
   }
 
+  @Post('remove-attachment')
+  @Permissions('delete')
+  async removeAttachment(@Body() payload: { ticketId?: string; attachmentId?: string }) {
+    return this.service.removeAttachment(payload?.ticketId, payload?.attachmentId);
+  }
+
   @Post('delete-ticket')
   @Permissions('delete')
   async deleteTicket(@Body() payload: { ticketId?: string }) {

@@ -603,6 +603,10 @@
       word-break: break-word;
       text-align: left;
       text-decoration: none;
+
+      &:hover {
+        text-decoration: underline;
+      }
     }
 
     .attachment-meta {

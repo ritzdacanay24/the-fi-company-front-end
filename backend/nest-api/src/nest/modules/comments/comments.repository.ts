@@ -2,6 +2,12 @@ import { Inject, Injectable } from '@nestjs/common';
 import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { MysqlService } from '@/shared/database/mysql.service';
 
+interface CommentOwnerRow extends RowDataPacket {
+  id: number;
+  userId: number;
+  active: number;
+}
+
 @Injectable()
 export class CommentsRepository {
   constructor(@Inject(MysqlService) private readonly mysqlService: MysqlService) {}
@@ -87,5 +93,13 @@ export class CommentsRepository {
     `;
 
     await this.mysqlService.execute(sql, [active, id]);
+  }
+
+  async findOwnerById(id: number): Promise<CommentOwnerRow | null> {
+    const rows = await this.mysqlService.query<CommentOwnerRow[]>(
+      `SELECT id, userId, active FROM eyefidb.comments WHERE id = ? LIMIT 1`,
+      [id],
+    );
+    return rows[0] || null;
   }
 }

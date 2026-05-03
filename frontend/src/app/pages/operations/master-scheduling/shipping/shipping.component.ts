@@ -400,7 +400,7 @@ export class ShippingComponent implements OnInit, OnDestroy {
             
             const ownerNames = response.data.map(o => o.name);
             console.log('✅ Loaded owners for dropdown:', ownerNames);
-            return ownerNames;
+            return ['— Clear Owner —', ...ownerNames];
           } else {
             console.error('❌ Failed to load owners:', response);
             return ['⚠️ Failed to load owners - Try again'];
@@ -2379,18 +2379,24 @@ export class ShippingComponent implements OnInit, OnDestroy {
       cellEditorParams: {}, // Will be updated dynamically based on setting
       onCellValueChanged: async (params: any) => {
         if (params.oldValue !== params.newValue) {
-          // Update the data model
-          if (!params.data.misc) {
-            params.data.misc = {};
+          // Construct the SO identifier (must be SO_NBR-LINE)
+          const so = `${String(params.data.SOD_NBR || '').trim()}-${String(params.data.SOD_LINE || '').trim()}`;
+          
+          // Validate SO is present and properly formatted
+          if (!so || so === '-') {
+            console.error('Cannot save owner: SO number or line is missing');
+            return;
           }
           
+          // '— Clear Owner —' sentinel or null/undefined means the user cleared the owner
+          const CLEAR_SENTINEL = '— Clear Owner —';
+          const newUserName = (!params.newValue || params.newValue === CLEAR_SENTINEL) ? '' : params.newValue;
+
           // Preserve existing misc data and update only userName
           const miscData = {
             ...params.data.misc,
-            userName: params.newValue,
-            // Ensure required fields are present
-            shippingMisc: params.data.misc.shippingMisc || params.data.misc.id,
-            so: params.data.misc.so || params.data.SOD_NBR
+            userName: newUserName,
+            so: so
           };
           
           // Save to backend
@@ -2905,7 +2911,10 @@ export class ShippingComponent implements OnInit, OnDestroy {
       } else if (params.data?.SALES_ORDER_LINE_NUMBER === this.comment) {
         classes.push("bg-primary-subtle")
       } else if (params.data.misc?.hot_order) {
-        classes.push("border border-danger bg-opacity-10 bg-danger")
+        classes.push("bg-opacity-10 bg-danger", "hot-order-row")
+        if (params.node?.rowPinned === 'top') {
+          classes.push('hot-order-pinned-row');
+        }
       }
       return classes;
     },

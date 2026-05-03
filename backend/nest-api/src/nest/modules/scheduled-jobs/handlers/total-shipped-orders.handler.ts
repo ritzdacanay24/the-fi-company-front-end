@@ -7,12 +7,9 @@ import { ScheduledJobHandler, ScheduledJobRunResultDto } from './scheduled-job.h
 
 interface ShippedOrderDetail extends RowDataPacket {
   order_number: string;
-  reference: string;
-  customer_name: string;
+  po_number: string;
+  ship_to: string;
   total_quantity: number;
-  total_weight: number;
-  ship_date: string;
-  carrier: string;
 }
 
 @Injectable()
@@ -29,24 +26,25 @@ export class TotalShippedOrdersHandler implements ScheduledJobHandler {
     const startedAtMs = Date.now();
 
     try {
-      // Query for all orders shipped today
-      const shippedOrders = await this.qadOdbcService.query<ShippedOrderDetail[]>(`
-        SELECT 
-          so.order_number,
-          so.reference,
-          c.name as customer_name,
-          SUM(sol.quantity_ordered) as total_quantity,
-          SUM(sol.weight) as total_weight,
-          so.ship_date,
-          so.carrier
-        FROM shipping_order so
-        JOIN shipping_order_line sol ON sol.shipping_order_id = so.id
-        LEFT JOIN customer c ON c.id = so.customer_id
-        WHERE DATE(so.ship_date) = CURDATE()
-        AND so.status = 'Completed'
-        GROUP BY so.order_number, so.reference, c.name, so.ship_date, so.carrier
-        ORDER BY so.ship_date DESC, so.order_number ASC
-      `);
+      const today = new Date().toISOString().slice(0, 10);
+      const shippedOrders = await this.qadOdbcService.queryWithParams<ShippedOrderDetail[]>(`
+        SELECT
+          a.sod_nbr AS order_number,
+          MAX(a.sod_contr_id) AS po_number,
+          MAX(c.so_ship) AS ship_to,
+          SUM(CAST(f.abs_ship_qty AS NUMERIC(36,0))) AS total_quantity
+        FROM sod_det a
+        JOIN so_mstr c ON c.so_nbr = a.sod_nbr
+          AND c.so_domain = 'EYE'
+        JOIN abs_mstr f ON f.abs_order = a.sod_nbr
+          AND f.abs_line = a.sod_line
+          AND f.abs_domain = 'EYE'
+        WHERE a.sod_domain = 'EYE'
+          AND f.abs_shp_date = ?
+          AND f.abs_ship_qty > 0
+        GROUP BY a.sod_nbr
+        ORDER BY a.sod_nbr ASC
+      `, [today], { keyCase: 'lower' });
 
       if (shippedOrders.length > 0) {
         const recipientRows = await this.emailNotificationService.find({ location: 'total_shipped_orders_report' });
@@ -54,56 +52,28 @@ export class TotalShippedOrdersHandler implements ScheduledJobHandler {
           .map((r) => r.email)
           .filter((e): e is string => typeof e === 'string' && e.trim().length > 0);
 
-        let tableRows = '';
-        let totalQuantityShipped = 0;
-        let totalWeightShipped = 0;
+        if (to.length > 0) {
+          const totalQuantity = shippedOrders.reduce((acc, row) => acc + Number(row.total_quantity || 0), 0);
+          const rows = shippedOrders
+            .map(
+              (row) =>
+                `<tr><td>${row.order_number}</td><td>${row.po_number || ''}</td><td>${row.ship_to || ''}</td><td>${row.total_quantity || 0}</td></tr>`,
+            )
+            .join('');
 
-        for (const order of shippedOrders) {
-          totalQuantityShipped += order.total_quantity;
-          totalWeightShipped += order.total_weight ?? 0;
-          tableRows += `<tr>
-            <td>${order.order_number}</td>
-            <td>${order.reference}</td>
-            <td>${order.customer_name || 'N/A'}</td>
-            <td>${order.total_quantity}</td>
-            <td>${(order.total_weight ?? 0).toFixed(2)} lbs</td>
-            <td>${order.carrier || 'Standard'}</td>
-          </tr>`;
+          await this.emailService.sendMail({
+            to,
+            subject: `Daily Shipping Report - ${shippedOrders.length} orders`,
+            html: `
+              <h3>Total Shipped Orders (${today})</h3>
+              <table rules="all" style="border-color:#666" cellpadding="5" border="1">
+                <tr style="background:#eee"><th>SO #</th><th>PO #</th><th>Ship To</th><th>Total Qty</th></tr>
+                ${rows}
+              </table>
+              <p><strong>Total Quantity:</strong> ${totalQuantity}</p>
+            `,
+          });
         }
-
-        const html = `
-          <h2>Total Shipped Orders Report - ${new Date().toLocaleDateString()}</h2>
-          <p>The following orders were shipped today:</p>
-          <table rules="all" style="border-color:#666" cellpadding="5" border="1">
-            <tr style="background:#eee">
-              <th>Order #</th>
-              <th>Reference</th>
-              <th>Customer</th>
-              <th>Quantity</th>
-              <th>Weight</th>
-              <th>Carrier</th>
-            </tr>
-            ${tableRows}
-          </table>
-          <div style="margin-top:20px;padding:15px;background:#f9f9f9;border:1px solid #ddd">
-            <h3>Summary</h3>
-            <ul>
-              <li>Total Orders Shipped: <strong>${shippedOrders.length}</strong></li>
-              <li>Total Quantity: <strong>${totalQuantityShipped}</strong> units</li>
-              <li>Total Weight: <strong>${totalWeightShipped.toFixed(2)}</strong> lbs</li>
-            </ul>
-          </div>
-          <p style="font-size:12px;color:#999;margin-top:20px">
-            This is an automatically generated daily shipping report.
-            Report generated on ${new Date().toLocaleString()}
-          </p>
-        `;
-
-        await this.emailService.sendMail({
-          to,
-          subject: `Daily Shipping Report - ${shippedOrders.length} orders (${totalQuantityShipped} units)`,
-          html,
-        });
       }
 
       const durationMs = Date.now() - startedAtMs;
@@ -116,7 +86,7 @@ export class TotalShippedOrdersHandler implements ScheduledJobHandler {
         ok: true,
         statusCode: 200,
         durationMs,
-        message: `${shippedOrders.length} shipped orders processed and reported.`,
+        message: `${shippedOrders.length} shipped orders processed.`,
         lastRun: {
           startedAt: new Date(startedAtMs).toISOString(),
           finishedAt: new Date().toISOString(),
@@ -129,7 +99,11 @@ export class TotalShippedOrdersHandler implements ScheduledJobHandler {
     } catch (error: unknown) {
       const durationMs = Date.now() - startedAtMs;
       const message = error instanceof Error ? error.message : String(error);
+      const odbcErrors = (error as Record<string, unknown>)?.odbcErrors;
       this.logger.error(`[${trigger}] total-shipped-orders failed in ${durationMs}ms: ${message}`);
+      if (odbcErrors) {
+        this.logger.error(`[${trigger}] total-shipped-orders ODBC errors: ${JSON.stringify(odbcErrors, null, 2)}`);
+      }
 
       return {
         id: 'total-shipped-orders',
@@ -150,5 +124,4 @@ export class TotalShippedOrdersHandler implements ScheduledJobHandler {
       };
     }
   }
-
 }

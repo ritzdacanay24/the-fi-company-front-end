@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { RowDataPacket } from 'mysql2/promise';
 import { CommentsRepository } from './comments.repository';
 import { MysqlService } from '@/shared/database/mysql.service';
+import { AccessControlService } from '../access-control';
 
 type GenericRow = Record<string, unknown>;
 
@@ -10,6 +11,7 @@ export class CommentsService {
   constructor(
     private readonly repository: CommentsRepository,
     private readonly mysqlService: MysqlService,
+    private readonly accessControlService: AccessControlService,
   ) {}
 
   async find(orderNum?: string, type?: string, active?: string) {
@@ -27,20 +29,19 @@ export class CommentsService {
   async create(payload: {
     comments?: string;
     orderNum?: string;
-    userId?: number | string;
     type?: string;
     locationPath?: string;
     pageName?: string;
     comments_html?: string;
     pid?: string | number | null;
-  }) {
+  }, requesterUserId: number) {
     const comments = String(payload?.comments || '').trim();
     const orderNum = String(payload?.orderNum || '').trim();
     const type = String(payload?.type || '').trim();
-    const userId = Number(payload?.userId);
+    const userId = Number(requesterUserId);
 
     if (!comments || !orderNum || !type || !userId) {
-      return { success: false, message: 'comments, orderNum, type and userId are required' };
+      return { success: false, message: 'comments, orderNum, type and authenticated user context are required' };
     }
 
     const insertId = await this.repository.create({
@@ -57,16 +58,32 @@ export class CommentsService {
     return { success: true, insertId };
   }
 
-  async delete(payload: { id?: number | string; active?: number | string }) {
+  async delete(payload: { id?: number | string; active?: number | string }, requesterUserId: number) {
     const id = Number(payload?.id);
     if (!id) {
       return { success: false, message: 'Comment id is required' };
     }
 
-    const active = Number(payload?.active ?? 0);
-    await this.repository.softDelete(id, Number.isNaN(active) ? 0 : active);
+    if (!requesterUserId || Number.isNaN(requesterUserId)) {
+      throw new ForbiddenException('Requester user id is required');
+    }
 
-    return { success: true, id, active: Number.isNaN(active) ? 0 : active };
+    const comment = await this.repository.findOwnerById(id);
+    if (!comment) {
+      throw new NotFoundException('Comment not found');
+    }
+
+    const isOwner = Number(comment.userId) === Number(requesterUserId);
+    const canDeleteAny = await this.accessControlService.userHasPermissions(requesterUserId, ['delete']);
+    if (!isOwner && !canDeleteAny) {
+      throw new ForbiddenException('Insufficient permission to delete this comment');
+    }
+
+    const active = Number(payload?.active ?? 0);
+    const normalizedActive = Number.isNaN(active) ? 0 : active;
+    await this.repository.softDelete(id, normalizedActive);
+
+    return { success: true, id, active: normalizedActive };
   }
 
   /**

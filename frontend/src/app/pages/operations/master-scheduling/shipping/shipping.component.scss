@@ -170,3 +170,10 @@
 // .alert-info {
 //   border-left: 4px solid #0dcaf0;
 // }
+
+/* Keep hot order highlights without red borders */
+
+:host ::ng-deep .ag-theme-quartz .ag-pinned-top .ag-row.hot-order-pinned-row .ag-cell {
+	background-color: rgba(220, 53, 69, 0.12) !important;
+}
+

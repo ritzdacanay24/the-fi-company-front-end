@@ -4,6 +4,16 @@ import { QadOdbcService } from '@/shared/database/qad-odbc.service';
 import { EmailService } from '@/shared/email/email.service';
 import { ScheduledJobHandler, ScheduledJobRunResultDto } from './scheduled-job.handler';
 
+interface DropInWorkOrder extends RowDataPacket {
+  wo_nbr: string;
+  wo_ord_date: string;
+  wo_due_date: string;
+  wo_qty_ord: number;
+  wo_part: string;
+  pt_desc1: string;
+  pt_desc2: string;
+}
+
 @Injectable()
 export class DropInWorkOrderEmailsHandler implements ScheduledJobHandler {
   private readonly logger = new Logger(DropInWorkOrderEmailsHandler.name);
@@ -17,66 +27,67 @@ export class DropInWorkOrderEmailsHandler implements ScheduledJobHandler {
     const startedAtMs = Date.now();
 
     try {
-      // Query QAD for drop-in work orders that are open (not completed)
-      // A drop-in work order is one that has no previous schedule or is marked as hot/drop-in
-      const workOrders = await this.qadOdbcService.query<RowDataPacket[]>(`
-        SELECT 
-          wo.order_number,
-          wo.reference,
-          wo.customer_po,
-          wo.due_date,
-          wo.status,
-          c.name as customer_name,
-          wo.created_date
-        FROM work_order wo
-        LEFT JOIN customer c ON c.id = wo.customer_id
-        WHERE wo.drop_in = 1
-        AND wo.status NOT IN ('Completed', 'Cancelled')
-        ORDER BY wo.created_date DESC
-      `);
-
-      const to = ['hotdrops@eye-fi.com'];
+      const workOrders = await this.qadOdbcService.query<DropInWorkOrder[]>(`
+        SELECT
+          a.wo_nbr,
+          a.wo_ord_date,
+          a.wo_due_date,
+          a.wo_qty_ord,
+          a.wo_part,
+          b.pt_desc1,
+          b.pt_desc2
+        FROM wo_mstr a
+        LEFT JOIN (
+          SELECT
+            pt_part,
+            MAX(pt_desc1) AS pt_desc1,
+            MAX(pt_desc2) AS pt_desc2
+          FROM pt_mstr
+          WHERE pt_domain = 'EYE'
+          GROUP BY pt_part
+        ) b ON b.pt_part = a.wo_part
+        WHERE a.wo_qty_ord <> a.wo_qty_comp
+          AND a.wo_domain = 'EYE'
+          AND (a.wo_so_job = 'dropin' OR a.wo_so_job = 'DROPIN')
+      `, { keyCase: 'lower' });
 
       if (workOrders.length > 0) {
         let tableRows = '';
-        for (const wo of workOrders as Array<Record<string, unknown>>) {
+        for (const row of workOrders) {
           tableRows += `<tr>
-            <td>${wo['order_number']}</td>
-            <td>${wo['reference']}</td>
-            <td>${wo['customer_po']}</td>
-            <td>${wo['due_date']}</td>
-            <td>${wo['customer_name']}</td>
-            <td>${wo['status']}</td>
+            <td>${row.wo_nbr}</td>
+            <td>${row.wo_ord_date}</td>
+            <td>${row.wo_qty_ord}</td>
+            <td>${row.wo_due_date}</td>
+            <td>${row.wo_part}</td>
+            <td>${(row.pt_desc1 || '') + ' ' + (row.pt_desc2 || '')}</td>
           </tr>`;
         }
 
         const html = `
-          <p>The following drop-in work orders have been received and are awaiting scheduling:</p>
+          <p>Listed below are hot drop-in orders that need immediate action.</p>
           <table rules="all" style="border-color:#666" cellpadding="5" border="1">
             <tr style="background:#eee">
-              <th>Order #</th>
-              <th>Reference</th>
-              <th>PO #</th>
+              <th>Work Order #</th>
+              <th>Ordered Date</th>
+              <th>Qty Ordered</th>
               <th>Due Date</th>
-              <th>Customer</th>
-              <th>Status</th>
+              <th>Item #</th>
+              <th>Description</th>
             </tr>
             ${tableRows}
           </table>
-          <p>This is an automated message. Total drop-in work orders: ${workOrders.length}</p>
         `;
 
         await this.emailService.sendMail({
-          to,
-          subject: `Hot Drop-In Work Orders (${workOrders.length})`,
+          to: ['hotdrops@eye-fi.com'],
+          subject: `Hot Drop In - Work Order (${workOrders.length})`,
           html,
         });
       }
 
       const durationMs = Date.now() - startedAtMs;
-      this.logger.log(
-        `[${trigger}] dropin-workorder-emails -> ${workOrders.length} drop-in orders in ${durationMs}ms`,
-      );
+      this.logger.log(`[${trigger}] dropin-workorder-emails -> ${workOrders.length} drop-in orders in ${durationMs}ms`);
 
       return {
         id: 'dropin-workorder-emails',
@@ -98,7 +109,11 @@ export class DropInWorkOrderEmailsHandler implements ScheduledJobHandler {
     } catch (error: unknown) {
       const durationMs = Date.now() - startedAtMs;
       const message = error instanceof Error ? error.message : String(error);
+      const odbcErrors = (error as Record<string, unknown>)?.odbcErrors;
       this.logger.error(`[${trigger}] dropin-workorder-emails failed in ${durationMs}ms: ${message}`);
+      if (odbcErrors) {
+        this.logger.error(`[${trigger}] dropin-workorder-emails ODBC errors: ${JSON.stringify(odbcErrors, null, 2)}`);
+      }
 
       return {
         id: 'dropin-workorder-emails',

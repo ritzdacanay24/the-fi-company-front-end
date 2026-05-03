@@ -88,6 +88,9 @@ interface PermitChecklistAttachment {
   mimeType: string;
   uploadedAt: string;
   dataUrl?: string;
+  url?: string;
+  link?: string;
+  path?: string;
 }
 
 interface PermitChecklistTransaction {
@@ -2063,7 +2066,7 @@ export class PermitChecklistsComponent implements OnInit {
     input.value = "";
   }
 
-  removeAttachment(attachmentId: string): void {
+  async removeAttachment(attachmentId: string): Promise<void> {
     const ticket = this.activeTicket;
     if (!ticket || !this.canEditActiveTicket) {
       return;
@@ -2071,6 +2074,23 @@ export class PermitChecklistsComponent implements OnInit {
 
     const target = (ticket.attachments || []).find((item) => item.id === attachmentId);
     if (!target) {
+      return;
+    }
+
+    const confirmed = window.confirm(`Remove attachment "${target.fileName}"? This cannot be undone.`);
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await this.permitChecklistsService.removeAttachment(ticket.ticketId, attachmentId);
+    } catch (err: any) {
+      const status = err?.status ?? err?.error?.statusCode;
+      if (status === 403) {
+        this.statusMessage = "You do not have permission to delete attachments.";
+      } else {
+        this.statusMessage = "Failed to remove attachment. Please try again.";
+      }
       return;
     }
 
@@ -2136,6 +2156,29 @@ export class PermitChecklistsComponent implements OnInit {
     this.previewAttachmentResourceUrl = null;
     this.previewDocxHtml = "";
     this.previewAttachmentKind = "none";
+  }
+
+  get canDownloadPreviewAttachment(): boolean {
+    return !!this.getAttachmentDownloadUrl(this.previewAttachment);
+  }
+
+  downloadPreviewAttachment(): void {
+    const attachment = this.previewAttachment;
+    const url = this.getAttachmentDownloadUrl(attachment);
+    if (!attachment || !url) {
+      return;
+    }
+
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.target = "_blank";
+    anchor.rel = "noopener";
+
+    if (url.startsWith("blob:") || url.startsWith("data:")) {
+      anchor.download = attachment.fileName || "attachment";
+    }
+
+    anchor.click();
   }
 
   openTicket(ticketId: string): void {
@@ -3062,7 +3105,33 @@ export class PermitChecklistsComponent implements OnInit {
       return attachment.dataUrl;
     }
 
+    const backendUrl = this.normalizeAttachmentLink(attachment.url || attachment.link || attachment.path);
+    if (backendUrl) {
+      return backendUrl;
+    }
+
     return this.objectUrlByAttachmentId.get(attachment.id);
+  }
+
+  private getAttachmentDownloadUrl(attachment: PermitChecklistAttachment | null): string | null {
+    if (!attachment) {
+      return null;
+    }
+
+    return this.resolveAttachmentUrl(attachment) ?? null;
+  }
+
+  private normalizeAttachmentLink(rawValue?: string): string | undefined {
+    const value = String(rawValue || "").trim();
+    if (!value) {
+      return undefined;
+    }
+
+    if (value.startsWith("http://") || value.startsWith("https://") || value.startsWith("blob:") || value.startsWith("data:")) {
+      return value;
+    }
+
+    return value.startsWith("/") ? value : `/${value}`;
   }
 
   private isDocxAttachment(attachment: PermitChecklistAttachment): boolean {

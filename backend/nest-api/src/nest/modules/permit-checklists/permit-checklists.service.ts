@@ -110,6 +110,32 @@ export class PermitChecklistsService {
     return { success: true, ticketId };
   }
 
+  async removeAttachment(ticketIdInput: string | undefined, attachmentIdInput: string | undefined) {
+    const ticketId = String(ticketIdInput || '').trim();
+    const attachmentId = String(attachmentIdInput || '').trim();
+
+    if (!ticketId) {
+      return { success: false, error: 'ticketId is required' };
+    }
+    if (!attachmentId) {
+      return { success: false, error: 'attachmentId is required' };
+    }
+
+    const raw = await this.repository.getAttachmentsJson(ticketId);
+    let attachments: Array<Record<string, unknown>> = [];
+    try {
+      const parsed = JSON.parse(raw || '[]');
+      attachments = Array.isArray(parsed) ? parsed : [];
+    } catch {
+      attachments = [];
+    }
+
+    const filtered = attachments.filter((a) => String(a['id'] || '') !== attachmentId);
+    const updatedAt = this.toDbDateTime(new Date().toISOString());
+    await this.repository.setAttachmentsJson(ticketId, JSON.stringify(filtered), updatedAt);
+    return { success: true, ticketId, attachmentId };
+  }
+
   async deleteTicket(ticketIdInput: string | undefined) {
     const ticketId = String(ticketIdInput || '').trim();
     if (!ticketId) {

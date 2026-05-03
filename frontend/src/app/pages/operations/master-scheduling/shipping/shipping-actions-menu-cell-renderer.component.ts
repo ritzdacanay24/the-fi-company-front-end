@@ -40,16 +40,17 @@ export class ShippingActionsMenuCellRendererComponent implements ICellRendererCo
 
     this.eButton = document.createElement('button');
     this.eButton.type = 'button';
-    this.eButton.className = 'btn btn-outline-secondary btn-xs d-flex align-items-center';
+    this.eButton.className = 'btn btn-sm btn-outline-secondary d-flex align-items-center';
     this.eButton.style.cssText = [
-      'height:24px',
-      'min-width:86px',
-      'padding:0 8px',
-      'font-size:11px',
+      'height:28px',
+      'padding:3px 8px',
+      'font-size:12px',
       'line-height:1',
-      'border-radius:4px'
+      'border-radius:4px',
+      'gap:4px',
+      'transition:color 0.15s ease-in-out, border-color 0.15s ease-in-out, background-color 0.15s ease-in-out'
     ].join(';');
-    this.eButton.innerHTML = '<i class="mdi mdi-dots-horizontal me-1"></i>Actions';
+    this.eButton.innerHTML = '<i class="mdi mdi-chevron-down me-1" style="font-size:14px;"></i>Actions';
 
     this.eButton.addEventListener('click', this.onToggleMenu);
     this.eGui.appendChild(this.eButton);
@@ -84,92 +85,119 @@ export class ShippingActionsMenuCellRendererComponent implements ICellRendererCo
     container.innerHTML = '';
 
     container.appendChild(
-      this.createMenuButton('BOM', hasBom, () => {
+      this.createMenuButton('BOM', hasBom, 'mdi mdi-file-document-outline', () => {
         if (this.params.onViewBom) this.params.onViewBom(rowData);
       })
     );
 
     container.appendChild(
-      this.createMenuButton('Sales Order', hasSo, () => {
+      this.createMenuButton('Sales Order', hasSo, 'mdi mdi-cart-outline', () => {
         if (this.params.onViewSalesOrder) this.params.onViewSalesOrder(rowData);
       })
     );
 
     container.appendChild(
-      this.createMenuButton('Ship To', hasShipTo, () => {
+      this.createMenuButton('Ship To', hasShipTo, 'mdi mdi-map-marker-outline', () => {
         if (this.params.onViewShipTo) this.params.onViewShipTo(rowData);
       })
     );
 
     container.appendChild(
-      this.createMenuButton('Generate Placard', hasSo && hasSoLine && hasBom, () => {
+      this.createMenuButton('Generate Placard', hasSo && hasSoLine && hasBom, 'mdi mdi-printer-outline', () => {
         if (this.params.onGeneratePlacard) this.params.onGeneratePlacard(rowData);
       })
     );
 
     container.appendChild(
-      this.createMenuButton('Notes', hasSo && hasSoLine, () => {
+      this.createMenuButton('Notes', hasSo && hasSoLine, 'mdi mdi-note-outline', () => {
         if (this.params.onViewNotes) this.params.onViewNotes(rowData);
       })
     );
 
     container.appendChild(
-      this.createMenuButton('RFQ', hasSo && hasSoLine, () => {
+      this.createMenuButton('RFQ', hasSo && hasSoLine, 'mdi mdi-file-question-outline', () => {
         if (this.params.onViewRfq) this.params.onViewRfq(rowData);
       })
     );
 
     container.appendChild(
-      this.createMenuButton('Late Reason Code', hasSo && hasSoLine, () => {
+      this.createMenuButton('Late Reason Code', hasSo && hasSoLine, 'mdi mdi-clock-outline', () => {
         if (this.params.onViewLateReasonCode) this.params.onViewLateReasonCode(rowData);
       })
     );
 
     container.appendChild(
-      this.createMenuButton('View Orders Request', hasSo, () => {
+      this.createMenuButton('View Orders Request', hasSo, 'mdi mdi-package-variant', () => {
         if (this.params.onViewPartsOrderRequest) this.params.onViewPartsOrderRequest(rowData);
       })
     );
 
     container.appendChild(
-      this.createMenuButton('SO / Job', hasWo, () => {
+      this.createMenuButton('SO / Job', hasWo, 'mdi mdi-briefcase-outline', () => {
         if (this.params.onViewSoJob) this.params.onViewSoJob(rowData);
       })
     );
 
     container.appendChild(
-      this.createMenuButton('View Work Order Routing', hasBom, () => {
+      this.createMenuButton('View Work Order Routing', hasBom, 'mdi mdi-vector-polyline', () => {
         if (this.params.onViewWorkOrderRouting) this.params.onViewWorkOrderRouting(rowData);
       })
     );
 
     container.appendChild(
-      this.createMenuButton('Comments', hasCommentsRef, () => {
+      this.createMenuButton('Comments', hasCommentsRef, 'mdi mdi-comment-text-outline', () => {
         if (this.params.onViewComments) this.params.onViewComments(rowData);
       })
     );
 
     container.appendChild(
-      this.createMenuButton('Part Number View', hasBom, () => {
+      this.createMenuButton('Part Number View', hasBom, 'mdi mdi-tag-multiple-outline', () => {
         if (this.params.onViewPartNumber) this.params.onViewPartNumber(rowData);
       })
     );
   }
 
-  private createMenuButton(label: string, enabled: boolean, onClick: () => void): HTMLButtonElement {
+  private createMenuButton(label: string, enabled: boolean, icon: string, onClick: () => void): HTMLButtonElement {
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'btn btn-sm w-100 text-start';
+    btn.className = enabled ? 'dropdown-item' : 'dropdown-item disabled';
     btn.style.cssText = [
-      'font-size:11px',
-      'line-height:1.2',
-      'padding:6px 8px',
-      'border-radius:3px'
+      'padding:6px 12px',
+      'border:none',
+      'background:none',
+      'text-align:left',
+      'cursor:' + (enabled ? 'pointer' : 'not-allowed'),
+      'color:' + (enabled ? '#212529' : '#a9acb0'),
+      'font-size:11.5px',
+      'display:flex',
+      'align-items:center',
+      'gap:8px',
+      'white-space:nowrap',
+      'transition:background-color 0.15s ease-in-out',
+      'width:100%'
     ].join(';');
-    btn.textContent = label;
-    btn.disabled = !enabled;
+
+    const iconEl = document.createElement('i');
+    iconEl.className = icon;
+    iconEl.style.cssText = [
+      'font-size:13px',
+      'width:14px',
+      'text-align:center'
+    ].join(';');
+
+    const labelEl = document.createElement('span');
+    labelEl.textContent = label;
+
+    btn.appendChild(iconEl);
+    btn.appendChild(labelEl);
 
     if (enabled) {
+      btn.addEventListener('mouseenter', () => {
+        btn.style.backgroundColor = '#f8f9fa';
+      });
+      btn.addEventListener('mouseleave', () => {
+        btn.style.backgroundColor = 'transparent';
+      });
       btn.addEventListener('click', (event) => {
         event.preventDefault();
         event.stopPropagation();
@@ -198,18 +226,47 @@ export class ShippingActionsMenuCellRendererComponent implements ICellRendererCo
 
     const rect = this.eButton.getBoundingClientRect();
     const popup = document.createElement('div');
-    popup.className = 'bg-body border rounded shadow-sm';
+    popup.className = 'dropdown-menu show';
     popup.style.cssText = [
       'position:fixed',
-      `top:${Math.min(window.innerHeight - 120, rect.bottom + 4)}px`,
-      `left:${Math.max(8, rect.right - 160)}px`,
-      'min-width:160px',
+      'min-width:190px',
+      'max-height:calc(100vh - 16px)',
+      'overflow-y:auto',
       'z-index:3000',
-      'padding:4px'
+      'display:block',
+      'margin:0',
+      'padding:0.25rem 0',
+      'background-color:#fff',
+      'border:1px solid rgba(0,0,0,0.15)',
+      'border-radius:0.25rem',
+      'box-shadow:0 0.5rem 1rem rgba(0,0,0,0.15)',
+      'top:0',
+      'left:0',
+      'visibility:hidden'
     ].join(';');
 
     this.buildMenuItems(popup);
     document.body.appendChild(popup);
+
+    const viewportPadding = 8;
+    const popupHeight = popup.offsetHeight || 0;
+    const popupWidth = popup.offsetWidth || 200;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+
+    const shouldOpenUp = spaceBelow < popupHeight && spaceAbove > spaceBelow;
+    const top = shouldOpenUp
+      ? Math.max(viewportPadding, rect.top - popupHeight - 2)
+      : Math.min(window.innerHeight - popupHeight - viewportPadding, rect.bottom + 2);
+
+    const left = Math.min(
+      Math.max(viewportPadding, rect.right - popupWidth),
+      window.innerWidth - popupWidth - viewportPadding,
+    );
+
+    popup.style.top = `${top}px`;
+    popup.style.left = `${left}px`;
+    popup.style.visibility = 'visible';
 
     this.popupMenu = popup;
     this.isOpen = true;

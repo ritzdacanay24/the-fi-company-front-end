@@ -8,12 +8,12 @@ import { ICellRendererParams } from 'ag-grid-community';
     <div class="w-100 h-100 d-flex align-items-center justify-content-center">
       <button 
         type="button" 
-        class="btn btn-outline-info btn-xs d-flex align-items-center justify-content-center"
+        class="btn btn-outline-secondary btn-xs d-flex align-items-center justify-content-center bom-action-btn"
         (click)="onClick()"
         [title]="getTooltip()"
         [disabled]="!hasPartNumber()">
-        <i class="mdi mdi-sitemap" style="font-size: 0.75rem;"></i>
-        <span class="d-none d-md-inline ms-1" style="font-size: 0.75rem;">BOM</span>
+        <i class="mdi mdi-sitemap me-1"></i>
+        <span class="d-none d-md-inline">BOM</span>
       </button>
     </div>
   `,
@@ -26,40 +26,36 @@ import { ICellRendererParams } from 'ag-grid-community';
       height: 100%;
     }
 
-    .btn {
+    .bom-action-btn {
       transition: all 0.2s ease;
-      border-radius: 3px;
-      min-width: 45px;
+      border-radius: 4px;
+      min-width: 62px;
       height: 24px;
-      padding: 0.15rem 0.3rem;
-      font-size: 0.75rem;
+      padding: 0 8px;
+      font-size: 11px;
+      line-height: 1;
     }
     
-    .btn:hover:not(:disabled) {
+    .bom-action-btn:hover:not(:disabled) {
       transform: translateY(-1px);
-      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     
-    .btn:disabled {
-      opacity: 0.5;
+    .bom-action-btn:disabled {
+      opacity: 0.6;
       cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
     }
-    
-    .btn-outline-info {
-      border-color: #0dcaf0;
-      color: #0dcaf0;
+
+    .bom-action-btn i {
+      font-size: 12px;
     }
-    
-    .btn-outline-info:hover:not(:disabled) {
-      background-color: #0dcaf0;
-      border-color: #0dcaf0;
-      color: #000;
-    }
-    
+
     @media (max-width: 768px) {
-      .btn {
+      .bom-action-btn {
         min-width: 32px;
-        padding: 0.1rem 0.25rem;
+        padding: 0 6px;
       }
     }
   `],

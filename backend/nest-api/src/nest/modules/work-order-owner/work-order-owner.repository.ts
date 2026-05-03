@@ -54,28 +54,45 @@ export class WorkOrderOwnerRepository extends BaseRepository<RowDataPacket> {
     fields: GenericRow,
     connection: PoolConnection,
   ): Promise<void> {
+    if (!Object.keys(fields).length) {
+      throw new Error('No fields provided for update');
+    }
+
     const setSql = Object.keys(fields)
       .map((key) => `${key} = ?`)
       .join(', ');
     const values = [...Object.values(fields), so];
 
-    await connection.execute<ResultSetHeader>(
+    const result = await connection.execute<ResultSetHeader>(
       `UPDATE eyefidb.workOrderOwner SET ${setSql} WHERE so = ?`,
       values as any[],
     );
+
+    if (!result[0].affectedRows) {
+      throw new Error(`Failed to update workOrderOwner: no record found for SO "${so}"`);
+    }
   }
 
   /**
-   * Insert new workOrderOwner record within transaction
+   * Insert new workOrderOwner record within transaction.
+   * Uses ON DUPLICATE KEY UPDATE to avoid race conditions when two concurrent
+   * requests both see no existing row and then both attempt an INSERT.
    */
   async createWithConnection(row: GenericRow, connection: PoolConnection): Promise<void> {
     const columns = Object.keys(row);
     const placeholders = columns.map(() => '?').join(', ');
-    const values = Object.values(row);
+    const insertValues = Object.values(row);
 
-    await connection.execute<ResultSetHeader>(
-      `INSERT INTO eyefidb.workOrderOwner (${columns.join(', ')}) VALUES (${placeholders})`,
-      values as any[],
-    );
+    // On duplicate key (so), update all columns except the immutable ones.
+    const updateColumns = columns.filter((c) => c !== 'so' && c !== 'createdDate' && c !== 'createdBy');
+    const updateSql = updateColumns.map((c) => `${c} = VALUES(${c})`).join(', ');
+
+    const sql = `
+      INSERT INTO eyefidb.workOrderOwner (${columns.join(', ')})
+      VALUES (${placeholders})
+      ON DUPLICATE KEY UPDATE ${updateSql}
+    `;
+
+    await connection.execute<ResultSetHeader>(sql, insertValues as any[]);
   }
 }

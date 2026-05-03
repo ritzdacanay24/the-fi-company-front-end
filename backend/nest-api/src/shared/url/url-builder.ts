@@ -26,6 +26,12 @@ export class UrlBuilder {
       this.withQuery('/operations/forms/igt-transfer/edit', { selectedViewType, id }),
     vehicleEdit: (id: number): string =>
       this.withQuery('/operations/forms/vehicle/edit', { id }),
+    vehicleList: (): string =>
+      this.withQuery('/operations/forms/vehicle/list', {}),
+    woLookup: (woNbr: string | number): string =>
+      this.withQuery('/operations/wo-lookup', { wo_nbr: woNbr }),
+    orderLookup: (salesOrderNumber: string | number): string =>
+      this.withQuery('/operations/order-lookup', { salesOrderNumber }),
   };
 
   readonly fieldService = {

@@ -13,7 +13,7 @@ export class KanbanPrioritiesController {
   }
 
   @Post()
-  @Permissions('write')
+  @Permissions('manage')
   async postAction(
     @Query('action') action?: string,
     @Body() payload: Record<string, unknown> = {},

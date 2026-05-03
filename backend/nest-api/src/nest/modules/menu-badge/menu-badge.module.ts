@@ -5,6 +5,6 @@ import { MenuBadgeCacheRefreshService } from './menu-badge-cache-refresh.service
 
 @Module({
   providers: [MenuBadgeRepository, MenuBadgeService, MenuBadgeCacheRefreshService],
-  exports: [MenuBadgeService],
+  exports: [MenuBadgeService, MenuBadgeCacheRefreshService],
 })
 export class MenuBadgeModule {}

@@ -78,7 +78,7 @@ export class VehicleExpirationEmailHandler implements ScheduledJobHandler {
             ? 'ATTENTION!! Vehicle registration is about to expire. Please renew as soon as possible'
             : 'Vehicle registration expiration report';
 
-          const listLink = 'https://dashboard.eye-fi.com/dist/web/operations/forms/vehicle/list';
+          const listLink = this.urlBuilder.operations.vehicleList();
           let body = `Hello Team, <br>`;
           body += `Listed below are vehicles that will expire soon. Once registration is completed, please click <a href="${listLink}" target="_parent">here</a> to update the expiration date.<br><br>`;
           body += `<table rules="all" style="border-color: #666;" cellpadding="10">`;
@@ -116,7 +116,11 @@ export class VehicleExpirationEmailHandler implements ScheduledJobHandler {
     } catch (error: unknown) {
       const durationMs = Date.now() - startedAtMs;
       const message = error instanceof Error ? error.message : String(error);
+      const odbcErrors = (error as Record<string, unknown>)?.odbcErrors;
       this.logger.error(`[${trigger}] vehicle-expiration-email failed in ${durationMs}ms: ${message}`);
+      if (odbcErrors) {
+        this.logger.error(`[${trigger}] vehicle-expiration-email ODBC errors: ${JSON.stringify(odbcErrors, null, 2)}`);
+      }
 
       return {
         id: 'vehicle-expiration-email',

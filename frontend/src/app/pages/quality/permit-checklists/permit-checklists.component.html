@@ -295,9 +295,9 @@
                     </div>
                     <ng-container *ngIf="getAttachmentsForField(field.key) as rowAttachments">
                       <div class="field-attachments-inline" *ngIf="rowAttachments.length">
-                        <span class="badge text- border">{{ rowAttachments.length }} attachment(s)</span>
+                        <span class="badge text-body-secondary border">{{ rowAttachments.length }} attachment(s)</span>
                         <div class="field-attachments-inline-list">
-                          <button class="file-chip file-chip-button" type="button"
+                          <button class="btn btn-primary btn-sm" type="button"
                             *ngFor="let attachment of rowAttachments" (click)="openAttachmentPreview(attachment)">
                             {{ attachment.fileName }}
                           </button>
@@ -369,7 +369,7 @@
                       </div>
                       <div class="process-note-row-actions">
                         <span class="action-divider" *ngIf="canEditActiveTicket || getFieldLoggedAt(field.key)">|</span>
-                        <button class="btn btn-link  p-0 process-note-link" type="button"
+                        <button class="btn btn-link" type="button"
                           [ngClass]="hasProcessNote(field.key) ? 'text-primary' : 'text-secondary'"
                           (click)="openProcessNoteModal(field)">
                           {{ hasProcessNote(field.key) ? 'Notes (' + getProcessNotesForField(field.key).length + ')' :
@@ -379,9 +379,9 @@
                     </div>
                     <ng-container *ngIf="getAttachmentsForField(field.key) as rowAttachments">
                       <div class="field-attachments-inline" *ngIf="rowAttachments.length">
-                        <span class="badge text- border">{{ rowAttachments.length }} attachment(s)</span>
+                        <span class="badge text-body-secondary border">{{ rowAttachments.length }} attachment(s)</span>
                         <div class="field-attachments-inline-list">
-                          <button class="file-chip file-chip-button" type="button"
+                          <button class="btn btn-primary btn-sm" type="button"
                             *ngFor="let attachment of rowAttachments" (click)="openAttachmentPreview(attachment)">
                             {{ attachment.fileName }}
                           </button>
@@ -639,7 +639,7 @@
               <div class="attachments-list" *ngIf="activeTicketAttachments.length; else noAttachmentsYet">
                 <div class="attachment-item" *ngFor="let attachment of activeTicketAttachments">
                   <div class="attachment-main">
-                    <button class="attachment-name btn btn-link p-0" type="button"
+                    <button class="attachment-name btn p-0" type="button"
                       (click)="openAttachmentPreview(attachment)">
                       {{ attachment.fileName }}
                     </button>
@@ -805,7 +805,13 @@
         <h6 class="mb-0">Attachment Preview</h6>
         <small class="text-muted" *ngIf="previewAttachment">{{ previewAttachment.fileName }}</small>
       </div>
-      <button class="btn  btn-outline-secondary" type="button" (click)="closeAttachmentPreview()">Close</button>
+      <div class="d-flex align-items-center gap-2">
+        <button class="btn btn-outline-primary" type="button"
+          (click)="downloadPreviewAttachment()">
+          <i class="mdi mdi-download me-1"></i>Download
+        </button>
+        <button class="btn btn-outline-secondary" type="button" (click)="closeAttachmentPreview()">Close</button>
+      </div>
     </div>
     <div class="card-body">
       <ng-container [ngSwitch]="previewAttachmentKind">
@@ -826,7 +832,12 @@
           </div>
         </div>
         <div *ngSwitchDefault class="text-muted">
-          Preview unavailable. Re-upload the file if you need to preview it in this session.
+          Preview unavailable in this session.
+          <div class="mt-2">
+            <button class="btn btn-outline-primary" type="button" (click)="downloadPreviewAttachment()">
+              <i class="mdi mdi-download me-1"></i>Download File
+            </button>
+          </div>
         </div>
       </ng-container>
     </div>

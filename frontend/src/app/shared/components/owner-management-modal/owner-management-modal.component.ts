@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
@@ -416,9 +416,9 @@ import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-
               <i class="mdi mdi-alert me-2"></i>
               No active owners found in the system.
             </div>
-
+<!--SO133370 - 2-->
             <div *ngIf="!loadingAssignments && allOwnersForAssignment.length > 0">
-              <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+              <div #ownersAssignmentScroll class="table-responsive" style="max-height: 400px; overflow-y: auto;">
                 <table class="table table-hover mb-0">
                   <thead class="table-light sticky-top owner-table-head">
                     <tr>
@@ -978,6 +978,8 @@ import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-
   `]
 })
 export class OwnerManagementModalComponent implements OnInit, OnDestroy {
+  @ViewChild('ownersAssignmentScroll') ownersAssignmentScroll?: ElementRef<HTMLDivElement>;
+
   // Tab management
   activeTab: 'owners' | 'assignments' | 'admins' | 'settings' = 'owners';
   
@@ -1327,6 +1329,7 @@ export class OwnerManagementModalComponent implements OnInit, OnDestroy {
     if (!this.selectedUserId) return;
 
     const adminUserId = this.authService.currentUserValue?.id || 'system';
+    const prevScrollTop = this.ownersAssignmentScroll?.nativeElement?.scrollTop ?? 0;
     
     try {
       if (owner.isAssigned) {
@@ -1340,6 +1343,7 @@ export class OwnerManagementModalComponent implements OnInit, OnDestroy {
         if (response.success) {
           owner.isAssigned = false;
           await this.loadUserAssignments();
+          this.restoreAssignmentScroll(prevScrollTop);
         } else {
           alert(response.error || 'Failed to remove assignment');
         }
@@ -1354,6 +1358,7 @@ export class OwnerManagementModalComponent implements OnInit, OnDestroy {
         if (response.success) {
           owner.isAssigned = true;
           await this.loadUserAssignments();
+          this.restoreAssignmentScroll(prevScrollTop);
         } else {
           alert(response.error || 'Failed to assign owner');
         }
@@ -1362,6 +1367,14 @@ export class OwnerManagementModalComponent implements OnInit, OnDestroy {
       console.error('Error toggling owner assignment:', error);
       alert('An error occurred while updating the assignment');
     }
+  }
+
+  private restoreAssignmentScroll(scrollTop: number): void {
+    setTimeout(() => {
+      if (this.ownersAssignmentScroll?.nativeElement) {
+        this.ownersAssignmentScroll.nativeElement.scrollTop = scrollTop;
+      }
+    }, 0);
   }
 
   /**

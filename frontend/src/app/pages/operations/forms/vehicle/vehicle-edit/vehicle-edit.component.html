@@ -103,13 +103,13 @@
                 [rowData]="attachments" 
                 [columnDefs]="columnDefs"
                 [gridOptions]="gridOptions" 
-                style="width: 100%;height: 300px;">
+                style="width: 100%;height: calc(100vh - 320px);">
               </ag-grid-angular>
             </div>
 
             <!-- File Upload -->
-            <div class="row">
-              <div class="col-md-8 mb-3 mb-md-0">
+            <div class="row g-2 align-items-start">
+              <div class="col-md-8">
                 <input (change)="this.onFilechange($event)" 
                   class="form-control" 
                   type="file" 
@@ -117,18 +117,20 @@
                   multiple 
                   name="file"
                   #userPhoto>
-                <div class="form-text">
-                  <i class="mdi mdi-information-outline me-1"></i>
-                  Select multiple files to upload vehicle documentation.
-                </div>
               </div>
-              <div class="col-md-4 d-flex align-items-end">
+              <div class="col-md-4 d-flex align-items-start">
                 <button (click)="this.onUploadAttachments()" 
                   type="button" 
                   class="btn btn-outline-dark w-100"
                   [disabled]="myFiles?.length == 0">
                   <i class="mdi mdi-upload me-1"></i>Upload Documents
                 </button>
+              </div>
+              <div class="col-12">
+                <div class="form-text mt-1">
+                  <i class="mdi mdi-information-outline me-1"></i>
+                  Select multiple files to upload vehicle documentation.
+                </div>
               </div>
             </div>
           </div>

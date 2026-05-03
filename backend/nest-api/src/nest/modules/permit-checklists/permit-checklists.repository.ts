@@ -146,6 +146,18 @@ export class PermitChecklistsRepository {
     ]);
   }
 
+  async getAttachmentsJson(ticketId: string): Promise<string | null> {
+    const sql = `SELECT attachments_json FROM quality_permit_checklist_tickets WHERE ticket_id = ? LIMIT 1`;
+    const rows = await this.mysqlService.query<(RowDataPacket & { attachments_json: string })[]>(sql, [ticketId]);
+    return rows[0]?.attachments_json ?? null;
+  }
+
+  async setAttachmentsJson(ticketId: string, attachmentsJson: string, updatedAt: string): Promise<number> {
+    const sql = `UPDATE quality_permit_checklist_tickets SET attachments_json = CAST(? AS JSON), updated_at = ? WHERE ticket_id = ?`;
+    const result = await this.mysqlService.execute<ResultSetHeader>(sql, [attachmentsJson, updatedAt, ticketId]);
+    return result.affectedRows;
+  }
+
   async archiveTicket(ticketId: string, updatedAt: string): Promise<number> {
     const sql = `UPDATE quality_permit_checklist_tickets SET status = ?, updated_at = ? WHERE ticket_id = ?`;
     const result = await this.mysqlService.execute<ResultSetHeader>(sql, ['archived', updatedAt, ticketId]);

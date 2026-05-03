@@ -1,7 +1,6 @@
 export { ScheduledJobHandler } from './scheduled-job.handler';
 export { BaseScheduledJobHandler } from './base-scheduled-job.handler';
 
-export { CleanTokensHandler } from './clean-tokens.handler';
 export { CleanUsersHandler } from './clean-users.handler';
 export { FieldServiceOldWorkOrdersHandler } from './field-service-old-workorders.handler';
 export { PastDueFieldServiceRequestsHandler } from './past-due-field-service-requests.handler';
@@ -9,15 +8,12 @@ export { DropInWorkOrderEmailsHandler } from './dropin-workorder-emails.handler'
 export { VehicleExpirationEmailHandler } from './vehicle-expiration-email.handler';
 export { LnwDeliveryHandler } from './lnw-delivery.handler';
 export { InspectionEmailHandler } from './inspection-email.handler';
-export { CertificateOfComplianceHandler } from './certificate-of-compliance.handler';
 export { CompletedProductionOrdersHandler } from './completed-production-orders.handler';
 export { OverdueOrdersHandler } from './overdue-orders.handler';
 export { GraphicsWorkOrderHandler } from './graphics-work-order.handler';
 export { MenuBadgeCacheRefreshHandler } from './menu-badge-cache-refresh.handler';
-export { CleanDbSessionsHandler } from './clean-db-sessions.handler';
 export { DashboardPerformanceHandler } from './dashboard-performance.handler';
 export { TotalShippedOrdersHandler } from './total-shipped-orders.handler';
-export { ShippingChangesHandler } from './shipping-changes.handler';
 export { DailyReportInsertHandler } from './daily-report-insert.handler';
 export { OpenShippingRequestsHandler } from './open-shipping-requests.handler';
 export { GraphicsDueTodayReportHandler } from './graphics-due-today-report.handler';

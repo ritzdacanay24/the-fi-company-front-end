@@ -12,11 +12,6 @@ export class ScheduledJobsRunnerService {
     await this.scheduledJobsService.runJobIfEnabled('dropin-workorder-emails');
   }
 
-  @Cron('0 */5 * * * *', { name: 'scheduled-jobs.clean-tokens', timeZone: SCHEDULED_JOBS_TIMEZONE })
-  async runCleanTokens(): Promise<void> {
-    await this.scheduledJobsService.runJobIfEnabled('clean-tokens');
-  }
-
   @Cron('0 */6 * * * *', { name: 'scheduled-jobs.clean-users', timeZone: SCHEDULED_JOBS_TIMEZONE })
   async runCleanUsers(): Promise<void> {
     await this.scheduledJobsService.runJobIfEnabled('clean-users');

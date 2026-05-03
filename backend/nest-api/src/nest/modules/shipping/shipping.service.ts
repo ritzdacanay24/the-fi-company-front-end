@@ -86,8 +86,13 @@ export class ShippingService {
 
   async saveMisc(payload: Record<string, unknown>, currentUserId?: number): Promise<GenericRow> {
     const so = String(payload.so || '').trim();
+    
     if (!so) {
-      throw new Error('So not provided');
+      throw new Error('SO (Sales Order number) is required for owner update. Expected format: "SOD_NBR-SOD_LINE"');
+    }
+
+    if (!so.includes('-')) {
+      throw new Error(`Invalid SO format: "${so}". Expected format: "SOD_NBR-SOD_LINE" (e.g., "12345-1")`);
     }
 
     // Always prefer authenticated requester identity for audit attribution.
@@ -222,7 +227,6 @@ export class ShippingService {
         AND so_compl_date IS NULL
         AND sod_project = ''
       ORDER BY a.sod_due_date ASC
-      WITH (NOLOCK)
     `;
 
     return this.qadOdbcService.query<GenericRow[]>(sql, { keyCase: 'upper' });
