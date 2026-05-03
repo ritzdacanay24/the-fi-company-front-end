@@ -19,7 +19,7 @@
   "url_handlers": [
     {
       "origin": "https://dashboard.eye-fi.com"
-    },
+    }
   ],
   "icons": [
     {
