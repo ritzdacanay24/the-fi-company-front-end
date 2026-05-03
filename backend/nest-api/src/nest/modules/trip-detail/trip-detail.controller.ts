@@ -31,6 +31,15 @@ export class TripDetailController {
     return this.service.create(payload);
   }
 
+  @Put('emailTripDetails')
+  @Permissions('write')
+  async emailTripDetails(
+    @Query('fsId') fsId: string | number,
+    @Body() payload?: Record<string, unknown>,
+  ) {
+    return this.service.emailTripDetails(this.parseNumberQuery(fsId, 'fsId'), payload);
+  }
+
   @Put(':id')
   @Permissions('write')
   async update(@Param('id', ParseIntPipe) id: number, @Body() payload: Record<string, unknown>) {
@@ -56,14 +65,5 @@ export class TripDetailController {
   @Get(':id')
   async getById(@Param('id', ParseIntPipe) id: number) {
     return this.service.getById(id);
-  }
-
-  @Put('emailTripDetails')
-  @Permissions('write')
-  async emailTripDetails(
-    @Query('fsId') fsId: string | number,
-    @Body() payload?: Record<string, unknown>,
-  ) {
-    return this.service.emailTripDetails(this.parseNumberQuery(fsId, 'fsId'), payload);
   }
 }
