@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { RowDataPacket } from 'mysql2/promise';
 import { MysqlService } from '@/shared/database/mysql.service';
 import { ScheduledJobHandler, ScheduledJobRunResultDto } from './scheduled-job.handler';
 
@@ -13,7 +14,7 @@ export class GraphicsDueTodayReportHandler implements ScheduledJobHandler {
 
     try {
       // Get graphics production due today
-      const dueTodayRows = await this.mysqlService.query<Array<{ count: number }>>(`
+      const dueTodayRows = await this.mysqlService.query<RowDataPacket[]>(`
         SELECT COUNT(*) as count
         FROM eyefidb.graphicsSchedule
         WHERE active = 1

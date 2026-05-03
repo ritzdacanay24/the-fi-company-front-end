@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { RowDataPacket } from 'mysql2/promise';
 import { MysqlService } from '@/shared/database/mysql.service';
 import { EmailService } from '@/shared/email/email.service';
@@ -76,6 +77,7 @@ export class ScheduledJobsService {
   constructor(
     private readonly mysqlService: MysqlService,
     private readonly emailService: EmailService,
+    private readonly configService: ConfigService,
     private readonly cleanTokensHandler: CleanTokensHandler,
     private readonly cleanUsersHandler: CleanUsersHandler,
     private readonly fieldServiceOldWorkOrdersHandler: FieldServiceOldWorkOrdersHandler,
@@ -313,7 +315,7 @@ export class ScheduledJobsService {
   }
 
   async testRunJobById(id: string): Promise<ScheduledJobRunResultDto> {
-    const testTo = 'ritz.dacanay@the-fi-company.com';
+    const testTo = this.configService.getOrThrow<string>('DEV_EMAIL_REROUTE_TO');
 
     // Enable test mode: all emails from job go to Ritz only
     this.emailService.setTestMode(testTo);
