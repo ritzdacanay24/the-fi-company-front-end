@@ -1,77 +1,31 @@
-<!DOCTYPE html>
 <html>
-<head>
-    <meta charset="utf-8">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-        }
-        .header {
-            background-color: #f8f9fa;
-            padding: 15px;
-            border-bottom: 2px solid #dee2e6;
-        }
-        .content {
-            padding: 20px;
-        }
-        .date-range {
-            font-size: 14px;
-            color: #666;
-            margin-bottom: 15px;
-        }
-        .footer {
-            margin-top: 30px;
-            padding-top: 15px;
-            border-top: 1px solid #dee2e6;
-            font-size: 12px;
-            color: #666;
-        }
-        .logo-container {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .logo-container img {
-            max-width: 200px;
-            height: auto;
-        }
-    </style>
-</head>
-<body>
-    <div class="header">
-        {{#if mailLogoUrl}}
-        <div class="logo-container">
-            <img src="{{mailLogoUrl}}" alt="Company Logo">
-        </div>
-        {{/if}}
-        <h2>Field Service Job Report</h2>
-    </div>
-
-    <div class="content">
-        <p>Hello Team,</p>
-
-        <p>Please find attached the Field Service job report for the following period:</p>
-
-        <div class="date-range">
-            <strong>Report Period:</strong> {{monthStart}} to {{monthEnd}}
-        </div>
-
-        <p>The attached CSV file contains detailed information about all scheduled field service jobs during this period.</p>
-
-        <p>If you have any questions or need clarification, please reach out to the operations team.</p>
-
-        {{#if recipientCount}}
-        <p style="font-size: 13px; color: #999; margin-top: 20px;">
-            This report was sent to {{recipientCount}} recipient(s).
-        </p>
-        {{/if}}
-
-        <div class="footer">
-            {{#if mailDisclaimerText}}
-            {{{mailDisclaimerText}}}
-            {{/if}}
-        </div>
-    </div>
-</body>
+  <body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f4f6f8; color: #1f2933;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 620px; background-color: #ffffff; border: 1px solid #dde3ea; border-radius: 10px; overflow: hidden;">
+            {{> email-header}}
+            <tr>
+              <td style="padding: 20px 24px; background-color: #0b5cab; color: #ffffff;">
+                <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Field Service Job Report</h2>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 24px; font-size: 14px; line-height: 1.6;">
+                <p style="margin-top: 0;">Hello Team,</p>
+                <p style="margin: 0 0 16px 0;">Please find attached the Field Service job report for the following period:</p>
+                <p style="margin: 0 0 10px 0;"><strong>Report Period:</strong> {{monthStart}} to {{monthEnd}}</p>
+                <p style="margin: 0 0 16px 0;">The attached CSV file contains detailed information about all scheduled field service jobs during this period.</p>
+                <p style="margin: 0 0 24px 0;">If you have any questions or need clarification, please reach out to the operations team.</p>
+                {{#if recipientCount}}
+                <p style="margin: 0; color: #5a6b7b; font-size: 12px;">This report was sent to {{recipientCount}} recipient(s).</p>
+                {{/if}}
+              </td>
+            </tr>
+            {{> email-footer}}
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
 </html>

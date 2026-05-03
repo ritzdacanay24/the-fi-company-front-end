@@ -1,13 +1,34 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { request as httpsRequest } from 'https';
-import { URL } from 'url';
 import { RowDataPacket } from 'mysql2/promise';
-import { EmailNotificationService } from '../email-notification/email-notification.service';
-import { GraphicsProductionService } from '../graphics-production/graphics-production.service';
 import { MysqlService } from '@/shared/database/mysql.service';
 import { EmailService } from '@/shared/email/email.service';
-import { EmailTemplateService } from '@/shared/email/email-template.service';
 import { SCHEDULED_JOB_DEFINITIONS } from './scheduled-jobs.definitions';
+import { ScheduledJobHandler } from './handlers/scheduled-job.handler';
+import {
+  CleanTokensHandler,
+  CleanUsersHandler,
+  FieldServiceOldWorkOrdersHandler,
+  PastDueFieldServiceRequestsHandler,
+  DropInWorkOrderEmailsHandler,
+  VehicleExpirationEmailHandler,
+  LnwDeliveryHandler,
+  InspectionEmailHandler,
+  CertificateOfComplianceHandler,
+  CompletedProductionOrdersHandler,
+  OverdueOrdersHandler,
+  GraphicsWorkOrderHandler,
+  MenuBadgeCacheRefreshHandler,
+  CleanDbSessionsHandler,
+  DashboardPerformanceHandler,
+  TotalShippedOrdersHandler,
+  ShippingChangesHandler,
+  DailyReportInsertHandler,
+  OpenShippingRequestsHandler,
+  GraphicsDueTodayReportHandler,
+  FsJobReportMorningHandler,
+  FsJobReportEveningHandler,
+  FsJobNoticeHandler,
+} from './handlers';
 
 export type ScheduledJobRunStatus = 'success' | 'failure';
 
@@ -46,52 +67,86 @@ export interface ScheduledJobRunResultDto {
   responseSnippet?: string;
 }
 
-interface ExecuteGetResult {
-  statusCode: number;
-  responseSnippet?: string;
-}
-
-const LEGACY_ENDPOINT_BY_JOB_ID: Record<string, string> = {
-  'graphics-due-today-report': 'https://dashboard.eye-fi.com/tasks/graphicsDueTodayReport.php?runDaily=1',
-  'dashboard-performance': 'https://dashboard.eye-fi.com/tasks/dashPerformance.php',
-  'dropin-workorder-emails': 'https://dashboard.eye-fi.com/tasks/email_dropInWorkOrder.php',
-  'clean-db-sessions': 'https://dashboard.eye-fi.com/tasks/cleanDbSessions.php',
-  'clean-tokens': 'https://dashboard.eye-fi.com/tasks/cleanTokens.php',
-  'clean-users': 'https://dashboard.eye-fi.com/tasks/cleanUsers.php',
-  'total-shipped-orders': 'https://dashboard.eye-fi.com/tasks/total_shipped_orders.php',
-  'shipping-changes': 'https://dashboard.eye-fi.com/tasks/shipping_changes.php?runShippingChanges=1',
-  'overdue-orders': 'https://dashboard.eye-fi.com/tasks/overDueOrders.php',
-  'field-service-old-workorders': 'https://dashboard.eye-fi.com/tasks/fieldServiceOldWorkOrders.php',
-  'open-shipping-requests': 'https://dashboard.eye-fi.com/tasks/shippingChanges.php?runOpenShippingRequests=1',
-  'graphics-work-order': 'https://dashboard.eye-fi.com/tasks/createGraphicsWorkOrder.class.php',
-  'certificate-of-compliance': 'https://dashboard.eye-fi.com/tasks/certificateOfCompliance.php',
-  'vehicle-expiration-email': 'https://dashboard.eye-fi.com/tasks/VehicleExpirationEmail.php',
-  'daily-report-insert': 'https://dashboard.eye-fi.com/tasks/dailyReport.php?insert=1',
-  'completed-production-orders': 'https://dashboard.eye-fi.com/tasks/completedProductionOrders.php',
-  'inspection-email': 'https://dashboard.eye-fi.com/tasks/inspection/emailInspection.php',
-  'fs-job-report-morning': 'https://dashboard.eye-fi.com/tasks/fsJobReport.php',
-  'fs-job-report-evening': 'https://dashboard.eye-fi.com/tasks/fsJobReport.php',
-  'past-due-field-service-requests': 'https://dashboard.eye-fi.com/tasks/fieldService/pastDueRequests.php',
-  'lnw-delivery': 'https://dashboard.eye-fi.com/tasks/lnwDelivery.php',
-  'fs-job-notice': 'https://dashboard.eye-fi.com/tasks/fieldService/fsJobNotice.php',
-};
-
 @Injectable()
 export class ScheduledJobsService {
   private readonly logger = new Logger(ScheduledJobsService.name);
-  private readonly requestTimeoutMs = Number(process.env.SCHEDULED_JOBS_TIMEOUT_MS || 120000);
+  private readonly handlerMap: Map<string, ScheduledJobHandler>;
+  private readonly isDevelopment: boolean;
 
   constructor(
     private readonly mysqlService: MysqlService,
     private readonly emailService: EmailService,
-    private readonly emailNotificationService: EmailNotificationService,
-    private readonly graphicsProductionService: GraphicsProductionService,
-    private readonly emailTemplateService: EmailTemplateService,
-  ) {}
+    private readonly cleanTokensHandler: CleanTokensHandler,
+    private readonly cleanUsersHandler: CleanUsersHandler,
+    private readonly fieldServiceOldWorkOrdersHandler: FieldServiceOldWorkOrdersHandler,
+    private readonly pastDueFieldServiceRequestsHandler: PastDueFieldServiceRequestsHandler,
+    private readonly dropInWorkOrderEmailsHandler: DropInWorkOrderEmailsHandler,
+    private readonly vehicleExpirationEmailHandler: VehicleExpirationEmailHandler,
+    private readonly lnwDeliveryHandler: LnwDeliveryHandler,
+    private readonly inspectionEmailHandler: InspectionEmailHandler,
+    private readonly certificateOfComplianceHandler: CertificateOfComplianceHandler,
+    private readonly completedProductionOrdersHandler: CompletedProductionOrdersHandler,
+    private readonly overdueOrdersHandler: OverdueOrdersHandler,
+    private readonly graphicsWorkOrderHandler: GraphicsWorkOrderHandler,
+    private readonly menuBadgeCacheRefreshHandler: MenuBadgeCacheRefreshHandler,
+    private readonly cleanDbSessionsHandler: CleanDbSessionsHandler,
+    private readonly dashboardPerformanceHandler: DashboardPerformanceHandler,
+    private readonly totalShippedOrdersHandler: TotalShippedOrdersHandler,
+    private readonly shippingChangesHandler: ShippingChangesHandler,
+    private readonly dailyReportInsertHandler: DailyReportInsertHandler,
+    private readonly openShippingRequestsHandler: OpenShippingRequestsHandler,
+    private readonly graphicsDueTodayReportHandler: GraphicsDueTodayReportHandler,
+    private readonly fsJobReportMorningHandler: FsJobReportMorningHandler,
+    private readonly fsJobReportEveningHandler: FsJobReportEveningHandler,
+    private readonly fsJobNoticeHandler: FsJobNoticeHandler,
+  ) {
+    this.handlerMap = new Map();
+    this.isDevelopment = String(process.env.NODE_ENV ?? '').toLowerCase() === 'development';
+    this.registerHandlers();
+  }
+
+  private registerHandlers(): void {
+    this.handlerMap.set('clean-tokens', this.cleanTokensHandler);
+    this.handlerMap.set('clean-users', this.cleanUsersHandler);
+    this.handlerMap.set('field-service-old-workorders', this.fieldServiceOldWorkOrdersHandler);
+    this.handlerMap.set('past-due-field-service-requests', this.pastDueFieldServiceRequestsHandler);
+    this.handlerMap.set('dropin-workorder-emails', this.dropInWorkOrderEmailsHandler);
+    this.handlerMap.set('vehicle-expiration-email', this.vehicleExpirationEmailHandler);
+    this.handlerMap.set('lnw-delivery', this.lnwDeliveryHandler);
+    this.handlerMap.set('inspection-email', this.inspectionEmailHandler);
+    this.handlerMap.set('certificate-of-compliance', this.certificateOfComplianceHandler);
+    this.handlerMap.set('completed-production-orders', this.completedProductionOrdersHandler);
+    this.handlerMap.set('overdue-orders', this.overdueOrdersHandler);
+    this.handlerMap.set('graphics-work-order', this.graphicsWorkOrderHandler);
+    this.handlerMap.set('menu-badge-cache-refresh', this.menuBadgeCacheRefreshHandler);
+    this.handlerMap.set('clean-db-sessions', this.cleanDbSessionsHandler);
+    this.handlerMap.set('dashboard-performance', this.dashboardPerformanceHandler);
+    this.handlerMap.set('total-shipped-orders', this.totalShippedOrdersHandler);
+    this.handlerMap.set('shipping-changes', this.shippingChangesHandler);
+    this.handlerMap.set('daily-report-insert', this.dailyReportInsertHandler);
+    this.handlerMap.set('open-shipping-requests', this.openShippingRequestsHandler);
+    this.handlerMap.set('graphics-due-today-report', this.graphicsDueTodayReportHandler);
+    this.handlerMap.set('fs-job-report-morning', this.fsJobReportMorningHandler);
+    this.handlerMap.set('fs-job-report-evening', this.fsJobReportEveningHandler);
+    this.handlerMap.set('fs-job-notice', this.fsJobNoticeHandler);
+  }
 
   isRunnerEnabled(): boolean {
     const raw = String(process.env.NEST_SCHEDULED_JOBS_ENABLED ?? 'false').toLowerCase().trim();
     return raw === '1' || raw === 'true' || raw === 'yes' || raw === 'on';
+  }
+
+  async runJobIfEnabled(id: string): Promise<void> {
+    if (!this.isRunnerEnabled()) {
+      return;
+    }
+
+    const job = SCHEDULED_JOB_DEFINITIONS.find((row) => row.id === id);
+    if (!job || !job.active) {
+      return;
+    }
+
+    await this.runJobById(id, 'cron');
   }
 
   async listJobs(): Promise<ScheduledJobDto[]> {
@@ -136,7 +191,7 @@ export class ScheduledJobsService {
 
   updateJob(
     id: string,
-    data: { cron: string; active: boolean; note?: string }
+    data: { cron: string; active: boolean; note?: string },
   ): ScheduledJobDto | null {
     const jobIndex = SCHEDULED_JOB_DEFINITIONS.findIndex((row) => row.id === id);
     if (jobIndex === -1) {
@@ -155,10 +210,7 @@ export class ScheduledJobsService {
     return this.toScheduledJobDto(SCHEDULED_JOB_DEFINITIONS[jobIndex], runnerEnabled, undefined);
   }
 
-  async runJobById(
-    id: string,
-    trigger: 'manual' | 'cron',
-  ): Promise<ScheduledJobRunResultDto> {
+  async runJobById(id: string, trigger: 'manual' | 'cron', skipDevNotification: boolean = false): Promise<ScheduledJobRunResultDto> {
     const job = SCHEDULED_JOB_DEFINITIONS.find((row) => row.id === id);
     if (!job) {
       return {
@@ -177,16 +229,20 @@ export class ScheduledJobsService {
     let runId: number | null = null;
 
     try {
-      const [insertResult] = await this.mysqlService.query<RowDataPacket[]>(
+      const [insertResult] = (await this.mysqlService.query<RowDataPacket[]>(
         `INSERT INTO scheduled_job_run (job_name, trigger_type, status, started_at) VALUES (?, ?, 'success', NOW())`,
         [job.id, trigger],
-      ) as any;
+      )) as any;
       runId = (insertResult as any)?.insertId ?? null;
     } catch (dbErr) {
       this.logger.warn(`[${trigger}] ${job.id} - could not insert run record: ${dbErr}`);
     }
 
-    const finishRun = async (status: ScheduledJobRunStatus, durationMs: number, errorMessage?: string): Promise<ScheduledJobLastRun> => {
+    const finishRun = async (
+      status: ScheduledJobRunStatus,
+      durationMs: number,
+      errorMessage?: string,
+    ): Promise<ScheduledJobLastRun> => {
       const finishedAtIso = new Date().toISOString();
       if (runId !== null) {
         try {
@@ -209,73 +265,11 @@ export class ScheduledJobsService {
     };
 
     try {
-      if (job.id === 'graphics-due-today-report') {
-        const dueToday = await this.graphicsProductionService.getDueTodayReport();
+      // Dispatch to handler
+      const handler = this.handlerMap.get(job.id);
+      if (!handler) {
         const durationMs = Date.now() - startedAtMs;
-        const responseSnippet = `totalOrders=${dueToday.totalOrders}`;
-        this.logger.log(`[${trigger}] ${job.id} -> local query in ${durationMs}ms (${responseSnippet})`);
-        const lastRun = await finishRun('success', durationMs);
-
-        return {
-          id: job.id,
-          name: job.name,
-          trigger,
-          ok: true,
-          statusCode: 200,
-          durationMs,
-          message: `Job ${job.name} completed locally in Nest (${responseSnippet}).`,
-          lastRun,
-          url: 'nest://graphics-production/getDueTodayReport',
-          responseSnippet,
-        };
-      }
-
-      if (job.id === 'fs-job-report-morning' || job.id === 'fs-job-report-evening') {
-        const sentTo = await this.sendFieldServiceJobReportEmail();
-        const durationMs = Date.now() - startedAtMs;
-        const responseSnippet = `recipients=${sentTo.length}`;
-        this.logger.log(`[${trigger}] ${job.id} -> local mail in ${durationMs}ms (${responseSnippet})`);
-        const lastRun = await finishRun('success', durationMs);
-
-        return {
-          id: job.id,
-          name: job.name,
-          trigger,
-          ok: true,
-          statusCode: 200,
-          durationMs,
-          message: `Job ${job.name} completed locally in Nest (${responseSnippet}).`,
-          lastRun,
-          url: job.url,
-          responseSnippet,
-        };
-      }
-
-      if (job.id === 'fs-job-notice') {
-        const noticesSent = await this.sendFieldServiceNoticeEmails();
-        const durationMs = Date.now() - startedAtMs;
-        const responseSnippet = `notices=${noticesSent}`;
-        this.logger.log(`[${trigger}] ${job.id} -> local mail in ${durationMs}ms (${responseSnippet})`);
-        const lastRun = await finishRun('success', durationMs);
-
-        return {
-          id: job.id,
-          name: job.name,
-          trigger,
-          ok: true,
-          statusCode: 200,
-          durationMs,
-          message: `Job ${job.name} completed locally in Nest (${responseSnippet}).`,
-          lastRun,
-          url: job.url,
-          responseSnippet,
-        };
-      }
-
-      const targetUrl = LEGACY_ENDPOINT_BY_JOB_ID[job.id];
-      if (!targetUrl) {
-        const durationMs = Date.now() - startedAtMs;
-        const lastRun = await finishRun('failure', durationMs, `No executor registered for ${job.id}.`);
+        const lastRun = await finishRun('failure', durationMs, `No handler registered for ${job.id}.`);
         return {
           id: job.id,
           name: job.name,
@@ -283,38 +277,20 @@ export class ScheduledJobsService {
           ok: false,
           statusCode: 501,
           durationMs,
-          message: `No executor registered for ${job.id}.`,
+          message: `No handler registered for ${job.id}.`,
           lastRun,
           url: job.url,
         };
       }
 
-      const { statusCode, responseSnippet } = await this.executeGet(targetUrl);
+      const result = await handler.handle(trigger);
       const durationMs = Date.now() - startedAtMs;
-      const ok = statusCode >= 200 && statusCode < 300;
-      const message = ok
-        ? `Job ${job.name} completed successfully (${statusCode}).`
-        : `Job ${job.name} returned non-success status (${statusCode})${responseSnippet ? `: ${responseSnippet}` : '.'}`;
-
-      if (ok) {
-        this.logger.log(`[${trigger}] ${job.id} -> ${statusCode} in ${durationMs}ms`);
-      } else {
-        this.logger.warn(`[${trigger}] ${job.id} -> ${statusCode} in ${durationMs}ms`);
-      }
-
-      const lastRun = await finishRun(ok ? 'success' : 'failure', durationMs, ok ? undefined : message);
+      const lastRun = await finishRun(result.ok ? 'success' : 'failure', durationMs, result.ok ? undefined : result.message);
 
       return {
-        id: job.id,
-        name: job.name,
-        trigger,
-        ok,
-        statusCode,
-        durationMs,
-        message,
+        ...result,
         lastRun,
         url: job.url,
-        responseSnippet,
       };
     } catch (error: unknown) {
       const durationMs = Date.now() - startedAtMs;
@@ -336,6 +312,70 @@ export class ScheduledJobsService {
     }
   }
 
+  async testRunJobById(id: string): Promise<ScheduledJobRunResultDto> {
+    const testTo = 'ritz.dacanay@the-fi-company.com';
+
+    // Enable test mode: all emails from job go to Ritz only
+    this.emailService.setTestMode(testTo);
+
+    try {
+      // Run the job normally, but with all emails redirected to Ritz
+      const result = await this.runJobById(id, 'manual', true);
+
+      // Send one confirmation email that job ran
+      try {
+        await this.emailService.sendMailDirect({
+          to: testTo,
+          subject: `[TEST BUTTON] Job Test Completed: ${result.name}`,
+          html: `<p style="font-family:monospace">
+            <strong>SCHEDULED JOB TEST RESULT</strong><br><br>
+            <strong>Job:</strong> ${result.name} (<code>${id}</code>)<br>
+            <strong>Status:</strong> ${result.ok ? 'OK' : 'FAILED'}<br>
+            <strong>Duration:</strong> ${result.durationMs}ms<br>
+            <strong>Message:</strong> ${result.message}<br>
+            <strong>Time:</strong> ${new Date().toISOString()}<br>
+          </p>
+          <hr><small>Job was executed and all output was sent to this email.</small>`,
+        });
+      } catch (err) {
+        this.logger.warn(`Could not send test confirmation email for job ${id}: ${err}`);
+      }
+
+      return result;
+    } finally {
+      // Always clear test mode
+      this.emailService.clearTestMode();
+    }
+  }
+
+  private async sendDevRunNotification(
+    id: string,
+    name: string,
+    trigger: 'manual' | 'cron',
+    ok: boolean,
+    durationMs: number,
+    message: string,
+  ): Promise<void> {
+    const status = ok ? '[OK]' : '[FAILED]';
+    const color = ok ? '#2d7a2d' : '#a00';
+    const devTo = String(process.env.DEV_EMAIL_REROUTE_TO ?? '');
+    if (!devTo) return;
+
+    await this.emailService.sendMail({
+      to: devTo,
+      subject: `[DEV] Scheduled Job: ${name} - ${ok ? 'OK' : 'FAILED'} (${trigger})`,
+      html: `<p style="font-family:monospace">
+        <strong style="color:${color}">${status}</strong><br><br>
+        <strong>Job:</strong> ${name} (<code>${id}</code>)<br>
+        <strong>Trigger:</strong> ${trigger}<br>
+        <strong>Duration:</strong> ${durationMs}ms<br>
+        <strong>Message:</strong> ${message}<br>
+        <strong>Time:</strong> ${new Date().toISOString()}
+      </p>
+      <hr><small>This email is only sent in NODE_ENV=development</small>`,
+    });
+  }
+
   private toScheduledJobDto(
     job: (typeof SCHEDULED_JOB_DEFINITIONS)[number],
     runnerEnabled: boolean,
@@ -344,7 +384,7 @@ export class ScheduledJobsService {
     return {
       ...job,
       lastRun,
-      command: 'NEST_LOCAL_HANDLER scheduledJobsService.runJobById(jobId)',
+      command: 'NEST_HANDLER_DISPATCH scheduledJobsService.runJobById(jobId)',
       source: 'nest-cron' as const,
       runnerEnabled,
     };
@@ -356,311 +396,14 @@ export class ScheduledJobsService {
     }
 
     if (value instanceof Date) {
-      return Number.isNaN(value.getTime()) ? null : value.toISOString();
+      return value.toISOString();
     }
 
-    if (typeof value === 'string' || typeof value === 'number') {
-      const parsed = new Date(value);
-      return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
-    }
-
-    return null;
-  }
-
-  async runJobIfEnabled(id: string): Promise<void> {
-    if (!this.isRunnerEnabled()) {
-      return;
-    }
-
-    const job = SCHEDULED_JOB_DEFINITIONS.find((row) => row.id === id);
-    if (!job || !job.active) {
-      return;
-    }
-
-    await this.runJobById(id, 'cron');
-  }
-
-  private async executeGet(url: string): Promise<ExecuteGetResult> {
-    const parsed = new URL(url);
-    const maxSnippetBytes = 1000;
-
-    return new Promise<ExecuteGetResult>((resolve, reject) => {
-      const req = httpsRequest(
-        {
-          protocol: parsed.protocol,
-          hostname: parsed.hostname,
-          port: parsed.port || undefined,
-          path: `${parsed.pathname}${parsed.search}`,
-          method: 'GET',
-          timeout: this.requestTimeoutMs,
-        },
-        (res) => {
-          const statusCode = res.statusCode || 0;
-          const chunks: Buffer[] = [];
-          let collectedBytes = 0;
-
-          res.on('data', (chunk: Buffer | string) => {
-            if (collectedBytes >= maxSnippetBytes) {
-              return;
-            }
-
-            const bufferChunk = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
-            const remaining = maxSnippetBytes - collectedBytes;
-            if (bufferChunk.length <= remaining) {
-              chunks.push(bufferChunk);
-              collectedBytes += bufferChunk.length;
-              return;
-            }
-
-            chunks.push(bufferChunk.subarray(0, remaining));
-            collectedBytes += remaining;
-          });
-
-          res.on('end', () => {
-            const rawSnippet = chunks.length
-              ? Buffer.concat(chunks).toString('utf-8').replace(/\s+/g, ' ').trim()
-              : undefined;
-
-            resolve({
-              statusCode,
-              responseSnippet: rawSnippet?.slice(0, 250),
-            });
-          });
-        },
-      );
-
-      req.on('timeout', () => {
-        req.destroy(new Error(`Request timeout after ${this.requestTimeoutMs}ms`));
-      });
-
-      req.on('error', (error) => reject(error));
-      req.end();
-    });
-  }
-
-  private async sendFieldServiceJobReportEmail(): Promise<string[]> {
-    const rows = await this.mysqlService.query<RowDataPacket[]>(`
-      SELECT *
-      FROM fs_scheduler_view
-      WHERE request_date BETWEEN LAST_DAY(CURDATE() - INTERVAL 2 MONTH) + INTERVAL 1 DAY
-        AND LAST_DAY(CURDATE() + INTERVAL 1 MONTH)
-      ORDER BY request_date ASC
-    `);
-
-    const recipients = await this.resolveNotificationEmails('field_serivce_copy_of_report');
-    if (!recipients.length) {
-      this.logger.warn('No recipients configured for field_serivce_copy_of_report');
-      return [];
-    }
-
-    const csv = this.toCsv(rows);
-    const monthStart = this.formatDate(new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1));
-    const monthEndDate = new Date(new Date().getFullYear(), new Date().getMonth() + 2, 0);
-    const monthEnd = this.formatDate(monthEndDate);
-
-    const html = this.emailTemplateService.render('fs-job-report', {
-      monthStart,
-      monthEnd,
-      recipientCount: recipients.length,
-    });
-
-    await this.emailService.sendMail({
-      to: recipients,
-      subject: 'Field Service Job Report',
-      text: `Field Service Job Report - ${monthStart} to ${monthEnd}`,
-      html,
-      attachments: [
-        {
-          filename: 'field_service_jobs.csv',
-          content: csv,
-          contentType: 'text/csv; charset=utf-8',
-        },
-      ],
-    });
-
-    return recipients;
-  }
-
-  private async resolveNotificationEmails(location: string): Promise<string[]> {
-    const rows = await this.emailNotificationService.find({ location });
-    const recipients = new Set<string>();
-
-    for (const row of rows as Array<Record<string, unknown>>) {
-      const values = [row['email'], row['notification_emails']]
-        .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
-        .flatMap((value) => value.split(','))
-        .map((value) => value.trim())
-        .filter((value) => value.length > 0);
-
-      for (const email of values) {
-        recipients.add(email);
-      }
-    }
-
-    return Array.from(recipients);
-  }
-
-  private toCsv(rows: RowDataPacket[]): string {
-    if (!rows.length) {
-      return '';
-    }
-
-    const headers = Object.keys(rows[0] as Record<string, unknown>);
-    const escapeCsv = (value: unknown): string => {
-      if (value === null || value === undefined) {
-        return '';
-      }
-
-      const text = String(value).replace(/"/g, '""');
-      return `"${text}"`;
-    };
-
-    const lines: string[] = [];
-    lines.push(headers.map((header) => escapeCsv(header)).join(','));
-
-    for (const row of rows as Array<Record<string, unknown>>) {
-      lines.push(headers.map((header) => escapeCsv(row[header])).join(','));
-    }
-
-    return lines.join('\n');
-  }
-
-  private formatDate(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-
-  }
-
-  private async sendFieldServiceNoticeEmails(): Promise<number> {
-      const jobs = await this.mysqlService.query<RowDataPacket[]>(`
-        SELECT
-          fs.id,
-          fs.request_id,
-          fs.request_date,
-          fs.start_time,
-          fs.property,
-          fs.service_type,
-          req.email,
-          req.requested_by,
-          req.token
-        FROM fs_scheduler fs
-        LEFT JOIN fs_request req ON req.id = fs.request_id
-        WHERE fs.request_date BETWEEN DATE_FORMAT(NOW(), '%Y-%m-%d')
-          AND DATE_ADD(DATE_FORMAT(NOW(), '%Y-%m-%d'), INTERVAL 2 DAY)
-        AND req.email IS NOT NULL
-        AND fs.notice_email_date IS NULL
-        AND fs.active = 1
-        AND fs.status = 'Confirmed'
-        ORDER BY fs.request_date ASC, fs.start_time ASC
-      `);
-
-      let sentCount = 0;
-      const noticeDetails: Array<Record<string, unknown>> = [];
-      const timeNow = new Date().toISOString().slice(0, 19).replace('T', ' ');
-
-      for (const job of jobs as Array<Record<string, unknown>>) {
-        const jobId = job['id'];
-        const requestId = job['request_id'];
-        const requestDate = job['request_date'];
-        const startTime = job['start_time'];
-        const property = job['property'];
-        const email = job['email'] as string;
-        const requestedBy = job['requested_by'] as string;
-        const token = job['token'] as string;
-
-        try {
-          const link = `https://dashboard.eye-fi.com/request?token=${token}`;
-          const message = `
-            Request ID: ${requestId} <br/>
-            View Request: <a href="${link}" target="_blank">Request</a> <br/><br/>
-            Dear ${requestedBy}, <br/> <br/>
-            This email is to confirm your upcoming appointment on ${requestDate} at ${startTime} at ${property}. Please let us know if you have any questions or concerns before the day of your appointment.<br/><br/>
-            Also, please note that our cancellation policy states that all cancellations must be made at least 48 hours in advance or a full fee may be charged.<br/><br/>
-            We look forward to seeing you soon!<br/><br/>
-            Sincerely,<br/>
-            The Fi Company
-          `;
-
-          await this.emailService.sendMail({
-            to: email,
-            subject: `Appointment Notice - Request ID ${requestId}`,
-            html: message,
-          });
-
-          await this.mysqlService.query(`
-            UPDATE fs_scheduler
-            SET notice_email_date = ?
-            WHERE id = ?
-          `, [timeNow, jobId]);
-
-          sentCount++;
-          noticeDetails.push({
-            request_id: requestId,
-            request_date: requestDate,
-            start_time: startTime,
-            property,
-            requested_by: requestedBy,
-            email_sent: timeNow,
-          });
-        } catch (error) {
-          this.logger.error(`Failed to send notice email for job ${jobId}:`, error);
-        }
-      }
-
-      if (noticeDetails.length > 0) {
-        try {
-          const summaryHtml = this.buildFieldServiceNoticeSummary(noticeDetails);
-          await this.emailService.sendMail({
-            to: 'schedulinglv@the-fi-company.com',
-            subject: 'Field Service Notice Email Summary',
-            html: summaryHtml,
-          });
-        } catch (error) {
-          this.logger.error('Failed to send scheduling team summary:', error);
-        }
-      }
-
-      return sentCount;
-    }
-
-    private buildFieldServiceNoticeSummary(details: Array<Record<string, unknown>>): string {
-      let html = `
-        <html><body>
-        <p><strong>Field Service Notice Email Summary</strong></p>
-        <table rules="all" style="border-color: #666; border-collapse: collapse;" cellpadding="5" border="1">
-        <tr style="background: #eee;">
-          <td><strong>Request ID</strong></td>
-          <td><strong>Request Date</strong></td>
-          <td><strong>Start Time</strong></td>
-          <td><strong>Requested By</strong></td>
-          <td><strong>Property</strong></td>
-          <td><strong>Email Sent</strong></td>
-        </tr>
-      `;
-
-      for (const detail of details) {
-        html += `
-        <tr>
-          <td>${detail['request_id']}</td>
-          <td>${detail['request_date']}</td>
-          <td>${detail['start_time']}</td>
-          <td>${detail['requested_by']}</td>
-          <td>${detail['property']}</td>
-          <td>${detail['email_sent']}</td>
-        </tr>
-        `;
-      }
-
-      html += `
-        </table>
-        <p style="margin-top: 20px; font-size: 12px; color: #666;">
-          Total notices sent: ${details.length}
-        </p>
-        </body></html>
-      `;
-
-      return html;
+    const text = String(value);
+    try {
+      return new Date(text).toISOString();
+    } catch {
+      return null;
     }
   }
+}

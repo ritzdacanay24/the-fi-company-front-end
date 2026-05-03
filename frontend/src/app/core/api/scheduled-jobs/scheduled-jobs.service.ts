@@ -55,6 +55,10 @@ export class ScheduledJobsService {
     return firstValueFrom(this.http.post<ScheduledJobRunResult>(`${this.baseUrl}/${id}/run`, {}));
   }
 
+  async testRun(id: string): Promise<ScheduledJobRunResult> {
+    return firstValueFrom(this.http.post<ScheduledJobRunResult>(`${this.baseUrl}/${id}/test-run`, {}));
+  }
+
   async update(
     id: string,
     data: { cron: string; active: boolean; note?: string }

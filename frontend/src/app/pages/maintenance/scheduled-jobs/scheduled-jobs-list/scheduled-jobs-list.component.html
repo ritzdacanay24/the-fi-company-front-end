@@ -63,6 +63,9 @@
                 <button class="btn btn-sm btn-primary" (click)="runJob(row)" [disabled]="isRunning(row.id)">
                   {{ isRunning(row.id) ? 'Running...' : 'Run Job' }}
                 </button>
+                <button class="btn btn-sm btn-warning ms-2" (click)="testJob(row)" [disabled]="isRunning(row.id)">
+                  {{ isRunning(row.id) ? 'Testing...' : 'Test' }}
+                </button>
                 <button class="btn btn-sm btn-outline-secondary ms-2" (click)="openEditModal(row)">
                   Edit
                 </button>

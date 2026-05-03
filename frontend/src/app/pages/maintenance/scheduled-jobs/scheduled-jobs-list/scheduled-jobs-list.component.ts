@@ -97,6 +97,32 @@ export class ScheduledJobsListComponent implements OnInit {
     }
   }
 
+  async testJob(job: ScheduledJobRow): Promise<void> {
+    if (!job?.id || this.isRunning(job.id)) {
+      return;
+    }
+
+    this.runningJobIds.add(job.id);
+    try {
+      const result = await this.scheduledJobsApi.testRun(job.id);
+      const jobIndex = this.jobs.findIndex((row) => row.id === job.id);
+      if (jobIndex >= 0 && result.lastRun) {
+        this.jobs[jobIndex] = {
+          ...this.jobs[jobIndex],
+          lastRun: result.lastRun,
+        };
+      }
+
+      if (!result.ok) {
+        console.warn(`Scheduled job ${job.id} test returned non-success:`, result);
+      }
+    } catch (error) {
+      console.warn(`Scheduled job ${job.id} test failed`, error);
+    } finally {
+      this.runningJobIds.delete(job.id);
+    }
+  }
+
   async openEditModal(job: ScheduledJobRow): Promise<void> {
     const modalRef = this.modalService.open(EditCronJobModalComponent, {
       size: "lg",

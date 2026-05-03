@@ -25,6 +25,11 @@ export class ScheduledJobsController {
     return await this.scheduledJobsService.runJobById(id, 'manual');
   }
 
+  @Post(':id/test-run')
+  async testRun(@Param('id') id: string): Promise<ScheduledJobRunResultDto> {
+    return await this.scheduledJobsService.testRunJobById(id);
+  }
+
   @Patch(':id')
   update(
     @Param('id') id: string,

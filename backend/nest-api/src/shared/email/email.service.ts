@@ -9,6 +9,7 @@ export class EmailService {
   private readonly defaultFrom: string;
   private readonly devEmailRerouteTo: string;
   private readonly mailTransport: 'smtp' | 'sendmail';
+  private testModeRedirectTo?: string;
 
   constructor(private readonly configService: ConfigService) {
     const nodeEnv = this.configService.getOrThrow<string>('NODE_ENV').toLowerCase();
@@ -62,15 +63,11 @@ export class EmailService {
       ...options,
     };
 
-    if (this.isDevelopment) {
-      // In dev: send to Mailpit AND also include your email address to receive in inbox
-      const recipients = Array.isArray(payload.to)
-        ? [...payload.to, this.devEmailRerouteTo]
-        : [payload.to || '', this.devEmailRerouteTo].filter(Boolean);
-
+    // Test mode: redirect all emails to testModeRedirectTo
+    if (this.testModeRedirectTo) {
       await this.transporter.sendMail({
         ...payload,
-        to: recipients,
+        to: this.testModeRedirectTo,
         cc: undefined,
         bcc: undefined,
         headers: {
@@ -78,13 +75,49 @@ export class EmailService {
           'X-Original-To': this.recipientsToText(options.to),
           'X-Original-Cc': this.recipientsToText(options.cc),
           'X-Original-Bcc': this.recipientsToText(options.bcc),
-          'X-Dev-Mode': `true (Mailpit: http://localhost:8025, Also sent to: ${this.devEmailRerouteTo})`,
+          'X-Test-Mode': `true (redirected to: ${this.testModeRedirectTo})`,
+        },
+      });
+      return;
+    }
+
+    if (this.isDevelopment) {
+      // In dev: redirect ALL emails to DEV_EMAIL_REROUTE_TO only — never send to real recipients
+      await this.transporter.sendMail({
+        ...payload,
+        to: this.devEmailRerouteTo,
+        cc: undefined,
+        bcc: undefined,
+        headers: {
+          ...(typeof payload.headers === 'object' && payload.headers ? payload.headers : {}),
+          'X-Original-To': this.recipientsToText(options.to),
+          'X-Original-Cc': this.recipientsToText(options.cc),
+          'X-Original-Bcc': this.recipientsToText(options.bcc),
+          'X-Dev-Mode': `true (redirected to: ${this.devEmailRerouteTo})`,
         },
       });
       return;
     }
 
     await this.transporter.sendMail(payload);
+  }
+
+  async sendMailDirect(options: SendMailOptions): Promise<void> {
+    // Send directly without any dev redirects — used for test confirmations that must go to specific recipient
+    const payload: SendMailOptions = {
+      from: options.from || this.defaultFrom,
+      ...options,
+    };
+
+    await this.transporter.sendMail(payload);
+  }
+
+  setTestMode(redirectTo: string): void {
+    this.testModeRedirectTo = redirectTo;
+  }
+
+  clearTestMode(): void {
+    this.testModeRedirectTo = undefined;
   }
 
   private recipientsToText(

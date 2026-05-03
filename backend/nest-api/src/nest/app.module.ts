@@ -271,6 +271,6 @@ import { UrlModule } from '../shared/url/url.module';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
-    consumer.apply(RequestContextMiddleware).forRoutes('*');
+    consumer.apply(RequestContextMiddleware).forRoutes('*path');
   }
 }

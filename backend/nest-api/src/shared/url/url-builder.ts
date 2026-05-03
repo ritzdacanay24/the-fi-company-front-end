@@ -24,11 +24,15 @@ export class UrlBuilder {
       this.withQuery('/quality/qir/edit', { selectedViewType, id }),
     igtTransferEdit: (id: number, selectedViewType = 'Active'): string =>
       this.withQuery('/operations/forms/igt-transfer/edit', { selectedViewType, id }),
+    vehicleEdit: (id: number): string =>
+      this.withQuery('/operations/forms/vehicle/edit', { id }),
   };
 
   readonly fieldService = {
     requestEdit: (id: number, selectedViewType = 'Open'): string =>
       this.withQuery('/field-service/request/edit', { selectedViewType, id }),
+    requestConfirmation: (token: string): string =>
+      this.withQuery('/request', { token }),
   };
 
   private withQuery(

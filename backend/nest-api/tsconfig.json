@@ -17,6 +17,10 @@
     "sourceMap": true,
     "types": ["node", "nodemailer", "pdfkit"]
   },
+  "ts-node": {
+    "swc": true,
+    "transpileOnly": true
+  },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }
