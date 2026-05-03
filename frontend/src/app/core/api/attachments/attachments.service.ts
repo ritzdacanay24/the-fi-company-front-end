@@ -6,6 +6,8 @@ import { firstValueFrom } from 'rxjs';
 import { queryString } from 'src/assets/js/util/queryString';
 
 const url = 'apiV2/attachments';
+const publicFieldServiceAttachmentsUrl = 'apiV2/public/field-service/attachments';
+const publicFieldServiceBaseUrl = 'apiV2/public/field-service';
 
 @Injectable({
   providedIn: 'root'
@@ -32,9 +34,26 @@ export class AttachmentsService extends DataService<any> {
   };
 
 
-  getAttachmentByRequestId(id: any) {
+  getAttachmentByRequestId(id: any, token?: string | null) {
+    const requestId = encodeURIComponent(String(id ?? ''));
+    const normalizedToken = String(token ?? '').trim();
+
+    if (normalizedToken) {
+      return firstValueFrom(
+        this.http.get<any[]>(
+          `${publicFieldServiceBaseUrl}/requests/${requestId}/attachments?token=${encodeURIComponent(normalizedToken)}`,
+        ),
+      ).then((response: any) => {
+        if (Array.isArray(response)) {
+          return response;
+        }
+
+        return Array.isArray(response?.attachments) ? response.attachments : [];
+      });
+    }
+
     return firstValueFrom(this.http.get<any[]>(
-      `${url}/find?field=${encodeURIComponent('Field Service Request')}&uniqueId=${encodeURIComponent(String(id ?? ''))}`,
+      `${url}/find?field=${encodeURIComponent('Field Service Request')}&uniqueId=${requestId}`,
     ));
   }
 
@@ -67,7 +86,7 @@ export class AttachmentsService extends DataService<any> {
 
   uploadfilePublic(file: any) {
     const payload = this.normalizeV2Payload(file);
-    return firstValueFrom(this.http.post(`${url}`, payload));
+    return firstValueFrom(this.http.post(`${publicFieldServiceAttachmentsUrl}`, payload));
   }
   
   getAttachmentByQirId(id: any) {

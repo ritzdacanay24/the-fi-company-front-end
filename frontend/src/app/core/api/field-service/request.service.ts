@@ -36,7 +36,8 @@ export class RequestService extends DataService<any> {
     const isPublicPayload =
       params &&
       typeof params === 'object' &&
-      ('customer_name' in params || 'service_type' in params || 'description' in params);
+      ('customer_name' in params || 'service_type' in params || 'description' in params ||
+       ('type_of_service' in params && 'onsite_customer_name' in params));
 
     if (isPublicPayload) {
       return firstValueFrom(this.http.post<any>(`${publicRequestV2Url}/requests`, params)).then((response) => ({

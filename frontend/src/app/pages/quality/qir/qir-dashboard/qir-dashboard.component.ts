@@ -223,11 +223,13 @@ export class QirDashboardComponent implements OnInit, OnDestroy {
       '#6f42c1'  // Purple for Other
     ];
 
-    this.metrics.failureTypes = Array.from(failureTypeCount.entries()).map(([type, count], index) => ({
-      type,
-      count,
-      color: failureColors[index % failureColors.length]
-    }));
+    const allFailureTypes = Array.from(failureTypeCount.entries())
+      .map(([type, count], index) => ({ type, count, color: failureColors[index % failureColors.length] }))
+      .sort((a, b) => b.count - a.count);
+    const topFailureTypes = allFailureTypes.slice(0, 10);
+    const otherCount = allFailureTypes.slice(10).reduce((sum, t) => sum + t.count, 0);
+    if (otherCount > 0) topFailureTypes.push({ type: 'Other', count: otherCount, color: '#adb5bd' });
+    this.metrics.failureTypes = topFailureTypes;
 
     // Component types
     const componentTypeCount = new Map();
@@ -471,89 +473,32 @@ export class QirDashboardComponent implements OnInit, OnDestroy {
   }
 
   private setupFailureTypeChart() {
+    const sorted = [...this.metrics.failureTypes].sort((a, b) => b.count - a.count);
+    const dynHeight = Math.max(350, sorted.length * 38 + 80);
     this.failureTypeChart = {
-      series: this.metrics.failureTypes.map(t => t.count),
-      chart: {
-        type: 'donut',
-        height: 400,
-        toolbar: { show: false }
-      },
-      labels: this.metrics.failureTypes.map(t => t.type),
-      colors: this.metrics.failureTypes.map(t => t.color),
-      plotOptions: {
-        pie: {
-          donut: {
-            size: '65%',
-            labels: {
-              show: true,
-              total: {
-                show: true,
-                label: 'Total',
-                fontSize: '18px',
-                fontWeight: 'bold'
-              }
-            }
-          }
-        }
-      },
-      legend: {
-        position: 'bottom',
-        fontSize: '14px'
-      },
-      title: {
-        text: 'QIRs by Failure Type',
-        align: 'center',
-        style: {
-          fontSize: '18px',
-          fontWeight: 'bold',
-          color: '#333'
-        }
-      }
+      series: [{ name: 'QIRs', data: sorted.map(t => t.count) }],
+      chart: { type: 'bar', height: dynHeight, toolbar: { show: false } },
+      colors: ['#dc3545'],
+      plotOptions: { bar: { horizontal: true, borderRadius: 3, dataLabels: { position: 'center' } } },
+      dataLabels: { enabled: true, style: { fontSize: '12px', colors: ['#fff'] } },
+      xaxis: { categories: sorted.map(t => t.type), labels: { style: { fontSize: '12px' } } },
+      yaxis: { labels: { style: { fontSize: '12px' }, maxWidth: 200 } },
+      title: { text: 'QIRs by Failure Type (Top 10)', align: 'left', style: { fontSize: '14px', fontWeight: '600', color: '#333' } }
     } as any;
   }
 
   private setupComponentTypeChart() {
+    const sorted = [...this.metrics.componentTypes].sort((a, b) => b.count - a.count).slice(0, 15);
+    const dynHeight = Math.max(350, sorted.length * 38 + 80);
     this.componentTypeChart = {
-      series: [{
-        name: 'QIRs',
-        data: this.metrics.componentTypes.map(c => c.count)
-      }],
-      chart: {
-        type: 'bar',
-        height: 400,
-        toolbar: { show: false }
-      },
-      colors: ['#007bff'],
-      plotOptions: {
-        bar: {
-          horizontal: true,
-          borderRadius: 4
-        }
-      },
-      xaxis: {
-        categories: this.metrics.componentTypes.map(c => c.component),
-        labels: {
-          style: {
-            fontSize: '14px'
-          }
-        }
-      },
-      yaxis: {
-        labels: {
-          style: {
-            fontSize: '14px'
-          }
-        }
-      },
-      title: {
-        text: 'QIRs by Component Type',
-        align: 'center',
-        style: {
-          fontSize: '18px',
-          fontWeight: 'bold',
-          color: '#333'
-        }
-      }
+      series: [{ name: 'QIRs', data: sorted.map(c => c.count) }],
+      chart: { type: 'bar', height: dynHeight, toolbar: { show: false } },
+      colors: ['#0d6efd'],
+      plotOptions: { bar: { horizontal: true, borderRadius: 3, dataLabels: { position: 'center' } } },
+      dataLabels: { enabled: true, style: { fontSize: '12px', colors: ['#fff'] } },
+      xaxis: { categories: sorted.map(c => c.component), labels: { style: { fontSize: '12px' } } },
+      yaxis: { labels: { style: { fontSize: '12px' }, maxWidth: 200 } },
+      title: { text: 'QIRs by Component Type (Top 15)', align: 'left', style: { fontSize: '14px', fontWeight: '600', color: '#333' } }
     };
   }
 
@@ -629,54 +574,25 @@ export class QirDashboardComponent implements OnInit, OnDestroy {
   }
 
   private setupCustomerChart() {
+    const sorted = [...this.metrics.customerBreakdown].sort((a, b) => b.count - a.count).slice(0, 10);
+    const dynHeight = Math.max(350, sorted.length * 38 + 80);
     this.customerChart = {
-      series: [{
-        name: 'QIRs',
-        data: this.metrics.customerBreakdown.map(c => c.count)
-      }],
-      chart: {
-        type: 'bar',
-        height: 400,
-        toolbar: { show: false }
-      },
+      series: [{ name: 'QIRs', data: sorted.map(c => c.count) }],
+      chart: { type: 'bar', height: dynHeight, toolbar: { show: false } },
       colors: ['#6f42c1'],
-      plotOptions: {
-        bar: {
-          horizontal: true,
-          borderRadius: 4
-        }
-      },
-      xaxis: {
-        categories: this.metrics.customerBreakdown.map(c => c.customer),
-        labels: {
-          style: {
-            fontSize: '14px'
-          }
-        }
-      },
-      yaxis: {
-        labels: {
-          style: {
-            fontSize: '14px'
-          }
-        }
-      },
-      title: {
-        text: 'Top 10 Customers by QIR Count',
-        align: 'center',
-        style: {
-          fontSize: '18px',
-          fontWeight: 'bold',
-          color: '#333'
-        }
-      }
+      plotOptions: { bar: { horizontal: true, borderRadius: 3, dataLabels: { position: 'center' } } },
+      dataLabels: { enabled: true, style: { fontSize: '12px', colors: ['#fff'] } },
+      xaxis: { categories: sorted.map(c => c.customer), labels: { style: { fontSize: '12px' } } },
+      yaxis: { labels: { style: { fontSize: '12px' }, maxWidth: 220 } },
+      title: { text: 'Top 10 Customers by QIR Count', align: 'left', style: { fontSize: '14px', fontWeight: '600', color: '#333' } }
     };
   }
 
   private setupParetoChart() {
-    // Sort failure types by count descending
+    // Sort failure types by count descending, limit to top 10 for readability
     const sortedFailureTypes = [...this.metrics.failureTypes]
-      .sort((a, b) => b.count - a.count);
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
     
     // Calculate cumulative percentages
     const totalCount = sortedFailureTypes.reduce((sum, item) => sum + item.count, 0);
@@ -725,10 +641,10 @@ export class QirDashboardComponent implements OnInit, OnDestroy {
       xaxis: {
         type: 'category',
         labels: {
-          style: {
-            fontSize: '12px'
-          },
-          rotate: -45
+          style: { fontSize: '11px' },
+          rotate: -30,
+          trim: true,
+          maxHeight: 80
         }
       },
       yaxis: {
@@ -786,167 +702,64 @@ export class QirDashboardComponent implements OnInit, OnDestroy {
   }
 
   private setupStakeholderChart() {
+    const sorted = [...this.metrics.stakeholderBreakdown].sort((a, b) => b.count - a.count).slice(0, 10);
+    const dynHeight = Math.max(300, sorted.length * 38 + 80);
     this.stakeholderChart = {
-      series: [{
-        name: 'QIRs',
-        data: this.metrics.stakeholderBreakdown.map(s => s.count)
-      }],
-      chart: {
-        type: 'bar',
-        height: 350,
-        toolbar: { show: false }
-      },
+      series: [{ name: 'QIRs', data: sorted.map(s => s.count) }],
+      chart: { type: 'bar', height: dynHeight, toolbar: { show: false } },
       colors: ['#e74c3c'],
-      plotOptions: {
-        bar: {
-          borderRadius: 4,
-          horizontal: false
-        }
-      },
-      xaxis: {
-        categories: this.metrics.stakeholderBreakdown.map(s => s.stakeholder),
-        labels: {
-          style: {
-            fontSize: '14px'
-          }
-        }
-      },
-      yaxis: {
-        labels: {
-          style: {
-            fontSize: '14px'
-          }
-        }
-      },
-      title: {
-        text: 'QIRs by Stakeholder',
-        align: 'center',
-        style: {
-          fontSize: '18px',
-          fontWeight: 'bold',
-          color: '#333'
-        }
-      }
+      plotOptions: { bar: { horizontal: true, borderRadius: 3, dataLabels: { position: 'center' } } },
+      dataLabels: { enabled: true, style: { fontSize: '12px', colors: ['#fff'] } },
+      xaxis: { categories: sorted.map(s => s.stakeholder), labels: { style: { fontSize: '12px' } } },
+      yaxis: { labels: { style: { fontSize: '12px' }, maxWidth: 200 } },
+      title: { text: 'QIRs by Stakeholder', align: 'left', style: { fontSize: '14px', fontWeight: '600', color: '#333' } }
     };
   }
 
   private setupSupplierChart() {
+    const sorted = [...this.metrics.supplierBreakdown].sort((a, b) => b.count - a.count).slice(0, 10);
+    const dynHeight = Math.max(350, sorted.length * 38 + 80);
     this.supplierChart = {
-      series: [{
-        name: 'QIRs',
-        data: this.metrics.supplierBreakdown.map(s => s.count)
-      }],
-      chart: {
-        type: 'bar',
-        height: 400,
-        toolbar: { show: false }
-      },
+      series: [{ name: 'QIRs', data: sorted.map(s => s.count) }],
+      chart: { type: 'bar', height: dynHeight, toolbar: { show: false } },
       colors: ['#f39c12'],
-      plotOptions: {
-        bar: {
-          horizontal: true,
-          borderRadius: 4
-        }
-      },
-      xaxis: {
-        categories: this.metrics.supplierBreakdown.map(s => s.supplier),
-        labels: {
-          style: {
-            fontSize: '14px'
-          }
-        }
-      },
-      yaxis: {
-        labels: {
-          style: {
-            fontSize: '14px'
-          }
-        }
-      },
-      title: {
-        text: 'Top 10 Suppliers by QIR Count',
-        align: 'center',
-        style: {
-          fontSize: '18px',
-          fontWeight: 'bold',
-          color: '#333'
-        }
-      }
+      plotOptions: { bar: { horizontal: true, borderRadius: 3, dataLabels: { position: 'center' } } },
+      dataLabels: { enabled: true, style: { fontSize: '12px', colors: ['#fff'] } },
+      xaxis: { categories: sorted.map(s => s.supplier), labels: { style: { fontSize: '12px' } } },
+      yaxis: { labels: { style: { fontSize: '12px' }, maxWidth: 220 } },
+      title: { text: 'Top 10 Suppliers by QIR Count', align: 'left', style: { fontSize: '14px', fontWeight: '600', color: '#333' } }
     };
   }
 
   private setupCreatedByChart() {
+    const sorted = [...this.metrics.createdByBreakdown].sort((a, b) => b.count - a.count).slice(0, 10);
+    const dynHeight = Math.max(300, sorted.length * 38 + 80);
     this.createdByChart = {
-      series: this.metrics.createdByBreakdown.map(c => c.count),
-      chart: {
-        type: 'donut',
-        height: 400,
-        toolbar: { show: false }
-      },
-      labels: this.metrics.createdByBreakdown.map(c => c.creator),
-      colors: ['#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#34495e', '#95a5a6', '#d35400', '#8e44ad'],
-      plotOptions: {
-        pie: {
-          donut: {
-            size: '65%',
-            labels: {
-              show: true,
-              total: {
-                show: true,
-                label: 'Total',
-                fontSize: '18px',
-                fontWeight: 'bold'
-              }
-            }
-          }
-        }
-      },
-      legend: {
-        position: 'bottom',
-        fontSize: '14px'
-      },
-      title: {
-        text: 'QIRs by Creator',
-        align: 'center',
-        style: {
-          fontSize: '18px',
-          fontWeight: 'bold',
-          color: '#333'
-        }
-      }
+      series: [{ name: 'QIRs', data: sorted.map(c => c.count) }],
+      chart: { type: 'bar', height: dynHeight, toolbar: { show: false } },
+      colors: ['#6f42c1'],
+      plotOptions: { bar: { horizontal: true, borderRadius: 3, dataLabels: { position: 'center' } } },
+      dataLabels: { enabled: true, style: { fontSize: '12px', colors: ['#fff'] } },
+      xaxis: { categories: sorted.map(c => c.creator), labels: { style: { fontSize: '12px' } } },
+      yaxis: { labels: { style: { fontSize: '12px' }, maxWidth: 200 } },
+      title: { text: 'QIRs by Creator (Top 10)', align: 'left', style: { fontSize: '14px', fontWeight: '600', color: '#333' } }
     } as any;
   }
 
   private setupPlatformTypeChart() {
+    const sorted = [...this.metrics.platformTypeBreakdown].sort((a, b) => b.count - a.count).slice(0, 15);
+    const dynHeight = Math.max(300, sorted.length * 38 + 80);
     this.platformTypeChart = {
-      series: [{
-        name: 'QIRs',
-        data: this.metrics.platformTypeBreakdown.map(p => p.count)
-      }],
-      chart: {
-        type: 'bar',
-        height: 350,
-        toolbar: { show: false }
-      },
+      series: [{ name: 'QIRs', data: sorted.map(p => p.count) }],
+      chart: { type: 'bar', height: dynHeight, toolbar: { show: false } },
       colors: ['#16a085'],
-      plotOptions: {
-        bar: {
-          borderRadius: 4,
-          horizontal: false
-        }
-      },
-      xaxis: {
-        categories: this.metrics.platformTypeBreakdown.map(p => p.platform),
-        labels: {
-          style: {
-            fontSize: '14px'
-          }
-        }
-      },
+      plotOptions: { bar: { horizontal: true, borderRadius: 3, dataLabels: { position: 'center' } } },
+      dataLabels: { enabled: true, style: { fontSize: '12px', colors: ['#fff'] } },
+      xaxis: { categories: sorted.map(p => p.platform), labels: { style: { fontSize: '12px' } } },
       yaxis: {
         labels: {
           style: {
-            fontSize: '14px'
+            fontSize: '12px'
           }
         }
       },

@@ -1,12 +1,15 @@
 import {
   ChangeDetectorRef,
   Component,
+  OnDestroy,
   OnInit,
   ViewEncapsulation,
 } from "@angular/core";
 import { FormGroup } from "@angular/forms";
 import moment from "moment";
 import { ActivatedRoute, Router } from "@angular/router";
+import { Subscription } from "rxjs";
+import { debounceTime } from "rxjs/operators";
 import { RequestService } from "@app/core/api/field-service/request.service";
 import { CommentsService } from "@app/core/api/field-service/comments.service";
 import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
@@ -26,7 +29,7 @@ import { RequestChangeModalService } from "@app/pages/field-service/request/requ
   templateUrl: "./request-public.component.html",
   styleUrls: ["./request-public.component.scss"],
 })
-export class RequestPublicComponent implements OnInit {
+export class RequestPublicComponent implements OnInit, OnDestroy {
   constructor(
     public activatedRoute: ActivatedRoute,
     private requestService: RequestService,
@@ -79,8 +82,14 @@ export class RequestPublicComponent implements OnInit {
   // LocalStorage keys
   private readonly STORAGE_KEYS = {
     RECENT_EMAILS: 'eyefi_recent_emails',
-    RECENT_CONTACTS: 'eyefi_recent_contacts'
+    RECENT_CONTACTS: 'eyefi_recent_contacts',
+    REQUEST_DRAFTS: 'eyefi_request_drafts_v1',
+    ACTIVE_DRAFT: 'eyefi_request_active_draft_v1',
   };
+
+  drafts: any[] = [];
+  activeDraftId: string | null = null;
+  private draftAutosaveSub?: Subscription;
 
   ngOnInit(): void {
     this.activatedRoute.queryParams.subscribe((params) => {
@@ -89,8 +98,13 @@ export class RequestPublicComponent implements OnInit {
     });
 
     this.loadRecentData();
+    this.loadDrafts();
 
     if (this.token) this.getData();
+  }
+
+  ngOnDestroy(): void {
+    this.draftAutosaveSub?.unsubscribe();
   }
 
   ngAfterContentChecked() {
@@ -114,6 +128,11 @@ export class RequestPublicComponent implements OnInit {
   setFormEmitter($event) {
     this.form = $event;
     this.form.get("active").disable();
+
+    if (!this.token) {
+      this.initializeDraftEditingSession();
+      this.setupDraftAutosave();
+    }
   }
 
   async onSubmit() {
@@ -129,6 +148,9 @@ export class RequestPublicComponent implements OnInit {
       return;
     }
 
+    const activeDraft = this.ensureActiveDraft();
+    this.updateDraftStatus(activeDraft.id, 'submitting');
+
     try {
       SweetAlert.loading("Saving. Please wait.");
       let data: any = await this.requestService.createFieldServiceRequest(
@@ -139,6 +161,12 @@ export class RequestPublicComponent implements OnInit {
       this.router.navigate([`request`], { queryParams: { token: data.token } });
 
       this.token = data.token;
+      this.updateDraftAfterSubmission(activeDraft.id, {
+        status: 'submitted',
+        requestId: data.id,
+        token: data.token,
+        errorMessage: null,
+      });
 
       if (this.myFiles) {
         const formData = new FormData();
@@ -161,6 +189,10 @@ export class RequestPublicComponent implements OnInit {
         text: `Request submitted successfully. Your request ID # is ${data.id}. `,
       });
     } catch (err) {
+      this.updateDraftAfterSubmission(activeDraft.id, {
+        status: 'failed',
+        errorMessage: this.extractSubmissionErrorMessage(err),
+      });
       alert("Sorry. Something went wrong.");
       SweetAlert.close(0);
     }
@@ -168,7 +200,8 @@ export class RequestPublicComponent implements OnInit {
 
   async getAttachments() {
     this.attachments = await this.attachmentsService.getAttachmentByRequestId(
-      this.request_id
+      this.request_id,
+      this.token,
     );
   }
 
@@ -236,6 +269,236 @@ export class RequestPublicComponent implements OnInit {
     this.router.navigate([`request`]).then(() => {
       window.location.reload();
     });
+  }
+
+  private setupDraftAutosave() {
+    this.draftAutosaveSub?.unsubscribe();
+
+    if (!this.form) {
+      return;
+    }
+
+    this.draftAutosaveSub = this.form.valueChanges
+      .pipe(debounceTime(1000))
+      .subscribe(() => {
+        if (this.token || this.disabled) {
+          return;
+        }
+
+        const draft = this.ensureActiveDraft();
+        this.updateDraftAfterSubmission(draft.id, {
+          formData: this.form.getRawValue(),
+          status: draft.status === 'failed' ? 'failed' : 'draft',
+          errorMessage: draft.status === 'failed' ? draft.errorMessage : null,
+        });
+      });
+  }
+
+  private initializeDraftEditingSession() {
+    if (!this.drafts.length) {
+      this.activeDraftId = null;
+      localStorage.removeItem(this.STORAGE_KEYS.ACTIVE_DRAFT);
+      return;
+    }
+
+    const rememberedDraftId = localStorage.getItem(this.STORAGE_KEYS.ACTIVE_DRAFT);
+    const rememberedDraft = this.drafts.find((draft) => draft.id === rememberedDraftId);
+
+    if (rememberedDraft && rememberedDraft.status !== 'submitted') {
+      this.resumeDraft(rememberedDraft.id);
+      return;
+    }
+
+    const latestOpenDraft = [...this.drafts]
+      .sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''))
+      .find((draft) => draft.status !== 'submitted');
+
+    if (latestOpenDraft) {
+      this.resumeDraft(latestOpenDraft.id);
+      return;
+    }
+
+    this.activeDraftId = null;
+    localStorage.removeItem(this.STORAGE_KEYS.ACTIVE_DRAFT);
+  }
+
+  private loadDrafts() {
+    try {
+      const raw = localStorage.getItem(this.STORAGE_KEYS.REQUEST_DRAFTS);
+      this.drafts = raw ? JSON.parse(raw) : [];
+    } catch (error) {
+      this.drafts = [];
+    }
+  }
+
+  private persistDrafts() {
+    try {
+      localStorage.setItem(this.STORAGE_KEYS.REQUEST_DRAFTS, JSON.stringify(this.drafts));
+    } catch (error) {
+      console.error('Error persisting request drafts:', error);
+    }
+  }
+
+  private ensureActiveDraft() {
+    const existing = this.drafts.find((draft) => draft.id === this.activeDraftId);
+    if (existing) {
+      return existing;
+    }
+
+    return this.createFreshDraft();
+  }
+
+  createFreshDraft(resetForm = false) {
+    if (resetForm && this.form) {
+      this.form.reset({}, { emitEvent: false });
+      this.form.enable({ emitEvent: false });
+      this.form.get('active')?.disable({ emitEvent: false });
+      this.disabled = false;
+      this.submitted = false;
+      this.request_id = null;
+      this.token = null;
+      this.data = null;
+      this.attachments = [];
+      this.comments = [];
+      this.selectedFiles = [];
+      this.myFiles = [];
+    }
+
+    const now = new Date().toISOString();
+    const draft = {
+      id: `draft_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      title: this.buildDraftTitle(),
+      status: 'draft',
+      updatedAt: now,
+      requestId: null,
+      token: null,
+      errorMessage: null,
+      formData: this.form ? this.form.getRawValue() : {},
+    };
+
+    this.drafts.unshift(draft);
+    this.activeDraftId = draft.id;
+    localStorage.setItem(this.STORAGE_KEYS.ACTIVE_DRAFT, draft.id);
+    this.persistDrafts();
+
+    return draft;
+  }
+
+  startNewDraft() {
+    this.createFreshDraft(true);
+  }
+
+  resumeDraft(draftId: string) {
+    const draft = this.drafts.find((row) => row.id === draftId);
+    if (!draft || !this.form) {
+      return;
+    }
+
+    this.activeDraftId = draft.id;
+    localStorage.setItem(this.STORAGE_KEYS.ACTIVE_DRAFT, draft.id);
+    this.form.patchValue(draft.formData || {}, { emitEvent: false });
+  }
+
+  deleteDraft(draftId: string) {
+    this.drafts = this.drafts.filter((draft) => draft.id !== draftId);
+
+    if (this.activeDraftId === draftId) {
+      this.activeDraftId = null;
+      localStorage.removeItem(this.STORAGE_KEYS.ACTIVE_DRAFT);
+      if (this.form) {
+        this.form.reset();
+      }
+      this.createFreshDraft();
+    }
+
+    this.persistDrafts();
+  }
+
+  retryDraftSubmission(draftId: string) {
+    this.resumeDraft(draftId);
+    this.onSubmit();
+  }
+
+  private updateDraftStatus(draftId: string, status: 'draft' | 'submitting' | 'submitted' | 'failed') {
+    const draft = this.drafts.find((row) => row.id === draftId);
+    if (!draft) {
+      return;
+    }
+
+    draft.status = status;
+    draft.updatedAt = new Date().toISOString();
+    draft.title = this.buildDraftTitle();
+    draft.formData = this.form?.getRawValue() || draft.formData;
+    this.persistDrafts();
+  }
+
+  private updateDraftAfterSubmission(
+    draftId: string,
+    payload: {
+      status?: 'draft' | 'submitting' | 'submitted' | 'failed';
+      requestId?: number | null;
+      token?: string | null;
+      errorMessage?: string | null;
+      formData?: any;
+    },
+  ) {
+    const draft = this.drafts.find((row) => row.id === draftId);
+    if (!draft) {
+      return;
+    }
+
+    draft.status = payload.status ?? draft.status;
+    draft.requestId = payload.requestId ?? draft.requestId;
+    draft.token = payload.token ?? draft.token;
+    draft.errorMessage = payload.errorMessage ?? draft.errorMessage;
+    draft.formData = payload.formData ?? this.form?.getRawValue() ?? draft.formData;
+    draft.updatedAt = new Date().toISOString();
+    draft.title = this.buildDraftTitle();
+    this.persistDrafts();
+  }
+
+  getDraftStatusClass(status: string) {
+    if (status === 'submitted') {
+      return 'bg-success';
+    }
+
+    if (status === 'failed') {
+      return 'bg-danger';
+    }
+
+    if (status === 'submitting') {
+      return 'bg-warning text-dark';
+    }
+
+    return 'bg-secondary';
+  }
+
+  private buildDraftTitle() {
+    const requestedBy = String(this.form?.get('requested_by')?.value || '').trim();
+    const customer = String(this.form?.get('customer')?.value || '').trim();
+    const nowText = moment().format('MMM DD, YYYY HH:mm');
+
+    if (requestedBy && customer) {
+      return `${customer} - ${requestedBy}`;
+    }
+
+    if (customer) {
+      return `${customer} draft`;
+    }
+
+    if (requestedBy) {
+      return `${requestedBy} draft`;
+    }
+
+    return `New draft ${nowText}`;
+  }
+
+  private extractSubmissionErrorMessage(error: any): string {
+    return (
+      error?.error?.message ||
+      error?.message ||
+      'Submission failed due to a backend or network error'
+    );
   }
 
   async getComments() {

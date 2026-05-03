@@ -2,7 +2,6 @@ import { Body, Controller, Get, Headers, Param, ParseIntPipe, Post, Query, Uploa
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Public } from '@/nest/decorators/public.decorator';
 import { CreatePublicRequestCommentDto } from './dto/create-public-request-comment.dto';
-import { CreatePublicRequestDto } from './dto/create-public-request.dto';
 import { PublicFieldServiceService } from './public-field-service.service';
 import { PublicRequestTokenGuard } from './public-request-token.guard';
 
@@ -17,8 +16,8 @@ export class PublicFieldServiceController {
   }
 
   @Post('requests')
-  async createRequest(@Body() payload: CreatePublicRequestDto) {
-    return this.service.createRequest(payload);
+  async createRequest(@Body() payload: Record<string, unknown>) {
+    return this.service.createRequest(payload as any);
   }
 
   @Get('requests/:id/status')
@@ -66,6 +65,15 @@ export class PublicFieldServiceController {
   ) {
     const token = authorization?.startsWith('Bearer ') ? authorization.slice(7).trim() : queryToken;
     return this.service.uploadAttachment(requestId, token, file);
+  }
+
+  @Post('attachments')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadPublicAttachment(
+    @Body() payload: Record<string, unknown>,
+    @UploadedFile() file?: { originalname?: string; size?: number; buffer?: Buffer },
+  ) {
+    return this.service.createPublicAttachment(payload, file);
   }
 
   @Get('requests/:id/attachments')

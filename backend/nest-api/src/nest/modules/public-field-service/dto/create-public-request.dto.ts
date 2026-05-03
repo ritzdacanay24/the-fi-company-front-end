@@ -7,9 +7,9 @@ export class CreatePublicRequestDto {
   customer_name!: string;
 
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   @MaxLength(200)
-  onsite_customer_name!: string;
+  onsite_customer_name?: string;
 
   @IsString()
   @IsOptional()
@@ -17,19 +17,20 @@ export class CreatePublicRequestDto {
   onsite_customer_phone_number?: string;
 
   @IsEmail()
-  email!: string;
+  @IsOptional()
+  email?: string;
 
   @IsArray()
   @IsOptional()
   cc_email?: string[];
 
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   @MaxLength(100)
-  service_type!: string;
+  service_type?: string;
 
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   @MaxLength(4000)
-  description!: string;
+  description?: string;
 }

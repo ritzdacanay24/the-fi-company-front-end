@@ -381,6 +381,7 @@ export class RequestPublicV2HorizontalComponent {
       sign_jacks: firstProduct.sign_jacks_required ? 1 : 0,
       special_instruction: formValue.special_instructions || "",
       cc_email: this.normalizeRecipientEmails(formValue.additional_recipients),
+      customer_name: formValue.customer_name,
       customer: formValue.customer_name,
       created_date: timestamp,
       active: 1,

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import { AttachmentsService } from '../attachments/attachments.service';
 import { RequestCommentsService } from '../request-comments';
@@ -49,22 +49,31 @@ export class PublicFieldServiceService {
     return row;
   }
 
-  async createRequest(payload: CreatePublicRequestDto) {
+  async createRequest(payload: Record<string, unknown>) {
     const token = randomBytes(24).toString('hex');
     const createdDate = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    const rawCreatedBy = String(payload['created_by'] ?? '').trim();
+    const parsedCreatedBy = Number.parseInt(rawCreatedBy, 10);
 
     const requestPayload: Record<string, unknown> = {
-      customer: payload.customer_name,
-      onsite_customer_name: payload.onsite_customer_name,
-      onsite_customer_phone_number: payload.onsite_customer_phone_number,
-      email: payload.email,
-      cc_email: Array.isArray(payload.cc_email) ? payload.cc_email.join(',') : payload.cc_email,
-      type_of_service: payload.service_type,
-      special_instruction: payload.description,
-      created_date: createdDate,
+      ...payload,
+      // Normalize DTO-style field names to legacy DB column names
+      customer: (payload['customer_name'] ?? payload['customer']) as string,
+      type_of_service: (payload['service_type'] ?? payload['type_of_service']) as string,
+      special_instruction: (payload['description'] ?? payload['special_instruction']) as string,
+      cc_email: Array.isArray(payload['cc_email'])
+        ? (payload['cc_email'] as string[]).join(',')
+        : payload['cc_email'],
+      created_by: Number.isNaN(parsedCreatedBy) ? null : parsedCreatedBy,
+      created_date: payload['created_date'] || createdDate,
       token,
       active: 1,
     };
+
+    // Remove DTO-style keys to avoid duplicate/unknown columns
+    delete requestPayload['customer_name'];
+    delete requestPayload['service_type'];
+    delete requestPayload['description'];
 
     const created = (await this.requestService.create(requestPayload)) as Record<string, unknown>;
     const id = Number(created?.id || 0) || null;
@@ -138,6 +147,39 @@ export class PublicFieldServiceService {
       },
       file,
     );
+
+    return {
+      id: result?.insertId ?? null,
+      requestId,
+      fileName: file?.originalname ?? null,
+      size: file?.size ?? null,
+      message: 'Attachment uploaded',
+    };
+  }
+
+  async createPublicAttachment(
+    payload: Record<string, unknown>,
+    file?: { originalname?: string; size?: number; buffer?: Buffer },
+  ) {
+    const rawUnique = payload['uniqueId'] ?? payload['uniqueData'];
+    const requestId = Number.parseInt(String(rawUnique ?? '').trim(), 10);
+    if (Number.isNaN(requestId) || requestId <= 0) {
+      throw new BadRequestException('uniqueId is required for public attachment upload');
+    }
+
+    const normalizedPayload: Record<string, unknown> = {
+      ...payload,
+      field: 'Field Service Request',
+      subFolder: 'fieldService',
+      uniqueId: requestId,
+      uniqueData: requestId,
+      createdDate:
+        typeof payload['createdDate'] === 'string' && payload['createdDate'].trim()
+          ? payload['createdDate']
+          : new Date().toISOString().slice(0, 19).replace('T', ' '),
+    };
+
+    const result = await this.attachmentsService.create(normalizedPayload, file);
 
     return {
       id: result?.insertId ?? null,
