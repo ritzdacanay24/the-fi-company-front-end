@@ -6,19 +6,10 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "navigationUrls": [
-    {
-      "positive": true,
-      "regex": "^\\/.*$"
-    },
-    {
-      "positive": false,
-      "regex": "^\\/(?:.+\\/)?[^/]*\\.[^/]*$"
-    },
-    {
-      "positive": false,
-      "regex": "^\\/dist\\/fsm-mobile\\/.*$"
-    }
-  ],
+      "/**",
+      "!/**/*.*",
+      "!/dist/fsm-mobile/**"
+    ],
   "assetGroups": [
     {
       "name": "app",

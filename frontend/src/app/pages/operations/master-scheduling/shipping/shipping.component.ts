@@ -1916,54 +1916,28 @@ export class ShippingComponent implements OnInit, OnDestroy {
   }
 
   columnDefs: ColDef[] = [
-    // Priority tab specific columns
-    {
-      rowDrag: (params: any) => {
-        // Simply check if we're in priority tab - the external filter already ensures only priority orders are shown
-        return this.activeTab === 'priority';
-      },
-      field: 'priority_drag_handle',
-      headerName: '',
-      width: 40,
-      maxWidth: 40,
-      minWidth: 40,
-      resizable: false,
-      sortable: false,
-      filter: false,
-      suppressHeaderMenuButton: true,
-      suppressMovable: true,
-      lockPosition: 'left',
-      cellClass: 'drag-handle-cell',
-      cellRenderer: (params: any) => {
-        // Only show drag handle for rows with priority in priority tab
-        if (this.activeTab === 'priority' && params.data && params.data.shipping_priority > 0) {
-          return '<div class="ag-drag-handle ag-row-drag" draggable="true"><i class="mdi mdi-drag-vertical"></i></div>';
-        }
-        return '';
-      },
-      hide: true, // Will be shown/hidden dynamically
-    },
+    // ── Priority tab columns (hidden/shown dynamically) ──────────────────────
     {
       field: 'priority_position',
       headerName: 'Shipping Position',
       width: 60,
-      sortable: false, // Disable sorting to prevent interference with drag operations
+      sortable: false,
       cellStyle: { textAlign: 'center', fontWeight: 'bold', fontSize: '16px' },
       valueGetter: (params) => {
-        // Always show the shipping_priority value if it exists
         if (params.data?.shipping_priority > 0) {
           return params.data.shipping_priority;
         }
         return '';
       },
-      hide: true, // Will be shown/hidden dynamically
+      hide: true,
     },
-    // All orders tab specific columns
+    // ── Action columns ────────────────────────────────────────────────────────
     {
       headerName: "Priority Actions",
       filter: false,
       sortable: false,
       maxWidth: 250,
+      hide: true,
       cellRenderer: PriorityActionsCellRendererComponent,
       cellRendererParams: {
         onAddToPriority: (orderData: any) => this.addToPriorityList(orderData),
@@ -1994,7 +1968,6 @@ export class ShippingComponent implements OnInit, OnDestroy {
       },
       headerTooltip: 'Quick actions menu',
     },
-    // Shared columns
     {
       field: "Misc Edit",
       headerName: "Misc Edit",
@@ -2017,99 +1990,12 @@ export class ShippingComponent implements OnInit, OnDestroy {
       maxWidth: 120,
       suppressHeaderMenuButton: false,
     },
-    {
-      field: "shipping_priority",
-      headerName: "Production Priority",
-      filter: false,
-      sortable: false, // Disable sorting to prevent interference with drag operations
-      editable: true,
-      maxWidth: 150,
-      cellEditor: 'agNumberCellEditor',
-      cellEditorParams: {
-        min: 0,
-        max: 9999,
-        precision: 0
-      },
-      cellRenderer: PriorityDisplayCellRendererComponent,
-      onCellValueChanged: async (params: any) => {
-        const newPriority = parseInt(params.newValue) || 0;
-        const success = await this.updatePriority(params.data, newPriority);
-        if (!success) {
-          // Revert the change if it failed
-          params.data.shipping_priority = params.oldValue;
-          this.gridApi.refreshCells({ rowNodes: [params.node] });
-        }
-      },
-      tooltipField: 'shipping_priority',
-      headerTooltip: 'Set shipping priority (1 = highest priority). Must be unique.',
-    },
-    {
-      field: "kanban_priority",
-      headerName: "Kanban Priority",
-      filter: false,
-      sortable: true,
-      editable: true,
-      maxWidth: 150,
-      cellEditor: 'agRichSelectCellEditor',
-      cellEditorParams: (params: any) => {
-        // Get all currently used kanban priorities from the grid
-        const usedPriorities = new Set<number>();
-        params.api.forEachNode((node: any) => {
-          if (node.data && node.data.kanban_priority && node.data !== params.data) {
-            usedPriorities.add(parseInt(node.data.kanban_priority));
-          }
-        });
-        
-        // Generate available priority numbers (1-50, excluding used ones)
-        const availablePriorities: number[] = [];
-        for (let i = 1; i <= 50; i++) {
-          if (!usedPriorities.has(i)) {
-            availablePriorities.push(i);
-          }
-        }
-        
-        // If current row has a priority, include it in the list
-        if (params.value) {
-          const currentPriority = parseInt(params.value);
-          if (!availablePriorities.includes(currentPriority)) {
-            availablePriorities.push(currentPriority);
-            availablePriorities.sort((a, b) => a - b);
-          }
-        }
-        
-        // Add "None" option at the beginning
-        const values = [null, ...availablePriorities];
-        
-        return {
-          values: values,
-          cellHeight: 50,
-          formatValue: (value: any) => {
-            if (value === null || value === undefined || value === '') {
-              return '(None)';
-            }
-            return `Priority ${value}`;
-          },
-          searchDebounceDelay: 300,
-          allowTyping: true,
-          filterList: true,
-          highlightMatch: true
-        };
-      },
-      cellRenderer: (params: any) => {
-        if (!params.value) return '';
-        return `<span class="badge bg-info-subtle text-info">★ ${params.value}</span>`;
-      },
-      onCellValueChanged: async (params: any) => {
-        const newPriority = parseInt(params.newValue) || null;
-        await this.updateKanbanPriority(params);
-      },
-      tooltipField: 'kanban_priority',
-      headerTooltip: 'Set kanban priority (1 = highest priority). Must be unique. Click to select from available priorities.',
-    },
+    // ── Core order info ───────────────────────────────────────────────────────
     {
       field: "STATUS",
       headerName: "Status",
       filter: "agSetColumnFilter",
+      width: 120,
       cellRenderer: (params: any) => {
         if (params.data) {
           if (params.value == "Future Order")
@@ -2124,41 +2010,26 @@ export class ShippingComponent implements OnInit, OnDestroy {
       },
     },
     {
-      field: "SOD_PART",
-      headerName: "Part",
-      filter: "agMultiColumnFilter",
-
-      cellRenderer: LinkRendererV2Component,
-      cellRendererParams: {
-        onClick: (e) => this.itemInfoModalService.open(e.rowData.SOD_PART),
-        isLink: true,
+      field: "SOD_DUE_DATE",
+      headerName: "Due Date",
+      filter: "agDateColumnFilter",
+      filterParams: agGridDateFilter,
+      width: 115,
+      cellStyle: (params) => {
+        if (params.data && this.isInspection(params.data?.misc)) {
+          return {
+            "background-color": "#0074D9",
+            color: "#fff",
+          };
+        }
+        return null;
       },
-    },
-    {
-      field: "VIEW_BOM",
-      headerName: "BOM",
-      filter: false,
-      sortable: false,
-      cellRenderer: BomRendererV2Component,
-      width: 65,
-      suppressHeaderMenuButton: true,
-      cellClass: "text-center",
-    },
-    { field: "FULLDESC", headerName: "Desc", filter: "agMultiColumnFilter" },
-    {
-      field: "CP_CUST_PART",
-      headerName: "Cust Part #",
-      filter: "agMultiColumnFilter",
-    },
-    {
-      field: "PT_REV",
-      headerName: "Part Revision",
-      filter: "agMultiColumnFilter",
     },
     {
       field: "SOD_NBR",
       headerName: "SO #",
       filter: "agMultiColumnFilter",
+      width: 120,
       cellStyle: (e) => {
         if (
           e.data &&
@@ -2174,142 +2045,82 @@ export class ShippingComponent implements OnInit, OnDestroy {
         isLink: true,
       },
     },
-    { field: "SOD_LINE", headerName: "Line #", filter: "agNumberColumnFilter" },
+    { field: "SOD_LINE", headerName: "Line #", filter: "agNumberColumnFilter", width: 80 },
     {
-      field: "SOD_CONTR_ID",
-      headerName: "PO #",
+      field: "SO_CUST",
+      headerName: "Customer",
       filter: "agMultiColumnFilter",
+      width: 150,
     },
-    { field: "SO_CUST", headerName: "Customer", filter: "agMultiColumnFilter" },
     {
-      field: "SO_SHIP",
-      headerName: "Ship To",
+      field: "SOD_PART",
+      headerName: "Part",
       filter: "agMultiColumnFilter",
+      width: 130,
       cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
-        onClick: (e) => this.addressInfoModalService.open(e.rowData.SO_SHIP),
+        onClick: (e) => this.itemInfoModalService.open(e.rowData.SOD_PART),
         isLink: true,
       },
     },
-    {
-      field: "SOD_QTY_ORD",
-      headerName: "Qty Ordered",
-      filter: "agNumberColumnFilter",
-    },
-    {
-      field: "SOD_QTY_ALL",
-      headerName: "Qty Allocated",
-      filter: "agNumberColumnFilter",
-    },
-    {
-      field: "SOD_QTY_SHIP",
-      headerName: "Qty Shipped",
-      filter: "agNumberColumnFilter",
-    },
+    { field: "FULLDESC", headerName: "Desc", filter: "agMultiColumnFilter", width: 200 },
     {
       field: "QTYOPEN",
       headerName: "Qty Open",
       filter: "agNumberColumnFilter",
+      width: 100,
     },
     {
-      field: "LD_QTY_OH",
-      headerName: "Qty OH",
-      filter: "agSetColumnFilter",
-      cellClass: (e) => {
-        if (e.data && e.data.LD_QTY_OH <= 0)
-          return ["border-start border-danger"];
-        return null;
-      },
-      filterParams: {
-        valueGetter: (params) => {
-          if (params.data && params.data.LD_QTY_OH <= 0) {
-            return "No qty on hand";
-          } else {
-            return "On hand qty available";
+      field: "misc.userName",
+      headerName: "Owner",
+      filter: "agMultiColumnFilter",
+      width: 140,
+      editable: true,
+      cellEditor: 'agTextCellEditor',
+      cellEditorPopup: false,
+      cellEditorParams: {},
+      onCellValueChanged: async (params: any) => {
+        if (params.oldValue !== params.newValue) {
+          const so = `${String(params.data.SOD_NBR || '').trim()}-${String(params.data.SOD_LINE || '').trim()}`;
+          if (!so || so === '-') {
+            console.error('Cannot save owner: SO number or line is missing');
+            return;
           }
-        },
-      },
-    },
-    {
-      field: "Drop in today",
-      headerName: "Dropped in today",
-      filter: "agSetColumnFilter",
-      cellClass: (e) => {
-        if (e.data && e.data.SOD_DUE_DATE == e.data.SO_ORD_DATE)
-          return ["border-start border-danger"];
-        return null;
-      },
-      valueGetter: (e) => {
-        if (e.data && e.data.SOD_DUE_DATE == e.data.SO_ORD_DATE)
-          return "Dropped in today"
-        return null;
-      },
-      filterParams: {
-        valueGetter: (e) => {
-          if (e.data && e.data.SOD_DUE_DATE == e.data.SO_ORD_DATE) {
-            return "Dropped in today";
-          } else {
-            return null;
-          }
-        },
-      },
-    },
-    {
-      field: "SOD_DUE_DATE",
-      headerName: "Due Date",
-      filter: "agDateColumnFilter",
-      filterParams: agGridDateFilter,
-      cellStyle: (params) => {
-        if (params.data && this.isInspection(params.data?.misc)) {
-          return {
-            "background-color": "#0074D9",
-            color: "#fff",
+          const CLEAR_SENTINEL = '— Clear Owner —';
+          const newUserName = (!params.newValue || params.newValue === CLEAR_SENTINEL) ? '' : params.newValue;
+          const miscData = {
+            ...params.data.misc,
+            userName: newUserName,
+            so: so
           };
+          try {
+            const res = await this.api.saveMisc(miscData);
+            params.data.misc = res;
+            this.sendAndUpdate(params.data, params.data.id);
+          } catch (err) {
+            console.error('Error saving owner:', err);
+          }
         }
-        return null;
       },
-      // cellRenderer: (params) => {
-      //   if (params.data) {
-      //     if (params.data && this.isInspection(params.data?.misc)) {
-      //       let startdate = moment(params.data.SOD_DUE_DATE);
-      //       const dow = startdate.day();
-
-      //       if (dow == 1) {
-      //         startdate = startdate.subtract(3, "days");
-      //         return startdate.format("YYYY-MM-DD");
-      //       } else {
-      //         startdate = startdate.subtract(1, "days");
-      //         return startdate.format("YYYY-MM-DD");
-      //       }
-      //     } else {
-      //       return params.data.SOD_DUE_DATE;
-      //     }
-      //   }
-      // },
-    },
-    {
-      field: "SOD_ORDER_CATEGORY",
-      headerName: "Customer CO #",
-      filter: "agTextColumnFilter",
-      cellRenderer: LinkRendererV2Component,
-      cellRendererParams: {
-        onClick: (e) => {
-          this.customerOrderInfoModalService.open(e.rowData.SOD_ORDER_CATEGORY);
-        },
-        isLink: true,
+      cellRenderer: (params: any) => {
+        if (params.value) {
+          const icon = this.ownerDropdownEnabled ? 'mdi-account-circle' : 'mdi-text';
+          return `<div class="d-flex align-items-center">
+                    <i class="mdi ${icon} text-primary me-2"></i>
+                    <span>${params.value}</span>
+                  </div>`;
+        }
+        if (!this.ownerDropdownEnabled) {
+          return `<span class="text-muted fst-italic">Enter owner name</span>`;
+        }
+        return `<span class="text-muted fst-italic">No owner assigned</span>`;
       },
     },
-    {
-      field: "SO_ORD_DATE",
-      headerName: "Ordered Date",
-      filter: "agDateColumnFilter",
-      filterParams: agGridDateFilter,
-    },
-    { field: "PT_ROUTING", headerName: "Routing", filter: "agSetColumnFilter" },
     {
       field: "Comments",
       headerName: "Comments",
       filter: "agMultiColumnFilter",
+      width: 110,
       cellRenderer: CommentsRendererV2Component,
       cellRendererParams: {
         onClick: (params: any) =>
@@ -2342,93 +2153,89 @@ export class ShippingComponent implements OnInit, OnDestroy {
       },
     },
     {
-      field: "recent_comments.comments_html",
-      headerName: "Recent Comment",
-      filter: "agTextColumnFilter",
+      field: "recent_notes.notes",
+      headerName: "Notes",
+      filter: "agSetColumnFilter",
+      width: 100,
       autoHeight: false,
       wrapText: false,
-      width: 100,
-      minWidth: 100,
-      // suppressSizeToFit: true,
-      // suppressAutoSize: true,
-      tooltipField: "recent_comments.comments_html",
-    },
-    {
-      field: "CMT_CMMT",
-      headerName: "QAD Comments",
-      filter: "agMultiColumnFilter",
-      tooltipField: "CMT_CMMT",
+      cellRenderer: NotesRendererV2Component,
+      cellRendererParams: {
+        onClick: this.viewNotes.bind(this),
+      },
       filterParams: {
         valueGetter: (params) => {
-          let data = params.data.CMT_CMMT;
-          if (data !== "") {
-            return "Has Comments";
+          let isEMpty = isEmpty(params.data.recent_notes);
+          if (!isEMpty) {
+            return "Has Notes";
           } else {
-            return "No Comments";
+            return "No Notes";
           }
         },
       },
     },
     {
-      field: "misc.userName",
-      headerName: "Owner",
-      filter: "agMultiColumnFilter",
-      editable: true, // Always editable - editor type controlled by setting
-      cellEditor: 'agTextCellEditor', // Will be updated dynamically based on setting
-      cellEditorPopup: false,
-      cellEditorParams: {}, // Will be updated dynamically based on setting
-      onCellValueChanged: async (params: any) => {
-        if (params.oldValue !== params.newValue) {
-          // Construct the SO identifier (must be SO_NBR-LINE)
-          const so = `${String(params.data.SOD_NBR || '').trim()}-${String(params.data.SOD_LINE || '').trim()}`;
-          
-          // Validate SO is present and properly formatted
-          if (!so || so === '-') {
-            console.error('Cannot save owner: SO number or line is missing');
-            return;
-          }
-          
-          // '— Clear Owner —' sentinel or null/undefined means the user cleared the owner
-          const CLEAR_SENTINEL = '— Clear Owner —';
-          const newUserName = (!params.newValue || params.newValue === CLEAR_SENTINEL) ? '' : params.newValue;
-
-          // Preserve existing misc data and update only userName
-          const miscData = {
-            ...params.data.misc,
-            userName: newUserName,
-            so: so
-          };
-          
-          // Save to backend
-          try {
-            const res = await this.api.saveMisc(miscData);
-            params.data.misc = res;
-            this.sendAndUpdate(params.data, params.data.id);
-          } catch (err) {
-            console.error('Error saving owner:', err);
-          }
+      field: "misc.clear_to_build_status",
+      headerName: "CTB in Period",
+      filter: "agSetColumnFilter",
+      width: 130,
+      cellEditor: "agRichSelectCellEditor",
+      editable: true,
+      cellClass: (params: any) => {
+        if (params.value == "CTB in Period") {
+          return ["bg-success bg-opacity-50"];
+        } else if (params.value == "At Risk") {
+          return ["bg-danger bg-opacity-75"];
+        } else if (params.value == "Miss") {
+          return ["bg-warning bg-opacity-50"];
+        } else {
+          return [];
         }
       },
-      cellRenderer: (params: any) => {
-        if (params.value) {
-          const icon = this.ownerDropdownEnabled ? 'mdi-account-circle' : 'mdi-text';
-          return `<div class="d-flex align-items-center">
-                    <i class="mdi ${icon} text-primary me-2"></i>
-                    <span>${params.value}</span>
-                  </div>`;
+      cellEditorParams: {
+        values: ["CTB in Period", "At Risk", "Miss", "NA"],
+        cellEditorPopup: false,
+      },
+      valueGetter: (params) => {
+        if (params.data) {
+          if (params?.data?.misc?.clear_to_build_status != "NA") {
+            return (
+              params?.data?.misc?.clear_to_build_status || "--Select status--"
+            );
+          }
+          return "--Select status--";
+        } else {
+          return "--Select status--";
         }
-        
-        if (!this.ownerDropdownEnabled) {
-          return `<span class="text-muted fst-italic">Enter owner name</span>`;
-        }
-        
-        return `<span class="text-muted fst-italic">No owner assigned</span>`;
+      },
+    },
+    {
+      field: "misc.tj_due_date",
+      headerName: "Planned to Pick",
+      filter: "agSetColumnFilter",
+      width: 140,
+      editable: true,
+      cellRenderer: EditIconV2Component,
+      cellRendererParams: {
+        iconName: "mdi mdi-pencil",
+      },
+    },
+    {
+      field: "misc.tj_po_number",
+      headerName: "Work Order #",
+      filter: "agSetColumnFilter",
+      width: 130,
+      editable: true,
+      cellRenderer: EditIconV2Component,
+      cellRendererParams: {
+        iconName: "mdi mdi-pencil",
       },
     },
     {
       field: "ownerTransactions",
       headerName: "Owner Transactions",
       filter: "agSetColumnFilter",
+      width: 140,
       cellRenderer: OwnerRendererV2Component,
       cellRendererParams: {
         onClick: (e) => {
@@ -2448,9 +2255,269 @@ export class ShippingComponent implements OnInit, OnDestroy {
       },
     },
     {
+      field: "misc.lateReasonCode",
+      headerName: "Late Reason Code",
+      filter: "agSetColumnFilter",
+      width: 150,
+      cellRenderer: LateReasonCodeRendererV2Component,
+      cellRendererParams: {
+        onClick: (e) => {
+          this.viewReasonCode(
+            "lateReasonCode",
+            e.rowData.misc,
+            e.rowData.SOD_NBR + "-" + e.rowData.SOD_LINE,
+            e.rowData
+          );
+        },
+      },
+    },
+    // ── Priority columns ──────────────────────────────────────────────────────
+    {
+      field: "shipping_priority",
+      headerName: "Production Priority",
+      filter: false,
+      sortable: false,
+      editable: true,
+      width: 140,
+      cellEditor: 'agNumberCellEditor',
+      cellEditorParams: {
+        min: 0,
+        max: 9999,
+        precision: 0
+      },
+      cellRenderer: PriorityDisplayCellRendererComponent,
+      onCellValueChanged: async (params: any) => {
+        const newPriority = parseInt(params.newValue) || 0;
+        const success = await this.updatePriority(params.data, newPriority);
+        if (!success) {
+          params.data.shipping_priority = params.oldValue;
+          this.gridApi.refreshCells({ rowNodes: [params.node] });
+        }
+      },
+      tooltipField: 'shipping_priority',
+      headerTooltip: 'Set shipping priority (1 = highest priority). Must be unique.',
+    },
+    {
+      field: "kanban_priority",
+      headerName: "Kanban Priority",
+      filter: false,
+      sortable: true,
+      editable: true,
+      width: 130,
+      cellEditor: 'agRichSelectCellEditor',
+      cellEditorParams: (params: any) => {
+        const usedPriorities = new Set<number>();
+        params.api.forEachNode((node: any) => {
+          if (node.data && node.data.kanban_priority && node.data !== params.data) {
+            usedPriorities.add(parseInt(node.data.kanban_priority));
+          }
+        });
+        const availablePriorities: number[] = [];
+        for (let i = 1; i <= 50; i++) {
+          if (!usedPriorities.has(i)) {
+            availablePriorities.push(i);
+          }
+        }
+        if (params.value) {
+          const currentPriority = parseInt(params.value);
+          if (!availablePriorities.includes(currentPriority)) {
+            availablePriorities.push(currentPriority);
+            availablePriorities.sort((a, b) => a - b);
+          }
+        }
+        const values = [null, ...availablePriorities];
+        return {
+          values: values,
+          cellHeight: 50,
+          formatValue: (value: any) => {
+            if (value === null || value === undefined || value === '') {
+              return '(None)';
+            }
+            return `Priority ${value}`;
+          },
+          searchDebounceDelay: 300,
+          allowTyping: true,
+          filterList: true,
+          highlightMatch: true
+        };
+      },
+      cellRenderer: (params: any) => {
+        if (!params.value) return '';
+        return `<span class="badge bg-info-subtle text-info">★ ${params.value}</span>`;
+      },
+      onCellValueChanged: async (params: any) => {
+        const newPriority = parseInt(params.newValue) || null;
+        await this.updateKanbanPriority(params);
+      },
+      tooltipField: 'kanban_priority',
+      headerTooltip: 'Set kanban priority (1 = highest priority). Must be unique.',
+    },
+    // ── Hidden by default ─────────────────────────────────────────────────────
+    {
+      field: "SOD_PER_DATE",
+      headerName: "Performance Date",
+      filter: "agDateColumnFilter",
+      filterParams: agGridDateFilter,
+      hide: true,
+      cellRenderer: StatusDateRenderer,
+    },
+    {
+      field: "SOD_CONTR_ID",
+      headerName: "PO #",
+      filter: "agMultiColumnFilter",
+      hide: true,
+    },
+    {
+      field: "SOD_ORDER_CATEGORY",
+      headerName: "Customer CO #",
+      filter: "agTextColumnFilter",
+      hide: true,
+      cellRenderer: LinkRendererV2Component,
+      cellRendererParams: {
+        onClick: (e) => {
+          this.customerOrderInfoModalService.open(e.rowData.SOD_ORDER_CATEGORY);
+        },
+        isLink: true,
+      },
+    },
+    {
+      field: "SO_SHIP",
+      headerName: "Ship To",
+      filter: "agMultiColumnFilter",
+      hide: true,
+      cellRenderer: LinkRendererV2Component,
+      cellRendererParams: {
+        onClick: (e) => this.addressInfoModalService.open(e.rowData.SO_SHIP),
+        isLink: true,
+      },
+    },
+    {
+      field: "VIEW_BOM",
+      headerName: "BOM",
+      filter: false,
+      sortable: false,
+      hide: true,
+      cellRenderer: BomRendererV2Component,
+      width: 65,
+      suppressHeaderMenuButton: true,
+      cellClass: "text-center",
+    },
+    {
+      field: "CP_CUST_PART",
+      headerName: "Cust Part #",
+      filter: "agMultiColumnFilter",
+      hide: true,
+    },
+    {
+      field: "PT_REV",
+      headerName: "Part Revision",
+      filter: "agMultiColumnFilter",
+      hide: true,
+    },
+    {
+      field: "SOD_QTY_ORD",
+      headerName: "Qty Ordered",
+      filter: "agNumberColumnFilter",
+      hide: true,
+    },
+    {
+      field: "SOD_QTY_ALL",
+      headerName: "Qty Allocated",
+      filter: "agNumberColumnFilter",
+      hide: true,
+    },
+    {
+      field: "SOD_QTY_SHIP",
+      headerName: "Qty Shipped",
+      filter: "agNumberColumnFilter",
+      hide: true,
+    },
+    {
+      field: "LD_QTY_OH",
+      headerName: "Qty OH",
+      filter: "agSetColumnFilter",
+      hide: true,
+      cellClass: (e) => {
+        if (e.data && e.data.LD_QTY_OH <= 0)
+          return ["border-start border-danger"];
+        return null;
+      },
+      filterParams: {
+        valueGetter: (params) => {
+          if (params.data && params.data.LD_QTY_OH <= 0) {
+            return "No qty on hand";
+          } else {
+            return "On hand qty available";
+          }
+        },
+      },
+    },
+    {
+      field: "Drop in today",
+      headerName: "Dropped in today",
+      filter: "agSetColumnFilter",
+      hide: true,
+      cellClass: (e) => {
+        if (e.data && e.data.SOD_DUE_DATE == e.data.SO_ORD_DATE)
+          return ["border-start border-danger"];
+        return null;
+      },
+      valueGetter: (e) => {
+        if (e.data && e.data.SOD_DUE_DATE == e.data.SO_ORD_DATE)
+          return "Dropped in today"
+        return null;
+      },
+      filterParams: {
+        valueGetter: (e) => {
+          if (e.data && e.data.SOD_DUE_DATE == e.data.SO_ORD_DATE) {
+            return "Dropped in today";
+          } else {
+            return null;
+          }
+        },
+      },
+    },
+    {
+      field: "SO_ORD_DATE",
+      headerName: "Ordered Date",
+      filter: "agDateColumnFilter",
+      filterParams: agGridDateFilter,
+      hide: true,
+    },
+    { field: "PT_ROUTING", headerName: "Routing", filter: "agSetColumnFilter", hide: true },
+    {
+      field: "recent_comments.comments_html",
+      headerName: "Recent Comment",
+      filter: "agTextColumnFilter",
+      hide: true,
+      autoHeight: false,
+      wrapText: false,
+      width: 100,
+      minWidth: 100,
+      tooltipField: "recent_comments.comments_html",
+    },
+    {
+      field: "CMT_CMMT",
+      headerName: "QAD Comments",
+      filter: "agMultiColumnFilter",
+      hide: true,
+      tooltipField: "CMT_CMMT",
+      filterParams: {
+        valueGetter: (params) => {
+          let data = params.data.CMT_CMMT;
+          if (data !== "") {
+            return "Has Comments";
+          } else {
+            return "No Comments";
+          }
+        },
+      },
+    },
+    {
       field: "SOD_LIST_PR",
       headerName: "List Price",
       filter: "agSetColumnFilter",
+      hide: true,
       valueFormatter: currencyFormatter,
       aggFunc: "sum",
       filterParams: {
@@ -2467,6 +2534,7 @@ export class ShippingComponent implements OnInit, OnDestroy {
       field: "SOD_LIST_PR",
       headerName: "No Cost List Price",
       filter: "agSetColumnFilter",
+      hide: true,
       valueFormatter: currencyFormatter,
       cellStyle: function (e) {
         if (e.data && 0 == e.data.SOD_LIST_PR)
@@ -2487,6 +2555,7 @@ export class ShippingComponent implements OnInit, OnDestroy {
       field: "OPENBALANCE",
       headerName: "Open Balance",
       filter: "agNumberColumnFilter",
+      hide: true,
       valueFormatter: currencyFormatter,
       aggFunc: "sum",
     },
@@ -2494,6 +2563,7 @@ export class ShippingComponent implements OnInit, OnDestroy {
       field: "WORK_ORDER_ROUTING",
       headerName: "View Work Order Routing",
       filter: "agMultiColumnFilter",
+      hide: true,
       cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
         onClick: (e) => this.viewRouting(e.rowData.SOD_PART),
@@ -2504,12 +2574,14 @@ export class ShippingComponent implements OnInit, OnDestroy {
       field: "LEADTIME",
       headerName: "Lead Time",
       filter: "agTextColumnFilter",
+      hide: true,
     },
-    { field: "AGE", headerName: "Age", filter: "agSetColumnFilter" },
+    { field: "AGE", headerName: "Age", filter: "agSetColumnFilter", hide: true },
     {
       field: "RFQ",
       headerName: "RFQ",
       filter: "agSetColumnFilter",
+      hide: true,
       cellRenderer: IconRendererV2Component,
       cellRendererParams: {
         onClick: (e) => {
@@ -2523,21 +2595,25 @@ export class ShippingComponent implements OnInit, OnDestroy {
       headerName: "Arrival Date",
       filter: "agDateColumnFilter",
       filterParams: agGridDateFilter,
+      hide: true,
     },
     {
       field: "misc.shipViaAccount",
       headerName: "Ship Via Account",
       filter: "agSetColumnFilter",
+      hide: true,
     },
     {
       field: "sod_acct",
       headerName: "Sod Account",
       filter: "agSetColumnFilter",
+      hide: true,
     },
     {
       field: "generate_placard",
       headerName: "Generate Placard",
       filter: "agSetColumnFilter",
+      hide: true,
       cellRenderer: IconRendererV2Component,
       cellRendererParams: {
         onClick: (e) => {
@@ -2551,33 +2627,16 @@ export class ShippingComponent implements OnInit, OnDestroy {
       },
     },
     {
-      field: "recent_notes.notes",
-      headerName: "Notes",
-      filter: "agSetColumnFilter",
-      cellRenderer: NotesRendererV2Component,
-      cellRendererParams: {
-        onClick: this.viewNotes.bind(this),
-      },
-      filterParams: {
-        valueGetter: (params) => {
-          let isEMpty = isEmpty(params.data.recent_notes);
-          if (!isEMpty) {
-            return "Has Notes";
-          } else {
-            return "No Notes";
-          }
-        },
-      },
-    },
-    {
       field: "SO_SHIPVIA",
       headerName: "Ship Via",
       filter: "agMultiColumnFilter",
+      hide: true,
     },
     {
       field: "misc.container",
       headerName: "Container",
       filter: "agMultiColumnFilter",
+      hide: true,
       editable: true,
       cellRenderer: EditIconV2Component,
       cellRendererParams: {
@@ -2588,28 +2647,7 @@ export class ShippingComponent implements OnInit, OnDestroy {
       field: "misc.container_due_date",
       headerName: "Container due date",
       filter: "agSetColumnFilter",
-      editable: true,
-      cellRenderer: EditIconV2Component,
-      cellRendererParams: {
-        iconName: "mdi mdi-pencil",
-      },
-    },
-    {
-      field: "misc.tj_po_number",
-      // headerName: "TJ PO #",
-      headerName: "Work Order #",
-      filter: "agSetColumnFilter",
-      editable: true,
-      cellRenderer: EditIconV2Component,
-      cellRendererParams: {
-        iconName: "mdi mdi-pencil",
-      },
-    },
-    {
-      field: "misc.tj_due_date",
-      // headerName: "TJ Due Date",
-      headerName: "Planned to Pick",
-      filter: "agSetColumnFilter",
+      hide: true,
       editable: true,
       cellRenderer: EditIconV2Component,
       cellRendererParams: {
@@ -2620,6 +2658,7 @@ export class ShippingComponent implements OnInit, OnDestroy {
       field: "misc.pallet_count",
       headerName: "Pallet Count",
       filter: "agSetColumnFilter",
+      hide: true,
       editable: true,
       cellRenderer: EditIconV2Component,
       cellRendererParams: {
@@ -2630,6 +2669,7 @@ export class ShippingComponent implements OnInit, OnDestroy {
       field: "FG-Label",
       headerName: "FG Label",
       filter: "agSetColumnFilter",
+      hide: true,
       cellRenderer: IconRendererV2Component,
       cellRendererParams: {
         onClick: (e) => {
@@ -2649,6 +2689,7 @@ export class ShippingComponent implements OnInit, OnDestroy {
       field: "POR-Label",
       headerName: "POR Label",
       filter: "agSetColumnFilter",
+      hide: true,
       cellRenderer: IconRendererV2Component,
       cellRendererParams: {
         onClick: (e) => {
@@ -2667,6 +2708,7 @@ export class ShippingComponent implements OnInit, OnDestroy {
       field: "misc.g2e_comments",
       headerName: "G2E",
       filter: "agMultiColumnFilter",
+      hide: true,
       cellRenderer: EditIconV2Component,
       editable: true,
       cellRendererParams: {
@@ -2677,6 +2719,7 @@ export class ShippingComponent implements OnInit, OnDestroy {
       field: "misc.shortages_review",
       headerName: "Shortages Review",
       filter: "agSetColumnFilter",
+      hide: true,
       cellRenderer: ChecboxRendererV2,
       cellRendererParams: {
         onClick: (e) => this.update(e.rowData),
@@ -2693,6 +2736,7 @@ export class ShippingComponent implements OnInit, OnDestroy {
       field: "misc.lateReasonCodePerfDate",
       headerName: "Late Reason Code (Perf Date)",
       filter: "agSetColumnFilter",
+      hide: true,
       cellRenderer: LateReasonCodeRendererV2Component,
       cellRendererParams: {
         onClick: (e) => {
@@ -2706,90 +2750,35 @@ export class ShippingComponent implements OnInit, OnDestroy {
       },
     },
     {
-      field: "misc.lateReasonCode",
-      headerName: "Late Reason Code",
-      filter: "agSetColumnFilter",
-      cellRenderer: LateReasonCodeRendererV2Component,
-      cellRendererParams: {
-        onClick: (e) => {
-          this.viewReasonCode(
-            "lateReasonCode",
-            e.rowData.misc,
-            e.rowData.SOD_NBR + "-" + e.rowData.SOD_LINE,
-            e.rowData
-          );
-        },
-      },
-    },
-    {
-      field: "misc.clear_to_build_status",
-      headerName: "CTB in Period",
-      filter: "agSetColumnFilter",
-      cellEditor: "agRichSelectCellEditor",
-      editable: true,
-      cellClass: (params: any) => {
-        if (params.value == "CTB in Period") {
-          return ["bg-success bg-opacity-50"];
-        } else if (params.value == "At Risk") {
-          return ["bg-danger bg-opacity-75"];
-        } else if (params.value == "Miss") {
-          return ["bg-warning bg-opacity-50"];
-        } else {
-          return [];
-        }
-      },
-
-      cellEditorParams: {
-        values: ["CTB in Period", "At Risk", "Miss", "NA"],
-        cellEditorPopup: false,
-      },
-
-      valueGetter: (params) => {
-        if (params.data) {
-          if (params?.data?.misc?.clear_to_build_status != "NA") {
-            return (
-              params?.data?.misc?.clear_to_build_status || "--Select status--"
-            );
-          }
-          return "--Select status--";
-        } else {
-          return "--Select status--";
-        }
-      },
-    },
-    {
       field: "clear_to_build_period",
       headerName: "CTB Report Period",
       filter: "agMultiColumnFilter",
+      hide: true,
       valueGetter: (params) => {
         if (params.data)
           return moment(params?.data?.SOD_DUE_DATE).format("MM-YYYY");
         return "";
       },
     },
-    { field: "SOD_TYPE", headerName: "SOD Type", filter: "agSetColumnFilter" },
-    {
-      field: "SOD_PER_DATE",
-      headerName: "Performance Date",
-      filter: "agDateColumnFilter",
-      filterParams: agGridDateFilter,
-      cellRenderer: StatusDateRenderer,
-    },
+    { field: "SOD_TYPE", headerName: "SOD Type", filter: "agSetColumnFilter", hide: true },
     {
       field: "SOD_REQ_DATE",
       headerName: "Request Date",
       filter: "agDateColumnFilter",
       filterParams: agGridDateFilter,
+      hide: true,
     },
     {
       field: "REQ_DUE_DIFF",
       headerName: "Request and Due Date Diff",
       filter: "agMultiColumnFilter",
+      hide: true,
     },
     {
       field: "VIEW_PARTS_ORDER_REQUEST",
       headerName: "View Parts Order Request",
       filter: "agMultiColumnFilter",
+      hide: true,
       cellRenderer: IconRendererV2Component,
       cellRendererParams: {
         onClick: (e) => this.viewPartsOrder(e.rowData.SOD_NBR),
@@ -2797,7 +2786,10 @@ export class ShippingComponent implements OnInit, OnDestroy {
       },
     },
     {
-      field: "WO_NBR", headerName: "SO/Job", filter: "agMultiColumnFilter",
+      field: "WO_NBR",
+      headerName: "SO/Job",
+      filter: "agMultiColumnFilter",
+      hide: true,
       cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
         onClick: ({ rowData }) =>
