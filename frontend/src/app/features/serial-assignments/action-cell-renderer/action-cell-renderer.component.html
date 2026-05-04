@@ -21,17 +21,17 @@
     <button ngbDropdownItem (click)="onPrint()">
       <i class="mdi mdi-printer me-2"></i>Print Report
     </button>
-    <div class="dropdown-divider"></div>
-    <button ngbDropdownItem (click)="onReassign()">
+    <div class="dropdown-divider" *ngIf="canManage"></div>
+    <button ngbDropdownItem (click)="onReassign()" *ngIf="canManage">
       <i class="mdi mdi-swap-horizontal me-2"></i>Reassign Work Order
     </button>
-    <button ngbDropdownItem (click)="onVoid()">
+    <button ngbDropdownItem (click)="onVoid()" *ngIf="canManage">
       <i class="mdi mdi-cancel me-2"></i>Void Assignment
     </button>
-    <button ngbDropdownItem disabled class="text-muted">
+    <button ngbDropdownItem disabled class="text-muted" *ngIf="canManage">
       <i class="mdi mdi-delete-off me-2"></i>Delete Disabled (Use Void/Reassign)
     </button>
-    <div class="dropdown-item-text small text-muted">
+    <div class="dropdown-item-text small text-muted" *ngIf="canManage">
       Permanent delete is disabled for safety.
     </div>
     <ng-container *ngIf="requiresVerif && verificationStatus !== 'verified'">

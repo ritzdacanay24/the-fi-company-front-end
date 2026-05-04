@@ -206,9 +206,9 @@ SELECT
     NULL as void_reason,
     sg.timeStamp as created_at,
     -- Additional details
-    sg.generated_SG_asset as part_number,
+    sg.sgPartNumber as part_number,
     NULL as wo_description,
-    sg.sgPartNumber as customer_part_number,
+    sg.generated_SG_asset as customer_part_number,
     sg.property_site,
     sg.inspectorName as inspector_name,
     'L&W' customer_name,

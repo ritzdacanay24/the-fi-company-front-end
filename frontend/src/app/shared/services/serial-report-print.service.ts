@@ -118,7 +118,7 @@ export class SerialReportPrintService {
             <thead>
               <tr>
                 <th>#</th>
-                <th>${data.customer} Asset Number</th>
+                <th>${['ATI', 'Other'].includes(data.customer) ? 'Asset Number' : data.customer + ' Asset Number'}</th>
                 <th>EyeFi Serial Number</th>
                 <th>UL Number</th>
                 <th>UL Category</th>

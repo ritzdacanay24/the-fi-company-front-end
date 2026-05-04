@@ -14,6 +14,7 @@ export interface ActionCellParams extends ICellRendererParams {
   requiresVerification: (data: any) => boolean;
   canHardDelete: (data: any) => boolean;
   getLinkedAssetNumber: (data: any) => string;
+  canManage: boolean;
 }
 
 @Component({
@@ -31,6 +32,7 @@ export class ActionCellRendererComponent implements ICellRendererAngularComp {
   requiresVerif = false;
   canHardDelete = false;
   linkedAssetNumber = '';
+  canManage = false;
 
   agInit(params: ActionCellParams): void {
     this.params = params;
@@ -60,6 +62,7 @@ export class ActionCellRendererComponent implements ICellRendererAngularComp {
     this.requiresVerif = this.params.requiresVerification(this.params.data);
     this.canHardDelete = this.params.canHardDelete(this.params.data);
     this.linkedAssetNumber = this.params.getLinkedAssetNumber(this.params.data);
+    this.canManage = this.params.canManage ?? false;
   }
 
   onPrint(): void {

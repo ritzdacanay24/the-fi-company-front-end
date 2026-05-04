@@ -310,14 +310,15 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
         hide: true,
       },
       {
-        headerName: 'Asset Number',
+        headerName: 'Customer Part Number',
         field: 'part_number',
         width: 150
       },
       {
-        headerName: 'Customer Part #',
+        headerName: 'Asset Number',
         field: 'customer_part_number',
-        width: 150
+        width: 150,
+        valueGetter: (params: any) => params.data?.customer_part_number || '-'
       },
       {
         headerName: 'Customer Name',
@@ -1361,7 +1362,7 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
     this.loading = true;
     try {
       // Fetch full assignment details from backend
-      const response = await this.serialAssignmentsService.getAssignmentById(assignment.source_id);
+      const response = await this.serialAssignmentsService.getAssignmentById(this.getAssignmentId(assignment));
       
       // Handle response - it might be wrapped in a data property or be the object directly
       const detailedAssignment = response?.data || response;
@@ -1468,7 +1469,7 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
         customer: sampleAssignment.customer_name || 'N/A',
         assets: batchAssignments.map((assignment: any, index: number) => ({
           index: index + 1,
-          assetNumber: assignment.generated_asset_number || assignment.part_number || 'N/A',
+          assetNumber: assignment.generated_asset_number || 'N/A',
           eyefiSerial: assignment.eyefi_serial_number || 'N/A',
           ulNumber: assignment.ul_number || 'N/A',
           ulCategory: assignment.ul_category || 'N/A',
