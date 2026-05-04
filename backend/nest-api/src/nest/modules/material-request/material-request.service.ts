@@ -212,7 +212,57 @@ export class MaterialRequestService {
   }
 
   async getPicking() {
-    return this.repository.getPicking();
+    const picks = await this.repository.getPicking();
+    if (!picks.length) return picks;
+
+    // Collect all unique part numbers across all details
+    const partNumbers = [
+      ...new Set(
+        picks.flatMap((row: any) =>
+          (row.details || []).map((d: any) => String(d.partNumber || d.partNumberUpper || '').trim().toUpperCase()).filter(Boolean),
+        ),
+      ),
+    ];
+
+    if (partNumbers.length === 0) return picks;
+
+    const placeholders = partNumbers.map(() => '?').join(', ');
+    const locationRows = await this.qadOdbcService.queryWithParams<Array<Record<string, unknown>>>(
+      `SELECT CAST(a.ld_loc AS CHAR(25)) LD_LOC
+        , a.ld_part LD_PART
+        , a.ld_qty_oh LD_QTY_OH
+        , a.ld_qty_all LD_QTY_ALL
+        , a.ld_qty_oh - a.ld_qty_all availableQty
+        , a.ld_lot
+        , a.ld_ref
+       FROM ld_det a
+       WHERE a.ld_part IN (${placeholders})
+         AND a.ld_domain = 'EYE'
+         AND a.ld_qty_oh > 0
+         AND a.ld_loc NOT IN ('JIAXING', 'PCREJ', 'REJECT', 'PROTO')
+       ORDER BY CASE WHEN a.ld_loc = 'INTGRTD' THEN 0 END ASC
+       WITH (NOLOCK)`,
+      partNumbers,
+      { keyCase: 'upper' },
+    );
+
+    // Group locations by part number for fast lookup
+    const locationsByPart = new Map<string, Array<Record<string, unknown>>>();
+    for (const loc of locationRows) {
+      const part = String(loc.LD_PART || '').trim().toUpperCase();
+      if (!locationsByPart.has(part)) locationsByPart.set(part, []);
+      locationsByPart.get(part)!.push(loc);
+    }
+
+    // Attach locations to each detail row
+    for (const row of picks as any[]) {
+      for (const detail of row.details || []) {
+        const part = String(detail.partNumber || detail.partNumberUpper || '').trim().toUpperCase();
+        detail.locations = locationsByPart.get(part) || [];
+      }
+    }
+
+    return picks;
   }
 
   async searchItemByQadPartNumber(rawItems?: string) {
