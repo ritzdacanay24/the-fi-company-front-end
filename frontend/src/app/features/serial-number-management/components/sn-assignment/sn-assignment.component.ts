@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormsModule } from '@angular/forms';
 import { SerialNumberService } from '../../services/serial-number.service';
 import { SerialNumber, SerialNumberAssignment } from '../../models/serial-number.model';
+import { SerialAssignmentsService } from '@app/features/serial-assignments/services/serial-assignments.service';
 import { Observable, BehaviorSubject } from 'rxjs';
 import { map, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
@@ -25,6 +26,7 @@ export class SnAssignmentComponent implements OnInit {
   selectedSerialNumbers: SerialNumber[] = [];
   isAssigning = false;
   isSearching = false;
+  lastAssignmentError: string | null = null;
   
   currentView: 'assign' | 'history' = 'assign';
   
@@ -32,7 +34,8 @@ export class SnAssignmentComponent implements OnInit {
 
   constructor(
     private fb: FormBuilder,
-    private serialNumberService: SerialNumberService
+    private serialNumberService: SerialNumberService,
+    private serialAssignmentsService: SerialAssignmentsService,
   ) {
     this.assignmentForm = this.fb.group({
       workOrderNumber: ['', Validators.pattern(/^[A-Z0-9-]{4,20}$/)],
@@ -90,9 +93,31 @@ export class SnAssignmentComponent implements OnInit {
 
   async loadAssignments() {
     try {
-      const response = await this.serialNumberService.getSerialNumberAssignments();
+      const response = await this.serialAssignmentsService.getAllConsumedSerials({ include_voided: false });
       if (response && response.success) {
-        this.assignments = response.data || [];
+        this.assignments = (response.data || []).map((assignment: any) => ({
+          id: assignment.id || assignment.source_id,
+          serial_number_id: assignment.eyefi_serial_id || 0,
+          serial_number: assignment.eyefi_serial_number,
+          ul_label_id: assignment.ul_label_id,
+          ul_number: assignment.ul_number,
+          work_order_number: assignment.wo_number || assignment.po_number,
+          customer_name: assignment.customer_name,
+          customer_po: assignment.po_number,
+          assigned_date: assignment.consumed_at || assignment.used_date || assignment.created_at,
+          assigned_by_user: assignment.consumed_by || assignment.used_by || '',
+          assigned_by_name: assignment.consumed_by || assignment.used_by || '',
+          status: assignment.status,
+          consumed_by: assignment.consumed_by || assignment.used_by,
+          notes: assignment.notes,
+          wo_nbr: assignment.wo_number,
+          wo_due_date: assignment.wo_due_date,
+          wo_part: assignment.wo_part || assignment.part_number,
+          wo_qty_ord: assignment.wo_qty_ord,
+          wo_routing: assignment.wo_routing,
+          wo_line: assignment.wo_line,
+          wo_description: assignment.wo_description,
+        }));
       } else {
         this.assignments = [];
       }
@@ -144,12 +169,14 @@ export class SnAssignmentComponent implements OnInit {
     }
 
     this.isAssigning = true;
+    this.lastAssignmentError = null;
     const formValue = this.assignmentForm.value;
 
-    // Create assignments for each selected serial number
     const assignments = this.selectedSerialNumbers.map(sn => ({
       serial_number_id: sn.id || 0,
+      eyefi_serial_number: sn.serial_number,
       serial_number: sn.serial_number,
+      wo_number: formValue.workOrderNumber,
       work_order_number: formValue.workOrderNumber,
       customer_name: formValue.customerName,
       customer_po: formValue.customerPo,
@@ -165,18 +192,16 @@ export class SnAssignmentComponent implements OnInit {
       wo_qty_ord: formValue.woQtyOrd,
       wo_routing: formValue.woRouting,
       wo_line: formValue.woLine,
-      wo_description: formValue.woDescription
-    } as SerialNumberAssignment));
+      wo_description: formValue.woDescription,
+      part_number: formValue.woPart,
+      po_number: formValue.customerPo,
+      cp_cust: formValue.customerName,
+      cp_cust_part: null,
+    }));
 
     try {
-      // Process assignments (in real app, this would be a batch API call)
-      await Promise.all(
-        assignments.map(assignment => 
-          this.serialNumberService.assignSerialNumber(assignment)
-        )
-      );
+      await this.serialAssignmentsService.bulkCreateOther(assignments, formValue.assignedByName);
       
-      // Success
       this.selectedSerialNumbers = [];
       this.assignmentForm.reset({
         assignedDate: new Date().toISOString().split('T')[0]
@@ -188,6 +213,7 @@ export class SnAssignmentComponent implements OnInit {
       this.assignmentCompleted.emit(assignments[0]);
     } catch (error) {
       console.error('Assignment error:', error);
+      this.lastAssignmentError = error instanceof Error ? error.message : 'Failed to create serial assignments';
     } finally {
       this.isAssigning = false;
     }
@@ -233,6 +259,12 @@ export class SnAssignmentComponent implements OnInit {
   }
 
   getStatusBadgeClass(assignment: SerialNumberAssignment): string {
+    if (assignment.status === 'consumed' || assignment.status === 'active') {
+      return 'badge-success';
+    }
+    if (assignment.status === 'cancelled' || assignment.status === 'returned') {
+      return 'badge-secondary';
+    }
     if (assignment.shipped_date) {
       return 'badge-success';
     } else if (assignment.tracking_number) {
@@ -243,6 +275,18 @@ export class SnAssignmentComponent implements OnInit {
   }
 
   getStatusText(assignment: SerialNumberAssignment): string {
+    if (assignment.status === 'consumed') {
+      return 'Consumed';
+    }
+    if (assignment.status === 'active') {
+      return 'Active';
+    }
+    if (assignment.status === 'cancelled') {
+      return 'Cancelled';
+    }
+    if (assignment.status === 'returned') {
+      return 'Returned';
+    }
     if (assignment.shipped_date) {
       return 'Shipped';
     } else if (assignment.tracking_number) {
@@ -284,7 +328,7 @@ export class SnAssignmentComponent implements OnInit {
   }
 
   trackByAssignment(index: number, item: SerialNumberAssignment): string {
-    return `${item.serial_number}-${item.assigned_date}`;
+    return `${item.id || item.serial_number}-${item.assigned_date}`;
   }
 
   // Template helper method

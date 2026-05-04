@@ -3,6 +3,8 @@ export interface BulkCreateSgAssetItemDto {
   property_site?: string;
   sgPartNumber?: string;
   serialNumber?: string;
+  category?: string;
+  ul_category?: string;
   sgAssetNumber?: string;
   generated_SG_asset?: string;
   manualUpdate?: string | boolean | null;

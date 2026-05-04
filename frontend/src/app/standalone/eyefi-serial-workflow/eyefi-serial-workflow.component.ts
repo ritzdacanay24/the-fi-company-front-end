@@ -186,108 +186,8 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
   customerOptions: string[] = [
     'IGT',
     'Light and Wonder',
-    'Bally',
-    'Scientific Games',
     'AGS',
-    'AINGAM',
-    'AMEGAM',
     'ATI',
-    'AVAGAM',
-    'BalGam',
-    'BALTEC',
-    'BETRIT',
-    'CHUGOL',
-    'EVIGAM',
-    'GAMART',
-    'IGT_EUR',
-    'INTGAM',
-    'JACENT',
-    'KONGAM',
-    'MCBHOL',
-    'MCBJOH',
-    'NORPRE',
-    'NOVAME',
-    'PECRES',
-    'SANMAN',
-    'SIGCON',
-    'SMSLLC',
-    'STYGAM',
-    'VegasSig',
-    'YELFIS',
-    'VGT',
-    'MIAVAL',
-    'ODACAS',
-    'ABPRE',
-    'CAEENT',
-    'USARMY',
-    'IGT_CAN',
-    'GAMCAP',
-    'VECGAM',
-    'ARUGAM',
-    'GTSOURCE',
-    'A&WENT',
-    'ADVGAM',
-    'AEROSPAC',
-    'MGM-BELL',
-    'BOYGAM',
-    'CENGAM-M',
-    'CHINATRA',
-    'COLEKEPR',
-    'DIAGAM',
-    'FLEXINT',
-    'GOLDROUT',
-    'GRANDVIS',
-    'INTUICOD',
-    'JPSLOT',
-    'NEXGAM',
-    'PARPRONV',
-    'PERGAM',
-    'SWSLOTCO',
-    'TOVISCO',
-    'VSRIND',
-    'WINMARK',
-    'WORLDWID',
-    'METAGAM',
-    'SANTFE',
-    'QUICHA',
-    'SYNBLUE',
-    'ELDOREST',
-    'CIRCCIRC',
-    'SILVLEGC',
-    'TURNSTON',
-    'MGMINTL',
-    'METSIG',
-    'RAINROCK',
-    'EPICTECH',
-    'PROTO-A',
-    'BVGA',
-    'WESTGATE',
-    'ELDORADO',
-    'ZITROUSA',
-    'BELLAGIO',
-    'TREASURE',
-    'BETRITE',
-    'HILAND',
-    'RAMPART',
-    'BLUBERI',
-    'AGLC',
-    'MICCO',
-    'MONROE',
-    'HAAS',
-    'OSPLLC',
-    'AVI',
-    'JRSHOS',
-    'INCRED',
-    'SONNY',
-    'KIRON',
-    'RHC',
-    'RTSINC',
-    'ECLIPSE',
-    'GALAXY',
-    'PLUSS',
-    'EXCEED',
-    'TIOLI',
-    'INTERB',
     'Other'
   ];
 
@@ -397,7 +297,8 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
           numeric_part: this.extractNumericPart(ul.ul_number),
           description: ul.description || '',
           category: ul.category || '',
-          status: 'available', // Already filtered by API
+          status: ul.status || '',
+          is_consumed: Number(ul.is_consumed || 0),
           dateCreated: new Date(ul.created_at),
           dateUsed: undefined
         }));
@@ -426,16 +327,41 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
     }
   }
 
-  onAuthenticationComplete(user: any): void {
+  async onAuthenticationComplete(user: any): Promise<void> {
     console.log('User authenticated:', user);
     this.isAuthenticated = true;
     this.currentUser = user;
-    
-    // Load UL numbers after authentication
-    this.loadAvailableULs();
-    
-    // Restore workflow state if user refreshed while authenticated
+
+    // Load latest availability first, then restore and sync any stale Step 5 state.
+    await this.loadAvailableULs();
+
+    // Restore workflow state if user refreshed while authenticated.
     this.restoreWorkflowState();
+
+    // Keep initial Step 5 values aligned with current sequence without requiring manual refresh.
+    await this.syncAutoSequenceAfterRestore();
+  }
+
+  private async syncAutoSequenceAfterRestore(): Promise<void> {
+    const isStepFiveOrLater = this.currentStep >= 5;
+    const hasAssignments = this.serialAssignments.length > 0;
+    const hasAnyAutoPopulated = this.serialAssignments.some(a => a.isAutoPopulated);
+    const hasManualOverride = this.serialAssignments.some(a => a.manuallyChanged);
+
+    if (!isStepFiveOrLater || !hasAssignments || !hasAnyAutoPopulated || hasManualOverride) {
+      return;
+    }
+
+    try {
+      this.isLoading = true;
+      await this.performAutoPopulation();
+      this.saveWorkflowState();
+      this.toastrService.info('Sequence auto-refreshed with latest available EyeFi and UL numbers.');
+    } catch (error) {
+      console.error('Error syncing auto-sequence after restore:', error);
+    } finally {
+      this.isLoading = false;
+    }
   }
 
   onUserLoggedOut(): void {
@@ -500,10 +426,8 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
           }
         } else {
           console.log('⚠️ Customer', workOrder.cp_cust, 'not found in customer options list. Will need manual selection.');
-          // Optionally set to "Other" and pre-fill the custom name
-          this.selectedCustomer = 'Other';
-          this.customOtherCustomerName = workOrder.cp_cust;
-          this.toastrService.info(`Customer set to "Other": ${workOrder.cp_cust}`, 'Auto-Selection');
+          this.selectedCustomer = '';
+          this.customOtherCustomerName = '';
         }
       } else {
         console.log('ℹ️ No cp_cust in work order. Customer selection required.');
@@ -804,7 +728,10 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
           console.log('🆕 Serials Response (from views):', serialsResponse);
           
           if (serialsResponse?.success && serialsResponse?.data && Array.isArray(serialsResponse.data)) {
-            const allSerials = serialsResponse.data;
+            const allSerials = serialsResponse.data.filter((s: any) =>
+              String(s?.status || '').toLowerCase() === 'available' &&
+              Number(s?.is_consumed || 0) === 0,
+            );
             
             // Use LAST or FIRST items based on testing mode
             serials = this.USE_LAST_ITEMS_FOR_TESTING 
@@ -828,9 +755,13 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
         // 'new' category → 'New' ULs, 'used' category → 'Used' ULs
         const categoryValue = this.category === 'new' ? 'New' : 'Used';
         
-        // Filter by category AND status='available' (not is_used)
+        // Filter by category and keep only truly available UL rows
         const filteredULs = this.availableULs
-          .filter(ul => ul.category === categoryValue && ul.status === 'available')
+          .filter(ul =>
+            String(ul.category || '').toLowerCase() === categoryValue.toLowerCase() &&
+            String(ul.status || '').toLowerCase() === 'active' &&
+            Number(ul.is_consumed || 0) === 0,
+          )
           .sort((a, b) => a.numeric_part - b.numeric_part);
         
         console.log(`Filtering for category "${categoryValue}":`, {
@@ -1388,6 +1319,9 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
             eyefi_serial_id: typeof generated.serial === 'string' ? null : generated.serial.id,
             ulNumber: generated.ulNumber?.ul_number || '',
             ul_label_id: generated.ulNumber?.id || null,
+            ul_category: generated.ulNumber?.category ?? null,
+            category: this.category,
+            partNumber: this.workOrderDetails?.cp_cust_part || '',
             sgAssetNumber: generated.assetNumber?.trim() || '', // Use manually entered asset number for USED (trimmed)
             manualUpdate: '1', // Flag as manual entry so sequence logic ignores this row
             sgPartNumber: this.workOrderDetails?.cp_cust_part || '',
@@ -1412,6 +1346,9 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
             eyefi_serial_id: typeof assignment.serial === 'string' ? null : assignment.serial.id,
             ulNumber: assignment.ulNumber?.ul_number || '',
             ul_label_id: assignment.ulNumber?.id || null,
+            ul_category: assignment.ulNumber?.category ?? null,
+            category: this.category,
+            partNumber: this.workOrderDetails?.cp_cust_part || '',
             sgPartNumber: this.workOrderDetails?.cp_cust_part || '', //this is a customer field for sg
         poNumber: this.workOrderNumber,
         property_site: '', // Add if needed
@@ -1437,7 +1374,7 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
       console.log('🔍 First assignment consumed_by:', assignments[0]?.consumed_by);
 
       // Call bulk create API - single transaction with user info
-      const response: any = await this.sgAssetService.bulkCreate(assignments, userFullName);
+      const response: any = await this.serialAssignmentsService.bulkCreateWorkflow('sg', assignments, userFullName);
       
       console.log('✅ Bulk SG response:', response);
 
@@ -1481,6 +1418,9 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
         eyefi_serial_id: typeof assignment.serial === 'string' ? null : assignment.serial.id,
         ulNumber: assignment.ulNumber?.ul_number || '',
         ul_label_id: assignment.ulNumber?.id || null,
+        ul_category: assignment.ulNumber?.category ?? null,
+        category: this.category,
+        partNumber: this.workOrderDetails?.cp_cust_part || '',
         sgPartNumber: this.workOrderDetails?.cp_cust_part || '',
         poNumber: this.workOrderNumber,
         property_site: '', // Add if needed
@@ -1504,7 +1444,7 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
       console.log('👤 Created by:', userFullName);
 
       // Call bulk create API - single transaction with user info
-      const response: any = await this.agsSerialService.bulkCreate(assignments, userFullName);
+      const response: any = await this.serialAssignmentsService.bulkCreateWorkflow('ags', assignments, userFullName);
       
       console.log('✅ Bulk AGS response:', response);
 
@@ -1549,6 +1489,8 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
         eyefi_serial_id: typeof generated.serial === 'string' ? null : generated.serial.id,
         ulNumber: generated.ulNumber?.ul_number || '',
         ul_label_id: generated.ulNumber?.id || null,
+        ul_category: generated.ulNumber?.category ?? null,
+        category: this.category,
         partNumber: this.workOrderDetails?.wo_part || '',
         poNumber: this.workOrderNumber,
         active: 1,
@@ -1571,7 +1513,7 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
       console.log('👤 Created by:', userFullName);
 
       // Call bulk create API - single transaction with user info
-      const response: any = await this.igtAssetService.bulkCreate(assignments, userFullName);
+      const response: any = await this.serialAssignmentsService.bulkCreateWorkflow('igt', assignments, userFullName);
       
       console.log('✅ Bulk IGT response:', response);
 
@@ -1619,6 +1561,8 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
         eyefi_serial_id: typeof assignment.serial === 'string' ? null : assignment.serial.id,
         ulNumber: assignment.ulNumber?.ul_number || '',
         ul_label_id: assignment.ulNumber?.id || null,
+        ul_category: assignment.ulNumber?.category ?? null,
+        category: this.category,
         partNumber: this.workOrderDetails?.wo_part || '',
         poNumber: this.workOrderNumber,
         customer_name: customerName, // Use determined customer name
@@ -1646,7 +1590,7 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
       console.log('👤 Created by:', userFullName);
 
       // Call the backend API to create the assignments
-      const response: any = await this.serialAssignmentsService.bulkCreateOther(assignments, userFullName);
+      const response: any = await this.serialAssignmentsService.bulkCreateWorkflow('other', assignments, userFullName);
       
       console.log('✅ Bulk Other response:', response);
 
@@ -1826,6 +1770,8 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
       case 'AGS':
       case 'AMEGAM':
         return 'ags';
+      case 'ATI':
+        return 'other';
       case 'Other':
         return 'other'; // Just assignment, no asset generation
       default:

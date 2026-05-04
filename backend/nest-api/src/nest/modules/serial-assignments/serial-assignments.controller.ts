@@ -87,6 +87,39 @@ export class SerialAssignmentsController {
     }
   }
 
+  @Post('bulk-create-other')
+  @Permissions('write')
+  async bulkCreateOther(
+    @Body() body: { assignments?: Array<Record<string, unknown>>; performed_by?: string },
+  ) {
+    try {
+      return await this.service.bulkCreateOther(body.assignments || [], body.performed_by || 'system');
+    } catch (err) {
+      throw new HttpException((err as Error).message, HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  @Post('bulk-create-workflow')
+  @Permissions('write')
+  async bulkCreateWorkflow(
+    @Body()
+    body: {
+      customer_type?: string;
+      assignments?: Array<Record<string, unknown>>;
+      performed_by?: string;
+    },
+  ) {
+    try {
+      return await this.service.bulkCreateWorkflowByCustomer(
+        body.customer_type || '',
+        body.assignments || [],
+        body.performed_by || 'System',
+      );
+    } catch (err) {
+      throw new HttpException((err as Error).message, HttpStatus.BAD_REQUEST);
+    }
+  }
+
   // POST /serial-assignments/bulk-void
   @Post('bulk-void')
   @Permissions('write')

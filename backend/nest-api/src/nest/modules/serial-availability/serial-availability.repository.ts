@@ -11,21 +11,56 @@ export class SerialAvailabilityRepository extends BaseRepository<RowDataPacket> 
 
   async getAvailableEyefiSerials(limit = 10): Promise<RowDataPacket[]> {
     return this.rawQuery<RowDataPacket>(
-      `SELECT id, serial_number, product_model, hardware_version, firmware_version, batch_number, status, created_at
-       FROM eyefi_serial_numbers
-       WHERE status = 'available' AND is_active = 1
-       ORDER BY id ASC
+      `SELECT esn.id,
+              esn.serial_number,
+              esn.product_model,
+              esn.hardware_version,
+              esn.firmware_version,
+              esn.batch_number,
+              esn.status,
+              esn.is_consumed,
+              esn.created_at
+       FROM eyefi_serial_numbers esn
+       LEFT JOIN serial_assignments sa
+         ON sa.eyefi_serial_id = esn.id
+        AND COALESCE(sa.is_voided, 0) = 0
+        AND COALESCE(sa.status, '') <> 'voided'
+       LEFT JOIN ul_label_usages ulu
+         ON BINARY ulu.eyefi_serial_number = BINARY esn.serial_number
+        AND COALESCE(ulu.is_voided, 0) = 0
+       LEFT JOIN agsSerialGenerator ags
+         ON BINARY ags.serialNumber = BINARY esn.serial_number
+        AND COALESCE(ags.active, 1) = 1
+       LEFT JOIN sgAssetGenerator sg
+         ON BINARY sg.serialNumber = BINARY esn.serial_number
+        AND COALESCE(sg.active, 1) = 1
+       WHERE esn.status = 'available'
+         AND esn.is_active = 1
+         AND COALESCE(esn.is_consumed, 0) = 0
+         AND sa.id IS NULL
+         AND ulu.id IS NULL
+         AND ags.id IS NULL
+         AND sg.id IS NULL
+       ORDER BY esn.id ASC
        LIMIT ${Math.max(1, Math.floor(limit))}`,
     );
   }
 
   async getAvailableUlLabels(limit = 10): Promise<RowDataPacket[]> {
     return this.rawQuery<RowDataPacket>(
-      `SELECT ul.id, ul.ul_number, ul.description, ul.category, ul.manufacturer, ul.part_number, ul.status, ul.created_at
+      `SELECT ul.id, ul.ul_number, ul.description, ul.category, ul.manufacturer, ul.part_number, ul.status, ul.is_consumed, ul.created_at
        FROM ul_labels ul
-       LEFT JOIN ul_label_usages ulu ON ul.id = ulu.ul_label_id
-       LEFT JOIN serial_assignments sa ON ul.id = sa.ul_label_id
-       WHERE ul.status = 'active' AND ulu.id IS NULL AND sa.id IS NULL
+       LEFT JOIN ul_label_usages ulu
+         ON ul.id = ulu.ul_label_id
+        AND COALESCE(ulu.is_voided, 0) = 0
+       LEFT JOIN serial_assignments sa
+         ON ul.id = sa.ul_label_id
+        AND COALESCE(sa.is_voided, 0) = 0
+        AND COALESCE(sa.status, '') <> 'voided'
+       WHERE ul.status = 'active'
+         AND COALESCE(ul.is_consumed, 0) = 0
+         AND ulu.id IS NULL
+         AND sa.id IS NULL
        ORDER BY ul.ul_number ASC
        LIMIT ${Math.max(1, Math.floor(limit))}`,
     );

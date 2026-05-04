@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { SerialAssignmentsRepository } from './serial-assignments.repository';
+import { SgAssetService } from '../sg-asset/sg-asset.service';
+import { AgsSerialService } from '../ags-serial/ags-serial.service';
+import { IgtSerialNumbersService } from '../igt-serial-numbers/igt-serial-numbers.service';
 import {
   AssignmentsFilterDto,
   VoidAssignmentDto,
@@ -11,11 +14,67 @@ import {
 
 @Injectable()
 export class SerialAssignmentsService {
-  constructor(private readonly repository: SerialAssignmentsRepository) {}
+  constructor(
+    private readonly repository: SerialAssignmentsRepository,
+    private readonly sgAssetService: SgAssetService,
+    private readonly agsSerialService: AgsSerialService,
+    private readonly igtSerialNumbersService: IgtSerialNumbersService,
+  ) {}
 
   async getAssignments(filters: AssignmentsFilterDto) {
     const result = await this.repository.findAll(filters);
     return { success: true, ...result, count: result.data.length };
+  }
+
+  async bulkCreateOther(assignments: Array<Record<string, unknown>>, performedBy: string) {
+    const result = await this.repository.bulkCreateOther(assignments, performedBy);
+    return {
+      success: true,
+      message: `Created ${result.count} serial assignment${result.count === 1 ? '' : 's'}`,
+      ...result,
+    };
+  }
+
+  async bulkCreateWorkflowByCustomer(
+    customerType: string,
+    assignments: Array<Record<string, unknown>>,
+    performedBy: string,
+  ) {
+    const normalized = String(customerType || '').trim().toLowerCase();
+
+    if (!Array.isArray(assignments) || assignments.length === 0) {
+      return { success: false, message: 'assignments array is required', count: 0, data: [] };
+    }
+
+    if (normalized === 'sg') {
+      return this.sgAssetService.bulkCreate({ assignments, user_full_name: performedBy || 'System' });
+    }
+
+    if (normalized === 'ags') {
+      return this.agsSerialService.bulkCreate({ assignments, user_full_name: performedBy || 'System' });
+    }
+
+    if (normalized === 'igt') {
+      const raw = await this.repository.bulkCreateIgtWorkflow(assignments, performedBy || 'System');
+      return {
+        success: true,
+        message: `Created ${raw.count} IGT serial assignment${raw.count === 1 ? '' : 's'}`,
+        count: raw.count,
+        data: raw.data,
+        raw,
+      };
+    }
+
+    if (normalized === 'other') {
+      return this.bulkCreateOther(assignments, performedBy || 'System');
+    }
+
+    return {
+      success: false,
+      message: `Unsupported customer_type '${customerType}'. Expected sg | ags | igt | other`,
+      count: 0,
+      data: [],
+    };
   }
 
   async getAssignmentById(id: number) {

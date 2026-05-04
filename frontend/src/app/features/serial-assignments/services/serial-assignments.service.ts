@@ -115,6 +115,16 @@ export class SerialAssignmentsService {
     );
   }
 
+  async bulkCreateWorkflow(customerType: 'sg' | 'ags' | 'igt' | 'other', assignments: any[], performedBy: string): Promise<any> {
+    return firstValueFrom(
+      this.http.post(`${this.API_URL}/bulk-create-workflow`, {
+        customer_type: customerType,
+        assignments,
+        performed_by: performedBy,
+      })
+    );
+  }
+
   async getAuditTrail(assignmentId?: number, limit: number = 100): Promise<any> {
     if (assignmentId) {
       const params = new HttpParams().set('limit', limit.toString());

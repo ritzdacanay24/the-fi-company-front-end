@@ -24,6 +24,8 @@ export interface SerialNumberAssignment {
   id?: number;
   serial_number_id: number;
   serial_number: string; // Denormalized for easier querying
+  ul_label_id?: number;
+  ul_number?: string;
   work_order_number?: string;
   customer_name?: string;
   customer_po?: string;
@@ -32,6 +34,8 @@ export interface SerialNumberAssignment {
   tracking_number?: string;
   assigned_by_user: string;
   assigned_by_name: string;
+  status?: string;
+  consumed_by?: string;
   notes?: string;
   // Work Order Information
   wo_nbr?: number;

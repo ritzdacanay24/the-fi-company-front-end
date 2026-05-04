@@ -7,11 +7,494 @@ import { AssignmentsFilterDto } from './dto';
 const VIEW = 'eyefidb.vw_all_consumed_serials';
 const TABLE = 'serial_assignments';
 const AUDIT_TABLE = 'serial_assignment_audit';
+const OTHER_CUSTOMER_TYPE_ID = 4;
+const IGT_CUSTOMER_TYPE_ID = 1;
 
 @Injectable()
 export class SerialAssignmentsRepository extends BaseRepository<RowDataPacket> {
   constructor(@Inject(MysqlService) mysqlService: MysqlService) {
     super(TABLE, mysqlService);
+  }
+
+  async bulkCreateOther(
+    assignments: Array<Record<string, unknown>>,
+    performedBy: string,
+  ): Promise<{ data: RowDataPacket[]; count: number }> {
+    const normalizedPerformedBy = String(performedBy ?? '').trim();
+    if (!normalizedPerformedBy) {
+      throw new Error('performedBy is required');
+    }
+    const batchId = `OTHER-${Date.now()}`;
+    const results: RowDataPacket[] = [];
+
+    for (const rawAssignment of assignments) {
+      const created = await this.mysqlService.withTransaction(async (conn: PoolConnection) => {
+        const eyefiSerialNumber = String(rawAssignment.eyefi_serial_number ?? '').trim();
+
+        if (!eyefiSerialNumber) {
+          throw new Error('EyeFi serial number is required');
+        }
+
+        const [serialRows] = await conn.execute<RowDataPacket[]>(
+          `SELECT id, serial_number, status, is_consumed
+           FROM eyefi_serial_numbers
+           WHERE serial_number = ?
+           LIMIT 1
+           FOR UPDATE`,
+          [eyefiSerialNumber],
+        );
+
+        const serial = serialRows[0];
+        if (!serial) {
+          throw new Error(`EyeFi serial '${eyefiSerialNumber}' not found`);
+        }
+
+        const [existingRows] = await conn.execute<RowDataPacket[]>(
+          `SELECT id
+           FROM serial_assignments
+           WHERE eyefi_serial_id = ?
+             AND COALESCE(is_voided, 0) = 0
+           LIMIT 1`,
+          [serial['id']],
+        );
+
+        if (existingRows.length > 0) {
+          throw new Error(`EyeFi serial '${eyefiSerialNumber}' is already assigned`);
+        }
+
+        const ulLabelIdRaw = rawAssignment.ul_label_id;
+        const ulLabelId = ulLabelIdRaw == null || ulLabelIdRaw === '' ? null : Number(ulLabelIdRaw);
+        const requestedUlNumber = String(rawAssignment.ulNumber ?? '').trim() || null;
+        const requestedUlCategoryRaw = String(rawAssignment.ul_category ?? '').trim();
+        const requestedUlCategory = requestedUlCategoryRaw ? requestedUlCategoryRaw.toLowerCase() : null;
+
+        if (!requestedUlCategory) {
+          throw new Error('ul_category is required for UL selection');
+        }
+
+        let ulLabel: RowDataPacket | undefined;
+
+        if (ulLabelId != null || requestedUlNumber) {
+          // Use the specific UL label the user selected
+          const [ulRows] = await conn.execute<RowDataPacket[]>(
+            `SELECT ul.id, ul.ul_number
+             FROM ul_labels ul
+             LEFT JOIN serial_assignments sa
+               ON sa.ul_label_id = ul.id
+              AND COALESCE(sa.is_voided, 0) = 0
+             WHERE ul.status = 'active'
+               AND COALESCE(ul.is_consumed, 0) = 0
+               AND sa.id IS NULL
+               AND (? IS NULL OR LOWER(COALESCE(ul.category, '')) = ?)
+               AND ((? IS NOT NULL AND ul.id = ?) OR (? IS NULL AND ? IS NOT NULL AND ul.ul_number = ?))
+             LIMIT 1
+             FOR UPDATE`,
+            [requestedUlCategory, requestedUlCategory, ulLabelId, ulLabelId, ulLabelId, requestedUlNumber, requestedUlNumber],
+          );
+          ulLabel = ulRows[0];
+          if (!ulLabel) {
+            throw new Error(`Selected UL label is not available for assignment`);
+          }
+        } else {
+          throw new Error('A UL label must be selected for Other customer assignments');
+        }
+
+        const woNumber = String(rawAssignment.wo_number ?? '').trim() || null;
+        const customerPo = String(rawAssignment.poNumber ?? '').trim() || null;
+        const customerName = String(rawAssignment.customer_name ?? '').trim();
+        if (!customerName) {
+          throw new Error('customer_name is required');
+        }
+        const woPart = String(rawAssignment.wo_part || '').trim() || null;
+        const partNumber = String(rawAssignment.partNumber ?? '').trim() || null;
+        const woDescription = String(rawAssignment.wo_description || '').trim() || null;
+        const woRouting = String(rawAssignment.wo_routing || '').trim() || null;
+        const woLine = String(rawAssignment.wo_line || '').trim() || null;
+        const customerPartNumber = String(rawAssignment.cp_cust_part || '').trim() || null;
+        const notes = String(rawAssignment.notes || '').trim() || null;
+        const inspectorName = String(rawAssignment.inspector_name ?? '').trim();
+        if (!inspectorName) {
+          throw new Error('inspector_name is required');
+        }
+        const woQtyOrdRaw = rawAssignment.wo_qty_ord;
+        const woQtyOrd = woQtyOrdRaw == null || woQtyOrdRaw === '' ? null : Number(woQtyOrdRaw);
+        const woDueDate = String(rawAssignment.wo_due_date || '').trim() || null;
+
+        const [insertResult] = await conn.execute<ResultSetHeader>(
+          `INSERT INTO serial_assignments (
+             eyefi_serial_id,
+             eyefi_serial_number,
+             ul_label_id,
+             ul_number,
+             customer_type_id,
+             customer_asset_id,
+             generated_asset_number,
+             po_number,
+             part_number,
+             wo_number,
+             wo_part,
+             wo_description,
+             wo_qty_ord,
+             wo_due_date,
+             wo_routing,
+             wo_line,
+             cp_cust_part,
+             cp_cust,
+             inspector_name,
+             batch_id,
+             status,
+             consumed_at,
+             consumed_by,
+             is_voided,
+             verification_status,
+             notes,
+             asset_type
+           ) VALUES (?, ?, ?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'consumed', NOW(), ?, 0, 'skipped', ?, 'serial')`,
+          [
+            Number(serial['id']),
+            String(serial['serial_number']),
+            Number(ulLabel['id']),
+            String(ulLabel['ul_number']),
+            OTHER_CUSTOMER_TYPE_ID,
+            customerPo,
+            partNumber,
+            woNumber,
+            woPart,
+            woDescription,
+            Number.isFinite(woQtyOrd) ? woQtyOrd : null,
+            woDueDate,
+            woRouting,
+            woLine,
+            customerPartNumber,
+            customerName,
+            inspectorName,
+            batchId,
+            String(rawAssignment.consumed_by ?? '').trim() || normalizedPerformedBy,
+            notes,
+          ],
+        );
+
+        await conn.execute(
+          `UPDATE eyefi_serial_numbers
+           SET status = 'assigned',
+               is_consumed = 1,
+               consumed_at = NOW(),
+               consumed_by = ?
+           WHERE id = ?`,
+          [String(rawAssignment.consumed_by ?? '').trim() || normalizedPerformedBy, Number(serial['id'])],
+        );
+
+        await conn.execute(
+          `UPDATE ul_labels
+           SET is_consumed = 1,
+               consumed_at = NOW(),
+               consumed_by = ?
+           WHERE id = ?`,
+          [String(rawAssignment.consumed_by ?? '').trim() || normalizedPerformedBy, Number(ulLabel['id'])],
+        );
+
+        await conn.execute(
+          `INSERT INTO \`${AUDIT_TABLE}\` (assignment_id, action, serial_type, serial_id, serial_number, reason, performed_by, performed_at)
+           VALUES (?, 'created', 'eyefi', ?, ?, 'Created from serial assignment workflow', ?, NOW())`,
+
+          [insertResult.insertId, Number(serial['id']), String(serial['serial_number']), String(rawAssignment.consumed_by ?? '').trim() || normalizedPerformedBy],
+        );
+
+        return {
+          id: insertResult.insertId,
+          eyefi_serial_number: String(serial['serial_number']),
+          ul_label_id: Number(ulLabel['id']),
+          ul_number: String(ulLabel['ul_number']),
+          customer_name: customerName,
+          wo_number: woNumber,
+          consumed_by: String(rawAssignment.consumed_by ?? '').trim() || normalizedPerformedBy,
+          batch_id: batchId,
+        } as RowDataPacket;
+      });
+
+      results.push(created);
+    }
+
+    return { data: results, count: results.length };
+  }
+
+  async bulkCreateIgtWorkflow(
+    assignments: Array<Record<string, unknown>>,
+    performedBy: string,
+  ): Promise<{ data: RowDataPacket[]; count: number; missingIgt: string[] }> {
+    const normalizedPerformedBy = String(performedBy ?? '').trim();
+    if (!normalizedPerformedBy) {
+      throw new Error('performedBy is required');
+    }
+    const results: RowDataPacket[] = [];
+    const missingIgt: string[] = [];
+
+    for (const rawAssignment of assignments) {
+      const created = await this.mysqlService.withTransaction(async (conn: PoolConnection) => {
+        const eyefiSerialNumber = String(rawAssignment.eyefi_serial_number ?? '').trim();
+
+        if (!eyefiSerialNumber) {
+          throw new Error('EyeFi serial number is required for IGT workflow');
+        }
+
+        const [serialRows] = await conn.execute<RowDataPacket[]>(
+          `SELECT id, serial_number, status, is_consumed
+           FROM eyefi_serial_numbers
+           WHERE serial_number = ?
+           LIMIT 1
+           FOR UPDATE`,
+          [eyefiSerialNumber],
+        );
+
+        const serial = serialRows[0];
+        if (!serial) {
+          throw new Error(`EyeFi serial '${eyefiSerialNumber}' not found`);
+        }
+
+        const [existingRows] = await conn.execute<RowDataPacket[]>(
+          `SELECT id
+           FROM serial_assignments
+           WHERE eyefi_serial_id = ?
+             AND COALESCE(is_voided, 0) = 0
+           LIMIT 1
+           FOR UPDATE`,
+          [serial['id']],
+        );
+
+        if (existingRows.length > 0) {
+          throw new Error(`EyeFi serial '${eyefiSerialNumber}' is already assigned`);
+        }
+
+        const requestedIgtIdRaw = rawAssignment.igt_asset_id;
+        const requestedIgtId = requestedIgtIdRaw == null || requestedIgtIdRaw === ''
+          ? null
+          : Number(requestedIgtIdRaw);
+        const requestedIgtSerial = String(rawAssignment.igt_serial_number ?? '').trim();
+
+        if (!(requestedIgtId != null && Number.isFinite(requestedIgtId) && requestedIgtId > 0) && !requestedIgtSerial) {
+          throw new Error('Either igt_asset_id or igt_serial_number is required');
+        }
+
+        let igtRows: RowDataPacket[] = [];
+
+        if (requestedIgtId != null && Number.isFinite(requestedIgtId) && requestedIgtId > 0) {
+          [igtRows] = await conn.execute<RowDataPacket[]>(
+            `SELECT id, serial_number, status
+             FROM igt_serial_numbers
+             WHERE id = ?
+             LIMIT 1
+             FOR UPDATE`,
+            [requestedIgtId],
+          );
+        }
+
+        if (!igtRows[0] && requestedIgtSerial) {
+          [igtRows] = await conn.execute<RowDataPacket[]>(
+            `SELECT id, serial_number, status
+             FROM igt_serial_numbers
+             WHERE serial_number = ?
+             LIMIT 1
+             FOR UPDATE`,
+            [requestedIgtSerial],
+          );
+        }
+
+        const igtAsset = igtRows[0];
+        if (!igtAsset) {
+          missingIgt.push(requestedIgtSerial || `igt_asset_id:${String(requestedIgtIdRaw ?? '')}`);
+          throw new Error('IGT serial not found for assignment');
+        }
+
+        const ulLabelIdRaw = rawAssignment.ul_label_id;
+        const ulLabelId = ulLabelIdRaw == null || ulLabelIdRaw === '' ? null : Number(ulLabelIdRaw);
+        const requestedUlNumber = String(rawAssignment.ulNumber ?? '').trim() || null;
+        const requestedUlCategoryRaw = String(rawAssignment.ul_category ?? '').trim();
+        const requestedUlCategory = requestedUlCategoryRaw ? requestedUlCategoryRaw.toLowerCase() : null;
+
+        if (ulLabelId != null || requestedUlNumber) {
+          if (!requestedUlCategory) {
+            throw new Error('ul_category is required for UL selection');
+          }
+        }
+
+        let ulLabel: RowDataPacket | null = null;
+        if (ulLabelId != null || requestedUlNumber) {
+          const [ulRows] = await conn.execute<RowDataPacket[]>(
+            `SELECT ul.id, ul.ul_number
+             FROM ul_labels ul
+             LEFT JOIN serial_assignments sa
+               ON sa.ul_label_id = ul.id
+              AND COALESCE(sa.is_voided, 0) = 0
+             WHERE ul.status = 'active'
+               AND COALESCE(ul.is_consumed, 0) = 0
+               AND sa.id IS NULL
+               AND (? IS NULL OR LOWER(COALESCE(ul.category, '')) = ?)
+               AND ((? IS NOT NULL AND ul.id = ?) OR (? IS NULL AND ? IS NOT NULL AND ul.ul_number = ?))
+             LIMIT 1
+             FOR UPDATE`,
+            [requestedUlCategory, requestedUlCategory, ulLabelId, ulLabelId, ulLabelId, requestedUlNumber, requestedUlNumber],
+          );
+
+          ulLabel = ulRows[0] || null;
+          if (!ulLabel) {
+            throw new Error('Selected UL label is not available for assignment');
+          }
+        }
+
+        const poNumber = String(rawAssignment.poNumber ?? '').trim() || null;
+        const partNumber = String(rawAssignment.partNumber ?? '').trim() || null;
+        const woNumber = String(rawAssignment.wo_number ?? '').trim() || null;
+        const woPart = String(rawAssignment.wo_part || '').trim() || null;
+        const woDescription = String(rawAssignment.wo_description || '').trim() || null;
+        const woRouting = String(rawAssignment.wo_routing || '').trim() || null;
+        const woLine = String(rawAssignment.wo_line || '').trim() || null;
+        const cpCustPart = String(rawAssignment.cp_cust_part || '').trim() || null;
+        const cpCust = String(rawAssignment.cp_cust || '').trim() || null;
+        const inspectorName = String(rawAssignment.inspector_name ?? '').trim();
+        const consumedBy = String(rawAssignment.consumed_by ?? '').trim();
+        if (!inspectorName) {
+          throw new Error('inspector_name is required');
+        }
+        if (!consumedBy) {
+          throw new Error('consumed_by is required');
+        }
+        const woQtyOrdRaw = rawAssignment.wo_qty_ord;
+        const woQtyOrd = woQtyOrdRaw == null || woQtyOrdRaw === '' ? null : Number(woQtyOrdRaw);
+        const woDueDate = String(rawAssignment.wo_due_date || '').trim() || null;
+        const propertySite = String(rawAssignment.property_site || '').trim() || null;
+        const notes = String(rawAssignment.notes || '').trim() || null;
+        const assetType = String(rawAssignment.asset_type ?? '').trim();
+        if (!assetType) {
+          throw new Error('asset_type is required');
+        }
+
+        const [insertResult] = await conn.execute<ResultSetHeader>(
+          `INSERT INTO serial_assignments (
+             eyefi_serial_id,
+             eyefi_serial_number,
+             ul_label_id,
+             ul_number,
+             customer_type_id,
+             customer_asset_id,
+             generated_asset_number,
+             po_number,
+             property_site,
+             part_number,
+             wo_number,
+             wo_part,
+             wo_description,
+             wo_qty_ord,
+             wo_due_date,
+             wo_routing,
+             wo_line,
+             cp_cust_part,
+             cp_cust,
+             inspector_name,
+             batch_id,
+             status,
+             consumed_at,
+             consumed_by,
+             is_voided,
+             verification_status,
+             notes,
+             asset_type
+           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, 'consumed', NOW(), ?, 0, 'pending', ?, ?)` ,
+          [
+            Number(serial['id']),
+            String(serial['serial_number']),
+            ulLabel ? Number(ulLabel['id']) : null,
+            ulLabel ? String(ulLabel['ul_number']) : null,
+            IGT_CUSTOMER_TYPE_ID,
+            Number(igtAsset['id']),
+            String(igtAsset['serial_number']),
+            poNumber,
+            propertySite,
+            partNumber,
+            woNumber,
+            woPart,
+            woDescription,
+            Number.isFinite(woQtyOrd) ? woQtyOrd : null,
+            woDueDate,
+            woRouting,
+            woLine,
+            cpCustPart,
+            cpCust,
+            inspectorName,
+            consumedBy,
+            notes,
+            assetType,
+          ],
+        );
+
+        await conn.execute(
+          `UPDATE eyefi_serial_numbers
+           SET status = 'assigned',
+               is_consumed = 1,
+               consumed_at = NOW(),
+               consumed_by = ?
+           WHERE id = ?`,
+          [consumedBy, Number(serial['id'])],
+        );
+
+        if (ulLabel) {
+          await conn.execute(
+            `UPDATE ul_labels
+             SET is_consumed = 1,
+                 consumed_at = NOW(),
+                 consumed_by = ?
+             WHERE id = ?`,
+            [consumedBy, Number(ulLabel['id'])],
+          );
+        }
+
+        await conn.execute(
+          `UPDATE igt_serial_numbers
+           SET status = 'used',
+               used_at = NOW(),
+               used_by = ?,
+               updated_by = ?,
+               used_in_asset_id = ?,
+               used_in_asset_number = ?
+           WHERE id = ?`,
+          [
+            consumedBy,
+            consumedBy,
+            insertResult.insertId,
+            String(igtAsset['serial_number']),
+            Number(igtAsset['id']),
+          ],
+        );
+
+        await conn.execute(
+          `INSERT INTO \`${AUDIT_TABLE}\` (assignment_id, action, serial_type, serial_id, serial_number, reason, performed_by, performed_at)
+           VALUES (?, 'created', 'eyefi', ?, ?, 'Created from IGT serial assignment workflow', ?, NOW())`,
+          [insertResult.insertId, Number(serial['id']), String(serial['serial_number']), consumedBy],
+        );
+
+        return {
+          assignment_id: insertResult.insertId,
+          eyefi_serial_number: String(serial['serial_number']),
+          ul_label_id: ulLabel ? Number(ulLabel['id']) : null,
+          ul_number: ulLabel ? String(ulLabel['ul_number']) : null,
+          customer_type_id: IGT_CUSTOMER_TYPE_ID,
+          customer_asset_id: Number(igtAsset['id']),
+          generated_asset_number: String(igtAsset['serial_number']),
+          po_number: poNumber,
+          part_number: partNumber,
+          inspector_name: inspectorName,
+          consumed_by: consumedBy,
+          status: 'consumed',
+        } as RowDataPacket;
+      });
+
+      results.push(created);
+    }
+
+    return {
+      data: results,
+      count: results.length,
+      missingIgt,
+    };
   }
 
   async findAll(filters: AssignmentsFilterDto): Promise<{
@@ -158,7 +641,7 @@ export class SerialAssignmentsRepository extends BaseRepository<RowDataPacket> {
          COALESCE(sa.inspector_name, v.inspector_name, v.used_by) AS performed_by,
          sa.customer_type_id,
          sa.customer_asset_id,
-         COALESCE(sa.generated_asset_number, v.customer_part_number) AS generated_asset_number,
+         sa.generated_asset_number AS generated_asset_number,
          sa.verification_status,
          sa.verified_at,
          sa.verified_by,
@@ -208,7 +691,7 @@ export class SerialAssignmentsRepository extends BaseRepository<RowDataPacket> {
          COALESCE(sa.inspector_name, v.inspector_name, v.used_by) AS performed_by,
          sa.customer_type_id,
          sa.customer_asset_id,
-         COALESCE(sa.generated_asset_number, v.customer_part_number) AS generated_asset_number,
+         sa.generated_asset_number AS generated_asset_number,
          sa.verification_status,
          sa.verified_at,
          sa.verified_by,
@@ -294,9 +777,9 @@ export class SerialAssignmentsRepository extends BaseRepository<RowDataPacket> {
       }
 
       await conn.execute(
-        `INSERT INTO \`${AUDIT_TABLE}\` (assignment_id, action, reason, performed_by, performed_at)
-         VALUES (?, 'voided', ?, ?, NOW())`,
-        [id, reason, performedBy],
+        `INSERT INTO \`${AUDIT_TABLE}\` (assignment_id, action, serial_type, serial_id, serial_number, reason, performed_by, performed_at)
+         VALUES (?, 'voided', 'eyefi', ?, ?, ?, ?, NOW())`,
+        [id, assignment['eyefi_serial_id'], assignment['eyefi_serial_number'] ?? '', reason, performedBy],
       );
 
       return {
@@ -342,9 +825,9 @@ export class SerialAssignmentsRepository extends BaseRepository<RowDataPacket> {
       }
 
       await conn.execute(
-        `INSERT INTO \`${AUDIT_TABLE}\` (assignment_id, action, reason, performed_by, performed_at)
-         VALUES (?, 'deleted', ?, ?, NOW())`,
-        [id, reason, performedBy],
+        `INSERT INTO \`${AUDIT_TABLE}\` (assignment_id, action, serial_type, serial_id, serial_number, reason, performed_by, performed_at)
+         VALUES (?, 'deleted', 'eyefi', ?, ?, ?, ?, NOW())`,
+        [id, assignment['eyefi_serial_id'], assignment['eyefi_serial_number'] ?? '', reason, performedBy],
       );
 
       await conn.execute(`DELETE FROM \`${TABLE}\` WHERE id = ?`, [id]);
@@ -374,21 +857,21 @@ export class SerialAssignmentsRepository extends BaseRepository<RowDataPacket> {
       );
 
       await conn.execute(
-        `UPDATE eyefi_serial_numbers SET status = 'consumed' WHERE id = ?`,
+        `UPDATE eyefi_serial_numbers SET status = 'assigned' WHERE id = ?`,
         [assignment['eyefi_serial_id']],
       );
 
       if (assignment['ul_label_id']) {
         await conn.execute(
-          `UPDATE ul_labels SET status = 'consumed', is_consumed = 1 WHERE id = ?`,
+          `UPDATE ul_labels SET is_consumed = 1 WHERE id = ?`,
           [assignment['ul_label_id']],
         );
       }
 
       await conn.execute(
-        `INSERT INTO \`${AUDIT_TABLE}\` (assignment_id, action, reason, performed_by, performed_at)
-         VALUES (?, 'restored', 'Assignment restored', ?, NOW())`,
-        [id, performedBy],
+        `INSERT INTO \`${AUDIT_TABLE}\` (assignment_id, action, serial_type, serial_id, serial_number, reason, performed_by, performed_at)
+         VALUES (?, 'restored', 'eyefi', ?, ?, 'Assignment restored', ?, NOW())`,
+        [id, assignment['eyefi_serial_id'], assignment['eyefi_serial_number'] ?? '', performedBy],
       );
     });
   }
@@ -428,9 +911,9 @@ export class SerialAssignmentsRepository extends BaseRepository<RowDataPacket> {
 
       const auditReason = `Reassigned WO ${oldWo || 'N/A'} -> ${targetWo}. ${reason}`.trim();
       await conn.execute(
-        `INSERT INTO \`${AUDIT_TABLE}\` (assignment_id, action, reason, performed_by, performed_at)
-         VALUES (?, 'reassigned', ?, ?, NOW())`,
-        [id, auditReason, performedBy],
+        `INSERT INTO \`${AUDIT_TABLE}\` (assignment_id, action, serial_type, serial_id, serial_number, reason, performed_by, performed_at)
+         VALUES (?, 'reassigned', 'eyefi', ?, ?, ?, ?, NOW())`,
+        [id, assignment['eyefi_serial_id'], assignment['eyefi_serial_number'] ?? '', auditReason, performedBy],
       );
 
       return {

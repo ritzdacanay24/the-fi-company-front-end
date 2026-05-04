@@ -6,5 +6,6 @@ import { SgAssetService } from './sg-asset.service';
 @Module({
   controllers: [SgAssetController],
   providers: [SgAssetService, SgAssetRepository],
+  exports: [SgAssetService],
 })
 export class SgAssetModule {}

@@ -8,5 +8,6 @@ import { AgsSerialService } from './ags-serial.service';
   imports: [AccessControlModule],
   controllers: [AgsSerialController],
   providers: [AgsSerialService, AgsSerialRepository],
+  exports: [AgsSerialService],
 })
 export class AgsSerialModule {}

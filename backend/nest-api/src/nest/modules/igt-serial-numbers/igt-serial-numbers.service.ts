@@ -45,6 +45,64 @@ export class IgtSerialNumbersService {
     return { success: true, ...result };
   }
 
+  async markSerialsUsedFromWorkflow(
+    assignments: Array<Record<string, unknown>>,
+    usedBy: string,
+  ): Promise<{
+    updated: number;
+    missing: string[];
+    data: Array<{ id: number; serial_number: string; status: string }>;
+  }> {
+    const normalizedUsedBy = String(usedBy || '').trim() || 'System';
+    const nowDate = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    const missing: string[] = [];
+    const data: Array<{ id: number; serial_number: string; status: string }> = [];
+
+    for (const assignment of assignments) {
+      const assetIdRaw = assignment['igt_asset_id'];
+      const assetId = assetIdRaw == null || assetIdRaw === '' ? null : Number(assetIdRaw);
+      const serialNumber = String(
+        assignment['igt_serial_number'] || assignment['assetNumber'] || assignment['serial_number'] || '',
+      ).trim();
+
+      let row = null;
+      if (assetId != null && Number.isFinite(assetId) && assetId > 0) {
+        row = await this.repo.findById(assetId);
+      }
+
+      if (!row && serialNumber) {
+        row = await this.repo.findBySerialNumber(serialNumber);
+      }
+
+      if (!row) {
+        missing.push(serialNumber || `igt_asset_id:${String(assetIdRaw ?? '')}`);
+        continue;
+      }
+
+      const id = Number(row['id']);
+      const resolvedSerialNumber = String(row['serial_number'] || serialNumber);
+
+      await this.repo.update(id, {
+        status: 'used',
+        used_at: nowDate,
+        used_by: normalizedUsedBy,
+        updated_by: normalizedUsedBy,
+      });
+
+      data.push({
+        id,
+        serial_number: resolvedSerialNumber,
+        status: 'used',
+      });
+    }
+
+    return {
+      updated: data.length,
+      missing,
+      data,
+    };
+  }
+
   async bulkUploadWithOptions(dto: BulkUploadOptionsDto) {
     const serials: CreateIgtSerialDto[] = dto.serialNumbers.map((s) => ({
       serial_number: s.serial_number,
