@@ -527,6 +527,25 @@ export class MasterControlService {
     });
   }
 
+  async savePrintDetails(payload: Record<string, unknown>): Promise<{ success: boolean }> {
+    const assignedTo = String(payload.assignedTo || '').trim();
+    const createdBy = Number(payload.createdBy) || null;
+    const workOrder = String(payload.workOrder || '').trim();
+    const printedDate = String(payload.printedDate || '').trim();
+    const comments = String(payload.comments || '').trim() || null;
+
+    await this.mysqlService.query(
+      `
+        INSERT INTO eyefidb.workOrderPrintDetails
+          (assignedTo, createdBy, workOrder, printedDate, comments)
+        VALUES (?, ?, ?, ?, ?)
+      `,
+      [assignedTo, createdBy, workOrder, printedDate, comments],
+    );
+
+    return { success: true };
+  }
+
   private async getLatestPrintDetailByWorkOrder(workOrderNumber: string): Promise<PrintDetailRow | null> {
     const sql = `
       SELECT a.id

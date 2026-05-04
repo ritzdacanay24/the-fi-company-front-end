@@ -21,9 +21,13 @@ export class NotesService {
   }
 
   /**
-   * Get latest notes by unique IDs (SO numbers)
+   * Get latest notes by unique IDs (SO numbers), scoped to a specific user.
+   * If no userId is provided, returns no notes (notes are strictly per-user).
    */
-  async getLatestByUniqueIds(ids: string[]): Promise<GenericRow[]> {
-    return this.repository.getLatestByUniqueIds(ids);
+  async getLatestByUniqueIds(ids: string[], userId?: number): Promise<GenericRow[]> {
+    if (!userId) {
+      return [];
+    }
+    return this.repository.getLatestByUniqueIds(ids, userId);
   }
 }

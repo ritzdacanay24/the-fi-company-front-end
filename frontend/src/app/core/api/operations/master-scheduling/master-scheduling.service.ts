@@ -73,7 +73,7 @@ export class MasterSchedulingService extends DataService<any> {
     );
 
   printWorkOrder(params: any) {
-    return firstValueFrom(this.http.post(`/MasterControl/index`, params));
+    return firstValueFrom(this.http.post(`apiV2/master-control/print-work-order`, params));
   }
 
   saveMisc(params: any) {
@@ -101,70 +101,25 @@ export class MasterSchedulingService extends DataService<any> {
   private async updateShippingPriorityAPI(params: ShippingPriorityRequest): Promise<ShippingPriorityResponse> {
     try {
       console.log('🌐 Making REAL API call to update shipping priority:', params);
-      
-      // First, check if priority already exists for this order
-      const existingPriorities = await this.getShippingPrioritiesAPI();
-      const existingPriority = existingPriorities.data?.find(p => p.order_id === params.orderId);
-      
+
       if (params.priority === 0) {
-        // Remove priority
-        if (existingPriority) {
-          return await this.removeShippingPriorityAPI(params.orderId);
-        } else {
-          return {
-            success: true,
-            message: 'Priority already removed',
-            data: null
-          };
-        }
+        return await this.removeShippingPriorityAPI(params.orderId);
       }
-      
-      // Check for priority conflicts (another order with same priority)
-      const conflictingPriority = existingPriorities.data?.find(
-        p => p.priority_level === params.priority && p.order_id !== params.orderId
+
+      // The backend applyChange handles priority shifting atomically — no client-side conflict check needed
+      const requestBody = {
+        order_id: params.orderId,
+        sales_order_number: params.salesOrderNumber,
+        sales_order_line: params.salesOrderLine,
+        priority: params.priority,
+        notes: params.notes,
+        created_by: this.getCurrentUser(),
+        updated_by: this.getCurrentUser()
+      };
+
+      const response = await firstValueFrom(
+        this.http.post<any>(`${this.shippingPriorityApiUrl}?action=apply_change`, requestBody)
       );
-      
-      if (conflictingPriority) {
-        return {
-          success: false,
-          message: `Priority ${params.priority} is already assigned to order ${conflictingPriority.order_id}`,
-          data: null
-        };
-      }
-
-      let response;
-      
-      if (existingPriority) {
-        // Move existing priority via server-side atomic endpoint
-        const requestBody = {
-          order_id: params.orderId,
-          sales_order_number: params.salesOrderNumber,
-          sales_order_line: params.salesOrderLine,
-          priority: params.priority,
-          notes: params.notes,
-          updated_by: this.getCurrentUser(),
-          created_by: existingPriority.created_by
-        };
-
-        response = await firstValueFrom(
-          this.http.post<any>(`${this.shippingPriorityApiUrl}/?action=apply_change`, requestBody)
-        );
-      } else {
-        // Create new priority via atomic endpoint (this will shift existing priorities)
-        const requestBody = {
-          order_id: params.orderId,
-          sales_order_number: params.salesOrderNumber,
-          sales_order_line: params.salesOrderLine,
-          priority: params.priority,
-          notes: params.notes,
-          created_by: this.getCurrentUser(),
-          updated_by: this.getCurrentUser()
-        };
-
-        response = await firstValueFrom(
-          this.http.post<any>(`${this.shippingPriorityApiUrl}/?action=apply_change`, requestBody)
-        );
-      }
 
       console.log('✅ Real API response:', response);
       return {

@@ -78,6 +78,7 @@ export class ProjectManagerTasksComponent implements OnInit {
   hideDone = false;
   filterPerson = '';
   filterStatus = '';
+  allProjects: ProjectDashboardItem[] = [];
   private groupColorMap = new Map<string, string>();
   private groupColorIndex = 0;
   private subgroupCatalog: Record<string, Set<string>> = {};
@@ -168,7 +169,7 @@ export class ProjectManagerTasksComponent implements OnInit {
           return `<span style="color:#0073ea;font-size:12px;cursor:pointer;display:flex;align-items:center;height:100%;user-select:none">＋</span>`;
         }
         if (params.data.rowType === 'task') return '';
-        return `<span style="cursor:pointer;font-size:16px;color:#c5cad3;font-weight:700;display:flex;align-items:center;justify-content:center;height:100%;user-select:none" title="Add item here">+</span>`;
+        return `<span style="cursor:pointer;font-size:18px;color:var(--vz-primary);font-weight:700;display:flex;align-items:center;justify-content:center;height:100%;user-select:none;opacity:0.7" title="Add item here">+</span>`;
       },
       onCellClicked: (params: any) => {
         if (!params.data || params.data.rowType === 'task') return;
@@ -318,12 +319,6 @@ export class ProjectManagerTasksComponent implements OnInit {
     }
   ];
 
-  defaultColDef: ColDef<PmTreeRow> = {
-    sortable: true,
-    filter: true,
-    resizable: true
-  };
-
   gridOptions: GridOptions<PmTreeRow> = {
     animateRows: true,
     treeData: true,
@@ -332,20 +327,16 @@ export class ProjectManagerTasksComponent implements OnInit {
     rowSelection: 'multiple',
     rowDragMultiRow: true,
     groupDefaultExpanded: -1,
-    rowHeight: 38,
-    headerHeight: 40,
     autoGroupColumnDef: {
       headerName: 'Item',
       field: 'label',
-      minWidth: 320,
-      flex: 2,
       rowDrag: params => !!params.data && (params.data.rowType === 'group' || params.data.rowType === 'subgroup' || params.data.rowType === 'task'),
       cellRendererParams: { suppressCount: true },
       cellRenderer: 'agGroupCellRenderer',
       cellRendererSelector: (params: any) => {
         if (params.data?.rowType === 'add-item') {
           return {
-            component: () => `<span style="color:#0073ea;cursor:pointer;font-size:12px;font-weight:500">+ Add Item</span>`
+            component: () => `<span style="color:var(--vz-primary);cursor:pointer;font-size:12px;font-weight:600;font-style:italic;opacity:0.8;letter-spacing:0.01em">＋ Add item…</span>`
           };
         }
         return undefined;
@@ -361,7 +352,13 @@ export class ProjectManagerTasksComponent implements OnInit {
         return { background: `${color}08`, borderLeft: `3px solid ${color}99`, fontWeight: '600' };
       }
       if (params.data.rowType === 'add-item') {
-        return { background: '#fafbfc', borderLeft: `3px solid ${color}40`, color: '#0073ea', cursor: 'pointer' };
+        return {
+          background: `rgba(var(--vz-primary-rgb), 0.04)`,
+          borderLeft: `3px solid ${color}60`,
+          borderBottom: `1px dashed rgba(var(--vz-primary-rgb), 0.25)`,
+          color: 'var(--vz-primary)',
+          cursor: 'pointer'
+        };
       }
       return { borderLeft: `3px solid transparent` };
     },
@@ -402,7 +399,6 @@ export class ProjectManagerTasksComponent implements OnInit {
     onGridReady: (event: GridReadyEvent<PmTreeRow>) => {
       this.gridApi = event.api;
       this.rebuildTreeRows();
-      this.gridApi.sizeColumnsToFit();
     }
   };
 
@@ -418,6 +414,10 @@ export class ProjectManagerTasksComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.projectsService.getProjects$().subscribe(projects => {
+      this.allProjects = projects;
+    });
+
     this.route.queryParamMap.subscribe(params => {
       const gateContext = (params.get('gateContext') || '').trim();
       const gate = Number(params.get('gate') || 0);
@@ -425,6 +425,20 @@ export class ProjectManagerTasksComponent implements OnInit {
       this.applyGateContext(gateContext, gate);
       this.applyProjectContext(projectId);
     });
+  }
+
+  get hasProject(): boolean {
+    return !!this.activeProjectId;
+  }
+
+  get selectedProjectId(): string {
+    return this.activeProjectId;
+  }
+
+  onProjectSelect(id: string): void {
+    if (!id) return;
+    const url = this.router.url.split('?')[0];
+    this.router.navigate([url], { queryParams: { projectId: id }, queryParamsHandling: 'merge' });
   }
 
   get executionChecklistQueryParams(): { projectId: string; view: 'checklist' } {

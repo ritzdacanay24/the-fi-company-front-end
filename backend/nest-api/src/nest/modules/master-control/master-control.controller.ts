@@ -1,4 +1,4 @@
-import { BadRequestException, Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { RolePermissionGuard } from '../access-control';
 import { MasterControlService } from './master-control.service';
 
@@ -24,5 +24,10 @@ export class MasterControlController {
     }
 
     return this.service.getPickDetailsByWorkOrderNumber(workOrderNumber, filteredSections || '');
+  }
+
+  @Post('print-work-order')
+  async savePrintWorkOrder(@Body() payload: Record<string, unknown>) {
+    return this.service.savePrintDetails(payload);
   }
 }

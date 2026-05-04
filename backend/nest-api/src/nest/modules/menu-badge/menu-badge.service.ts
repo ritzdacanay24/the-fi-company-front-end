@@ -22,6 +22,8 @@ const DEFAULT_COUNTS: SidebarMenuBadgeCounts = {
   partsOrderOpen: 0,
   trainingLiveSessionsOpen: 0,
   inspectionChecklistExecutionInProgress: 0,
+  pmProjectsOpen: 0,
+  pmTasksOpen: 0,
 };
 
 @Injectable()
@@ -30,9 +32,9 @@ export class MenuBadgeService {
 
   constructor(private readonly repository: MenuBadgeRepository) {}
 
-  async getSidebarBadgeCounts(): Promise<SidebarMenuBadgeCounts> {
+  async getSidebarBadgeCounts(userId?: number): Promise<SidebarMenuBadgeCounts> {
     try {
-      return await this.repository.getSidebarBadgeCounts();
+      return await this.repository.getSidebarBadgeCounts(userId);
     } catch (error) {
       this.logger.error('Failed to fetch sidebar badge counts from repository:', error as Error);
       return DEFAULT_COUNTS;

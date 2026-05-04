@@ -155,6 +155,7 @@ export class QirRepository extends BaseRepository<RowDataPacket> {
 
   async create(payload: Record<string, unknown>): Promise<number> {
     const data = this.getMutablePayload(payload);
+    this.normalizeNumericFields(data);
     if (!data.createdDate) {
       data.createdDate = new Date();
     }
@@ -168,6 +169,7 @@ export class QirRepository extends BaseRepository<RowDataPacket> {
 
   async updateById(id: number, payload: Record<string, unknown>): Promise<number> {
     const data = this.getMutablePayload(payload);
+    this.normalizeNumericFields(data);
     if (Object.keys(data).length === 0) {
       return 0;
     }
@@ -185,5 +187,30 @@ export class QirRepository extends BaseRepository<RowDataPacket> {
         (QirRepository.MUTABLE_COLUMNS as readonly string[]).includes(key),
       ),
     );
+  }
+
+  private normalizeNumericFields(payload: Record<string, unknown>): void {
+    const normalizeInt = (value: unknown): number | null => {
+      if (value === null || value === undefined) {
+        return null;
+      }
+
+      if (typeof value === 'number') {
+        return Number.isFinite(value) ? Math.trunc(value) : null;
+      }
+
+      const parsed = Number.parseInt(String(value).trim(), 10);
+      return Number.isNaN(parsed) ? null : parsed;
+    };
+
+    if (Object.prototype.hasOwnProperty.call(payload, 'createdBy')) {
+      const createdBy = normalizeInt(payload.createdBy);
+      payload.createdBy = createdBy ?? 0;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(payload, 'fieldServiceSchedulerId')) {
+      const fieldServiceSchedulerId = normalizeInt(payload.fieldServiceSchedulerId);
+      payload.fieldServiceSchedulerId = fieldServiceSchedulerId;
+    }
   }
 }

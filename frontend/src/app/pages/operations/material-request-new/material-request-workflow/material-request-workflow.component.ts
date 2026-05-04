@@ -356,6 +356,8 @@ export class MaterialRequestWorkflowComponent implements OnInit {
   // Auto-save functionality
   autoSaveEnabled = true;
   lastAutoSave: Date | null = null;
+  private readonly MAX_DRAFT_ITEMS = 100;
+  private readonly MAX_MATERIAL_DRAFT_BYTES = 500_000;
 
   enableAutoSave() {
     if (!this.autoSaveEnabled) return;
@@ -379,11 +381,20 @@ export class MaterialRequestWorkflowComponent implements OnInit {
 
   private autoSaveDraft() {
     if (this.requestForm.valid && this.items.length > 0) {
+      const boundedItems = this.items.value.slice(0, this.MAX_DRAFT_ITEMS);
       const draftData = {
         ...this.requestForm.value,
-        items: this.items.value,
+        items: boundedItems,
         lastSaved: new Date()
       };
+
+      if (new Blob([JSON.stringify(draftData)]).size > this.MAX_MATERIAL_DRAFT_BYTES) {
+        this.toastr.warning('Draft too large to autosave. Please reduce line items.', '', {
+          timeOut: 3000,
+          positionClass: 'toast-bottom-right'
+        });
+        return;
+      }
       
       localStorage.setItem('materialRequestDraft', JSON.stringify(draftData));
       this.lastAutoSave = new Date();

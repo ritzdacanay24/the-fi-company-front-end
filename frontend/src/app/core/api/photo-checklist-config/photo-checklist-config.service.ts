@@ -591,6 +591,14 @@ export class PhotoChecklistConfigService {
     );
   }
 
+  deleteOwnMedia(instanceId: number, itemId: number, fileUrl: string, userId: number): Observable<{success: boolean}> {
+    return this.http.post<{success: boolean}>(
+      `${this.mediaApiBaseUrl}/media/delete-own`,
+      { instance_id: instanceId, item_id: itemId, file_url: fileUrl },
+      { headers: { 'x-user-id': String(userId) } }
+    );
+  }
+
   // ==============================================
   // Configuration Management
   // ==============================================

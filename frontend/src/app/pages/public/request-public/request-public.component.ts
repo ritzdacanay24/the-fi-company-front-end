@@ -86,6 +86,8 @@ export class RequestPublicComponent implements OnInit, OnDestroy {
     REQUEST_DRAFTS: 'eyefi_request_drafts_v1',
     ACTIVE_DRAFT: 'eyefi_request_active_draft_v1',
   };
+  private readonly MAX_REQUEST_DRAFTS = 12;
+  private readonly MAX_DRAFTS_PAYLOAD_BYTES = 750_000;
 
   drafts: any[] = [];
   activeDraftId: string | null = null;
@@ -333,10 +335,45 @@ export class RequestPublicComponent implements OnInit, OnDestroy {
 
   private persistDrafts() {
     try {
-      localStorage.setItem(this.STORAGE_KEYS.REQUEST_DRAFTS, JSON.stringify(this.drafts));
+      const boundedDrafts = this.buildBoundedDraftsSnapshot();
+      localStorage.setItem(this.STORAGE_KEYS.REQUEST_DRAFTS, JSON.stringify(boundedDrafts));
+      this.drafts = boundedDrafts;
     } catch (error) {
       console.error('Error persisting request drafts:', error);
     }
+  }
+
+  private buildBoundedDraftsSnapshot() {
+    const sorted = [...this.drafts].sort((a, b) =>
+      String(b?.updatedAt || '').localeCompare(String(a?.updatedAt || '')),
+    );
+
+    let bounded = sorted.slice(0, this.MAX_REQUEST_DRAFTS);
+    if (this.activeDraftId && !bounded.some((draft) => draft.id === this.activeDraftId)) {
+      const active = sorted.find((draft) => draft.id === this.activeDraftId);
+      if (active) {
+        bounded = [active, ...bounded.slice(0, this.MAX_REQUEST_DRAFTS - 1)];
+      }
+    }
+
+    while (bounded.length > 1) {
+      const bytes = this.estimateJsonBytes(bounded);
+      if (bytes <= this.MAX_DRAFTS_PAYLOAD_BYTES) {
+        break;
+      }
+
+      const removableIndex = bounded.findIndex((draft) => draft.id !== this.activeDraftId);
+      if (removableIndex < 0) {
+        break;
+      }
+      bounded.splice(removableIndex, 1);
+    }
+
+    return bounded;
+  }
+
+  private estimateJsonBytes(value: unknown): number {
+    return new Blob([JSON.stringify(value)]).size;
   }
 
   private ensureActiveDraft() {
@@ -596,7 +633,11 @@ export class RequestPublicComponent implements OnInit, OnDestroy {
 
   saveRecentContacts() {
     try {
-      localStorage.setItem(this.STORAGE_KEYS.RECENT_CONTACTS, JSON.stringify(this.recentContacts));
+      const boundedContacts = Array.isArray(this.recentContacts)
+        ? this.recentContacts.slice(0, 25)
+        : [];
+      localStorage.setItem(this.STORAGE_KEYS.RECENT_CONTACTS, JSON.stringify(boundedContacts));
+      this.recentContacts = boundedContacts;
     } catch (error) {
       console.error('Error saving recent contacts:', error);
     }

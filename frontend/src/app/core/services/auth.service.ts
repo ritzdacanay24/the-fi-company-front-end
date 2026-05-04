@@ -17,6 +17,14 @@ import { THE_FI_COMPANY_CURRENT_USER } from "../guards/admin.guard";
 
 const AUTH_API = "apiV2/";
 const REFRESH_TOKEN_KEY = 'refresh_token';
+const LOCAL_STORAGE_CLEANUP_KEYS = [
+  'eyefi_request_drafts_v1',
+  'eyefi_request_active_draft_v1',
+  'eyefi_recent_contacts',
+  'materialRequestDraft',
+  'universalSearchRecent',
+  'THE_FI_COMPANY_RECENT_SEARCH',
+] as const;
 
 const httpOptions = {
   headers: new HttpHeaders({ "Content-Type": "application/json" }),
@@ -156,7 +164,7 @@ export class AuthenticationService {
     // return getFirebaseBackend()!.logout();
     localStorage.removeItem(THE_FI_COMPANY_CURRENT_USER);
     localStorage.removeItem("token");
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
+    this.clearRefreshToken();
     this.currentUserSubject.next(null!);
 
     return of(undefined).pipe();
@@ -167,7 +175,7 @@ export class AuthenticationService {
    * Updates localStorage with new tokens and returns the new access token.
    */
   refreshToken(): Observable<string> {
-    const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+    const refreshToken = this.getStoredRefreshToken();
     if (!refreshToken) {
       return throwError(() => new Error('No refresh token stored'));
     }
@@ -180,7 +188,7 @@ export class AuthenticationService {
       .pipe(
         map((response) => {
           localStorage.setItem('token', response.access_token);
-          localStorage.setItem(REFRESH_TOKEN_KEY, response.refresh_token);
+          this.storeRefreshToken(response.refresh_token);
           // Update the token stored in the current user object so the interceptor picks it up
           const storedUser = localStorage.getItem(THE_FI_COMPANY_CURRENT_USER);
           if (storedUser) {
@@ -195,6 +203,67 @@ export class AuthenticationService {
           return response.access_token;
         }),
       );
+  }
+
+  storeRefreshToken(token?: string | null): void {
+    const value = String(token || '').trim();
+    if (!value) {
+      this.clearRefreshToken();
+      return;
+    }
+
+    try {
+      localStorage.setItem(REFRESH_TOKEN_KEY, value);
+      return;
+    } catch (error) {
+      if (!this.isQuotaExceededError(error)) {
+        throw error;
+      }
+    }
+
+    try {
+      this.releaseLocalStorageSpace();
+      localStorage.setItem(REFRESH_TOKEN_KEY, value);
+    } catch {
+      throw new Error('Unable to store refresh token in localStorage (quota exceeded).');
+    }
+  }
+
+  private getStoredRefreshToken(): string | null {
+    return localStorage.getItem(REFRESH_TOKEN_KEY);
+  }
+
+  private clearRefreshToken(): void {
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
+  }
+
+  private isQuotaExceededError(error: unknown): boolean {
+    return error instanceof DOMException && (
+      error.name === 'QuotaExceededError' ||
+      error.name === 'NS_ERROR_DOM_QUOTA_REACHED'
+    );
+  }
+
+  private releaseLocalStorageSpace(): void {
+    for (const key of LOCAL_STORAGE_CLEANUP_KEYS) {
+      localStorage.removeItem(key);
+    }
+
+    const checklistKeysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i);
+      if (!key) {
+        continue;
+      }
+
+      if (/^checklist_\d+_completion$/i.test(key)) {
+        checklistKeysToRemove.push(key);
+      }
+    }
+
+    for (const key of checklistKeysToRemove) {
+      localStorage.removeItem(key);
+    }
   }
 
   /**

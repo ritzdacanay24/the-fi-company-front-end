@@ -23,7 +23,7 @@ export class ShippingService {
     @Inject(OwnersService) private readonly ownersService: OwnersService,
   ) {}
 
-  async readOpenReport(): Promise<GenericRow[]> {
+  async readOpenReport(currentUserId?: number): Promise<GenericRow[]> {
     const base = await this.getShippingInfo();
     if (!base.length) {
       return [];
@@ -37,7 +37,7 @@ export class ShippingService {
       await Promise.all([
         this.commentsService.getForShippingByOrderNumbers(ids),
         this.workOrderOwnerService.getBySoArray(ids),
-        this.notesService.getLatestByUniqueIds(ids),
+        this.notesService.getLatestByUniqueIds(ids, currentUserId),
         this.userTransactionsService.getChangesToday('Sales Order Shipping', 'New Sales Order Usr Input'),
         this.commentsService.getMentionsByOrderNumbers(ids),
         this.ownersService.getProductionStatusMap(),

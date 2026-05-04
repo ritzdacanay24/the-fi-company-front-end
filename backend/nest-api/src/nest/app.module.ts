@@ -108,6 +108,7 @@ import { RequestModule } from './modules/request';
 import { RequestCommentsModule } from './modules/request-comments';
 import { PublicFieldServiceModule } from './modules/public-field-service';
 import { ReceivingModule } from './modules/receiving/receiving.module';
+import { ProjectManagerModule } from './modules/project-manager/project-manager.module';
 import { SalesOrderSearchModule } from './modules/sales-order-search';
 import { WorkOrderModule } from './modules/work-order';
 import { ReportsModule } from './modules/reports';
@@ -257,6 +258,7 @@ import { UrlModule } from '../shared/url/url.module';
     TripExpenseTransactionsModule,
     FsQirModule,
     WebsocketModule,
+    ProjectManagerModule,
   ],
   providers: [
     {

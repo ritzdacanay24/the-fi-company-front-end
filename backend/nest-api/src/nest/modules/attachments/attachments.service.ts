@@ -54,8 +54,11 @@ export class AttachmentsService {
     if (field.includes('field service')) {
       return 'fieldService';
     }
+    if (field.includes('capa')) {
+      return 'capa';
+    }
 
-    return 'fieldService';
+    return 'general';
   }
 
   private resolveGenericSubFolder(folder?: string): string {

@@ -100,7 +100,7 @@ export class QirService {
       const eyefiPartNumber = String(payload.eyefiPartNumber || '');
       const qtyAffected = String(payload.qtyAffected || '');
       const priority = String(payload.priority || '');
-      const issueComment = String(payload.issueComment || '');
+      const issueComment = this.toPlainText(payload.issueComment ?? payload.issue_comment_html);
       const link = this.urlBuilder.operations.qirEdit(insertId, 'Open');
       const createdDate = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
@@ -134,5 +134,34 @@ export class QirService {
 
   private uniqueEmails(values: string[]): string[] {
     return Array.from(new Set(values.map((value) => String(value || '').trim()).filter(Boolean)));
+  }
+
+  private toPlainText(value: unknown): string {
+    const source = String(value ?? '').trim();
+    if (!source) {
+      return '';
+    }
+
+    const withBreaks = source
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/p>/gi, '\n')
+      .replace(/<\/div>/gi, '\n')
+      .replace(/<\/li>/gi, '\n')
+      .replace(/<li[^>]*>/gi, '- ');
+
+    const stripped = withBreaks
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/&amp;/gi, '&')
+      .replace(/&lt;/gi, '<')
+      .replace(/&gt;/gi, '>')
+      .replace(/&#39;/gi, "'")
+      .replace(/&quot;/gi, '"');
+
+    return stripped
+      .replace(/\r\n/g, '\n')
+      .replace(/[ \t]+/g, ' ')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
   }
 }

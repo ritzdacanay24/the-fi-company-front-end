@@ -218,22 +218,23 @@ export class ProjectManagerDashboardComponent implements OnInit {
       return;
     }
 
-    this.projectsService.deleteProject(project.id);
-    this.reloadProjects();
-
-    if (this.selectedProjectId) {
-      this.router.navigate([], {
-        relativeTo: this.route,
-        queryParams: { projectId: this.selectedProjectId },
-        queryParamsHandling: 'merge'
+    this.projectsService.deleteProject$(project.id).subscribe(() => {
+      this.reloadProjects(() => {
+        if (this.selectedProjectId) {
+          this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: { projectId: this.selectedProjectId },
+            queryParamsHandling: 'merge'
+          });
+        } else {
+          this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: { projectId: null },
+            queryParamsHandling: 'merge'
+          });
+        }
       });
-    } else {
-      this.router.navigate([], {
-        relativeTo: this.route,
-        queryParams: { projectId: null },
-        queryParamsHandling: 'merge'
-      });
-    }
+    });
   }
 
   get totalProjects(): number {
@@ -260,20 +261,23 @@ export class ProjectManagerDashboardComponent implements OnInit {
     return this.projects.find(project => project.id === this.selectedProjectId) || this.projects[0];
   }
 
-  private reloadProjects(): void {
-    this.projects = this.projectsService.getProjects();
+  private reloadProjects(callback?: () => void): void {
+    this.projectsService.getProjects$().subscribe(projects => {
+      this.projects = projects;
 
-    const routeMatch = this.routeProjectId
-      ? this.projects.find(project => project.id === this.routeProjectId)
-      : undefined;
+      const routeMatch = this.routeProjectId
+        ? projects.find(project => project.id === this.routeProjectId)
+        : undefined;
 
-    if (routeMatch) {
-      this.selectedProjectId = routeMatch.id;
-      this.projectsService.setSelectedProjectId(routeMatch.id);
-      return;
-    }
+      if (routeMatch) {
+        this.selectedProjectId = routeMatch.id;
+        this.projectsService.setSelectedProjectId(routeMatch.id);
+      } else {
+        this.selectedProjectId = this.projectsService.getSelectedProjectId(projects);
+      }
 
-    this.selectedProjectId = this.projectsService.getSelectedProjectId(this.projects);
+      callback?.();
+    });
   }
 
   get bottleneckAlerts(): ProjectDashboardItem[] {

@@ -1,4 +1,6 @@
 import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable, of, catchError, map, tap } from 'rxjs';
 import { environment } from 'src/environments/environment';
 import { AuthenticationService } from 'src/app/core/services/auth.service';
 
@@ -119,66 +121,190 @@ export class ProjectManagerProjectsService {
     ]
   };
 
-  constructor(private authService: AuthenticationService) {}
+  constructor(private authService: AuthenticationService, private http: HttpClient) {}
+
+  // ─── Observable API (used by components) ───────────────────────────────────
+
+  /** Fetch all projects. In API mode, loads from server and caches to localStorage. */
+  getProjects$(): Observable<ProjectDashboardItem[]> {
+    if (!this.isApiMode) {
+      return of(this.getProjectsFromLocalStorage());
+    }
+
+    return this.http.get<any[]>(environment.pmApiUrl).pipe(
+      map(rows => rows.map(row => this.apiRowToDashboardItem(row))),
+      tap(projects => this.saveProjectsToLocalStorage(projects)),
+      catchError(err => {
+        console.error('[PM] getProjects$ failed, falling back to localStorage', err);
+        return of(this.getProjectsFromLocalStorage());
+      })
+    );
+  }
+
+  /** Upsert a project to API + localStorage. Returns the saved dashboard item. */
+  upsertProject$(input: ProjectCreationInput): Observable<ProjectDashboardItem> {
+    const project = this.buildDashboardItem(input);
+
+    if (!this.isApiMode) {
+      const projects = [project, ...this.getProjectsFromLocalStorage().filter(p => p.id !== project.id)];
+      this.saveProjectsToLocalStorage(projects);
+      this.setSelectedProjectId(project.id);
+      return of(project);
+    }
+
+    return this.http.post<any>(environment.pmApiUrl, {
+      id: input.id,
+      productName: input.productName,
+      customer: input.customer,
+      projectCategory: input.projectCategory,
+      strategyType: input.strategyType,
+      roughRevenuePotential: input.roughRevenuePotential || '',
+      estimatedRevenue: input.estimatedRevenue || '',
+      initialRfpDate: input.initialRfpDate || null,
+      targetProductionDate: input.targetProductionDate || null,
+      readinessScore: input.readinessScore,
+      readinessStatus: input.readinessStatus,
+      activeGate: input.activeGate,
+      isDraft: !!input.isDraft,
+      owner: this.getCurrentOwnerName(),
+      gateCompletion: input.gateCompletion,
+      gateCompletedAt: input.gateCompletedAt,
+    }).pipe(
+      map(row => this.apiRowToDashboardItem(row)),
+      tap(saved => {
+        const projects = [saved, ...this.getProjectsFromLocalStorage().filter(p => p.id !== saved.id)];
+        this.saveProjectsToLocalStorage(projects);
+        this.setSelectedProjectId(saved.id);
+      }),
+      catchError(err => {
+        console.error('[PM] upsertProject$ failed, saving to localStorage only', err);
+        const projects = [project, ...this.getProjectsFromLocalStorage().filter(p => p.id !== project.id)];
+        this.saveProjectsToLocalStorage(projects);
+        this.setSelectedProjectId(project.id);
+        return of(project);
+      })
+    );
+  }
+
+  /** Delete a project from API + localStorage. */
+  deleteProject$(projectId: string): Observable<void> {
+    if (!projectId) {
+      return of(undefined);
+    }
+
+    this.removeProjectFromLocalStorage(projectId);
+
+    if (!this.isApiMode) {
+      return of(undefined);
+    }
+
+    return this.http.delete<void>(`${environment.pmApiUrl}/${encodeURIComponent(projectId)}`).pipe(
+      catchError(err => {
+        console.error('[PM] deleteProject$ failed', err);
+        return of(undefined);
+      })
+    );
+  }
+
+  /** Load intake state (form values) for a project. */
+  getIntakeState$(projectId: string): Observable<IntakeStoragePayload | null> {
+    if (!this.isApiMode) {
+      return of(this.loadIntakeState(projectId));
+    }
+
+    return this.http.get<any>(`${environment.pmApiUrl}/${encodeURIComponent(projectId)}/intake`).pipe(
+      map(raw => {
+        if (!raw) return null;
+        const payload: IntakeStoragePayload = {
+          formValue: raw.formValue || null,
+          activeInputSystem: raw.activeInputSystem || 'gate1',
+          activeGate: raw.activeGate || 1,
+          gateCompletedAt: raw.gateCompletedAt || {},
+        };
+        // Cache to localStorage so sync fallbacks still work.
+        try {
+          localStorage.setItem(this.getIntakeStorageKey(projectId), JSON.stringify(payload));
+        } catch { /* ignore */ }
+        return payload;
+      }),
+      catchError(err => {
+        console.error('[PM] getIntakeState$ failed, falling back to localStorage', err);
+        return of(this.loadIntakeState(projectId));
+      })
+    );
+  }
+
+  /** Persist intake state (form values) for a project. */
+  saveIntakeState$(projectId: string, payload: IntakeStoragePayload): Observable<void> {
+    if (!projectId) return of(undefined);
+
+    // Always write to localStorage immediately for responsiveness.
+    try {
+      localStorage.setItem(this.getIntakeStorageKey(projectId), JSON.stringify(payload));
+    } catch { /* ignore */ }
+
+    if (!this.isApiMode) {
+      return of(undefined);
+    }
+
+    return this.http.put<void>(`${environment.pmApiUrl}/${encodeURIComponent(projectId)}/intake`, {
+      formValue: payload.formValue || {},
+      activeInputSystem: payload.activeInputSystem || 'gate1',
+      activeGate: payload.activeGate || 1,
+      gateCompletedAt: payload.gateCompletedAt || {},
+    }).pipe(
+      catchError(err => {
+        console.error('[PM] saveIntakeState$ failed (localStorage already updated)', err);
+        return of(undefined);
+      })
+    );
+  }
+
+  // ─── Synchronous helpers (retained for backward compatibility) ──────────────
 
   getProjects(): ProjectDashboardItem[] {
-    if (this.isApiMode) {
-      return this.getProjectsFromApi();
-    }
-
-    const raw = localStorage.getItem(this.projectsStorageKey);
-    if (!raw) {
-      return [];
-    }
-
-    try {
-      const parsed = JSON.parse(raw) as ProjectDashboardItem[];
-      return Array.isArray(parsed) ? parsed.map(project => this.syncProjectFromIntake(project)) : [];
-    } catch {
-      return [];
-    }
+    return this.getProjectsFromLocalStorage();
   }
 
   saveProjects(projects: ProjectDashboardItem[]): void {
-    if (this.isApiMode) {
-      this.saveProjectsToApi(projects);
-      return;
-    }
-
-    try {
-      localStorage.setItem(this.projectsStorageKey, JSON.stringify(projects));
-    } catch {
-      // Ignore localStorage write issues in browser test mode.
-    }
+    this.saveProjectsToLocalStorage(projects);
   }
 
   getSelectedProjectId(projects: ProjectDashboardItem[]): string {
-    if (this.isApiMode) {
-      return this.getSelectedProjectIdFromApi(projects);
-    }
-
-    const saved = localStorage.getItem(this.selectedProjectStorageKey);
-    if (saved && projects.some(project => project.id === saved)) {
-      return saved;
-    }
-    return projects[0]?.id || '';
+    return this.getSelectedProjectIdFromLocalStorage(projects);
   }
 
   setSelectedProjectId(projectId: string): void {
-    if (this.isApiMode) {
-      this.setSelectedProjectIdToApi(projectId);
-      return;
-    }
-
     localStorage.setItem(this.selectedProjectStorageKey, projectId);
   }
 
   createProject(input: ProjectCreationInput): ProjectDashboardItem {
+    const newProject = this.buildDashboardItem(input);
+    const projects = [newProject, ...this.getProjectsFromLocalStorage().filter(project => project.id !== input.id)];
+    this.saveProjectsToLocalStorage(projects);
+    this.setSelectedProjectId(newProject.id);
+    return newProject;
+  }
+
+  deleteProject(projectId: string): void {
+    if (!projectId) return;
+    this.removeProjectFromLocalStorage(projectId);
+  }
+
+  generateProjectId(): string {
+    return `PRJ-${Date.now().toString().slice(-8)}`;
+  }
+
+  private get isApiMode(): boolean {
+    return environment.projectManagerDataSource === 'api';
+  }
+
+  private buildDashboardItem(input: ProjectCreationInput): ProjectDashboardItem {
     const taskCompletionByGate = this.loadTaskCompletionByGate(input.id);
     const activeGateKey = this.mapGateNumberToKey(input.activeGate);
     const gateProgress = this.buildGateProgress(input.gateCompletion, taskCompletionByGate, input.gateCompletedAt, input.initialRfpDate);
 
-    const newProject: ProjectDashboardItem = {
+    return {
       id: input.id,
       code: input.id,
       name: input.productName,
@@ -200,59 +326,69 @@ export class ProjectManagerProjectsService {
       taskCompletion: taskCompletionByGate[activeGateKey],
       executionHealth: Math.min(input.gateCompletion[activeGateKey], taskCompletionByGate[activeGateKey]),
       hasGateTaskMismatch: gateProgress.some(gate => gate.mismatch),
-      gateProgress
+      gateProgress,
     };
-
-    const projects = [newProject, ...this.getProjects().filter(project => project.id !== input.id)];
-    this.saveProjects(projects);
-    this.setSelectedProjectId(newProject.id);
-    return newProject;
   }
 
-  deleteProject(projectId: string): void {
-    if (!projectId) {
-      return;
-    }
-
-    const remainingProjects = this.getProjects().filter(project => project.id !== projectId);
-    this.saveProjects(remainingProjects);
-
-    const nextSelectedProjectId = remainingProjects[0]?.id || '';
-    if (nextSelectedProjectId) {
-      this.setSelectedProjectId(nextSelectedProjectId);
+  private removeProjectFromLocalStorage(projectId: string): void {
+    const remaining = this.getProjectsFromLocalStorage().filter(p => p.id !== projectId);
+    this.saveProjectsToLocalStorage(remaining);
+    const next = remaining[0]?.id || '';
+    if (next) {
+      this.setSelectedProjectId(next);
     } else {
       localStorage.removeItem(this.selectedProjectStorageKey);
     }
-
     this.removeScopedProjectState(projectId);
   }
 
-  generateProjectId(): string {
-    return `PRJ-${Date.now().toString().slice(-8)}`;
+  /**
+   * Convert an API row (from UpsertProjectDto response shape) back to a ProjectDashboardItem.
+   * The API returns the same shape as UpsertProjectDto with camelCase fields.
+   */
+  private apiRowToDashboardItem(row: any): ProjectDashboardItem {
+    const taskCompletion = this.loadTaskCompletionByGate(row.id);
+    const activeGate = (row.activeGate as 1 | 2 | 3 | 4 | 5 | 6) || 1;
+    const activeGateKey = this.mapGateNumberToKey(activeGate);
+    const gateCompletion = row.gateCompletion || { gate1: 0, gate2: 0, gate3: 0, gate4: 0, gate5: 0, gate6: 0 };
+    const gateCompletedAt = row.gateCompletedAt || { gate1: null, gate2: null, gate3: null, gate4: null, gate5: null, gate6: null };
+    const gateProgress = this.buildGateProgress(gateCompletion, taskCompletion, gateCompletedAt, row.initialRfpDate || '');
+
+    return {
+      id: row.id,
+      code: row.id,
+      name: row.productName || '',
+      customer: row.customer || '',
+      category: row.projectCategory || '',
+      gateLabel: this.toGateLabel(activeGate),
+      gateTag: this.toGateTag(activeGate),
+      readiness: row.readinessScore || 0,
+      status: row.isDraft ? 'Draft' : this.toStatus(row.readinessStatus || 'Red'),
+      owner: row.owner || '',
+      revenue: this.normalizeRevenueInput(row.estimatedRevenue) || this.toRevenueByPotential(row.roughRevenuePotential) || '',
+      strategy: row.strategyType || '',
+      awarded: activeGate >= 3,
+      rfpDate: row.initialRfpDate || '',
+      targetProd: row.targetProductionDate || '',
+      taskCompletion: taskCompletion[activeGateKey],
+      executionHealth: Math.min(gateCompletion[activeGateKey], taskCompletion[activeGateKey]),
+      hasGateTaskMismatch: gateProgress.some(g => g.mismatch),
+      gateProgress,
+    };
   }
 
-  private get isApiMode(): boolean {
-    return environment.projectManagerDataSource === 'api';
+  private getIntakeStorageKey(projectId: string): string {
+    return `${this.intakeStoragePrefix}${projectId}`;
   }
 
-  private getProjectsFromApi(): ProjectDashboardItem[] {
-    // TODO: Replace with HttpClient integration when PM API is ready.
-    return this.getProjectsFromLocalStorage();
-  }
-
-  private saveProjectsToApi(projects: ProjectDashboardItem[]): void {
-    // TODO: Replace with HttpClient integration when PM API is ready.
-    this.saveProjectsToLocalStorage(projects);
-  }
-
-  private getSelectedProjectIdFromApi(projects: ProjectDashboardItem[]): string {
-    // TODO: Replace with API-backed user preference state.
-    return this.getSelectedProjectIdFromLocalStorage(projects);
-  }
-
-  private setSelectedProjectIdToApi(projectId: string): void {
-    // TODO: Replace with API-backed user preference state.
-    this.setSelectedProjectIdToLocalStorage(projectId);
+  private loadIntakeState(projectId: string): IntakeStoragePayload | null {
+    try {
+      const raw = localStorage.getItem(this.getIntakeStorageKey(projectId));
+      if (!raw) return null;
+      return JSON.parse(raw) as IntakeStoragePayload;
+    } catch {
+      return null;
+    }
   }
 
   private getProjectsFromLocalStorage(): ProjectDashboardItem[] {
@@ -648,22 +784,6 @@ export class ProjectManagerProjectsService {
     }
 
     return Math.abs(checklistCompletion - taskCompletion) >= 25;
-  }
-
-  private loadIntakeState(projectId: string): IntakeStoragePayload | null {
-    if (!projectId) {
-      return null;
-    }
-
-    try {
-      const raw = localStorage.getItem(`${this.intakeStoragePrefix}${projectId}`);
-      if (!raw) {
-        return null;
-      }
-      return JSON.parse(raw) as IntakeStoragePayload;
-    } catch {
-      return null;
-    }
   }
 
   private computeGateCompletion(form: Record<string, any>): Record<GateKey, number> {

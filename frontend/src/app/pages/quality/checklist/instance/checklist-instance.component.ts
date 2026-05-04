@@ -3493,7 +3493,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       didOpen: () => Swal.showLoading()
     });
 
-    const result = this.photoOps.deletePhotoByUrl(photoUrl, itemId, this.instanceId);
+    const result = this.photoOps.deletePhotoByUrl(photoUrl, itemId, this.instanceId, this.currentUserId);
     if (!result) {
       setTimeout(() => Swal.close(), 800);
       alert('Error deleting media. Missing required delete context.');

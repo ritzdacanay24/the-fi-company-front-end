@@ -128,17 +128,16 @@ export class QirCreatePublicComponent {
     try {
       SweetAlert.loading("Saving. Please wait.");
       this.isLoading = true;
-      let res: any = await this.api.createQir(this.form.value);
+      let res: any = await this.api.createQirPublic(this.form.value);
 
       if (this.myFiles.length > 0) {
         for (const file of this.myFiles) {
           const formData = new FormData();
           formData.append("file", file);
-          formData.append("field", "Capa Request");
           formData.append("uniqueData", `${res.insertId}`);
-          formData.append("folderName", "capa");
+          formData.append("uniqueId", `${res.insertId}`);
           try {
-            await this.attachmentsService.uploadfilePublic(formData);
+            await this.api.uploadAttachmentPublic(formData);
           } catch (err) {}
         }
       }

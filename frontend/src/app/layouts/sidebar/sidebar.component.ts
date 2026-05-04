@@ -62,6 +62,8 @@ export class SidebarComponent implements OnInit {
     'partsOrderOpen',
     'trainingLiveSessionsOpen',
     'inspectionChecklistExecutionInProgress',
+    'pmProjectsOpen',
+    'pmTasksOpen',
   ]);
 
   private readonly badgeVariantByKey: Record<keyof SidebarMenuBadgeCounts, string> = {
@@ -85,6 +87,8 @@ export class SidebarComponent implements OnInit {
     partsOrderOpen: 'sidebar-count-badge--critical',
     trainingLiveSessionsOpen: 'sidebar-count-badge--critical',
     inspectionChecklistExecutionInProgress: 'sidebar-count-badge--critical',
+    pmProjectsOpen: 'sidebar-count-badge--attention',
+    pmTasksOpen: 'sidebar-count-badge--attention',
   };
 
   menu: any;
@@ -123,6 +127,7 @@ export class SidebarComponent implements OnInit {
   private menuBadgeSubscription?: Subscription;
   private badgeTooltipRefreshTimerId?: ReturnType<typeof setInterval>;
   private menuBadgeEmissionCount = 0;
+  private badgeTooltipNowMs = Date.now();
   menuBadgeLastUpdatedAt: Date | null = null;
   menuBadgeCounts: SidebarMenuBadgeCounts = {
     validationQueue: 0,
@@ -145,6 +150,8 @@ export class SidebarComponent implements OnInit {
     partsOrderOpen: 0,
     trainingLiveSessionsOpen: 0,
     inspectionChecklistExecutionInProgress: 0,
+    pmProjectsOpen: 0,
+    pmTasksOpen: 0,
   };
 
   get appRailItems() {
@@ -367,12 +374,13 @@ export class SidebarComponent implements OnInit {
     // Menu Items
     // this.menuItems = MENU;
     this.badgeTooltipRefreshTimerId = setInterval(() => {
-      // Triggers change detection so relative tooltip text stays current while open.
-      this.menuBadgeLastUpdatedAt = this.menuBadgeLastUpdatedAt ? new Date(this.menuBadgeLastUpdatedAt) : null;
-    }, 30000);
+      // Keep a stable "now" snapshot for tooltip rendering in each change detection cycle.
+      this.badgeTooltipNowMs = Date.now();
+    }, 1000);
 
     this.menuBadgeWebsocketService.init();
     this.menuBadgeSubscription = this.menuBadgeWebsocketService.counts$.subscribe((counts) => {
+      this.badgeTooltipNowMs = Date.now();
       this.menuBadgeEmissionCount += 1;
       if (this.menuBadgeEmissionCount > 1) {
         this.menuBadgeLastUpdatedAt = new Date();
@@ -486,7 +494,7 @@ export class SidebarComponent implements OnInit {
   }
 
   private formatRelativeTime(date: Date): string {
-    const elapsedMs = Date.now() - date.getTime();
+    const elapsedMs = this.badgeTooltipNowMs - date.getTime();
     const elapsedSeconds = Math.max(0, Math.floor(elapsedMs / 1000));
 
     if (elapsedSeconds < 10) {

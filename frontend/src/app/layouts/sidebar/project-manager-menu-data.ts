@@ -13,6 +13,7 @@ export const PROJECT_MANAGER_MENU: MenuItem[] = [
         link: "/project-manager/dashboard",
         description: "Portfolio health and gate progress overview",
         icon: "las la-briefcase",
+        badgeId: "pmProjectsOpen",
         hideCheckBox: true,
         accessRequired: false,
         activatedRoutes: "/project-manager/dashboard*"
@@ -33,6 +34,7 @@ export const PROJECT_MANAGER_MENU: MenuItem[] = [
         link: "/project-manager/tasks",
         description: "Track tasks, ownership, and project workflow",
         icon: "las la-tasks",
+        badgeId: "pmTasksOpen",
         hideCheckBox: true,
         accessRequired: false,
         activatedRoutes: "/project-manager/tasks*"

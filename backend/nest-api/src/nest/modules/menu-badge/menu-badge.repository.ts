@@ -28,13 +28,15 @@ export interface SidebarMenuBadgeCounts {
   partsOrderOpen: number;
   trainingLiveSessionsOpen: number;
   inspectionChecklistExecutionInProgress: number;
+  pmProjectsOpen: number;
+  pmTasksOpen: number;
 }
 
 @Injectable()
 export class MenuBadgeRepository {
   constructor(@Inject(MysqlService) private readonly mysqlService: MysqlService) {}
 
-  async getSidebarBadgeCounts(): Promise<SidebarMenuBadgeCounts> {
+  async getSidebarBadgeCounts(userId?: number): Promise<SidebarMenuBadgeCounts> {
     const rows = await this.mysqlService.query<MenuBadgeCountRow[]>(`
       SELECT 'validationQueue' AS menu_id, COUNT(DISTINCT m.id) AS count
       FROM mrf m
@@ -195,6 +197,11 @@ export class MenuBadgeRepository {
       SELECT 'inspectionChecklistExecutionInProgress' AS menu_id, COUNT(*) AS count
       FROM checklist_instances ci
       WHERE ci.status IN ('draft', 'in_progress', 'review')
+
+      UNION ALL
+
+      SELECT 'pmProjectsOpen' AS menu_id, COUNT(*) AS count
+      FROM eyefidb.pm_projects pp
     `);
 
     const defaults: SidebarMenuBadgeCounts = {
@@ -218,6 +225,8 @@ export class MenuBadgeRepository {
       partsOrderOpen: 0,
       trainingLiveSessionsOpen: 0,
       inspectionChecklistExecutionInProgress: 0,
+      pmProjectsOpen: 0,
+      pmTasksOpen: 0,
     };
 
     for (const row of rows) {
@@ -228,6 +237,35 @@ export class MenuBadgeRepository {
       defaults[key] = Number(row.count || 0);
     }
 
+    // Per-user pm tasks open count (requires separate query after we know user name)
+    defaults.pmTasksOpen = await this.getPmTasksOpenCount(userId);
+
     return defaults;
+  }
+
+  async getPmTasksOpenCount(userId?: number): Promise<number> {
+    if (!userId) {
+      // Global count — all open tasks
+      const rows = await this.mysqlService.query<RowDataPacket[]>(
+        `SELECT COUNT(*) AS cnt FROM eyefidb.pm_tasks WHERE status NOT IN ('Completed', 'Locked')`,
+      );
+      return Number((rows[0] as any)?.cnt || 0);
+    }
+
+    // Look up user full name from db.users
+    const userRows = await this.mysqlService.query<RowDataPacket[]>(
+      `SELECT CONCAT(TRIM(first), ' ', TRIM(last)) AS full_name FROM db.users WHERE id = ? AND active = 1 LIMIT 1`,
+      [userId],
+    );
+    const fullName = ((userRows[0] as any)?.full_name || '').trim();
+    if (!fullName) return 0;
+
+    const rows = await this.mysqlService.query<RowDataPacket[]>(
+      `SELECT COUNT(*) AS cnt FROM eyefidb.pm_tasks
+       WHERE status NOT IN ('Completed', 'Locked')
+         AND JSON_CONTAINS(assigned_to, ?, '$')`,
+      [JSON.stringify(fullName)],
+    );
+    return Number((rows[0] as any)?.cnt || 0);
   }
 }

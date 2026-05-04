@@ -222,7 +222,7 @@ export class NewProjectComponent implements OnDestroy {
     const createdProjectId = this.generatedProjectId || this.projectsService.generateProjectId();
     this.generatedProjectId = createdProjectId;
 
-    this.projectsService.createProject({
+    this.projectsService.upsertProject$({
       id: createdProjectId,
       productName: String(this.projectForm.get('productName')?.value || '').trim(),
       customer: String(this.projectForm.get('customer')?.value || '').trim(),
@@ -252,19 +252,19 @@ export class NewProjectComponent implements OnDestroy {
         gate6: this.gate6CompletedAt
       },
       isDraft: false
-    });
+    }).subscribe(() => {
+      this.lastSavedProjectId = createdProjectId;
+      this.activeProjectId = createdProjectId;
+      this.isDraftProject = false;
+      this.persistProjectIntakeState(createdProjectId);
+      this.saveSuccessful = true;
+      this.saveMessageType = 'success';
+      this.saveMessage = 'Project intake is complete and ready for backend submission.';
 
-    this.lastSavedProjectId = createdProjectId;
-    this.activeProjectId = createdProjectId;
-    this.isDraftProject = false;
-    this.persistProjectIntakeState(createdProjectId);
-    this.saveSuccessful = true;
-    this.saveMessageType = 'success';
-    this.saveMessage = 'Project intake is complete and ready for backend submission.';
-
-    // Continue in the checklist execution view for the newly created project.
-    this.router.navigate([`${this.baseRoute}/new-project`], {
-      queryParams: { projectId: createdProjectId, view: 'checklist' }
+      // Continue in the checklist execution view for the newly created project.
+      this.router.navigate([`${this.baseRoute}/new-project`], {
+        queryParams: { projectId: createdProjectId, view: 'checklist' }
+      });
     });
   }
 
@@ -274,7 +274,7 @@ export class NewProjectComponent implements OnDestroy {
     const draftProjectId = this.generatedProjectId || this.projectsService.generateProjectId();
     this.generatedProjectId = draftProjectId;
 
-    this.projectsService.createProject({
+    this.projectsService.upsertProject$({
       id: draftProjectId,
       productName: String(this.projectForm.get('productName')?.value || '').trim() || 'Draft Project',
       customer: String(this.projectForm.get('customer')?.value || '').trim() || 'TBD',
@@ -304,19 +304,25 @@ export class NewProjectComponent implements OnDestroy {
         gate6: this.gate6CompletedAt
       },
       isDraft: true
-    });
+    }).subscribe(() => {
+      this.lastSavedProjectId = draftProjectId;
+      this.activeProjectId = draftProjectId;
+      this.isDraftProject = true;
+      this.persistProjectIntakeState(draftProjectId);
+      this.saveSuccessful = true;
+      this.saveMessageType = 'info';
+        this.saveMessage = 'Draft saved. You can continue this project later from any gate.';
 
-    this.lastSavedProjectId = draftProjectId;
-    this.activeProjectId = draftProjectId;
-    this.isDraftProject = true;
-    this.persistProjectIntakeState(draftProjectId);
-    this.saveSuccessful = true;
-    this.saveMessageType = 'info';
-    this.saveMessage = 'Draft saved. You can continue this project later from any gate.';
-
-    this.router.navigate([`${this.baseRoute}/new-project`], {
-      queryParams: { projectId: draftProjectId, view: 'checklist' },
-      replaceUrl: true
+      // Only navigate if the projectId is not already in the URL.
+      // Navigating when the param hasn't changed re-triggers the queryParamMap
+      // subscription which calls loadProjectIntakeState() and resets the form.
+      const currentProjectId = (this.route.snapshot.queryParamMap.get('projectId') || '').trim();
+      if (currentProjectId !== draftProjectId) {
+        this.router.navigate([`${this.baseRoute}/new-project`], {
+          queryParams: { projectId: draftProjectId, view: 'checklist' },
+          replaceUrl: true
+        });
+      }
     });
   }
 
@@ -1097,6 +1103,9 @@ export class NewProjectComponent implements OnDestroy {
     } catch {
       // Ignore localStorage write issues in test mode.
     }
+
+    // Fire-and-forget: also persist to API
+    this.projectsService.saveIntakeState$(projectId, payload).subscribe();
   }
 
   private loadProjectIntakeState(projectId: string, projectSummary?: ProjectDashboardItem): void {
@@ -1116,31 +1125,33 @@ export class NewProjectComponent implements OnDestroy {
       this.gate5CompletedAt = null;
       this.gate6CompletedAt = null;
 
-      const raw = localStorage.getItem(this.getIntakeStorageKey(projectId));
-      if (raw) {
-        const parsed = JSON.parse(raw) as Partial<IntakeStoragePayload>;
-        if (parsed.formValue) {
-          this.projectForm.patchValue(parsed.formValue, { emitEvent: false });
+      this.projectsService.getIntakeState$(projectId).subscribe(parsed => {
+        if (parsed) {
+          if (parsed.formValue) {
+            this.projectForm.patchValue(parsed.formValue, { emitEvent: false });
+          }
+
+          if (parsed.activeInputSystem && ['gate1', 'gate2', 'gate3', 'gate4', 'gate5', 'gate6'].includes(parsed.activeInputSystem)) {
+            this.activeInputSystem = parsed.activeInputSystem;
+          }
+
+          if (parsed.activeGate && parsed.activeGate >= 1 && parsed.activeGate <= 6) {
+            this.activeGate = parsed.activeGate;
+          }
+
+          this.gate1CompletedAt = parsed.gateCompletedAt?.gate1 ?? null;
+          this.gate2CompletedAt = parsed.gateCompletedAt?.gate2 ?? null;
+          this.gate3CompletedAt = parsed.gateCompletedAt?.gate3 ?? null;
+          this.gate4CompletedAt = parsed.gateCompletedAt?.gate4 ?? null;
+          this.gate5CompletedAt = parsed.gateCompletedAt?.gate5 ?? null;
+          this.gate6CompletedAt = parsed.gateCompletedAt?.gate6 ?? null;
         }
 
-        if (parsed.activeInputSystem && ['gate1', 'gate2', 'gate3', 'gate4', 'gate5', 'gate6'].includes(parsed.activeInputSystem)) {
-          this.activeInputSystem = parsed.activeInputSystem;
-        }
-
-        if (parsed.activeGate && parsed.activeGate >= 1 && parsed.activeGate <= 6) {
-          this.activeGate = parsed.activeGate;
-        }
-
-        this.gate1CompletedAt = parsed.gateCompletedAt?.gate1 ?? null;
-        this.gate2CompletedAt = parsed.gateCompletedAt?.gate2 ?? null;
-        this.gate3CompletedAt = parsed.gateCompletedAt?.gate3 ?? null;
-        this.gate4CompletedAt = parsed.gateCompletedAt?.gate4 ?? null;
-        this.gate5CompletedAt = parsed.gateCompletedAt?.gate5 ?? null;
-        this.gate6CompletedAt = parsed.gateCompletedAt?.gate6 ?? null;
-      }
-
-      this.saveSuccessful = false;
-      this.updateGateCompletionTimestamps();
+        this.saveSuccessful = false;
+        this.updateGateCompletionTimestamps();
+        this.isApplyingProjectState = false;
+      });
+      return; // rest of the finally block is replaced by the subscribe
     } catch {
       this.projectForm.reset(this.createBaseProjectFormState(projectSummary), { emitEvent: false });
     } finally {

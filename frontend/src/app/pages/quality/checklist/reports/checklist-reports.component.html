@@ -26,15 +26,15 @@
     <div class="btn-group" role="group" aria-label="Scope filter">
       <button class="btn btn-sm" [class.btn-primary]="scope === 'all'" [class.btn-outline-primary]="scope !== 'all'" (click)="onScopeChange('all')">
         All
-        <span class="ms-1 badge-secondary text-body-emphasis">{{ getScopeCount('all') }}</span>
+        <span class="ms-1" [class.text-white]="scope === 'all'" [class.text-body-secondary]="scope !== 'all'">{{ getScopeCount('all') }}</span>
       </button>
       <button class="btn btn-sm" [class.btn-primary]="scope === 'active'" [class.btn-outline-primary]="scope !== 'active'" (click)="onScopeChange('active')">
         Active
-        <span class="ms-1 badge-secondary text-body-emphasis">{{ getScopeCount('active') }}</span>
+        <span class="ms-1" [class.text-white]="scope === 'active'" [class.text-body-secondary]="scope !== 'active'">{{ getScopeCount('active') }}</span>
       </button>
       <button class="btn btn-sm" [class.btn-primary]="scope === 'mine'" [class.btn-outline-primary]="scope !== 'mine'" (click)="onScopeChange('mine')">
         My Assignments
-        <span class="ms-1 badge-secondary text-body-emphasis">{{ getScopeCount('mine') }}</span>
+        <span class="ms-1" [class.text-white]="scope === 'mine'" [class.text-body-secondary]="scope !== 'mine'">{{ getScopeCount('mine') }}</span>
       </button>
     </div>
   </div>

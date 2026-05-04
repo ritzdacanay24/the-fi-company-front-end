@@ -1,4 +1,16 @@
 RewriteEngine On
+# Redirect /dist/web/request → /request (no-store, no-cache)
+RewriteCond %{REQUEST_URI} ^/dist/web/request [NC]
+RewriteRule ^dist/web/request(/.*)?$ /request%1 [R=301,L]
+
+# No-cache headers for /request
+<IfModule mod_headers.c>
+	<If "%{REQUEST_URI} =~ m#^/request#">
+		Header always set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+		Header always set Pragma "no-cache"
+	</If>
+</IfModule>
+
 # If an existing asset or directory is requested go to it as it is
 RewriteCond %{DOCUMENT_ROOT}%{REQUEST_URI} -f [OR]
 RewriteCond %{DOCUMENT_ROOT}%{REQUEST_URI} -d

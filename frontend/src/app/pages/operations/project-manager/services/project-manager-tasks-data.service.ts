@@ -1,4 +1,6 @@
 import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable, map, catchError, of } from 'rxjs';
 import { environment } from 'src/environments/environment';
 
 export type TaskStatus = 'Open' | 'In Process' | 'Review' | 'Completed' | 'Locked';
@@ -54,7 +56,40 @@ export interface ProjectManagerTasksState {
 @Injectable({ providedIn: 'root' })
 export class ProjectManagerTasksDataService {
   private readonly storageKey = 'pm_tasks_state_v1';
+  private readonly apiUrl = environment.pmApiUrl;
 
+  constructor(private readonly http: HttpClient) {}
+
+  /** Observable API: load task state from server. Falls back to localStorage on error. */
+  loadState$(projectId: string): Observable<ProjectManagerTasksState> {
+    if (!this.isApiMode || !projectId) {
+      return of(this.loadStateFromLocalStorage(projectId));
+    }
+    return this.http.get<ProjectManagerTasksState>(`${this.apiUrl}/${projectId}/tasks`).pipe(
+      map(res => ({
+        nextId: res.nextId || 1,
+        taskRecords: this.normalizeTaskRecords(res.taskRecords || []),
+        subgroupCatalog: this.normalizeSubgroupCatalog(res.subgroupCatalog || {}),
+      })),
+      catchError(() => of(this.loadStateFromLocalStorage(projectId))),
+    );
+  }
+
+  /** Observable API: save task state to server. Falls back to localStorage on error. */
+  saveState$(state: ProjectManagerTasksState, projectId: string): Observable<void> {
+    if (!this.isApiMode || !projectId) {
+      this.saveStateToLocalStorage(state, projectId);
+      return of(undefined);
+    }
+    return this.http.put<void>(`${this.apiUrl}/${projectId}/tasks`, { taskRecords: state.taskRecords }).pipe(
+      catchError(() => {
+        this.saveStateToLocalStorage(state, projectId);
+        return of(undefined);
+      }),
+    );
+  }
+
+  /** Synchronous entry point — delegates to localStorage or API depending on mode. */
   loadState(projectId = ''): ProjectManagerTasksState {
     if (this.isApiMode) {
       return this.loadStateFromApi(projectId);
@@ -103,13 +138,14 @@ export class ProjectManagerTasksDataService {
   }
 
   private loadStateFromApi(projectId: string): ProjectManagerTasksState {
-    // TODO: Replace with HttpClient integration when PM Tasks API is ready.
+    // Synchronous callers get localStorage; use loadState$() for API data.
     return this.loadStateFromLocalStorage(projectId);
   }
 
   private saveStateToApi(state: ProjectManagerTasksState, projectId: string): void {
-    // TODO: Replace with HttpClient integration when PM Tasks API is ready.
+    // Fire-and-forget via Observable; also persist to localStorage as cache.
     this.saveStateToLocalStorage(state, projectId);
+    this.saveState$(state, projectId).subscribe();
   }
 
   private loadStateFromLocalStorage(projectId: string): ProjectManagerTasksState {

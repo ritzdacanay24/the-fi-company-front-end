@@ -232,6 +232,14 @@ export class InspectionChecklistController {
     return this.service.deleteMediaByLocator(payload.instance_id, payload.item_id, payload.file_url);
   }
 
+  @Post('media/delete-own')
+  async deleteOwnMedia(
+    @CurrentUserId() userId: number,
+    @Body() payload: { instance_id: number; item_id: number; file_url: string },
+  ) {
+    return this.service.deleteOwnMedia(payload.instance_id, payload.item_id, payload.file_url, userId);
+  }
+
   @Get('instances/:id/export')
   async exportInstance(@Param('id', ParseIntPipe) id: number) {
     return this.service.getInstanceById(id);

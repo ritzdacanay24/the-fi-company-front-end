@@ -55,6 +55,18 @@ export class QirService extends DataService<any> {
     return this.create(params);
   }
 
+  async createQirPublic(params: any): Promise<{ message: string; insertId?: number }> {
+    const response = await firstValueFrom(this.http.post<{ insertId?: number }>(`${url}/create-public`, params));
+    return {
+      message: 'QIR created successfully',
+      insertId: response?.insertId,
+    };
+  }
+
+  async uploadAttachmentPublic(formData: FormData): Promise<any> {
+    return firstValueFrom(this.http.post(`${url}/upload-public`, formData));
+  }
+
   async getQirById(id: number) {
     return this.getById(id);
   }

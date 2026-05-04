@@ -43,7 +43,8 @@ export class PhotoOperationsService {
   deletePhotoByUrl(
     photoUrl: string, 
     itemId: number | string, 
-    instanceId: number
+    instanceId: number,
+    userId?: number | null
   ): Observable<any> | null {
     const progress = this.stateService.findItemProgress(itemId);
     if (!progress) {
@@ -70,7 +71,11 @@ export class PhotoOperationsService {
     );
 
     // Delete from server using stable locator fields.
-    return this.photoChecklistService.deleteMediaByLocator(instanceId, baseItemId, photoUrl).pipe(
+    const deleteCall = userId && userId > 0
+      ? this.photoChecklistService.deleteOwnMedia(instanceId, baseItemId, photoUrl, userId)
+      : this.photoChecklistService.deleteMediaByLocator(instanceId, baseItemId, photoUrl);
+
+    return deleteCall.pipe(
       tap(() => {
         // Remove from state after successful deletion
         if (isVideo) {

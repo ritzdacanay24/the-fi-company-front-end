@@ -9,8 +9,8 @@ export class ShippingController {
   constructor(private readonly service: ShippingService) {}
 
   @Get('read-open-report')
-  async readOpenReport() {
-    return this.service.readOpenReport();
+  async readOpenReport(@CurrentUserId() currentUserId: number) {
+    return this.service.readOpenReport(currentUserId);
   }
 
   @Post('save-misc')

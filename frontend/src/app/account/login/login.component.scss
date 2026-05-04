@@ -1,0 +1,29 @@
+:host {
+	display: block;
+}
+
+.request-public-page {
+	--request-theme-blue: var(--vz-primary, #1a3a6f);
+	background-image: none;
+	background-color: var(--request-theme-blue);
+	background: linear-gradient(120deg, #173867 0%, var(--request-theme-blue) 52%, #2a62ad 100%);
+}
+
+.request-public-page .bg-overlay {
+	background: linear-gradient(135deg, rgba(14, 38, 75, 0.96) 0%, rgba(26, 58, 111, 0.93) 52%, rgba(33, 71, 133, 0.86) 100%);
+	opacity: 0.58;
+}
+
+.request-public-header {
+	background: transparent;
+	box-shadow: none;
+}
+
+.request-public-title {
+	color: #f4f8ff;
+}
+
+.request-public-subtitle {
+	color: #dbe8fb;
+}
+

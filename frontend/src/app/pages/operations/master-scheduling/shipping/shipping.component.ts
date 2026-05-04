@@ -258,6 +258,18 @@ export class ShippingComponent implements OnInit, OnDestroy {
     this.shippingWebsocketService.destroy();
   }
 
+  /**
+   * Strip personal-only fields from an incoming WS row before applying it
+   * to this user's grid, so notes from other users are never visible here.
+   */
+  private mergeIncomingRow(incoming: any): any {
+    const rowNode = this.gridApi?.getRowNode(incoming?.id);
+    const merged = { ...incoming };
+    // Notes are strictly per-user — always keep the receiver's own value.
+    merged.recent_notes = rowNode?.data?.recent_notes ?? null;
+    return merged;
+  }
+
   private setupWebSocketSubscriptions(): void {
     this.shippingSubscription = this.shippingWebsocketService
       .subscribe<any>(ShippingMessageType.SHIPPING)
@@ -268,13 +280,15 @@ export class ShippingComponent implements OnInit, OnDestroy {
         }
 
         if (Array.isArray(payload.message)) {
-          this.gridApi.applyTransaction({ update: payload.message });
+          const merged = payload.message.map((row: any) => this.mergeIncomingRow(row));
+          this.gridApi.applyTransaction({ update: merged });
           this.gridApi.redrawRows();
           return;
         }
 
-        const rowNode = this.gridApi.getRowNode(payload.message.id);
-        this.gridApi.applyTransaction({ update: [payload.message] });
+        const merged = this.mergeIncomingRow(payload.message);
+        const rowNode = this.gridApi.getRowNode(merged.id);
+        this.gridApi.applyTransaction({ update: [merged] });
         this.gridApi.redrawRows({ rowNodes: rowNode ? [rowNode] : undefined });
 
         if (rowNode) {
@@ -1602,32 +1616,25 @@ export class ShippingComponent implements OnInit, OnDestroy {
   }
 
   async updatePriority(orderData: ShippingOrder, newPriority: number): Promise<boolean> {
-    try {
-      // Generate order ID from SO number and line
-      const orderId = `${orderData.SOD_NBR}-${orderData.SOD_LINE}`;
+    // buttonId (no-dash) must match the HTML element id rendered by the cell renderer
+    const buttonId = orderData.id;
+    // order_id uses dash format (matches priority map keys and DB records)
+    const orderId = `${orderData.SOD_NBR}-${orderData.SOD_LINE}`;
 
-      console.log('🎯 Mock Priority Update Request:', {
-        orderId,
-        currentPriority: orderData.shipping_priority,
-        newPriority,
-        orderDetails: `${orderData.SOD_NBR}-${orderData.SOD_LINE}`
-      });
-
-      // Check if priority already exists (excluding current order)
-      const existingOrder = this.allOrdersData.find(
-        order => order.shipping_priority === newPriority &&
-          order.id !== orderData.id &&
-          newPriority > 0
-      );
-
-      if (existingOrder && newPriority > 0) {
-        console.log('❌ Priority conflict detected:', `Priority ${newPriority} already assigned to ${existingOrder.SOD_NBR}-${existingOrder.SOD_LINE}`);
-        alert(`Priority ${newPriority} is already assigned to SO#${existingOrder.SOD_NBR}-${existingOrder.SOD_LINE}`);
-        return false;
+    const revertButton = () => {
+      // Restore button to the correct state based on the order's current (unchanged) priority
+      if (orderData.shipping_priority > 0) {
+        this.updatePriorityButton(buttonId, 'added');
+      } else {
+        this.updatePriorityButton(buttonId, 'removed');
       }
+    };
 
-      // Update via API (mock)
-      await this.api.updateShippingPriority({
+    try {
+      console.log('🎯 Priority Update Request:', { orderId, buttonId, newPriority });
+
+      // Update via API
+      const response = await this.api.updateShippingPriority({
         orderId: orderId,
         salesOrderNumber: orderData.SOD_NBR,
         salesOrderLine: orderData.SOD_LINE,
@@ -1635,42 +1642,41 @@ export class ShippingComponent implements OnInit, OnDestroy {
         notes: `Priority set for ${orderData.SOD_PART}`
       });
 
+      if (!response.success) {
+        console.error('❌ Priority API returned failure:', response.message);
+        alert(response.message || 'Failed to update priority. Please try again.');
+        revertButton();
+        return false;
+      }
+
       // Update local data
       orderData.shipping_priority = newPriority;
 
-      // Update priority map
-      if (newPriority > 0) {
-        this.priorityMap.set(orderId, {
-          id: Date.now() + Math.random(), // Generate a mock ID for development
-          priority_level: newPriority,
-          order_id: orderId,
-          sales_order_number: orderData.SOD_NBR,
-          sales_order_line: orderData.SOD_LINE,
-          notes: `Priority set for ${orderData.SOD_PART}`,
-          created_at: new Date().toISOString(),
-          created_by: this.userSsoId || 'unknown',
-          updated_at: new Date().toISOString(),
-          updated_by: this.userSsoId || 'unknown',
-          is_active: true
-        });
-
-        console.log('✅ Mock Priority Set:', {
-          orderId,
-          priority: newPriority,
-          totalPriorities: this.priorityMap.size
-        });
+      // Refresh priority map from the authoritative response data (which contains real DB ids)
+      if (Array.isArray(response.data) && response.data.length > 0) {
+        this.priorityMap.clear();
+        for (const p of response.data) {
+          this.priorityMap.set(p.order_id, p);
+        }
+      } else if (newPriority > 0) {
+        // Fallback: fetch latest priorities from server to get real DB ids
+        const refreshed = await this.api.getShippingPriorities();
+        if (refreshed.success && Array.isArray(refreshed.data)) {
+          this.priorityMap.clear();
+          for (const p of refreshed.data) {
+            this.priorityMap.set(p.order_id, p);
+          }
+        }
       } else {
         this.priorityMap.delete(orderId);
-        console.log('🗑️ Mock Priority Removed:', orderId);
       }
 
       this.refreshPriorityData();
 
-      // Update button state based on priority change
       if (newPriority > 0) {
-        this.updatePriorityButton(orderId, 'added');
+        this.updatePriorityButton(buttonId, 'added');
       } else {
-        this.updatePriorityButton(orderId, 'removed');
+        this.updatePriorityButton(buttonId, 'removed');
       }
 
       // Send WebSocket notification for priority changes
@@ -1678,8 +1684,9 @@ export class ShippingComponent implements OnInit, OnDestroy {
 
       return true;
     } catch (error) {
-      console.error('❌ Error updating mock priority:', error);
+      console.error('❌ Error updating priority:', error);
       alert('Failed to update priority. Please try again.');
+      revertButton();
       return false;
     }
   }
@@ -2960,8 +2967,11 @@ export class ShippingComponent implements OnInit, OnDestroy {
 
     this.setPinnedRows();
 
+    // Strip recent_notes before broadcasting — notes are personal to each user
+    // and must never be pushed into other users' grids via WebSocket.
+    const { recent_notes, ...broadcastData } = newData;
     this.shippingWebsocketService.publish(ShippingMessageType.SHIPPING, {
-      message: newData,
+      message: broadcastData,
     });
   }
 

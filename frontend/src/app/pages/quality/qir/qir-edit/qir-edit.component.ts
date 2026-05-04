@@ -277,7 +277,75 @@ export class QirEditComponent {
       return;
     }
 
+    if (action === "archive") {
+      this.onArchiveQir();
+      return;
+    }
+
+    if (action === "delete") {
+      this.onDeleteQir();
+      return;
+    }
+
     this.toastrService.info("This action is not available yet.");
+  }
+
+  private async onArchiveQir() {
+    if (!this.id) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Archive QIR #${this.id}? Archived records are removed from active lists.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      this.isLoading = true;
+      await this.api.update(this.id, { active: 0 });
+      this.toastrService.success("QIR archived successfully");
+      this.goBack();
+    } catch (error: any) {
+      const message =
+        error?.error?.message ||
+        error?.message ||
+        "Unable to archive QIR";
+      this.toastrService.error(message);
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
+  private async onDeleteQir() {
+    if (!this.id) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Delete QIR #${this.id}? This action cannot be undone.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      this.isLoading = true;
+      await this.api.delete(this.id);
+      this.toastrService.success("QIR deleted successfully");
+      this.goBack();
+    } catch (error: any) {
+      const message =
+        error?.error?.message ||
+        error?.message ||
+        "Unable to delete QIR. You may not have manage permission.";
+      this.toastrService.error(message);
+    } finally {
+      this.isLoading = false;
+    }
   }
 
   attachments: any = [];

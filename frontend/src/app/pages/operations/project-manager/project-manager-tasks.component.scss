@@ -1,373 +1,87 @@
-// ── Board shell ─────────────────────────────────────────────────────────────
-.pm-board {
-  display: flex;
-  flex-direction: column;
-  background: #f6f7fb;
-  min-height: 100vh;
-  padding: 0;
-}
-
-.pm-panel {
-  background: #fff;
-  border: 1px solid #dde3ea;
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-.pm-content-header {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  background: #fff;
-  border: 0;
-  padding: 12px 14px 10px;
-}
-
-.pm-content-header-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.pm-content-header-left {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-
-.pm-content-heading-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.pm-content-subtitle {
-  font-size: 0.82rem;
-  color: #5f7087;
-}
-
-.pm-content-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-.pm-header-btn {
-  font-size: 0.76rem;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.pm-title {
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: #1f3044;
-  margin: 0;
-}
-
-.pm-context-badge {
-  display: inline-flex;
-  align-self: flex-start;
-  background: #e8f0fe;
-  color: #1a73e8;
-  font-size: 0.72rem;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 20px;
-  white-space: nowrap;
-}
-
-.pm-project-context {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-
-  .chip {
-    display: inline-flex;
-    align-items: center;
-    padding: 3px 9px;
-    border-radius: 999px;
-    font-size: 0.72rem;
-    font-weight: 600;
-    color: #1f3044;
-    background: #f5f7fb;
-    border: 1px solid #dde3ea;
-    white-space: nowrap;
-  }
-
-  .chip.primary {
-    background: #e8f0fe;
-    border-color: #c9ddff;
-    color: #1a73e8;
-  }
-}
-
-// ── Toolbar ──────────────────────────────────────────────────────────────────
-.pm-toolbar {
-  display: flex;
-  align-items: center;
-  background: #fff;
-  border-top: 1px solid #dde3ea;
-  border-bottom: 1px solid #dde3ea;
-  padding: 6px 16px;
-  gap: 8px;
-  flex-wrap: wrap;
-  flex-shrink: 0;
-}
-
-.pm-toolbar-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: 1;
-  flex-wrap: wrap;
-}
-
-.pm-toolbar-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.pm-gate-filter-wrap {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-right: 2px;
-}
-
-.pm-gate-filter-label {
-  margin: 0;
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: #495669;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.pm-gate-filter {
-  min-width: 112px;
-  border-color: #dde3ea;
-  font-size: 0.76rem;
-  color: #1f3044;
-}
-
-.pm-new-btn {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  background: #0073ea;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 5px 14px;
-  font-size: 0.82rem;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.15s;
-
-  &:hover {
-    background: #0060c0;
-  }
-}
-
-.pm-new-btn-icon {
-  font-size: 1.1rem;
-  line-height: 1;
-}
-
-.pm-divider {
-  width: 1px;
-  height: 20px;
-  background: #dde3ea;
-  flex-shrink: 0;
-}
-
-// ── Avatar filters ────────────────────────────────────────────────────────────
-.pm-avatar-filters {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.pm-avatar-btn {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: #0073ea;
-  color: #fff;
-  border: 2px solid transparent;
-  font-size: 0.68rem;
-  font-weight: 700;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  transition: border-color 0.15s;
-
-  &.active {
-    border-color: #1f3044;
-    box-shadow: 0 0 0 2px #0073ea44;
-  }
-
-  &:hover {
-    border-color: #1f3044;
-  }
-}
-
-// ── Status pills ───────────────────────────────────────────────────────────────
+// ── Status filter pills ────────────────────────────────────────────────────────
 .pm-status-pill {
-  border: 1px solid #dde3ea;
+  border: 1px solid var(--vz-border-color);
   border-radius: 20px;
   padding: 3px 10px;
   font-size: 0.76rem;
   font-weight: 500;
-  background: #fff;
-  color: #444e5a;
+  background: var(--vz-card-bg);
+  color: var(--vz-body-color);
   cursor: pointer;
   white-space: nowrap;
   transition: background 0.15s, color 0.15s;
 
   &.active,
   &:hover {
-    background: #0073ea;
+    background: var(--vz-primary);
     color: #fff;
-    border-color: #0073ea;
-  }
-
-  &.status-in-process.active { background: #fdab3d; border-color: #fdab3d; color: #fff; }
-  &.status-review.active     { background: #9c27b0; border-color: #9c27b0; color: #fff; }
-  &.status-completed.active  { background: #00c875; border-color: #00c875; color: #fff; }
-  &.status-locked.active     { background: #c4c4c4; border-color: #c4c4c4; color: #fff; }
-}
-
-// ── Search ─────────────────────────────────────────────────────────────────────
-.pm-search {
-  width: 200px;
-  border: 1px solid #dde3ea;
-  border-radius: 6px;
-  font-size: 0.8rem;
-  padding: 4px 10px;
-  outline: none;
-  transition: border-color 0.15s;
-
-  &:focus {
-    border-color: #0073ea;
+    border-color: var(--vz-primary);
   }
 }
 
-// ── Quick-add panel ────────────────────────────────────────────────────────────
-.pm-quickadd-wrap {
-  padding: 0 16px 12px;
-  background: #f6f7fb;
-}
-
-.pm-quickadd {
-  background: #fff;
-  border: 1px solid #dde3ea;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  max-width: 720px;
-}
-
-.pm-quickadd-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid #dde3ea;
+// ── Floating Action Toolbar ────────────────────────────────────────────────────
+.pm-floating-toolbar {
+  position: fixed;
+  bottom: 0;
+  left: var(--vz-vertical-menu-width, 250px);
+  right: 0;
+  background: var(--vz-card-bg);
+  border-top: 1px solid var(--vz-border-color);
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
   padding: 10px 16px;
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: #1f3044;
+  z-index: 100;
+  display: flex;
+  justify-content: flex-start;
+  gap: 12px;
 }
 
-.pm-close-btn {
-  background: none;
-  border: none;
-  font-size: 1.1rem;
-  color: #888;
-  cursor: pointer;
-  line-height: 1;
-  padding: 0 2px;
-
-  &:hover { color: #333; }
-}
-
-.pm-quickadd-body {
-  padding: 14px 16px;
-}
-
-// ── Grid ───────────────────────────────────────────────────────────────────────
-.pm-grid-wrap {
-  flex: 1;
-  padding: 0;
-}
-
-.pm-grid {
-  width: 100%;
-  height: calc(100vh - 370px);
-  min-height: 400px;
-}
-
-@media (max-width: 992px) {
-  .pm-content-header-top {
-    width: 100%;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-  }
-
-  .pm-content-header-actions {
-    flex-wrap: wrap;
-    justify-content: flex-start;
+@media (max-width: 991.98px) {
+  .pm-floating-toolbar {
+    left: 0;
   }
 }
 
 // ── AG Grid theme overrides ────────────────────────────────────────────────────
 :host ::ng-deep .ag-theme-quartz {
-  --ag-border-color: #dde3ea;
-  --ag-header-background-color: #f8fafc;
-  --ag-header-foreground-color: #2f3340;
-  --ag-row-hover-color: #f1f5f9;
-  --ag-odd-row-background-color: #ffffff;
-  --ag-background-color: #ffffff;
+  --ag-border-color: var(--vz-border-color);
+  --ag-header-background-color: var(--vz-secondary-bg);
+  --ag-header-foreground-color: var(--vz-body-color);
+  --ag-row-hover-color: var(--vz-tertiary-bg, rgba(var(--vz-primary-rgb), 0.05));
+  --ag-odd-row-background-color: var(--vz-card-bg);
+  --ag-background-color: var(--vz-card-bg);
   --ag-font-size: 12px;
-  --ag-row-border-color: #f0f2f5;
+  --ag-row-border-color: var(--vz-border-color);
 
   .pm-group-row {
     font-weight: 700;
-    background: #f8fafc !important;
-    color: #1f3044;
+    background: var(--vz-secondary-bg) !important;
+    color: var(--vz-emphasis-color, var(--vz-body-color));
     font-size: 0.82rem;
   }
 
   .pm-subgroup-row {
     font-weight: 600;
-    background: #fafbfc !important;
-    color: #2f3340;
+    background: var(--vz-secondary-bg) !important;
+    color: var(--vz-body-color);
     font-size: 0.8rem;
   }
 
   .pm-add-item-row {
-    color: #0073ea;
+    color: var(--vz-primary);
     font-size: 0.8rem;
     cursor: pointer;
+    font-style: italic;
 
     .ag-cell {
       cursor: pointer;
     }
 
     &:hover .ag-cell {
-      background: #f0f7ff !important;
+      background: rgba(var(--vz-primary-rgb), 0.1) !important;
+    }
+
+    .ag-row-group-indent-0 {
+      opacity: 0.85;
     }
   }
 }

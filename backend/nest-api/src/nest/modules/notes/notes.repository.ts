@@ -53,9 +53,9 @@ export class NotesRepository {
   }
 
   /**
-   * Get latest notes by unique IDs (SO numbers)
+   * Get latest notes by unique IDs (SO numbers), scoped strictly to a single user.
    */
-  async getLatestByUniqueIds(ids: string[]): Promise<GenericRow[]> {
+  async getLatestByUniqueIds(ids: string[], userId: number): Promise<GenericRow[]> {
     if (!ids.length) {
       return [];
     }
@@ -77,11 +77,13 @@ export class NotesRepository {
           , MAX(id) id
         FROM eyefidb.notes
         WHERE uniqueId IN (${placeholders})
+          AND createdBy = ?
         GROUP BY uniqueId
       ) b ON a.uniqueId = b.uniqueId AND a.id = b.id
       WHERE a.uniqueId IN (${placeholders})
+        AND a.createdBy = ?
       ORDER BY a.createdDate DESC
     `;
-    return this.mysqlService.query<RowDataPacket[]>(sql, [...ids, ...ids]);
+    return this.mysqlService.query<RowDataPacket[]>(sql, [...ids, userId, ...ids, userId]);
   }
 }

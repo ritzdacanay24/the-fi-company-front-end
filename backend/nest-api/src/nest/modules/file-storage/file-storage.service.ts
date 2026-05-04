@@ -355,6 +355,15 @@ export class FileStorageService {
       return 'safetyIncident';
     }
 
+    if (
+      field.includes('capa request') ||
+      field.includes('capa') ||
+      field.includes('qir') ||
+      field.includes('quality incident')
+    ) {
+      return 'capa';
+    }
+
     return 'fieldService';
   }
 

@@ -231,25 +231,25 @@ export class UnifiedWebSocketService implements OnModuleDestroy {
   }
 
   private async broadcastBadgeCounts(): Promise<void> {
-    const subscribedClientIds = Array.from(this.clients.entries())
-      .filter(([, client]) => client.channels.has(BADGE_CHANNEL))
-      .map(([clientId]) => clientId);
+    const subscribedClients = Array.from(this.clients.entries())
+      .filter(([, client]) => client.channels.has(BADGE_CHANNEL));
 
-    if (subscribedClientIds.length === 0) {
+    if (subscribedClients.length === 0) {
       return;
     }
 
     try {
-      const counts = await this.menuBadgeService.getSidebarBadgeCounts();
-
-      subscribedClientIds.forEach((clientId) => {
-        this.sendToClient(clientId, {
-          type: WebSocketMessageType.SIDEBAR_MENU_BADGE_COUNTS,
-          channel: BADGE_CHANNEL,
-          data: { counts },
-          timestamp: Date.now(),
-        });
-      });
+      await Promise.all(
+        subscribedClients.map(async ([clientId, client]) => {
+          const counts = await this.menuBadgeService.getSidebarBadgeCounts(client.userId || undefined);
+          this.sendToClient(clientId, {
+            type: WebSocketMessageType.SIDEBAR_MENU_BADGE_COUNTS,
+            channel: BADGE_CHANNEL,
+            data: { counts },
+            timestamp: Date.now(),
+          });
+        })
+      );
     } catch (error) {
       this.logger.error('Failed to broadcast badge counts:', error as Error);
     }
@@ -257,7 +257,9 @@ export class UnifiedWebSocketService implements OnModuleDestroy {
 
   private async sendBadgeCountsToClient(clientId: string): Promise<void> {
     try {
-      const counts = await this.menuBadgeService.getSidebarBadgeCounts();
+      const client = this.clients.get(clientId);
+      const userId = client?.userId || undefined;
+      const counts = await this.menuBadgeService.getSidebarBadgeCounts(userId);
       this.sendToClient(clientId, {
         type: WebSocketMessageType.SIDEBAR_MENU_BADGE_COUNTS,
         channel: BADGE_CHANNEL,

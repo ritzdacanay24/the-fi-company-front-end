@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import { RowDataPacket } from 'mysql2/promise';
 import { PhotoChecklistRepository } from './photo-checklist.repository';
@@ -291,6 +291,26 @@ export class PhotoChecklistService {
     }
 
     return this.deleteMediaById(mediaId);
+  }
+
+  async deleteOwnMedia(instanceId: number, itemId: number, fileUrl: string, requestingUserId: number) {
+    const instance = await this.repository.getInstanceById(instanceId);
+    if (!instance) {
+      throw new NotFoundException({
+        code: 'RC_CHECKLIST_INSTANCE_NOT_FOUND',
+        message: 'Checklist instance not found',
+      });
+    }
+
+    const operatorId = Number(instance.operator_id || 0);
+    if (operatorId !== requestingUserId) {
+      throw new ForbiddenException({
+        code: 'RC_CHECKLIST_MEDIA_NOT_OWNER',
+        message: 'You can only delete media from your own checklist instance',
+      });
+    }
+
+    return this.deleteMediaByLocator(instanceId, itemId, fileUrl);
   }
 
   async deleteInstance(id: number) {

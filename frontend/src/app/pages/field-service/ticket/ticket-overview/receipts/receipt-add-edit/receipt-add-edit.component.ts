@@ -67,6 +67,8 @@ export class ReceiptAddEditComponent implements OnInit {
   }> = [];
   batchProcessingProgress = { current: 0, total: 0 };
   private DRAFT_STORAGE_KEY = 'receipt_batch_drafts_'; // Changed to plural
+  private readonly MAX_BATCH_DRAFTS = 3;
+  private readonly MAX_BATCH_DRAFT_BYTES = 1_500_000;
   currentDraftName = ''; // Track current draft name
   availableDrafts: Array<{ name: string; timestamp: string; count: number }> = [];
 
@@ -888,8 +890,9 @@ export class ReceiptAddEditComponent implements OnInit {
       
       // Add or update this draft
       existingDrafts[draftName] = draft;
-      
-      localStorage.setItem(draftKey, JSON.stringify(existingDrafts));
+
+      const boundedDrafts = this.boundBatchDrafts(existingDrafts, draftName);
+      localStorage.setItem(draftKey, JSON.stringify(boundedDrafts));
       this.currentDraftName = draftName;
       this.loadAvailableDrafts();
       
@@ -910,6 +913,37 @@ export class ReceiptAddEditComponent implements OnInit {
         icon: 'error'
       });
     }
+  }
+
+  private boundBatchDrafts(
+    drafts: Record<string, any>,
+    preserveDraftName: string,
+  ): Record<string, any> {
+    const entries = Object.entries(drafts)
+      .sort((a, b) => String(b[1]?.timestamp || '').localeCompare(String(a[1]?.timestamp || '')));
+
+    let boundedEntries = entries.slice(0, this.MAX_BATCH_DRAFTS);
+    if (!boundedEntries.some(([name]) => name === preserveDraftName)) {
+      const preserved = entries.find(([name]) => name === preserveDraftName);
+      if (preserved) {
+        boundedEntries = [preserved, ...boundedEntries.slice(0, this.MAX_BATCH_DRAFTS - 1)];
+      }
+    }
+
+    while (boundedEntries.length > 1) {
+      const payload = Object.fromEntries(boundedEntries);
+      if (new Blob([JSON.stringify(payload)]).size <= this.MAX_BATCH_DRAFT_BYTES) {
+        break;
+      }
+
+      const removableIndex = boundedEntries.findIndex(([name]) => name !== preserveDraftName);
+      if (removableIndex < 0) {
+        break;
+      }
+      boundedEntries.splice(removableIndex, 1);
+    }
+
+    return Object.fromEntries(boundedEntries);
   }
 
   /**
