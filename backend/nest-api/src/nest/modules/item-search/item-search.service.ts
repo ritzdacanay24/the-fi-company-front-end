@@ -10,6 +10,50 @@ export class ItemSearchService {
     @Inject(MysqlService) private readonly mysqlService: MysqlService,
   ) {}
 
+  async getCustomerPartInfo(partNumber: string): Promise<Record<string, unknown> | null> {
+    const trimmedPartNumber = String(partNumber || '').trim();
+    if (!trimmedPartNumber) {
+      return null;
+    }
+
+    const sql = `
+      SELECT a.pt_part
+        , a.pt_desc1
+        , a.pt_desc2
+        , b.cp_cust_part
+      FROM pt_mstr a
+      LEFT JOIN cp_mstr b ON b.cp_part = a.pt_part AND b.cp_domain = 'EYE'
+      WHERE a.pt_domain = 'EYE'
+        AND (
+          UPPER(a.pt_part) = ?
+          OR UPPER(b.cp_cust_part) = ?
+          OR UPPER(b.cp_cust_part) LIKE ?
+        )
+      ORDER BY CASE
+          WHEN UPPER(b.cp_cust_part) = ? THEN 0
+          WHEN UPPER(a.pt_part) = ? THEN 1
+          ELSE 2
+        END
+      WITH (NOLOCK)
+    `;
+
+    const normalizedPartNumber = trimmedPartNumber.toUpperCase();
+    const rows = await this.qadOdbcService.queryWithParams<Array<Record<string, unknown>>>(
+      sql,
+      [
+        normalizedPartNumber,
+        normalizedPartNumber,
+        `%${normalizedPartNumber}%`,
+        normalizedPartNumber,
+        normalizedPartNumber,
+      ],
+      { keyCase: 'upper' },
+    );
+
+    const row = rows[0];
+    return row ? this.withCaseVariants(row) : null;
+  }
+
   async readByItem(item: string, typeOfItemSearch = 'partNumber'): Promise<Record<string, unknown>> {
     const trimmedItem = String(item || '').trim();
     if (!trimmedItem) {

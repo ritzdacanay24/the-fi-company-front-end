@@ -2,6 +2,8 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 
+const itemSearchApiV2Url = 'apiV2/item-search';
+
 @Injectable({
   providedIn: 'root'
 })
@@ -18,7 +20,9 @@ export class LabelService {
 
   // Read details
   getCustomerInfo(partNumber: string) {
-    return this.http.get<any>(`/item_search/customer_part_search?partNumber=${partNumber}`).toPromise();
+    return this.http.get<any>(
+      `${itemSearchApiV2Url}/customer-part-search?partNumber=${encodeURIComponent(partNumber)}`,
+    ).toPromise();
   }
 
   getLocationByRange(locationStart: string, locationEnd: string) {

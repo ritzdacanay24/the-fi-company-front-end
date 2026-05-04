@@ -7,6 +7,11 @@ import { ItemSearchService } from './item-search.service';
 export class ItemSearchController {
   constructor(private readonly service: ItemSearchService) {}
 
+  @Get('customer-part-search')
+  async customerPartSearch(@Query('partNumber') partNumber?: string) {
+    return this.service.getCustomerPartInfo(partNumber || '');
+  }
+
   @Get('read-single')
   async readSingle(
     @Query('readSingle') readSingle?: string,
