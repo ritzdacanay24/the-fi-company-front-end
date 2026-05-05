@@ -539,7 +539,11 @@ export class RequestPublicComponent implements OnInit, OnDestroy {
   }
 
   async getComments() {
-    this.comments = await this.commentsService.getByRequestId(this.request_id);
+    if (this.token && this.request_id) {
+      this.comments = await this.requestService.getPublicComments(this.request_id, this.token);
+    } else {
+      this.comments = await this.commentsService.getByRequestId(this.request_id);
+    }
   }
 
   async onSubmitComment() {
@@ -550,17 +554,27 @@ export class RequestPublicComponent implements OnInit, OnDestroy {
 
     SweetAlert.loading("Saving. Please wait.");
     try {
-      await this.commentsService.createComment(
-        this.form.value.token,
-        this.form.value.email,
-        {
+      if (this.token && this.request_id) {
+        await this.requestService.onRequestChanges({
+          fs_request_id: this.request_id,
+          token: this.token,
           name: this.name,
           comment: this.comment,
           request_change: this.request_change,
-          fs_request_id: this.request_id,
-          created_date: moment().format("YYYY-MM-DD HH:mm:ss"),
-        }
-      );
+        });
+      } else {
+        await this.commentsService.createComment(
+          this.form.value.token,
+          this.form.value.email,
+          {
+            name: this.name,
+            comment: this.comment,
+            request_change: this.request_change,
+            fs_request_id: this.request_id,
+            created_date: moment().format("YYYY-MM-DD HH:mm:ss"),
+          }
+        );
+      }
       this.comment = "";
       this.request_change = false;
       this.getComments();

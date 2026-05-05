@@ -70,6 +70,14 @@ export class RequestService extends DataService<any> {
     await firstValueFrom(this.http.get<any>(`${requestV2Url}/getChart?dateFrom=${dateFrom}&dateTo=${dateTo}&displayCustomers=${encodeURIComponent(displayCustomers)}&typeOfView=${typeOfView}`))
 
 
+  getPublicComments(requestId: number, token: string): Promise<any[]> {
+    return firstValueFrom(
+      this.http.get<{ id: number; comments: any[] }>(
+        `${publicRequestV2Url}/requests/${encodeURIComponent(String(requestId))}/comments?token=${encodeURIComponent(token)}`,
+      ),
+    ).then((response) => response?.comments ?? []);
+  }
+
   onRequestChanges(params, sendEmail = false) {
     const requestId = Number(params?.fs_request_id ?? params?.request_id ?? 0);
     const token = String(params?.token || '').trim();
