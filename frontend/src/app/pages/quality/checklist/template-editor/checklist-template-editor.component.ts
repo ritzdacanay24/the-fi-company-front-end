@@ -921,6 +921,9 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       return;
     }
 
+    const previousSelectedIndex = this.selectedFormItemIndex;
+    this.selectedFormItemIndex = null;
+
     this.templateForm.patchValue({
       name: this.stripVersionSuffixFromName(template.name),
       category: 'inspection',
@@ -948,8 +951,11 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     this.sampleImages = {};
     this.sampleVideos = {};
 
-    // Recursively flatten nested items structure to flat list
-    const flattenedItems = this.flattenNestedItems(template.items || []);
+    // If items are already flat (from API — have level/parent_id but no children arrays),
+    // use them directly. Only run flattenNestedItems for nested structures (e.g. imports).
+    const rawItems: any[] = template.items || [];
+    const isNested = rawItems.some((item: any) => Array.isArray(item?.children));
+    const flattenedItems = isNested ? this.flattenNestedItems(rawItems) : rawItems;
 
     // Add template items and their sample images
     if (flattenedItems.length > 0) {
@@ -1011,6 +1017,10 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     // Recalculate order indices to ensure correct outline numbering display
     this.recalculateOrderIndices();
 
+    if (this.activePanel === 'item' && previousSelectedIndex !== null && this.items.length > 0) {
+      this.selectedFormItemIndex = Math.min(previousSelectedIndex, this.items.length - 1);
+    }
+
     // Reinitialize navigation + tracking after loading items
     this.expandedItems.clear();
     this.initializeNavExpansion();
@@ -1036,8 +1046,8 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       // Add current item with level/parent_id metadata
       const flatItem = {
         ...item,
-        level: level,
-        parent_id: parentId
+        level: item?.level ?? level,
+        parent_id: item?.parent_id ?? parentId
       };
 
       // Remove children array from the item itself (we'll flatten it)
