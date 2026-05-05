@@ -1,0 +1,73 @@
+<html>
+  <body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f4f6f8; color: #1f2933;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 920px; background-color: #ffffff; border: 1px solid #dde3ea; border-radius: 10px; overflow: hidden;">
+            {{> email-header}}
+            <tr>
+              <td style="padding: 20px 24px; background-color: #0b5cab; color: #ffffff;">
+                <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Urgent: Action Needed on Open Safety Incidents</h2>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 24px; font-size: 14px; line-height: 1.6;">
+                <p style="margin: 0 0 12px 0;">Dear Team,</p>
+                <p style="margin: 0 0 12px 0;">
+                  I wanted to bring your attention to the safety report highlighting incidents that have been open for more than 7 days.
+                  Please help address these promptly to keep our workplace safe and compliant.
+                </p>
+                <p style="margin: 0 0 12px 0;"><strong>What We Need From You:</strong></p>
+                <p style="margin: 0 0 6px 0;">
+                  <strong>Review the Report:</strong>
+                  Open the report here:
+                  <a href="{{reportLink}}">Open Safety Incident List</a>
+                </p>
+                <p style="margin: 0 0 16px 0;">
+                  <strong>Update Status:</strong>
+                  If incidents are resolved, please update them to <strong>Closed</strong>.
+                </p>
+
+                <p style="margin: 0 0 12px 0;"><strong>Total open incidents over 7 days:</strong> {{totalOpenIncidents}}</p>
+
+                {{#if hasRows}}
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse; margin-bottom: 18px;">
+                  <thead>
+                    <tr>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">View</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Type of Incident</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Date of Incident</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Time of Incident</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Status</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Age (days)</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Corrective Action Owner</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {{#each rows}}
+                    <tr>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;"><a href="{{viewLink}}">View</a></td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{incidentType}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{incidentDate}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{incidentTime}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{status}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{age}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{correctiveActionOwner}}</td>
+                    </tr>
+                    {{/each}}
+                  </tbody>
+                </table>
+                {{else}}
+                <p style="margin: 0 0 16px 0; color: #15803d; font-weight: 600;">No open safety incidents older than 7 days were found.</p>
+                {{/if}}
+
+                <p style="margin: 0;">Thank you for your attention to this important matter.</p>
+              </td>
+            </tr>
+            {{> email-footer}}
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

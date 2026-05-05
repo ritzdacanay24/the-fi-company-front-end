@@ -3,6 +3,7 @@ import { RowDataPacket, ResultSetHeader } from 'mysql2/promise';
 import { QadOdbcService } from '@/shared/database/qad-odbc.service';
 import { MysqlService } from '@/shared/database/mysql.service';
 import { EmailService } from '@/shared/email/email.service';
+import { EmailTemplateService } from '@/shared/email/email-template.service';
 import { EmailNotificationService } from '@/nest/modules/email-notification/email-notification.service';
 import { UrlBuilder } from '@/shared/url/url-builder';
 import { ScheduledJobHandler, ScheduledJobRunResultDto } from './scheduled-job.handler';
@@ -62,6 +63,7 @@ export class OverdueOrdersHandler implements ScheduledJobHandler {
     private readonly qadOdbcService: QadOdbcService,
     private readonly mysqlService: MysqlService,
     private readonly emailService: EmailService,
+    private readonly emailTemplateService: EmailTemplateService,
     private readonly emailNotificationService: EmailNotificationService,
     private readonly urlBuilder: UrlBuilder,
   ) {}
@@ -639,7 +641,7 @@ export class OverdueOrdersHandler implements ScheduledJobHandler {
     return rows.filter((row) => this.normalizeDateKey(row.due_by) === todayKey).length;
   }
 
-  // ─── Email builder (matches overDueOrders.php SendMail() HTML layout) ────────
+  // ─── Email builder (HBS template) ─────────────────────────────────────────────
 
   private buildEmailBody(data: {
     overduePicking: RoutingOverdueRow[];
@@ -653,57 +655,61 @@ export class OverdueOrdersHandler implements ScheduledJobHandler {
     dueTodayShipping: number;
     dueTodayGraphics: number;
   }): string {
-    let html = 'Good morning team, <br><br><html><body>';
-
-    // Summary table (matches overDueOrders.php summary block)
-    html += '<table rules="all" style="border-color: #666;" cellpadding="5" border="1">';
-    html += "<tr style='background: #eee;'><td></td><td><strong>Picking</strong></td><td><strong>Production</strong></td><td><strong>QC</strong></td><td><strong>Shipping</strong></td><td><strong>Graphics</strong></td></tr>";
-    html += `<tr><td>Overdue Order Lines</td><td style='color:red;text-align:center'>${data.overduePicking.length}</td><td style='color:red;text-align:center'>${data.overdueProduction.length}</td><td style='color:red;text-align:center'>${data.overdueQc.length}</td><td style='color:red;text-align:center'>${data.overdueShipping.length}</td><td style='color:red;text-align:center'>${data.overdueGraphics.length}</td></tr>`;
-    html += `<tr><td>Order Lines Due Today</td><td style='text-align:center'>${data.dueTodayPicking}</td><td style='text-align:center'>${data.dueTodayProduction}</td><td style='text-align:center'>${data.dueTodayQc}</td><td style='text-align:center'>${data.dueTodayShipping}</td><td style='text-align:center'>${data.dueTodayGraphics}</td></tr>`;
-    html += '</table><br><hr>';
-
-    html += this.buildRoutingTable('Pick and Stage Material overdue work orders', data.overduePicking, 'Picking Due By');
-    html += this.buildRoutingTable('Production overdue work orders', data.overdueProduction, 'Production Due By');
-    html += this.buildRoutingTable('Final/Test QC overdue work orders', data.overdueQc, 'QC Due By');
-    html += this.buildShippingTable(data.overdueShipping);
-    html += this.buildGraphicsTable(data.overdueGraphics);
-
-    html += 'This automated email will be sent daily at 4am <br>Thank you.</body></html>';
-    return html;
+    return this.emailTemplateService.render('overdue-orders-report', {
+      summary: {
+        overduePicking: data.overduePicking.length,
+        overdueProduction: data.overdueProduction.length,
+        overdueQc: data.overdueQc.length,
+        overdueShipping: data.overdueShipping.length,
+        overdueGraphics: data.overdueGraphics.length,
+        dueTodayPicking: data.dueTodayPicking,
+        dueTodayProduction: data.dueTodayProduction,
+        dueTodayQc: data.dueTodayQc,
+        dueTodayShipping: data.dueTodayShipping,
+        dueTodayGraphics: data.dueTodayGraphics,
+      },
+      pickAndStage: this.mapRoutingRows(data.overduePicking),
+      production: this.mapRoutingRows(data.overdueProduction),
+      qc: this.mapRoutingRows(data.overdueQc),
+      shipping: this.mapShippingRows(data.overdueShipping),
+      graphics: this.mapGraphicsRows(data.overdueGraphics),
+      hasPickAndStage: data.overduePicking.length > 0,
+      hasProduction: data.overdueProduction.length > 0,
+      hasQc: data.overdueQc.length > 0,
+      hasShipping: data.overdueShipping.length > 0,
+      hasGraphics: data.overdueGraphics.length > 0,
+    });
   }
 
-  private buildRoutingTable(title: string, rows: RoutingOverdueRow[], dueDateLabel: string): string {
-    let html = `<h3>${title}: <span style='color:red'>${rows.length} lines</span></h3>`;
-    html += '<table rules="all" style="border-color: #666;" cellpadding="5" border="1">';
-    html += `<tr style='background: #eee;'><td><strong>Work Order #</strong></td><td><strong>Part #</strong></td><td><strong>Open Qty</strong></td><td><strong>${dueDateLabel}</strong></td></tr>`;
-    for (const row of rows) {
-      const link = this.urlBuilder.operations.woLookup(row.order_number);
-      html += `<tr><td><a href='${link}' target='_parent'>${row.order_number}</a></td><td>${row.part_number}</td><td>${Number(row.open_qty || 0).toFixed(2)}</td><td>${row.due_by}</td></tr>`;
-    }
-    html += '</table><br><hr>';
-    return html;
+  private mapRoutingRows(rows: RoutingOverdueRow[]): Array<{ workOrder: string; workOrderLink: string; partNumber: string; openQty: string; dueBy: string }> {
+    return rows.map((row) => ({
+      workOrder: row.order_number,
+      workOrderLink: this.urlBuilder.operations.woLookup(row.order_number),
+      partNumber: row.part_number,
+      openQty: Number(row.open_qty || 0).toFixed(2),
+      dueBy: row.due_by,
+    }));
   }
 
-  private buildShippingTable(rows: ShippingOverdueRow[]): string {
-    let html = `<h3>Shipping overdue orders: <span style='color:red'>${rows.length} lines</span></h3>`;
-    html += '<table rules="all" style="border-color: #666;" cellpadding="5" border="1">';
-    html += "<tr style='background: #eee;'><td><strong>SO #</strong></td><td><strong>Line #</strong></td><td><strong>Part #</strong></td><td><strong>Open Qty</strong></td><td><strong>Due date</strong></td></tr>";
-    for (const row of rows) {
-      const link = this.urlBuilder.operations.orderLookup(row.sod_nbr);
-      html += `<tr><td><a href='${link}' target='_parent'>${row.sod_nbr}</a></td><td>${row.sod_line}</td><td>${row.sod_part}</td><td>${Number(row.open_qty || 0).toFixed(2)}</td><td>${row.sod_due_date}</td></tr>`;
-    }
-    html += '</table><br><hr>';
-    return html;
+  private mapShippingRows(rows: ShippingOverdueRow[]): Array<{ salesOrder: string; salesOrderLink: string; line: number; partNumber: string; openQty: string; dueDate: string }> {
+    return rows.map((row) => ({
+      salesOrder: row.sod_nbr,
+      salesOrderLink: this.urlBuilder.operations.orderLookup(row.sod_nbr),
+      line: row.sod_line,
+      partNumber: row.sod_part,
+      openQty: Number(row.open_qty || 0).toFixed(2),
+      dueDate: row.sod_due_date,
+    }));
   }
 
-  private buildGraphicsTable(rows: GraphicsOverdueRow[]): string {
-    let html = `<h3>Graphics overdue orders: <span style='color:red'>${rows.length} lines</span></h3>`;
-    html += '<table rules="all" style="border-color: #666;" cellpadding="5" border="1">';
-    html += "<tr style='background: #eee;'><td><strong>WO #</strong></td><td><strong>Graphics Status</strong></td><td><strong>SO #</strong></td><td><strong>Part #</strong></td><td><strong>Qty Needed</strong></td><td><strong>Due date</strong></td></tr>";
-    for (const row of rows) {
-      html += `<tr><td>${row.wo_number}</td><td>${row.graphics_status}</td><td>${row.order_num}</td><td>${row.item_number}</td><td>${Number(row.open_qty || 0).toFixed(2)}</td><td>${row.due_date}</td></tr>`;
-    }
-    html += '</table><br><hr>';
-    return html;
+  private mapGraphicsRows(rows: GraphicsOverdueRow[]): Array<{ workOrder: string; status: string; salesOrder: string; partNumber: string; qtyNeeded: string; dueDate: string }> {
+    return rows.map((row) => ({
+      workOrder: row.wo_number,
+      status: row.graphics_status,
+      salesOrder: row.order_num,
+      partNumber: row.item_number,
+      qtyNeeded: Number(row.open_qty || 0).toFixed(2),
+      dueDate: row.due_date,
+    }));
   }
 }

@@ -1,0 +1,80 @@
+<html>
+  <body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f4f6f8; color: #1f2933;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 760px; background-color: #ffffff; border: 1px solid #dde3ea; border-radius: 10px; overflow: hidden;">
+            {{> email-header}}
+            <tr>
+              <td style="padding: 20px 24px; background-color: #0b5cab; color: #ffffff;">
+                <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Daily Forklift and Vehicle Summary Report</h2>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 24px; font-size: 14px; line-height: 1.6;">
+                <p style="margin: 0 0 10px 0;"><strong>Date:</strong> {{reportDate}}</p>
+                <p style="margin: 0 0 18px 0;"><strong>Total inspections:</strong> {{totalInspections}}</p>
+                <p style="margin: 0 0 18px 0;"><strong>Total tracked assets:</strong> {{totalTrackedAssets}}</p>
+
+                {{#if hasVehicleInspections}}
+                <h3 style="margin: 0 0 8px 0; font-size: 16px;">Vehicle Inspections</h3>
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse; margin-bottom: 18px;">
+                  <thead>
+                    <tr>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Asset Name</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Type</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Inspector</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Status</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Notes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {{#each vehicleInspections}}
+                    <tr>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{assetName}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{assetType}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{inspectorName}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px; color: {{statusColor}}; font-weight: 700;">{{statusText}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{notes}}</td>
+                    </tr>
+                    {{/each}}
+                  </tbody>
+                </table>
+                {{/if}}
+
+                {{#if hasForkliftInspections}}
+                <h3 style="margin: 0 0 8px 0; font-size: 16px;">Forklift Inspections</h3>
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse; margin-bottom: 18px;">
+                  <thead>
+                    <tr>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Asset Name</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Type</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Inspector</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Status</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Notes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {{#each forkliftInspections}}
+                    <tr>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{assetName}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{assetType}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{inspectorName}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px; color: {{statusColor}}; font-weight: 700;">{{statusText}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{notes}}</td>
+                    </tr>
+                    {{/each}}
+                  </tbody>
+                </table>
+                {{/if}}
+
+                <p style="margin: 0; color: #5a6b7b; font-size: 12px;">This is an automated message from The Fi Company Dashboard.</p>
+              </td>
+            </tr>
+            {{> email-footer}}
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

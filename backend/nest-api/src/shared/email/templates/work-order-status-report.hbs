@@ -1,0 +1,147 @@
+<html>
+  <body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f4f6f8; color: #1f2933;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 1040px; background-color: #ffffff; border: 1px solid #dde3ea; border-radius: 10px; overflow: hidden;">
+            {{> email-header}}
+            <tr>
+              <td style="padding: 20px 24px; background-color: #0b5cab; color: #ffffff;">
+                <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Work Order Status Report</h2>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 24px; font-size: 14px; line-height: 1.6;">
+                <p style="margin: 0 0 14px 0;">Good morning team,</p>
+
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse; margin-bottom: 16px;">
+                  <thead>
+                    <tr>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Ready to Close</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Picking Issues</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td align="center" style="border: 1px solid #dde3ea; padding: 8px; color: #b91c1c; font-weight: 700;">{{summary.readyToClose}} order(s)</td>
+                      <td align="center" style="border: 1px solid #dde3ea; padding: 8px; color: #b91c1c; font-weight: 700;">{{summary.pickingIssues}} order(s)</td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <h3 style="margin: 0 0 8px 0;">Ready to Close: <span style="color: #b91c1c;">{{summary.readyToClose}}</span></h3>
+                {{#if hasReadyToClose}}
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse; margin-bottom: 16px;">
+                  <thead>
+                    <tr>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Work Order #</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Line #</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Due Date</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Part</th>
+                      <th align="right" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Qty Ordered</th>
+                      <th align="right" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Qty Completed</th>
+                      <th align="right" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Qty Required</th>
+                      <th align="right" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Qty Issued</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Status</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Age</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {{#each readyToCloseRows}}
+                    <tr>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;"><a href="{{workOrderLink}}">{{workOrder}}</a></td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{line}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{dueDate}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{part}}</td>
+                      <td align="right" style="border: 1px solid #dde3ea; padding: 8px;">{{qtyOrdered}}</td>
+                      <td align="right" style="border: 1px solid #dde3ea; padding: 8px;">{{qtyCompleted}}</td>
+                      <td align="right" style="border: 1px solid #dde3ea; padding: 8px;">{{qtyRequired}}</td>
+                      <td align="right" style="border: 1px solid #dde3ea; padding: 8px;">{{qtyIssued}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{status}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{ageText}}</td>
+                    </tr>
+                    {{/each}}
+                  </tbody>
+                </table>
+                {{else}}
+                <p style="margin: 0 0 16px 0; color: #15803d;">No work orders ready to close.</p>
+                {{/if}}
+
+                <h3 style="margin: 0 0 8px 0;">Picking Issues: <span style="color: #b91c1c;">{{summary.pickingIssues}}</span></h3>
+                {{#if hasPickingIssues}}
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse; margin-bottom: 16px;">
+                  <thead>
+                    <tr>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Work Order #</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Line #</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Due Date</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Part</th>
+                      <th align="right" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Qty Ordered</th>
+                      <th align="right" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Qty Completed</th>
+                      <th align="right" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Qty Required</th>
+                      <th align="right" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Qty Issued</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Status</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Age</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {{#each pickingIssueRows}}
+                    <tr>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;"><a href="{{workOrderLink}}">{{workOrder}}</a></td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{line}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{dueDate}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{part}}</td>
+                      <td align="right" style="border: 1px solid #dde3ea; padding: 8px;">{{qtyOrdered}}</td>
+                      <td align="right" style="border: 1px solid #dde3ea; padding: 8px;">{{qtyCompleted}}</td>
+                      <td align="right" style="border: 1px solid #dde3ea; padding: 8px;">{{qtyRequired}}</td>
+                      <td align="right" style="border: 1px solid #dde3ea; padding: 8px;">{{qtyIssued}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{status}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{ageText}}</td>
+                    </tr>
+                    {{/each}}
+                  </tbody>
+                </table>
+                {{else}}
+                <p style="margin: 0 0 16px 0; color: #15803d;">No work orders with picking issues.</p>
+                {{/if}}
+
+                <h3 style="margin: 0 0 8px 0;">WOs Over Completed: <span style="color: #b91c1c;">{{overCompletedCount}}</span></h3>
+                {{#if hasOverCompleted}}
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse; margin-bottom: 16px;">
+                  <thead>
+                    <tr>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Work Order #</th>
+                      <th align="right" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Operation</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Work Center</th>
+                      <th align="right" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Qty Ordered</th>
+                      <th align="right" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Qty Completed</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {{#each overCompletedRows}}
+                    <tr>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;"><a href="{{workOrderLink}}">{{workOrder}}</a></td>
+                      <td align="right" style="border: 1px solid #dde3ea; padding: 8px;">{{operation}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{workCenter}}</td>
+                      <td align="right" style="border: 1px solid #dde3ea; padding: 8px;">{{qtyOrdered}}</td>
+                      <td align="right" style="border: 1px solid #dde3ea; padding: 8px;">{{qtyCompleted}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{status}}</td>
+                    </tr>
+                    {{/each}}
+                  </tbody>
+                </table>
+                {{else}}
+                <p style="margin: 0 0 16px 0; color: #15803d;">No over-completed work orders in Q status.</p>
+                {{/if}}
+
+                <p style="margin: 0;">This automated email is sent daily at 5am. Thank you.</p>
+              </td>
+            </tr>
+            {{> email-footer}}
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

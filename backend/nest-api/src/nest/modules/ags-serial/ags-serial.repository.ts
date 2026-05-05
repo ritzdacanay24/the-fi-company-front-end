@@ -260,6 +260,30 @@ export class AgsSerialRepository extends BaseRepository<AgsSerialRecord> {
     return String(weekNo).padStart(2, '0');
   }
 
+  /**
+   * Simple: EF + MMDDYY + 4-digit sequence (1000-9999)
+   * If week changed, reset to 1000. Otherwise increment.
+   */
+  private generateNextAgsSerialNumber(
+    currentSequence: number,
+    lastWeekNumber: string,
+  ): string {
+    const now = new Date();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const yy = String(now.getFullYear()).slice(-2);
+    const dateSequence = `${mm}${dd}${yy}`;
+
+    const currentWeekNumber = this.getWeekNumber(now.toISOString());
+    const sequence =
+      currentWeekNumber === String(lastWeekNumber).padStart(2, '0')
+        ? currentSequence + 1
+        : 1000;
+
+    const sequenceStr = String(sequence).padStart(4, '0');
+    return `EF${dateSequence}${sequenceStr}`;
+  }
+
   private generateSerialNumber(
     previousSequence: number,
     lastRecordedWeekNumber: string,
@@ -450,13 +474,31 @@ export class AgsSerialRepository extends BaseRepository<AgsSerialRecord> {
     const assignments = payload.assignments || [];
     const userFullName = payload.user_full_name || 'System';
     const nowDate = new Date().toISOString().slice(0, 19).replace('T', ' ');
-    const batchId = `AGS-${Date.now()}`;
 
     const result = await this.mysqlService.withTransaction(async (connection) => {
       const rows: Array<{ generated_asset_number: string; customer_asset_id: number; serialNumber?: string }> = [];
       const conn = connection as {
         execute: <T = unknown>(sql: string, params?: Record<string, unknown>) => Promise<[T, unknown]>;
       };
+
+      // Query last record ONCE at the start
+      const [lastRows] = await conn.execute<Array<RowDataPacket & { generatedAssetNumber: string; dateCreated: string }>>(
+        `
+          SELECT RIGHT(generated_SG_asset, 4) AS generatedAssetNumber,
+                 DATE(timeStamp) AS dateCreated
+          FROM \`${TABLE}\`
+          WHERE manualUpdate IS NULL OR manualUpdate = ''
+          ORDER BY id DESC
+          LIMIT 1
+        `,
+      );
+
+      const lastRecord = lastRows[0];
+      const lastSequence = Number(lastRecord?.generatedAssetNumber || 999);
+      const lastWeekNumber = this.getWeekNumber(String(lastRecord?.dateCreated || nowDate));
+
+      // Track current sequence in memory as we loop
+      let currentSequence = lastSequence;
 
       for (const assignment of assignments) {
         const serialNumber = String(assignment.serialNumber || '');
@@ -473,22 +515,9 @@ export class AgsSerialRepository extends BaseRepository<AgsSerialRecord> {
         let generatedAssetNumber = String(assignment.generated_SG_asset || '');
 
         if (!useManualAsset) {
-          const [lastRows] = await conn.execute<Array<RowDataPacket & { generatedAssetNumber: string; dateCreated: string }>>(
-            `
-              SELECT RIGHT(generated_SG_asset, 4) AS generatedAssetNumber,
-                     DATE(timeStamp) AS dateCreated
-              FROM \`${TABLE}\`
-              WHERE manualUpdate IS NULL OR manualUpdate = ''
-              ORDER BY id DESC
-              LIMIT 1
-            `,
-          );
-
-          const prev = lastRows[0];
-          generatedAssetNumber = this.generateSerialNumber(
-            Number(prev?.generatedAssetNumber || 999),
-            this.getWeekNumber(String(prev?.dateCreated || nowDate)),
-          );
+          // Use the tracked sequence, increment it
+          generatedAssetNumber = this.generateNextAgsSerialNumber(currentSequence, lastWeekNumber);
+          currentSequence = Number(generatedAssetNumber.slice(-4)); // Extract last 4 digits for next iteration
         }
 
         const [insertResult] = await conn.execute<ResultSetHeader>(
@@ -527,7 +556,7 @@ export class AgsSerialRepository extends BaseRepository<AgsSerialRecord> {
           customerAssetId: Number(insertResult.insertId),
           generatedAssetNumber,
           assignment,
-          batchId,
+          batchId: `AGS-${Date.now()}`,
           userFullName,
           ulLabel,
         });

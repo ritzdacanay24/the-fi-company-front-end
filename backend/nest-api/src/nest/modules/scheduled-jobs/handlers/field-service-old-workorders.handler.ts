@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { RowDataPacket } from 'mysql2/promise';
 import { MysqlService } from '@/shared/database/mysql.service';
 import { EmailService } from '@/shared/email/email.service';
+import { EmailTemplateService } from '@/shared/email/email-template.service';
 import { EmailNotificationService } from '@/nest/modules/email-notification/email-notification.service';
 import { ScheduledJobHandler, ScheduledJobRunResultDto } from './scheduled-job.handler';
 
@@ -29,6 +30,7 @@ export class FieldServiceOldWorkOrdersHandler implements ScheduledJobHandler {
     private readonly mysqlService: MysqlService,
     private readonly emailService: EmailService,
     private readonly emailNotificationService: EmailNotificationService,
+    private readonly emailTemplateService: EmailTemplateService,
   ) {}
 
   async handle(trigger: 'manual' | 'cron'): Promise<ScheduledJobRunResultDto> {
@@ -63,7 +65,8 @@ export class FieldServiceOldWorkOrdersHandler implements ScheduledJobHandler {
 
       this.logger.log(`[${trigger}] field-service-old-workorders -> found ${rows.length} overdue WOs`);
 
-      if (rows.length > 0) {
+      const shouldSendReport = rows.length > 0 || trigger === 'manual';
+      if (shouldSendReport) {
         const recipientRows = await this.emailNotificationService.find({ location: 'overdue_field_service_workorder' });
         const to = (recipientRows as Array<{ email?: string }>)
           .map((r) => r.email)
@@ -71,34 +74,30 @@ export class FieldServiceOldWorkOrdersHandler implements ScheduledJobHandler {
 
         const toFinal = to.length > 0 ? to : ['ritz.dacanay@the-fi-company.com'];
 
-        let tableRows = '';
-        for (const row of rows) {
-          tableRows += `<tr>
-            <td>${row.fs_scheduler_id}</td>
-            <td>${row.id}</td>
-            <td>${row.createdDate}</td>
-            <td>${row.status}</td>
-            <td>${row.service_type}</td>
-            <td>${row.customer}</td>
-            <td>${row.property}</td>
-            <td>${row.sign_theme}</td>
-            <td>${row.installers ?? ''}</td>
-            <td>${row.age}</td>
-          </tr>`;
-        }
+        const templateRows = rows.map((row) => ({
+          fsSchedulerId: row.fs_scheduler_id,
+          ticketId: row.id,
+          createdDate: row.createdDate,
+          status: row.status,
+          serviceType: row.service_type,
+          customer: row.customer,
+          property: row.property,
+          signTheme: row.sign_theme,
+          installers: row.installers ?? '',
+          age: row.age,
+        }));
 
-        const html = `Total of ${rows.length} overdue work orders.<br>
-          This report is generated daily at 9am. These orders need immediate action — techs must close them if complete.<br><br>
-          <table rules="all" style="border-color:#666" cellpadding="2" border="1">
-            <tr style="background:#eee">
-              <th>FSID</th><th>Ticket #</th><th>Ticket Created On</th><th>Status</th>
-              <th>Service Type</th><th>Customer</th><th>Property</th><th>Sign Theme</th>
-              <th>Installers</th><th>Age</th>
-            </tr>
-            ${tableRows}
-          </table>`;
+        const html = this.emailTemplateService.render('field-service-old-workorders', {
+          totalOverdue: rows.length,
+          hasRows: rows.length > 0,
+          rows: templateRows,
+        });
 
-        await this.emailService.sendMail({ to: toFinal, subject: 'Overdue Field Service Open Work Orders', html });
+        await this.emailService.sendMail({
+          to: toFinal,
+          subject: 'Action Needed on Field Service Open Work Orders',
+          html,
+        });
       }
 
       const durationMs = Date.now() - startedAtMs;

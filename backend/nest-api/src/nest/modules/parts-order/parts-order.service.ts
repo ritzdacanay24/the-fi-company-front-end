@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { ConfigService } from '@nestjs/config';
 import { QadOdbcService } from '@/shared/database/qad-odbc.service';
 import { EmailService } from '@/shared/email/email.service';
+import { EmailTemplateService } from '@/shared/email/email-template.service';
 import { PartsOrderRepository } from './parts-order.repository';
 
 interface PartsOrderRow extends Record<string, unknown> {
@@ -20,6 +21,7 @@ export class PartsOrderService {
     private readonly repository: PartsOrderRepository,
     private readonly qadOdbcService: QadOdbcService,
     private readonly emailService: EmailService,
+    private readonly emailTemplateService: EmailTemplateService,
     private readonly configService: ConfigService,
   ) {}
 
@@ -291,43 +293,26 @@ export class PartsOrderService {
     const contactPhone = String(payload.contact_phone_number || '');
     const instructions = String(payload.instructions || '');
     const soNumber = String(payload.so_number || '');
-    const details = this.parseDetails(payload.details);
+    const details = this.parseDetails(payload.details).map((row) => ({
+      partNumber: String(row.part_number || ''),
+      billable: String(row.billable || ''),
+      qty: String(row.qty || ''),
+    }));
 
-    const detailsRows = details
-      .map((row) => {
-        const part = String(row.part_number || '');
-        const billable = String(row.billable || '');
-        const qty = String(row.qty || '');
-        return `<tr><td>${part}</td><td>${billable}</td><td>${qty}</td></tr>`;
-      })
-      .join('');
-
-    const detailsTable = details.length
-      ? `
-        <p>Parts</p>
-        <table border="1" cellpadding="5" cellspacing="0">
-          <tr><th>Part Number</th><th>Billable</th><th>Qty</th></tr>
-          ${detailsRows}
-        </table>
-      `
-      : '';
-
-    const html = `
-      <html><body>
-        <p>Parts Order Request</p>
-        ${soNumber ? `<p>SV Number: ${soNumber}</p>` : ''}
-        <p>Parts Order ID #: ${id}</p>
-        <p>OEM: ${oem}</p>
-        <p>Casino Name: ${casinoName}</p>
-        <p>Arrival Date: ${arrivalDate}</p>
-        <p>Address: ${address}</p>
-        <p>Contact: ${contactName}</p>
-        <p>Contact Phone Number: ${contactPhone}</p>
-        <p>${instructions}</p>
-        ${detailsTable}
-        <p>Please click <a href="${link}">here</a> to view request.</p>
-      </body></html>
-    `;
+    const html = this.emailTemplateService.render('parts-order-request', {
+      id,
+      soNumber,
+      oem,
+      casinoName,
+      arrivalDate,
+      address,
+      contactName,
+      contactPhone,
+      instructions,
+      details,
+      hasDetails: details.length > 0,
+      link,
+    });
 
     await this.emailService.sendMail({
       to: recipients,

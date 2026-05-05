@@ -1437,14 +1437,30 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
       const allAssignments = batchResponse?.data || [];
       
       // Filter to only assignments with matching batch_id
-      const batchAssignments = allAssignments.filter((a: any) => a.batch_id === batchId);
+      const batchAssignmentsFromView = allAssignments.filter((a: any) => a.batch_id === batchId);
 
-      if (!batchAssignments || batchAssignments.length === 0) {
+      if (!batchAssignmentsFromView || batchAssignmentsFromView.length === 0) {
         console.warn('No batch assignments found for batch_id:', batchId);
         return;
       }
 
-      console.log(`Found ${batchAssignments.length} assignments in batch ${batchId}`);
+      console.log(`Found ${batchAssignmentsFromView.length} assignments in batch ${batchId}`);
+
+      // Fetch full details for each assignment to ensure we have generated_asset_number
+      const batchAssignments = [];
+      for (const assignment of batchAssignmentsFromView) {
+        try {
+          const response = await this.serialAssignmentsService.getAssignmentById(this.getAssignmentId(assignment));
+          const detailedAssignment = response?.data || response;
+          if (detailedAssignment) {
+            batchAssignments.push(detailedAssignment);
+          }
+        } catch (err) {
+          console.warn(`Failed to fetch details for assignment ${assignment.unique_id}:`, err);
+          // Use the view data as fallback
+          batchAssignments.push(assignment);
+        }
+      }
 
       // Build the print data
       const printData = {

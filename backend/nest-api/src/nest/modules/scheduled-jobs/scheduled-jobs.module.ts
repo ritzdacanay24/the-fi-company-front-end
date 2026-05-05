@@ -30,6 +30,8 @@ import {
   FsJobReportEveningHandler,
   FsJobNoticeHandler,
   SerialStockAlertHandler,
+  OverdueQirHandler,
+  OverdueSafetyIncidentHandler,
 } from './handlers';
 
 @Module({
@@ -59,6 +61,8 @@ import {
     FsJobReportEveningHandler,
     FsJobNoticeHandler,
     SerialStockAlertHandler,
+    OverdueQirHandler,
+    OverdueSafetyIncidentHandler,
   ],
 })
 export class ScheduledJobsModule {}

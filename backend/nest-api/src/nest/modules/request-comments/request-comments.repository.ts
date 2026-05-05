@@ -20,6 +20,8 @@ export interface RequestEmailContextRow extends RowDataPacket {
   id: number;
   subject: string | null;
   token: string | null;
+  email: string | null;
+  cc_email: string | null;
   date_of_service: string | null;
   start_time: string | null;
   customer_co_number: string | null;
@@ -73,6 +75,8 @@ export class RequestCommentsRepository extends BaseRepository<RowDataPacket> {
         SELECT id,
                subject,
                token,
+           email,
+           cc_email,
                date_of_service,
                start_time,
                customer_co_number,

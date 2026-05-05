@@ -88,6 +88,21 @@ export class AttachmentsService extends DataService<any> {
     const payload = this.normalizeV2Payload(file);
     return firstValueFrom(this.http.post(`${publicFieldServiceAttachmentsUrl}`, payload));
   }
+
+  uploadRequestAttachmentPublic(requestId: number | string, token: string, file: File) {
+    const payload = new FormData();
+    payload.append('file', file);
+
+    const encodedId = encodeURIComponent(String(requestId));
+    const encodedToken = encodeURIComponent(String(token || '').trim());
+
+    return firstValueFrom(
+      this.http.post(
+        `${publicFieldServiceBaseUrl}/requests/${encodedId}/attachments?token=${encodedToken}`,
+        payload,
+      ),
+    );
+  }
   
   getAttachmentByQirId(id: any) {
     return firstValueFrom(this.http.get<any[]>(

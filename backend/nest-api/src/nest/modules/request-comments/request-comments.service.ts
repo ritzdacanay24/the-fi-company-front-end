@@ -69,11 +69,24 @@ export class RequestCommentsService {
     token?: string,
   ): Promise<void> {
     try {
+      const numericRequestId = Number(commentData.fs_request_id || 0);
+      const requestContext =
+        Number.isFinite(numericRequestId) && numericRequestId > 0
+          ? await this.repository.getRequestEmailContext(numericRequestId)
+          : null;
+
       const configuredRecipients = await this.emailNotificationsService.getRecipients(
         'field_service_comment_notification_request_form',
       );
+      const requestContextEmail = this.parseRecipients(String(requestContext?.email || ''));
+      const requestContextCcEmail = this.parseRecipients(String(requestContext?.cc_email || ''));
       const fallbackRecipients = this.parseRecipients(toEmail);
-      const recipients = configuredRecipients.length > 0 ? configuredRecipients : fallbackRecipients;
+      const recipients = this.mergeRecipients(
+        configuredRecipients,
+        requestContextEmail,
+        requestContextCcEmail,
+        fallbackRecipients,
+      );
 
       if (recipients.length === 0) {
         this.logger.warn(
@@ -81,12 +94,6 @@ export class RequestCommentsService {
         );
         return;
       }
-
-      const numericRequestId = Number(commentData.fs_request_id || 0);
-      const requestContext =
-        Number.isFinite(numericRequestId) && numericRequestId > 0
-          ? await this.repository.getRequestEmailContext(numericRequestId)
-          : null;
 
       const requestId = String(commentData.fs_request_id || '').trim();
       const createdBy = String(commentData.name || '').trim();
@@ -141,6 +148,25 @@ export class RequestCommentsService {
       .split(/[;,]/)
       .map((email) => email.trim())
       .filter(Boolean);
+  }
+
+  private mergeRecipients(...groups: string[][]): string[] {
+    const seen = new Set<string>();
+    const merged: string[] = [];
+
+    for (const group of groups) {
+      for (const email of group) {
+        const normalized = String(email || '').trim().toLowerCase();
+        if (!normalized || seen.has(normalized)) {
+          continue;
+        }
+
+        seen.add(normalized);
+        merged.push(normalized);
+      }
+    }
+
+    return merged;
   }
 
   private withQuery(

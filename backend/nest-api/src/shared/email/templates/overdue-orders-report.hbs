@@ -1,0 +1,193 @@
+<html>
+  <body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f4f6f8; color: #1f2933;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 1040px; background-color: #ffffff; border: 1px solid #dde3ea; border-radius: 10px; overflow: hidden;">
+            {{> email-header}}
+            <tr>
+              <td style="padding: 20px 24px; background-color: #0b5cab; color: #ffffff;">
+                <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Overdue Work Orders Report</h2>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 24px; font-size: 14px; line-height: 1.6;">
+                <p style="margin: 0 0 14px 0;">Good morning team,</p>
+
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse; margin-bottom: 16px;">
+                  <thead>
+                    <tr>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;"></th>
+                      <th align="center" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Picking</th>
+                      <th align="center" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Production</th>
+                      <th align="center" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">QC</th>
+                      <th align="center" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Shipping</th>
+                      <th align="center" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Graphics</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">Overdue Order Lines</td>
+                      <td align="center" style="border: 1px solid #dde3ea; padding: 8px; color: #b91c1c; font-weight: 700;">{{summary.overduePicking}}</td>
+                      <td align="center" style="border: 1px solid #dde3ea; padding: 8px; color: #b91c1c; font-weight: 700;">{{summary.overdueProduction}}</td>
+                      <td align="center" style="border: 1px solid #dde3ea; padding: 8px; color: #b91c1c; font-weight: 700;">{{summary.overdueQc}}</td>
+                      <td align="center" style="border: 1px solid #dde3ea; padding: 8px; color: #b91c1c; font-weight: 700;">{{summary.overdueShipping}}</td>
+                      <td align="center" style="border: 1px solid #dde3ea; padding: 8px; color: #b91c1c; font-weight: 700;">{{summary.overdueGraphics}}</td>
+                    </tr>
+                    <tr>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">Order Lines Due Today</td>
+                      <td align="center" style="border: 1px solid #dde3ea; padding: 8px;">{{summary.dueTodayPicking}}</td>
+                      <td align="center" style="border: 1px solid #dde3ea; padding: 8px;">{{summary.dueTodayProduction}}</td>
+                      <td align="center" style="border: 1px solid #dde3ea; padding: 8px;">{{summary.dueTodayQc}}</td>
+                      <td align="center" style="border: 1px solid #dde3ea; padding: 8px;">{{summary.dueTodayShipping}}</td>
+                      <td align="center" style="border: 1px solid #dde3ea; padding: 8px;">{{summary.dueTodayGraphics}}</td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <h3 style="margin: 0 0 8px 0;">Pick and Stage Material overdue work orders: <span style="color: #b91c1c;">{{summary.overduePicking}} lines</span></h3>
+                {{#if hasPickAndStage}}
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse; margin-bottom: 16px;">
+                  <thead>
+                    <tr>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Work Order #</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Part #</th>
+                      <th align="right" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Open Qty</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Picking Due By</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {{#each pickAndStage}}
+                    <tr>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;"><a href="{{workOrderLink}}">{{workOrder}}</a></td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{partNumber}}</td>
+                      <td align="right" style="border: 1px solid #dde3ea; padding: 8px;">{{openQty}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{dueBy}}</td>
+                    </tr>
+                    {{/each}}
+                  </tbody>
+                </table>
+                {{else}}
+                <p style="margin: 0 0 16px 0; color: #15803d;">No overdue picking work orders.</p>
+                {{/if}}
+
+                <h3 style="margin: 0 0 8px 0;">Production overdue work orders: <span style="color: #b91c1c;">{{summary.overdueProduction}} lines</span></h3>
+                {{#if hasProduction}}
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse; margin-bottom: 16px;">
+                  <thead>
+                    <tr>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Work Order #</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Part #</th>
+                      <th align="right" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Open Qty</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Production Due By</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {{#each production}}
+                    <tr>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;"><a href="{{workOrderLink}}">{{workOrder}}</a></td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{partNumber}}</td>
+                      <td align="right" style="border: 1px solid #dde3ea; padding: 8px;">{{openQty}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{dueBy}}</td>
+                    </tr>
+                    {{/each}}
+                  </tbody>
+                </table>
+                {{else}}
+                <p style="margin: 0 0 16px 0; color: #15803d;">No overdue production work orders.</p>
+                {{/if}}
+
+                <h3 style="margin: 0 0 8px 0;">Final/Test QC overdue work orders: <span style="color: #b91c1c;">{{summary.overdueQc}} lines</span></h3>
+                {{#if hasQc}}
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse; margin-bottom: 16px;">
+                  <thead>
+                    <tr>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Work Order #</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Part #</th>
+                      <th align="right" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Open Qty</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">QC Due By</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {{#each qc}}
+                    <tr>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;"><a href="{{workOrderLink}}">{{workOrder}}</a></td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{partNumber}}</td>
+                      <td align="right" style="border: 1px solid #dde3ea; padding: 8px;">{{openQty}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{dueBy}}</td>
+                    </tr>
+                    {{/each}}
+                  </tbody>
+                </table>
+                {{else}}
+                <p style="margin: 0 0 16px 0; color: #15803d;">No overdue QC work orders.</p>
+                {{/if}}
+
+                <h3 style="margin: 0 0 8px 0;">Shipping overdue orders: <span style="color: #b91c1c;">{{summary.overdueShipping}} lines</span></h3>
+                {{#if hasShipping}}
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse; margin-bottom: 16px;">
+                  <thead>
+                    <tr>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">SO #</th>
+                      <th align="right" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Line #</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Part #</th>
+                      <th align="right" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Open Qty</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Due Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {{#each shipping}}
+                    <tr>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;"><a href="{{salesOrderLink}}">{{salesOrder}}</a></td>
+                      <td align="right" style="border: 1px solid #dde3ea; padding: 8px;">{{line}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{partNumber}}</td>
+                      <td align="right" style="border: 1px solid #dde3ea; padding: 8px;">{{openQty}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{dueDate}}</td>
+                    </tr>
+                    {{/each}}
+                  </tbody>
+                </table>
+                {{else}}
+                <p style="margin: 0 0 16px 0; color: #15803d;">No overdue shipping orders.</p>
+                {{/if}}
+
+                <h3 style="margin: 0 0 8px 0;">Graphics overdue orders: <span style="color: #b91c1c;">{{summary.overdueGraphics}} lines</span></h3>
+                {{#if hasGraphics}}
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse; margin-bottom: 16px;">
+                  <thead>
+                    <tr>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">WO #</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Graphics Status</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">SO #</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Part #</th>
+                      <th align="right" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Qty Needed</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Due Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {{#each graphics}}
+                    <tr>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{workOrder}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{status}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{salesOrder}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{partNumber}}</td>
+                      <td align="right" style="border: 1px solid #dde3ea; padding: 8px;">{{qtyNeeded}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{dueDate}}</td>
+                    </tr>
+                    {{/each}}
+                  </tbody>
+                </table>
+                {{else}}
+                <p style="margin: 0 0 16px 0; color: #15803d;">No overdue graphics orders.</p>
+                {{/if}}
+
+                <p style="margin: 0;">This automated email is sent daily at 4am. Thank you.</p>
+              </td>
+            </tr>
+            {{> email-footer}}
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

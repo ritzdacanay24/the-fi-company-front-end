@@ -170,4 +170,20 @@ export const SCHEDULED_JOB_DEFINITIONS: ScheduledJobDefinition[] = [
     active: true,
     note: 'Daily 7 AM PT — emails serial_stock_alert recipients when any pool is at or below threshold.',
   },
+  {
+    id: 'overdue-qir',
+    name: 'Overdue Quality Incidents',
+    cron: '0 9 * * 1-5',
+    url: 'nest://scheduled-jobs/overdue-qir',
+    active: false,
+    note: 'Action Required report for open quality incidents older than 7 days.',
+  },
+  {
+    id: 'overdue-safety-incident',
+    name: 'Overdue Safety Incidents',
+    cron: '0 9 * * 1-5',
+    url: 'nest://scheduled-jobs/overdue-safety-incident',
+    active: false,
+    note: 'Urgent action-needed report for open safety incidents older than 7 days.',
+  },
 ];

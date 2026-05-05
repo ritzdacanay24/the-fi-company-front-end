@@ -64,4 +64,14 @@ export class ScheduledJobsRunnerService {
   async runLnwDelivery(): Promise<void> {
     await this.scheduledJobsService.runJobIfEnabled('lnw-delivery');
   }
+
+  @Cron('0 0 9 * * 1-5', { name: 'scheduled-jobs.overdue-qir', timeZone: SCHEDULED_JOBS_TIMEZONE })
+  async runOverdueQir(): Promise<void> {
+    await this.scheduledJobsService.runJobIfEnabled('overdue-qir');
+  }
+
+  @Cron('0 0 9 * * 1-5', { name: 'scheduled-jobs.overdue-safety-incident', timeZone: SCHEDULED_JOBS_TIMEZONE })
+  async runOverdueSafetyIncident(): Promise<void> {
+    await this.scheduledJobsService.runJobIfEnabled('overdue-safety-incident');
+  }
 }

@@ -214,12 +214,13 @@ export class RequestPublicComponent implements OnInit, OnDestroy {
         this.token
       ));
       this.request_id = data.id;
-      this.comments = await this.commentsService.getByRequestId(
-        this.request_id
-      );
-      this.jobInfo = await this.requestService.getjobByRequestId(
-        this.request_id
-      );
+      this.jobInfo = {
+        id: data?.id ?? null,
+        status: String(data?.active) === '0' ? 'Cancelled' : 'Pending',
+        request_date: data?.date_of_service ?? null,
+        start_time: data?.start_time ?? null,
+        published: data?.published ?? 0,
+      };
 
       this.isLoading = false;
 
@@ -617,14 +618,22 @@ export class RequestPublicComponent implements OnInit, OnDestroy {
     if (this.myFiles) {
       let totalAttachments = 0;
       this.isLoading = true;
-      const formData = new FormData();
-      for (var i = 0; i < this.myFiles.length; i++) {
-        formData.append("file", this.myFiles[i]);
-        formData.append("field", FIELD_SERVICE.UPLOAD_FIELD_NAME);
-        formData.append("uniqueData", `${this.request_id}`);
-        formData.append("folderName", FIELD_SERVICE.UPLOAD_FOLDER_NAME);
+      for (let i = 0; i < this.myFiles.length; i++) {
         try {
-          await this.attachmentsService.uploadfile(formData);
+          if (this.token && this.request_id) {
+            await this.attachmentsService.uploadRequestAttachmentPublic(
+              this.request_id,
+              this.token,
+              this.myFiles[i],
+            );
+          } else {
+            const formData = new FormData();
+            formData.append("file", this.myFiles[i]);
+            formData.append("field", FIELD_SERVICE.UPLOAD_FIELD_NAME);
+            formData.append("uniqueData", `${this.request_id}`);
+            formData.append("folderName", FIELD_SERVICE.UPLOAD_FOLDER_NAME);
+            await this.attachmentsService.uploadfile(formData);
+          }
           totalAttachments++;
         } catch (err) { }
       }

@@ -7,6 +7,7 @@ import { BulkCreateEyeFiSerialDto } from './dto/bulk-create-eyefi-serial.dto';
 import { CreateAssignmentDto } from './dto/create-assignment.dto';
 import { UpdateAssignmentDto } from './dto/update-assignment.dto';
 import { EmailService } from '@/shared/email/email.service';
+import { EmailTemplateService } from '@/shared/email/email-template.service';
 
 type WorkflowReportPayload = {
   workOrder?: Record<string, unknown>;
@@ -24,6 +25,7 @@ export class EyeFiSerialService {
     private readonly eyeFiSerialRepository: EyeFiSerialRepository,
     @Inject(EmailService)
     private readonly emailService: EmailService,
+    private readonly emailTemplateService: EmailTemplateService,
   ) {}
 
   async search(params: {
@@ -163,18 +165,18 @@ export class EyeFiSerialService {
       throw new BadRequestException('Current user does not have an active email address');
     }
 
+    const html = this.emailTemplateService.render('serial-workflow-report', {
+      createdBy: payload.createdBy,
+      workOrderNumber: payload.workOrder.number,
+      customer: payload.customer,
+      quantity: payload.batch.quantity,
+      generatedAt: payload.timestamp,
+    });
+
     await this.emailService.sendMail({
       to: recipientEmail,
       subject: `Serial Workflow Report: WO ${payload.workOrder.number}`,
-      html: `
-        <p>Hello ${payload.createdBy},</p>
-        <p>Your serial workflow report for work order <strong>${payload.workOrder.number}</strong> is attached.</p>
-        <p>
-          <strong>Customer:</strong> ${payload.customer}<br/>
-          <strong>Quantity:</strong> ${payload.batch.quantity}<br/>
-          <strong>Generated:</strong> ${payload.timestamp}
-        </p>
-      `,
+      html,
       attachments: [
         {
           filename: payload.fileName,

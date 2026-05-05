@@ -27,6 +27,8 @@ import {
   FsJobReportEveningHandler,
   FsJobNoticeHandler,
   SerialStockAlertHandler,
+  OverdueQirHandler,
+  OverdueSafetyIncidentHandler,
 } from './handlers';
 
 export type ScheduledJobRunStatus = 'success' | 'failure';
@@ -97,6 +99,8 @@ export class ScheduledJobsService {
     private readonly fsJobReportEveningHandler: FsJobReportEveningHandler,
     private readonly fsJobNoticeHandler: FsJobNoticeHandler,
     private readonly serialStockAlertHandler: SerialStockAlertHandler,
+    private readonly overdueQirHandler: OverdueQirHandler,
+    private readonly overdueSafetyIncidentHandler: OverdueSafetyIncidentHandler,
   ) {
     this.handlerMap = new Map();
     this.isDevelopment = String(process.env.NODE_ENV ?? '').toLowerCase() === 'development';
@@ -124,6 +128,8 @@ export class ScheduledJobsService {
     this.handlerMap.set('fs-job-report-evening', this.fsJobReportEveningHandler);
     this.handlerMap.set('fs-job-notice', this.fsJobNoticeHandler);
     this.handlerMap.set('serial-stock-alert', this.serialStockAlertHandler);
+    this.handlerMap.set('overdue-qir', this.overdueQirHandler);
+    this.handlerMap.set('overdue-safety-incident', this.overdueSafetyIncidentHandler);
   }
 
   isRunnerEnabled(): boolean {

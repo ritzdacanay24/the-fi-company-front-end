@@ -2,7 +2,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import { RowDataPacket } from 'mysql2/promise';
 import { QadOdbcService } from '@/shared/database/qad-odbc.service';
 import { EmailService } from '@/shared/email/email.service';
+import { EmailTemplateService } from '@/shared/email/email-template.service';
 import { EmailNotificationService } from '@/nest/modules/email-notification/email-notification.service';
+import { UrlBuilder } from '@/shared/url/url-builder';
 import { ScheduledJobHandler, ScheduledJobRunResultDto } from './scheduled-job.handler';
 
 interface CompletedOrder extends RowDataPacket {
@@ -18,6 +20,15 @@ interface CompletedOrder extends RowDataPacket {
   age: number;
 }
 
+interface OverCompletedRoute extends RowDataPacket {
+  wr_nbr: string;
+  wr_op: number;
+  wr_wkctr: string;
+  wr_qty_ord: number;
+  wr_qty_comp: number;
+  wr_status: string;
+}
+
 @Injectable()
 export class CompletedProductionOrdersHandler implements ScheduledJobHandler {
   private readonly logger = new Logger(CompletedProductionOrdersHandler.name);
@@ -25,7 +36,9 @@ export class CompletedProductionOrdersHandler implements ScheduledJobHandler {
   constructor(
     private readonly qadOdbcService: QadOdbcService,
     private readonly emailService: EmailService,
+    private readonly emailTemplateService: EmailTemplateService,
     private readonly emailNotificationService: EmailNotificationService,
+    private readonly urlBuilder: UrlBuilder,
   ) {}
 
   async handle(trigger: 'manual' | 'cron'): Promise<ScheduledJobRunResultDto> {
@@ -59,17 +72,32 @@ export class CompletedProductionOrdersHandler implements ScheduledJobHandler {
         ORDER BY CURDATE() - a.wo_due_date DESC
       `, { keyCase: 'lower' });
 
+      const overCompleted = await this.qadOdbcService.query<OverCompletedRoute[]>(`
+        SELECT
+          wr_nbr,
+          wr_op,
+          wr_wkctr,
+          wr_qty_ord,
+          wr_qty_comp,
+          wr_status
+        FROM wr_route
+        WHERE wr_qty_comp > wr_qty_ord
+          AND wr_domain = 'EYE'
+          AND wr_status = 'Q'
+      `, { keyCase: 'lower' });
+
       const readyToClose = data.filter((r) => r.wod_status === 'Yes' || String(r.wo_line || '').toLowerCase() === 'graphics');
       const withPickingIssues = data.filter((r) => r.wod_status === 'No' && String(r.wo_line || '').toLowerCase() !== 'graphics');
 
-      if (data.length > 0) {
+      const hasReportRows = data.length > 0 || overCompleted.length > 0;
+      if (hasReportRows) {
         const recipientRows = await this.emailNotificationService.find({ location: 'production_orders' });
         const to = (recipientRows as Array<{ email?: string }>)
           .map((r) => r.email)
           .filter((e): e is string => typeof e === 'string' && e.trim().length > 0);
 
         if (to.length > 0) {
-          const html = this.buildEmailBody(readyToClose, withPickingIssues);
+          const html = this.buildEmailBody(readyToClose, withPickingIssues, overCompleted);
           await this.emailService.sendMail({
             to,
             subject: 'Work Order Status Report',
@@ -88,7 +116,7 @@ export class CompletedProductionOrdersHandler implements ScheduledJobHandler {
         ok: true,
         statusCode: 200,
         durationMs,
-        message: `${data.length} work orders analyzed (${readyToClose.length} ready, ${withPickingIssues.length} with issues).`,
+        message: `${data.length} work orders analyzed (${readyToClose.length} ready, ${withPickingIssues.length} with issues, ${overCompleted.length} over-completed).`,
         lastRun: {
           startedAt: new Date(startedAtMs).toISOString(),
           finishedAt: new Date().toISOString(),
@@ -127,27 +155,59 @@ export class CompletedProductionOrdersHandler implements ScheduledJobHandler {
     }
   }
 
-  private buildEmailBody(readyToClose: CompletedOrder[], withPickingIssues: CompletedOrder[]): string {
-    const buildRows = (rows: CompletedOrder[]): string =>
-      rows
-        .map(
-          (r) =>
-            `<tr><td>${r.wo_nbr}</td><td>${r.wo_line}</td><td>${r.wo_due_date}</td><td>${r.wo_part}</td><td>${Number(r.wo_qty_ord || 0).toFixed(2)}</td><td>${Number(r.wo_qty_comp || 0).toFixed(2)}</td><td>${Number(r.wod_qty_req || 0).toFixed(2)}</td><td>${Number(r.wod_qty_iss || 0).toFixed(2)}</td><td>${r.wod_status}</td><td>${Number(r.age || 0)} day(s)</td></tr>`,
-        )
-        .join('');
+  private buildEmailBody(
+    readyToClose: CompletedOrder[],
+    withPickingIssues: CompletedOrder[],
+    overCompleted: OverCompletedRoute[],
+  ): string {
+    return this.emailTemplateService.render('work-order-status-report', {
+      summary: {
+        readyToClose: readyToClose.length,
+        pickingIssues: withPickingIssues.length,
+      },
+      readyToCloseRows: this.mapCompletedRows(readyToClose),
+      pickingIssueRows: this.mapCompletedRows(withPickingIssues),
+      overCompletedRows: overCompleted.map((row) => ({
+        workOrder: row.wr_nbr,
+        workOrderLink: this.urlBuilder.operations.woLookup(row.wr_nbr),
+        operation: row.wr_op,
+        workCenter: row.wr_wkctr,
+        qtyOrdered: Number(row.wr_qty_ord || 0).toFixed(2),
+        qtyCompleted: Number(row.wr_qty_comp || 0).toFixed(2),
+        status: row.wr_status,
+      })),
+      overCompletedCount: overCompleted.length,
+      hasReadyToClose: readyToClose.length > 0,
+      hasPickingIssues: withPickingIssues.length > 0,
+      hasOverCompleted: overCompleted.length > 0,
+    });
+  }
 
-    return `
-      <h3>Ready to Close: <span style="color:red">${readyToClose.length}</span></h3>
-      <table rules="all" style="border-color:#666" cellpadding="5" border="1">
-        <tr style="background:#eee"><th>WO #</th><th>Line</th><th>Due Date</th><th>Part</th><th>Qty Ordered</th><th>Qty Completed</th><th>Qty Required</th><th>Qty Issued</th><th>Status</th><th>Age</th></tr>
-        ${buildRows(readyToClose)}
-      </table>
-      <br><hr>
-      <h3>Picking Issues: <span style="color:red">${withPickingIssues.length}</span></h3>
-      <table rules="all" style="border-color:#666" cellpadding="5" border="1">
-        <tr style="background:#eee"><th>WO #</th><th>Line</th><th>Due Date</th><th>Part</th><th>Qty Ordered</th><th>Qty Completed</th><th>Qty Required</th><th>Qty Issued</th><th>Status</th><th>Age</th></tr>
-        ${buildRows(withPickingIssues)}
-      </table>
-    `;
+  private mapCompletedRows(rows: CompletedOrder[]): Array<{
+    workOrder: string;
+    workOrderLink: string;
+    line: string;
+    dueDate: string;
+    part: string;
+    qtyOrdered: string;
+    qtyCompleted: string;
+    qtyRequired: string;
+    qtyIssued: string;
+    status: string;
+    ageText: string;
+  }> {
+    return rows.map((r) => ({
+      workOrder: r.wo_nbr,
+      workOrderLink: this.urlBuilder.operations.woLookup(r.wo_nbr),
+      line: r.wo_line,
+      dueDate: r.wo_due_date,
+      part: r.wo_part,
+      qtyOrdered: Number(r.wo_qty_ord || 0).toFixed(2),
+      qtyCompleted: Number(r.wo_qty_comp || 0).toFixed(2),
+      qtyRequired: Number(r.wod_qty_req || 0).toFixed(2),
+      qtyIssued: Number(r.wod_qty_iss || 0).toFixed(2),
+      status: r.wod_status,
+      ageText: Number(r.age || 0) < 0 ? '-' : `${Number(r.age || 0)} day(s)`,
+    }));
   }
 }

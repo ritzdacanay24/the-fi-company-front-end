@@ -1,0 +1,72 @@
+<html>
+  <body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f4f6f8; color: #1f2933;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 920px; background-color: #ffffff; border: 1px solid #dde3ea; border-radius: 10px; overflow: hidden;">
+            {{> email-header}}
+            <tr>
+              <td style="padding: 20px 24px; background-color: #0b5cab; color: #ffffff;">
+                <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Action Required: Review of Open Quality Incidents</h2>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 24px; font-size: 14px; line-height: 1.6;">
+                <p style="margin: 0 0 12px 0;">Dear Team,</p>
+                <p style="margin: 0 0 12px 0;">
+                  As part of our ongoing commitment to quality standards, please review the open incidents listed below.
+                  These incidents have been open for more than 7 days and need immediate attention.
+                </p>
+                <p style="margin: 0 0 12px 0;">
+                  Please update the status of resolved incidents to <strong>Closed</strong>.
+                </p>
+                <p style="margin: 0 0 16px 0;">
+                  <a href="{{reportLink}}" style="display: inline-block; padding: 10px 18px; border-radius: 6px; background-color: #0b5cab; color: #ffffff; text-decoration: none; font-weight: 600;">
+                    View Open Quality Incident Report
+                  </a>
+                </p>
+                <p style="margin: 0 0 12px 0;"><strong>Total open incidents over 7 days:</strong> {{totalOpenIncidents}}</p>
+
+                {{#if hasRows}}
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse; margin-bottom: 18px;">
+                  <thead>
+                    <tr>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">View</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Stakeholder</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Type</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Priority</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Created Date</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Status</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Age (days)</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Serial Number</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {{#each rows}}
+                    <tr>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;"><a href="{{viewLink}}">View</a></td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{stakeholder}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{type}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{priority}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{createdDate}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{status}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{age}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{serialNumber}}</td>
+                    </tr>
+                    {{/each}}
+                  </tbody>
+                </table>
+                {{else}}
+                <p style="margin: 0 0 16px 0; color: #15803d; font-weight: 600;">No open quality incidents older than 7 days were found.</p>
+                {{/if}}
+
+                <p style="margin: 0;">Thank you for your cooperation and dedication to quality.</p>
+              </td>
+            </tr>
+            {{> email-footer}}
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
