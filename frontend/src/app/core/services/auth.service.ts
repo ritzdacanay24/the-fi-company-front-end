@@ -14,6 +14,7 @@ import {
 } from "src/app/store/Authentication/authentication.actions";
 import { TokenStorageService } from "./token-storage.service";
 import { THE_FI_COMPANY_CURRENT_USER } from "../guards/admin.guard";
+import { Router } from "@angular/router";
 
 const AUTH_API = "apiV2/";
 const REFRESH_TOKEN_KEY = 'refresh_token';
@@ -38,17 +39,28 @@ const httpOptions = {
 export class AuthenticationService {
   user!: User;
   private currentUserSubject: BehaviorSubject<User>;
+  private readonly authChannel = new BroadcastChannel('eyefi_auth');
 
   constructor(
     private http: HttpClient,
     private store: Store,
-    private tokenStorageService: TokenStorageService
+    private tokenStorageService: TokenStorageService,
+    private router: Router
   ) {
     let e = localStorage.getItem(THE_FI_COMPANY_CURRENT_USER);
     this.currentUserSubject = new BehaviorSubject<User>(
       JSON.parse(e == "undefined" ? null : e)
     );
-    // this.currentUser = this.currentUserSubject.asObservable();
+
+    // Listen for logout broadcast from other tabs
+    this.authChannel.onmessage = (event) => {
+      if (event.data?.type === 'logout') {
+        localStorage.removeItem(THE_FI_COMPANY_CURRENT_USER);
+        localStorage.removeItem('token');
+        this.currentUserSubject.next(null!);
+        this.router.navigate(['/auth/login']);
+      }
+    };
   }
   /**
    * Performs the register
@@ -160,12 +172,13 @@ export class AuthenticationService {
    */
   logout() {
     this.store.dispatch(logout());
-    // logout the user
-    // return getFirebaseBackend()!.logout();
     localStorage.removeItem(THE_FI_COMPANY_CURRENT_USER);
     localStorage.removeItem("token");
     this.clearRefreshToken();
     this.currentUserSubject.next(null!);
+
+    // Notify all other tabs to log out
+    this.authChannel.postMessage({ type: 'logout' });
 
     return of(undefined).pipe();
   }

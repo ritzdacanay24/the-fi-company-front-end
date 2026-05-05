@@ -403,6 +403,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
 
   // Navigation filter (shared with nav component)
   navShowOnlyOpenItems = false;
+  navShowOnlyRequiredAndOpen = false;
 
   // User's open checklists for offcanvas
   userOpenChecklists: ChecklistInstance[] = [];
@@ -2976,7 +2977,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     const parents = allProgress.filter(p => p.item.level === 0 || !p.item.level);
     
     parents.forEach(parent => {
-      if ((parent.item as ChecklistItem).is_required !== false) {
+      if (!!(parent.item as ChecklistItem).is_required) {
         return;
       }
       // Find all sub-items for this parent

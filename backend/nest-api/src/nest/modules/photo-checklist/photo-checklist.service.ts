@@ -386,6 +386,11 @@ export class PhotoChecklistService {
     return this.deleteMediaByLocator(instanceId, itemId, fileUrl);
   }
 
+  async archiveInstance(id: number) {
+    const result = await this.repository.archiveInstance(id);
+    return result;
+  }
+
   async deleteInstance(id: number) {
     const result = await this.repository.deleteInstance(id);
     if (!result.success) {

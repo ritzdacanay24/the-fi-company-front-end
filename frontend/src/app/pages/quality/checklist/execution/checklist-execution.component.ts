@@ -1,9 +1,10 @@
 import { PhotosService } from './photos/photos.service';
-import { Component, Inject, OnDestroy, OnInit, Renderer2 } from '@angular/core';
+import { Component, Inject, OnDestroy, OnInit, Renderer2, ElementRef } from '@angular/core';
 import { Router } from '@angular/router';
 import { first } from 'rxjs/operators';
 import { WorkOrderInfoService } from '@app/core/api/work-order/work-order-info.service';
 import { PhotoChecklistConfigService, ChecklistTemplate, ChecklistInstance } from '@app/core/api/photo-checklist-config/photo-checklist-config.service';
+import { PhotoChecklistV2Service } from '@app/core/api/photo-checklist-config/photo-checklist-v2.service';
 import { SharedModule } from '@app/shared/shared.module';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import { DOCUMENT } from '@angular/common';
@@ -115,6 +116,15 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
         const date = new Date(params.value);
         return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       }
+    },
+    {
+      field: 'actions',
+      headerName: 'Actions',
+      minWidth: 100,
+      maxWidth: 120,
+      sortable: false,
+      filter: false,
+      cellRenderer: () => `<button class="btn btn-sm btn-outline-secondary actions-trigger" type="button" title="Actions"><i class="mdi mdi-dots-vertical"></i></button>`
     }
   ];
 
@@ -143,6 +153,7 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
     private photosService: PhotosService,
     private workOrderInfoService: WorkOrderInfoService,
     private photoChecklistConfigService: PhotoChecklistConfigService,
+    private photoChecklistV2Service: PhotoChecklistV2Service,
     private router: Router,
     private authService: AuthenticationService,
     private renderer: Renderer2,
@@ -338,7 +349,117 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
 
     if (event?.colDef?.field === 'work_order_number' || event?.colDef?.field === 'id') {
       this.openChecklistInstance(instanceId);
+      return;
     }
+
+    if (event?.colDef?.field === 'actions') {
+      const target = event?.event?.target as HTMLElement;
+      const btn = target?.closest('.actions-trigger') as HTMLElement;
+      if (btn) {
+        this.showActionsMenu(btn, instanceId);
+      }
+    }
+  }
+
+  private _actionsMenu: HTMLElement | null = null;
+  private _actionsMenuRemoveClickListener: (() => void) | null = null;
+
+  private showActionsMenu(anchor: HTMLElement, instanceId: number): void {
+    this.closeActionsMenu();
+
+    const menu = this.document.createElement('div');
+    menu.innerHTML = `
+      <div style="position:fixed;z-index:9999;background:#fff;border:1px solid #dee2e6;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.15);min-width:160px;padding:4px 0;">
+        <a class="action-archive" href="javascript:void(0)" style="display:flex;align-items:center;padding:8px 16px;color:#f0ad4e;text-decoration:none;font-size:14px;white-space:nowrap;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
+          <i class="mdi mdi-archive-outline" style="margin-right:8px;"></i>Archive
+        </a>
+        <a class="action-delete" href="javascript:void(0)" style="display:flex;align-items:center;padding:8px 16px;color:#dc3545;text-decoration:none;font-size:14px;white-space:nowrap;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
+          <i class="mdi mdi-trash-can-outline" style="margin-right:8px;"></i>Delete
+        </a>
+      </div>`;
+
+    const inner = menu.firstElementChild as HTMLElement;
+    this.document.body.appendChild(inner);
+    this._actionsMenu = inner;
+
+    // Position below the anchor button
+    const rect = anchor.getBoundingClientRect();
+    const menuW = 160;
+    let left = rect.right - menuW;
+    if (left < 4) left = 4;
+    inner.style.top = `${rect.bottom + 4}px`;
+    inner.style.left = `${left}px`;
+
+    // Wire up item clicks
+    inner.querySelector('.action-archive')?.addEventListener('click', () => {
+      this.closeActionsMenu();
+      this.onArchiveInstance(instanceId);
+    });
+    inner.querySelector('.action-delete')?.addEventListener('click', () => {
+      this.closeActionsMenu();
+      this.onDeleteInstance(instanceId);
+    });
+
+    // Close on outside click
+    const close = (e: MouseEvent) => {
+      if (!inner.contains(e.target as Node) && e.target !== anchor) {
+        this.closeActionsMenu();
+      }
+    };
+    setTimeout(() => {
+      this._actionsMenuRemoveClickListener = this.renderer.listen(this.document, 'click', close);
+    });
+  }
+
+  private closeActionsMenu(): void {
+    if (this._actionsMenu) {
+      this._actionsMenu.remove();
+      this._actionsMenu = null;
+    }
+    if (this._actionsMenuRemoveClickListener) {
+      this._actionsMenuRemoveClickListener();
+      this._actionsMenuRemoveClickListener = null;
+    }
+  }
+
+  onDeleteInstance(instanceId: number): void {
+    if (!confirm('Delete this checklist instance? This action cannot be undone.')) {
+      return;
+    }
+
+    this.photoChecklistV2Service.deleteInstance(instanceId).pipe(first()).subscribe({
+      next: (result) => {
+        if (result?.success === false) {
+          alert(result.error || 'Cannot delete this instance.');
+        } else {
+          this.getOpenChecklists();
+        }
+      },
+      error: (err) => {
+        const msg = err?.error?.message || 'Failed to delete. You may not have permission.';
+        alert(msg);
+      }
+    });
+  }
+
+  onArchiveInstance(instanceId: number): void {
+    if (!confirm('Archive this checklist instance?')) {
+      return;
+    }
+
+    this.photoChecklistV2Service.archiveInstance(instanceId).pipe(first()).subscribe({
+      next: (result) => {
+        if (result?.success === false) {
+          alert(result.error || 'Cannot archive this instance.');
+        } else {
+          this.getOpenChecklists();
+        }
+      },
+      error: (err) => {
+        const msg = err?.error?.message || 'Failed to archive. You may not have permission.';
+        alert(msg);
+      }
+    });
   }
 
   ngOnInit(): void {
@@ -357,6 +478,7 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
     } catch {
       // ignore
     }
+    this.closeActionsMenu();
   }
 
 }

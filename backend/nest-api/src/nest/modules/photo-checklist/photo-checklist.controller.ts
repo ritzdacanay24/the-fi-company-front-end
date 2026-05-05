@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { Permissions, RolePermissionGuard } from '../access-control';
 import { PhotoChecklistService } from './photo-checklist.service';
 
@@ -37,5 +37,17 @@ export class PhotoChecklistController {
     },
   ) {
     return this.service.createInstance(payload);
+  }
+
+  @Delete('instances/:id')
+  @Permissions('manage')
+  async deleteInstance(@Param('id', ParseIntPipe) id: number) {
+    return this.service.deleteInstance(id);
+  }
+
+  @Patch('instances/:id/archive')
+  @Permissions('manage')
+  async archiveInstance(@Param('id', ParseIntPipe) id: number) {
+    return this.service.archiveInstance(id);
   }
 }

@@ -301,7 +301,7 @@ export class ChecklistStateService {
     const progress = this.itemProgressSubject.value;
     if (progress.length === 0) return 0;
 
-    const requiredItems = progress.filter(p => p.item.is_required !== false);
+    const requiredItems = progress.filter(p => !!p.item.is_required);
     const total = requiredItems.length;
     if (total === 0) return 0;
 
@@ -314,7 +314,7 @@ export class ChecklistStateService {
    */
   getRequiredCompletionStatus(): { completed: number; total: number } {
     const progress = this.itemProgressSubject.value;
-    const requiredItems = progress.filter(p => p.item.is_required !== false);
+    const requiredItems = progress.filter(p => !!p.item.is_required);
     const completedRequired = requiredItems.filter(p => p.completed);
     
     return {
@@ -328,7 +328,7 @@ export class ChecklistStateService {
    * Matches the numerator used in getCompletionPercentage()
    */
   getCompletedItemsCount(): number {
-    const requiredItems = this.itemProgressSubject.value.filter(p => p.item.is_required !== false);
+    const requiredItems = this.itemProgressSubject.value.filter(p => !!p.item.is_required);
     return requiredItems.filter(p => p.completed).length;
   }
 
@@ -337,7 +337,7 @@ export class ChecklistStateService {
    * This should match the denominator used in getCompletionPercentage()
    */
   getTotalItemsCount(): number {
-    return this.itemProgressSubject.value.filter(p => p.item.is_required !== false).length;
+    return this.itemProgressSubject.value.filter(p => !!p.item.is_required).length;
   }
 
   /**

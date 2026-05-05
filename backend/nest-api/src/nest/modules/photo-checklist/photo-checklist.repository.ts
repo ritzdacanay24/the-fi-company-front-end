@@ -1083,6 +1083,19 @@ export class PhotoChecklistRepository {
     );
   }
 
+  async archiveInstance(id: number): Promise<{ success: boolean; error?: string }> {
+    const instanceId = Number(id);
+    const rows = await this.mysqlService.query<RowDataPacket[]>(
+      `SELECT id, status FROM checklist_instances WHERE id = ? LIMIT 1`, [instanceId]);
+    const instance = rows[0];
+    if (!instance) return { success: false, error: 'Instance not found' };
+
+    await this.mysqlService.query(
+      `UPDATE checklist_instances SET status = 'archived' WHERE id = ?`, [instanceId]);
+
+    return { success: true };
+  }
+
   async deleteInstance(id: number): Promise<{ success: boolean; error?: string }> {
     const instanceId = Number(id);
     const rows = await this.mysqlService.query<RowDataPacket[]>(

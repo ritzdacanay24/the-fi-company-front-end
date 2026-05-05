@@ -213,12 +213,43 @@
           [showMediaContext]="showInspectionNavMediaContext"
           [showOnlyOpenItems]="navShowOnlyOpenItems"
           (showOnlyOpenItemsChange)="navShowOnlyOpenItems = $event"
+          [showOnlyRequiredAndOpen]="navShowOnlyRequiredAndOpen"
+          (showOnlyRequiredAndOpenChange)="navShowOnlyRequiredAndOpen = $event"
           [mode]="'readonly'"
           [showExpandCollapse]="false"
           [cardStyle]="false"
           (itemSelected)="onExecutionNavSelected($event)"
           (userPhotoRequested)="onNavUserPhotoRequested($event)">
         </app-checklist-navigation>
+      </div>
+      <!-- Nav Filter Footer -->
+      <div class="flex-shrink-0 border-top bg-light px-2 py-2">
+        <div class="btn-group btn-group-sm w-100" role="group" aria-label="Filter checklist items">
+          <button type="button"
+                  class="btn"
+                  [class.btn-primary]="!navShowOnlyRequiredAndOpen && !navShowOnlyOpenItems"
+                  [class.btn-outline-secondary]="navShowOnlyRequiredAndOpen || navShowOnlyOpenItems"
+                  (click)="navShowOnlyRequiredAndOpen = false; navShowOnlyOpenItems = false"
+                  title="Show all items">
+            All
+          </button>
+          <button type="button"
+                  class="btn"
+                  [class.btn-info]="navShowOnlyOpenItems"
+                  [class.btn-outline-secondary]="!navShowOnlyOpenItems"
+                  (click)="navShowOnlyOpenItems = !navShowOnlyOpenItems; navShowOnlyRequiredAndOpen = false"
+                  title="Show all incomplete items">
+            <i class="mdi mdi-checkbox-blank-outline me-1"></i>Open
+          </button>
+          <button type="button"
+                  class="btn"
+                  [class.btn-warning]="navShowOnlyRequiredAndOpen"
+                  [class.btn-outline-secondary]="!navShowOnlyRequiredAndOpen"
+                  (click)="navShowOnlyRequiredAndOpen = !navShowOnlyRequiredAndOpen; navShowOnlyOpenItems = false"
+                  title="Show required items that are not yet complete">
+            <i class="mdi mdi-alert-circle-outline me-1"></i>Req &amp; Open
+          </button>
+        </div>
       </div>
     </div>
     <!-- End Navigation Sidebar Panel -->
@@ -517,7 +548,7 @@
               <div class="row g-4 mb-4">
 
                 <!-- Optional Photo Verification (when photos not required) -->
-                <div class="col-12" *ngIf="(progress.item['submission_type'] === 'photo' || !progress.item['submission_type']) && progress.item.is_required !== false && progress.item.photo_requirements && progress.item.photo_requirements.picture_required === false && (!progress.photos || progress.photos.length === 0) && !showOptionalPhotoCapture[progress.item.id]">
+                <div class="col-12" *ngIf="(progress.item['submission_type'] === 'photo' || !progress.item['submission_type']) && !!progress.item.is_required && progress.item.photo_requirements && progress.item.photo_requirements.picture_required === false && (!progress.photos || progress.photos.length === 0) && !showOptionalPhotoCapture[progress.item.id]">
                   <div class="border rounded p-4 text-center d-flex flex-column align-items-center justify-content-center"
                        style="min-height: 220px;"
                        [ngClass]="progress.completed ? 'border-success bg-success bg-opacity-10' : 'border-secondary bg-light'">
@@ -552,7 +583,7 @@
                 </div>
 
                 <!-- Manual Verification (no media required) -->
-                <div class="col-12" *ngIf="progress.item['submission_type'] === 'none' && progress.item.is_required !== false">
+                <div class="col-12" *ngIf="progress.item['submission_type'] === 'none' && !!progress.item.is_required">
                   <div class="border rounded p-4 text-center d-flex flex-column align-items-center justify-content-center"
                        style="min-height: 220px;"
                        [ngClass]="progress.completed ? 'border-success bg-success bg-opacity-10' : 'border-secondary bg-light'">

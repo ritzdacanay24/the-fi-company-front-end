@@ -54,6 +54,14 @@ export class PhotoChecklistV2Service {
     return this.http.post<{ success: boolean; instance_id: number }>(`${this.baseUrl}/instances`, instance);
   }
 
+  deleteInstance(id: number): Observable<{ success: boolean; error?: string }> {
+    return this.http.delete<{ success: boolean; error?: string }>(`${this.baseUrl}/instances/${id}`);
+  }
+
+  archiveInstance(id: number): Observable<{ success: boolean; error?: string }> {
+    return this.http.patch<{ success: boolean; error?: string }>(`${this.baseUrl}/instances/${id}/archive`, {});
+  }
+
   getConfig(): Observable<ChecklistConfig[]> {
     return this.http.get<ChecklistConfig[]>(`${this.baseUrl}/config`);
   }

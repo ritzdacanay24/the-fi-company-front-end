@@ -38,6 +38,8 @@ export class ChecklistNavigationComponent implements OnChanges, OnDestroy {
 
   @Input() showOnlyOpenItems = false;
   @Output() showOnlyOpenItemsChange = new EventEmitter<boolean>();
+  @Input() showOnlyRequiredAndOpen = false;
+  @Output() showOnlyRequiredAndOpenChange = new EventEmitter<boolean>();
 
   @Output() itemSelected = new EventEmitter<{ itemId: number; index: number }>();
   @Output() navDrop = new EventEmitter<CdkDragDrop<any[]> | { sourceIndex: number; targetIndex: number; dropPosition: 'before' | 'inside' | 'after' }>();
@@ -111,8 +113,17 @@ export class ChecklistNavigationComponent implements OnChanges, OnDestroy {
     }
 
     if (changes['showOnlyOpenItems']) {
-      const next = !!changes['showOnlyOpenItems'].currentValue;
-      this.setShowOnlyOpenItems(next, { emit: false });
+      if (this.showOnlyOpenItems) {
+        this.expandParentsWithOpenDescendants();
+      }
+      this.recomputeVisible();
+    }
+
+    if (changes['showOnlyRequiredAndOpen']) {
+      if (this.showOnlyRequiredAndOpen) {
+        this.expandParentsWithRequiredOpenDescendants();
+      }
+      this.recomputeVisible();
     }
 
     if ((changes['mode'] || changes['allowReadonlyReorder']) && !this.canUseReorderControls()) {
@@ -207,6 +218,14 @@ export class ChecklistNavigationComponent implements OnChanges, OnDestroy {
     this.initializeNavExpansion();
     this.updateNavSearchSets();
     this.updateActiveFromInputs();
+
+    // Re-apply active filter expansions after items change
+    if (this.showOnlyRequiredAndOpen) {
+      this.expandParentsWithRequiredOpenDescendants();
+    } else if (this.showOnlyOpenItems) {
+      this.expandParentsWithOpenDescendants();
+    }
+
     this.recomputeVisible();
   }
 
@@ -408,6 +427,11 @@ export class ChecklistNavigationComponent implements OnChanges, OnDestroy {
       if (visible) {
         if (isSearchActive) {
           visible = this.navSearchVisibleIndices.has(i);
+        } else if (this.showOnlyRequiredAndOpen && !this.isEditorMode()) {
+          visible =
+            i === this.activeNavItemIndex ||
+            (!!item.isRequired && item.isComplete !== true) ||
+            this.hasRequiredOpenDescendant(i);
         } else if (this.showOnlyOpenItems && !this.isEditorMode()) {
           visible =
             i === this.activeNavItemIndex ||
@@ -468,6 +492,45 @@ export class ChecklistNavigationComponent implements OnChanges, OnDestroy {
     return nextLevel > currentLevel;
   }
 
+  setShowOnlyRequiredAndOpen(value: boolean, opts?: { emit?: boolean }): void {
+    const emit = opts?.emit !== false;
+    const next = !!value;
+    if (this.showOnlyRequiredAndOpen === next) {
+      return;
+    }
+    this.showOnlyRequiredAndOpen = next;
+    if (this.showOnlyRequiredAndOpen) {
+      this.expandParentsWithRequiredOpenDescendants();
+    }
+    if (emit) {
+      this.showOnlyRequiredAndOpenChange.emit(this.showOnlyRequiredAndOpen);
+    }
+    this.recomputeVisible();
+  }
+
+  private expandParentsWithRequiredOpenDescendants(): void {
+    this.navItems.forEach((item, i) => {
+      if (this.hasChildren(i) && this.hasRequiredOpenDescendant(i)) {
+        this.expandedItems.add(i);
+      }
+    });
+  }
+
+  private hasRequiredOpenDescendant(itemIndex: number): boolean {
+    const currentLevel = this.navItems[itemIndex]?.level ?? 0;
+    for (let i = itemIndex + 1; i < this.navItems.length; i++) {
+      const descendantLevel = this.navItems[i]?.level ?? 0;
+      if (descendantLevel <= currentLevel) {
+        break;
+      }
+      const d = this.navItems[i];
+      if (!!d?.isRequired && d?.isComplete !== true) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   setShowOnlyOpenItems(value: boolean, opts?: { emit?: boolean }): void {
     const emit = opts?.emit !== false;
     const next = !!value;
@@ -490,7 +553,7 @@ export class ChecklistNavigationComponent implements OnChanges, OnDestroy {
   }
 
   private passesOpenFilter(itemIndex: number): boolean {
-    if (!this.showOnlyOpenItems || this.isEditorMode()) {
+    if (this.isEditorMode()) {
       return true;
     }
 
@@ -502,17 +565,19 @@ export class ChecklistNavigationComponent implements OnChanges, OnDestroy {
     const item = this.navItems[itemIndex];
     if (!item) return false;
 
-    // Treat unknown completion as "open"
-    if (item.isComplete !== true) {
-      return true;
+    if (this.showOnlyRequiredAndOpen) {
+      if (!!item.isRequired && item.isComplete !== true) return true;
+      if (this.hasRequiredOpenDescendant(itemIndex)) return true;
+      return false;
     }
 
-    // Keep parents visible if any descendant is open
-    if (this.hasOpenDescendant(itemIndex)) {
-      return true;
+    if (this.showOnlyOpenItems) {
+      if (item.isComplete !== true) return true;
+      if (this.hasOpenDescendant(itemIndex)) return true;
+      return false;
     }
 
-    return false;
+    return true;
   }
 
   private hasOpenDescendant(parentIndex: number): boolean {
@@ -537,7 +602,7 @@ export class ChecklistNavigationComponent implements OnChanges, OnDestroy {
 
   private expandParentsWithOpenDescendants(): void {
     this.navItems.forEach((item, i) => {
-      if ((item.level ?? 0) === 0 && this.hasOpenDescendant(i)) {
+      if (this.hasChildren(i) && this.hasOpenDescendant(i)) {
         this.expandedItems.add(i);
       }
     });
