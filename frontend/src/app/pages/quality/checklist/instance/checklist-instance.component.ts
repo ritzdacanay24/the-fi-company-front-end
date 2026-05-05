@@ -1530,10 +1530,18 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     return this.toSourceLabel(source);
   }
 
+  getPhotoMeta(progress: ChecklistItemProgress, photoUrl: string): { uploadedBy?: string; uploadedAt?: string } {
+    return progress?.photoMeta?.[photoUrl] || {};
+  }
+
   getVideoSourceLabel(progress: ChecklistItemProgress, videoUrl: string): string | null {
     if (!progress || !videoUrl) return null;
     const source = progress.videoMeta?.[videoUrl]?.source;
     return this.toSourceLabel(source);
+  }
+
+  getVideoMeta(progress: ChecklistItemProgress, videoUrl: string): { uploadedBy?: string; uploadedAt?: string } {
+    return progress?.videoMeta?.[videoUrl] || {};
   }
 
   getAudioSourceLabel(progress: ChecklistItemProgress, audioUrl: string): string | null {

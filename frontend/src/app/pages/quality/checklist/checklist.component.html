@@ -99,10 +99,10 @@
             <div class="tab-pane-content" [class.d-none]="activeTab !== 'instances'">
 
               <!-- Instances Content -->
-              <div class="p-3">
+              <div>
                 <ag-grid-angular class="ag-theme-quartz no-border" [suppressAggFuncInHeader]="true"
                   [rowData]="instanceGridRows" [gridOptions]="instanceGridOptions"
-                  [class.d-none]="instanceGridRows.length === 0" style="width: 100%; height: calc(100vh - 420px);">
+                  [class.d-none]="instanceGridRows.length === 0" style="width: 100%; height: calc(100vh - 330px );">
                 </ag-grid-angular>
 
                 <!-- Empty State -->
@@ -173,34 +173,50 @@
       </div>
     </div>
 
-    <div class="mb-3">
-      <div class="mb-3">
+    <div class="row g-3 mb-3">
+      <div class="col-md-4">
+        <label class="form-label fw-bold">How many checklists? *</label>
+        <input type="number"
+               min="1"
+               max="100"
+               class="form-control"
+               [(ngModel)]="newInstanceCount"
+               (ngModelChange)="onNewInstanceCountChange()" />
+        <div class="form-text">Max 100 per batch.</div>
+      </div>
+      <div class="col-md-4">
         <label for="workOrder" class="form-label fw-bold">Work Order Number *</label>
         <input type="text" class="form-control" id="workOrder" [(ngModel)]="newInstance.workOrder" name="workOrder"
-          required placeholder="e.g., WO-2024-001"
-          [class.is-invalid]="!newInstance.workOrder && newInstance.workOrder !== ''">
-        <div class="invalid-feedback" *ngIf="!newInstance.workOrder && newInstance.workOrder !== ''">
-          Work order number is required
-        </div>
+          required placeholder="e.g., WO-2024-001">
       </div>
-
-      <div class="mb-3">
+      <div class="col-md-4">
         <label for="partNumber" class="form-label fw-bold">Part Number *</label>
         <input type="text" class="form-control" id="partNumber" [(ngModel)]="newInstance.partNumber" name="partNumber"
-          required placeholder="e.g., VWL-03513-210"
-          [class.is-invalid]="!newInstance.partNumber && newInstance.partNumber !== ''">
-        <div class="invalid-feedback" *ngIf="!newInstance.partNumber && newInstance.partNumber !== ''">
-          Part number is required
-        </div>
+          required placeholder="e.g., VWL-03513-210">
       </div>
+    </div>
 
-      <div class="mb-3">
-        <label for="serialNumber" class="form-label fw-bold">Serial Number *</label>
-        <input type="text" class="form-control" id="serialNumber" [(ngModel)]="newInstance.serialNumber"
-          name="serialNumber" required placeholder="e.g., SN123456789"
-          [class.is-invalid]="!newInstance.serialNumber && newInstance.serialNumber !== ''">
-        <div class="invalid-feedback" *ngIf="!newInstance.serialNumber && newInstance.serialNumber !== ''">
-          Serial number is required
+    <div class="row g-3 mb-3">
+      <div class="col-md-6">
+        <label class="form-label fw-bold">Starting Serial Number</label>
+        <input type="text" class="form-control"
+               [(ngModel)]="newInstance.serialNumber"
+               (ngModelChange)="onBaseSerialChange()"
+               placeholder="e.g., 1000 or SN-1000" />
+        <div class="form-text">Serial numbers are auto-generated sequentially and can be edited below.</div>
+      </div>
+    </div>
+
+    <div class="border rounded bg-light p-3">
+      <div class="fw-semibold mb-2">Serial Numbers
+        <span class="badge bg-secondary ms-2">{{ newInstanceCount || 1 }}</span>
+      </div>
+      <div class="row g-2" *ngIf="newInstanceSerialNumbers.length > 0">
+        <div class="col-md-6" *ngFor="let serial of newInstanceSerialNumbers; let i = index; trackBy: trackByIndex">
+          <label class="form-label small text-muted mb-1">Checklist {{ i + 1 }}</label>
+          <input class="form-control form-control-sm"
+                 [(ngModel)]="newInstanceSerialNumbers[i]"
+                 [placeholder]="'Serial #' + (i + 1)" />
         </div>
       </div>
     </div>
@@ -218,9 +234,12 @@
         (click)="closeCreateInstanceModal()">
         <i class="mdi mdi-close me-1"></i>Cancel
       </button>
-      <button type="button" class="btn btn-primary d-flex align-items-center" [disabled]="!isNewInstanceFormValid"
-        (click)="createChecklistInstance(selectedTemplate!, newInstance.workOrder, newInstance.partNumber, newInstance.serialNumber)">
-        <i class="mdi mdi-plus me-1"></i>Start Checklist
+      <button type="button" class="btn btn-primary d-flex align-items-center"
+        [disabled]="!isNewInstanceFormValid || creatingInstances"
+        (click)="createChecklistInstancesBatch()">
+        <span *ngIf="creatingInstances" class="spinner-border spinner-border-sm me-2" role="status"></span>
+        <i class="mdi mdi-plus me-1" *ngIf="!creatingInstances"></i>
+        {{ (newInstanceCount || 1) > 1 ? 'Start ' + (newInstanceCount || 1) + ' Checklists' : 'Start Checklist' }}
       </button>
     </div>
   </div>

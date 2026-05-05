@@ -10,9 +10,9 @@ export interface ChecklistItemProgress {
   };
   completed: boolean;
   photos: string[];
-  photoMeta?: Record<string, { source?: 'in-app' | 'system' | 'library' }>; // per-photo metadata by URL
+  photoMeta?: Record<string, { source?: 'in-app' | 'system' | 'library'; uploadedAt?: string; uploadedBy?: string }>; // per-photo metadata by URL
   videos?: string[]; // NEW: Array of uploaded video URLs
-  videoMeta?: Record<string, { source?: 'in-app' | 'system' | 'library' }>; // per-video metadata by URL
+  videoMeta?: Record<string, { source?: 'in-app' | 'system' | 'library'; uploadedAt?: string; uploadedBy?: string }>; // per-video metadata by URL
   notes: string;
   completedAt?: Date;
   completedByUserId?: number; // Track who completed this item
@@ -30,8 +30,8 @@ interface CompletionData {
   notes?: string;
   completedByUserId?: number;
   completedByName?: string;
-  photoMeta?: Record<string, { source?: 'in-app' | 'system' | 'library' }>;
-  videoMeta?: Record<string, { source?: 'in-app' | 'system' | 'library' }>;
+  photoMeta?: Record<string, { source?: 'in-app' | 'system' | 'library'; uploadedAt?: string; uploadedBy?: string }>;
+  videoMeta?: Record<string, { source?: 'in-app' | 'system' | 'library'; uploadedAt?: string; uploadedBy?: string }>;
   lastModifiedAt?: string;
   lastModifiedByUserId?: number;
   lastModifiedByName?: string;
@@ -126,10 +126,13 @@ export class ChecklistStateService {
     const minPhotos = item.item.photo_requirements?.min_photos || 1;
     const shouldComplete = newPhotos.length >= minPhotos;
 
-    const photoMeta: Record<string, { source?: 'in-app' | 'system' | 'library' }> = { ...(item.photoMeta || {}) };
-    if (captureSource) {
-      photoMeta[photoUrl] = { ...(photoMeta[photoUrl] || {}), source: captureSource };
-    }
+    const photoMeta: Record<string, { source?: 'in-app' | 'system' | 'library'; uploadedAt?: string; uploadedBy?: string }> = { ...(item.photoMeta || {}) };
+    photoMeta[photoUrl] = {
+      ...(photoMeta[photoUrl] || {}),
+      uploadedAt: new Date().toISOString(),
+      uploadedBy: userName,
+      ...(captureSource ? { source: captureSource } : {}),
+    };
 
     this.updateItemProgress(itemId, {
       photos: newPhotos,
@@ -160,10 +163,12 @@ export class ChecklistStateService {
 
     const submissionType = (item.item.submission_type || 'photo') as any;
     const nextVideos = [videoUrl];
-    const videoMeta: Record<string, { source?: 'in-app' | 'system' | 'library' }> = {};
-    if (captureSource) {
-      videoMeta[videoUrl] = { source: captureSource };
-    }
+    const videoMeta: Record<string, { source?: 'in-app' | 'system' | 'library'; uploadedAt?: string; uploadedBy?: string }> = {};
+    videoMeta[videoUrl] = {
+      uploadedAt: new Date().toISOString(),
+      uploadedBy: userName,
+      ...(captureSource ? { source: captureSource } : {}),
+    };
 
     // For video/audio/either submissions, uploaded media is sufficient to complete.
     const shouldComplete = submissionType === 'video' || submissionType === 'audio' || submissionType === 'either';

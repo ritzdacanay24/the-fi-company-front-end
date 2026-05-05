@@ -38,6 +38,9 @@ export class ChecklistComponent implements OnInit {
         partNumber: '',
         serialNumber: ''
     };
+    newInstanceCount = 1;
+    newInstanceSerialNumbers: string[] = [''];
+    creatingInstances = false;
 
     // Tab management
     activeTab = 'templates';
@@ -851,8 +854,9 @@ export class ChecklistComponent implements OnInit {
     get isNewInstanceFormValid(): boolean {
         return !!(this.newInstance.workOrder &&
             this.newInstance.partNumber &&
-            this.newInstance.serialNumber &&
-            this.selectedTemplate);
+            this.selectedTemplate &&
+            this.newInstanceSerialNumbers.length > 0 &&
+            this.newInstanceSerialNumbers.every(s => s.trim()));
     }
 
     // ==============================================
@@ -905,6 +909,9 @@ export class ChecklistComponent implements OnInit {
             partNumber: '',
             serialNumber: ''
         };
+        this.newInstanceCount = 1;
+        this.newInstanceSerialNumbers = [''];
+        this.creatingInstances = false;
         this.selectedTemplate = null;
     }
 
@@ -912,6 +919,97 @@ export class ChecklistComponent implements OnInit {
         this.router.navigate(['/inspection-checklist/instance'], {
             queryParams: { id: instance.id }
         });
+    }
+
+    trackByIndex(index: number): number { return index; }
+
+    onNewInstanceCountChange(): void {
+        this.newInstanceCount = Math.min(100, Math.max(1, Number(this.newInstanceCount || 1)));
+        this.regenerateSerials();
+    }
+
+    onBaseSerialChange(): void {
+        this.regenerateSerials();
+    }
+
+    private regenerateSerials(): void {
+        const count = Math.max(1, Number(this.newInstanceCount || 1));
+        const base = String(this.newInstance.serialNumber || '').trim();
+
+        if (!base) {
+            this.newInstanceSerialNumbers = Array.from({ length: count }, (_, i) =>
+                this.newInstanceSerialNumbers[i] || '');
+            return;
+        }
+
+        // Detect numeric suffix to increment
+        const match = base.match(/^(.*?)(\d+)$/);
+        if (match) {
+            const prefix = match[1];
+            const startNum = parseInt(match[2], 10);
+            const padLen = match[2].length;
+            this.newInstanceSerialNumbers = Array.from({ length: count }, (_, i) =>
+                prefix + String(startNum + i).padStart(padLen, '0'));
+        } else {
+            this.newInstanceSerialNumbers = Array.from({ length: count }, (_, i) =>
+                i === 0 ? base : (this.newInstanceSerialNumbers[i] || ''));
+        }
+    }
+
+    async createChecklistInstancesBatch(): Promise<void> {
+        const template = this.selectedTemplate;
+        if (!template) return;
+
+        const resolvedTemplate = await this.confirmTemplateVersionBeforeStart(template);
+        if (!resolvedTemplate) return;
+
+        const workOrder = this.newInstance.workOrder.trim();
+        const partNumber = this.newInstance.partNumber.trim();
+        const serials = this.newInstanceSerialNumbers.map(s => s.trim()).filter(Boolean);
+
+        if (!workOrder || !partNumber || !serials.length) {
+            alert('Please fill in all required fields and ensure all serial numbers are set.');
+            return;
+        }
+
+        const currentUser = this.authService.currentUser();
+        const operatorId = currentUser?.id || null;
+        const operatorName = currentUser
+            ? `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim()
+            : 'Unknown User';
+
+        this.creatingInstances = true;
+
+        const requests = serials.map(serialNumber =>
+            this.photoChecklistService.createInstance({
+                template_id: resolvedTemplate.id,
+                work_order_number: workOrder,
+                part_number: partNumber,
+                serial_number: serialNumber,
+                operator_id: operatorId,
+                operator_name: operatorName,
+            }).toPromise()
+        );
+
+        try {
+            const results = await Promise.all(requests);
+            this.closeCreateInstanceModal();
+            this.loadInstances();
+
+            // If single, navigate directly; if batch, switch to Instances tab
+            if (results.length === 1 && results[0]?.instance_id) {
+                this.router.navigate(['/inspection-checklist/instance'], {
+                    queryParams: { id: results[0].instance_id }
+                });
+            } else {
+                this.activeTab = 'instances';
+            }
+        } catch (err) {
+            console.error('Error creating checklist instances:', err);
+            alert('One or more checklists could not be created. Please try again.');
+        } finally {
+            this.creatingInstances = false;
+        }
     }
 
     selectTemplate(template: ChecklistTemplate): void {
