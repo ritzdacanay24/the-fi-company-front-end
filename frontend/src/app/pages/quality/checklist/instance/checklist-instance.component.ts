@@ -51,7 +51,6 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   instanceId: number = 0;
 
   // Start-from-template (fullscreen modal) state
-  showTemplatePickerModal = false;
   availableTemplates: ChecklistTemplate[] = [];
   loadingTemplates = false;
   selectedTemplateId: number | null = null;
@@ -67,7 +66,6 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   startFromTemplateWorkOrder = '';
   startFromTemplateSerialNumber = '';
   startFromTemplatePartNumber = '';
-  showStartChecklistModal = false;
   startFromTemplateCount = 1;
   startFromTemplateSerialNumbers: string[] = [];
 
@@ -358,7 +356,14 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   }
 
   // Full checklist overview modal
-  showFullChecklistModal = false;
+  @ViewChild('fullChecklistModal') fullChecklistModalRef?: TemplateRef<any>;
+  private fullChecklistModal?: NgbModalRef;
+
+  @ViewChild('templatePickerModal') templatePickerModalRef?: TemplateRef<any>;
+  private templatePickerModal?: NgbModalRef;
+
+  @ViewChild('startChecklistModal') startChecklistModalRef?: TemplateRef<any>;
+  private startChecklistModal?: NgbModalRef;
 
   // In-app camera capture (reliable)
   cameraCaptureItemId: number | string | null = null;
@@ -4560,6 +4565,10 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     event.target.style.display = 'none';
   }
 
+  flattenTemplateItems(items: ChecklistItem[]): ChecklistItem[] {
+    return this.flattenItems(items || []);
+  }
+
   getTemplateItemLabel(items: any[], item: any): string {
     const level = Number(item.level ?? 0);
     if (level === 0) {
@@ -4585,11 +4594,17 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
    * Full checklist modal methods
    */
   openFullChecklistModal(): void {
-    this.showFullChecklistModal = true;
+    if (this.fullChecklistModalRef) {
+      this.fullChecklistModal = this.modalService.open(this.fullChecklistModalRef, {
+        size: 'fullscreen',
+        scrollable: true,
+      });
+    }
   }
 
   closeFullChecklistModal(): void {
-    this.showFullChecklistModal = false;
+    this.fullChecklistModal?.close();
+    this.fullChecklistModal = undefined;
   }
 
   navigateToItemFromModal(index: number): void {
@@ -4724,7 +4739,6 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   }
 
   openTemplatePickerModal(): void {
-    this.showTemplatePickerModal = true;
     this.loadingTemplates = true;
     this.availableTemplates = [];
     this.groupedTemplates = [];
@@ -4740,9 +4754,16 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     this.startFromTemplateSerialNumber = '';
     // Keep optional part number convenience
     this.startFromTemplatePartNumber = this.instance?.part_number || '';
-    this.showStartChecklistModal = false;
     this.startFromTemplateCount = 1;
     this.startFromTemplateSerialNumbers = [];
+
+    if (this.templatePickerModalRef) {
+      this.templatePickerModal = this.modalService.open(this.templatePickerModalRef, {
+        size: 'fullscreen',
+        backdrop: 'static',
+        keyboard: true,
+      });
+    }
 
     this.photoChecklistService.getTemplates().subscribe({
       next: (templates) => {
@@ -4819,18 +4840,10 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
 
 
   closeTemplatePickerModal(): void {
-    this.showTemplatePickerModal = false;
-    this.showStartChecklistModal = false;
-  }
-
-  onTemplatePickerBackdropClick(event: MouseEvent): void {
-    if (this.showStartChecklistModal) {
-      return;
-    }
-
-    if (event.target === event.currentTarget) {
-      this.closeTemplatePickerModal();
-    }
+    this.startChecklistModal?.close();
+    this.startChecklistModal = undefined;
+    this.templatePickerModal?.close();
+    this.templatePickerModal = undefined;
   }
 
   openStartChecklistModal(): void {
@@ -4839,13 +4852,21 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       return;
     }
 
-    this.showStartChecklistModal = true;
     this.startFromTemplateCount = Math.max(1, Number(this.startFromTemplateCount || 1));
     this.regenerateTemplateStartSerials();
+
+    if (this.startChecklistModalRef) {
+      this.startChecklistModal = this.modalService.open(this.startChecklistModalRef, {
+        size: 'lg',
+        scrollable: true,
+        backdrop: 'static',
+      });
+    }
   }
 
   closeStartChecklistModal(): void {
-    this.showStartChecklistModal = false;
+    this.startChecklistModal?.close();
+    this.startChecklistModal = undefined;
   }
 
   onStartTemplateCountChange(): void {

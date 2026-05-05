@@ -1609,12 +1609,7 @@
 }
 
 <!-- Full Checklist Overview Modal -->
-<div class="modal fade show" 
-     *ngIf="showFullChecklistModal" 
-     style="display: block; background: rgba(0,0,0,0.5);"
-     (click)="closeFullChecklistModal()">
-  <div class="modal-dialog modal-fullscreen modal-dialog-scrollable">
-    <div class="modal-content" (click)="$event.stopPropagation()">
+<ng-template #fullChecklistModal let-modal>
       <div class="modal-header bg-primary text-white">
         <h5 class="modal-title">
           <i class="mdi mdi-clipboard-list-outline me-2"></i>
@@ -1786,17 +1781,10 @@
           <i class="mdi mdi-close me-2"></i>Close
         </button>
       </div>
-    </div>
-  </div>
-</div>
+</ng-template>
 
 <!-- Template Picker Modal (Fullscreen) -->
-<div class="modal fade show"
-     *ngIf="showTemplatePickerModal"
-     style="display: block; background: rgba(0,0,0,0.5);"
-  (click)="onTemplatePickerBackdropClick($event)">
-  <div class="modal-dialog modal-fullscreen">
-    <div class="modal-content" (click)="$event.stopPropagation()">
+<ng-template #templatePickerModal let-modal>
       <div class="modal-header bg-white border-bottom">
         <div class="min-w-0">
           <h5 class="modal-title mb-0 text-truncate">
@@ -1950,12 +1938,12 @@
                 <div class="p-2">
                   <div class="text-muted small" *ngIf="!tpl.items || tpl.items.length === 0">No items available.</div>
                   <div class="d-flex align-items-start gap-2 py-2 border-bottom"
-                       *ngFor="let item of tpl.items"
-                       [style.padding-left]="(item.level ?? 0) > 0 ? '1.5rem' : '0'">
-                    <span class="badge"
-                          [ngClass]="(item.level ?? 0) > 0 ? 'bg-secondary bg-opacity-50 text-dark' : 'bg-dark bg-opacity-75'">
-                      {{ getTemplateItemLabel(tpl.items, item) }}
-                    </span>
+                       *ngFor="let item of flattenTemplateItems(tpl.items)"
+                       [style.padding-left.rem]="(item.level ?? 0) * 1.5">
+                      <span class="badge"
+                            [ngClass]="(item.level ?? 0) > 0 ? 'bg-secondary bg-opacity-50 text-dark' : 'bg-dark bg-opacity-75'">
+                        {{ getTemplateItemLabel(flattenTemplateItems(tpl.items), item) }}
+                      </span>
                     <div class="min-w-0 flex-grow-1">
                       <div class="fw-semibold text-truncate" [title]="item.title">{{ item.title }}</div>
                       <div class="small text-muted description-content" *ngIf="item.description" style="max-height: 2.6em; overflow: hidden;" [innerHTML]="item.description"></div>
@@ -2006,16 +1994,10 @@
           Start
         </button>
       </div>
-    </div>
-  </div>
-</div>
+</ng-template>
 
 <!-- Start Checklists Modal -->
-<div class="modal fade show"
-     *ngIf="showStartChecklistModal"
-  style="display: block; background: rgba(0,0,0,0.5);">
-  <div class="modal-dialog modal-lg modal-dialog-scrollable">
-    <div class="modal-content" (click)="$event.stopPropagation()">
+<ng-template #startChecklistModal let-modal>
       <div class="modal-header bg-white border-bottom">
         <div>
           <h5 class="modal-title mb-0">
@@ -2092,9 +2074,7 @@
           Start Checklists
         </button>
       </div>
-    </div>
-  </div>
-</div>
+</ng-template>
 
 <!-- Work Order Information Offcanvas -->
 <ng-template #workOrderContent let-offcanvas>
