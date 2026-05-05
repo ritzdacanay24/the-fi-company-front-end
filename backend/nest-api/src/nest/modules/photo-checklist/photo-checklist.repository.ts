@@ -44,7 +44,8 @@ export class PhotoChecklistRepository {
         qr.id AS qr_id,
         qr.revision_number AS qr_revision_number,
         COALESCE(ic.item_count, 0) AS item_count,
-        COALESCE(ac.active_instances, 0) AS active_instances
+        COALESCE(ac.active_instances, 0) AS active_instances,
+        TRIM(CONCAT(COALESCE(u.first, ''), ' ', COALESCE(u.last, ''))) AS created_by_name
       FROM checklist_templates t
       LEFT JOIN quality_documents qd ON qd.id = t.quality_document_id
       LEFT JOIN quality_revisions qr ON qr.id = t.quality_revision_id
@@ -57,6 +58,7 @@ export class PhotoChecklistRepository {
         FROM checklist_instances WHERE status != 'completed'
         GROUP BY template_id
       ) ac ON ac.template_id = t.id
+      LEFT JOIN db.users u ON u.id = t.created_by
       WHERE ${whereClause}
       ORDER BY t.updated_at DESC
     `;
@@ -191,6 +193,39 @@ export class PhotoChecklistRepository {
     }
 
     return r as RowDataPacket;
+  }
+
+  /** Lightweight fetch — returns raw row without joins or draft resolution */
+  async getRawTemplateById(id: number): Promise<RowDataPacket | null> {
+    const rows = await this.mysqlService.query<RowDataPacket[]>(
+      'SELECT id, version, is_draft, is_active, template_group_id FROM checklist_templates WHERE id = ? LIMIT 1',
+      [id],
+    );
+    const row = rows?.[0] ?? null;
+    if (row) {
+      row.is_draft = !!row.is_draft;
+      if (row.template_group_id != null) row.template_group_id = Number(row.template_group_id);
+    }
+    return row;
+  }
+
+  /** Returns all published (non-draft) versions in a family group */
+  async getPublishedVersionsInGroup(groupId: number): Promise<RowDataPacket[]> {
+    return this.mysqlService.query<RowDataPacket[]>(
+      'SELECT id, version FROM checklist_templates WHERE template_group_id = ? AND is_draft = 0',
+      [groupId],
+    );
+  }
+
+  /** Returns any active draft already in this family group */
+  async getActiveDraftInGroup(groupId: number): Promise<RowDataPacket | null> {
+    const rows = await this.mysqlService.query<RowDataPacket[]>(
+      `SELECT id, version FROM checklist_templates
+       WHERE template_group_id = ? AND is_draft = 1 AND is_active = 1
+       ORDER BY updated_at DESC, id DESC LIMIT 1`,
+      [groupId],
+    );
+    return rows?.[0] ?? null;
   }
 
   async getTemplateItems(templateId: number): Promise<RowDataPacket[]> {
@@ -357,6 +392,18 @@ export class PhotoChecklistRepository {
     const isDraft = payload?.is_draft === 1 || payload?.is_draft === true ? 1 : 0;
     const isActive = payload?.is_active === 0 || payload?.is_active === false ? 0 : 1;
 
+    // If transitioning from draft → published and no published_at provided, stamp it now.
+    const existingRow = await this.mysqlService.query<RowDataPacket[]>(
+      'SELECT is_draft, published_at, version FROM checklist_templates WHERE id = ? LIMIT 1',
+      [id],
+    );
+    const wasPublished = existingRow?.[0]?.published_at;
+    // Preserve the existing version when the payload omits it — prevents accidental clobber to '1.0'.
+    const resolvedVersion = payload?.version || existingRow?.[0]?.version || '1.0';
+    const publishedAt = isDraft === 0
+      ? (payload?.published_at ?? wasPublished ?? new Date().toISOString().slice(0, 19).replace('T', ' '))
+      : null;
+
     await this.mysqlService.withTransaction<void>(async (connection) => {
       await connection.execute(updateSql, [
         payload?.quality_document_id ?? null,
@@ -374,12 +421,12 @@ export class PhotoChecklistRepository {
         payload?.revised_by ?? null,
         payload?.product_type ?? null,
         payload?.category || 'inspection',
-        payload?.version || '1.0',
+        resolvedVersion,
         payload?.parent_template_id ?? null,
         isActive,
         payload?.created_by ?? null,
         isDraft,
-        payload?.published_at ?? null,
+        publishedAt,
         payload?.last_autosave_at ?? null,
         id,
       ]);
@@ -502,7 +549,7 @@ export class PhotoChecklistRepository {
     return { success: true };
   }
 
-  async createParentVersion(sourceTemplateId: number): Promise<number> {
+  async createParentVersion(sourceTemplateId: number, userId?: number): Promise<number> {
     return this.mysqlService.withTransaction<number>(async (connection) => {
       const [rows] = await connection.query<RowDataPacket[]>(
         'SELECT * FROM checklist_templates WHERE id = ? LIMIT 1',
@@ -572,7 +619,7 @@ export class PhotoChecklistRepository {
           source.product_type ?? null,
           source.category || 'inspection',
           nextMajorVersion,
-          source.created_by ?? null,
+          userId ?? null,
           groupId,
         ],
       );

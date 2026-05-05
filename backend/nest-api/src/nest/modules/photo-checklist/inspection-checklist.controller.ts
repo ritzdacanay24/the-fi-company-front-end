@@ -58,8 +58,8 @@ export class InspectionChecklistController {
 
   @Post('templates/:id/create-parent-version')
   @Permissions('write')
-  async createParentVersion(@Param('id', ParseIntPipe) id: number) {
-    return this.service.createParentVersion(id);
+  async createParentVersion(@Param('id', ParseIntPipe) id: number, @CurrentUserId() currentUserId: number) {
+    return this.service.createParentVersion(id, currentUserId);
   }
 
   @Post('templates/delete-major-version')

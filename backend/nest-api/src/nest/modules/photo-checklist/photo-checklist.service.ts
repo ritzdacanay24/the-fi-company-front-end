@@ -70,6 +70,26 @@ export class PhotoChecklistService {
   }
 
   async createTemplate(payload: Record<string, unknown>) {
+    // When branching from an existing published template (sub-version draft),
+    // reject if it is not the latest published version in its family.
+    const sourceId = Number(payload?.source_template_id || 0);
+    if (sourceId > 0) {
+      await this.assertIsLatestVersionInFamily(sourceId);
+
+      // Check if an active draft already exists in this family — redirect to it
+      const groupId = Number(payload?.template_group_id || 0);
+      if (groupId > 0) {
+        const existingDraft = await this.repository.getActiveDraftInGroup(groupId);
+        if (existingDraft) {
+          return {
+            success: false,
+            code: 'DRAFT_ALREADY_EXISTS',
+            message: `A draft (v${existingDraft.version}) already exists for this template family. Please complete or discard it before creating a new version.`,
+            existing_draft_id: Number(existingDraft.id),
+          };
+        }
+      }
+    }
     const templateId = await this.repository.createTemplate(payload);
     const template = await this.getTemplateById(templateId, { includeInactive: true });
     return { success: true, template_id: templateId, template };
@@ -129,8 +149,25 @@ export class PhotoChecklistService {
     return this.repository.deleteMajorVersion(groupId, major);
   }
 
-  async createParentVersion(sourceTemplateId: number) {
-    const newTemplateId = await this.repository.createParentVersion(sourceTemplateId);
+  async createParentVersion(sourceTemplateId: number, userId?: number) {
+    await this.assertIsLatestVersionInFamily(sourceTemplateId);
+
+    // Check if an active draft already exists in this family — redirect to it
+    const source = await this.repository.getRawTemplateById(sourceTemplateId);
+    if (source) {
+      const groupId = Number(source.template_group_id || source.id);
+      const existingDraft = await this.repository.getActiveDraftInGroup(groupId);
+      if (existingDraft) {
+        return {
+          success: false,
+          code: 'DRAFT_ALREADY_EXISTS',
+          message: `A draft (v${existingDraft.version}) already exists for this template family. Please complete or discard it before creating a new version.`,
+          existing_draft_id: Number(existingDraft.id),
+        };
+      }
+    }
+
+    const newTemplateId = await this.repository.createParentVersion(sourceTemplateId, userId);
     if (!newTemplateId) {
       throw new NotFoundException({
         code: 'RC_CHECKLIST_TEMPLATE_NOT_FOUND',
@@ -144,6 +181,42 @@ export class PhotoChecklistService {
 
   async getTemplateHistory(options: { groupId?: number; templateId?: number }) {
     return this.repository.getTemplateHistory(options);
+  }
+
+  /**
+   * Throws ForbiddenException if the given template is not the latest published
+   * version in its family. Drafts are always allowed through (they are never "old").
+   */
+  private async assertIsLatestVersionInFamily(templateId: number): Promise<void> {
+    const rows = await this.repository.getRawTemplateById(templateId);
+    if (!rows) return; // let downstream handle not-found
+    if (rows.is_draft) return; // drafts are fine
+
+    const groupId = Number(rows.template_group_id || rows.id);
+    const siblings = await this.repository.getPublishedVersionsInGroup(groupId);
+    const thisVersion = String(rows.version || '1.0');
+
+    // Simple version comparison: split by '.' and compare numerically
+    const parseVer = (v: string) => String(v).split('.').map(Number);
+    const compareVer = (a: string, b: string): number => {
+      const pa = parseVer(a);
+      const pb = parseVer(b);
+      for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+        const diff = (pa[i] ?? 0) - (pb[i] ?? 0);
+        if (diff !== 0) return diff;
+      }
+      return 0;
+    };
+
+    const latestVersion = siblings
+      .map((s: RowDataPacket) => String(s.version || '1.0'))
+      .sort((a: string, b: string) => compareVer(b, a))[0];
+
+    if (latestVersion && compareVer(thisVersion, latestVersion) < 0) {
+      throw new ForbiddenException(
+        `Cannot create a new version from an older version (${thisVersion}). Please use the latest version (${latestVersion}).`,
+      );
+    }
   }
 
   async compareTemplates(sourceId: number, targetId: number) {

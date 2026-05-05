@@ -58,6 +58,7 @@ export class ChecklistReportsComponent implements OnInit {
   loading = false;
   instances: ChecklistInstance[] = [];
   filteredInstances: ChecklistInstance[] = [];
+  private chartReflowQueued = false;
 
   quickSearch = '';
   dateFrom = '';
@@ -464,6 +465,25 @@ export class ChecklistReportsComponent implements OnInit {
     this.updateTemplateUsageChart();
     this.updateTemplatePerformanceChart();
     this.updateTemplateAverageTimeChart();
+    this.queueChartReflow();
+  }
+
+  private queueChartReflow(): void {
+    if (this.chartReflowQueued) {
+      return;
+    }
+
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    this.chartReflowQueued = true;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        window.dispatchEvent(new Event('resize'));
+        this.chartReflowQueued = false;
+      });
+    });
   }
 
   private updateTemplateUsageChart(): void {

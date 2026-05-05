@@ -9,3 +9,28 @@
 .badge {
   font-weight: 600;
 }
+
+.chart-loading-skeleton {
+  width: 100%;
+  border-radius: 0.75rem;
+  background: linear-gradient(90deg, #eef1f5 0%, #e2e8f0 50%, #eef1f5 100%);
+  background-size: 200% 100%;
+  animation: chart-loading-shimmer 1.2s ease-in-out infinite;
+}
+
+.chart-loading-skeleton--300 {
+  height: 300px;
+}
+
+.chart-loading-skeleton--320 {
+  height: 320px;
+}
+
+@keyframes chart-loading-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}

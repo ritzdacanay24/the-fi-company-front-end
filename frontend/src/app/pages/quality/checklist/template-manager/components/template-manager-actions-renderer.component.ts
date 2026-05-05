@@ -6,6 +6,8 @@ import { ChecklistTemplate } from '@app/core/api/photo-checklist-config/photo-ch
 
 export interface TemplateManagerActionsCellParams extends ICellRendererParams<ChecklistTemplate> {
   onEdit: (template: ChecklistTemplate) => void;
+  onView: (template: ChecklistTemplate) => void;
+  isLatest: boolean;
 }
 
 @Component({
@@ -14,10 +16,22 @@ export interface TemplateManagerActionsCellParams extends ICellRendererParams<Ch
   imports: [CommonModule],
   template: `
     <ng-container *ngIf="params?.data">
+      <!-- Latest version (or draft): full edit button -->
       <button
+        *ngIf="params.isLatest"
         class="btn btn-sm btn-primary"
         type="button"
         title="Open template editor"
+        (click)="onEdit()">
+        <i class="mdi mdi-pencil me-1"></i>
+        Edit
+      </button>
+      <!-- Older version: view-only -->
+      <button
+        *ngIf="!params.isLatest"
+        class="btn btn-sm btn-outline-secondary"
+        type="button"
+        title="View this version (read-only)"
         (click)="onView()">
         <i class="mdi mdi-eye me-1"></i>
         View
@@ -27,13 +41,6 @@ export interface TemplateManagerActionsCellParams extends ICellRendererParams<Ch
   styles: [`
     .tm-actions {
       width: 100%;
-      justify-content: center;
-    }
-
-    .tm-actions-primary {
-      width: 120px;
-      display: inline-flex;
-      align-items: center;
       justify-content: center;
     }
   `]
@@ -50,11 +57,15 @@ export class TemplateManagerActionsRendererComponent implements ICellRendererAng
     return true;
   }
 
-  onView(): void {
-    if (!this.params?.data) {
-      return;
+  onEdit(): void {
+    if (this.params?.data) {
+      this.params.onEdit(this.params.data);
     }
+  }
 
-    this.params.onEdit(this.params.data);
+  onView(): void {
+    if (this.params?.data) {
+      this.params.onView(this.params.data);
+    }
   }
 }

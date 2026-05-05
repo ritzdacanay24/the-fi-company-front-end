@@ -326,6 +326,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       revised_by: (this.editingTemplate as any)?.revised_by ?? null,
       product_type: (this.editingTemplate as any)?.product_type ?? '',
       category: 'inspection',
+      version: this.editingTemplate.version ?? '1.0',
       is_active: nextActive ? 1 : 0
     };
 
@@ -532,6 +533,8 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
     // Keep selected item in URL (?item=INDEX) and restore on refresh/load.
     this.routeQueryParamSub = this.route.queryParamMap.subscribe((params) => {
+      this.isViewOnly = params.get('readonly') === '1';
+
       const raw = params.get('item');
       const parsed = raw !== null ? Number(raw) : NaN;
       const nextRequested = Number.isInteger(parsed) && parsed >= 0 ? parsed : null;
@@ -557,7 +560,10 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       this.scheduleRestoreRequestedNavItemSelection();
     });
   }
+  isViewOnly = false;
+
   isPublishedLocked(): boolean {
+    if (this.isViewOnly) return true;
     return !!this.editingTemplate && !this.editingTemplate.is_draft;
   }
 
@@ -566,7 +572,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   }
 
   startMajorVersionDraft(): void {
-    if (this.saving || !this.editingTemplate || this.editingTemplate.is_draft) {
+    if (this.saving || !this.editingTemplate || this.editingTemplate.is_draft || this.isViewOnly) {
       return;
     }
 
@@ -577,6 +583,13 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
         this.saving = false;
 
         if (response?.success === false) {
+          // If a draft already exists, navigate to it instead of blocking
+          const existingDraftId = Number(response?.existing_draft_id || 0);
+          if (response?.code === 'DRAFT_ALREADY_EXISTS' && existingDraftId > 0) {
+            this.loadTemplate(existingDraftId);
+            this.router.navigate(['/inspection-checklist/template-editor', existingDraftId], { replaceUrl: true });
+            return;
+          }
           alert(response?.error || response?.message || 'Unable to start major version draft.');
           return;
         }
@@ -648,7 +661,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     templateData.product_type = modalValue.product_type || '';
     templateData.customer_name = modalValue.customer_name || '';
     templateData.is_active = !!modalValue.is_active ? 1 : 0;
-    templateData.is_draft = 1;
+    templateData.is_draft = 0;  // New standalone templates publish immediately
     templateData.version = '1.0';
     templateData.created_by = this.getCurrentUserIdentifier();
 
@@ -828,7 +841,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
         if (!template) {
           console.error('Template not found');
           alert('Template not found. Redirecting to template manager.');
-          this.router.navigate(['/inspection-checklist/template-manager']);
+          this.navigateToTemplateManager(id);
           this.loading = false;
           return;
         }
@@ -869,7 +882,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
         console.error('Error loading template:', error);
         this.loading = false;
         alert('Error loading template: ' + (error.message || 'Unknown error'));
-        this.router.navigate(['/inspection-checklist/template-manager']);
+        this.navigateToTemplateManager(id);
       }
     });
   }
@@ -4968,6 +4981,11 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     if (this.editingTemplate?.is_draft) {
       (templateData as any).is_draft = 0;
       (templateData as any).is_active = 1;
+      // Preserve the version assigned when the draft was created (e.g. 2.0 for a major version draft).
+      // Without this the backend falls back to '1.0' since version is not a form control.
+      if (this.editingTemplate.version) {
+        (templateData as any).version = this.editingTemplate.version;
+      }
       delete (templateData as any).source_template_id;
       this.proceedWithSave(templateData, false);
       return;
@@ -5054,18 +5072,23 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     const templateData = this.buildTemplatePayload();
     (templateData as any).is_draft = 1;
 
-    // If starting a draft from a published template, pick next minor based on the latest
-    // PUBLISHED template in the same major line (e.g., latest v2.x is v2.3 -> draft becomes v2.4).
+    // If starting a draft from a published template, create a NEW row (don't overwrite the
+    // published record). Pick the next minor version for the same major line.
     if (this.editingTemplate && !this.editingTemplate.is_draft) {
       const groupId = Number((this.editingTemplate as any)?.template_group_id || this.editingTemplate.id || 0);
       const major = Number(String(this.editingTemplate.version || '1.0').split('.')[0] || 1);
+
+      // Carry group membership and source link into the new draft row.
+      (templateData as any).template_group_id = groupId;
+      (templateData as any).source_template_id = this.editingTemplate.id;
 
       this.configService.getTemplatesIncludingInactive().subscribe({
         next: (templates: any[]) => {
           const nextVersion = this.computeNextMinorForMajorLine(templates || [], groupId, major);
           (templateData as any).version = nextVersion;
 
-          const saveRequest = this.configService.updateTemplate(this.editingTemplate!.id, templateData);
+          // CREATE a new draft row — never mutate the published template.
+          const saveRequest = this.configService.createTemplate(templateData);
           this.subscribeToDraftSave(saveRequest, startedSeq, templateData);
         },
         error: (error) => {
@@ -5073,11 +5096,16 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
           // Fall back to current version + 1
           (templateData as any).version = this.getNextVersion(this.editingTemplate!.version || '1.0');
 
-          const saveRequest = this.configService.updateTemplate(this.editingTemplate!.id, templateData);
+          const saveRequest = this.configService.createTemplate(templateData);
           this.subscribeToDraftSave(saveRequest, startedSeq, templateData);
         }
       });
       return;
+    }
+
+    // Preserve the version already assigned to this draft (e.g. 2.0 for a major version draft).
+    if (this.editingTemplate?.version && !(templateData as any).version) {
+      (templateData as any).version = this.editingTemplate.version;
     }
 
     const saveRequest = this.editingTemplate
@@ -5213,7 +5241,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       this.saving = false;
 
       if (response?.success) {
-        this.router.navigate(['/quality/checklist/template-manager']);
+        this.navigateToTemplateManager(this.editingTemplate.id);
         return;
       }
 
@@ -5868,12 +5896,12 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
         } else if (!createVersion && this.editingTemplate?.is_draft) {
           this.saving = false;
           alert('Draft published successfully!');
-          this.router.navigate(['/quality/checklist/template-manager']);
+          this.navigateToTemplateManager(templateId);
         } else {
           // Direct update without revision tracking (shouldn't happen with current flow)
           this.saving = false;
           alert('Template updated successfully!');
-          this.router.navigate(['/quality/checklist/template-manager']);
+          this.navigateToTemplateManager(templateId);
         }
       },
       error: (error) => {
@@ -5932,7 +5960,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       next: (result) => {
                 this.saving = false;
         alert(`✓ Document created: ${result.document_number}, Rev ${result.revision_number}\n\n${result.message}`);
-        this.router.navigate(['/quality/checklist/template-manager']);
+        this.navigateToTemplateManager(templateId);
       },
       error: (error) => {
         console.error('Error creating document:', error);
@@ -5970,7 +5998,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       next: (result) => {
                 this.saving = false;
         alert(`✓ Revision created: ${result.document_number}, Rev ${result.revision_number}\n\n${result.message}`);
-        this.router.navigate(['/quality/checklist/template-manager']);
+        this.navigateToTemplateManager(templateId);
       },
       error: (error) => {
         console.error('Error creating revision:', error);
@@ -6006,6 +6034,18 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   }
 
   cancel(): void {
+    this.navigateToTemplateManager(this.editingTemplate?.id);
+  }
+
+  private navigateToTemplateManager(focusId?: number | null): void {
+    const safeFocusId = Number(focusId || this.editingTemplate?.id || 0);
+    if (safeFocusId > 0) {
+      this.router.navigate(['/inspection-checklist/template-manager'], {
+        queryParams: { focusId: safeFocusId }
+      });
+      return;
+    }
+
     this.router.navigate(['/inspection-checklist/template-manager']);
   }
 

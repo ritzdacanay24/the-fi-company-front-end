@@ -126,16 +126,20 @@
     <div class="card border-0 shadow-sm h-100">
       <div class="card-header"><h4 class="h6 mb-0">Status Distribution</h4></div>
       <div class="card-body">
-        <apx-chart
-          [series]="statusDonutChart.series"
-          [chart]="statusDonutChart.chart"
-          [labels]="statusDonutChart.labels"
-          [dataLabels]="statusDonutChart.dataLabels"
-          [legend]="statusDonutChart.legend"
-          [tooltip]="statusDonutChart.tooltip"
-          [plotOptions]="statusDonutChart.plotOptions"
-          [colors]="statusDonutChart.colors"
-        ></apx-chart>
+        @if (loading) {
+          <div class="chart-loading-skeleton chart-loading-skeleton--300" aria-hidden="true"></div>
+        } @else {
+          <apx-chart
+            [series]="statusDonutChart.series"
+            [chart]="statusDonutChart.chart"
+            [labels]="statusDonutChart.labels"
+            [dataLabels]="statusDonutChart.dataLabels"
+            [legend]="statusDonutChart.legend"
+            [tooltip]="statusDonutChart.tooltip"
+            [plotOptions]="statusDonutChart.plotOptions"
+            [colors]="statusDonutChart.colors"
+          ></apx-chart>
+        }
       </div>
     </div>
   </div>
@@ -144,19 +148,23 @@
     <div class="card border-0 shadow-sm h-100">
       <div class="card-header"><h4 class="h6 mb-0">Progress Buckets</h4></div>
       <div class="card-body">
-        <apx-chart
-          [series]="progressBucketChart.series"
-          [chart]="progressBucketChart.chart"
-          [xaxis]="progressBucketChart.xaxis"
-          [yaxis]="progressBucketChart.yaxis"
-          [dataLabels]="progressBucketChart.dataLabels"
-          [grid]="progressBucketChart.grid"
-          [stroke]="progressBucketChart.stroke"
-          [legend]="progressBucketChart.legend"
-          [tooltip]="progressBucketChart.tooltip"
-          [plotOptions]="progressBucketChart.plotOptions"
-          [colors]="progressBucketChart.colors"
-        ></apx-chart>
+        @if (loading) {
+          <div class="chart-loading-skeleton chart-loading-skeleton--300" aria-hidden="true"></div>
+        } @else {
+          <apx-chart
+            [series]="progressBucketChart.series"
+            [chart]="progressBucketChart.chart"
+            [xaxis]="progressBucketChart.xaxis"
+            [yaxis]="progressBucketChart.yaxis"
+            [dataLabels]="progressBucketChart.dataLabels"
+            [grid]="progressBucketChart.grid"
+            [stroke]="progressBucketChart.stroke"
+            [legend]="progressBucketChart.legend"
+            [tooltip]="progressBucketChart.tooltip"
+            [plotOptions]="progressBucketChart.plotOptions"
+            [colors]="progressBucketChart.colors"
+          ></apx-chart>
+        }
       </div>
     </div>
   </div>
@@ -165,19 +173,23 @@
     <div class="card border-0 shadow-sm h-100">
       <div class="card-header"><h4 class="h6 mb-0">Top Operators by Load</h4></div>
       <div class="card-body">
-        <apx-chart
-          [series]="operatorChart.series"
-          [chart]="operatorChart.chart"
-          [xaxis]="operatorChart.xaxis"
-          [yaxis]="operatorChart.yaxis"
-          [dataLabels]="operatorChart.dataLabels"
-          [grid]="operatorChart.grid"
-          [stroke]="operatorChart.stroke"
-          [legend]="operatorChart.legend"
-          [tooltip]="operatorChart.tooltip"
-          [plotOptions]="operatorChart.plotOptions"
-          [colors]="operatorChart.colors"
-        ></apx-chart>
+        @if (loading) {
+          <div class="chart-loading-skeleton chart-loading-skeleton--320" aria-hidden="true"></div>
+        } @else {
+          <apx-chart
+            [series]="operatorChart.series"
+            [chart]="operatorChart.chart"
+            [xaxis]="operatorChart.xaxis"
+            [yaxis]="operatorChart.yaxis"
+            [dataLabels]="operatorChart.dataLabels"
+            [grid]="operatorChart.grid"
+            [stroke]="operatorChart.stroke"
+            [legend]="operatorChart.legend"
+            [tooltip]="operatorChart.tooltip"
+            [plotOptions]="operatorChart.plotOptions"
+            [colors]="operatorChart.colors"
+          ></apx-chart>
+        }
       </div>
     </div>
   </div>
@@ -190,19 +202,23 @@
         <h4 class="h6 mb-0">14-Day Inspection Flow</h4>
       </div>
       <div class="card-body">
-        <apx-chart
-          [series]="trendChart.series"
-          [chart]="trendChart.chart"
-          [xaxis]="trendChart.xaxis"
-          [yaxis]="trendChart.yaxis"
-          [dataLabels]="trendChart.dataLabels"
-          [grid]="trendChart.grid"
-          [stroke]="trendChart.stroke"
-          [legend]="trendChart.legend"
-          [tooltip]="trendChart.tooltip"
-          [plotOptions]="trendChart.plotOptions"
-          [colors]="trendChart.colors"
-        ></apx-chart>
+        @if (loading) {
+          <div class="chart-loading-skeleton chart-loading-skeleton--320" aria-hidden="true"></div>
+        } @else {
+          <apx-chart
+            [series]="trendChart.series"
+            [chart]="trendChart.chart"
+            [xaxis]="trendChart.xaxis"
+            [yaxis]="trendChart.yaxis"
+            [dataLabels]="trendChart.dataLabels"
+            [grid]="trendChart.grid"
+            [stroke]="trendChart.stroke"
+            [legend]="trendChart.legend"
+            [tooltip]="trendChart.tooltip"
+            [plotOptions]="trendChart.plotOptions"
+            [colors]="trendChart.colors"
+          ></apx-chart>
+        }
       </div>
     </div>
   </div>
@@ -213,19 +229,23 @@
         <h4 class="h6 mb-0">Template Performance (Avg Progress)</h4>
       </div>
       <div class="card-body">
-        <apx-chart
-          [series]="templatePerformanceChart.series"
-          [chart]="templatePerformanceChart.chart"
-          [xaxis]="templatePerformanceChart.xaxis"
-          [yaxis]="templatePerformanceChart.yaxis"
-          [dataLabels]="templatePerformanceChart.dataLabels"
-          [grid]="templatePerformanceChart.grid"
-          [stroke]="templatePerformanceChart.stroke"
-          [legend]="templatePerformanceChart.legend"
-          [tooltip]="templatePerformanceChart.tooltip"
-          [plotOptions]="templatePerformanceChart.plotOptions"
-          [colors]="templatePerformanceChart.colors"
-        ></apx-chart>
+        @if (loading) {
+          <div class="chart-loading-skeleton chart-loading-skeleton--320" aria-hidden="true"></div>
+        } @else {
+          <apx-chart
+            [series]="templatePerformanceChart.series"
+            [chart]="templatePerformanceChart.chart"
+            [xaxis]="templatePerformanceChart.xaxis"
+            [yaxis]="templatePerformanceChart.yaxis"
+            [dataLabels]="templatePerformanceChart.dataLabels"
+            [grid]="templatePerformanceChart.grid"
+            [stroke]="templatePerformanceChart.stroke"
+            [legend]="templatePerformanceChart.legend"
+            [tooltip]="templatePerformanceChart.tooltip"
+            [plotOptions]="templatePerformanceChart.plotOptions"
+            [colors]="templatePerformanceChart.colors"
+          ></apx-chart>
+        }
       </div>
     </div>
   </div>
@@ -238,19 +258,23 @@
         <h4 class="h6 mb-0">Most Used Templates</h4>
       </div>
       <div class="card-body">
-        <apx-chart
-          [series]="templateUsageChart.series"
-          [chart]="templateUsageChart.chart"
-          [xaxis]="templateUsageChart.xaxis"
-          [yaxis]="templateUsageChart.yaxis"
-          [dataLabels]="templateUsageChart.dataLabels"
-          [grid]="templateUsageChart.grid"
-          [stroke]="templateUsageChart.stroke"
-          [legend]="templateUsageChart.legend"
-          [tooltip]="templateUsageChart.tooltip"
-          [plotOptions]="templateUsageChart.plotOptions"
-          [colors]="templateUsageChart.colors"
-        ></apx-chart>
+        @if (loading) {
+          <div class="chart-loading-skeleton chart-loading-skeleton--320" aria-hidden="true"></div>
+        } @else {
+          <apx-chart
+            [series]="templateUsageChart.series"
+            [chart]="templateUsageChart.chart"
+            [xaxis]="templateUsageChart.xaxis"
+            [yaxis]="templateUsageChart.yaxis"
+            [dataLabels]="templateUsageChart.dataLabels"
+            [grid]="templateUsageChart.grid"
+            [stroke]="templateUsageChart.stroke"
+            [legend]="templateUsageChart.legend"
+            [tooltip]="templateUsageChart.tooltip"
+            [plotOptions]="templateUsageChart.plotOptions"
+            [colors]="templateUsageChart.colors"
+          ></apx-chart>
+        }
       </div>
     </div>
   </div>
@@ -261,19 +285,23 @@
         <h4 class="h6 mb-0">Average Time to Complete by Template</h4>
       </div>
       <div class="card-body">
-        <apx-chart
-          [series]="templateAvgTimeChart.series"
-          [chart]="templateAvgTimeChart.chart"
-          [xaxis]="templateAvgTimeChart.xaxis"
-          [yaxis]="templateAvgTimeChart.yaxis"
-          [dataLabels]="templateAvgTimeChart.dataLabels"
-          [grid]="templateAvgTimeChart.grid"
-          [stroke]="templateAvgTimeChart.stroke"
-          [legend]="templateAvgTimeChart.legend"
-          [tooltip]="templateAvgTimeChart.tooltip"
-          [plotOptions]="templateAvgTimeChart.plotOptions"
-          [colors]="templateAvgTimeChart.colors"
-        ></apx-chart>
+        @if (loading) {
+          <div class="chart-loading-skeleton chart-loading-skeleton--320" aria-hidden="true"></div>
+        } @else {
+          <apx-chart
+            [series]="templateAvgTimeChart.series"
+            [chart]="templateAvgTimeChart.chart"
+            [xaxis]="templateAvgTimeChart.xaxis"
+            [yaxis]="templateAvgTimeChart.yaxis"
+            [dataLabels]="templateAvgTimeChart.dataLabels"
+            [grid]="templateAvgTimeChart.grid"
+            [stroke]="templateAvgTimeChart.stroke"
+            [legend]="templateAvgTimeChart.legend"
+            [tooltip]="templateAvgTimeChart.tooltip"
+            [plotOptions]="templateAvgTimeChart.plotOptions"
+            [colors]="templateAvgTimeChart.colors"
+          ></apx-chart>
+        }
       </div>
     </div>
   </div>

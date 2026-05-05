@@ -1784,7 +1784,12 @@
           <div class="border-end bg-light" style="width: 340px; min-width: 340px; max-width: 340px;">
             <div class="p-3 border-bottom bg-light">
               <div class="fw-semibold">Templates</div>
-              <div class="small text-muted">Select a template to preview</div>
+              <div class="small text-muted mb-2">Latest version shown by default</div>
+              <input type="search"
+                     class="form-control form-control-sm"
+                     placeholder="Search templates..."
+                     [(ngModel)]="templatePickerSearch"
+                     autocomplete="off">
             </div>
 
             <div class="p-3" *ngIf="loadingTemplates">
@@ -1794,28 +1799,68 @@
               </div>
             </div>
 
-            <div class="p-3 text-muted" *ngIf="!loadingTemplates && availableTemplates.length === 0">
+            <div class="p-3 text-muted" *ngIf="!loadingTemplates && filteredGroupedTemplates.length === 0">
               No templates found.
             </div>
 
-            <div class="list-group list-group-flush overflow-auto" style="min-height: 0; max-height: calc(100vh - 160px);" *ngIf="!loadingTemplates && availableTemplates.length > 0">
-              <button type="button"
-                      class="list-group-item list-group-item-action"
-                      *ngFor="let t of availableTemplates"
-                      (click)="selectTemplateForPreview(t)"
-                      [class.active]="selectedTemplateId === t.id">
-                <div class="d-flex justify-content-between align-items-center">
-                  <div class="text-truncate fw-semibold" [title]="t.name">{{ t.name }}</div>
-                  <span class="badge" [ngClass]="selectedTemplateId === t.id ? 'bg-light text-dark' : 'bg-secondary'" *ngIf="t.item_count">
-                    {{ t.item_count }}
-                  </span>
-                </div>
-                <div class="small" [class.text-white-50]="selectedTemplateId === t.id" [class.text-muted]="selectedTemplateId !== t.id">
-                  <span *ngIf="t.part_number"><strong>P/N:</strong> {{ t.part_number }}</span>
-                  <span *ngIf="t.part_number && t.category"> · </span>
-                  <span *ngIf="t.category">{{ t.category }}</span>
-                </div>
-              </button>
+            <div class="list-group list-group-flush overflow-auto" style="min-height: 0; max-height: calc(100vh - 200px);" *ngIf="!loadingTemplates && filteredGroupedTemplates.length > 0">
+              <ng-container *ngFor="let g of filteredGroupedTemplates">
+                <!-- Latest version row -->
+                <button type="button"
+                        class="list-group-item list-group-item-action"
+                        (click)="selectTemplateForPreview(g.latest)"
+                        [class.active]="selectedTemplateId === g.latest.id">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <div class="text-truncate fw-semibold" [title]="g.latest.name">{{ g.latest.name }}</div>
+                    <div class="d-flex align-items-center gap-1 flex-shrink-0">
+                      <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 small">v{{ g.latest.version }}</span>
+                      <span class="badge" [ngClass]="selectedTemplateId === g.latest.id ? 'bg-light text-dark' : 'bg-secondary'" *ngIf="g.latest.item_count">
+                        {{ g.latest.item_count }}
+                      </span>
+                    </div>
+                  </div>
+                  <div class="d-flex justify-content-between align-items-center">
+                    <div class="small" [class.text-white-50]="selectedTemplateId === g.latest.id" [class.text-muted]="selectedTemplateId !== g.latest.id">
+                      <span *ngIf="g.latest.part_number"><strong>P/N:</strong> {{ g.latest.part_number }}</span>
+                      <span *ngIf="g.latest.part_number && g.latest.category"> · </span>
+                      <span *ngIf="g.latest.category">{{ g.latest.category }}</span>
+                    </div>
+                    <!-- Expand older versions toggle -->
+                    <button *ngIf="g.older.length > 0"
+                            type="button"
+                            class="btn btn-link btn-sm p-0 text-decoration-none"
+                            [class.text-white-50]="selectedTemplateId === g.latest.id"
+                            [class.text-muted]="selectedTemplateId !== g.latest.id"
+                            style="font-size: 0.7rem;"
+                            (click)="$event.stopPropagation(); toggleGroupExpand(g.groupId)"
+                            [title]="expandedGroups.has(g.groupId) ? 'Hide older versions' : 'Show ' + g.older.length + ' older version(s)'">
+                      <i class="mdi" [class.mdi-chevron-up]="expandedGroups.has(g.groupId)" [class.mdi-chevron-down]="!expandedGroups.has(g.groupId)"></i>
+                      {{ g.older.length }} older
+                    </button>
+                  </div>
+                </button>
+                <!-- Older versions (collapsible) -->
+                <ng-container *ngIf="expandedGroups.has(g.groupId)">
+                  <button type="button"
+                          class="list-group-item list-group-item-action ps-4"
+                          style="background: #f8f9fa;"
+                          *ngFor="let t of g.older"
+                          (click)="selectTemplateForPreview(t)"
+                          [class.active]="selectedTemplateId === t.id">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <div class="text-truncate small text-muted" [class.text-white-50]="selectedTemplateId === t.id" [title]="t.name">
+                        <i class="mdi mdi-history me-1"></i>v{{ t.version }}
+                      </div>
+                      <span class="badge" [ngClass]="selectedTemplateId === t.id ? 'bg-light text-dark' : 'bg-secondary'" *ngIf="t.item_count">
+                        {{ t.item_count }}
+                      </span>
+                    </div>
+                    <div class="small" [class.text-white-50]="selectedTemplateId === t.id" [class.text-muted]="selectedTemplateId !== t.id" *ngIf="t.part_number">
+                      <strong>P/N:</strong> {{ t.part_number }}
+                    </div>
+                  </button>
+                </ng-container>
+              </ng-container>
             </div>
           </div>
 

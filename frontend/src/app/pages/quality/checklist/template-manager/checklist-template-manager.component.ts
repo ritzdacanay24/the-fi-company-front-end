@@ -1,11 +1,12 @@
-import { Component, OnInit, ViewChild, TemplateRef, ElementRef } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild, TemplateRef, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { NgbModal, NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { CdkDragDrop, moveItemInArray, DragDropModule } from '@angular/cdk/drag-drop';
 import { AgGridModule } from 'ag-grid-angular';
-import { CellClickedEvent, ColDef, RowDoubleClickedEvent } from 'ag-grid-community';
+import { CellClickedEvent, ColDef, GetRowIdParams, GridApi, GridReadyEvent, RowClassRules, RowDoubleClickedEvent } from 'ag-grid-community';
+import { Subscription } from 'rxjs';
 
 import { PhotoChecklistConfigService, ChecklistTemplate, ChecklistItem } from '@app/core/api/photo-checklist-config/photo-checklist-config.service';
 import { AttachmentsService } from '@app/core/api/attachments/attachments.service';
@@ -158,10 +159,17 @@ interface FamilyNavNode {
                     class="ag-theme-quartz no-border"
                     style="width: 100%; height: calc(100vh - 280px); min-height: 400px;"
                     [rowData]="getFilteredTemplates()"
+                    [getRowId]="versionsGetRowId"
+                    [rowClassRules]="versionsRowClassRules"
                     [columnDefs]="versionsColumnDefs"
+                    [autoGroupColumnDef]="versionsAutoGroupColumnDef"
+                    [groupDisplayType]="'singleColumn'"
+                    [groupDefaultExpanded]="versionsGroupDefaultExpanded"
+                    [isGroupOpenByDefault]="isVersionGroupOpenByDefault"
                     [defaultColDef]="versionsDefaultColDef"
                     [overlayNoRowsTemplate]="versionsNoRowsOverlay"
                     [suppressCellFocus]="true"
+                    (gridReady)="onVersionsGridReady($event)"
                     (cellClicked)="onVersionsGridCellClicked($event)"
                     (rowDoubleClicked)="onVersionsGridRowDoubleClicked($event)">
                   </ag-grid-angular>
@@ -2142,14 +2150,36 @@ interface FamilyNavNode {
       background: rgba(220, 53, 69, 0.1) !important;
       border-left-color: #dc3545;
     }
+
+    ::ng-deep .ag-theme-quartz .ag-row.focused-template-row {
+      background: linear-gradient(90deg, rgba(25, 135, 84, 0.2), rgba(25, 135, 84, 0.1)) !important;
+      outline: 2px solid rgba(25, 135, 84, 0.7);
+      outline-offset: -2px;
+    }
+
+    ::ng-deep .ag-theme-quartz .ag-row.focused-template-row .ag-cell {
+      font-weight: 600;
+    }
   `],
   animations: [
     // Add slide animation for requirements section
   ]
 })
-export class ChecklistTemplateManagerComponent implements OnInit {
+export class ChecklistTemplateManagerComponent implements OnInit, OnDestroy {
   private readonly templateManagerStateKey = 'checklist-template-manager-state:v1';
   private pendingRestoreState: any | null = null;
+  private versionsGridApi: GridApi<ChecklistTemplate> | null = null;
+  private pendingFocusTemplateId: number | null = null;
+  private highlightedTemplateId: number | null = null;
+  private routeQuerySub?: Subscription;
+  readonly versionsGetRowId = (params: GetRowIdParams<ChecklistTemplate>): string =>
+    String(params.data?.id ?? '');
+  readonly versionsRowClassRules: RowClassRules<ChecklistTemplate> = {
+    'focused-template-row': (params: any) => {
+      const id = Number(params?.data?.id || 0);
+      return id > 0 && this.highlightedTemplateId === id;
+    }
+  };
 
   @ViewChild('versionHistoryModal') versionHistoryModal!: TemplateRef<any>;
   @ViewChild('versionComparisonModal') versionComparisonModal!: TemplateRef<any>;
@@ -2205,7 +2235,85 @@ export class ChecklistTemplateManagerComponent implements OnInit {
     resizable: true,
     floatingFilter: true
   };
+  versionsGroupDefaultExpanded = 0;
+  readonly isVersionGroupOpenByDefault = (params: any): boolean => {
+    const node = params?.rowNode || params?.node;
+    if (!node?.group) {
+      return false;
+    }
+
+    const selectedGroupKey = this.getSelectedTemplateFamilyKeyForGrid();
+    if (!selectedGroupKey) {
+      return false;
+    }
+
+    return String(node.key || '') === selectedGroupKey;
+  };
+  readonly versionsAutoGroupColumnDef: ColDef<ChecklistTemplate> = {
+    headerName: 'Template Family',
+    minWidth: 280,
+    pinned: 'left',
+    cellRendererParams: {
+      suppressCount: false,
+      innerRenderer: (params: any) => {
+        const firstChild = params.node?.allLeafChildren?.[0]?.data
+          ?? params.node?.childrenAfterGroup?.[0]?.allLeafChildren?.[0]?.data;
+        if (firstChild) {
+          return this.getTemplateFamilyLabel(firstChild);
+        }
+        return params.value || '';
+      }
+    },
+  };
+
+  private getSelectedTemplateFamilyKeyForGrid(): string | null {
+    const selectedId = Number(this.selectedBranchParentId || 0);
+    if (selectedId <= 0) {
+      return null;
+    }
+
+    const selectedTemplate = this.templates.find(t => Number(t?.id || 0) === selectedId) || null;
+    if (!selectedTemplate) {
+      return null;
+    }
+
+    const raw = (selectedTemplate as any)?.template_group_id;
+    const groupId = Number(raw || 0);
+    return String(groupId > 0 ? groupId : selectedId);
+  }
+
+  private getSelectedTemplateFamilyLabelForGrid(): string | null {
+    const selectedId = Number(this.selectedBranchParentId || 0);
+    if (selectedId <= 0) {
+      return null;
+    }
+
+    const selectedTemplate = this.templates.find(t => Number(t?.id || 0) === selectedId) || null;
+    if (!selectedTemplate) {
+      return null;
+    }
+
+    return this.getTemplateFamilyLabel(selectedTemplate);
+  }
+
   readonly versionsColumnDefs: ColDef<ChecklistTemplate>[] = [
+    {
+      headerName: 'Family',
+      colId: 'family_group',
+      hide: true,
+      rowGroup: true,
+      // Group by template_group_id so all versions stay together even when
+      // part_number or customer_name changes across versions.
+      valueGetter: (params: any) => {
+        if (!params.data) return null;
+        const raw = (params.data as any)?.template_group_id;
+        const id = Number(raw || 0);
+        return String(id > 0 ? id : Number(params.data?.id || 0));
+      },
+      filter: true,
+      sortable: true,
+      floatingFilter: false,
+    },
     {
       headerName: 'Actions',
       colId: 'actions',
@@ -2268,10 +2376,23 @@ export class ChecklistTemplateManagerComponent implements OnInit {
       valueGetter: (params: any) => params.data?.part_number || '—'
     },
     {
+      headerName: 'Template Group ID',
+      colId: 'template_group_id',
+      width: 170,
+      minWidth: 150,
+      valueGetter: (params: any) => {
+        if (!params.data) return '';
+        const groupId = Number((params.data as any)?.template_group_id || 0);
+        return groupId > 0 ? groupId : Number(params.data?.id || 0);
+      }
+    },
+    {
       headerName: 'Version',
       field: 'version',
       width: 110,
       minWidth: 100,
+      sort: 'desc',
+      comparator: (valueA: string, valueB: string) => this.compareVersionNumbers(String(valueA || ''), String(valueB || '')),
       cellRenderer: (params: any) => {
         if (!params.data) return '';
         return `<span class="badge bg-success bg-gradient">v${params.value || ''}</span>`;
@@ -2374,12 +2495,188 @@ export class ChecklistTemplateManagerComponent implements OnInit {
 
   ngOnInit(): void {
     this.restoreStatePreLoad();
+
+    // Listen for focusId on every navigation, including when Angular reuses this component.
+    this.routeQuerySub = this.route.queryParamMap.subscribe((params) => {
+      const focusId = Number(params.get('focusId') || 0);
+      if (focusId <= 0) {
+        return;
+      }
+
+      this.selectedBranchParentId = focusId;
+      this.pendingFocusTemplateId = focusId;
+
+      if (this.pendingRestoreState && typeof this.pendingRestoreState === 'object') {
+        this.pendingRestoreState.selectedBranchParentId = focusId;
+      }
+
+      // If data/grid are already available (reused component), focus immediately.
+      if (this.templates.length > 0 && this.versionsGridApi) {
+        this.scheduleFocusAttempt(focusId);
+      }
+    });
+
     this.loadTemplates();
     
     // Track form changes
     this.templateForm.valueChanges.subscribe(() => {
       this.formChanged = true;
     });
+  }
+
+  ngOnDestroy(): void {
+    this.routeQuerySub?.unsubscribe();
+  }
+
+  onVersionsGridReady(event: GridReadyEvent<ChecklistTemplate>): void {
+    this.versionsGridApi = event.api;
+
+    event.api.addEventListener('firstDataRendered', () => {
+      if (this.pendingFocusTemplateId) {
+        this.scheduleFocusAttempt(this.pendingFocusTemplateId);
+      }
+    });
+
+    event.api.addEventListener('modelUpdated', () => {
+      if (this.pendingFocusTemplateId) {
+        this.scheduleFocusAttempt(this.pendingFocusTemplateId);
+      }
+    });
+  }
+
+  private focusTemplateRow(templateId: number): boolean {
+    const api = this.versionsGridApi;
+    if (!api) {
+      return false;
+    }
+
+    const targetNode: any = api.getRowNode(String(templateId || ''));
+    if (!targetNode?.data) {
+      return false;
+    }
+
+    const groupId = Number(this.resolveTemplateGroupId(targetNode.data) || 0);
+    if (groupId > 0) {
+      api.forEachNode((node: any) => {
+        if (node?.group && String(node.key || '') === String(groupId)) {
+          node.setExpanded(true);
+        }
+      });
+    }
+
+    let parent = targetNode.parent;
+    while (parent && parent.group) {
+      parent.setExpanded(true);
+      parent = parent.parent;
+    }
+
+    // Succeed only when the row is displayable after expand.
+    // During regroup/model refresh the leaf can exist with no rowIndex yet.
+    if (targetNode.rowIndex == null || targetNode.rowIndex < 0) {
+      return false;
+    }
+
+    this.highlightedTemplateId = Number(templateId || 0);
+    api.redrawRows();
+
+    api.deselectAll();
+    api.ensureNodeVisible(targetNode, 'middle');
+    api.ensureIndexVisible(targetNode.rowIndex, 'middle');
+
+    const firstVisibleColumn = api.getAllDisplayedColumns()?.[0];
+    if (firstVisibleColumn) {
+      api.setFocusedCell(targetNode.rowIndex, firstVisibleColumn);
+    }
+
+    targetNode.setSelected?.(true, true);
+    api.flashCells({ rowNodes: [targetNode] });
+
+    setTimeout(() => {
+      if (this.highlightedTemplateId === Number(templateId || 0)) {
+        this.highlightedTemplateId = null;
+        this.versionsGridApi?.redrawRows();
+      }
+    }, 4000);
+
+    this.pendingFocusTemplateId = null;
+    return true;
+  }
+
+  private ensureFocusedTemplateVisible(templateId: number): boolean {
+    const safeId = Number(templateId || 0);
+    if (safeId <= 0) {
+      return false;
+    }
+
+    const target = this.templates.find(t => Number(t?.id || 0) === safeId);
+    if (!target) {
+      return false;
+    }
+
+    const alreadyVisible = this.getFilteredTemplates().some(t => Number(t?.id || 0) === safeId);
+    if (alreadyVisible) {
+      return false;
+    }
+
+    let changed = false;
+
+    // Relax filters only as needed so focusId row can be rendered by AG Grid.
+    if (this.templateFilters.activeOnly !== null) {
+      this.templateFilters.activeOnly = null;
+      changed = true;
+    }
+
+    const category = String(this.templateFilters.category || '').trim();
+    if (category && String(target.category || '') !== category) {
+      this.templateFilters.category = '';
+      changed = true;
+    }
+
+    const partFilter = String(this.templateFilters.partNumber || '').trim().toLowerCase();
+    const targetPart = String(target.part_number || '').toLowerCase();
+    if (partFilter && !targetPart.includes(partFilter)) {
+      this.templateFilters.partNumber = '';
+      changed = true;
+    }
+
+    const search = String(this.templateSearch || '').trim().toLowerCase();
+    if (search) {
+      const haystack = [
+        target.name,
+        target.description,
+        target.part_number,
+        (target as any).customer_name,
+        (target as any).customer_part_number,
+        target.version,
+      ].map(v => String(v || '').toLowerCase());
+      const matchesSearch = haystack.some(v => v.includes(search));
+      if (!matchesSearch) {
+        this.templateSearch = '';
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      this.selectedBranchParentId = safeId;
+      this.ensureExpandedDirectoryDefaults();
+    }
+
+    return changed;
+  }
+
+  private scheduleFocusAttempt(templateId: number, attempt: number = 0): void {
+    const maxAttempts = 10;
+    const ok = this.focusTemplateRow(templateId);
+    if (ok || attempt >= maxAttempts) {
+      return;
+    }
+
+    if (attempt === 0 && this.ensureFocusedTemplateVisible(templateId)) {
+      setTimeout(() => this.scheduleFocusAttempt(templateId, attempt + 1), 0);
+      return;
+    }
+
+    setTimeout(() => this.scheduleFocusAttempt(templateId, attempt + 1), 120);
   }
 
   onVersionsGridCellClicked(event: CellClickedEvent<ChecklistTemplate>): void {
@@ -2496,6 +2793,10 @@ export class ChecklistTemplateManagerComponent implements OnInit {
         }
         this.buildTemplateFamiliesMap(); // Build family relationships for version indicators
         this.loading = false;
+
+        if (this.pendingFocusTemplateId && this.versionsGridApi) {
+          this.scheduleFocusAttempt(this.pendingFocusTemplateId);
+        }
       },
       error: (error) => {
         console.error('Error loading templates:', error);
@@ -2666,7 +2967,7 @@ export class ChecklistTemplateManagerComponent implements OnInit {
   }
 
   duplicateTemplate(template: ChecklistTemplate): void {
-    this.configService.getTemplate(template.id).subscribe({
+    this.configService.getTemplateIncludingInactive(template.id).subscribe({
       next: (fullTemplate) => {
         // Create a copy with new name
         const duplicated = {
@@ -5328,7 +5629,7 @@ Enter choice (1-4):`;
     // Close version history modal and create new template based on source
     this.modalService.dismissAll();
     
-    this.configService.getTemplate(sourceVersion.id).subscribe({
+    this.configService.getTemplateIncludingInactive(sourceVersion.id).subscribe({
       next: (fullTemplate) => {
         const branchedTemplate = {
           ...fullTemplate,

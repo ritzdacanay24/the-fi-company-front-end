@@ -50,9 +50,9 @@ export class AuthGuard implements CanActivate {
     }
 
     // TEMPORARY: disable auth checks
-    return true;
+    // return true;
 
-    /*
+    
     const request = context.switchToHttp().getRequest();
 
     try {
@@ -76,7 +76,9 @@ export class AuthGuard implements CanActivate {
       }
 
       // Verify JWT
-      const jwtSecret = this.configService.get<string>('JWT_SECRET') || 'your-secret-key-change-in-production';
+      const jwtSecret =
+        this.configService.get<string>('JWT_SECRET') ||
+        'your-secret-key-change-in-production';
       if (!jwtSecret) {
         throw new UnauthorizedException('JWT secret is not configured');
       }
@@ -131,6 +133,6 @@ export class AuthGuard implements CanActivate {
       this.logger.error('[AuthGuard] Authentication error:', error);
       throw new UnauthorizedException('Authentication failed');
     }
-    */
+    
   }
 }

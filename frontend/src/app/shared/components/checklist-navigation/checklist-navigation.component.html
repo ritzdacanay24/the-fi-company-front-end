@@ -141,18 +141,17 @@
              style="font-size: 18px;"></i>
         </div>
 
-        <div class="flex-grow-1" style="overflow: hidden; min-width: 96px;">
-          <small class="d-block nav-item-title"
-                 [class.fw-semibold]="item.level === 0"
-                 style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+        <div class="flex-grow-1" style="overflow: hidden; min-width: 0;">
+             <small class="d-block nav-item-title text-truncate w-100"
+               [class.fw-semibold]="item.level === 0"
                  [title]="item.title">
             {{ item.title }}
           </small>
           <small *ngIf="isReadonlyMode() && item.isParent && item.progressTotal"
-                 class="d-block"
+                 class="d-block text-truncate w-100"
                  [class.text-muted]="activeNavItemIndex !== i"
                  [class.text-white-50]="activeNavItemIndex === i"
-                 style="font-size: 0.7rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                 style="font-size: 0.7rem;">
             ({{ item.progressCompleted || 0 }}/{{ item.progressTotal }} · {{ item.progressPercent || 0 }}%)
           </small>
         </div>

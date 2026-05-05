@@ -59,6 +59,11 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   loadingTemplatePreview = false;
   startingTemplateId: number | null = null;
 
+  // Grouped template picker state
+  groupedTemplates: { groupId: number; name: string; latest: ChecklistTemplate; older: ChecklistTemplate[] }[] = [];
+  expandedGroups = new Set<number>();
+  templatePickerSearch = '';
+
   startFromTemplateWorkOrder = '';
   startFromTemplateSerialNumber = '';
   startFromTemplatePartNumber = '';
@@ -4702,6 +4707,9 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     this.showTemplatePickerModal = true;
     this.loadingTemplates = true;
     this.availableTemplates = [];
+    this.groupedTemplates = [];
+    this.expandedGroups.clear();
+    this.templatePickerSearch = '';
     this.selectedTemplateId = null;
     this.selectedTemplatePreview = null;
     this.loadingTemplatePreview = false;
@@ -4721,17 +4729,71 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
           .sort((a, b) =>
           String(a?.name || '').localeCompare(String(b?.name || ''), undefined, { sensitivity: 'base' })
         );
+        this.groupedTemplates = this.buildGroupedTemplates(this.availableTemplates);
         this.loadingTemplates = false;
         this.cdr.detectChanges();
       },
       error: (error) => {
         console.error('Error loading templates:', error);
         this.availableTemplates = [];
+        this.groupedTemplates = [];
         this.loadingTemplates = false;
         this.cdr.detectChanges();
       }
     });
   }
+
+  private buildGroupedTemplates(templates: ChecklistTemplate[]): { groupId: number; name: string; latest: ChecklistTemplate; older: ChecklistTemplate[] }[] {
+    const groupMap = new Map<number, ChecklistTemplate[]>();
+
+    for (const t of templates) {
+      const gid = Number((t as any)?.template_group_id || t.id || 0);
+      if (!groupMap.has(gid)) groupMap.set(gid, []);
+      groupMap.get(gid)!.push(t);
+    }
+
+    const groups: { groupId: number; name: string; latest: ChecklistTemplate; older: ChecklistTemplate[] }[] = [];
+
+    for (const [groupId, members] of groupMap) {
+      // Sort descending by version (major then minor)
+      const sorted = members.slice().sort((a, b) => {
+        const [aMaj, aMin] = String(a.version || '1.0').split('.').map(Number);
+        const [bMaj, bMin] = String(b.version || '1.0').split('.').map(Number);
+        if (bMaj !== aMaj) return bMaj - aMaj;
+        return bMin - aMin;
+      });
+
+      const [latest, ...older] = sorted;
+      groups.push({ groupId, name: String(latest?.name || ''), latest, older });
+    }
+
+    // Sort groups alphabetically by name
+    groups.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+    return groups;
+  }
+
+  get filteredGroupedTemplates(): { groupId: number; name: string; latest: ChecklistTemplate; older: ChecklistTemplate[] }[] {
+    const search = (this.templatePickerSearch || '').trim().toLowerCase();
+    if (!search) return this.groupedTemplates;
+    return this.groupedTemplates.filter(g =>
+      g.name.toLowerCase().includes(search) ||
+      String((g.latest as any)?.part_number || '').toLowerCase().includes(search) ||
+      String(g.latest?.category || '').toLowerCase().includes(search) ||
+      g.older.some(t =>
+        String(t.name || '').toLowerCase().includes(search) ||
+        String((t as any)?.part_number || '').toLowerCase().includes(search)
+      )
+    );
+  }
+
+  toggleGroupExpand(groupId: number): void {
+    if (this.expandedGroups.has(groupId)) {
+      this.expandedGroups.delete(groupId);
+    } else {
+      this.expandedGroups.add(groupId);
+    }
+  }
+
 
   closeTemplatePickerModal(): void {
     this.showTemplatePickerModal = false;
@@ -4746,7 +4808,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     this.selectedTemplatePreview = null;
     this.cdr.detectChanges();
 
-    this.photoChecklistService.getTemplate(template.id).subscribe({
+    this.photoChecklistService.getTemplateIncludingInactive(template.id).subscribe({
       next: (full) => {
         this.selectedTemplatePreview = full;
         this.loadingTemplatePreview = false;

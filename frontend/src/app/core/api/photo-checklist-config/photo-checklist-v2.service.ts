@@ -11,12 +11,30 @@ export class PhotoChecklistV2Service {
 
   constructor(private readonly http: HttpClient) {}
 
-  getTemplates(): Observable<ChecklistTemplate[]> {
-    return this.http.get<ChecklistTemplate[]>(`${this.baseUrl}/templates`);
+  getTemplates(options?: { includeInactive?: boolean; includeDeleted?: boolean }): Observable<ChecklistTemplate[]> {
+    const query: string[] = [];
+    if (options?.includeInactive) {
+      query.push('include_inactive=1');
+    }
+    if (options?.includeDeleted) {
+      query.push('include_deleted=1');
+    }
+
+    const suffix = query.length > 0 ? `?${query.join('&')}` : '';
+    return this.http.get<ChecklistTemplate[]>(`${this.baseUrl}/templates${suffix}`);
   }
 
-  getTemplate(id: number): Observable<ChecklistTemplate> {
-    return this.http.get<ChecklistTemplate>(`${this.baseUrl}/templates/${id}`);
+  getTemplate(id: number, options?: { includeInactive?: boolean; includeDeleted?: boolean }): Observable<ChecklistTemplate> {
+    const query: string[] = [];
+    if (options?.includeInactive) {
+      query.push('include_inactive=1');
+    }
+    if (options?.includeDeleted) {
+      query.push('include_deleted=1');
+    }
+
+    const suffix = query.length > 0 ? `?${query.join('&')}` : '';
+    return this.http.get<ChecklistTemplate>(`${this.baseUrl}/templates/${id}${suffix}`);
   }
 
   getInstances(filters?: { status?: string; work_order?: string }): Observable<ChecklistInstance[]> {

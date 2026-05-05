@@ -28,12 +28,7 @@ import { MysqlModule } from '@/shared/database/mysql.module';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        // TODO(legacy-compat): Prefer APP_SECRET_KEY only while legacy clients are active.
-        // After full migration, simplify to a single new JWT secret.
-        secret:
-          configService.get<string>('APP_SECRET_KEY') ||
-          configService.get<string>('JWT_SECRET') ||
-          'your-secret-key-change-in-production',
+        secret: configService.get<string>('JWT_SECRET') || 'your-secret-key-change-in-production',
         signOptions: {
            expiresIn: 86400, // 24 hours in seconds
         },

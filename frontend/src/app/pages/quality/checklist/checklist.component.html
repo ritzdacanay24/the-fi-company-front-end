@@ -1,7 +1,7 @@
 <div class="container-fluid">
   <div class="row justify-content-center">
     <div class="col-12">
-      
+
       <!-- Breadcrumb -->
       <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb mb-0">
@@ -15,12 +15,13 @@
           </li>
         </ol>
       </nav>
-      
+
       <!-- Page Header with Context -->
       <div class="mb-4">
         <div class="d-flex align-items-center justify-content-between mb-3">
           <div class="d-flex align-items-center">
-            <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+            <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center"
+              style="width: 60px; height: 60px;">
               <i class="mdi mdi-clipboard-check text-white fs-4"></i>
             </div>
             <div>
@@ -30,7 +31,7 @@
           </div>
 
         </div>
-        
+
       </div>
 
       <div class="card shadow-sm border-0">
@@ -41,7 +42,8 @@
                 [(ngModel)]="templateSearch" (ngModelChange)="onTemplateSearch($event)">
               <i class="ri-search-2-line"></i>
             </div>
-            <button class="btn btn-outline-primary" [routerLink]="['../reports']" [relativeTo]="route" title="Open checklist reports">
+            <button class="btn btn-outline-primary" [routerLink]="['../reports']" [relativeTo]="route"
+              title="Open checklist reports">
               <i class="mdi mdi-chart-bar me-1"></i>Reports
             </button>
             <button class="btn btn-outline-secondary" (click)="loadData()" title="Refresh">
@@ -50,14 +52,14 @@
           </div>
         </div>
 
-        
+
         <!-- Tab Content -->
         <div class="card-body p-0">
           <div class="tab-content">
-            
+
             <!-- Templates Tab -->
             <div class="tab-pane-content" [class.d-none]="activeTab !== 'templates'">
-              
+
               <!-- Loading State -->
               <div class="text-center p-5" *ngIf="loading">
                 <div class="spinner-border text-primary" role="status"></div>
@@ -66,11 +68,8 @@
 
               <!-- Templates Content -->
               <div *ngIf="!loading">
-                <ag-grid-angular
-                  class="ag-theme-quartz no-border"
-                  [rowData]="templateGridRows"
-                  [gridOptions]="templateGridOptions"
-                  [class.d-none]="templateGridRows.length === 0"
+                <ag-grid-angular class="ag-theme-quartz no-border" [rowData]="templateGridRows"
+                  [gridOptions]="templateGridOptions" [class.d-none]="templateGridRows.length === 0"
                   style="width: 100%; height: calc(100vh - 318px);">
                 </ag-grid-angular>
 
@@ -79,7 +78,9 @@
                   <div class="d-flex flex-column align-items-center justify-content-center p-5">
                     <div class="text-center" style="max-width: 500px;">
                       <div class="mb-4">
-                        <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mx-auto" style="width: 120px; height: 120px;">
+                        <div
+                          class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mx-auto"
+                          style="width: 120px; height: 120px;">
                           <i class="mdi mdi-clipboard-list-outline text-primary" style="font-size: 3rem;"></i>
                         </div>
                       </div>
@@ -99,12 +100,9 @@
 
               <!-- Instances Content -->
               <div class="p-3">
-                <ag-grid-angular
-                  class="ag-theme-quartz no-border"
-                  [rowData]="instanceGridRows"
-                  [gridOptions]="instanceGridOptions"
-                  [class.d-none]="instanceGridRows.length === 0"
-                  style="width: 100%; height: calc(100vh - 420px);">
+                <ag-grid-angular class="ag-theme-quartz no-border" [suppressAggFuncInHeader]="true"
+                  [rowData]="instanceGridRows" [gridOptions]="instanceGridOptions"
+                  [class.d-none]="instanceGridRows.length === 0" style="width: 100%; height: calc(100vh - 420px);">
                 </ag-grid-angular>
 
                 <!-- Empty State -->
@@ -112,7 +110,9 @@
                   <div class="d-flex flex-column align-items-center justify-content-center p-5">
                     <div class="text-center" style="max-width: 500px;">
                       <div class="mb-4">
-                        <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mx-auto" style="width: 120px; height: 120px;">
+                        <div
+                          class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mx-auto"
+                          style="width: 120px; height: 120px;">
                           <i class="mdi mdi-clipboard-check-outline text-primary" style="font-size: 3rem;"></i>
                         </div>
                       </div>
@@ -125,576 +125,110 @@
             </div>
           </div>
         </div>
-        
+
       </div>
-      
+
     </div>
   </div>
 </div>
 
-<!-- Create Instance Modal -->
-<div *ngIf="showCreateInstanceModal" class="modal-backdrop fade show" style="display: block;"></div>
-<div *ngIf="showCreateInstanceModal" class="modal fade show d-block" tabindex="-1" role="dialog">
-  <div class="modal-dialog modal-lg" role="document">
-    <div class="modal-content">
-      <div class="modal-header bg-primary bg-gradient text-white position-relative overflow-hidden p-4" style="border-radius: 16px 16px 0 0;">
-        <!-- Background Pattern -->
-        <div class="position-absolute" style="top: -20px; right: -20px; opacity: 0.1;">
-          <i class="mdi mdi-clipboard-plus-outline" style="font-size: 8rem; transform: rotate(15deg);"></i>
-        </div>
-        
-        <div class="d-flex align-items-center justify-content-between position-relative w-100">
-          <div class="d-flex align-items-center">
-            <span class="bg-white bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3"
-                  style="width: 2.5rem; height: 2.5rem;">
-              <i class="mdi mdi-clipboard-plus-outline fs-4 text-white"></i>
-            </span>
-            <div>
-              <h4 class="mb-1 fw-bold text-white">
-                Start New Checklist
-              </h4>
-              <p class="text-white-50 mb-0" *ngIf="selectedTemplate">Template: {{selectedTemplate.name}} | Category: {{selectedTemplate.category | titlecase}}</p>
-            </div>
+<!-- Create Instance Modal (ng-bootstrap) -->
+<ng-template #createInstanceModal let-modal>
+  <div class="modal-header border-bottom px-4 py-3">
+    <div>
+      <h5 class="mb-1 fw-semibold">Start New Checklist</h5>
+      <p class="text-muted mb-0" *ngIf="selectedTemplate">
+        {{selectedTemplate.name}} • v{{selectedTemplate.version}} • {{selectedTemplate.category | titlecase}}
+      </p>
+    </div>
+    <button type="button" class="btn-close" aria-label="Close" (click)="closeCreateInstanceModal()"></button>
+  </div>
+
+  <div class="modal-body p-4" *ngIf="selectedTemplate">
+    <div class="border rounded-3 p-3 mb-4 bg-body-tertiary">
+      <div class="row text-center g-2">
+        <div class="row">
+          <div class="col-md-3">
+            <small class="text-muted">Template:</small>
+            <div class="fw-semibold">{{selectedTemplate.name}}</div>
           </div>
-          
-          <div class="d-flex align-items-center gap-2">
-            <span class="badge bg-white text-primary" *ngIf="selectedTemplate">{{selectedTemplate.item_count || 0}} Items</span>
+          <div class="col-md-3">
+            <small class="text-muted">Category:</small>
+            <div class="fw-semibold">{{selectedTemplate.category | titlecase}}</div>
+          </div>
+          <div class="col-md-3">
+            <small class="text-muted">Items Count:</small>
+            <div class="fw-semibold">{{getSelectedTemplateItemCount()}}</div>
+          </div>
+          <div class="col-md-3">
+            <small class="text-muted">Version:</small>
+            <div class="fw-semibold">v{{selectedTemplate.version}}</div>
+          </div>
+        </div>
+        <div class="row mt-2" *ngIf="selectedTemplate.description">
+          <div class="col-12">
+            <small class="text-muted">{{selectedTemplate.description}}</small>
           </div>
         </div>
       </div>
-      <div class="modal-body py-3" *ngIf="selectedTemplate">
-        <!-- Template Summary Info -->
-        <div class="card border-0 shadow-none mb-3 bg-light">
-          <div class="card-body py-2 px-3 text-center">
-            <div class="row">
-              <div class="col-md-3">
-                <small class="text-muted">Template:</small>
-                <div class="fw-semibold">{{selectedTemplate.name}}</div>
-              </div>
-              <div class="col-md-3">
-                <small class="text-muted">Category:</small>
-                <div class="fw-semibold">{{selectedTemplate.category | titlecase}}</div>
-              </div>
-              <div class="col-md-3">
-                <small class="text-muted">Items Count:</small>
-                <div class="fw-semibold">{{selectedTemplate.item_count || 0}}</div>
-              </div>
-              <div class="col-md-3">
-                <small class="text-muted">Version:</small>
-                <div class="fw-semibold">{{selectedTemplate.version}}</div>
-              </div>
-            </div>
-            <div class="row mt-2" *ngIf="selectedTemplate.description">
-              <div class="col-12">
-                <small class="text-muted">{{selectedTemplate.description}}</small>
-              </div>
-            </div>
-          </div>
-        </div>
+    </div>
 
-        <div class="mb-3">
-          <div class="mb-3">
-            <label for="workOrder" class="form-label fw-bold">Work Order Number *</label>
-            <input type="text" class="form-control" id="workOrder" 
-                   [(ngModel)]="newInstance.workOrder" 
-                   name="workOrder" required placeholder="e.g., WO-2024-001"
-                   [class.is-invalid]="!newInstance.workOrder && newInstance.workOrder !== ''">
-            <div class="invalid-feedback" *ngIf="!newInstance.workOrder && newInstance.workOrder !== ''">
-              Work order number is required
-            </div>
-          </div>
-
-          <div class="mb-3">
-            <label for="partNumber" class="form-label fw-bold">Part Number *</label>
-            <input type="text" class="form-control" id="partNumber" 
-                   [(ngModel)]="newInstance.partNumber" 
-                   name="partNumber" required 
-                   placeholder="e.g., VWL-03513-210"
-                   [class.is-invalid]="!newInstance.partNumber && newInstance.partNumber !== ''">
-            <div class="invalid-feedback" *ngIf="!newInstance.partNumber && newInstance.partNumber !== ''">
-              Part number is required
-            </div>
-          </div>
-
-          <div class="mb-3">
-            <label for="serialNumber" class="form-label fw-bold">Serial Number *</label>
-            <input type="text" class="form-control" id="serialNumber" 
-                   [(ngModel)]="newInstance.serialNumber" 
-                   name="serialNumber" required placeholder="e.g., SN123456789"
-                   [class.is-invalid]="!newInstance.serialNumber && newInstance.serialNumber !== ''">
-            <div class="invalid-feedback" *ngIf="!newInstance.serialNumber && newInstance.serialNumber !== ''">
-              Serial number is required
-            </div>
-          </div>
+    <div class="mb-3">
+      <div class="mb-3">
+        <label for="workOrder" class="form-label fw-bold">Work Order Number *</label>
+        <input type="text" class="form-control" id="workOrder" [(ngModel)]="newInstance.workOrder" name="workOrder"
+          required placeholder="e.g., WO-2024-001"
+          [class.is-invalid]="!newInstance.workOrder && newInstance.workOrder !== ''">
+        <div class="invalid-feedback" *ngIf="!newInstance.workOrder && newInstance.workOrder !== ''">
+          Work order number is required
         </div>
       </div>
-      <div class="modal-footer bg-light d-flex justify-content-between align-items-center py-3">
-        <div class="d-flex align-items-center">
-          <small class="text-muted me-3" *ngIf="selectedTemplate">
-            <i class="mdi mdi-clock-outline me-1"></i>
-            Template Version: {{selectedTemplate.version}} | Items: {{selectedTemplate.item_count || 0}}
-          </small>
+
+      <div class="mb-3">
+        <label for="partNumber" class="form-label fw-bold">Part Number *</label>
+        <input type="text" class="form-control" id="partNumber" [(ngModel)]="newInstance.partNumber" name="partNumber"
+          required placeholder="e.g., VWL-03513-210"
+          [class.is-invalid]="!newInstance.partNumber && newInstance.partNumber !== ''">
+        <div class="invalid-feedback" *ngIf="!newInstance.partNumber && newInstance.partNumber !== ''">
+          Part number is required
         </div>
-        <div class="d-flex align-items-center gap-2">
-          <button type="button" class="btn btn-outline-secondary d-flex align-items-center" (click)="closeCreateInstanceModal()">
-            <i class="mdi mdi-close me-1"></i>Cancel
-          </button>
-          <button type="button" class="btn btn-primary d-flex align-items-center" 
-                  [disabled]="!isNewInstanceFormValid"
-                  (click)="createChecklistInstance(selectedTemplate!, newInstance.workOrder, newInstance.partNumber, newInstance.serialNumber)">
-            <i class="mdi mdi-plus me-1"></i>Start Checklist
-          </button>
+      </div>
+
+      <div class="mb-3">
+        <label for="serialNumber" class="form-label fw-bold">Serial Number *</label>
+        <input type="text" class="form-control" id="serialNumber" [(ngModel)]="newInstance.serialNumber"
+          name="serialNumber" required placeholder="e.g., SN123456789"
+          [class.is-invalid]="!newInstance.serialNumber && newInstance.serialNumber !== ''">
+        <div class="invalid-feedback" *ngIf="!newInstance.serialNumber && newInstance.serialNumber !== ''">
+          Serial number is required
         </div>
       </div>
     </div>
   </div>
-</div>
+
+  <div class="modal-footer bg-body-tertiary d-flex justify-content-between align-items-center px-4 py-3">
+    <div class="d-flex align-items-center">
+      <small class="text-muted me-3" *ngIf="selectedTemplate">
+        <i class="mdi mdi-clock-outline me-1"></i>
+        Template Version: v{{selectedTemplate.version}} | Items: {{getSelectedTemplateItemCount()}}
+      </small>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <button type="button" class="btn btn-outline-secondary d-flex align-items-center"
+        (click)="closeCreateInstanceModal()">
+        <i class="mdi mdi-close me-1"></i>Cancel
+      </button>
+      <button type="button" class="btn btn-primary d-flex align-items-center" [disabled]="!isNewInstanceFormValid"
+        (click)="createChecklistInstance(selectedTemplate!, newInstance.workOrder, newInstance.partNumber, newInstance.serialNumber)">
+        <i class="mdi mdi-plus me-1"></i>Start Checklist
+      </button>
+    </div>
+  </div>
+</ng-template>
 
 <!-- Template Preview Modal -->
 <ng-template #previewTemplateModal let-modal>
-      <div class="modal-header bg-primary bg-gradient text-white position-relative overflow-hidden p-4" style="border-radius: 16px 16px 0 0;">
-        <!-- Background Pattern -->
-        <div class="position-absolute" style="top: -20px; right: -20px; opacity: 0.1;">
-          <i class="mdi mdi-clipboard-text-outline" style="font-size: 8rem; transform: rotate(15deg);"></i>
-        </div>
-        
-        <div class="d-flex align-items-center justify-content-between position-relative w-100">
-          <div class="d-flex align-items-center">
-            <span class="bg-white bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3"
-                  style="width: 2.5rem; height: 2.5rem;">
-              <i class="mdi mdi-clipboard-text-outline fs-4 text-white"></i>
-            </span>
-            <div>
-              <h4 class="mb-1 fw-bold text-white">
-                Template Preview
-              </h4>
-              <p class="text-white-50 mb-0" *ngIf="selectedTemplate">
-                {{selectedTemplate.name}} - Version {{selectedTemplate.version}} | {{selectedTemplate.category | titlecase}}
-              </p>
-            </div>
-          </div>
-          
-          <div class="d-flex align-items-center gap-2">
-            <span class="badge bg-white text-primary" *ngIf="selectedTemplate">{{selectedTemplate.item_count || 0}} Items</span>
-            <span class="badge bg-white text-primary" *ngIf="selectedTemplate && selectedTemplate.is_active">Active</span>
-            <button type="button" class="btn-close btn-close-white ms-2" aria-label="Close" (click)="modal.dismiss('close')"></button>
-          </div>
-        </div>
-      </div>
-      
-      <div class="modal-body py-3" *ngIf="selectedTemplate">
-        <!-- Template Summary Info -->
-        <div class="bg-light border rounded-3 p-3 mb-3 text-center">
-          <div class="row">
-            <div class="col-md-3">
-              <small class="text-muted">Template Name:</small>
-              <div class="fw-semibold">{{selectedTemplate.name}}</div>
-            </div>
-            <div class="col-md-3">
-              <small class="text-muted">Category:</small>
-              <div class="fw-semibold">{{selectedTemplate.category | titlecase}}</div>
-            </div>
-            <div class="col-md-3">
-              <small class="text-muted">Version:</small>
-              <div class="fw-semibold">v{{selectedTemplate.version}}</div>
-            </div>
-            <div class="col-md-3">
-              <small class="text-muted">Active Instances:</small>
-              <div class="fw-semibold">{{selectedTemplate.active_instances || 0}}</div>
-            </div>
-          </div>
-          <div class="row mt-2">
-            <div class="col-md-6" *ngIf="selectedTemplate.part_number">
-              <small class="text-muted">Part Number:</small>
-              <div class="fw-semibold">{{selectedTemplate.part_number}}</div>
-            </div>
-            <div class="col-md-6" *ngIf="selectedTemplate.product_type">
-              <small class="text-muted">Product Type:</small>
-              <div class="fw-semibold">{{selectedTemplate.product_type}}</div>
-            </div>
-          </div>
-          <div class="row mt-2" *ngIf="selectedTemplate.description">
-            <div class="col-12">
-              <small class="text-muted">Description:</small>
-              <div class="fw-semibold">{{selectedTemplate.description}}</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Checklist Items with Shared Navigation -->
-        <div class="border rounded-3 overflow-hidden">
-          <div class="bg-success text-white px-3 py-2">
-            <h6 class="mb-0">
-              <i class="mdi mdi-format-list-checks me-2"></i>
-              Checklist Items ({{selectedTemplate.items?.length || 0}})
-            </h6>
-          </div>
-          <div class="row g-0">
-            <div class="col-12 col-md-4 col-lg-3 border-end" style="max-height: calc(100vh - 260px); overflow: auto;">
-                <app-checklist-navigation
-                  [templateId]="selectedTemplate.id"
-                  [items]="previewNavItems"
-                  [activeItemId]="previewActiveItemId"
-                  [activeItemIndex]="previewActiveItemIndex"
-                  [mode]="'readonly'"
-                  [cardStyle]="false"
-                  [showMediaContext]="true"
-                  [showSearch]="true"
-                  [showExpandCollapse]="true"
-                  (itemSelected)="onPreviewNavItemSelected($event)">
-                </app-checklist-navigation>
-            </div>
-
-            <div class="col-12 col-md-8 col-lg-9" style="max-height: calc(100vh - 260px); overflow: auto;">
-                <div class="list-group list-group-flush" *ngIf="selectedTemplate.items && selectedTemplate.items.length > 0">
-              <!-- Parent items -->
-              <ng-container *ngFor="let item of selectedTemplate.items; let i = index">
-                <div class="list-group-item" [attr.id]="'preview-item-' + item.id">
-                  <div class="d-flex align-items-start gap-3">
-                    <!-- Left side: Number badge and content -->
-                    <div class="flex-shrink-0">
-                      <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center"
-                           style="width: 32px; height: 32px; font-size: 0.875rem; font-weight: 600;">
-                        {{i + 1}}
-                      </div>
-                    </div>
-                    
-                    <!-- Middle: Item details -->
-                    <div class="flex-grow-1">
-                      <div class="mb-2">
-                        <h6 class="mb-0">
-                          {{item.title}}
-                          <span class="badge bg-danger ms-2" style="font-size: 0.7rem;" *ngIf="item.is_required">Required</span>
-                          <span class="badge ms-1" style="font-size: 0.7rem;" 
-                                [ngClass]="{
-                                  'bg-primary': item.submission_type === 'photo',
-                                  'bg-success': item.submission_type === 'video',
-                                  'bg-info': item.submission_type === 'either'
-                                }">
-                            <i class="mdi" [ngClass]="{
-                              'mdi-camera': item.submission_type === 'photo',
-                              'mdi-video': item.submission_type === 'video',
-                              'mdi-file-multiple': item.submission_type === 'either'
-                            }"></i>
-                            {{item.submission_type === 'either' ? 'Photo OR Video' : (item.submission_type | titlecase)}}
-                          </span>
-                        </h6>
-                      </div>
-                      <div class="text-muted mb-2" *ngIf="item.description" [innerHTML]="item.description"></div>
-                    
-                      <!-- Photo Requirements (only for photo/either) -->
-                      <div class="row g-2 mb-2" *ngIf="(item.submission_type === 'photo' || item.submission_type === 'either') && item.photo_requirements && hasPhotoRequirements(item.photo_requirements)">
-                        <div class="col-auto" *ngIf="item.photo_requirements.angle">
-                          <small class="badge bg-light text-dark">
-                            <i class="mdi mdi-camera-metering-spot me-1"></i>
-                            {{item.photo_requirements.angle | titlecase}}
-                          </small>
-                        </div>
-                        <div class="col-auto" *ngIf="item.photo_requirements.distance">
-                          <small class="badge bg-light text-dark">
-                            <i class="mdi mdi-arrow-expand-all me-1"></i>
-                            {{item.photo_requirements.distance | titlecase}}
-                          </small>
-                        </div>
-                        <div class="col-auto" *ngIf="item.photo_requirements.lighting">
-                          <small class="badge bg-light text-dark">
-                            <i class="mdi mdi-lightbulb me-1"></i>
-                            {{item.photo_requirements.lighting | titlecase}}
-                          </small>
-                        </div>
-                        <div class="col-auto" *ngIf="item.photo_requirements.focus">
-                          <small class="badge bg-light text-dark">
-                            <i class="mdi mdi-target me-1"></i>
-                            {{item.photo_requirements.focus}}
-                          </small>
-                        </div>
-                        <div class="col-auto" *ngIf="item.max_photos || item.min_photos">
-                          <small class="badge bg-info text-white">
-                            <i class="mdi mdi-camera me-1"></i>
-                            {{getPhotoLimitText(item)}}
-                          </small>
-                        </div>
-                      </div>
-                      
-                      <!-- Video Requirements (only for video/either) -->
-                      <div class="row g-2 mb-2" *ngIf="(item.submission_type === 'video' || item.submission_type === 'either') && item.video_requirements && item.video_requirements.max_video_duration_seconds">
-                        <div class="col-auto">
-                          <small class="badge bg-light text-dark">
-                            <i class="mdi mdi-timer-off me-1"></i>
-                            Max Duration: {{item.video_requirements.max_video_duration_seconds}}s
-                          </small>
-                        </div>
-                      </div>
-                      
-                      <!-- Submission Time Limit -->
-                      <div class="row g-2 mb-2" *ngIf="item.submission_time_seconds">
-                        <div class="col-auto">
-                          <small class="badge bg-warning text-dark">
-                            <i class="mdi mdi-clock-alert me-1"></i>
-                            Time Limit: {{item.submission_time_seconds}}s
-                          </small>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- Right side: Sample media (images and videos) -->
-                    <div class="flex-shrink-0" style="width: 280px;" *ngIf="(item.sample_images && item.sample_images.length > 0) || (item.sample_videos && item.sample_videos.length > 0)">
-                      <!-- Primary Sample Image -->
-                      <ng-container *ngIf="item.submission_type === 'photo' || item.submission_type === 'either'">
-                        <ng-container *ngFor="let sampleImage of item.sample_images">
-                          <div *ngIf="sampleImage.is_primary && sampleImage.image_type === 'sample'" 
-                               class="mb-2 p-2 border border-primary rounded bg-light">
-                            <div class="d-flex align-items-center mb-2">
-                              <small class="text-primary fw-bold">
-                                <i class="mdi mdi-target me-1"></i>Match This
-                              </small>
-                              <span class="badge bg-primary ms-auto" style="font-size: 0.65rem;">Primary</span>
-                            </div>
-                            <img [src]="sampleImage.url" 
-                                 class="img-thumbnail border-primary w-100"
-                                 style="height: 180px; object-fit: contain; cursor: pointer; border-width: 2px !important;"
-                                 [alt]="sampleImage.label || 'Primary sample image'"
-                                 [title]="sampleImage.label || 'Primary Sample Image'"
-                                 (click)="previewImage(sampleImage.url)"
-                                 (error)="$any($event).target.style.display='none'">
-                            <p class="mb-0 mt-1 small text-muted">
-                              <i class="mdi mdi-information-outline me-1"></i>
-                              Replicate this photo
-                            </p>
-                          </div>
-                        </ng-container>
-                        
-                        <!-- Reference Images -->
-                        <ng-container *ngIf="getReferenceImages(item.sample_images).length > 0">
-                          <div class="mb-1">
-                            <small class="text-secondary fw-bold">
-                              <i class="mdi mdi-image-multiple me-1"></i>Reference ({{ getReferenceImages(item.sample_images).length }})
-                            </small>
-                          </div>
-                          <div class="row g-1">
-                            <div class="col-6" *ngFor="let refImage of getReferenceImages(item.sample_images)">
-                              <img [src]="refImage.url" 
-                                   class="img-thumbnail w-100"
-                                   style="height: 80px; object-fit: cover; cursor: pointer;"
-                                   [alt]="refImage.label || 'Reference image'"
-                                   [title]="refImage.label || 'Reference Image'"
-                                   (click)="previewImage(refImage.url)"
-                                   (error)="$any($event).target.style.display='none'">
-                            </div>
-                          </div>
-                        </ng-container>
-                      </ng-container>
-                      
-                      <!-- Primary Sample Video -->
-                      <ng-container *ngIf="(item.submission_type === 'video' || item.submission_type === 'either') && item.sample_videos && item.sample_videos.length > 0">
-                        <ng-container *ngFor="let sampleVideo of item.sample_videos">
-                          <div *ngIf="sampleVideo.is_primary" 
-                               class="mb-2 p-2 border border-success rounded bg-light">
-                            <div class="d-flex align-items-center mb-2">
-                              <small class="text-success fw-bold">
-                                <i class="mdi mdi-video me-1"></i>Sample Video
-                              </small>
-                              <span class="badge bg-success ms-auto" style="font-size: 0.65rem;">Primary</span>
-                            </div>
-                            <video [src]="sampleVideo.url" 
-                                   controls
-                                   class="w-100 rounded"
-                                   style="max-height: 180px; object-fit: contain; cursor: pointer;"
-                                   [title]="sampleVideo.label || 'Primary Sample Video'">
-                            </video>
-                            <p class="mb-0 mt-1 small text-muted">
-                              <i class="mdi mdi-information-outline me-1"></i>
-                              Reference video
-                              <span *ngIf="sampleVideo.duration_seconds"> ({{sampleVideo.duration_seconds}}s)</span>
-                            </p>
-                          </div>
-                        </ng-container>
-                      </ng-container>
-                    </div>
-                  </div>
-                </div>
-                
-                <!-- Child/nested items -->
-                <ng-container *ngIf="item.children && item.children.length > 0">
-                  <div class="list-group-item ms-4 border-start border-primary border-3 bg-light" 
-                       *ngFor="let child of item.children; let j = index">
-                    <span class="d-none" [attr.id]="'preview-item-' + child.id"></span>
-                    <div class="d-flex align-items-start gap-3">
-                      <!-- Left: Number badge -->
-                      <div class="flex-shrink-0">
-                        <div class="bg-info text-white rounded-circle d-flex align-items-center justify-content-center"
-                             style="width: 28px; height: 28px; font-size: 0.75rem; font-weight: 600;">
-                          {{i + 1}}.{{j + 1}}
-                        </div>
-                      </div>
-                      
-                      <!-- Middle: Content -->
-                      <div class="flex-grow-1">
-                        <div class="mb-2">
-                          <h6 class="mb-0 fs-6">
-                            <i class="mdi mdi-subdirectory-arrow-right me-1 text-primary"></i>
-                            {{child.title}}
-                            <span class="badge bg-danger ms-2" style="font-size: 0.65rem;" *ngIf="child.is_required">Required</span>
-                            <span class="badge ms-1" style="font-size: 0.65rem;" 
-                                  [ngClass]="{
-                                    'bg-primary': child.submission_type === 'photo',
-                                    'bg-success': child.submission_type === 'video',
-                                    'bg-info': child.submission_type === 'either'
-                                  }">
-                              <i class="mdi" [ngClass]="{
-                                'mdi-camera': child.submission_type === 'photo',
-                                'mdi-video': child.submission_type === 'video',
-                                'mdi-file-multiple': child.submission_type === 'either'
-                              }"></i>
-                              {{child.submission_type === 'either' ? 'Photo OR Video' : (child.submission_type | titlecase)}}
-                            </span>
-                          </h6>
-                        </div>
-                        <div class="text-muted mb-2 small" *ngIf="child.description" [innerHTML]="child.description"></div>
-                        
-                        <!-- Photo Requirements for child (only for photo/either) -->
-                        <div class="row g-2 mb-2" *ngIf="(child.submission_type === 'photo' || child.submission_type === 'either') && child.photo_requirements && hasPhotoRequirements(child.photo_requirements)">
-                          <div class="col-auto" *ngIf="child.photo_requirements.angle">
-                            <small class="badge bg-light text-dark">
-                              <i class="mdi mdi-camera-metering-spot me-1"></i>
-                              {{child.photo_requirements.angle | titlecase}}
-                            </small>
-                          </div>
-                          <div class="col-auto" *ngIf="child.photo_requirements.distance">
-                            <small class="badge bg-light text-dark">
-                              <i class="mdi mdi-arrow-expand-all me-1"></i>
-                              {{child.photo_requirements.distance | titlecase}}
-                            </small>
-                          </div>
-                          <div class="col-auto" *ngIf="child.photo_requirements.lighting">
-                            <small class="badge bg-light text-dark">
-                              <i class="mdi mdi-lightbulb me-1"></i>
-                              {{child.photo_requirements.lighting | titlecase}}
-                            </small>
-                          </div>
-                          <div class="col-auto" *ngIf="child.max_photos || child.min_photos">
-                            <small class="badge bg-info text-white">
-                              <i class="mdi mdi-camera me-1"></i>
-                              {{getPhotoLimitText(child)}}
-                            </small>
-                          </div>
-                        </div>
-                        
-                        <!-- Video Requirements for child (only for video/either) -->
-                        <div class="row g-2 mb-2" *ngIf="(child.submission_type === 'video' || child.submission_type === 'either') && child.video_requirements && child.video_requirements.max_video_duration_seconds">
-                          <div class="col-auto">
-                            <small class="badge bg-light text-dark">
-                              <i class="mdi mdi-timer-off me-1"></i>
-                              Max Duration: {{child.video_requirements.max_video_duration_seconds}}s
-                            </small>
-                          </div>
-                        </div>
-                        
-                        <!-- Submission Time Limit -->
-                        <div class="row g-2 mb-2" *ngIf="child.submission_time_seconds">
-                          <div class="col-auto">
-                            <small class="badge bg-warning text-dark">
-                              <i class="mdi mdi-clock-alert me-1"></i>
-                              Time Limit: {{child.submission_time_seconds}}s
-                            </small>
-                          </div>
-                        </div>
-                      </div>
-
-                      <!-- Right: Sample media -->
-                      <div class="flex-shrink-0" style="width: 200px;" *ngIf="(child.sample_images && child.sample_images.length > 0) || (child.sample_videos && child.sample_videos.length > 0)">
-                        <!-- Primary Sample Image -->
-                        <ng-container *ngIf="child.submission_type === 'photo' || child.submission_type === 'either'">
-                          <ng-container *ngFor="let sampleImage of child.sample_images">
-                            <div *ngIf="sampleImage.is_primary && sampleImage.image_type === 'sample'" 
-                                 class="mb-2 p-2 border border-info rounded" style="background-color: #f0f8ff;">
-                              <div class="d-flex align-items-center mb-1">
-                                <small class="text-info fw-bold">
-                                  <i class="mdi mdi-target me-1"></i>Match This
-                                </small>
-                                <span class="badge bg-info ms-auto" style="font-size: 0.65rem;">Primary</span>
-                              </div>
-                              <img [src]="sampleImage.url" 
-                                   class="img-thumbnail border-info w-100"
-                                   style="height: 120px; object-fit: contain; cursor: pointer; border-width: 2px !important;"
-                                   [alt]="sampleImage.label || 'Primary sample'"
-                                   (click)="previewImage(sampleImage.url)"
-                                   (error)="$any($event).target.style.display='none'">
-                            </div>
-                          </ng-container>
-                          
-                          <!-- Reference Images -->
-                          <ng-container *ngIf="getReferenceImages(child.sample_images).length > 0">
-                            <div class="mb-1">
-                              <small class="text-secondary fw-bold">
-                                <i class="mdi mdi-image-multiple me-1"></i>Ref ({{ getReferenceImages(child.sample_images).length }})
-                              </small>
-                            </div>
-                            <div class="row g-1">
-                              <div class="col-6" *ngFor="let refImage of getReferenceImages(child.sample_images)">
-                                <img [src]="refImage.url" 
-                                     class="img-thumbnail w-100"
-                                     style="height: 60px; object-fit: cover; cursor: pointer;"
-                                     [alt]="refImage.label || 'Reference'"
-                                     [title]="refImage.label || 'Reference Image'"
-                                     (click)="previewImage(refImage.url)"
-                                     (error)="$any($event).target.style.display='none'">
-                              </div>
-                            </div>
-                          </ng-container>
-                        </ng-container>
-                        
-                        <!-- Primary Sample Video -->
-                        <ng-container *ngIf="(child.submission_type === 'video' || child.submission_type === 'either') && child.sample_videos && child.sample_videos.length > 0">
-                          <ng-container *ngFor="let sampleVideo of child.sample_videos">
-                            <div *ngIf="sampleVideo.is_primary" 
-                                 class="mb-2 p-2 border border-success rounded bg-light">
-                              <div class="d-flex align-items-center mb-1">
-                                <small class="text-success fw-bold">
-                                  <i class="mdi mdi-video me-1"></i>Sample
-                                </small>
-                                <span class="badge bg-success ms-auto" style="font-size: 0.65rem;">Primary</span>
-                              </div>
-                              <video [src]="sampleVideo.url" 
-                                     controls
-                                     class="w-100 rounded"
-                                     style="max-height: 120px; object-fit: contain;">
-                              </video>
-                            </div>
-                          </ng-container>
-                        </ng-container>
-                      </div>
-                    </div>
-                  </div>
-                </ng-container>
-              </ng-container>
-            </div>
-          </div>
-            
-            <!-- Empty State -->
-            <div class="text-center p-4" *ngIf="!selectedTemplate.items || selectedTemplate.items.length === 0">
-              <i class="mdi mdi-clipboard-outline text-muted mb-2" style="font-size: 2rem;"></i>
-              <p class="text-muted mb-0">No checklist items defined</p>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div class="modal-footer bg-light d-flex justify-content-between align-items-center py-3">
-        <div class="d-flex align-items-center">
-          <small class="text-muted me-3" *ngIf="selectedTemplate">
-            <i class="mdi mdi-clock-outline me-1"></i>
-            Version {{selectedTemplate.version}} | Last updated: {{selectedTemplate.updated_at || selectedTemplate.created_at | date:'medium'}}
-          </small>
-        </div>
-        <div class="d-flex align-items-center gap-2">
-          <button type="button" class="btn btn-outline-secondary d-flex align-items-center" (click)="modal.close('close')">
-            <i class="mdi mdi-close me-1"></i>Close Preview
-          </button>
-          <button type="button" class="btn btn-primary d-flex align-items-center" 
-              (click)="startChecklistFromPreview()">
-            <i class="mdi mdi-plus me-1"></i>Start Checklist
-          </button>
-        </div>
-      </div>
+  <app-checklist-template-preview-modal [templateId]="selectedTemplate?.id || null" [allowStart]="true"
+    (closeRequested)="modal.dismiss('close')" (startRequested)="onPreviewStartRequested($event)">
+  </app-checklist-template-preview-modal>
 </ng-template>

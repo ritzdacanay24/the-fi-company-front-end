@@ -30,6 +30,7 @@ export interface ChecklistTemplate {
   is_draft?: boolean;
   is_active: boolean;
   created_by?: string;
+  created_by_name?: string;
   published_at?: string | null;
   active_instances?: number;
   item_count?: number;
