@@ -108,12 +108,17 @@
             <div class="col-md-6 mb-3" *ngFor="let template of checklistTemplates">
               <div class="card border-success">
                 <div class="card-body">
-                  <h6 class="card-title text-success">
-                    <i class="mdi mdi-clipboard-check me-2"></i>
+                  <h6 class="card-title text-success d-flex align-items-center gap-2">
+                    <i class="mdi mdi-clipboard-check"></i>
                     {{template.name}}
+                    <span class="badge bg-success-subtle text-success fw-normal" style="font-size: 0.7rem;" *ngIf="template.version">v{{template.version}}</span>
                   </h6>
                   <p class="card-text text-muted small mb-2" *ngIf="template.description">
                     {{template.description}}
+                  </p>
+                  <p class="card-text small mb-2" *ngIf="template.customer_name">
+                    <i class="mdi mdi-domain me-1 text-muted"></i>
+                    <span class="text-muted">Customer:</span> {{template.customer_name}}
                   </p>
                   <div class="d-flex justify-content-between align-items-center">
                     <div class="text-muted small">

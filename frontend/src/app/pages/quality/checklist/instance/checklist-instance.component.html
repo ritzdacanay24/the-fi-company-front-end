@@ -60,6 +60,14 @@
             </div>
             <div class="flex-grow-1 min-w-0">
               <h6 class="mb-0 fw-semibold">{{template?.name || 'Checklist Instance'}}</h6>
+              <div class="d-flex align-items-center gap-2 mt-1">
+                <span class="badge bg-body-secondary text-body border" *ngIf="template?.version">
+                  v{{ template?.version }}
+                </span>
+                <span class="badge bg-body-secondary text-body border" *ngIf="template?.part_number || instance?.part_number">
+                  P/N: {{ template?.part_number || instance?.part_number }}
+                </span>
+              </div>
             </div>
           </div>
           <div class="d-flex align-items-center gap-2">
@@ -115,13 +123,6 @@
               (click)="openSettings(settingsContent)"
               title="Checklist Settings">
               <i class="mdi mdi-cog-outline me-1"></i>Settings
-            </button>
-            <button
-              type="button"
-              class="btn btn-outline-success btn-sm d-none d-xl-inline-flex align-items-center"
-              (click)="openShareModal()"
-              title="Share inspection report with customer">
-              <i class="mdi mdi-share-variant me-1"></i>Share Report
             </button>
             <button
               type="button"
@@ -207,7 +208,8 @@
           [items]="executionNavItems"
           [activeItemIndex]="getActiveNavIndex()"
           [disableVirtualScroll]="true"
-          [showItemNumbers]="false"
+          [showItemNumbers]="true"
+          [navVariant]="'editor-like'"
           [showMediaContext]="showInspectionNavMediaContext"
           [showOnlyOpenItems]="navShowOnlyOpenItems"
           (showOnlyOpenItemsChange)="navShowOnlyOpenItems = $event"
@@ -1761,8 +1763,8 @@
 <div class="modal fade show"
      *ngIf="showTemplatePickerModal"
      style="display: block; background: rgba(0,0,0,0.5);"
-     (click)="closeTemplatePickerModal()">
-  <div class="modal-dialog modal-fullscreen modal-dialog-scrollable">
+  (click)="onTemplatePickerBackdropClick($event)">
+  <div class="modal-dialog modal-fullscreen">
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header bg-white border-bottom">
         <div class="min-w-0">
@@ -1778,10 +1780,10 @@
         <button type="button" class="btn-close" aria-label="Close" (click)="closeTemplatePickerModal()"></button>
       </div>
 
-      <div class="modal-body p-0">
+      <div class="modal-body p-0" style="overflow: hidden;">
         <div class="d-flex" style="min-height: 0; height: 100%;">
           <!-- Left: Template navigation -->
-          <div class="border-end bg-light" style="width: 340px; min-width: 340px; max-width: 340px;">
+          <div class="border-end bg-light d-flex flex-column h-100" style="width: 340px; min-width: 340px; max-width: 340px; min-height: 0;">
             <div class="p-3 border-bottom bg-light">
               <div class="fw-semibold">Templates</div>
               <div class="small text-muted mb-2">Latest version shown by default</div>
@@ -1803,7 +1805,7 @@
               No templates found.
             </div>
 
-            <div class="list-group list-group-flush overflow-auto" style="min-height: 0; max-height: calc(100vh - 200px);" *ngIf="!loadingTemplates && filteredGroupedTemplates.length > 0">
+            <div class="list-group list-group-flush overflow-auto flex-grow-1" style="min-height: 0;" *ngIf="!loadingTemplates && filteredGroupedTemplates.length > 0">
               <ng-container *ngFor="let g of filteredGroupedTemplates">
                 <!-- Latest version row -->
                 <button type="button"
@@ -1813,17 +1815,15 @@
                   <div class="d-flex justify-content-between align-items-center">
                     <div class="text-truncate fw-semibold" [title]="g.latest.name">{{ g.latest.name }}</div>
                     <div class="d-flex align-items-center gap-1 flex-shrink-0">
-                      <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 small">v{{ g.latest.version }}</span>
-                      <span class="badge" [ngClass]="selectedTemplateId === g.latest.id ? 'bg-light text-dark' : 'bg-secondary'" *ngIf="g.latest.item_count">
-                        {{ g.latest.item_count }}
-                      </span>
+                      <span class="badge small"
+                            [ngClass]="selectedTemplateId === g.latest.id
+                              ? 'bg-white bg-opacity-25 text-white border border-white border-opacity-50'
+                              : 'bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25'">v{{ g.latest.version }}</span>
                     </div>
                   </div>
                   <div class="d-flex justify-content-between align-items-center">
                     <div class="small" [class.text-white-50]="selectedTemplateId === g.latest.id" [class.text-muted]="selectedTemplateId !== g.latest.id">
                       <span *ngIf="g.latest.part_number"><strong>P/N:</strong> {{ g.latest.part_number }}</span>
-                      <span *ngIf="g.latest.part_number && g.latest.category"> · </span>
-                      <span *ngIf="g.latest.category">{{ g.latest.category }}</span>
                     </div>
                     <!-- Expand older versions toggle -->
                     <button *ngIf="g.older.length > 0"
@@ -1842,21 +1842,26 @@
                 <!-- Older versions (collapsible) -->
                 <ng-container *ngIf="expandedGroups.has(g.groupId)">
                   <button type="button"
-                          class="list-group-item list-group-item-action ps-4"
-                          style="background: #f8f9fa;"
-                          *ngFor="let t of g.older"
+                          class="list-group-item list-group-item-action ps-0"
+                          style="border-left: 3px solid #dee2e6;"
+                          *ngFor="let t of g.older; let last = last"
                           (click)="selectTemplateForPreview(t)"
-                          [class.active]="selectedTemplateId === t.id">
-                    <div class="d-flex justify-content-between align-items-center">
-                      <div class="text-truncate small text-muted" [class.text-white-50]="selectedTemplateId === t.id" [title]="t.name">
-                        <i class="mdi mdi-history me-1"></i>v{{ t.version }}
+                          [class.active]="selectedTemplateId === t.id"
+                          [style.border-left-color]="selectedTemplateId === t.id ? '#0d6efd' : '#dee2e6'">
+                    <div class="d-flex align-items-center ps-3">
+                      <div class="d-flex justify-content-between align-items-center w-100">
+                        <div class="small"
+                             [class.text-white-50]="selectedTemplateId === t.id"
+                             [class.text-muted]="selectedTemplateId !== t.id">
+                          <i class="mdi mdi-history me-1"></i>
+                          <span *ngIf="t.part_number"><strong>P/N:</strong> {{ t.part_number }}</span>
+                          <span *ngIf="!t.part_number">Older version</span>
+                        </div>
+                        <span class="badge small flex-shrink-0"
+                              [ngClass]="selectedTemplateId === t.id
+                                ? 'bg-white bg-opacity-25 text-white border border-white border-opacity-50'
+                                : 'bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25'">v{{ t.version }}</span>
                       </div>
-                      <span class="badge" [ngClass]="selectedTemplateId === t.id ? 'bg-light text-dark' : 'bg-secondary'" *ngIf="t.item_count">
-                        {{ t.item_count }}
-                      </span>
-                    </div>
-                    <div class="small" [class.text-white-50]="selectedTemplateId === t.id" [class.text-muted]="selectedTemplateId !== t.id" *ngIf="t.part_number">
-                      <strong>P/N:</strong> {{ t.part_number }}
                     </div>
                   </button>
                 </ng-container>
@@ -1882,9 +1887,9 @@
                   <h5 class="mb-1 text-primary text-truncate" [title]="tpl.name">{{ tpl.name }}</h5>
                   <div class="text-muted small description-content" *ngIf="tpl.description" [innerHTML]="tpl.description"></div>
                 </div>
-                <div class="text-end small text-muted">
-                  <div *ngIf="tpl.version"><strong>v{{ tpl.version }}</strong></div>
-                  <div *ngIf="tpl.is_active === false" class="text-warning">Inactive</div>
+                <div class="text-end d-flex flex-column align-items-end gap-1">
+                  <span *ngIf="tpl.version" class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">v{{ tpl.version }}</span>
+                  <span *ngIf="tpl.is_active === false" class="badge bg-warning text-dark">Inactive</span>
                 </div>
               </div>
 
@@ -1911,10 +1916,15 @@
 
               <div class="border rounded bg-white mb-4">
                 <div class="border-bottom p-2 fw-semibold small text-muted">Checklist Items</div>
-                <div class="p-2" style="max-height: 40vh; overflow: auto;">
+                <div class="p-2">
                   <div class="text-muted small" *ngIf="!tpl.items || tpl.items.length === 0">No items available.</div>
-                  <div class="d-flex align-items-start gap-2 py-2 border-bottom" *ngFor="let item of tpl.items">
-                    <span class="badge bg-dark bg-opacity-75">{{ item.order_index }}</span>
+                  <div class="d-flex align-items-start gap-2 py-2 border-bottom"
+                       *ngFor="let item of tpl.items"
+                       [style.padding-left]="(item.level ?? 0) > 0 ? '1.5rem' : '0'">
+                    <span class="badge"
+                          [ngClass]="(item.level ?? 0) > 0 ? 'bg-secondary bg-opacity-50 text-dark' : 'bg-dark bg-opacity-75'">
+                      {{ getTemplateItemLabel(tpl.items, item) }}
+                    </span>
                     <div class="min-w-0 flex-grow-1">
                       <div class="fw-semibold text-truncate" [title]="item.title">{{ item.title }}</div>
                       <div class="small text-muted description-content" *ngIf="item.description" style="max-height: 2.6em; overflow: hidden;" [innerHTML]="item.description"></div>
@@ -1945,37 +1955,111 @@
                   </div>
                 </div>
               </div>
-
-              <div class="border rounded bg-light p-3">
-                <div class="fw-semibold mb-2">Start this checklist</div>
-                <div class="row g-3">
-                  <div class="col-md-4">
-                    <label class="form-label small fw-semibold">Work Order Number</label>
-                    <input class="form-control" [(ngModel)]="startFromTemplateWorkOrder" />
-                  </div>
-                  <div class="col-md-4">
-                    <label class="form-label small fw-semibold">Serial Number</label>
-                    <input class="form-control" [(ngModel)]="startFromTemplateSerialNumber" />
-                  </div>
-                  <div class="col-md-4">
-                    <label class="form-label small fw-semibold">Part Number (optional)</label>
-                    <input class="form-control" [(ngModel)]="startFromTemplatePartNumber" />
-                  </div>
-                </div>
-
-                <div class="d-flex justify-content-end mt-3">
-                  <button type="button"
-                          class="btn btn-primary"
-                          (click)="startSelectedTemplateInstance()"
-                          [disabled]="startingTemplateId === tpl.id || !startFromTemplateWorkOrder?.trim() || !startFromTemplateSerialNumber?.trim()">
-                    <span *ngIf="startingTemplateId === tpl.id" class="spinner-border spinner-border-sm me-2" role="status"></span>
-                    Start
-                  </button>
-                </div>
-              </div>
             </ng-container>
           </div>
         </div>
+      </div>
+
+      <div class="modal-footer bg-white border-top d-flex justify-content-between align-items-center">
+        <div class="small text-muted" *ngIf="selectedTemplatePreview as tpl">
+          Ready to start from <strong>{{ tpl.name }}</strong>
+          <span *ngIf="tpl.version"> (v{{ tpl.version }})</span>
+        </div>
+        <div class="small text-muted" *ngIf="!selectedTemplatePreview">Select a template to continue.</div>
+
+        <button type="button"
+                class="btn btn-primary"
+                (click)="openStartChecklistModal()"
+                [disabled]="!selectedTemplateId || loadingTemplatePreview || !!startingTemplateId">
+          <span *ngIf="startingTemplateId" class="spinner-border spinner-border-sm me-2" role="status"></span>
+          Start
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Start Checklists Modal -->
+<div class="modal fade show"
+     *ngIf="showStartChecklistModal"
+  style="display: block; background: rgba(0,0,0,0.5);">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header bg-white border-bottom">
+        <div>
+          <h5 class="modal-title mb-0">
+            <i class="mdi mdi-playlist-plus me-2 text-primary"></i>
+            Start Checklists
+          </h5>
+          <div class="small text-muted" *ngIf="selectedTemplatePreview as tpl">
+            {{ tpl.name }} <span *ngIf="tpl.version">(v{{ tpl.version }})</span>
+          </div>
+        </div>
+        <button type="button" class="btn-close" aria-label="Close" (click)="closeStartChecklistModal()"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="row g-3 mb-3">
+          <div class="col-md-4">
+            <label class="form-label small fw-semibold">How many checklists?</label>
+            <input type="number"
+                   min="1"
+                   max="100"
+                   class="form-control"
+                   [(ngModel)]="startFromTemplateCount"
+                   (ngModelChange)="onStartTemplateCountChange()" />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small fw-semibold">Work Order Number</label>
+            <input class="form-control" [(ngModel)]="startFromTemplateWorkOrder" />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small fw-semibold">Part Number (optional)</label>
+            <input class="form-control" [(ngModel)]="startFromTemplatePartNumber" />
+          </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label class="form-label small fw-semibold">Starting Serial Number</label>
+            <input class="form-control"
+                   [(ngModel)]="startFromTemplateSerialNumber"
+                   (ngModelChange)="onStartTemplateBaseSerialChange()"
+                   placeholder="Example: 1000 or SN-1000" />
+            <div class="small text-muted mt-1">
+              Serial numbers are auto-generated sequentially and can be edited below.
+            </div>
+          </div>
+        </div>
+
+        <div class="border rounded bg-light p-3">
+          <div class="fw-semibold mb-2">Serial Numbers</div>
+          <div class="small text-muted mb-3" *ngIf="startFromTemplateSerialNumbers.length > 0">
+            Showing {{ startFromTemplateSerialNumbers.length }} serial field(s).
+          </div>
+
+          <div class="row g-2" *ngIf="startFromTemplateSerialNumbers.length > 0">
+            <div class="col-md-6" *ngFor="let serial of startFromTemplateSerialNumbers; let i = index">
+              <label class="form-label small text-muted mb-1">Checklist {{ i + 1 }}</label>
+              <input class="form-control"
+                     [(ngModel)]="startFromTemplateSerialNumbers[i]"
+                     [placeholder]="'Serial #' + (i + 1)" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer bg-white border-top d-flex justify-content-between align-items-center">
+        <div class="small text-muted">
+          Create {{ startFromTemplateCount || 1 }} checklist(s) from selected template.
+        </div>
+        <button type="button"
+                class="btn btn-primary"
+                (click)="startSelectedTemplateInstancesBatch()"
+                [disabled]="!!startingTemplateId || !startFromTemplateWorkOrder?.trim() || !startFromTemplateSerialNumbers?.length">
+          <span *ngIf="startingTemplateId" class="spinner-border spinner-border-sm me-2" role="status"></span>
+          Start Checklists
+        </button>
       </div>
     </div>
   </div>
@@ -2287,6 +2371,13 @@
                     <h6 class="mb-0 fw-semibold" [class.text-white]="checklist.id === instance?.id">
                       {{ checklist.template_name || 'Checklist #' + checklist.id }}
                     </h6>
+                    <span *ngIf="checklist.template_version"
+                          class="badge px-2 py-1 small fw-semibold"
+                          [ngClass]="checklist.id === instance?.id
+                            ? 'bg-white text-primary'
+                            : 'bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25'">
+                      v{{ checklist.template_version }}
+                    </span>
                     <span 
                       *ngIf="checklist.id === instance?.id"
                       class="badge bg-white text-primary px-2 py-1 small fw-semibold">

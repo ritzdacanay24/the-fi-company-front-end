@@ -60,7 +60,19 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
     {
       field: 'template_name',
       headerName: 'Template',
-      minWidth: 150
+      minWidth: 180,
+      cellRenderer: (params: any) => {
+        const name = params.data?.template_name || '';
+        const version = params.data?.template_version;
+        const vBadge = version ? ` <span style="font-size:0.7rem;padding:1px 5px;border-radius:4px;background:rgba(10,179,156,0.15);color:#0ab39c;font-weight:500;">v${version}</span>` : '';
+        return `${name}${vBadge}`;
+      }
+    },
+    {
+      field: 'customer_name',
+      headerName: 'Customer',
+      minWidth: 130,
+      cellRenderer: (params: any) => params.value ? `<span>${params.value}</span>` : `<span class="text-muted">—</span>`
     },
     {
       field: 'operator_name',

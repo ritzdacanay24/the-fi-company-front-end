@@ -259,7 +259,7 @@ export class PhotoChecklistRepository {
       SELECT ci.id, ci.template_id, ci.work_order_number, ci.part_number, ci.serial_number,
              ci.operator_id, ci.operator_name, ci.status, ci.progress_percentage,
              ci.created_at, ci.updated_at, ci.started_at, ci.completed_at, ci.submitted_at,
-             ct.name AS template_name, ct.category, ct.version AS template_version,
+             ct.name AS template_name, ct.category, ct.version AS template_version, ct.customer_name,
              (SELECT COUNT(*) FROM photo_submissions ps2
               WHERE ps2.instance_id = ci.id) AS photo_count,
              (SELECT COUNT(*) FROM checklist_items citm2
@@ -804,7 +804,7 @@ export class PhotoChecklistRepository {
     const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
     return this.mysqlService.query<RowDataPacket[]>(
-      `SELECT ci.*, t.name AS template_name
+      `SELECT ci.*, t.name AS template_name, t.version AS template_version, t.customer_name
        FROM checklist_instances ci
        INNER JOIN checklist_templates t ON t.id = ci.template_id
        ${whereClause}
@@ -1123,13 +1123,27 @@ export class PhotoChecklistRepository {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
+    // Stack of inserted row IDs indexed by level.
+    // Rebuilt per-save so parent_id always reflects the actual DB auto-increment IDs
+    // regardless of whether the frontend sent a parent_id or not.
+    const insertedIdByLevel: Array<number | null> = [];
+
     for (const item of items) {
+      let normalizedLevel = Number(item?.level ?? 0);
+      if (!Number.isInteger(normalizedLevel) || normalizedLevel < 0) {
+        normalizedLevel = 0;
+      }
+
+      // Trim the stack to the current level so we always reference the nearest ancestor.
+      insertedIdByLevel.length = normalizedLevel;
+      const persistedParentId = normalizedLevel > 0 ? (insertedIdByLevel[normalizedLevel - 1] ?? null) : null;
+
       const needsMediaUpload = this.computeNeedsMediaUpload(item);
-      await connection.execute(insertSql, [
+      const [insertResult] = await connection.execute(insertSql, [
         templateId,
         Number(item?.order_index || 0),
-        item?.parent_id ?? null,
-        Number(item?.level || 0),
+        persistedParentId,
+        normalizedLevel,
         item?.title || '',
         item?.description ?? null,
         item?.submission_type || 'photo',
@@ -1143,7 +1157,10 @@ export class PhotoChecklistRepository {
         item?.sample_videos ? JSON.stringify(item.sample_videos) : null,
         needsMediaUpload,
         item?.links ? JSON.stringify(item.links) : null,
-      ]);
+      ]) as [ResultSetHeader, any];
+
+      // Record this row's auto-increment ID so children can reference it.
+      insertedIdByLevel[normalizedLevel] = insertResult.insertId;
     }
   }
 

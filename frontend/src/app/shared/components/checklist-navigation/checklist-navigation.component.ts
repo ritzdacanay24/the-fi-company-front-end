@@ -30,6 +30,7 @@ export class ChecklistNavigationComponent implements OnChanges, OnDestroy {
   @Input() allowReadonlyReorder = false;
   @Input() autoScrollActive = true;
   @Input() showItemNumbers = true;
+  @Input() navVariant: 'default' | 'editor-like' = 'default';
   @Input() summary: { completed: number; total: number; percent: number } | null = null;
   @Input() cardStyle = true;
   @Input() height: string | null = null;  // e.g., '500px', 'calc(100vh - 300px)'

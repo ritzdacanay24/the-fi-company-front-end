@@ -67,6 +67,9 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   startFromTemplateWorkOrder = '';
   startFromTemplateSerialNumber = '';
   startFromTemplatePartNumber = '';
+  showStartChecklistModal = false;
+  startFromTemplateCount = 1;
+  startFromTemplateSerialNumbers: string[] = [];
 
   // Photo upload
   selectedFiles: { [itemId: number]: FileList } = {};
@@ -2173,25 +2176,20 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
    * OR sort flat array with sub-items placed after their parents
    */
   private flattenItems(items: ChecklistItem[]): ChecklistItem[] {
-    // Check if items are already flat (no children property)
-    const hasChildren = items.some(item => (item as any).children && Array.isArray((item as any).children));
-    
-    if (!hasChildren) {
-      // Items are already flat - just sort them properly
-      // Separate parents and sub-items
-      const parents = items.filter(item => item.level === 0 || !item.level);
-      const subItems = items.filter(item => item.level === 1);
-      
-      // Build ordered array: parent followed by its sub-items
-      const sorted: ChecklistItem[] = [];
-      parents.forEach(parent => {
-        sorted.push(parent);
-        // Find and add all sub-items that belong to this parent
-        const children = subItems.filter(sub => sub.parent_id === parent.id);
-        sorted.push(...children);
-      });
-      
-      return sorted;
+    // Treat as hierarchical only when there are actual nested children.
+    // Some API payloads include `children: []` on flat items; that should stay flat.
+    const hasNestedChildren = items.some(item => {
+      const children = (item as any).children;
+      return Array.isArray(children) && children.length > 0;
+    });
+
+    if (!hasNestedChildren) {
+      // For flat payloads, trust explicit order_index + level sequence from DB.
+      // Do not re-parent by parent_id here because legacy templates may store
+      // mixed parent_id semantics (ID vs order index), which can mis-group rows.
+      return items
+        .slice()
+        .sort((a, b) => Number(a.order_index || 0) - Number(b.order_index || 0));
     }
     
     // Hierarchical flattening logic with proper level assignment
@@ -4561,6 +4559,27 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     event.target.style.display = 'none';
   }
 
+  getTemplateItemLabel(items: any[], item: any): string {
+    const level = Number(item.level ?? 0);
+    if (level === 0) {
+      const parentIndex = items.filter(i => Number(i.level ?? 0) === 0)
+        .sort((a, b) => a.order_index - b.order_index)
+        .findIndex(i => i.id === item.id);
+      return String(parentIndex + 1);
+    } else {
+      const parent = items.find(i => i.id === item.parent_id);
+      const parentIndex = parent
+        ? items.filter(i => Number(i.level ?? 0) === 0)
+            .sort((a, b) => a.order_index - b.order_index)
+            .findIndex(i => i.id === parent.id)
+        : -1;
+      const siblingIndex = items.filter(i => Number(i.level ?? 0) === 1 && i.parent_id === item.parent_id)
+        .sort((a, b) => a.order_index - b.order_index)
+        .findIndex(i => i.id === item.id);
+      return `${parentIndex + 1}.${siblingIndex + 1}`;
+    }
+  }
+
   /**
    * Full checklist modal methods
    */
@@ -4720,6 +4739,9 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     this.startFromTemplateSerialNumber = '';
     // Keep optional part number convenience
     this.startFromTemplatePartNumber = this.instance?.part_number || '';
+    this.showStartChecklistModal = false;
+    this.startFromTemplateCount = 1;
+    this.startFromTemplateSerialNumbers = [];
 
     this.photoChecklistService.getTemplates().subscribe({
       next: (templates) => {
@@ -4797,6 +4819,187 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
 
   closeTemplatePickerModal(): void {
     this.showTemplatePickerModal = false;
+    this.showStartChecklistModal = false;
+  }
+
+  onTemplatePickerBackdropClick(event: MouseEvent): void {
+    if (this.showStartChecklistModal) {
+      return;
+    }
+
+    if (event.target === event.currentTarget) {
+      this.closeTemplatePickerModal();
+    }
+  }
+
+  openStartChecklistModal(): void {
+    if (!this.selectedTemplateId) {
+      alert('Select a template first.');
+      return;
+    }
+
+    this.showStartChecklistModal = true;
+    this.startFromTemplateCount = Math.max(1, Number(this.startFromTemplateCount || 1));
+    this.regenerateTemplateStartSerials();
+  }
+
+  closeStartChecklistModal(): void {
+    this.showStartChecklistModal = false;
+  }
+
+  onStartTemplateCountChange(): void {
+    this.startFromTemplateCount = Math.min(100, Math.max(1, Number(this.startFromTemplateCount || 1)));
+    this.regenerateTemplateStartSerials();
+  }
+
+  onStartTemplateBaseSerialChange(): void {
+    this.regenerateTemplateStartSerials();
+  }
+
+  private regenerateTemplateStartSerials(): void {
+    const count = Math.max(1, Number(this.startFromTemplateCount || 1));
+    const baseSerial = String(this.startFromTemplateSerialNumber || '').trim();
+
+    if (!baseSerial) {
+      this.startFromTemplateSerialNumbers = Array.from({ length: count }, (_, i) =>
+        this.startFromTemplateSerialNumbers[i] || ''
+      );
+      return;
+    }
+
+    const serialMatch = baseSerial.match(/^(.*?)(\d+)$/);
+    if (!serialMatch) {
+      this.startFromTemplateSerialNumbers = Array.from({ length: count }, (_, i) =>
+        i === 0 ? baseSerial : (this.startFromTemplateSerialNumbers[i] || '')
+      );
+      return;
+    }
+
+    const prefix = serialMatch[1] || '';
+    const numericPart = serialMatch[2] || '';
+    const baseValue = Number(numericPart);
+    const paddedLength = numericPart.length;
+
+    this.startFromTemplateSerialNumbers = Array.from({ length: count }, (_, i) => {
+      // Include the entered starting serial as Checklist 1.
+      // Example: base 1000 with count 5 => 1000 ... 1004
+      const nextValue = (baseValue + i).toString().padStart(paddedLength, '0');
+      return `${prefix}${nextValue}`;
+    });
+  }
+
+  startSelectedTemplateInstancesBatch(): void {
+    const templateId = this.selectedTemplateId;
+    if (!templateId) {
+      alert('Select a template first.');
+      return;
+    }
+
+    const workOrder = String(this.startFromTemplateWorkOrder || '').trim();
+    const partNumber = String(this.startFromTemplatePartNumber || '').trim();
+    const count = Math.max(1, Number(this.startFromTemplateCount || 1));
+    const serials = (this.startFromTemplateSerialNumbers || [])
+      .slice(0, count)
+      .map(s => String(s || '').trim());
+
+    if (!workOrder) {
+      alert('Work Order Number is required.');
+      return;
+    }
+
+    if (serials.length !== count || serials.some(s => !s)) {
+      alert('Please complete all serial numbers before starting.');
+      return;
+    }
+
+    const isOlderVersion = this.groupedTemplates.some(g =>
+      g.older.some(t => t.id === templateId)
+    );
+
+    if (isOlderVersion) {
+      const tpl = this.selectedTemplatePreview;
+      Swal.fire({
+        icon: 'warning',
+        title: 'Older Version Selected',
+        html: `You are about to start <strong>${count}</strong> checklist(s) using <strong>v${tpl?.version}</strong> of <strong>${tpl?.name}</strong>, which is not the latest version.<br><br>Are you sure you want to continue?`,
+        showCancelButton: true,
+        confirmButtonText: 'Yes, continue',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#f7b731',
+        reverseButtons: true,
+      }).then(result => {
+        if (result.isConfirmed) {
+          this.doStartTemplateInstancesBatch(templateId, workOrder, partNumber, serials);
+        }
+      });
+      return;
+    }
+
+    this.doStartTemplateInstancesBatch(templateId, workOrder, partNumber, serials);
+  }
+
+  private doStartTemplateInstancesBatch(templateId: number, workOrder: string, partNumber: string, serials: string[]): void {
+    this.startingTemplateId = templateId;
+    this.cdr.detectChanges();
+
+    const createdInstanceIds: number[] = [];
+    const failedSerials: string[] = [];
+    let index = 0;
+
+    const createNext = (): void => {
+      if (index >= serials.length) {
+        this.startingTemplateId = null;
+        this.cdr.detectChanges();
+
+        if (createdInstanceIds.length === 0) {
+          alert('Failed to start checklist(s) from template.');
+          return;
+        }
+
+        this.closeStartChecklistModal();
+        this.closeTemplatePickerModal();
+
+        if (createdInstanceIds.length === 1 && failedSerials.length === 0) {
+          this.switchToChecklist(createdInstanceIds[0]);
+          return;
+        }
+
+        Swal.fire({
+          icon: failedSerials.length > 0 ? 'warning' : 'success',
+          title: failedSerials.length > 0 ? 'Completed With Some Failures' : 'Checklists Created',
+          html: `Created <strong>${createdInstanceIds.length}</strong> checklist(s).${failedSerials.length > 0 ? `<br><br>Failed serial(s): <strong>${failedSerials.join(', ')}</strong>` : ''}`,
+          confirmButtonText: 'OK'
+        });
+        return;
+      }
+
+      const serial = serials[index];
+      index += 1;
+
+      this.photoChecklistService.createInstanceFromTemplate(
+        templateId,
+        workOrder,
+        partNumber,
+        serial,
+        { id: this.currentUserId || undefined, name: this.currentUserName }
+      ).subscribe({
+        next: (result) => {
+          if (result?.success && result.instance_id) {
+            createdInstanceIds.push(result.instance_id);
+          } else {
+            failedSerials.push(serial);
+          }
+          createNext();
+        },
+        error: (error) => {
+          console.error('Error starting checklist from template:', error);
+          failedSerials.push(serial);
+          createNext();
+        }
+      });
+    };
+
+    createNext();
   }
 
   selectTemplateForPreview(template: ChecklistTemplate): void {
@@ -4839,6 +5042,34 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       return;
     }
 
+    // Check if the selected template is an older (non-latest) version
+    const isOlderVersion = this.groupedTemplates.some(g =>
+      g.older.some(t => t.id === templateId)
+    );
+
+    if (isOlderVersion) {
+      const tpl = this.selectedTemplatePreview;
+      Swal.fire({
+        icon: 'warning',
+        title: 'Older Version Selected',
+        html: `You are about to start a checklist using <strong>v${tpl?.version}</strong> of <strong>${tpl?.name}</strong>, which is not the latest version.<br><br>Are you sure you want to continue?`,
+        showCancelButton: true,
+        confirmButtonText: 'Yes, continue',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#f7b731',
+        reverseButtons: true,
+      }).then(result => {
+        if (result.isConfirmed) {
+          this.doStartTemplateInstance(templateId, workOrder, serialNumber, partNumber);
+        }
+      });
+      return;
+    }
+
+    this.doStartTemplateInstance(templateId, workOrder, serialNumber, partNumber);
+  }
+
+  private doStartTemplateInstance(templateId: number, workOrder: string, serialNumber: string, partNumber: string): void {
     this.startingTemplateId = templateId;
     this.cdr.detectChanges();
 
@@ -4969,6 +5200,8 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   buildExecutionNavItems(): ChecklistNavItem[] {
     return this.itemProgress.map((progress, index) => {
       const item = progress.item as ChecklistItem;
+      const rawLevel = Number((item as any).level ?? 0);
+      const normalizedLevel = Number.isFinite(rawLevel) ? Math.max(0, Math.floor(rawLevel)) : 0;
       const sampleImages = Array.isArray(item.sample_images) ? item.sample_images : [];
       const sampleVideos = Array.isArray(item.sample_videos) ? item.sample_videos : [];
       const primaryImage = sampleImages.find(img => img.is_primary) ?? null;
@@ -4989,7 +5222,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       return {
         id: index,
         title: item.title || 'Untitled',
-        level: item.level ?? 0,
+        level: normalizedLevel,
         orderIndex: index,
         submissionType: (item as any).submission_type ?? 'photo',
         isRequired: !!(item as any).is_required,

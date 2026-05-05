@@ -2,6 +2,7 @@
   [class.h-100]="!height"
   [style.height]="height"
   [style.max-height]="height"
+  [class.nav-editor-like]="navVariant === 'editor-like'"
      [class.card]="cardStyle"
      [class.shadow-sm]="cardStyle"
      [class.border-0]="cardStyle"
@@ -120,9 +121,9 @@
     <!-- Shared item body template (used by both editor and readonly containers) -->
     <!-- Content fragment: chevron, indent, icon, badge, title, status, media, actions -->
     <ng-template #navItemTpl let-item="item" let-i="i" let-hasChildren="hasChildren">
-        <div class="flex-shrink-0" style="width: 6px;"></div>
+        <div class="flex-shrink-0" [style.width.px]="navVariant === 'editor-like' ? 0 : 6"></div>
 
-        <div class="flex-shrink-0" [style.width.px]="item.level * 10"></div>
+        <div class="flex-shrink-0" [style.width.px]="item.level * (navVariant === 'editor-like' ? 6 : 10)"></div>
 
         <div class="flex-shrink-0" style="width: 20px;">
           <i class="mdi"
@@ -135,10 +136,21 @@
              (click)="toggleNavExpansion(i, $event)"></i>
 
            <i class="mdi mdi-file-document-outline"
-             *ngIf="!hasChildren"
+             *ngIf="!hasChildren && navVariant !== 'editor-like'"
              [class.text-muted]="activeNavItemIndex !== i"
              [class.text-white]="activeNavItemIndex === i"
              style="font-size: 18px;"></i>
+        </div>
+
+        <div *ngIf="navVariant === 'editor-like' && item.level > 0" class="flex-shrink-0 nav-item-child-indicator" aria-hidden="true">
+          <i class="mdi mdi-subdirectory-arrow-right text-primary"></i>
+        </div>
+
+        <div *ngIf="showItemNumbers && navVariant === 'editor-like' && !(canUseReorderControls() && isReorderDragging)"
+             class="flex-shrink-0 nav-item-outline-badge"
+             [class.nav-item-outline-badge-active]="activeNavItemIndex === i"
+             title="Item outline number">
+          {{ getNavIndexLabel(i) }}
         </div>
 
         <div class="flex-grow-1" style="overflow: hidden; min-width: 0;">
@@ -147,7 +159,7 @@
                  [title]="item.title">
             {{ item.title }}
           </small>
-          <small *ngIf="isReadonlyMode() && item.isParent && item.progressTotal"
+             <small *ngIf="isReadonlyMode() && item.isParent && item.progressTotal && !expandedItems.has(i)"
                  class="d-block text-truncate w-100"
                  [class.text-muted]="activeNavItemIndex !== i"
                  [class.text-white-50]="activeNavItemIndex === i"
@@ -209,7 +221,7 @@
           </ng-container>
         </div>
 
-        <div *ngIf="showItemNumbers && !(canUseReorderControls() && isReorderDragging)"
+        <div *ngIf="showItemNumbers && navVariant !== 'editor-like' && !(canUseReorderControls() && isReorderDragging)"
              class="flex-shrink-0 nav-item-index"
              [class.text-muted]="activeNavItemIndex !== i"
              [class.text-white-50]="activeNavItemIndex === i"
