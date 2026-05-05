@@ -357,6 +357,28 @@ export class SgAssetRepository extends BaseRepository<SgAssetRecord> {
     return String(date.getUTCFullYear());
   }
 
+  /**
+   * Simple: US14 + week + year + sequence (01-99)
+   * If week changed, reset sequence to 01. Otherwise increment.
+   */
+  private generateNextSgAssetNumber(
+    currentSequence: number,
+    lastWeekNumber: string,
+  ): string {
+    const defaultFirst = 'US14';
+    const now = new Date();
+    const currentYear = String(now.getUTCFullYear()).slice(-2);
+    const currentWeek = this.getWeekNumber(now.toISOString());
+
+    // Same week? Increment. Different week? Reset to 01.
+    const sequence =
+      currentWeek === String(lastWeekNumber).padStart(2, '0')
+        ? String(currentSequence + 1).padStart(2, '0')
+        : '01';
+
+    return `${defaultFirst}${currentWeek}${currentYear}${sequence}`;
+  }
+
   private generateSerialNumber(
     previousSequence: number,
     lastRecordedWeekNumber: string,
@@ -513,6 +535,25 @@ export class SgAssetRepository extends BaseRepository<SgAssetRecord> {
         execute: <T = unknown>(sql: string, params?: Record<string, unknown>) => Promise<[T, unknown]>;
       };
 
+      // Query last record ONCE at the start
+      const [lastRows] = await conn.execute<Array<RowDataPacket & { generatedAssetNumber: string; dateCreated: string }>>(
+        `
+          SELECT RIGHT(generated_SG_asset, 2) AS generatedAssetNumber,
+                 DATE(timeStamp) AS dateCreated
+          FROM ${table}
+          WHERE manualUpdate IS NULL OR manualUpdate = ''
+          ORDER BY id DESC
+          LIMIT 1
+        `,
+      );
+
+      const lastRecord = lastRows[0];
+      const lastSequence = Number(lastRecord?.generatedAssetNumber || 0);
+      const lastWeekNumber = this.getWeekNumber(String(lastRecord?.dateCreated || nowDate));
+
+      // Track current sequence in memory as we loop
+      let currentSequence = lastSequence;
+
       for (const assignment of assignments) {
         const serialNumber = String(assignment.serialNumber || '');
         let eyefiSerialId = assignment.eyefi_serial_id;
@@ -528,27 +569,9 @@ export class SgAssetRepository extends BaseRepository<SgAssetRecord> {
         let generatedAssetNumber = String(assignment.sgAssetNumber || assignment.generated_SG_asset || '');
 
         if (!useManualAsset) {
-          const [lastRows] = await (
-            connection as {
-              execute: <T = unknown>(sql: string, params?: Record<string, unknown>) => Promise<[T, unknown]>;
-            }
-          ).execute<Array<RowDataPacket & { generatedAssetNumber: string; dateCreated: string }>>(
-            `
-              SELECT RIGHT(generated_SG_asset, 2) AS generatedAssetNumber,
-                     DATE(timeStamp) AS dateCreated
-              FROM ${table}
-              WHERE manualUpdate IS NULL OR manualUpdate = ''
-              ORDER BY id DESC
-              LIMIT 1
-            `,
-          );
-
-          const prev = lastRows[0];
-          generatedAssetNumber = this.generateSerialNumber(
-            Number(prev?.generatedAssetNumber || 0),
-            this.getWeekNumber(String(prev?.dateCreated || nowDate)),
-            this.getYearNumber(String(prev?.dateCreated || nowDate)),
-          );
+          // Use the tracked sequence, increment it
+          generatedAssetNumber = this.generateNextSgAssetNumber(currentSequence, lastWeekNumber);
+          currentSequence = Number(generatedAssetNumber.slice(-2)); // Extract last 2 digits for next iteration
         }
 
         const [insertResult] = await conn.execute<ResultSetHeader>(

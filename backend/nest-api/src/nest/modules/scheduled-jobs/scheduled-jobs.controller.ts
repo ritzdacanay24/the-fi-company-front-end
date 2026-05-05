@@ -31,15 +31,15 @@ export class ScheduledJobsController {
   }
 
   @Patch(':id')
-  update(
+  async update(
     @Param('id') id: string,
     @Body() data: UpdateScheduledJobDto
-  ): ScheduledJobDto {
+  ): Promise<ScheduledJobDto> {
     if (!data.cron || typeof data.active !== 'boolean') {
       throw new BadRequestException('cron and active fields are required');
     }
 
-    const updated = this.scheduledJobsService.updateJob(id, data);
+    const updated = await this.scheduledJobsService.updateJob(id, data);
     if (!updated) {
       throw new BadRequestException(`Scheduled job not found: ${id}`);
     }

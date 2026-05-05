@@ -55,6 +55,11 @@ export class ScheduledJobsRunnerService {
     await this.scheduledJobsService.runJobIfEnabled('past-due-field-service-requests');
   }
 
+  @Cron('0 0 7 * * *', { name: 'scheduled-jobs.serial-stock-alert', timeZone: SCHEDULED_JOBS_TIMEZONE })
+  async runSerialStockAlert(): Promise<void> {
+    await this.scheduledJobsService.runJobIfEnabled('serial-stock-alert');
+  }
+
   @Cron('0 0 7 * * 1-5', { name: 'scheduled-jobs.lnw-delivery', timeZone: SCHEDULED_JOBS_TIMEZONE })
   async runLnwDelivery(): Promise<void> {
     await this.scheduledJobsService.runJobIfEnabled('lnw-delivery');

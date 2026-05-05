@@ -4,6 +4,7 @@ import { RowDataPacket } from 'mysql2/promise';
 import { MysqlService } from '@/shared/database/mysql.service';
 import { EmailService } from '@/shared/email/email.service';
 import { SCHEDULED_JOB_DEFINITIONS } from './scheduled-jobs.definitions';
+import { ScheduledJobsConfigRepository } from './scheduled-jobs-config.repository';
 import { ScheduledJobHandler } from './handlers/scheduled-job.handler';
 import {
   CleanUsersHandler,
@@ -25,6 +26,7 @@ import {
   FsJobReportMorningHandler,
   FsJobReportEveningHandler,
   FsJobNoticeHandler,
+  SerialStockAlertHandler,
 } from './handlers';
 
 export type ScheduledJobRunStatus = 'success' | 'failure';
@@ -74,6 +76,7 @@ export class ScheduledJobsService {
     private readonly mysqlService: MysqlService,
     private readonly emailService: EmailService,
     private readonly configService: ConfigService,
+    private readonly scheduledJobsConfigRepository: ScheduledJobsConfigRepository,
     private readonly cleanUsersHandler: CleanUsersHandler,
     private readonly fieldServiceOldWorkOrdersHandler: FieldServiceOldWorkOrdersHandler,
     private readonly pastDueFieldServiceRequestsHandler: PastDueFieldServiceRequestsHandler,
@@ -93,6 +96,7 @@ export class ScheduledJobsService {
     private readonly fsJobReportMorningHandler: FsJobReportMorningHandler,
     private readonly fsJobReportEveningHandler: FsJobReportEveningHandler,
     private readonly fsJobNoticeHandler: FsJobNoticeHandler,
+    private readonly serialStockAlertHandler: SerialStockAlertHandler,
   ) {
     this.handlerMap = new Map();
     this.isDevelopment = String(process.env.NODE_ENV ?? '').toLowerCase() === 'development';
@@ -119,6 +123,7 @@ export class ScheduledJobsService {
     this.handlerMap.set('fs-job-report-morning', this.fsJobReportMorningHandler);
     this.handlerMap.set('fs-job-report-evening', this.fsJobReportEveningHandler);
     this.handlerMap.set('fs-job-notice', this.fsJobNoticeHandler);
+    this.handlerMap.set('serial-stock-alert', this.serialStockAlertHandler);
   }
 
   isRunnerEnabled(): boolean {
@@ -132,7 +137,15 @@ export class ScheduledJobsService {
     }
 
     const job = SCHEDULED_JOB_DEFINITIONS.find((row) => row.id === id);
-    if (!job || !job.active) {
+    if (!job) {
+      return;
+    }
+
+    // Check database config first, fall back to definition
+    const config = await this.scheduledJobsConfigRepository.findById(id);
+    const isActive = config ? config.active : job.active;
+
+    if (!isActive) {
       return;
     }
 
@@ -142,6 +155,11 @@ export class ScheduledJobsService {
   async listJobs(): Promise<ScheduledJobDto[]> {
     const runnerEnabled = this.isRunnerEnabled();
 
+    // Load persisted configs from database
+    const persistedConfigs = await this.scheduledJobsConfigRepository.findAll();
+    const configMap = new Map(persistedConfigs.map(c => [c.id, c]));
+
+    // Fetch last run info
     const rows = await this.mysqlService.query<RowDataPacket[]>(`
       SELECT
         r.job_name,
@@ -176,28 +194,49 @@ export class ScheduledJobsService {
       });
     }
 
-    return SCHEDULED_JOB_DEFINITIONS.map((job) => this.toScheduledJobDto(job, runnerEnabled, lastRunByJobId.get(job.id)));
+    // Merge database configs with definitions
+    return SCHEDULED_JOB_DEFINITIONS.map((job) => {
+      const config = configMap.get(job.id);
+      const mergedJob = config
+        ? { ...job, cron: config.cron, active: config.active, note: config.note }
+        : job;
+      return this.toScheduledJobDto(mergedJob, runnerEnabled, lastRunByJobId.get(job.id));
+    });
   }
 
-  updateJob(
+  async updateJob(
     id: string,
     data: { cron: string; active: boolean; note?: string },
-  ): ScheduledJobDto | null {
+  ): Promise<ScheduledJobDto | null> {
     const jobIndex = SCHEDULED_JOB_DEFINITIONS.findIndex((row) => row.id === id);
     if (jobIndex === -1) {
       return null;
     }
 
-    const job = SCHEDULED_JOB_DEFINITIONS[jobIndex];
-    SCHEDULED_JOB_DEFINITIONS[jobIndex] = {
-      ...job,
+    // Persist to database
+    const config = await this.scheduledJobsConfigRepository.upsert({
+      id,
       cron: data.cron,
       active: data.active,
       note: data.note,
+    });
+
+    if (!config) {
+      this.logger.error(`Failed to persist job config for ${id}`);
+      return null;
+    }
+
+    // Return merged job definition with database values
+    const job = SCHEDULED_JOB_DEFINITIONS[jobIndex];
+    const mergedJob = {
+      ...job,
+      cron: config.cron,
+      active: config.active,
+      note: config.note,
     };
 
     const runnerEnabled = this.isRunnerEnabled();
-    return this.toScheduledJobDto(SCHEDULED_JOB_DEFINITIONS[jobIndex], runnerEnabled, undefined);
+    return this.toScheduledJobDto(mergedJob, runnerEnabled, undefined);
   }
 
   async runJobById(id: string, trigger: 'manual' | 'cron', skipDevNotification: boolean = false): Promise<ScheduledJobRunResultDto> {

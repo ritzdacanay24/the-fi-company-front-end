@@ -162,4 +162,12 @@ export const SCHEDULED_JOB_DEFINITIONS: ScheduledJobDefinition[] = [
     active: false,
     note: 'Disabled - enable from UX',
   },
+  {
+    id: 'serial-stock-alert',
+    name: 'Serial Stock Alert',
+    cron: '0 7 * * *',
+    url: 'nest://scheduled-jobs/serial-stock-alert',
+    active: true,
+    note: 'Daily 7 AM PT — emails serial_stock_alert recipients when any pool is at or below threshold.',
+  },
 ];

@@ -20,3 +20,4 @@ export { GraphicsDueTodayReportHandler } from './graphics-due-today-report.handl
 export { FsJobReportMorningHandler } from './fs-job-report-morning.handler';
 export { FsJobReportEveningHandler } from './fs-job-report-evening.handler';
 export { FsJobNoticeHandler } from './fs-job-notice.handler';
+export { SerialStockAlertHandler } from './serial-stock-alert.handler';

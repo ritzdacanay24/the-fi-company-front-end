@@ -134,8 +134,11 @@ export class ScheduledJobsListComponent implements OnInit {
     try {
       const result = await modalRef.result;
       await this.updateJob(job.id, result);
-    } catch {
-      // Modal dismissed, do nothing
+    } catch (error: any) {
+      // Only suppress if modal was dismissed by user, not if update failed
+      if (error?.dismissed !== true) {
+        console.error('Unexpected error:', error);
+      }
     }
   }
 
@@ -150,8 +153,12 @@ export class ScheduledJobsListComponent implements OnInit {
         this.jobs[jobIndex] = updated;
       }
       console.log(`Job ${id} updated successfully`);
-    } catch (error) {
+      alert(`Job updated successfully`);
+    } catch (error: any) {
+      const message = error?.message || 'Failed to update job';
       console.error(`Failed to update job ${id}:`, error);
+      alert(`Error: ${message}`);
+      throw error; // Re-throw so caller knows it failed
     }
   }
 
