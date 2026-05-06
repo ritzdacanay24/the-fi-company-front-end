@@ -63,6 +63,15 @@
     }
   }
 
+  .home-main-card {
+    min-height: calc(100vh - 370px);
+  }
+
+  .permit-home-grid {
+    width: 100%;
+    height: calc(100vh - 295px);
+  }
+
   .nav-tabs {
     .nav-link {
     }
@@ -177,9 +186,115 @@
   .form-shell {
   }
 
+  .permit-form-header {
+    .breadcrumb {
+      font-size: 0.82rem;
+      margin-bottom: 0;
+    }
+
+    .breadcrumb-item a {
+      color: var(--pc-accent);
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .breadcrumb-item a:hover {
+      text-decoration: underline;
+    }
+
+    h2 {
+      font-weight: 700;
+    }
+
+    .btn {
+      white-space: nowrap;
+    }
+  }
+
   .form-workspace {
+    .row {
+      overflow: visible;
+    }
+
+    .ticket-side-column {
+      position: sticky;
+      top: 5rem;
+      z-index: 2;
+      height: fit-content;
+      align-self: flex-start;
+      overflow: visible;
+    }
+
     .form-main-card {
       height: 100%;
+    }
+
+    &.condensed-form {
+      .form-main-card {
+        .card-body {
+          padding: 0.5rem 0.6rem;
+        }
+
+        .section-title {
+          font-size: 0.78rem;
+          margin-bottom: 0.25rem !important;
+        }
+
+        table td,
+        table th {
+          padding: 0.25rem 0.4rem;
+          font-size: 0.8rem;
+        }
+
+        .input-group,
+        .form-control,
+        .form-select {
+          font-size: 0.8rem;
+        }
+
+        .form-control,
+        .form-select {
+          padding: 0.2rem 0.4rem;
+          min-height: unset;
+          height: 1.7rem;
+          line-height: 1.3;
+        }
+
+        .input-group-text {
+          padding: 0.2rem 0.4rem;
+          font-size: 0.8rem;
+        }
+
+        .btn {
+          padding: 0.2rem 0.5rem;
+          font-size: 0.8rem;
+          line-height: 1.4;
+        }
+
+        .fee-breakdown {
+          padding: 0.4rem;
+
+          .fee-row .btn,
+          .fee-quick-add .btn {
+            min-height: unset;
+            padding-top: 0.2rem;
+            padding-bottom: 0.2rem;
+            font-size: 0.8rem;
+          }
+
+          .fee-approved-toggle,
+          .fee-approved-placeholder {
+            min-height: unset;
+            font-size: 0.78rem;
+          }
+
+          .fee-row,
+          .fee-quick-add {
+            gap: 0.35rem;
+            margin-bottom: 0.3rem;
+          }
+        }
+      }
     }
 
     .ticket-side-card {
@@ -213,6 +328,77 @@
       word-break: break-word;
     }
 
+    .ticket-progress-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      padding: 0.6rem 0.7rem;
+      background: var(--pc-surface-soft);
+      border-radius: 0.5rem;
+    }
+
+    .ticket-progress-row {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .ticket-progress-label {
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--pc-muted);
+      font-weight: 700;
+      width: 4.5rem;
+      flex-shrink: 0;
+    }
+
+    .ticket-progress-value {
+      font-size: 0.78rem;
+      color: var(--pc-text);
+      font-weight: 700;
+      width: 2.8rem;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .ticket-progress-track {
+      height: 0.5rem;
+      width: 80px;
+      flex-shrink: 0;
+      margin-left: auto;
+      background: var(--bs-tertiary-bg);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .ticket-progress-fill {
+      height: 100%;
+      border-radius: inherit;
+      transition: width 320ms ease-in-out;
+    }
+
+    .ticket-progress-fill-header {
+      background: linear-gradient(90deg, #2563eb 0%, #3b82f6 100%);
+    }
+
+    .ticket-progress-fill-timeline {
+      background: linear-gradient(90deg, #0d9488 0%, #14b8a6 100%);
+    }
+
+    .ticket-progress-fill-total {
+      background: linear-gradient(90deg, #ea580c 0%, #f97316 100%);
+    }
+
+    .ticket-progress-caption {
+      font-size: 0.76rem;
+      color: var(--pc-muted);
+      font-weight: 600;
+      flex-shrink: 0;
+      width: 2.8rem;
+      text-align: right;
+    }
+
     .status-pill {
       display: inline-block;
       padding: 0.18rem 0.65rem;
@@ -224,6 +410,16 @@
     .status-draft {
       color: #8a5f00;
       background: #fff4d8;
+    }
+
+    .status-open {
+      color: #0a6b46;
+      background: #dff8ef;
+    }
+
+    .status-closed {
+      color: #374151;
+      background: #eceff3;
     }
 
     .status-saved {
@@ -244,6 +440,17 @@
     .status-archived {
       color: #374151;
       background: #eceff3;
+    }
+
+    .ticket-view-toggles {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+
+      .form-check-label {
+        font-size: 0.8rem;
+        color: var(--pc-text);
+      }
     }
 
     .side-actions {
@@ -378,8 +585,19 @@
       color: var(--pc-text);
     }
 
-    td {
+    td, th {
       vertical-align: middle;
+
+      &.field-filled {
+        background: #e8f7ef !important;
+      }
+
+      &.field-empty {
+        background: #fff7ea !important;
+      }
+    }
+
+    td {
       background: var(--pc-surface);
 
       .form-control {
@@ -387,6 +605,62 @@
 
       .form-control:focus {
         box-shadow: 0 0 0 0.18rem rgba(31, 111, 235, 0.12);
+      }
+    }
+  }
+
+  .open-items-empty {
+    font-size: 0.82rem;
+    color: #16a34a;
+    padding: 0.3rem 0.6rem;
+    margin-bottom: 0.6rem;
+    background: #f0fdf4;
+    border-radius: 0.4rem;
+    border: 1px solid #bbf7d0;
+  }
+
+  .sign-package-chips {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+
+    .sign-package-chip-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+    }
+
+    .sign-package-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.2rem 0.5rem;
+      background: #e0edff;
+      border: 1px solid #bcd3f8;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #1e40af;
+      white-space: nowrap;
+    }
+
+    .sign-package-chip-remove {
+      background: none;
+      border: none;
+      padding: 0;
+      line-height: 1;
+      cursor: pointer;
+      color: #6b7280;
+      font-size: 0.75rem;
+      display: flex;
+      align-items: center;
+
+      &:hover {
+        color: #dc2626;
+      }
+
+      &:disabled {
+        display: none;
       }
     }
   }
@@ -577,6 +851,40 @@
 
   .attachments-block {
     padding-top: 0.95rem;
+
+    .attachments-dropzone {
+      border: 2px dashed #6b7280;
+      background: var(--pc-surface-soft);
+      padding: 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 160ms ease, background-color 160ms ease;
+
+      &.is-drag-over {
+        border-color: #1f6feb;
+        background: var(--pc-accent-soft);
+      }
+
+      &.is-disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .dropzone-icon {
+        font-size: 1.6rem;
+        color: var(--pc-accent);
+      }
+
+      .dropzone-title {
+        font-weight: 700;
+        color: var(--pc-text);
+      }
+
+      .dropzone-subtitle {
+        font-size: 0.8rem;
+        color: var(--pc-muted);
+      }
+    }
 
     .form-control,
     .form-select {
@@ -828,8 +1136,9 @@
     }
 
     .form-workspace {
-      .ticket-side-card {
+      .ticket-side-column {
         position: static;
+        top: auto;
       }
 
       .detail-value {

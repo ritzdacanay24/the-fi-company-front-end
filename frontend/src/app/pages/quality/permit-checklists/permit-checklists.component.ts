@@ -13,6 +13,7 @@ import { THE_FI_COMPANY_CURRENT_USER } from "@app/core/guards/admin.guard";
 import { PermitChecklistsService } from "@app/core/api/quality/permit-checklists.service";
 import { NgbDropdownModule, NgbModal, NgbModalModule, NgbModalRef } from "@ng-bootstrap/ng-bootstrap";
 import * as mammoth from "mammoth";
+import { TextFieldModule } from "@angular/cdk/text-field";
 
 type PermitChecklistType = "seismic" | "dca";
 type BillingSection = "customer" | "eyefi";
@@ -176,12 +177,15 @@ interface StoredChecklistData {
 @Component({
   standalone: true,
   selector: "app-permit-checklists",
-  imports: [CommonModule, FormsModule, AgGridModule, NgbDropdownModule, NgbModalModule, PermitChecklistSummaryComponent],
+  imports: [CommonModule, FormsModule, AgGridModule, NgbDropdownModule, NgbModalModule, PermitChecklistSummaryComponent, TextFieldModule],
   templateUrl: "./permit-checklists.component.html",
   styleUrls: ["./permit-checklists.component.scss"],
 })
 export class PermitChecklistsComponent implements OnInit {
   private readonly maxTransactions = 2000;
+  private readonly ticketGridStateKey = "quality_permit_checklists_ticket_grid_state_v1";
+  private readonly auditGridStateKey = "quality_permit_checklists_audit_grid_state_v1";
+  private readonly approvedGridStateKey = "quality_permit_checklists_approved_grid_state_v1";
   private readonly legacyStorageCleanupFlag = "quality_permit_checklists_cleanup_done_v1";
   private readonly legacyChecklistStorageKeys = ["quality_permit_checklists_v2", "quality_permit_checklists_v1"];
   private readonly defaultCustomerNames: string[] = [
@@ -203,7 +207,7 @@ export class PermitChecklistsComponent implements OnInit {
     "Yaamava",
     "Zitro",
   ];
-  private readonly defaultArchitectNames: string[] = ["R2 Architects"];
+  private readonly defaultArchitectNames: string[] = ["R2 Architects", "WATG"];
   private routeSub?: Subscription;
   private ticketSyncTimer: ReturnType<typeof setTimeout> | null = null;
   private directorySyncDirty = false;
@@ -216,6 +220,9 @@ export class PermitChecklistsComponent implements OnInit {
 
   viewMode: "home" | "form" | "summary" = "home";
   homeTab: "tickets" | "audit" | "approved-report" = "tickets";
+  showOpenItemsOnly = localStorage.getItem('pc_showOpenItemsOnly') === 'true';
+  condensedForm = localStorage.getItem('pc_condensedForm') === 'true';
+  signPackageDraft = "";
 
   readonly templates: ChecklistTemplate[] = [
     {
@@ -304,6 +311,7 @@ export class PermitChecklistsComponent implements OnInit {
 
   draftFormType: PermitChecklistType = "seismic";
   homeSearchQuery = "";
+  showRecentChangesPanel = false;
   tickets: PermitChecklistTicket[] = [];
   recentTickets: PermitChecklistTicket[] = [];
   transactions: PermitChecklistTransaction[] = [];
@@ -316,6 +324,7 @@ export class PermitChecklistsComponent implements OnInit {
   previewAttachmentResourceUrl: SafeResourceUrl | null = null;
   previewAttachmentKind: "image" | "pdf" | "docx" | "other" | "none" = "none";
   previewDocxHtml = "";
+  isAttachmentDragOver = false;
   isProcessNoteModalOpen = false;
   processNoteFieldKey = "";
   processNoteFieldLabel = "";
@@ -385,19 +394,12 @@ export class PermitChecklistsComponent implements OnInit {
       field: "status",
       minWidth: 120,
       cellRenderer: (params: any) => {
-        if (params.value === "archived") {
-          return `<span class="badge bg-secondary-subtle text-secondary">Archived</span>`;
+        const status = String(params.value || "").toLowerCase();
+        const isClosed = status === "finalized" || status === "archived";
+        if (isClosed) {
+          return `<span class="badge bg-secondary-subtle text-secondary">Closed</span>`;
         }
-        if (params.value === "finalized") {
-          return `<span class="badge bg-dark-subtle text-dark">Finalized</span>`;
-        }
-        if (params.value === "submitted") {
-          return `<span class="badge bg-primary-subtle text-primary">Submitted</span>`;
-        }
-        if (params.value === "saved") {
-          return `<span class="badge bg-success-subtle text-success">Saved</span>`;
-        }
-        return `<span class="badge bg-warning-subtle text-warning">Draft</span>`;
+        return `<span class="badge bg-success-subtle text-success">Open</span>`;
       },
     },
     {
@@ -461,6 +463,17 @@ export class PermitChecklistsComponent implements OnInit {
       }
 
       this.openTicket(ticketId);
+    },
+    onGridReady: (params: any) => this.restoreGridState(this.ticketGridStateKey, params.api),
+    onColumnMoved: (params: any) => this.saveGridState(this.ticketGridStateKey, params.api),
+    onColumnPinned: (params: any) => this.saveGridState(this.ticketGridStateKey, params.api),
+    onColumnVisible: (params: any) => this.saveGridState(this.ticketGridStateKey, params.api),
+    onSortChanged: (params: any) => this.saveGridState(this.ticketGridStateKey, params.api),
+    onFilterChanged: (params: any) => this.saveGridState(this.ticketGridStateKey, params.api),
+    onColumnResized: (params: any) => {
+      if (params?.finished) {
+        this.saveGridState(this.ticketGridStateKey, params.api);
+      }
     },
   };
 
@@ -527,6 +540,17 @@ export class PermitChecklistsComponent implements OnInit {
     rowHeight: 42,
     animateRows: true,
     suppressMenuHide: true,
+    onGridReady: (params: any) => this.restoreGridState(this.auditGridStateKey, params.api),
+    onColumnMoved: (params: any) => this.saveGridState(this.auditGridStateKey, params.api),
+    onColumnPinned: (params: any) => this.saveGridState(this.auditGridStateKey, params.api),
+    onColumnVisible: (params: any) => this.saveGridState(this.auditGridStateKey, params.api),
+    onSortChanged: (params: any) => this.saveGridState(this.auditGridStateKey, params.api),
+    onFilterChanged: (params: any) => this.saveGridState(this.auditGridStateKey, params.api),
+    onColumnResized: (params: any) => {
+      if (params?.finished) {
+        this.saveGridState(this.auditGridStateKey, params.api);
+      }
+    },
   };
 
   approvedReportColumnDefs: ColDef[] = [
@@ -560,6 +584,17 @@ export class PermitChecklistsComponent implements OnInit {
     rowHeight: 42,
     animateRows: true,
     suppressMenuHide: true,
+    onGridReady: (params: any) => this.restoreGridState(this.approvedGridStateKey, params.api),
+    onColumnMoved: (params: any) => this.saveGridState(this.approvedGridStateKey, params.api),
+    onColumnPinned: (params: any) => this.saveGridState(this.approvedGridStateKey, params.api),
+    onColumnVisible: (params: any) => this.saveGridState(this.approvedGridStateKey, params.api),
+    onSortChanged: (params: any) => this.saveGridState(this.approvedGridStateKey, params.api),
+    onFilterChanged: (params: any) => this.saveGridState(this.approvedGridStateKey, params.api),
+    onColumnResized: (params: any) => {
+      if (params?.finished) {
+        this.saveGridState(this.approvedGridStateKey, params.api);
+      }
+    },
   };
 
   constructor(
@@ -658,12 +693,46 @@ export class PermitChecklistsComponent implements OnInit {
     return this.getCompletedCount(this.activeTemplate.processFields);
   }
 
+  get openFieldCount(): number {
+    return this.totalFieldCount - this.totalCompletedCount;
+  }
+
+  get visibleHeaderFields(): ChecklistField[] {
+    if (!this.showOpenItemsOnly) {
+      return this.activeTemplate.headerFields;
+    }
+    return this.activeTemplate.headerFields.filter((field) => !this.isFieldPopulated(field.key));
+  }
+
+  get visibleProcessFields(): ChecklistField[] {
+    if (!this.showOpenItemsOnly) {
+      return this.activeTemplate.processFields;
+    }
+    return this.activeTemplate.processFields.filter((field) => !this.isFieldPopulated(field.key));
+  }
+
   get totalFieldCount(): number {
     return this.activeTemplate.headerFields.length + this.activeTemplate.processFields.length;
   }
 
   get totalCompletedCount(): number {
     return this.headerCompletedCount + this.processCompletedCount;
+  }
+
+  get headerCompletionPercent(): number {
+    const total = this.activeTemplate.headerFields.length;
+    if (total === 0) {
+      return 0;
+    }
+    return Math.round((this.headerCompletedCount / total) * 100);
+  }
+
+  get processCompletionPercent(): number {
+    const total = this.activeTemplate.processFields.length;
+    if (total === 0) {
+      return 0;
+    }
+    return Math.round((this.processCompletedCount / total) * 100);
   }
 
   get completionPercent(): number {
@@ -690,24 +759,15 @@ export class PermitChecklistsComponent implements OnInit {
     if (!status) {
       return "-";
     }
-    return status.charAt(0).toUpperCase() + status.slice(1);
+    return status === "finalized" || status === "archived" ? "Closed" : "Open";
   }
 
   get activeTicketStatusClass(): string {
     const status = this.activeTicket?.status;
-    if (status === "finalized") {
-      return "status-pill status-finalized";
+    if (status === "finalized" || status === "archived") {
+      return "status-pill status-closed";
     }
-    if (status === "archived") {
-      return "status-pill status-archived";
-    }
-    if (status === "submitted") {
-      return "status-pill status-submitted";
-    }
-    if (status === "saved") {
-      return "status-pill status-saved";
-    }
-    return "status-pill status-draft";
+    return "status-pill status-open";
   }
 
   get activeTicketRecentTransaction(): PermitChecklistTransaction | undefined {
@@ -964,6 +1024,43 @@ export class PermitChecklistsComponent implements OnInit {
 
   isAssignedArchitectField(fieldKey: string): boolean {
     return fieldKey === "assignedArchitect";
+  }
+
+  isSignPackageField(fieldKey: string): boolean {
+    return fieldKey === "signPackage";
+  }
+
+  getSignPackageChips(): string[] {
+    const raw = String(this.activeValues["signPackage"] || "").trim();
+    if (!raw) return [];
+    return raw.split("|").map(s => s.trim()).filter(s => s.length > 0);
+  }
+
+  addSignPackageChip(): void {
+    const val = this.signPackageDraft.trim();
+    if (!val) return;
+    const chips = this.getSignPackageChips();
+    if (!chips.includes(val)) {
+      chips.push(val);
+    }
+    this.signPackageDraft = "";
+    this.onFieldInputChange("signPackage", chips.join("|"));
+  }
+
+  removeSignPackageChip(chip: string): void {
+    const chips = this.getSignPackageChips().filter(c => c !== chip);
+    this.onFieldInputChange("signPackage", chips.join("|"));
+  }
+
+  onSignPackageDraftKeydown(event: KeyboardEvent): void {
+    if (event.key === "Enter" || event.key === ",") {
+      event.preventDefault();
+      this.addSignPackageChip();
+    }
+  }
+
+  isFieldPopulated(fieldKey: string): boolean {
+    return String(this.activeValues[fieldKey] || "").trim().length > 0;
   }
 
   openCustomerDirectoryModal(content: TemplateRef<unknown>): void {
@@ -1263,6 +1360,22 @@ export class PermitChecklistsComponent implements OnInit {
     }
   }
 
+  onFieldEditorDoubleClick(fieldKey: string): void {
+    if (!this.canEditActiveTicket) {
+      return;
+    }
+
+    if (!this.isFieldEditing(fieldKey)) {
+      this.beginFieldEdit(fieldKey);
+    }
+  }
+
+  onFieldEditorBlur(fieldKey: string): void {
+    if (this.isFieldEditing(fieldKey)) {
+      this.saveFieldEdit(fieldKey);
+    }
+  }
+
   updateFieldDraft(fieldKey: string, nextValue: string): void {
     if (!this.isFieldEditing(fieldKey)) {
       return;
@@ -1336,6 +1449,10 @@ export class PermitChecklistsComponent implements OnInit {
 
     const nextFieldKey = fieldKeys[nextIndex];
     event.preventDefault();
+
+    if (this.isFieldEditing(fieldKey)) {
+      this.saveFieldEdit(fieldKey);
+    }
 
     if (!this.isFieldEditing(nextFieldKey)) {
       this.beginFieldEdit(nextFieldKey, false);
@@ -2009,61 +2126,81 @@ export class PermitChecklistsComponent implements OnInit {
   }
 
   async uploadAttachment(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const files = Array.from(input.files || []);
+    await this.uploadAttachmentFiles(files);
+    input.value = "";
+  }
+
+  onAttachmentDragOver(event: DragEvent): void {
+    event.preventDefault();
+    if (!this.canEditActiveTicket) {
+      return;
+    }
+    this.isAttachmentDragOver = true;
+  }
+
+  onAttachmentDragLeave(event: DragEvent): void {
+    event.preventDefault();
+    this.isAttachmentDragOver = false;
+  }
+
+  async onAttachmentDrop(event: DragEvent): Promise<void> {
+    event.preventDefault();
+    this.isAttachmentDragOver = false;
+    const files = Array.from(event.dataTransfer?.files || []);
+    await this.uploadAttachmentFiles(files);
+  }
+
+  private async uploadAttachmentFiles(files: File[]): Promise<void> {
     const ticket = this.activeTicket;
     if (!ticket || !this.canEditActiveTicket) {
       return;
     }
 
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) {
+    if (!files.length) {
       return;
     }
 
-    const field = this.attachmentFieldOptions.find((item) => item.key === this.selectedAttachmentFieldKey);
-    if (!field) {
-      this.statusMessage = "Select an item first, then upload attachment.";
-      input.value = "";
-      return;
+    const newAttachments: PermitChecklistAttachment[] = [];
+    for (const file of files) {
+      const attachmentId = this.generateAttachmentId();
+      const objectUrl = URL.createObjectURL(file);
+      this.objectUrlByAttachmentId.set(attachmentId, objectUrl);
+
+      let dataUrl: string | undefined;
+      if (file.size <= this.maxPersistedPreviewSizeBytes) {
+        dataUrl = await this.readFileAsDataUrl(file);
+      }
+
+      newAttachments.push({
+        id: attachmentId,
+        fieldKey: "general",
+        fieldLabel: "General Attachment",
+        uploadedBy: this.getCurrentUserDisplay(),
+        fileName: file.name,
+        fileSize: file.size,
+        mimeType: file.type || "application/octet-stream",
+        uploadedAt: new Date().toISOString(),
+        dataUrl,
+      });
+
+      this.appendTransaction(ticket.ticketId, "attachment_upload", {
+        fieldKey: "general",
+        newValue: file.name,
+        source: "attachment",
+      });
     }
 
-    const attachmentId = this.generateAttachmentId();
-    const objectUrl = URL.createObjectURL(file);
-    this.objectUrlByAttachmentId.set(attachmentId, objectUrl);
-
-    let dataUrl: string | undefined;
-    if (file.size <= this.maxPersistedPreviewSizeBytes) {
-      dataUrl = await this.readFileAsDataUrl(file);
-    }
-
-    const attachment: PermitChecklistAttachment = {
-      id: attachmentId,
-      fieldKey: field.key,
-      fieldLabel: field.label,
-      uploadedBy: this.getCurrentUserDisplay(),
-      fileName: file.name,
-      fileSize: file.size,
-      mimeType: file.type || "application/octet-stream",
-      uploadedAt: new Date().toISOString(),
-      dataUrl,
-    };
-
-    ticket.attachments = [...(ticket.attachments || []), attachment];
+    ticket.attachments = [...(ticket.attachments || []), ...newAttachments];
     ticket.updatedAt = new Date().toISOString();
     if (ticket.status === "submitted") {
       ticket.status = "draft";
     }
 
-    this.appendTransaction(ticket.ticketId, "attachment_upload", {
-      fieldKey: field.key,
-      newValue: file.name,
-      source: "attachment",
-    });
-
     this.refreshRecentTickets();
     this.persistLocalData();
-    this.statusMessage = `Attachment added for ${field.label}.`;
-    input.value = "";
+    this.statusMessage = `${newAttachments.length} attachment(s) uploaded.`;
   }
 
   async removeAttachment(attachmentId: string): Promise<void> {
@@ -2111,14 +2248,14 @@ export class PermitChecklistsComponent implements OnInit {
     }
 
     this.appendTransaction(ticket.ticketId, "attachment_remove", {
-      fieldKey: target.fieldKey,
+      fieldKey: "general",
       oldValue: target.fileName,
       source: "attachment",
     });
 
     this.refreshRecentTickets();
     this.persistLocalData();
-    this.statusMessage = `Attachment removed from ${target.fieldLabel}.`;
+    this.statusMessage = "Attachment removed.";
   }
 
   async openAttachmentPreview(attachment: PermitChecklistAttachment): Promise<void> {
@@ -2729,6 +2866,16 @@ export class PermitChecklistsComponent implements OnInit {
     void this.hydrateFromApi();
   }
 
+  onShowOpenItemsOnlyChange(value: boolean): void {
+    this.showOpenItemsOnly = value;
+    localStorage.setItem('pc_showOpenItemsOnly', String(value));
+  }
+
+  onCondensedFormChange(value: boolean): void {
+    this.condensedForm = value;
+    localStorage.setItem('pc_condensedForm', String(value));
+  }
+
   private clearLegacyPermitChecklistLocalCache(): void {
     try {
       if (localStorage.getItem(this.legacyStorageCleanupFlag) === "1") {
@@ -3293,6 +3440,47 @@ export class PermitChecklistsComponent implements OnInit {
       currency: "USD",
       maximumFractionDigits: 2,
     }).format(Number(value || 0));
+  }
+
+  private saveGridState(storageKey: string, gridApi: any): void {
+    if (!gridApi) {
+      return;
+    }
+
+    try {
+      const columnState = gridApi.getColumnState ? gridApi.getColumnState() : [];
+      const sortModel = gridApi.getSortModel ? gridApi.getSortModel() : [];
+      const filterModel = gridApi.getFilterModel ? gridApi.getFilterModel() : {};
+      localStorage.setItem(storageKey, JSON.stringify({ columnState, sortModel, filterModel }));
+    } catch {
+      // Ignore storage errors to avoid breaking grid UX.
+    }
+  }
+
+  private restoreGridState(storageKey: string, gridApi: any): void {
+    if (!gridApi) {
+      return;
+    }
+
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (!raw) {
+        return;
+      }
+
+      const parsed = JSON.parse(raw || "{}");
+      if (parsed?.columnState?.length && gridApi.applyColumnState) {
+        gridApi.applyColumnState({ state: parsed.columnState, applyOrder: true });
+      }
+      if (parsed?.sortModel && gridApi.setSortModel) {
+        gridApi.setSortModel(parsed.sortModel);
+      }
+      if (parsed?.filterModel && gridApi.setFilterModel) {
+        gridApi.setFilterModel(parsed.filterModel);
+      }
+    } catch {
+      // Ignore malformed state and proceed with defaults.
+    }
   }
 
   private buildPrintableHtml(ticket: PermitChecklistTicket): string {

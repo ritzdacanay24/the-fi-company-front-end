@@ -1,4 +1,4 @@
-<div class="container-fluid py-3 permit-checklists-page">
+<div class="container-fluid  permit-checklists-page">
   <div class="mb-4 permit-page-header" *ngIf="viewMode === 'home'">
     <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
       <div class="d-flex align-items-center">
@@ -14,7 +14,7 @@
     </div>
   </div>
 
-  <div class="card mb-3" *ngIf="viewMode === 'home'">
+  <div class="card mb-3 home-main-card" *ngIf="viewMode === 'home'">
     <div class="card-header">
       <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 home-card-toolbar">
         <div class="d-flex align-items-center gap-2 flex-wrap">
@@ -130,20 +130,20 @@
     </div> -->
 
     <div class="card-body p-0" *ngIf="homeTab === 'tickets' && filteredRecentTickets.length > 0; else noTickets">
-      <ag-grid-angular class="ag-theme-quartz no-border" style="width: 100%;height: calc(100vh - 320px);"
+      <ag-grid-angular class="ag-theme-quartz no-border permit-home-grid"
         [gridOptions]="ticketGridOptions" [components]="ticketGridComponents" [rowData]="filteredRecentTickets">
       </ag-grid-angular>
     </div>
 
     <div class="card-body p-0" *ngIf="homeTab === 'audit' && filteredAuditLogRows.length > 0; else noAuditRows">
-      <ag-grid-angular class="ag-theme-quartz no-border" style="width: 100%;height: calc(100vh - 320px);"
+      <ag-grid-angular class="ag-theme-quartz no-border permit-home-grid"
         [gridOptions]="auditGridOptions" [rowData]="filteredAuditLogRows">
       </ag-grid-angular>
     </div>
 
     <div class="card-body p-0"
       *ngIf="homeTab === 'approved-report' && filteredApprovedReportRows.length > 0; else noApprovedRows">
-      <ag-grid-angular class="ag-theme-quartz no-border" style="width: 100%;height: calc(100vh - 320px);"
+      <ag-grid-angular class="ag-theme-quartz no-border permit-home-grid"
         [gridOptions]="approvedReportGridOptions" [rowData]="filteredApprovedReportRows">
       </ag-grid-angular>
     </div>
@@ -167,7 +167,30 @@
     </ng-template>
   </div>
 
-  <div class="form-workspace mb-3" *ngIf="viewMode === 'form' && activeTicket">
+  <div class="mb-4 permit-page-header permit-form-header" *ngIf="viewMode === 'form' && activeTicket">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div class="d-flex align-items-center">
+        <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center"
+          style="width: 60px; height: 60px;">
+          <i class="mdi mdi-clipboard-check-outline text-white fs-4"></i>
+        </div>
+        <div>
+          <nav aria-label="breadcrumb" class="mb-1">
+            <ol class="breadcrumb mb-0">
+              <li class="breadcrumb-item"><a role="button" (click)="goHome()">Permit Checklists</a></li>
+              <li class="breadcrumb-item active" aria-current="page">{{ activeTicket.ticketId }}</li>
+            </ol>
+          </nav>
+          <h2 class="mb-0 text-primary">Permit Checklist Form</h2>
+        </div>
+      </div>
+      <button class="btn btn-outline-secondary" type="button" (click)="goHome()">
+        <i class="mdi mdi-arrow-left me-1"></i>Back to Tickets
+      </button>
+    </div>
+  </div>
+
+  <div class="form-workspace mb-3" [class.condensed-form]="condensedForm" *ngIf="viewMode === 'form' && activeTicket">
     <div class="row g-3 align-items-start">
       <div class="col-12 col-xl-8">
         <div class="card form-shell form-main-card">
@@ -176,59 +199,26 @@
               <div>
                 <h4 class="mb-0">{{ activeTicket.ticketId }}</h4>
               </div>
-              <div class="ms-auto d-flex flex-wrap gap-2 form-stats">
-                <div class="stat-chip">
-                  <span class="label">Header</span>
-                  <span class="value">{{ headerCompletedCount }}/{{ activeTemplate.headerFields.length }}</span>
-                </div>
-                <div class="stat-chip">
-                  <span class="label">Timeline</span>
-                  <span class="value">{{ processCompletedCount }}/{{ activeTemplate.processFields.length }}</span>
-                </div>
-              </div>
-            </div>
-            <div class="progress form-progress mt-3">
-              <div class="progress-bar" role="progressbar" [style.width.%]="completionPercent"></div>
-            </div>
-            <div class="form-progress-meta mt-2">
-              <span class="progress-percent">{{ completionPercent }}% complete</span>
-              <span class="text-muted small">{{ totalCompletedCount }}/{{ totalFieldCount }} fields</span>
             </div>
           </div>
 
           <div class="card-body">
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
               <h6 class="section-title mb-0">Header Information</h6>
-              <div class="d-flex align-items-center gap-2">
-                <ng-container *ngIf="canEditActiveTicket">
-                  <ng-container *ngIf="isHeaderSectionEditing(); else enableHeaderEditAll">
-                    <button class="btn  btn-primary" type="button" (click)="saveSectionEdits('header')">Save
-                      All</button>
-                    <button class="btn  btn-outline-secondary" type="button"
-                      (click)="cancelSectionEdits('header')">Cancel All</button>
-                  </ng-container>
-                  <ng-template #enableHeaderEditAll>
-                    <button class="btn  btn-outline-primary" type="button" (click)="beginSectionEdit('header')">Edit All
-                      Header</button>
-                  </ng-template>
-                </ng-container>
-                <button class="btn  btn-outline-secondary" type="button"
-                  (click)="openCustomerDirectoryModal(customerDirectoryModal)">
-                  Manage Customers & Architects
-                </button>
-              </div>
             </div>
-            <table class="table table form-grid mb-4">
+            <table class="table table form-grid mb-4" *ngIf="visibleHeaderFields.length > 0">
               <tbody>
-                <tr *ngFor="let field of activeTemplate.headerFields">
-                  <th scope="row">{{ field.label }}</th>
-                  <td>
+                <tr *ngFor="let field of visibleHeaderFields">
+                  <th scope="row" [class.field-filled]="isFieldPopulated(field.key)" [class.field-empty]="!isFieldPopulated(field.key)">{{ field.label }}</th>
+                  <td [class.field-filled]="isFieldPopulated(field.key)" [class.field-empty]="!isFieldPopulated(field.key)"
+                    (dblclick)="onFieldEditorDoubleClick(field.key)">
                     <ng-container *ngIf="isCustomerField(field.key); else assignedArchitectFieldInput">
                       <div class="d-flex flex-wrap align-items-center gap-2">
                         <select [id]="getFieldEditorId(field.key)" class="form-select"
                           [ngModel]="getFieldEditValue(field.key)" (ngModelChange)="updateFieldDraft(field.key, $event)"
+                          (blur)="onFieldEditorBlur(field.key)" (dblclick)="onFieldEditorDoubleClick(field.key)"
                           (keydown.tab)="onFieldTab($event, field.key)"
-                          [disabled]="!canEditActiveTicket || !isFieldEditing(field.key)">
+                          [disabled]="!canEditActiveTicket">
                           <option value="">Select customer</option>
                           <option *ngFor="let customerName of customerOptions" [ngValue]="customerName">
                             {{ customerName }}
@@ -237,13 +227,14 @@
                       </div>
                     </ng-container>
                     <ng-template #assignedArchitectFieldInput>
-                      <ng-container *ngIf="isAssignedArchitectField(field.key); else dateOrTextHeaderInput">
+                      <ng-container *ngIf="isAssignedArchitectField(field.key); else signPackageFieldInput">
                         <div class="d-flex flex-wrap align-items-center gap-2">
                           <select [id]="getFieldEditorId(field.key)" class="form-select"
                             [ngModel]="getFieldEditValue(field.key)"
                             (ngModelChange)="updateFieldDraft(field.key, $event)"
+                            (blur)="onFieldEditorBlur(field.key)" (dblclick)="onFieldEditorDoubleClick(field.key)"
                             (keydown.tab)="onFieldTab($event, field.key)"
-                            [disabled]="!canEditActiveTicket || !isFieldEditing(field.key)">
+                            [disabled]="!canEditActiveTicket">
                             <option value="">Select architect</option>
                             <option *ngFor="let architectName of architectOptionsForSelection"
                               [ngValue]="architectName">
@@ -253,14 +244,37 @@
                         </div>
                       </ng-container>
                     </ng-template>
+                    <ng-template #signPackageFieldInput>
+                      <ng-container *ngIf="isSignPackageField(field.key); else dateOrTextHeaderInput">
+                        <div class="sign-package-chips">
+                          <div class="input-group" *ngIf="canEditActiveTicket">
+                            <input class="form-control" type="text" placeholder="Add part number"
+                              [(ngModel)]="signPackageDraft"
+                              (keydown)="onSignPackageDraftKeydown($event)" />
+                            <button class="btn btn-outline-secondary" type="button"
+                              (click)="addSignPackageChip()">Add</button>
+                          </div>
+                          <div class="sign-package-chip-list" *ngIf="getSignPackageChips().length > 0">
+                            <span class="sign-package-chip" *ngFor="let chip of getSignPackageChips()">
+                              {{ chip }}
+                              <button type="button" class="sign-package-chip-remove" [disabled]="!canEditActiveTicket"
+                                (click)="removeSignPackageChip(chip)" aria-label="Remove">
+                                <i class="mdi mdi-close"></i>
+                              </button>
+                            </span>
+                          </div>
+                        </div>
+                      </ng-container>
+                    </ng-template>
                     <ng-template #dateOrTextHeaderInput>
                       <ng-container *ngIf="resolveFieldType(field) === 'date'; else headerTextInput">
                         <div class="input-group">
                           <input [id]="getFieldEditorId(field.key)" class="form-control" type="date"
                             [ngModel]="getFieldEditValue(field.key)"
                             (ngModelChange)="updateFieldDraft(field.key, $event)"
+                            (blur)="onFieldEditorBlur(field.key)" (dblclick)="onFieldEditorDoubleClick(field.key)"
                             (keydown.tab)="onFieldTab($event, field.key)"
-                            [disabled]="!canEditActiveTicket || !isFieldEditing(field.key)" />
+                            [disabled]="!canEditActiveTicket" [readonly]="!isFieldEditing(field.key)" />
                           <button *ngIf="isFieldEditing(field.key)" class="btn btn-outline-secondary" type="button"
                             (click)="setDraftFieldNow(field.key)">
                             Now
@@ -271,131 +285,73 @@
                     <ng-template #headerTextInput>
                       <input [id]="getFieldEditorId(field.key)" class="form-control" [type]="resolveFieldType(field)"
                         [ngModel]="getFieldEditValue(field.key)" (ngModelChange)="updateFieldDraft(field.key, $event)"
+                        (blur)="onFieldEditorBlur(field.key)" (dblclick)="onFieldEditorDoubleClick(field.key)"
                         (keydown.tab)="onFieldTab($event, field.key)"
-                        [disabled]="!canEditActiveTicket || !isFieldEditing(field.key)"
+                        [disabled]="!canEditActiveTicket" [readonly]="!isFieldEditing(field.key)"
                         [placeholder]="field.placeholder || 'Enter value'" />
                     </ng-template>
-                    <div class="field-meta-row" *ngIf="canEditActiveTicket || getFieldLoggedAt(field.key)">
-                      <div class="field-edit-actions" *ngIf="canEditActiveTicket">
-                        <ng-container *ngIf="isFieldEditing(field.key); else headerEditButton">
-                          <button class="btn btn-link  p-0 action-link" type="button"
-                            (click)="saveFieldEdit(field.key)">Save</button>
-                          <span class="action-divider">|</span>
-                          <button class="btn btn-link  p-0 action-link text-muted" type="button"
-                            (click)="cancelFieldEdit(field.key)">Cancel</button>
-                        </ng-container>
-                        <ng-template #headerEditButton>
-                          <button class="btn btn-link  p-0 action-link" type="button"
-                            (click)="beginFieldEdit(field.key)">Edit</button>
-                        </ng-template>
-                      </div>
-                      <div class="field-timestamp" *ngIf="getFieldLoggedAt(field.key)">
-                        Logged at {{ getFieldLoggedAt(field.key) }}
-                      </div>
-                    </div>
-                    <ng-container *ngIf="getAttachmentsForField(field.key) as rowAttachments">
-                      <div class="field-attachments-inline" *ngIf="rowAttachments.length">
-                        <span class="badge text-body-secondary border">{{ rowAttachments.length }} attachment(s)</span>
-                        <div class="field-attachments-inline-list">
-                          <button class="btn btn-primary btn-sm" type="button"
-                            *ngFor="let attachment of rowAttachments" (click)="openAttachmentPreview(attachment)">
-                            {{ attachment.fileName }}
-                          </button>
-                        </div>
-                      </div>
-                    </ng-container>
                   </td>
                 </tr>
               </tbody>
             </table>
+            <div class="open-items-empty" *ngIf="showOpenItemsOnly && visibleHeaderFields.length === 0">
+              <i class="mdi mdi-check-circle-outline me-1"></i> All header fields complete
+            </div>
 
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
               <h6 class="section-title mb-0">Process Timeline</h6>
-              <div class="d-flex align-items-center gap-2" *ngIf="canEditActiveTicket">
-                <ng-container *ngIf="isProcessSectionEditing(); else enableProcessEditAll">
-                  <button class="btn  btn-primary" type="button" (click)="saveSectionEdits('process')">Save
-                    All</button>
-                  <button class="btn  btn-outline-secondary" type="button"
-                    (click)="cancelSectionEdits('process')">Cancel All</button>
-                </ng-container>
-                <ng-template #enableProcessEditAll>
-                  <button class="btn  btn-outline-primary" type="button" (click)="beginSectionEdit('process')">Edit All
-                    Timeline</button>
-                </ng-template>
-              </div>
             </div>
-            <table class="table table-bordered form-grid mb-3">
+            <table class="table table-bordered form-grid mb-3" *ngIf="visibleProcessFields.length > 0">
               <tbody>
-                <tr *ngFor="let field of activeTemplate.processFields">
-                  <th scope="row">{{ field.label }}</th>
-                  <td>
+                <tr *ngFor="let field of visibleProcessFields">
+                  <th scope="row" [class.field-filled]="isFieldPopulated(field.key)" [class.field-empty]="!isFieldPopulated(field.key)">{{ field.label }}</th>
+                  <td [class.field-filled]="isFieldPopulated(field.key)" [class.field-empty]="!isFieldPopulated(field.key)"
+                    (dblclick)="onFieldEditorDoubleClick(field.key)">
                     <ng-container *ngIf="resolveFieldType(field) === 'date'; else processTextInput">
                       <div class="input-group">
                         <input [id]="getFieldEditorId(field.key)" class="form-control timeline-input" type="date"
                           [ngModel]="getFieldEditValue(field.key)" (ngModelChange)="updateFieldDraft(field.key, $event)"
+                          (blur)="onFieldEditorBlur(field.key)" (dblclick)="onFieldEditorDoubleClick(field.key)"
                           (keydown.tab)="onFieldTab($event, field.key)"
-                          [disabled]="!canEditActiveTicket || !isFieldEditing(field.key)" />
+                          [disabled]="!canEditActiveTicket" [readonly]="!isFieldEditing(field.key)" />
                         <button *ngIf="isFieldEditing(field.key)" class="btn btn-outline-secondary" type="button"
                           (click)="setDraftFieldNow(field.key)">
                           Now
                         </button>
+                        <button class="btn btn-outline-secondary" type="button"
+                          [ngClass]="hasProcessNote(field.key) ? 'text-primary' : ''"
+                          (click)="openProcessNoteModal(field)">
+                          {{ hasProcessNote(field.key) ? 'Notes (' + getProcessNotesForField(field.key).length + ')' : 'Add Note' }}
+                        </button>
                       </div>
                     </ng-container>
                     <ng-template #processTextInput>
-                      <input [id]="getFieldEditorId(field.key)" class="form-control timeline-input"
-                        [type]="resolveFieldType(field)" [ngModel]="getFieldEditValue(field.key)"
-                        (ngModelChange)="updateFieldDraft(field.key, $event)"
-                        (keydown.tab)="onFieldTab($event, field.key)"
-                        [disabled]="!canEditActiveTicket || !isFieldEditing(field.key)"
-                        placeholder="Date or status update" />
-                    </ng-template>
-                    <div class="field-meta-row field-meta-row-process"
-                      *ngIf="canEditActiveTicket || getFieldLoggedAt(field.key) || hasProcessNote(field.key)">
-                      <div class="field-edit-actions" *ngIf="canEditActiveTicket">
-                        <ng-container *ngIf="isFieldEditing(field.key); else processEditButton">
-                          <button class="btn btn-link  p-0 action-link" type="button"
-                            (click)="saveFieldEdit(field.key)">Save</button>
-                          <span class="action-divider">|</span>
-                          <button class="btn btn-link  p-0 action-link text-muted" type="button"
-                            (click)="cancelFieldEdit(field.key)">Cancel</button>
-                        </ng-container>
-                        <ng-template #processEditButton>
-                          <button class="btn btn-link  p-0 action-link" type="button"
-                            (click)="beginFieldEdit(field.key)">Edit</button>
-                        </ng-template>
-                      </div>
-                      <div class="field-timestamp" *ngIf="getFieldLoggedAt(field.key)">
-                        Logged at {{ getFieldLoggedAt(field.key) }}
-                      </div>
-                      <div class="process-note-row-actions">
-                        <span class="action-divider" *ngIf="canEditActiveTicket || getFieldLoggedAt(field.key)">|</span>
-                        <button class="btn btn-link" type="button"
-                          [ngClass]="hasProcessNote(field.key) ? 'text-primary' : 'text-secondary'"
+                      <div class="input-group">
+                        <input [id]="getFieldEditorId(field.key)" class="form-control timeline-input"
+                          [type]="resolveFieldType(field)" [ngModel]="getFieldEditValue(field.key)"
+                          (ngModelChange)="updateFieldDraft(field.key, $event)"
+                          (blur)="onFieldEditorBlur(field.key)" (dblclick)="onFieldEditorDoubleClick(field.key)"
+                          (keydown.tab)="onFieldTab($event, field.key)"
+                          [disabled]="!canEditActiveTicket" [readonly]="!isFieldEditing(field.key)"
+                          placeholder="Date or status update" />
+                        <button class="btn btn-outline-secondary" type="button"
+                          [ngClass]="hasProcessNote(field.key) ? 'text-primary' : ''"
                           (click)="openProcessNoteModal(field)">
-                          {{ hasProcessNote(field.key) ? 'Notes (' + getProcessNotesForField(field.key).length + ')' :
-                          'Add Note' }}
+                          {{ hasProcessNote(field.key) ? 'Notes (' + getProcessNotesForField(field.key).length + ')' : 'Add Note' }}
                         </button>
                       </div>
-                    </div>
-                    <ng-container *ngIf="getAttachmentsForField(field.key) as rowAttachments">
-                      <div class="field-attachments-inline" *ngIf="rowAttachments.length">
-                        <span class="badge text-body-secondary border">{{ rowAttachments.length }} attachment(s)</span>
-                        <div class="field-attachments-inline-list">
-                          <button class="btn btn-primary btn-sm" type="button"
-                            *ngFor="let attachment of rowAttachments" (click)="openAttachmentPreview(attachment)">
-                            {{ attachment.fileName }}
-                          </button>
-                        </div>
-                      </div>
-                    </ng-container>
+                    </ng-template>
                   </td>
                 </tr>
               </tbody>
             </table>
+            <div class="open-items-empty" *ngIf="showOpenItemsOnly && visibleProcessFields.length === 0">
+              <i class="mdi mdi-check-circle-outline me-1"></i> All timeline fields complete
+            </div>
 
             <div class="mb-3 notes-block">
               <label class="form-label fw-semibold">Additional Notes</label>
-              <textarea rows="4" class="form-control" [ngModel]="activeValues['additionalNotes']"
+              <textarea cdkTextareaAutosize cdkAutosizeMinRows="2" class="form-control" [ngModel]="activeValues['additionalNotes']"
                 (focus)="onFieldFocus('additionalNotes')"
                 (ngModelChange)="onFieldInputChange('additionalNotes', $event)" (blur)="onFieldBlur('additionalNotes')"
                 [disabled]="!canEditActiveTicket"
@@ -405,10 +361,6 @@
             <div class="financials-block mb-3">
               <div class="d-flex align-items-center justify-content-between gap-2">
                 <h6 class="section-title mb-0">Customer Billing</h6>
-                <button class="btn  btn-outline-secondary" type="button" [disabled]="!canEditActiveTicket"
-                  (click)="openCustomerBillingDefaultsModal(customerBillingDefaultsModal)">
-                  Configure Defaults
-                </button>
               </div>
 
               <div class="fee-breakdown mt-3 border border-secondary-subtle rounded-3 p-2"
@@ -607,32 +559,19 @@
             <div class="attachments-block mt-4 border-top border-secondary-subtle pt-3">
               <h6 class="section-title mb-2">Attachments</h6>
               <p class="text-muted small mb-3">
-                Select the checklist item this file belongs to, then upload.
+                Drag and drop files anywhere in this box, or click to browse.
               </p>
 
-              <div class="row g-2 align-items-end mb-3">
-                <div class="col-12 col-md-7">
-                  <label class="form-label fw-semibold small mb-1">Attachment For</label>
-                  <select class="form-select border border-secondary-subtle" [(ngModel)]="selectedAttachmentFieldKey"
-                    [disabled]="!canEditActiveTicket">
-                    <option value="">Select checklist item</option>
-                    <optgroup label="Header Information" *ngIf="headerAttachmentFieldOptions.length">
-                      <option *ngFor="let field of headerAttachmentFieldOptions" [value]="field.key">
-                        {{ field.label }}
-                      </option>
-                    </optgroup>
-                    <optgroup label="Process Timeline" *ngIf="processAttachmentFieldOptions.length">
-                      <option *ngFor="let field of processAttachmentFieldOptions" [value]="field.key">
-                        {{ field.label }}
-                      </option>
-                    </optgroup>
-                  </select>
-                </div>
-                <div class="col-12 col-md-5">
-                  <label class="form-label fw-semibold small mb-1">Upload File</label>
-                  <input class="form-control border border-secondary-subtle" type="file"
-                    [disabled]="!canEditActiveTicket || !selectedAttachmentFieldKey"
-                    (change)="uploadAttachment($event)" />
+              <div class="attachments-dropzone mb-3" [class.is-drag-over]="isAttachmentDragOver"
+                [class.is-disabled]="!canEditActiveTicket" (click)="canEditActiveTicket && ticketAttachmentInput.click()"
+                (dragover)="onAttachmentDragOver($event)" (dragleave)="onAttachmentDragLeave($event)"
+                (drop)="onAttachmentDrop($event)">
+                <input #ticketAttachmentInput class="d-none" type="file" multiple [disabled]="!canEditActiveTicket"
+                  (change)="uploadAttachment($event)" />
+                <div class="dropzone-content">
+                  <i class="mdi mdi-cloud-upload-outline dropzone-icon"></i>
+                  <div class="dropzone-title">Drop files here or click to upload</div>
+                  <div class="dropzone-subtitle">Attachments are stored at ticket level.</div>
                 </div>
               </div>
 
@@ -647,8 +586,7 @@
                       Uploaded by {{ attachment.uploadedBy || 'Unknown User' }}
                     </div>
                     <div class="attachment-meta">
-                      {{ attachment.fieldLabel }} | {{ formatFileSize(attachment.fileSize) }} | {{
-                      formatDateTime(attachment.uploadedAt) }}
+                      {{ formatFileSize(attachment.fileSize) }} | {{ formatDateTime(attachment.uploadedAt) }}
                     </div>
                   </div>
                   <button class="btn  btn-outline-danger" type="button" [disabled]="!canEditActiveTicket"
@@ -666,12 +604,11 @@
         </div>
       </div>
 
-      <div class="col-12 col-xl-4">
+      <div class="col-12 col-xl-4 ticket-side-column">
         <div class="card ticket-side-card">
           <div class="card-header d-flex align-items-center justify-content-between gap-2">
             <h6 class="mb-0">Ticket Details</h6>
             <div class="d-flex align-items-center gap-2">
-              <button class="btn btn-outline-primary" type="button" (click)="goHome()">Back</button>
               <div class="dropdown" ngbDropdown container="body" autoClose="outside">
                 <button class="btn  btn-outline-primary dropdown-toggle" type="button" ngbDropdownToggle
                   aria-expanded="false">
@@ -681,6 +618,18 @@
                 <li>
                   <button class="dropdown-item" type="button" ngbDropdownItem (click)="goToAuditLog()">View Change
                     Log</button>
+                </li>
+                <li>
+                  <button class="dropdown-item" type="button" ngbDropdownItem
+                    (click)="openCustomerDirectoryModal(customerDirectoryModal)">
+                    Manage Customers & Architects
+                  </button>
+                </li>
+                <li>
+                  <button class="dropdown-item" type="button" ngbDropdownItem [disabled]="!canEditActiveTicket"
+                    (click)="openCustomerBillingDefaultsModal(customerBillingDefaultsModal)">
+                    Configure Defaults
+                  </button>
                 </li>
                 <li>
                   <hr class="dropdown-divider" />
@@ -742,6 +691,53 @@
 
             <hr class="my-1" />
 
+            <div class="ticket-progress-panel">
+              <div class="ticket-progress-row">
+                <span class="ticket-progress-label">Header</span>
+                <span class="ticket-progress-value">{{ headerCompletedCount }}/{{ activeTemplate.headerFields.length }}</span>
+                <div class="ticket-progress-track" role="progressbar" [attr.aria-valuenow]="headerCompletionPercent" aria-valuemin="0" aria-valuemax="100">
+                  <div class="ticket-progress-fill ticket-progress-fill-header" [style.width.%]="headerCompletionPercent"></div>
+                </div>
+                <span class="ticket-progress-caption">{{ headerCompletionPercent }}%</span>
+              </div>
+
+              <div class="ticket-progress-row">
+                <span class="ticket-progress-label">Timeline</span>
+                <span class="ticket-progress-value">{{ processCompletedCount }}/{{ activeTemplate.processFields.length }}</span>
+                <div class="ticket-progress-track" role="progressbar" [attr.aria-valuenow]="processCompletionPercent" aria-valuemin="0" aria-valuemax="100">
+                  <div class="ticket-progress-fill ticket-progress-fill-timeline" [style.width.%]="processCompletionPercent"></div>
+                </div>
+                <span class="ticket-progress-caption">{{ processCompletionPercent }}%</span>
+              </div>
+
+              <div class="ticket-progress-row">
+                <span class="ticket-progress-label">Total</span>
+                <span class="ticket-progress-value">{{ totalCompletedCount }}/{{ totalFieldCount }}</span>
+                <div class="ticket-progress-track" role="progressbar" [attr.aria-valuenow]="completionPercent" aria-valuemin="0" aria-valuemax="100">
+                  <div class="ticket-progress-fill ticket-progress-fill-total" [style.width.%]="completionPercent"></div>
+                </div>
+                <span class="ticket-progress-caption">{{ completionPercent }}%</span>
+              </div>
+            </div>
+
+            <div class="ticket-view-toggles">
+              <div class="form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" id="openItemsOnlyToggle"
+                  [ngModel]="showOpenItemsOnly" (ngModelChange)="onShowOpenItemsOnlyChange($event)" />
+                <label class="form-check-label" for="openItemsOnlyToggle">
+                  Open items only
+                  <span class="text-muted" *ngIf="showOpenItemsOnly">({{ openFieldCount }})</span>
+                </label>
+              </div>
+              <div class="form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" id="condensedFormToggle"
+                  [ngModel]="condensedForm" (ngModelChange)="onCondensedFormChange($event)" />
+                <label class="form-check-label" for="condensedFormToggle">Condense form</label>
+              </div>
+            </div>
+
+            <hr class="my-1" />
+
             <div class="side-actions d-grid gap-2">
               <button class="btn btn-primary" type="button" [disabled]="!canFinalizeActiveTicket"
                 (click)="finalizeTicket()" title="Final submit this report (incomplete forms require confirmation)">
@@ -751,7 +747,7 @@
           </div>
         </div>
 
-        <div class="card ticket-history-card mt-3">
+        <div class="card ticket-history-card mt-3" *ngIf="showRecentChangesPanel">
           <div class="card-header">
             <h6 class="mb-0">Last 5 Changes</h6>
           </div>
@@ -773,21 +769,32 @@
     </div>
   </div>
 
-  <div class="form-workspace mb-3" *ngIf="viewMode === 'summary' && activeTicket">
-    <div class="card form-shell mb-3">
-      <div class="card-body d-flex flex-wrap align-items-center justify-content-between gap-2">
-        <div>
-          <p class="toolbar-kicker mb-1">Completed Checklist</p>
-          <h5 class="mb-0">Summary & Print</h5>
+  <div class="mb-4 permit-page-header permit-form-header" *ngIf="viewMode === 'summary' && activeTicket">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div class="d-flex align-items-center">
+        <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center"
+          style="width: 60px; height: 60px;">
+          <i class="mdi mdi-file-document-outline text-white fs-4"></i>
         </div>
-        <div class="d-flex gap-2">
-          <button class="btn  btn-outline-secondary" type="button" (click)="goToFormView()">Back to
-            Checklist</button>
-          <button class="btn  btn-outline-primary" type="button" (click)="goHome()">Back to Tickets</button>
+        <div>
+          <nav aria-label="breadcrumb" class="mb-1">
+            <ol class="breadcrumb mb-0">
+              <li class="breadcrumb-item"><a role="button" (click)="goHome()">Permit Checklists</a></li>
+              <li class="breadcrumb-item"><a role="button" (click)="goToFormView()">{{ activeTicket.ticketId }}</a></li>
+              <li class="breadcrumb-item active" aria-current="page">Summary</li>
+            </ol>
+          </nav>
+          <h2 class="mb-0 text-primary">Permit Checklist Summary</h2>
         </div>
       </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary" type="button" (click)="goToFormView()">Back to Checklist</button>
+        <button class="btn btn-outline-primary" type="button" (click)="goHome()">Back to Tickets</button>
+      </div>
     </div>
+  </div>
 
+  <div class="form-workspace mb-3" *ngIf="viewMode === 'summary' && activeTicket">
     <app-permit-checklist-summary [template]="activeTemplate" [ticket]="activeTicket"
       [completionPercent]="completionPercent" [approvedAmount]="activeFinancials.approvedAmount"
       (attachmentSelected)="openAttachmentPreview($event)">
