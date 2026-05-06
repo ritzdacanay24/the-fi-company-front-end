@@ -495,7 +495,7 @@ export class AgsSerialRepository extends BaseRepository<AgsSerialRecord> {
 
       const lastRecord = lastRows[0];
       const lastSequence = Number(lastRecord?.generatedAssetNumber || 999);
-      const lastWeekNumber = this.getWeekNumber(String(lastRecord?.dateCreated || nowDate));
+      let sequenceWeekNumber = this.getWeekNumber(String(lastRecord?.dateCreated || nowDate));
 
       // Track current sequence in memory as we loop
       let currentSequence = lastSequence;
@@ -516,8 +516,10 @@ export class AgsSerialRepository extends BaseRepository<AgsSerialRecord> {
 
         if (!useManualAsset) {
           // Use the tracked sequence, increment it
-          generatedAssetNumber = this.generateNextAgsSerialNumber(currentSequence, lastWeekNumber);
+          generatedAssetNumber = this.generateNextAgsSerialNumber(currentSequence, sequenceWeekNumber);
           currentSequence = Number(generatedAssetNumber.slice(-4)); // Extract last 4 digits for next iteration
+          // After first generated value in a new week, keep subsequent rows incrementing.
+          sequenceWeekNumber = this.getWeekNumber(nowDate);
         }
 
         const [insertResult] = await conn.execute<ResultSetHeader>(

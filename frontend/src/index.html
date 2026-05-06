@@ -17,10 +17,71 @@
   .ag-watermark {
     display: none !important;
   }
+
+  .app-loading {
+    align-items: center;
+    background: #f8f9fa;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    height: 100vh;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .app-loading .logo img {
+    width: 180px;
+    max-width: 70vw;
+    height: auto;
+  }
+
+  .app-loading .spinner {
+    animation: rotate 1.6s linear infinite;
+    height: 42px;
+    width: 42px;
+  }
+
+  .app-loading .spinner .path {
+    animation: dash 1.2s ease-in-out infinite;
+    stroke: #2e3230;
+    stroke-linecap: round;
+  }
+
+  @keyframes rotate {
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  @keyframes dash {
+    0% {
+      stroke-dasharray: 1, 150;
+      stroke-dashoffset: 0;
+    }
+
+    50% {
+      stroke-dasharray: 90, 150;
+      stroke-dashoffset: -35;
+    }
+
+    100% {
+      stroke-dasharray: 90, 150;
+      stroke-dashoffset: -124;
+    }
+  }
 </style>
 
 <body>
-  <app-root></app-root>
+  <app-root>
+    <div class="app-loading">
+      <div class="logo">
+        <img src="assets/images/logo-dark.png" alt="The Fi Company logo">
+      </div>
+      <svg class="spinner" viewBox="25 25 50 50" aria-hidden="true">
+        <circle class="path" cx="50" cy="50" r="20" fill="none" stroke-width="2" stroke-miterlimit="10"></circle>
+      </svg>
+    </div>
+  </app-root>
   <noscript>Please enable JavaScript to continue using this application.</noscript>
 </body>
 
