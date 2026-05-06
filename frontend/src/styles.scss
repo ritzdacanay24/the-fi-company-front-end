@@ -1,5 +1,47 @@
 /* You can add global styles to this file, and also import other style files */
 
+:root {
+  --qad-validation-banner-height: 0px;
+}
+
+.app-global-status-banner {
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1003;
+  border-left: 0;
+  border-right: 0;
+  border-top: 0;
+  background-color: #b45309 !important;
+  color: #fff !important;
+  border-bottom: 1px solid #92400e !important;
+
+  i, strong {
+    color: #fff !important;
+  }
+}
+
+body.qad-validation-banner-visible #page-topbar {
+  top: var(--qad-validation-banner-height) !important;
+}
+
+body.qad-validation-banner-visible .navbar-menu {
+  top: var(--qad-validation-banner-height) !important;
+}
+
+body.qad-validation-banner-visible .app-content .content {
+  margin-top: calc(70px + var(--qad-validation-banner-height)) !important;
+}
+
+body.qad-validation-banner-visible .page-content {
+  padding-top: calc(94px + var(--qad-validation-banner-height)) !important;
+}
+
+body.qad-validation-banner-visible[data-layout="horizontal"] .navbar-menu {
+  margin-top: calc(70px + var(--qad-validation-banner-height)) !important;
+}
+
 @font-face {
   font-family: "Aptos";
   src: url(assets/fonts/aptos.ttf);

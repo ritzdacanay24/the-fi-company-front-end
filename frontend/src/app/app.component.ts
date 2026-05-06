@@ -1,14 +1,18 @@
-import { Component } from "@angular/core";
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from "@angular/core";
 import { NgbModalConfig } from "@ng-bootstrap/ng-bootstrap";
 import { TitleService } from "./shared/services/title.service";
 import { environment } from "@environments/environment";
 import { SwUpdate } from "@angular/service-worker";
-import { interval } from "rxjs";
+import { interval, Subscription } from "rxjs";
 import { SweetAlert } from "./shared/sweet-alert/sweet-alert.service";
 import { THE_FI_COMPANY_LAYOUT } from "./layouts/topbar/topbar.component";
 import { LightboxConfig } from "ngx-lightbox";
 import { isMobile } from "src/assets/js/util/is-mobile-helpers";
 import { ToastrService } from "ngx-toastr";
+import { Router, NavigationEnd } from "@angular/router";
+import { filter } from "rxjs/operators";
+import { AuthenticationService } from "./core/services/auth.service";
+import { MaterialRequestService } from "./core/api/operations/material-request/material-request.service";
 
 export function setThemeColor(data) {
   setTimeout(function () {
@@ -30,13 +34,21 @@ export function setThemeColor(data) {
   templateUrl: "./app.component.html",
   styleUrls: ["./app.component.scss"],
 })
-export class AppComponent {
+export class AppComponent implements OnInit, OnDestroy {
+  private readonly validationStatusPollMs = 60000;
+  private routerEventsSubscription?: Subscription;
+  private validationStatusSubscription?: Subscription;
+  @ViewChild("qadValidationBanner") qadValidationBanner?: ElementRef<HTMLElement>;
+
   constructor(
     ngbModalConfig: NgbModalConfig,
     private titleService: TitleService,
     private swUpdate: SwUpdate,
     private _lightboxConfig: LightboxConfig,
     private toastr: ToastrService,
+    private router: Router,
+    private authenticationService: AuthenticationService,
+    private materialRequestService: MaterialRequestService,
   ) {
     ngbModalConfig.backdrop = "static";
     ngbModalConfig.keyboard = false;
@@ -61,9 +73,21 @@ export class AppComponent {
   hasUpdate = false;
 
   enableSwUpdate = false;
+  isAuthenticated = false;
+  isValidationServiceAvailable = true;
+  isValidationServiceChecking = false;
+  validationServiceMessage = "";
 
   ngOnInit(): void {
     this.isMobile = isMobile();
+    void this.refreshAuthAndValidationBanner();
+    this.startValidationStatusPolling();
+
+    this.routerEventsSubscription = this.router.events
+      .pipe(filter((event) => event instanceof NavigationEnd))
+      .subscribe(() => {
+        void this.refreshAuthAndValidationBanner();
+      });
 
     if (localStorage.getItem(THE_FI_COMPANY_LAYOUT)) {
       let d = JSON.parse(localStorage.getItem(THE_FI_COMPANY_LAYOUT));
@@ -134,5 +158,73 @@ export class AppComponent {
 
   reloadSite(): void {
     window.location.reload();
+  }
+
+  ngOnDestroy(): void {
+    this.routerEventsSubscription?.unsubscribe();
+    this.validationStatusSubscription?.unsubscribe();
+    this.clearBannerLayoutOffset();
+  }
+
+  private async refreshAuthAndValidationBanner(): Promise<void> {
+    this.isAuthenticated = !!this.authenticationService.currentUserValue;
+    if (!this.isAuthenticated) {
+      this.isValidationServiceAvailable = true;
+      this.validationServiceMessage = "";
+      this.isValidationServiceChecking = false;
+      this.scheduleBannerLayoutSync();
+      return;
+    }
+
+    await this.checkValidationConnection();
+    this.scheduleBannerLayoutSync();
+  }
+
+  private startValidationStatusPolling(): void {
+    this.validationStatusSubscription?.unsubscribe();
+    this.validationStatusSubscription = interval(this.validationStatusPollMs).subscribe(() => {
+      if (!this.isValidationServiceChecking) {
+        void this.refreshAuthAndValidationBanner();
+      }
+    });
+  }
+
+  private async checkValidationConnection(): Promise<void> {
+    this.isValidationServiceChecking = true;
+    try {
+      const status = await this.materialRequestService.getValidationConnectionStatus();
+      this.isValidationServiceAvailable = !!status?.isConnected;
+      this.validationServiceMessage = status?.message || "";
+    } catch {
+      this.isValidationServiceAvailable = false;
+      this.validationServiceMessage = "QAD validation is currently unavailable. Item validation will be bypassed.";
+    } finally {
+      this.isValidationServiceChecking = false;
+      this.scheduleBannerLayoutSync();
+    }
+  }
+
+  private scheduleBannerLayoutSync(): void {
+    setTimeout(() => this.syncBannerLayoutOffset(), 0);
+  }
+
+  private syncBannerLayoutOffset(): void {
+    const shouldShowBanner = this.isAuthenticated && !this.isValidationServiceAvailable && !this.isValidationServiceChecking;
+    if (!shouldShowBanner) {
+      this.clearBannerLayoutOffset();
+      return;
+    }
+
+    const bannerEl = this.qadValidationBanner?.nativeElement;
+    const bannerHeight = bannerEl?.offsetHeight ?? 0;
+    const safeHeight = bannerHeight > 0 ? bannerHeight : 48;
+
+    document.body.classList.add("qad-validation-banner-visible");
+    document.documentElement.style.setProperty("--qad-validation-banner-height", `${safeHeight}px`);
+  }
+
+  private clearBannerLayoutOffset(): void {
+    document.body.classList.remove("qad-validation-banner-visible");
+    document.documentElement.style.setProperty("--qad-validation-banner-height", "0px");
   }
 }

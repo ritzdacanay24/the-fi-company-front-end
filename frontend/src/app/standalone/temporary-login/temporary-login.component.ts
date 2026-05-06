@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, Output, EventEmitter, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Subject } from 'rxjs';
+import { Subject, finalize, takeUntil } from 'rxjs';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import { THE_FI_COMPANY_CURRENT_USER } from '@app/core/guards/admin.guard';
 
@@ -75,7 +75,12 @@ export class TemporaryLoginComponent implements OnInit, OnDestroy {
         loginObservable = this.authService.loginWithCardNumber(formData.cardNumber);
       }
 
-      loginObservable.subscribe({
+      loginObservable.pipe(
+        takeUntil(this.destroy$),
+        finalize(() => {
+          this.isLoggingIn = false;
+        })
+      ).subscribe({
         next: (response: any) => {
           // Handle different response structures
           let user = null;
@@ -109,16 +114,16 @@ export class TemporaryLoginComponent implements OnInit, OnDestroy {
             this.loginSuccess.emit(user);
             form.reset();
           } else {
-            throw new Error(response?.message || 'Authentication failed - Invalid user data');
+            const errorMessage = response?.message || 'Authentication failed - Invalid user data';
+            this.loginError = errorMessage;
+            this.loginErrorEvent.emit(errorMessage);
           }
         },
         error: (error: any) => {
           console.error('Login error:', error);
           const errorMessage = error?.message || 'Login failed. Please check your credentials.';
           this.loginError = errorMessage;
-        },
-        complete: () => {
-          this.isLoggingIn = false;
+          this.loginErrorEvent.emit(errorMessage);
         }
       });
     } catch (error: any) {

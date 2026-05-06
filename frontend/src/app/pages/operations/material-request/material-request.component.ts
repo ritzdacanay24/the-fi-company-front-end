@@ -121,16 +121,9 @@ export class MaterialRequestComponent implements OnInit {
    */
   onRefresh(): void {
     this.isRefreshing = true;
-    
-    // Emit refresh event to child component
-    // This could be implemented with a service or event emitter
-    // For now, we can trigger a simple page refresh or custom logic
-    
-    // Simulate refresh delay
+
     setTimeout(() => {
       this.isRefreshing = false;
-      // You can implement custom refresh logic here
-      // or communicate with child components via a service
     }, 1000);
   }
 

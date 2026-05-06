@@ -49,6 +49,17 @@
   --pc-surface-soft: var(--bs-tertiary-bg);
   --pc-surface-alt: var(--bs-secondary-bg);
   --pc-text: var(--bs-body-color);
+  --pc-field-filled-bg: #e8f7ef;
+  --pc-field-empty-bg: #fff7ea;
+  --pc-field-cell-text: var(--pc-text);
+  --pc-open-items-text: #16a34a;
+  --pc-open-items-bg: #f0fdf4;
+  --pc-open-items-border: #bbf7d0;
+  --pc-chip-bg: #e0edff;
+  --pc-chip-border: #bcd3f8;
+  --pc-chip-text: #1e40af;
+  --pc-chip-remove: #6b7280;
+  --pc-chip-remove-hover: #dc2626;
 
   .permit-page-header {
     .toolbar-actions {
@@ -589,11 +600,13 @@
       vertical-align: middle;
 
       &.field-filled {
-        background: #e8f7ef !important;
+        background: var(--pc-field-filled-bg) !important;
+        color: var(--pc-field-cell-text) !important;
       }
 
       &.field-empty {
-        background: #fff7ea !important;
+        background: var(--pc-field-empty-bg) !important;
+        color: var(--pc-field-cell-text) !important;
       }
     }
 
@@ -611,12 +624,12 @@
 
   .open-items-empty {
     font-size: 0.82rem;
-    color: #16a34a;
+    color: var(--pc-open-items-text);
     padding: 0.3rem 0.6rem;
     margin-bottom: 0.6rem;
-    background: #f0fdf4;
+    background: var(--pc-open-items-bg);
     border-radius: 0.4rem;
-    border: 1px solid #bbf7d0;
+    border: 1px solid var(--pc-open-items-border);
   }
 
   .sign-package-chips {
@@ -635,12 +648,12 @@
       align-items: center;
       gap: 0.3rem;
       padding: 0.2rem 0.5rem;
-      background: #e0edff;
-      border: 1px solid #bcd3f8;
+      background: var(--pc-chip-bg);
+      border: 1px solid var(--pc-chip-border);
       border-radius: 999px;
       font-size: 0.8rem;
       font-weight: 600;
-      color: #1e40af;
+      color: var(--pc-chip-text);
       white-space: nowrap;
     }
 
@@ -650,13 +663,13 @@
       padding: 0;
       line-height: 1;
       cursor: pointer;
-      color: #6b7280;
+      color: var(--pc-chip-remove);
       font-size: 0.75rem;
       display: flex;
       align-items: center;
 
       &:hover {
-        color: #dc2626;
+        color: var(--pc-chip-remove-hover);
       }
 
       &:disabled {
@@ -1012,6 +1025,21 @@
     }
   }
 
+}
+
+:host-context([data-bs-theme='dark']) .permit-checklists-page,
+:host-context(body.dark) .permit-checklists-page {
+  --pc-field-filled-bg: #17362c;
+  --pc-field-empty-bg: #3a311f;
+  --pc-field-cell-text: #d8e2f0;
+  --pc-open-items-text: #86efac;
+  --pc-open-items-bg: #132b24;
+  --pc-open-items-border: #235743;
+  --pc-chip-bg: #1c2f4a;
+  --pc-chip-border: #31517c;
+  --pc-chip-text: #b8d3ff;
+  --pc-chip-remove: #9ca3af;
+  --pc-chip-remove-hover: #f87171;
 }
 
 :host ::ng-deep {

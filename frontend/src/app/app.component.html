@@ -1,1 +1,12 @@
+<div
+	#qadValidationBanner
+	class="alert alert-warning app-global-status-banner d-flex align-items-start mb-0 rounded-0"
+	*ngIf="isAuthenticated && !isValidationServiceAvailable && !isValidationServiceChecking">
+	<i class="mdi mdi-alert-circle-outline me-2 fs-5"></i>
+	<div>
+		<strong>QAD is currently unreachable.</strong>
+		Some features may be limited until connectivity is restored. You can continue working normally in the meantime.
+	</div>
+</div>
+
 <router-outlet></router-outlet>

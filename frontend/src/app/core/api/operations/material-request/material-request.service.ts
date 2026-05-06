@@ -124,4 +124,7 @@ export class MaterialRequestService extends DataService<any> {
     );
   }
 
+  getValidationConnectionStatus = async (): Promise<{ isConnected: boolean; message: string }> =>
+    firstValueFrom(this.http.get<{ isConnected: boolean; message: string }>(`${url}/validationConnectionStatus`));
+
 }

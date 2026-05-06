@@ -312,10 +312,18 @@ export class MaterialRequestService {
       WITH (NOLOCK)
     `;
 
-    const rows = await this.qadOdbcService.queryWithParams<MaterialValidationLookupRow[]>(
-      sql,
-      partNumbers,
-    );
+    let rows: MaterialValidationLookupRow[] = [];
+    try {
+      rows = await this.qadOdbcService.queryWithParams<MaterialValidationLookupRow[]>(
+        sql,
+        partNumbers,
+      );
+    } catch (error) {
+      this.logger.warn(
+        `QAD validation unavailable in searchItemByQadPartNumber; bypassing validation for ${partNumbers.length} item(s): ${error instanceof Error ? error.message : String(error)}`,
+      );
+      return items.map((item) => this.withValidationBypass(item));
+    }
 
     const byPart = new Map<string, MaterialValidationLookupRow>();
     for (const row of rows) {
@@ -342,6 +350,24 @@ export class MaterialRequestService {
         cost: this.getLookupNumber(lookup, 'sct_cst_tot'),
       };
     });
+  }
+
+  async getValidationConnectionStatus() {
+    try {
+      await this.qadOdbcService.query('SELECT 1 AS ok');
+      return {
+        isConnected: true,
+        message: 'QAD is online.',
+      };
+    } catch (error) {
+      this.logger.warn(
+        `QAD connection check failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      return {
+        isConnected: false,
+        message: 'QAD is currently unreachable. QAD-dependent features will be bypassed until connectivity is restored.',
+      };
+    }
   }
 
   async sendBackToValidation(id: number) {
@@ -553,6 +579,18 @@ export class MaterialRequestService {
       availableQty: 0,
       description: '',
       cost: 0,
+    };
+  }
+
+  private withValidationBypass(item: MaterialValidationItem): MaterialValidationItem {
+    return {
+      ...item,
+      message: '',
+      hasError: false,
+      validationBypassed: true,
+      availableQty: null,
+      description: '',
+      cost: null,
     };
   }
 
