@@ -13,6 +13,18 @@ interface UploadResult {
   errors?: string[];
 }
 
+interface PreviewSerialRow {
+  serial_number: string;
+  status: 'valid' | 'duplicate' | 'error';
+}
+
+interface ValidationSummary {
+  valid: number;
+  duplicates: number;
+  errors: number;
+  total: number;
+}
+
 @Component({
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule],
@@ -40,13 +52,11 @@ export class SnUploadComponent {
   ];
 
   // Range input properties
-  inputMethod: 'range' | 'list' = 'range';
-  rangePrefix = '';
   rangeStart: number | null = null;
   rangeEnd: number | null = null;
-  rangePadding = '0';
-  individualList = '';
   previewSerialNumbers: string[] = [];
+  previewRows: PreviewSerialRow[] = [];
+  validationSummary: ValidationSummary | null = null;
 
   constructor(
     private fb: FormBuilder,
@@ -267,6 +277,17 @@ export class SnUploadComponent {
               this.rangeEnd >= this.rangeStart);
   }
 
+  onRangeChange(): void {
+    if (!this.isValidRange()) {
+      this.previewSerialNumbers = [];
+      this.previewRows = [];
+      this.validationSummary = null;
+      return;
+    }
+
+    this.generatePreview();
+  }
+
   getRangeCount(): number {
     if (!this.isValidRange()) return 0;
     return (this.rangeEnd! - this.rangeStart!) + 1;
@@ -276,44 +297,111 @@ export class SnUploadComponent {
     if (!this.isValidRange()) return;
 
     this.previewSerialNumbers = [];
-    const padding = parseInt(this.rangePadding);
     
     for (let i = this.rangeStart!; i <= this.rangeEnd!; i++) {
-      const paddedNumber = padding > 0 ? i.toString().padStart(padding, '0') : i.toString();
-      
-      if (this.rangePrefix && this.rangePrefix.trim()) {
-        // If prefix exists, add it with a separator
-        this.previewSerialNumbers.push(`${this.rangePrefix}-${paddedNumber}`);
-      } else {
-        // If no prefix, just use the number
-        this.previewSerialNumbers.push(paddedNumber);
-      }
+      this.previewSerialNumbers.push(i.toString());
     }
+
+    this.validatePreviewRows();
   }
 
-  parseIndividualList(): void {
-    if (!this.individualList?.trim()) {
-      this.previewSerialNumbers = [];
+  canSubmitRangeUpload(): boolean {
+    if (!this.validationSummary) return false;
+
+    return this.validationSummary.valid > 0
+      && this.validationSummary.duplicates === 0
+      && this.validationSummary.errors === 0;
+  }
+
+  private async validatePreviewRows(): Promise<void> {
+    const rows = this.previewSerialNumbers;
+
+    if (rows.length === 0) {
+      this.previewRows = [];
+      this.validationSummary = null;
       return;
     }
 
-    this.previewSerialNumbers = this.individualList
-      .split('\n')
-      .map(line => line.trim())
-      .filter(line => line.length > 0);
+    try {
+      const response = await this.serialNumberService.checkExistingSerialNumbers(rows);
+      const existing = Array.isArray(response?.data)
+        ? response.data.map((item: unknown) => String(item || '').trim())
+        : [];
+      const existingSet = new Set(existing);
+
+      let valid = 0;
+      let duplicates = 0;
+      let errors = 0;
+
+      this.previewRows = rows.map((serial) => {
+        if (!serial || !/^\d+$/.test(serial)) {
+          errors += 1;
+          return { serial_number: serial, status: 'error' };
+        }
+
+        if (existingSet.has(serial)) {
+          duplicates += 1;
+          return { serial_number: serial, status: 'duplicate' };
+        }
+
+        valid += 1;
+        return { serial_number: serial, status: 'valid' };
+      });
+
+      this.validationSummary = {
+        valid,
+        duplicates,
+        errors,
+        total: rows.length,
+      };
+    } catch {
+      this.previewRows = rows.map((serial) => ({ serial_number: serial, status: 'error' }));
+      this.validationSummary = {
+        valid: 0,
+        duplicates: 0,
+        errors: rows.length,
+        total: rows.length,
+      };
+    }
+  }
+
+  getStatusBadgeClass(status: string): string {
+    switch (status) {
+      case 'valid': return 'bg-success';
+      case 'duplicate': return 'bg-warning';
+      case 'error': return 'bg-danger';
+      default: return 'bg-secondary';
+    }
+  }
+
+  getStatusIcon(status: string): string {
+    switch (status) {
+      case 'valid': return 'mdi mdi-check-circle';
+      case 'duplicate': return 'mdi mdi-alert-circle';
+      case 'error': return 'mdi mdi-close-circle';
+      default: return 'mdi mdi-help-circle';
+    }
+  }
+
+  getStatusText(status: string): string {
+    switch (status) {
+      case 'valid': return 'Valid';
+      case 'duplicate': return 'Duplicate';
+      case 'error': return 'Error';
+      default: return 'Unknown';
+    }
   }
 
   async addRangeToDatabase(): Promise<void> {
-    if (this.inputMethod === 'range' && !this.isValidRange()) return;
-    if (this.inputMethod === 'list' && this.previewSerialNumbers.length === 0) return;
+    if (!this.isValidRange()) return;
+    if (!this.canSubmitRangeUpload()) return;
 
     this.isUploading = true;
 
     const serialNumbers = this.previewSerialNumbers.map(serial => ({
       serial_number: serial,
       product_model: 'EyeFi Pro X1', // Default model
-      status: 'available',
-      created_at: new Date().toISOString()
+      status: 'available'
     }));
 
     try {
@@ -358,12 +446,11 @@ export class SnUploadComponent {
   }
 
   resetForm(): void {
-    this.rangePrefix = 'eyefi';
     this.rangeStart = null;
     this.rangeEnd = null;
-    this.rangePadding = '3';
-    this.individualList = '';
     this.previewSerialNumbers = [];
+    this.previewRows = [];
+    this.validationSummary = null;
     this.uploadResult = null;
   }
 }

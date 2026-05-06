@@ -106,9 +106,11 @@ export class IgtSerialNumbersService {
   async bulkUploadWithOptions(dto: BulkUploadOptionsDto) {
     const serials: CreateIgtSerialDto[] = dto.serialNumbers.map((s) => ({
       serial_number: s.serial_number,
-      category: s.category ?? dto.category ?? 'gaming',
+      category: 'gaming',
     }));
-    const result = await this.repo.bulkCreate(serials, dto.duplicateStrategy ?? 'skip');
+
+    // Strict mode: duplicates are always rejected and never replaced.
+    const result = await this.repo.bulkCreate(serials, 'error');
     return { success: true, ...result };
   }
 

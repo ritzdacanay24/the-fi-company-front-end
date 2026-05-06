@@ -44,7 +44,7 @@ type ChartOptions = {
 
 @Component({
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule, AgGridModule, NgbDropdownModule, NgApexchartsModule, SnActionDropdownRendererComponent],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule, AgGridModule, NgbDropdownModule, NgApexchartsModule],
   selector: 'app-sn-list',
   templateUrl: './sn-list.component.html',
   styleUrls: ['./sn-list.component.scss']
@@ -118,17 +118,6 @@ export class SnListComponent implements OnInit {
       }
     },
     {
-      headerName: 'Assignment ID',
-      field: 'serial_assignment_id',
-      sortable: true,
-      filter: true,
-      width: 130,
-      cellRenderer: (params: any) => {
-        const value = params.value;
-        return value ? `<span class="badge bg-light text-dark border">#${value}</span>` : '<span class="text-muted">—</span>';
-      }
-    },
-    {
       headerName: 'Status',
       field: 'status',
       sortable: true,
@@ -184,20 +173,6 @@ export class SnListComponent implements OnInit {
       filter: true,
       width: 140,
       cellRenderer: (params: any) => {
-        return params.value || '<span class="text-muted">—</span>';
-      }
-    },
-    {
-      headerName: 'Consumed By',
-      field: 'assigned_by',
-      sortable: true,
-      filter: true,
-      width: 140,
-      cellRenderer: (params: any) => {
-        const status = this.getSimpleStatus(params.data);
-        if (status !== 'used') {
-          return '<span class="text-muted">—</span>';
-        }
         return params.value || '<span class="text-muted">—</span>';
       }
     },

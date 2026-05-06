@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, map } from 'rxjs';
 
 const API_URL = 'apiV2/igt-serial-numbers';
 
@@ -75,15 +75,38 @@ export class SerialNumberService {
 
   checkExistingSerials(serialNumbers: string[]): Promise<string[]> {
     return firstValueFrom(
-      this.http.post<string[]>(`${API_URL}/check-existing`, { serial_numbers: serialNumbers })
+      this.http.post<any>(`${API_URL}/check-existing`, { serial_numbers: serialNumbers }).pipe(
+        map((response) => {
+          if (Array.isArray(response)) {
+            return response;
+          }
+
+          if (Array.isArray(response?.data)) {
+            return response.data;
+          }
+
+          return [];
+        })
+      )
     );
   }
 
+  bulkUploadRange(options: {
+    serialNumbers: { serial_number: string; category: string }[];
+  }): Promise<{ created: number; updated: number; errors: any[] }> {
+    return firstValueFrom(this.http.post<any>(`${API_URL}/bulk-upload`, {
+      serialNumbers: options.serialNumbers,
+      category: 'gaming',
+      duplicateStrategy: 'error',
+    }));
+  }
+
+  // Backward-compatible wrapper for existing callers.
   bulkUploadWithOptions(options: {
     serialNumbers: { serial_number: string; category: string }[];
-    duplicateStrategy: 'skip' | 'replace' | 'error';
-    category: string;
+    duplicateStrategy?: 'skip' | 'replace' | 'error';
+    category?: string;
   }): Promise<{ created: number; updated: number; errors: any[] }> {
-    return firstValueFrom(this.http.post<any>(`${API_URL}/bulk-upload`, options));
+    return this.bulkUploadRange(options);
   }
 }

@@ -44,6 +44,35 @@ export class UlLabelsService {
       };
     }
   }
+  async checkExistingUlNumbers(ulNumbers: string[]): Promise<ApiResponse<string[]>> {
+    const normalized = (ulNumbers || [])
+      .map((num) => String(num || '').trim())
+      .filter(Boolean);
+
+    if (normalized.length === 0) {
+      return { success: true, data: [] };
+    }
+
+    try {
+      const uniqueNumbers = Array.from(new Set(normalized));
+      const placeholders = uniqueNumbers.map(() => '?').join(',');
+      const rows = await this.mysqlService.query<Array<RowDataPacket & { ul_number: string }>>(
+        `SELECT ul_number FROM ul_labels WHERE ul_number IN (${placeholders})`,
+        uniqueNumbers,
+      );
+
+      return {
+        success: true,
+        data: rows.map((row) => String(row.ul_number || '').trim()).filter(Boolean),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `Error checking existing UL numbers: ${this.getErrorMessage(error)}`,
+        data: [],
+      };
+    }
+  }
 
   async createLabel(body: Record<string, unknown>, currentUserId?: number): Promise<ApiResponse<{ id: number }>> {
     const ulNumber = String(body.ul_number || '').trim();
@@ -58,7 +87,7 @@ export class UlLabelsService {
     const certificationDate = this.toNullableString(body.certification_date);
     const expiryDate = this.toNullableString(body.expiry_date);
     const status = String(body.status || 'active');
-    const createdBy = Number(currentUserId) > 0 ? Number(currentUserId) : Number(body.created_by || 1);
+    const createdBy = await this.resolveUserDisplayName(currentUserId, body.created_by);
 
     try {
       const result = await this.mysqlService.execute<ResultSetHeader>(
@@ -76,7 +105,7 @@ export class UlLabelsService {
           certificationDate,
           expiryDate,
           status,
-          Number.isFinite(createdBy) ? createdBy : 1,
+          createdBy,
         ],
       );
 
@@ -122,7 +151,7 @@ export class UlLabelsService {
 
     assignments.push('updated_at = NOW()');
     assignments.push('updated_by = ?');
-    values.push(Number(currentUserId) > 0 ? Number(currentUserId) : Number(body.updated_by || 1));
+    values.push(await this.resolveUserDisplayName(currentUserId, body.updated_by));
 
     if (assignments.length === 1) {
       return { success: false, message: 'No updatable fields provided' };
@@ -350,13 +379,15 @@ export class UlLabelsService {
     }
   }
 
-  async handleBulkUploadJson(body: Record<string, unknown>): Promise<ApiResponse> {
+  async handleBulkUploadJson(body: Record<string, unknown>, currentUserId?: number): Promise<ApiResponse> {
+    const createdBy = await this.resolveUserDisplayName(currentUserId, body.created_by);
+
     if (Array.isArray(body.labels)) {
-      return this.bulkCreateLabels(body.labels as Record<string, unknown>[]);
+      return this.bulkCreateLabels(body.labels as Record<string, unknown>[], createdBy);
     }
 
     if (body.start_number !== undefined && body.end_number !== undefined) {
-      return this.createLabelsFromRange(body);
+      return this.createLabelsFromRange(body, createdBy);
     }
 
     return {
@@ -365,7 +396,8 @@ export class UlLabelsService {
     };
   }
 
-  async handleBulkUploadFile(file: { originalname?: string; buffer: Buffer }): Promise<ApiResponse> {
+  async handleBulkUploadFile(file: { originalname?: string; buffer: Buffer }, currentUserId?: number): Promise<ApiResponse> {
+    const createdBy = await this.resolveUserDisplayName(currentUserId);
     const fileName = (file.originalname || '').toLowerCase();
 
     if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
@@ -386,6 +418,7 @@ export class UlLabelsService {
 
       return this.bulkCreateLabels(
         labels.map((row: Record<string, unknown>) => this.normalizeBulkRow(row)),
+        createdBy,
       );
     }
 
@@ -414,7 +447,7 @@ export class UlLabelsService {
       labels.push(this.normalizeBulkRow(row));
     }
 
-    return this.bulkCreateLabels(labels);
+    return this.bulkCreateLabels(labels, createdBy);
   }
 
   async uploadImage(
@@ -1298,7 +1331,7 @@ export class UlLabelsService {
     return this.mysqlService.query<RowDataPacket[]>(sql, params);
   }
 
-  private async createLabelsFromRange(rangeData: Record<string, unknown>): Promise<ApiResponse> {
+  private async createLabelsFromRange(rangeData: Record<string, unknown>, createdBy: string): Promise<ApiResponse> {
     const start = Number(rangeData.start_number);
     const end = Number(rangeData.end_number);
 
@@ -1324,15 +1357,16 @@ export class UlLabelsService {
       };
     }
 
-    const prefix = String(rangeData.prefix || '').trim();
-    const suffix = String(rangeData.suffix || '').trim();
+    const category = String(rangeData.category || 'New').trim();
+    const normalizedCategory = category.toLowerCase();
+    const categoryPrefix = normalizedCategory === 'used' ? 'T' : 'Q';
 
     const labels: Record<string, unknown>[] = [];
     for (let i = start; i <= end; i += 1) {
       labels.push({
-        ul_number: `${prefix}${i}${suffix}`,
+        ul_number: `${categoryPrefix}${i}`,
         description: String(rangeData.description || '').trim(),
-        category: String(rangeData.category || 'New').trim(),
+        category,
         manufacturer: this.toNullableString(rangeData.manufacturer),
         part_number: this.toNullableString(rangeData.part_number),
         certification_date: this.toNullableString(rangeData.certification_date),
@@ -1341,10 +1375,10 @@ export class UlLabelsService {
       });
     }
 
-    return this.bulkCreateLabels(labels);
+    return this.bulkCreateLabels(labels, createdBy);
   }
 
-  private async bulkCreateLabels(labelsData: Record<string, unknown>[]): Promise<ApiResponse> {
+  private async bulkCreateLabels(labelsData: Record<string, unknown>[], createdBy: string): Promise<ApiResponse> {
     const errors: BulkUploadError[] = [];
     let uploadedCount = 0;
 
@@ -1393,7 +1427,7 @@ export class UlLabelsService {
             this.toNullableString(label.certification_date),
             this.toNullableString(label.expiry_date),
             String(label.status || 'active').trim(),
-            1,
+            createdBy,
           ],
         );
 
@@ -1506,6 +1540,28 @@ export class UlLabelsService {
 
     const text = String(value).trim();
     return text === '' ? null : text;
+  }
+
+  private async resolveUserDisplayName(currentUserId?: number, fallback?: unknown): Promise<string> {
+    if (Number(currentUserId) > 0) {
+      const rows = await this.mysqlService.query<Array<RowDataPacket & { full_name: string }>>(
+        `
+          SELECT TRIM(CONCAT(COALESCE(first, ''), ' ', COALESCE(last, ''))) AS full_name
+          FROM db.users
+          WHERE id = ?
+          LIMIT 1
+        `,
+        [Number(currentUserId)],
+      );
+
+      const fullName = String(rows[0]?.full_name || '').trim();
+      if (fullName) {
+        return fullName;
+      }
+    }
+
+    const fallbackName = String(fallback || '').trim();
+    return fallbackName || 'system';
   }
 
   private toNullableNumber(value: unknown): number | null {

@@ -99,13 +99,22 @@ export class EyeFiSerialService {
     return this.eyeFiSerialRepository.getStatistics();
   }
 
-  async bulkCreate(dto: BulkCreateEyeFiSerialDto) {
-    const result = await this.eyeFiSerialRepository.bulkCreate(dto.serialNumbers);
+  async bulkCreate(dto: BulkCreateEyeFiSerialDto, userId: number) {
+    const createdBy = await this.eyeFiSerialRepository.getActiveUserDisplayNameById(userId);
+    const result = await this.eyeFiSerialRepository.bulkCreate(
+      dto.serialNumbers,
+      createdBy || String(userId),
+    );
     return {
       success: true,
       message: `Created ${result.inserted} serial numbers (${result.duplicates} duplicates skipped)`,
       ...result,
     };
+  }
+
+  async checkExisting(serialNumbers: string[]) {
+    const existing = await this.eyeFiSerialRepository.checkExisting(serialNumbers || []);
+    return { success: true, data: existing };
   }
 
   async getProductModels() {

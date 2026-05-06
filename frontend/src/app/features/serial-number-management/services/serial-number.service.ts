@@ -52,6 +52,12 @@ export class SerialNumberService {
     return await firstValueFrom(this.http.post(`${this.API_URL}/bulk`, { serialNumbers }));
   }
 
+  async checkExistingSerialNumbers(serialNumbers: string[]): Promise<any> {
+    return await firstValueFrom(
+      this.http.post(`${this.API_URL}/check-existing`, { serial_numbers: serialNumbers })
+    );
+  }
+
   // Create serial numbers from range (alias for bulk create)
   async createSerialNumbersFromRange(rangeData: any): Promise<any> {
     return await firstValueFrom(this.http.post(`${this.API_URL}/bulk`, rangeData));

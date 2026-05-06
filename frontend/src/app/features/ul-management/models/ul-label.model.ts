@@ -11,7 +11,7 @@ export interface ULLabel {
   status: 'active' | 'inactive' | 'expired';
   created_at?: string;
   updated_at?: string;
-  created_by?: number;
+  created_by?: string | number;
 }
 
 export interface ULLabelUsage {
@@ -35,7 +35,7 @@ export interface ULLabelUsage {
   wo_description?: string;
   created_at?: string;
   updated_at?: string;
-  created_by?: number;
+  created_by?: string | number;
 }
 
 export interface ULLabelReport {

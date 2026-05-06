@@ -96,12 +96,13 @@ export class UlLabelsController {
   async bulkUpload(
     @UploadedFile() file?: { originalname?: string; buffer: Buffer },
     @Body() body: Record<string, unknown> = {},
+    @CurrentUserId() currentUserId: number = 0,
   ) {
     if (file) {
-      return this.ulLabelsService.handleBulkUploadFile(file);
+      return this.ulLabelsService.handleBulkUploadFile(file, currentUserId);
     }
 
-    return this.ulLabelsService.handleBulkUploadJson(body);
+    return this.ulLabelsService.handleBulkUploadJson(body, currentUserId);
   }
 
   @Get('usages')
@@ -160,6 +161,12 @@ export class UlLabelsController {
   @Get('validation/number')
   async validateUlNumber(@Query('ulNumber') ulNumber?: string) {
     return this.ulLabelsService.validateUlNumber(ulNumber);
+  }
+
+  @Post('check-existing')
+  @Permissions('write')
+  async checkExistingUlNumbers(@Body('ul_numbers') ulNumbers: string[] = []) {
+    return this.ulLabelsService.checkExistingUlNumbers(ulNumbers);
   }
 
   @Get('stats/dashboard')

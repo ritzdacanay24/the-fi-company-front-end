@@ -165,16 +165,6 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
     animateRows: true,
     rowSelection: 'multiple',
     suppressRowClickSelection: true,
-    groupDefaultExpanded: 1,
-    autoGroupColumnDef: {
-      headerName: 'Batch Group',
-      minWidth: 250,
-      cellRendererParams: {
-        suppressCount: false,
-        checkbox: false
-      }
-    },
-    groupDisplayType: 'singleColumn'
   };
 
   // Pagination - removed, showing all records
@@ -318,7 +308,10 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
         headerName: 'Asset Number',
         field: 'customer_part_number',
         width: 150,
-        valueGetter: (params: any) => params.data?.customer_part_number || '-'
+        valueGetter: (params: any) => {
+          if (!params.data) return '-';
+          return params.data.generated_asset_number || params.data.customer_part_number || '-';
+        }
       },
       {
         headerName: 'Customer Name',
@@ -328,12 +321,10 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
       {
         headerName: 'Description',
         field: 'wo_description',
-        width: 200
       },
       {
         headerName: 'Work Order / PO',
         field: 'wo_number',
-        width: 150,
         valueGetter: (params: any) => {
           if (!params.data) return '';
           return params.data.wo_number || params.data.po_number || '-';
@@ -342,7 +333,6 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
       {
         headerName: 'Batch ID',
         field: 'batch_id',
-        width: 140,
         valueFormatter: (params: any) => params.value || '-'
       },
       {

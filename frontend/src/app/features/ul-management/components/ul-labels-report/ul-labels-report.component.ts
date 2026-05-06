@@ -192,6 +192,22 @@ export class ULLabelsReportComponent implements OnInit {
       }
     },
     {
+      headerName: 'Created By',
+      field: 'created_by',
+      sortable: true,
+      filter: 'agTextColumnFilter',
+      floatingFilter: true,
+      width: 170,
+      cellRenderer: (params: any) => {
+        const value = String(params.value || '').trim();
+        return value ? value : '<span class="text-muted">-</span>';
+      },
+      filterParams: {
+        filterOptions: ['contains', 'equals', 'startsWith'],
+        defaultOption: 'contains'
+      }
+    },
+    {
       headerName: 'Actions',
       field: 'actions',
       width: 200,

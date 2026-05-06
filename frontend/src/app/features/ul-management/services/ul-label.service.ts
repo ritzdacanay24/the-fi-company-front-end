@@ -155,6 +155,10 @@ export class ULLabelService {
     return this.http.get(`${this.API_URL}/validation/number`, { params });
   }
 
+  checkExistingUlNumbers(ulNumbers: string[]): Observable<any> {
+    return this.http.post(`${this.API_URL}/check-existing`, { ul_numbers: ulNumbers });
+  }
+
   // Dashboard statistics
   getDashboardStats(): Observable<any> {
     return this.http.get(`${this.API_URL}/stats/dashboard`);

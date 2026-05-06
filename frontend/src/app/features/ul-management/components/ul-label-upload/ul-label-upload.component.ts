@@ -6,6 +6,19 @@ import { ULLabelService } from '../../services/ul-label.service';
 import { ULLabel } from '../../models/ul-label.model';
 import { BreadcrumbComponent, BreadcrumbItem } from "@app/shared/components/breadcrumb/breadcrumb.component";
 import { ActivatedRoute, Router } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
+
+interface RangePreviewRow {
+  ul_number: string;
+  status: 'valid' | 'duplicate' | 'error';
+}
+
+interface RangeValidationSummary {
+  valid: number;
+  duplicates: number;
+  errors: number;
+  total: number;
+}
 
 @Component({
   standalone: true,
@@ -25,6 +38,10 @@ export class ULLabelUploadComponent implements OnInit {
 
   // Upload mode: 'single', 'bulk', 'range'
   uploadMode = 'single';
+  private readonly maxRangeSize = 1000;
+  rangePreviewRows: RangePreviewRow[] = [];
+  rangeValidationSummary: RangeValidationSummary | null = null;
+  rangeValidationError = '';
 
   constructor(
     private fb: FormBuilder,
@@ -47,8 +64,6 @@ export class ULLabelUploadComponent implements OnInit {
     this.rangeForm = this.fb.group({
       start_number: ['', [Validators.required, Validators.pattern(/^\d+$/)]],
       end_number: ['', [Validators.required, Validators.pattern(/^\d+$/)]],
-      prefix: ['', Validators.pattern(/^[A-Z]*$/)],
-      suffix: ['', Validators.pattern(/^[A-Z0-9-]*$/)],
       description: ['UL certified product', [Validators.required, Validators.minLength(5)]],
       category: ['New', Validators.required],
       manufacturer: [''],
@@ -56,7 +71,12 @@ export class ULLabelUploadComponent implements OnInit {
     });
   }
 
-  ngOnInit(): void { }
+  ngOnInit(): void {
+    this.rangeForm.valueChanges.subscribe(() => {
+      this.refreshRangePreview();
+    });
+    this.refreshRangePreview();
+  }
 
   onFileSelected(event: any): void {
     const file = event.target.files[0];
@@ -109,8 +129,13 @@ export class ULLabelUploadComponent implements OnInit {
       }
 
       const totalNumbers = endNum - startNum + 1;
-      if (totalNumbers > 1000) {
-        this.toastr.error('Range too large. Maximum 1000 UL numbers per upload.');
+      if (totalNumbers > this.maxRangeSize) {
+        this.toastr.error(`Range too large. Maximum ${this.maxRangeSize} UL numbers per upload.`);
+        return;
+      }
+
+      if (!this.canSubmitRangeUpload()) {
+        this.toastr.error('Fix duplicate or invalid UL numbers before upload.');
         return;
       }
 
@@ -128,6 +153,9 @@ export class ULLabelUploadComponent implements OnInit {
             }
             this.rangeForm.reset();
             this.rangeForm.patchValue({ status: 'active', description: 'UL certified product', category: 'New' });
+            this.rangePreviewRows = [];
+            this.rangeValidationSummary = null;
+            this.rangeValidationError = '';
           } else {
             this.toastr.error(response.message || 'Range upload failed');
           }
@@ -143,41 +171,18 @@ export class ULLabelUploadComponent implements OnInit {
     }
   }
 
-  generatePreview(): string[] {
-    if (!this.rangeForm.valid) return [];
-
-    const formData = this.rangeForm.value;
-    const startNum = parseInt(formData.start_number);
-    const endNum = parseInt(formData.end_number);
-
-    if (isNaN(startNum) || isNaN(endNum) || startNum >= endNum) return [];
-
-    const preview: string[] = [];
-    const maxPreview = Math.min(5, endNum - startNum + 1);
-
-    for (let i = 0; i < maxPreview; i++) {
-      const num = startNum + i;
-      preview.push(`${formData.prefix}${num}${formData.suffix}`);
-    }
-
-    if (endNum - startNum + 1 > 5) {
-      preview.push('...');
-      preview.push(`${formData.prefix}${endNum}${formData.suffix}`);
-    }
-
-    return preview;
+  getRangeCount(): number {
+    return this.rangePreviewRows.length;
   }
 
-  getRangeCount(): number {
-    if (!this.rangeForm.valid) return 0;
+  canSubmitRangeUpload(): boolean {
+    if (!this.rangeForm.valid || !this.rangeValidationSummary) {
+      return false;
+    }
 
-    const formData = this.rangeForm.value;
-    const startNum = parseInt(formData.start_number);
-    const endNum = parseInt(formData.end_number);
-
-    if (isNaN(startNum) || isNaN(endNum) || startNum >= endNum) return 0;
-
-    return endNum - startNum + 1;
+    return this.rangeValidationSummary.valid > 0
+      && this.rangeValidationSummary.duplicates === 0
+      && this.rangeValidationSummary.errors === 0;
   }
 
   onBulkUpload(): void {
@@ -250,6 +255,135 @@ export class ULLabelUploadComponent implements OnInit {
       if (field.errors['minlength']) return `${fieldName.replace('_', ' ')} is too short`;
     }
     return '';
+  }
+
+  private async refreshRangePreview(): Promise<void> {
+    const numbers = this.generateUlNumbersFromRange();
+
+    if (numbers.length === 0) {
+      this.rangePreviewRows = [];
+      this.rangeValidationSummary = null;
+      this.rangeValidationError = '';
+      return;
+    }
+
+    this.rangePreviewRows = numbers.map((ulNumber) => ({
+      ul_number: ulNumber,
+      status: 'valid',
+    }));
+
+    await this.validateRangePreview();
+  }
+
+  private generateUlNumbersFromRange(): string[] {
+    const formData = this.rangeForm.value;
+    const startNum = Number(formData.start_number);
+    const endNum = Number(formData.end_number);
+
+    if (!Number.isFinite(startNum) || !Number.isFinite(endNum) || startNum <= 0 || endNum <= 0 || startNum > endNum) {
+      return [];
+    }
+
+    const total = endNum - startNum + 1;
+    if (total > this.maxRangeSize) {
+      return [];
+    }
+
+    const categoryPrefix = this.getCategoryPrefix(formData.category);
+    const numbers: string[] = [];
+    for (let i = startNum; i <= endNum; i += 1) {
+      numbers.push(`${categoryPrefix}${i}`);
+    }
+
+    return numbers;
+  }
+
+  private getCategoryPrefix(category: unknown): 'Q' | 'T' {
+    return String(category || '').trim().toLowerCase() === 'used' ? 'T' : 'Q';
+  }
+
+  private async validateRangePreview(): Promise<void> {
+    const rows = this.rangePreviewRows;
+    if (rows.length === 0) {
+      this.rangeValidationSummary = null;
+      return;
+    }
+
+    try {
+      const response = await firstValueFrom(this.ulLabelService.checkExistingUlNumbers(rows.map((r) => r.ul_number)));
+      const existingNumbers = Array.isArray(response?.data) ? response.data : [];
+      const existingSet = new Set(existingNumbers.map((num: unknown) => String(num || '').trim()));
+
+      let valid = 0;
+      let duplicates = 0;
+      let errors = 0;
+
+      this.rangePreviewRows = rows.map((row) => {
+        if (!row.ul_number || row.ul_number.length < 2) {
+          errors += 1;
+          return { ...row, status: 'error' };
+        }
+
+        if (existingSet.has(row.ul_number)) {
+          duplicates += 1;
+          return { ...row, status: 'duplicate' };
+        }
+
+        valid += 1;
+        return { ...row, status: 'valid' };
+      });
+
+      this.rangeValidationSummary = {
+        valid,
+        duplicates,
+        errors,
+        total: rows.length,
+      };
+      this.rangeValidationError = '';
+    } catch (error) {
+      this.rangeValidationError = 'Unable to validate duplicates right now. Please try again.';
+      this.rangeValidationSummary = null;
+      console.error('UL range validation error:', error);
+    }
+  }
+
+  getStatusBadgeClass(status: string): string {
+    switch (status) {
+      case 'valid':
+        return 'bg-success';
+      case 'duplicate':
+        return 'bg-warning';
+      case 'error':
+        return 'bg-danger';
+      default:
+        return 'bg-secondary';
+    }
+  }
+
+  getStatusIcon(status: string): string {
+    switch (status) {
+      case 'valid':
+        return 'mdi mdi-check-circle';
+      case 'duplicate':
+        return 'mdi mdi-alert-circle';
+      case 'error':
+        return 'mdi mdi-close-circle';
+      default:
+        return 'mdi mdi-help-circle';
+    }
+  }
+
+  getStatusText(status: string): string {
+    switch (status) {
+      case 'valid':
+        return 'Valid';
+      case 'duplicate':
+        return 'Duplicate';
+      case 'error':
+        return 'Error';
+      default:
+        return 'Unknown';
+    }
   }
 
   // Breadcrumb navigation

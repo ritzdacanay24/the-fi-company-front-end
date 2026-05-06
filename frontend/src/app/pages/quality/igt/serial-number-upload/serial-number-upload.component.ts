@@ -11,9 +11,8 @@ interface UploadValidationSummary {
   total: number;
 }
 
-interface CSVPreviewRow {
+interface PreviewRow {
   serial_number: string;
-  category: string;
   status: 'valid' | 'duplicate' | 'error';
 }
 
@@ -25,18 +24,15 @@ interface CSVPreviewRow {
   styleUrls: ['./serial-number-upload.component.scss']
 })
 export class SerialNumberUploadComponent implements OnInit {
-  selectedUploadMethod: 'csv' | 'manual' = 'csv';
-  defaultCategory = 'gaming';
-  manualCategory = 'gaming';
-  duplicateStrategy: 'skip' | 'replace' | 'error' = 'skip';
-  
-  // CSV Upload
-  selectedFile: File | null = null;
-  csvPreview: CSVPreviewRow[] = [];
+  private readonly fixedCategory = 'gaming';
+  rangeStart = '';
+  rangeEnd = '';
+  rangeError = '';
+  private readonly maxRangeSize = 5000;
   
   // Manual Entry
   manualSerialNumbers = '';
-  manualPreview: string[] = [];
+  manualPreview: PreviewRow[] = [];
   
   // Validation
   validationSummary: UploadValidationSummary | null = null;
@@ -59,87 +55,80 @@ export class SerialNumberUploadComponent implements OnInit {
     this.router.navigate(['../'], { relativeTo: this.activatedRoute });
   }
 
-  onUploadMethodChange(): void {
-    // Clear previous data when switching methods
-    this.csvPreview = [];
-    this.manualPreview = [];
-    this.validationSummary = null;
-    this.selectedFile = null;
-    this.manualSerialNumbers = '';
-  }
+  onRangeChange(): void {
+    this.rangeError = '';
+    const start = this.rangeStart.trim();
+    const end = this.rangeEnd.trim();
 
-  onFileSelect(event: any): void {
-    const file = event.target.files[0];
-    if (file && file.type === 'text/csv') {
-      this.selectedFile = file;
-      this.parseCSV(file);
-    } else {
-      this.toastrService.error('Please select a valid CSV file', 'Invalid File');
-    }
-  }
-
-  private parseCSV(file: File): void {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const csvText = e.target?.result as string;
-      this.processCsvText(csvText);
-    };
-    reader.readAsText(file);
-  }
-
-  private processCsvText(csvText: string): void {
-    const lines = csvText.split('\n').filter(line => line.trim());
-    const preview: CSVPreviewRow[] = [];
-    
-    // Skip header if it exists
-    const startIndex = this.isHeaderRow(lines[0]) ? 1 : 0;
-    
-    for (let i = startIndex; i < Math.min(lines.length, startIndex + 50); i++) {
-      const columns = lines[i].split(',').map(col => col.trim().replace(/"/g, ''));
-      if (columns[0]) {
-        preview.push({
-          serial_number: columns[0],
-          category: columns[1] || this.defaultCategory,
-          status: 'valid' // Will be validated against existing serials
-        });
-      }
-    }
-    
-    this.csvPreview = preview;
-    this.validateSerialNumbers();
-  }
-
-  private isHeaderRow(line: string): boolean {
-    const firstCell = line.split(',')[0].toLowerCase().trim();
-    return firstCell.includes('serial') || firstCell.includes('number') || firstCell === 'sn';
-  }
-
-  onManualEntryChange(): void {
-    if (!this.manualSerialNumbers.trim()) {
+    if (!start || !end) {
       this.manualPreview = [];
       this.validationSummary = null;
       return;
     }
 
-    // Parse manual entry - support both line breaks and commas
-    const serials = this.manualSerialNumbers
+    const generated = this.generateSerialRange(start, end);
+    if (!generated) {
+      this.manualPreview = [];
+      this.validationSummary = null;
+      return;
+    }
+
+    this.manualSerialNumbers = generated.join('\n');
+    this.manualPreview = generated.slice(0, 50).map(serial => ({ serial_number: serial, status: 'valid' }));
+    this.validateSerialNumbers();
+  }
+
+  private generateSerialRange(start: string, end: string): string[] | null {
+    const pattern = /^([a-zA-Z_-]*)(\d+)$/;
+    const startMatch = start.match(pattern);
+    const endMatch = end.match(pattern);
+
+    if (!startMatch || !endMatch) {
+      this.rangeError = 'Use serials like z8301 to z8400 (same prefix + numeric suffix).';
+      return null;
+    }
+
+    const startPrefix = startMatch[1];
+    const endPrefix = endMatch[1];
+    if (startPrefix.toLowerCase() !== endPrefix.toLowerCase()) {
+      this.rangeError = 'Start and end serials must have the same prefix.';
+      return null;
+    }
+
+    const startNumber = Number(startMatch[2]);
+    const endNumber = Number(endMatch[2]);
+    if (!Number.isFinite(startNumber) || !Number.isFinite(endNumber) || startNumber > endNumber) {
+      this.rangeError = 'End serial must be greater than or equal to start serial.';
+      return null;
+    }
+
+    const count = endNumber - startNumber + 1;
+    if (count > this.maxRangeSize) {
+      this.rangeError = `Range too large (${count}). Maximum allowed is ${this.maxRangeSize}.`;
+      return null;
+    }
+
+    const padLength = Math.max(startMatch[2].length, endMatch[2].length);
+    const normalizedPrefix = startPrefix;
+    const serials: string[] = [];
+
+    for (let i = startNumber; i <= endNumber; i++) {
+      serials.push(`${normalizedPrefix}${String(i).padStart(padLength, '0')}`);
+    }
+
+    return serials;
+  }
+
+  private getManualSerials(): string[] {
+    return this.manualSerialNumbers
       .split(/[\n,]/)
       .map(s => s.trim())
       .filter(s => s.length > 0);
-    
-    this.manualPreview = serials.slice(0, 50); // Show first 50 for preview
-    this.validateSerialNumbers();
   }
 
   private async validateSerialNumbers(): Promise<void> {
     try {
-      let serialsToValidate: string[] = [];
-      
-      if (this.selectedUploadMethod === 'csv') {
-        serialsToValidate = this.csvPreview.map(row => row.serial_number);
-      } else {
-        serialsToValidate = this.manualPreview;
-      }
+      const serialsToValidate = this.getManualSerials();
 
       if (serialsToValidate.length === 0) {
         this.validationSummary = null;
@@ -170,18 +159,17 @@ export class SerialNumberUploadComponent implements OnInit {
         total: serialsToValidate.length
       };
 
-      // Update CSV preview with validation results
-      if (this.selectedUploadMethod === 'csv') {
-        this.csvPreview.forEach(row => {
-          if (!row.serial_number || row.serial_number.length < 2) {
-            row.status = 'error';
-          } else if (existingSerials.includes(row.serial_number)) {
-            row.status = 'duplicate';
-          } else {
-            row.status = 'valid';
-          }
-        });
-      }
+      this.manualPreview = this.manualPreview.map((row) => {
+        if (!row.serial_number || row.serial_number.length < 2) {
+          return { ...row, status: 'error' };
+        }
+
+        if (existingSerials.includes(row.serial_number)) {
+          return { ...row, status: 'duplicate' };
+        }
+
+        return { ...row, status: 'valid' };
+      });
 
     } catch (error) {
       console.error('Error validating serial numbers:', error);
@@ -191,13 +179,11 @@ export class SerialNumberUploadComponent implements OnInit {
 
   canUpload(): boolean {
     if (!this.validationSummary) return false;
-    
-    if (this.duplicateStrategy === 'error' && this.validationSummary.duplicates > 0) {
-      return false;
-    }
-    
-    return this.validationSummary.valid > 0 || 
-           (this.duplicateStrategy !== 'error' && this.validationSummary.duplicates > 0);
+
+    // Strict mode: upload only when every generated serial is valid and unique.
+    return this.validationSummary.valid > 0
+      && this.validationSummary.duplicates === 0
+      && this.validationSummary.errors === 0;
   }
 
   async uploadSerialNumbers(): Promise<void> {
@@ -205,30 +191,15 @@ export class SerialNumberUploadComponent implements OnInit {
 
     try {
       this.isUploading = true;
-      
-      let serialNumbers: { serial_number: string; category: string }[] = [];
-      
-      if (this.selectedUploadMethod === 'csv') {
-        serialNumbers = this.csvPreview.map(row => ({
-          serial_number: row.serial_number,
-          category: row.category
-        }));
-      } else {
-        const serials = this.manualSerialNumbers
-          .split(/[\n,]/)
-          .map(s => s.trim())
-          .filter(s => s.length > 0);
-        
-        serialNumbers = serials.map(serial => ({
-          serial_number: serial,
-          category: this.manualCategory
-        }));
-      }
 
-      const result = await this.serialNumberService.bulkUploadWithOptions({
+      const serials = this.getManualSerials();
+      const serialNumbers = serials.map(serial => ({
+        serial_number: serial,
+        category: this.fixedCategory
+      }));
+
+      const result = await this.serialNumberService.bulkUploadRange({
         serialNumbers,
-        duplicateStrategy: this.duplicateStrategy,
-        category: this.selectedUploadMethod === 'csv' ? this.defaultCategory : this.manualCategory
       });
 
       this.toastrService.success(

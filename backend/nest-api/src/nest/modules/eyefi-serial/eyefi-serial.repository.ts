@@ -173,7 +173,10 @@ export class EyeFiSerialRepository extends BaseRepository<EyeFiSerialRecord> {
     return { overall: null, model_distribution: modelDist };
   }
 
-  async bulkCreate(serials: CreateEyeFiSerialDto[]): Promise<{ inserted: number; duplicates: number }> {
+  async bulkCreate(
+    serials: CreateEyeFiSerialDto[],
+    createdBy: string,
+  ): Promise<{ inserted: number; duplicates: number }> {
     if (serials.length === 0) return { inserted: 0, duplicates: 0 };
 
     let inserted = 0;
@@ -198,7 +201,7 @@ export class EyeFiSerialRepository extends BaseRepository<EyeFiSerialRecord> {
           s.qr_code ?? null,
           s.notes ?? null,
           s.category ?? null,
-          s.created_by ?? 'api',
+          createdBy,
         ]);
         if (result[0].affectedRows > 0) inserted++;
         else duplicates++;
@@ -213,6 +216,24 @@ export class EyeFiSerialRepository extends BaseRepository<EyeFiSerialRecord> {
       `SELECT DISTINCT product_model FROM \`${TABLE}\` WHERE product_model IS NOT NULL ORDER BY product_model ASC`,
     );
     return rows.map((r) => r['product_model'] as string);
+  }
+
+  async checkExisting(serialNumbers: string[]): Promise<string[]> {
+    const normalized = (serialNumbers || [])
+      .map((serial) => String(serial || '').trim())
+      .filter(Boolean);
+
+    if (normalized.length === 0) {
+      return [];
+    }
+
+    const placeholders = normalized.map(() => '?').join(',');
+    const rows = await this.rawQuery<RowDataPacket>(
+      `SELECT serial_number FROM \`${TABLE}\` WHERE serial_number IN (${placeholders})`,
+      normalized,
+    );
+
+    return rows.map((row) => String(row['serial_number'] || '').trim()).filter(Boolean);
   }
 
   async getExportData(serialNumbers?: string[]): Promise<EyeFiSerialRecord[]> {
@@ -311,6 +332,22 @@ export class EyeFiSerialRepository extends BaseRepository<EyeFiSerialRecord> {
 
     const email = String(rows[0]?.email || '').trim();
     return email || null;
+  }
+
+  async getActiveUserDisplayNameById(userId: number): Promise<string | null> {
+    const rows = await this.rawQuery<RowDataPacket>(
+      `
+        SELECT TRIM(CONCAT(COALESCE(first, ''), ' ', COALESCE(last, ''))) AS full_name
+        FROM db.users
+        WHERE id = ?
+          AND active = 1
+        LIMIT 1
+      `,
+      [userId],
+    );
+
+    const fullName = String(rows[0]?.full_name || '').trim();
+    return fullName || null;
   }
 
   async updateAssignment(id: number, dto: UpdateAssignmentDto): Promise<number> {

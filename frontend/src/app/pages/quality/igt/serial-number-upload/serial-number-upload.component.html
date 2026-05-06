@@ -1,6 +1,6 @@
 <div class="container-fluid">
   <div class="row justify-content-center">
-    <div class="col-12 col-lg-11 col-xl-10 col-xxl-8">
+    <div class="col-12 col-lg-11 col-xl-10 col-xxl-7">
       
       <!-- Breadcrumb -->
       <nav aria-label="breadcrumb" class="mb-3">
@@ -23,7 +23,7 @@
           </div>
           <div>
             <h2 class="mb-1 text-primary">Upload Serial Numbers</h2>
-            <p class="text-muted mb-0">Import serial numbers via CSV file or manual text entry</p>
+            <p class="text-muted mb-0">Import serial numbers by entering a serial range</p>
           </div>
         </div>
         
@@ -39,188 +39,74 @@
         <div class="card-body p-4">
           <form class="settings-form">
             <div class="body">
-              
-              <!-- Upload Method Selection -->
               <div class="mb-4 pb-4 border-bottom">
                 <div class="mb-3">
-                  <h3 class="h5 mb-1">Upload Method</h3>
+                  <h3 class="h5 mb-1">Serial Range</h3>
                   <p class="text-muted mb-0">
-                    Choose how you want to import your serial numbers.
+                    Enter a start and end serial. All values in between will be generated automatically as Gaming Equipment.
                   </p>
                 </div>
 
                 <div class="row">
-                  <div class="col-12 mb-3">
-                    <div class="btn-group w-100" role="group">
-                      <input type="radio" class="btn-check" name="uploadMethod" id="csvMethod" value="csv" 
-                             [(ngModel)]="selectedUploadMethod" (ngModelChange)="onUploadMethodChange()" autocomplete="off" checked>
-                      <label class="btn btn-outline-primary" for="csvMethod">
-                        <i class="mdi mdi-file-upload me-2"></i>CSV File Upload
-                      </label>
-
-                      <input type="radio" class="btn-check" name="uploadMethod" id="manualMethod" value="manual" 
-                             [(ngModel)]="selectedUploadMethod" (ngModelChange)="onUploadMethodChange()" autocomplete="off">
-                      <label class="btn btn-outline-primary" for="manualMethod">
-                        <i class="mdi mdi-format-list-bulleted me-2"></i>Manual Text Entry
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- CSV Upload Section -->
-              <div class="mb-4 pb-4 border-bottom" *ngIf="selectedUploadMethod === 'csv'">
-                <div class="mb-3">
-                  <h3 class="h5 mb-1">CSV File Upload</h3>
-                  <p class="text-muted mb-0">
-                    Upload a CSV file containing serial numbers with optional category information.
-                  </p>
-                </div>
-
-                <div class="row">
-                  <div class="col-12 mb-3">
+                  <div class="col-md-6 mb-3">
                     <label class="form-label">
-                      CSV File <span class="text-danger">*</span>
+                      Start Serial <span class="text-danger">*</span>
                     </label>
-                    <input type="file" class="form-control" accept=".csv" (change)="onFileSelect($event)">
-                    <div class="form-text">
-                      <i class="mdi mdi-information-outline me-1"></i>
-                      Upload a CSV file with serial numbers. First column should contain the serial numbers.
-                    </div>
+                    <input class="form-control font-monospace" type="text" name="rangeStart" [(ngModel)]="rangeStart" (ngModelChange)="onRangeChange()"
+                           placeholder="Example: z8301" />
                   </div>
 
                   <div class="col-md-6 mb-3">
                     <label class="form-label">
-                      Default Category
+                      End Serial <span class="text-danger">*</span>
                     </label>
-                    <select class="form-select" [(ngModel)]="defaultCategory">
-                      <option value="gaming">Gaming Equipment</option>
-                      <option value="peripheral">Peripheral Devices</option>
-                      <option value="system">System Components</option>
-                      <option value="other">Other Hardware</option>
-                    </select>
-                    <div class="form-text">
-                      <i class="mdi mdi-information-outline me-1"></i>
-                      Category applied to serial numbers without a category column.
+                    <input class="form-control font-monospace" type="text" name="rangeEnd" [(ngModel)]="rangeEnd" (ngModelChange)="onRangeChange()"
+                           placeholder="Example: z8400" />
+                  </div>
+
+                  <div class="col-12" *ngIf="rangeError">
+                    <div class="alert alert-warning mb-3">
+                      <i class="mdi mdi-alert-circle-outline me-1"></i>{{ rangeError }}
                     </div>
                   </div>
 
-                  <div class="col-md-6 mb-3">
-                    <label class="form-label">
-                      Duplicate Strategy
-                    </label>
-                    <select class="form-select" [(ngModel)]="duplicateStrategy">
-                      <option value="skip">Skip Duplicates (Recommended)</option>
-                      <option value="replace">Replace Existing</option>
-                      <option value="error">Fail on Duplicates</option>
-                    </select>
-                    <div class="form-text">
-                      <i class="mdi mdi-information-outline me-1"></i>
-                      How to handle existing serial numbers during upload.
+                  <div class="col-12">
+                    <div class="alert alert-info mb-0">
+                      <i class="mdi mdi-shield-check-outline me-1"></i>
+                      Duplicate serial numbers are blocked. Upload is enabled only when the full range is unique.
                     </div>
                   </div>
                 </div>
 
-                <!-- File Preview -->
-                <div class="alert alert-light border p-3" *ngIf="csvPreview.length > 0">
+                <!-- Preview Table -->
+                <div class="alert alert-light border p-3" *ngIf="manualPreview.length > 0">
                   <h6 class="fw-bold text-secondary mb-2">
                     <i class="mdi mdi-eye me-1"></i>
-                    CSV Preview ({{csvPreview.length}} rows)
+                    Preview ({{manualPreview.length}} shown)
                   </h6>
-                  <div class="table-responsive" style="max-height: 200px;">
-                    <table class="table table-sm table-bordered">
+                  <div class="small text-muted mb-2">
+                    Generated from range {{ rangeStart }} to {{ rangeEnd }}.
+                  </div>
+                  <div class="table-responsive" style="max-height: 240px;">
+                    <table class="table table-sm table-bordered mb-0 preview-table">
                       <thead class="table-light">
                         <tr>
                           <th>Serial Number</th>
-                          <th>Category</th>
-                          <th>Status</th>
+                          <th style="width: 140px;">Status</th>
                         </tr>
                       </thead>
                       <tbody>
-                        <tr *ngFor="let row of csvPreview; let i = index">
-                          <td class="font-monospace">{{row.serial_number}}</td>
-                          <td>{{row.category}}</td>
+                        <tr *ngFor="let row of manualPreview">
+                          <td class="font-monospace serial-cell">{{ row.serial_number }}</td>
                           <td>
                             <span class="badge" [ngClass]="getStatusBadgeClass(row.status)">
                               <i [ngClass]="getStatusIcon(row.status)" class="me-1"></i>
-                              {{getStatusText(row.status)}}
+                              {{ getStatusText(row.status) }}
                             </span>
                           </td>
                         </tr>
                       </tbody>
                     </table>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Manual Entry Section -->
-              <div class="mb-4 pb-4 border-bottom" *ngIf="selectedUploadMethod === 'manual'">
-                <div class="mb-3">
-                  <h3 class="h5 mb-1">Manual Text Entry</h3>
-                  <p class="text-muted mb-0">
-                    Enter serial numbers manually, one per line or separated by commas.
-                  </p>
-                </div>
-
-                <div class="row">
-                  <div class="col-12 mb-3">
-                    <label class="form-label">
-                      Serial Numbers <span class="text-danger">*</span>
-                    </label>
-                    <textarea class="form-control font-monospace" rows="8" 
-                              [(ngModel)]="manualSerialNumbers" 
-                              (ngModelChange)="onManualEntryChange()"
-                              placeholder="Enter serial numbers here...&#10;Examples:&#10;SN001&#10;SN002&#10;SN003&#10;&#10;Or comma-separated: SN001, SN002, SN003">
-                    </textarea>
-                    <div class="form-text">
-                      <i class="mdi mdi-information-outline me-1"></i>
-                      Enter one serial number per line, or separate multiple numbers with commas.
-                    </div>
-                  </div>
-
-                  <div class="col-md-6 mb-3">
-                    <label class="form-label">
-                      Category
-                    </label>
-                    <select class="form-select" [(ngModel)]="manualCategory">
-                      <option value="gaming">Gaming Equipment</option>
-                      <option value="peripheral">Peripheral Devices</option>
-                      <option value="system">System Components</option>
-                      <option value="other">Other Hardware</option>
-                    </select>
-                    <div class="form-text">
-                      <i class="mdi mdi-information-outline me-1"></i>
-                      Category applied to all manually entered serial numbers.
-                    </div>
-                  </div>
-
-                  <div class="col-md-6 mb-3">
-                    <label class="form-label">
-                      Duplicate Strategy
-                    </label>
-                    <select class="form-select" [(ngModel)]="duplicateStrategy">
-                      <option value="skip">Skip Duplicates (Recommended)</option>
-                      <option value="replace">Replace Existing</option>
-                      <option value="error">Fail on Duplicates</option>
-                    </select>
-                    <div class="form-text">
-                      <i class="mdi mdi-information-outline me-1"></i>
-                      How to handle existing serial numbers during upload.
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Manual Entry Preview -->
-                <div class="alert alert-light border p-3" *ngIf="manualPreview.length > 0">
-                  <h6 class="fw-bold text-secondary mb-2">
-                    <i class="mdi mdi-eye me-1"></i>
-                    Preview ({{manualPreview.length}} serial numbers)
-                  </h6>
-                  <div class="d-flex flex-wrap gap-2">
-                    <span *ngFor="let item of manualPreview" 
-                          class="badge bg-light text-dark border font-monospace">
-                      {{item}}
-                    </span>
                   </div>
                 </div>
               </div>

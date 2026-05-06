@@ -54,6 +54,12 @@ export class EyeFiSerialController {
     return this.eyeFiSerialService.getBySerialNumber(serialNumber);
   }
 
+  @Post('check-existing')
+  @Permissions('write')
+  async checkExisting(@Body('serial_numbers') serialNumbers: string[] = []) {
+    return this.eyeFiSerialService.checkExisting(serialNumbers);
+  }
+
   @Put('serial/:serialNumber/status')
   @Permissions('write')
   async updateStatus(
@@ -125,8 +131,11 @@ export class EyeFiSerialController {
 
   @Post('bulk')
   @Permissions('write')
-  async bulkCreate(@Body() dto: BulkCreateEyeFiSerialDto) {
-    return this.eyeFiSerialService.bulkCreate(dto);
+  async bulkCreate(
+    @Body() dto: BulkCreateEyeFiSerialDto,
+    @CurrentUserId() userId: number,
+  ) {
+    return this.eyeFiSerialService.bulkCreate(dto, userId);
   }
 
   // ── Parameterised routes ───────────────────────────────────────────────────
