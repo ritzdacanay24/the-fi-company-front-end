@@ -1,4 +1,4 @@
-import { ColDef, GridApi, GridOptions } from "ag-grid-community";
+﻿import { ColDef, GridApi, GridOptions } from "ag-grid-community";
 import { Component, Input, OnInit } from "@angular/core";
 import { ReactiveFormsModule } from "@angular/forms";
 import { NgSelectModule } from "@ng-select/ng-select";
@@ -73,6 +73,7 @@ export class IgtListComponent implements OnInit {
       field: "igtSerialNumber",
       headerName: "IGT Serial Number",
       filter: "agMultiColumnFilter",
+      sort: "asc",
       cellRenderer: (params: any) => {
         if (!params.value) return '';
         const serialNumber = params.value.toString();
@@ -377,3 +378,5 @@ export class IgtListComponent implements OnInit {
     );
   }
 }
+
+

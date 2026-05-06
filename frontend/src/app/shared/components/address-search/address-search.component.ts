@@ -54,6 +54,7 @@ export class AddressSearchComponent implements OnInit {
   @Input() clearSearch: boolean = false;
   @Input() addTagText: string = "Add address: ";
   @Input() showCategories: boolean = false;
+  @Input() publicMode: boolean = false;
   @Input() ngClass: string | any;
 
   data$: Observable<any[]>;
@@ -101,7 +102,7 @@ export class AddressSearchComponent implements OnInit {
           this.notifyParentItsLoading.emit(this.dataLoading);
         }),
         switchMap((term) =>
-          this.api.searchAddress(term).pipe(
+          (this.publicMode ? this.api.searchAddressPublic(term) : this.api.searchAddress(term)).pipe(
             catchError(() => of([])), // empty list on error
             tap((data) => {
               this.dataLoading = false;

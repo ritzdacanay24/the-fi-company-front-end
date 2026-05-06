@@ -148,7 +148,8 @@
             </label>
             <div class="col-12 col-lg-9">
               <app-address-search (notifyParent)="notifyParent($event)" [value]="f.location.value"
-                [disabled]="this.form.disabled" form_label="Location of Issue" [showLabel]="false">
+                [disabled]="this.form.disabled" form_label="Location of Issue" [showLabel]="false"
+                [publicMode]="true">
               </app-address-search>
             </div>
           </div>

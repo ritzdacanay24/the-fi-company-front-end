@@ -101,11 +101,14 @@ export class SchedulerService extends DataService<any> {
     return this.http.get<any>(`${schedulerV2Url}/${woNumber}`);
   }
 
-  searchByQadPartNumber(q: string, currentCompanySelection: string): Observable<any> {
+  searchByQadPartNumber(q: string, currentCompanySelection: string, publicMode = false): Observable<any> {
     const safeQuery = encodeURIComponent(String(q || '').trim());
     const safeCompany = String(currentCompanySelection || '').trim();
+    const endpoint = publicMode
+      ? `apiV2/qad/public/searchCustomerPartNumber?text=${safeQuery}`
+      : `apiV2/qad/searchCustomerPartNumber?text=${safeQuery}`;
 
-    return this.http.get<any[]>(`apiV2/qad/searchCustomerPartNumber?text=${safeQuery}`).pipe(
+    return this.http.get<any[]>(endpoint).pipe(
       // Preserve response shape expected by existing ng-select templates.
       map((rows) => (rows || [])
         .filter((row) => !safeCompany || String(row?.cp_cust || row?.CP_CUST || '').trim() === safeCompany)

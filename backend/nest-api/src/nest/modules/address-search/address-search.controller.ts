@@ -1,6 +1,7 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { RolePermissionGuard } from '../access-control';
 import { AddressSearchService } from './address-search.service';
+import { Public } from '@/nest/decorators/public.decorator';
 
 @Controller('address-search')
 @UseGuards(RolePermissionGuard)
@@ -9,6 +10,12 @@ export class AddressSearchController {
 
   @Get('addressSearch')
   async addressSearch(@Query('q') q?: string) {
+    return this.service.addressSearch(q);
+  }
+
+  @Public()
+  @Get('public/addressSearch')
+  async publicAddressSearch(@Query('q') q?: string) {
     return this.service.addressSearch(q);
   }
 

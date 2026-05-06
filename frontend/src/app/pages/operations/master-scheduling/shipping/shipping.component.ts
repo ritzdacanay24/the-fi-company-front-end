@@ -2102,7 +2102,7 @@ export class ShippingComponent implements OnInit, OnDestroy {
           };
           try {
             const res = await this.api.saveMisc(miscData);
-            params.data.misc = res;
+            params.data.misc = this.normalizeMiscSaveResponse(res, miscData);
             this.sendAndUpdate(params.data, params.data.id);
           } catch (err) {
             console.error('Error saving owner:', err);
@@ -2899,6 +2899,7 @@ export class ShippingComponent implements OnInit, OnDestroy {
     // onFilterChanged: params => this.updateUrl(params),
     // onSortChanged: params => this.updateUrl(params),
     onCellEditingStopped: (event) => {
+      if (event.column?.getColId?.() === 'misc.userName') return;
       if (event.oldValue == event.newValue || event.value === undefined) return;
       this.update(event.data);
     },
@@ -2923,7 +2924,26 @@ export class ShippingComponent implements OnInit, OnDestroy {
     },
   };
 
+  private normalizeMiscSaveResponse(response: any, fallbackMisc: any): any {
+    const payload = response && typeof response === 'object' && response.data && typeof response.data === 'object'
+      ? response.data
+      : response;
+
+    if (!payload || typeof payload !== 'object') {
+      return { ...(fallbackMisc || {}) };
+    }
+
+    return {
+      ...(fallbackMisc || {}),
+      ...payload,
+    };
+  }
+
   public async update(data: any) {
+    if (!data.misc || typeof data.misc !== 'object') {
+      data.misc = {};
+    }
+
     data.misc.shippingMisc = 1;
     data.misc.so = data.sales_order_line_number; //add on insert since so is not available yet
 
@@ -2939,7 +2959,7 @@ export class ShippingComponent implements OnInit, OnDestroy {
     try {
       this.gridApi?.showLoadingOverlay();
       let res = await this.api.saveMisc(data.misc);
-      data.misc = res;
+      data.misc = this.normalizeMiscSaveResponse(res, data.misc);
       this.sendAndUpdate(data, data.id);
       this.gridApi?.hideOverlay();
     } catch (err) {

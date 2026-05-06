@@ -109,11 +109,6 @@ export class MaterialRequestController {
     return this.service.searchItemByQadPartNumber(rawItems);
   }
 
-  @Get('validationConnectionStatus')
-  async validationConnectionStatus() {
-    return this.service.getValidationConnectionStatus();
-  }
-
   @Post('sendBackToValidation')
   @Permissions('write')
   async sendBackToValidation(@Body() payload: { id: number }) {

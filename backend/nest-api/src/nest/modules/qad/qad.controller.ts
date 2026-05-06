@@ -1,6 +1,7 @@
 import { Controller, Get, Inject, Query, UseGuards } from '@nestjs/common';
 import { RolePermissionGuard } from '../access-control';
 import { QadService } from './qad.service';
+import { Public } from '@/nest/decorators/public.decorator';
 
 @Controller('qad')
 @UseGuards(RolePermissionGuard)
@@ -31,6 +32,12 @@ export class QadController {
 
   @Get('searchCustomerPartNumber')
   async searchCustomerPartNumber(@Query('text') text?: string) {
+    return this.qadService.searchCustomerPartNumber(text);
+  }
+
+  @Public()
+  @Get('public/searchCustomerPartNumber')
+  async searchCustomerPartNumberPublic(@Query('text') text?: string) {
     return this.qadService.searchCustomerPartNumber(text);
   }
 

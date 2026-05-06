@@ -12,7 +12,7 @@ import { ToastrService } from "ngx-toastr";
 import { Router, NavigationEnd } from "@angular/router";
 import { filter } from "rxjs/operators";
 import { AuthenticationService } from "./core/services/auth.service";
-import { MaterialRequestService } from "./core/api/operations/material-request/material-request.service";
+import { HealthService } from "./core/api/operations/health/health.service";
 
 export function setThemeColor(data) {
   setTimeout(function () {
@@ -48,7 +48,7 @@ export class AppComponent implements OnInit, OnDestroy {
     private toastr: ToastrService,
     private router: Router,
     private authenticationService: AuthenticationService,
-    private materialRequestService: MaterialRequestService,
+    private healthService: HealthService,
   ) {
     ngbModalConfig.backdrop = "static";
     ngbModalConfig.keyboard = false;
@@ -192,7 +192,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private async checkValidationConnection(): Promise<void> {
     this.isValidationServiceChecking = true;
     try {
-      const status = await this.materialRequestService.getValidationConnectionStatus();
+      const status = await this.healthService.getQadConnectionStatus();
       this.isValidationServiceAvailable = !!status?.isConnected;
       this.validationServiceMessage = status?.message || "";
     } catch {

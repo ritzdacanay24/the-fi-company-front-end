@@ -82,7 +82,7 @@
                 <div class="alert alert-light border p-3" *ngIf="manualPreview.length > 0">
                   <h6 class="fw-bold text-secondary mb-2">
                     <i class="mdi mdi-eye me-1"></i>
-                    Preview ({{manualPreview.length}} shown)
+                    Preview ({{manualPreview.length}} serial numbers)
                   </h6>
                   <div class="small text-muted mb-2">
                     Generated from range {{ rangeStart }} to {{ rangeEnd }}.
@@ -96,7 +96,7 @@
                         </tr>
                       </thead>
                       <tbody>
-                        <tr *ngFor="let row of manualPreview">
+                        <tr *ngFor="let row of manualPreview; trackBy: trackBySerial">
                           <td class="font-monospace serial-cell">{{ row.serial_number }}</td>
                           <td>
                             <span class="badge" [ngClass]="getStatusBadgeClass(row.status)">

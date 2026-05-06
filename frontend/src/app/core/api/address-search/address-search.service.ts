@@ -17,6 +17,10 @@ export class AddressSearch extends DataService<any> {
     return this.http.get<any>(`${url}/addressSearch?q=${encodeURIComponent(q || "")}`);
   }
 
+  searchAddressPublic(q): Observable<any> {
+    return this.http.get<any>(`${url}/public/addressSearch?q=${encodeURIComponent(q || "")}`);
+  }
+
   searchNearbyAirport({ q, lat, lon, radius, limit, categorySet }: any) {
     return firstValueFrom(
       this.http.get<any>(

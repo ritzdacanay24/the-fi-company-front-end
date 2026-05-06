@@ -352,24 +352,6 @@ export class MaterialRequestService {
     });
   }
 
-  async getValidationConnectionStatus() {
-    try {
-      await this.qadOdbcService.query('SELECT 1 AS ok');
-      return {
-        isConnected: true,
-        message: 'QAD is online.',
-      };
-    } catch (error) {
-      this.logger.warn(
-        `QAD connection check failed: ${error instanceof Error ? error.message : String(error)}`,
-      );
-      return {
-        isConnected: false,
-        message: 'QAD is currently unreachable. QAD-dependent features will be bypassed until connectivity is restored.',
-      };
-    }
-  }
-
   async sendBackToValidation(id: number) {
     const mrf = await this.getById(id);
     if (!mrf.active) {

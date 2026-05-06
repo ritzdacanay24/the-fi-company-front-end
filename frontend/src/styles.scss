@@ -30,6 +30,24 @@ body.qad-validation-banner-visible .navbar-menu {
   top: var(--qad-validation-banner-height) !important;
 }
 
+body.qad-validation-banner-visible .checklist-fullscreen-wrapper {
+  height: calc(100vh - var(--qad-validation-banner-height)) !important;
+  margin-top: var(--qad-validation-banner-height) !important;
+}
+
+body.qad-validation-banner-visible .public-form-wrapper {
+  padding-top: var(--qad-validation-banner-height) !important;
+}
+
+body.qad-validation-banner-visible app-menu {
+  display: block;
+  padding-top: var(--qad-validation-banner-height);
+}
+
+body.qad-validation-banner-visible .eyefi-logout-button {
+  top: calc(24px + var(--qad-validation-banner-height)) !important;
+}
+
 body.qad-validation-banner-visible .app-content .content {
   margin-top: calc(70px + var(--qad-validation-banner-height)) !important;
 }

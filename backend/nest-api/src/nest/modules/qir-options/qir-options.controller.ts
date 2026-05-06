@@ -10,6 +10,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { Public } from '@/nest/decorators/public.decorator';
 import { Permissions, RolePermissionGuard } from '../access-control';
 import { QirOptionsService } from './qir-options.service';
 
@@ -22,6 +23,7 @@ export class QirOptionsController {
    * Returns same groupable shape as old qir_settings/find?active=1.
    * No auth guard so the form works for external users.
    */
+  @Public()
   @Get('form-settings')
   getFormSettings() {
     return this.service.getFormSettings();

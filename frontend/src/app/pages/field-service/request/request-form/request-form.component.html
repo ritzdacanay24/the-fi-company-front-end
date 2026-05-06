@@ -248,6 +248,7 @@
             <app-address-search (notifyParent)="notifyParent($event)"
               [ngClass]="{ 'is-invalid': submitted && f.address1.errors }" [editableSearchTerm]="false" [hideSelected]="false"
               [showLabel]="false" [placeholder]="'Search by property name or address'" [showCategories]="true" [required]="true"
+              [publicMode]="publicAddressSearch"
               appendToBody="body" [addTag]="false" [value]="f.address1.value" [disabled]="disabled"
               [appendToBody]="'body'"></app-address-search>
           </div>

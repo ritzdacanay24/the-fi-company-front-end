@@ -189,7 +189,7 @@ export class RequestPublicV2Component {
           this.productSearchLoading[uid] = true;
         }),
         switchMap((term) =>
-          this.schedulerService.searchByQadPartNumber(term, "").pipe(
+          this.schedulerService.searchByQadPartNumber(term, "", true).pipe(
             catchError(() => of([])),
             tap(() => {
               this.productSearchLoading[uid] = false;

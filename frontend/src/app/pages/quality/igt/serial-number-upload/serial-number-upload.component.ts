@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+﻿import { Component, OnInit } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { SharedModule } from '@app/shared/shared.module';
@@ -29,14 +29,14 @@ export class SerialNumberUploadComponent implements OnInit {
   rangeEnd = '';
   rangeError = '';
   private readonly maxRangeSize = 5000;
-  
+
   // Manual Entry
   manualSerialNumbers = '';
   manualPreview: PreviewRow[] = [];
-  
+
   // Validation
   validationSummary: UploadValidationSummary | null = null;
-  
+
   // Loading states
   isUploading = false;
 
@@ -53,6 +53,10 @@ export class SerialNumberUploadComponent implements OnInit {
 
   goBack(): void {
     this.router.navigate(['../'], { relativeTo: this.activatedRoute });
+  }
+
+  trackBySerial(_index: number, row: PreviewRow): string {
+    return row.serial_number;
   }
 
   onRangeChange(): void {
@@ -74,7 +78,7 @@ export class SerialNumberUploadComponent implements OnInit {
     }
 
     this.manualSerialNumbers = generated.join('\n');
-    this.manualPreview = generated.slice(0, 50).map(serial => ({ serial_number: serial, status: 'valid' }));
+    this.manualPreview = generated.map(serial => ({ serial_number: serial, status: 'valid' as const }));
     this.validateSerialNumbers();
   }
 
@@ -135,9 +139,8 @@ export class SerialNumberUploadComponent implements OnInit {
         return;
       }
 
-      // Call validation service (you'll need to implement this in your service)
       const existingSerials = await this.serialNumberService.checkExistingSerials(serialsToValidate);
-      
+
       let valid = 0;
       let duplicates = 0;
       let errors = 0;
@@ -161,14 +164,12 @@ export class SerialNumberUploadComponent implements OnInit {
 
       this.manualPreview = this.manualPreview.map((row) => {
         if (!row.serial_number || row.serial_number.length < 2) {
-          return { ...row, status: 'error' };
+          return { ...row, status: 'error' as const };
         }
-
         if (existingSerials.includes(row.serial_number)) {
-          return { ...row, status: 'duplicate' };
+          return { ...row, status: 'duplicate' as const };
         }
-
-        return { ...row, status: 'valid' };
+        return { ...row, status: 'valid' as const };
       });
 
     } catch (error) {
@@ -179,8 +180,6 @@ export class SerialNumberUploadComponent implements OnInit {
 
   canUpload(): boolean {
     if (!this.validationSummary) return false;
-
-    // Strict mode: upload only when every generated serial is valid and unique.
     return this.validationSummary.valid > 0
       && this.validationSummary.duplicates === 0
       && this.validationSummary.errors === 0;
@@ -198,16 +197,13 @@ export class SerialNumberUploadComponent implements OnInit {
         category: this.fixedCategory
       }));
 
-      const result = await this.serialNumberService.bulkUploadRange({
-        serialNumbers,
-      });
+      const result = await this.serialNumberService.bulkUploadRange({ serialNumbers });
 
       this.toastrService.success(
         `Successfully uploaded ${result.created} serial numbers`,
         'Upload Complete'
       );
 
-      // Navigate back to manager
       this.goBack();
 
     } catch (error) {

@@ -91,6 +91,7 @@ export class RequestFormComponent {
   myInvalid = [];
   
   @Input() showCaptcha = true
+  @Input() publicAddressSearch = false;
   
   @Input() disabled = false;
 
@@ -263,7 +264,7 @@ export class RequestFormComponent {
         tap(() => {
           this.dataLoading = true
         }),
-        switchMap(term => this.api.searchByQadPartNumber(term, this.currentCompanySelection).pipe(
+        switchMap(term => this.api.searchByQadPartNumber(term, this.currentCompanySelection, this.publicAddressSearch).pipe(
           catchError(() => of([])), // empty list on error
           tap((res) => {
             this.dataLoading = false

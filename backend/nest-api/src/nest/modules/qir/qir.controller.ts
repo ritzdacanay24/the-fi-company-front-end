@@ -1,5 +1,6 @@
 import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { Public } from '@/nest/decorators/public.decorator';
 import { Permissions, RolePermissionGuard } from '../access-control';
 import { AttachmentsService } from '../attachments/attachments.service';
 import { QirService } from './qir.service';
@@ -53,11 +54,13 @@ export class QirController {
     return this.service.create(payload);
   }
 
+  @Public()
   @Post('create-public')
   async createPublic(@Body() payload: Record<string, unknown>) {
     return this.service.create(payload);
   }
 
+  @Public()
   @Post('upload-public')
   @UseInterceptors(FileInterceptor('file'))
   async uploadPublic(

@@ -17,8 +17,10 @@ export class OwnerRendererV2Component {
   init(params: any) {
     this.params = params;
     this.data = this.params.data.misc;
+    const currentOwner = String(this.data?.userName || "").trim();
+    const hasOwner = currentOwner.length > 0;
 
-    if (!isEmpty(this.data) && this.data.userName != "") {
+    if (!isEmpty(this.data) && hasOwner) {
       if (isEmpty(this.params.data.recent_owner_changes)) {
         this.iconColor = "text-info-emphasis";
       } else if (!isEmpty(this.params.data.recent_owner_changes)) {
@@ -31,7 +33,7 @@ export class OwnerRendererV2Component {
         <div class="card-header d-flex align-items-center"><h4 class="card-title mb-0">${this.data.so}</h4></div>
             <div class="card-body" style="overflow:hidden">
               <h6 class="mb-2">Owner Info</h6>
-              Current owner is ${this.data.userName}
+              Current owner is ${currentOwner}
             </div>
           </div>
         `,
@@ -54,6 +56,25 @@ export class OwnerRendererV2Component {
             <div class="card-body" style="overflow:hidden">
               <h6 class="mb-2">Owner Info</h6>
               Owner was changed today. Click on icon to view change.
+            </div>
+          </div>
+        `,
+        placement: "bottom-start",
+        allowHTML: true,
+        theme: "light",
+        offset: [20, -3],
+        trigger: "mouseenter",
+      });
+    } else if (!isEmpty(this.data)) {
+      this.iconColor = "text-muted";
+
+      this.instance = tippy(params.eGridCell, {
+        content: `
+        <div class="card shadow-md" style="min-width:300px">
+        <div class="card-header d-flex align-items-center"><h4 class="card-title mb-0">${this.data.so}</h4></div>
+            <div class="card-body" style="overflow:hidden">
+              <h6 class="mb-2">Owner Info</h6>
+              No owner assigned yet.
             </div>
           </div>
         `,
