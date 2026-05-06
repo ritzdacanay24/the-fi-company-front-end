@@ -5,14 +5,13 @@ import { ToastrService } from "ngx-toastr";
 import { NAVIGATION_ROUTE } from "../user-constant";
 import moment from "moment";
 import { AuthenticationService } from "@app/core/services/auth.service";
-import { UserSearchV1Component } from "@app/shared/components/user-search-v1/user-search-v1.component";
 import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErrors";
 import { NewUserService } from "@app/core/api/users/users.service";
 import { UserCreateFormComponent } from "../forms/create-form/user-create-form.component";
 
 @Component({
   standalone: true,
-  imports: [SharedModule, UserCreateFormComponent, UserSearchV1Component],
+  imports: [SharedModule, UserCreateFormComponent],
   selector: "app-user-create",
   templateUrl: "./user-create.component.html",
 })

@@ -1,18 +1,19 @@
-import { Component, EventEmitter, Input, Output } from "@angular/core";
+import { Component, ElementRef, EventEmitter, Input, Output, ViewChild } from "@angular/core";
 import { FormBuilder, Validators } from "@angular/forms";
 import { SharedModule } from "@app/shared/shared.module";
 import { UserSearchV1Component } from "@app/shared/components/user-search-v1/user-search-v1.component";
-import { UserFormComponent } from "@app/pages/operations/maintenance/user/user-form/user-form.component";
 import { accessRight, departments } from "../../user-constant";
 import { merge } from "rxjs";
 
 @Component({
   standalone: true,
-  imports: [SharedModule, UserFormComponent, UserSearchV1Component],
+  imports: [SharedModule, UserSearchV1Component],
   selector: "app-user-create-form",
   templateUrl: "./user-create-form.component.html",
 })
 export class UserCreateFormComponent {
+  @ViewChild('badgeInput') badgeInput?: ElementRef<HTMLInputElement>;
+
   constructor(private fb: FormBuilder) {
     merge(
       this.form.get("orgChartPlaceHolder").valueChanges,
@@ -70,6 +71,51 @@ export class UserCreateFormComponent {
     this.form.get(key).patchValue(e ? 1 : 0);
   }
 
+  onTwoStepToggle() {
+    this.setBooleanToNumber('enableTwostep');
+
+    if (this.isTwoStepEnabled() && !this.isEmailValidForNotifications()) {
+      this.form.get('email')?.markAsTouched();
+    }
+  }
+
+  isTwoStepEnabled(): boolean {
+    return !!this.form.get('enableTwostep')?.value;
+  }
+
+  isEmailValidForNotifications(): boolean {
+    const emailControl = this.form.get('email');
+    return !!emailControl?.value && !emailControl?.invalid;
+  }
+
+  getNotificationTarget(): string {
+    const email = this.form.get('email')?.value;
+    return email || 'the email address above';
+  }
+
+  focusBadgeInput() {
+    this.badgeInput?.nativeElement?.focus();
+    this.badgeInput?.nativeElement?.select();
+  }
+
+  onBadgeInput(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const normalized = this.normalizeCardNumber(input.value);
+    input.value = normalized;
+    this.form
+      .get('card_number')
+      ?.patchValue(normalized ? Number(normalized) : null, { emitEvent: false });
+  }
+
+  onBadgeEnter(event: KeyboardEvent) {
+    event.preventDefault();
+    this.onBadgeInput(event as unknown as Event);
+  }
+
+  private normalizeCardNumber(value: string): string {
+    return String(value || '').replace(/\D+/g, '').slice(0, 20);
+  }
+
   form = this.fb.group({
     access: [1],
     active: [1],
@@ -91,5 +137,6 @@ export class UserCreateFormComponent {
     openPosition: 0,
     hire_date: null,
     org_chart_department: "",
+    card_number: [null],
   });
 }

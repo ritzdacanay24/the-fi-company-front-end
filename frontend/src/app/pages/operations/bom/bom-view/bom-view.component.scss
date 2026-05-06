@@ -1,0 +1,107 @@
+:host ::ng-deep .ag-theme-quartz .ag-cell.bom-level-cell {
+	color: #0f172a;
+	font-weight: 600;
+	text-align: center;
+}
+
+:host ::ng-deep .ag-theme-quartz .ag-cell.bom-level-parent {
+	font-weight: 700;
+}
+
+:host ::ng-deep .ag-theme-quartz .ag-cell.bom-level-0 { background-color: #e8f4fd; }
+:host ::ng-deep .ag-theme-quartz .ag-cell.bom-level-1 { background-color: #dff3f8; }
+:host ::ng-deep .ag-theme-quartz .ag-cell.bom-level-2 { background-color: #d8f5ee; }
+:host ::ng-deep .ag-theme-quartz .ag-cell.bom-level-3 { background-color: #d8ebff; }
+:host ::ng-deep .ag-theme-quartz .ag-cell.bom-level-4 { background-color: #e8e5ff; }
+:host ::ng-deep .ag-theme-quartz .ag-cell.bom-level-5 { background-color: #f8e4ff; }
+:host ::ng-deep .ag-theme-quartz .ag-cell.bom-level-6 { background-color: #e6f8f2; }
+:host ::ng-deep .ag-theme-quartz .ag-cell.bom-level-7 { background-color: #ffe8f4; }
+:host ::ng-deep .ag-theme-quartz .ag-cell.bom-level-8 { background-color: #f0f3f6; }
+:host ::ng-deep .ag-theme-quartz .ag-cell.bom-level-9 { background-color: #e3f1ff; }
+:host ::ng-deep .ag-theme-quartz .ag-cell.bom-level-10 { background-color: #f5f7fa; }
+:host ::ng-deep .ag-theme-quartz .ag-cell.bom-level-11 { background-color: #e9eef5; }
+:host ::ng-deep .ag-theme-quartz .ag-cell.bom-level-12 { background-color: #f6ebe6; }
+:host ::ng-deep .ag-theme-quartz .ag-cell.bom-level-13 { background-color: #e6f0f2; }
+:host ::ng-deep .ag-theme-quartz .ag-cell.bom-level-14 { background-color: #ffe9df; }
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-cell,
+:host-context(.dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-cell,
+:host-context(body.dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-cell,
+:host-context(.theme-dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-cell {
+	color: #e6edf3;
+}
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-0,
+:host-context(.dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-0,
+:host-context(body.dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-0,
+:host-context(.theme-dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-0 { background-color: #1f2f3d; }
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-1,
+:host-context(.dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-1,
+:host-context(body.dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-1,
+:host-context(.theme-dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-1 { background-color: #1d3340; }
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-2,
+:host-context(.dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-2,
+:host-context(body.dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-2,
+:host-context(.theme-dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-2 { background-color: #1c3a35; }
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-3,
+:host-context(.dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-3,
+:host-context(body.dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-3,
+:host-context(.theme-dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-3 { background-color: #213450; }
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-4,
+:host-context(.dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-4,
+:host-context(body.dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-4,
+:host-context(.theme-dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-4 { background-color: #2a2f52; }
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-5,
+:host-context(.dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-5,
+:host-context(body.dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-5,
+:host-context(.theme-dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-5 { background-color: #3a2c4f; }
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-6,
+:host-context(.dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-6,
+:host-context(body.dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-6,
+:host-context(.theme-dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-6 { background-color: #234139; }
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-7,
+:host-context(.dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-7,
+:host-context(body.dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-7,
+:host-context(.theme-dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-7 { background-color: #4a2e40; }
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-8,
+:host-context(.dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-8,
+:host-context(body.dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-8,
+:host-context(.theme-dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-8 { background-color: #2d3641; }
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-9,
+:host-context(.dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-9,
+:host-context(body.dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-9,
+:host-context(.theme-dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-9 { background-color: #223a52; }
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-10,
+:host-context(.dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-10,
+:host-context(body.dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-10,
+:host-context(.theme-dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-10 { background-color: #2a3340; }
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-11,
+:host-context(.dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-11,
+:host-context(body.dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-11,
+:host-context(.theme-dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-11 { background-color: #273244; }
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-12,
+:host-context(.dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-12,
+:host-context(body.dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-12,
+:host-context(.theme-dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-12 { background-color: #463730; }
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-13,
+:host-context(.dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-13,
+:host-context(body.dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-13,
+:host-context(.theme-dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-13 { background-color: #2a3b42; }
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-14,
+:host-context(.dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-14,
+:host-context(body.dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-14,
+:host-context(.theme-dark) ::ng-deep .ag-theme-quartz .ag-cell.bom-level-14 { background-color: #4a352d; }

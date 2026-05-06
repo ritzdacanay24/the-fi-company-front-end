@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from "@angular/core";
+import { Component, ElementRef, EventEmitter, Input, Output, ViewChild } from "@angular/core";
 import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms";
 import { UserSearchV1Component } from "@app/shared/components/user-search-v1/user-search-v1.component";
 import { SharedModule } from "@app/shared/shared.module";
@@ -21,6 +21,7 @@ import { NewUserService } from "@app/core/api/users/users.service";
 export class UserEditFormComponent {
   title = "User Info";
   isLoading = false;
+  @ViewChild('badgeInput') badgeInput?: ElementRef<HTMLInputElement>;
 
   @Output() setFormEmitter: EventEmitter<any> = new EventEmitter();
   @Output() imageUploadSuccess: EventEmitter<any> = new EventEmitter();
@@ -100,11 +101,55 @@ export class UserEditFormComponent {
     hire_date: null,
     org_chart_department: "",
     org_chart_expand: 0,
+    card_number: [null],
   });
+
+  focusBadgeInput() {
+    this.badgeInput?.nativeElement?.focus();
+    this.badgeInput?.nativeElement?.select();
+  }
+
+  onBadgeInput(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const normalized = this.normalizeCardNumber(input.value);
+    input.value = normalized;
+    this.form.get('card_number')?.patchValue(normalized ? Number(normalized) : null, { emitEvent: false });
+  }
+
+  onBadgeEnter(event: KeyboardEvent) {
+    event.preventDefault();
+    this.onBadgeInput(event as unknown as Event);
+  }
+
+  private normalizeCardNumber(value: string): string {
+    return String(value || '').replace(/\D+/g, '').slice(0, 20);
+  }
 
   setBooleanToNumber(key) {
     let e = this.form.value[key];
     this.form.get(key).patchValue(e ? 1 : 0);
+  }
+
+  onTwoStepToggle() {
+    this.setBooleanToNumber('enableTwostep');
+
+    if (this.isTwoStepEnabled() && !this.isEmailValidForNotifications()) {
+      this.form.get('email')?.markAsTouched();
+    }
+  }
+
+  isTwoStepEnabled(): boolean {
+    return !!this.form.get('enableTwostep')?.value;
+  }
+
+  isEmailValidForNotifications(): boolean {
+    const emailControl = this.form.get('email');
+    return !!emailControl?.value && !emailControl?.invalid;
+  }
+
+  getNotificationTarget(): string {
+    const email = this.form.get('email')?.value;
+    return email || 'the email address above';
   }
 
   toggleActiveStatus() {

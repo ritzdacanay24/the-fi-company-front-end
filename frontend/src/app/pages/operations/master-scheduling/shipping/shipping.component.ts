@@ -54,7 +54,7 @@ import { IconRendererV2Component } from "@app/shared/ag-grid/icon-renderer-v2/ic
 import { NotesRendererV2Component } from "@app/shared/ag-grid/notes-renderer-v2/notes-renderer-v2.component";
 import { StatusDateRenderer } from "@app/shared/ag-grid/cell-renderers/status-date-renderer-v2.component";
 import { BomRendererV2Component } from "@app/shared/ag-grid/bom-renderer-v2/bom-renderer-v2.component";
-import { BomViewModalService } from "@app/shared/components/bom-view-modal/bom-view-modal.component";
+import { BomViewModalService } from "@app/shared/components/bom-view-modal/bom-view-modal.service";
 import { WorkOrderInfoModalService } from "@app/shared/components/work-order-info-modal/work-order-info-modal.component";
 import { environment } from "@environments/environment";
 import { ChecboxRendererV2 } from "@app/shared/ag-grid/cell-renderers/checkbox-renderer-v2/checkbox-renderer-v2.component";

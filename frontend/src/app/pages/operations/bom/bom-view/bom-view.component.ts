@@ -95,29 +95,16 @@ export class BomViewComponent implements OnInit, OnChanges {
       headerName: "Level",
       filter: "agNumberColumnFilter",
       width: 80,
-      cellStyle: (params) => {
-        // Use API-provided bom_level for styling
-        const bomLevel = params.data?.bom_level || 0;
-        const colors = [
-          "#e8f4fd", // Level 0 (Parent)
-          "#d1ecf1", // Level 1
-          "#bee5eb", // Level 2
-          "#a2d9ce", // Level 3
-          "#85c1e9", // Level 4
-          "#ddb3ff", // Level 5
-          "#b3f0e6", // Level 6
-          "#ffb3e6", // Level 7
-          "#d6d8db", // Level 8
-          "#b3e5fc", // Level 9
-          "#f8f9fa", // Level 10
-          "#e9ecef", // Level 11
-          "#d7ccc8", // Level 12
-          "#cfd8dc", // Level 13
-          "#ffccbc"  // Level 14+
-        ];
-        return {
-          backgroundColor: colors[Math.min(bomLevel, colors.length - 1)],
-        };
+      cellClass: (params: any) => {
+        const rawLevel = Number(params?.data?.bom_level ?? 0);
+        const level = Number.isFinite(rawLevel) ? Math.max(0, Math.min(rawLevel, 14)) : 0;
+        const classes = ["bom-level-cell", `bom-level-${level}`];
+
+        if (params?.data?.bom_level_hierarchical === "Parent") {
+          classes.push("bom-level-parent");
+        }
+
+        return classes;
       },
       valueGetter: (params) => {
         // Check if params.data exists (group nodes might not have data)

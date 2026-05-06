@@ -27,7 +27,7 @@
       <div class="row">
         <div class="col-md-6 mb-3">
           <label class="form-label required">Email</label>
-          <input type="text" class="form-control" name="email" formControlName="email" placeholder="Enter email"
+          <input type="email" class="form-control" name="email" formControlName="email" placeholder="name@company.com"
             [ngClass]="{ 'is-invalid': submitted && f.email.errors }" />
           <div class="form-text">
             <i class="mdi mdi-information-outline me-1"></i>
@@ -73,6 +73,32 @@
           <label class="form-label required">Hire Date</label>
           <input type="date" class="form-control" formControlName="hire_date"
             [ngClass]="{ 'is-invalid': submitted && f.hire_date.errors }" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Badge / Card Number</label>
+          <div class="input-group">
+            <input
+              #badgeInput
+              type="password"
+              class="form-control"
+              formControlName="card_number"
+              placeholder="Scan badge now"
+              inputmode="numeric"
+              autocomplete="off"
+              (input)="onBadgeInput($event)"
+              (keydown.enter)="onBadgeEnter($any($event))"
+            />
+            <button type="button" class="btn btn-outline-secondary" (click)="focusBadgeInput()">
+              <i class="mdi mdi-card-account-details-outline me-1"></i>Scan
+            </button>
+          </div>
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Click Scan, then scan the badge. Scanner input is captured and saved to card number.
+          </div>
         </div>
       </div>
 
@@ -162,16 +188,25 @@
         <div class="col-12">
           <div class="d-flex align-items-center justify-content-between p-3 border rounded">
             <div>
-              Enable Two Factor Authentication (Email)
+              Email Verification (2FA)
               <div class="form-text mt-1">
                 <i class="mdi mdi-information-outline me-1"></i>
-                Require email verification code for enhanced account security.
+                @if (isTwoStepEnabled()) {
+                  Verification codes will be sent to {{ getNotificationTarget() }}.
+                } @else {
+                  Enable to require a code sent by email during sign-in.
+                }
               </div>
+              @if (isTwoStepEnabled() && !isEmailValidForNotifications()) {
+                <div class="text-danger small mt-1">
+                  Enter a valid email address to use email verification.
+                </div>
+              }
             </div>
             <div class="ms-3">
               <div class="form-check form-switch form-switch-md">
                 <input class="form-check-input" type="checkbox" id="enableTwostep" formControlName="enableTwostep"
-                  (change)="setBooleanToNumber('enableTwostep')">
+                  (change)="onTwoStepToggle()">
                 <label class="form-check-label" for="enableTwostep"></label>
               </div>
             </div>
@@ -274,3 +309,4 @@
     </div>
 
   </div>
+</form>

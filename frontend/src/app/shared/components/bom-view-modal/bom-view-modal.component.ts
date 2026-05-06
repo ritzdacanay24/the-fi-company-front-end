@@ -5,33 +5,7 @@ import { SharedModule } from "@app/shared/shared.module";
 import { NgbActiveModal } from "@ng-bootstrap/ng-bootstrap";
 import { AgGridModule } from "ag-grid-angular";
 import { ColDef, GridApi, GridOptions } from "ag-grid-community";
-
-import { Injectable } from "@angular/core";
-import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { ToastrService } from "ngx-toastr";
-
-@Injectable({
-  providedIn: "root",
-})
-export class BomViewModalService {
-  modalRef: any;
-
-  constructor(public modalService: NgbModal) {}
-
-  open(partNumber: string, soNumber?: string) {
-    this.modalRef = this.modalService.open(BomViewModalComponent, {
-      size: "xl",
-      centered: true,
-      scrollable: true,
-      fullscreen: true,
-      windowClass: "modal-fullwidth", // Add custom class for full width
-      backdrop: 'static', // Prevent closing on backdrop click for better UX
-    });
-    this.modalRef.componentInstance.partNumber = partNumber;
-    this.modalRef.componentInstance.soNumber = soNumber;
-    return this.modalRef;
-  }
-}
 
 @Component({
   standalone: true,
@@ -100,17 +74,16 @@ export class BomViewModalComponent implements OnInit {
       headerName: "Level",
       filter: "agNumberColumnFilter",
       width: 80,
-      cellStyle: (params) => {
-        // Use API-provided bom_level for styling
-        const bomLevel = params.data?.bom_level || 0;
-        const colors = [
-          "#e8f4fd", "#d1ecf1", "#bee5eb", "#a2d9ce", "#85c1e9", 
-          "#ddb3ff", "#b3f0e6", "#ffb3e6", "#d6d8db", "#b3e5fc",
-          "#f8f9fa", "#e9ecef", "#d7ccc8", "#cfd8dc", "#ffccbc"
-        ];
-        return {
-          backgroundColor: colors[Math.min(bomLevel, colors.length - 1)],
-        };
+      cellClass: (params: any) => {
+        const rawLevel = Number(params?.data?.bom_level ?? 0);
+        const level = Number.isFinite(rawLevel) ? Math.max(0, Math.min(rawLevel, 14)) : 0;
+        const classes = ["bom-level-cell", `bom-level-${level}`];
+
+        if (params?.data?.bom_level_hierarchical === "Parent") {
+          classes.push("bom-level-parent");
+        }
+
+        return classes;
       },
       valueGetter: (params) => {
         if (!params.data) return "";
