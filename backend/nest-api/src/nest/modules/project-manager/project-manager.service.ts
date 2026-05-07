@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ProjectManagerRepository } from './project-manager.repository';
+import { toMysqlDate, toMysqlDatetime } from '@/shared/utils/date.util';
 
 export interface UpsertProjectDto {
   id: string;
@@ -63,8 +64,8 @@ export class ProjectManagerService {
       strategy_type: dto.strategyType,
       rough_revenue_potential: dto.roughRevenuePotential || '',
       estimated_revenue: dto.estimatedRevenue || '',
-      initial_rfp_date: dto.initialRfpDate || null,
-      target_production_date: dto.targetProductionDate || null,
+      initial_rfp_date: toMysqlDate(dto.initialRfpDate),
+      target_production_date: toMysqlDate(dto.targetProductionDate),
       readiness_score: dto.readinessScore,
       readiness_status: dto.readinessStatus,
       active_gate: dto.activeGate,
@@ -76,12 +77,12 @@ export class ProjectManagerService {
       gate4_completion: dto.gateCompletion.gate4,
       gate5_completion: dto.gateCompletion.gate5,
       gate6_completion: dto.gateCompletion.gate6,
-      gate1_completed_at: dto.gateCompletedAt.gate1 || null,
-      gate2_completed_at: dto.gateCompletedAt.gate2 || null,
-      gate3_completed_at: dto.gateCompletedAt.gate3 || null,
-      gate4_completed_at: dto.gateCompletedAt.gate4 || null,
-      gate5_completed_at: dto.gateCompletedAt.gate5 || null,
-      gate6_completed_at: dto.gateCompletedAt.gate6 || null,
+      gate1_completed_at: toMysqlDatetime(dto.gateCompletedAt.gate1),
+      gate2_completed_at: toMysqlDatetime(dto.gateCompletedAt.gate2),
+      gate3_completed_at: toMysqlDatetime(dto.gateCompletedAt.gate3),
+      gate4_completed_at: toMysqlDatetime(dto.gateCompletedAt.gate4),
+      gate5_completed_at: toMysqlDatetime(dto.gateCompletedAt.gate5),
+      gate6_completed_at: toMysqlDatetime(dto.gateCompletedAt.gate6),
     });
 
     const row = await this.repository.findOne({ id: dto.id });

@@ -140,12 +140,7 @@ export class GraphicsWorkOrderHandler implements ScheduledJobHandler {
         a.wo_nbr,
         a.wo_ord_date,
         a.wo_rel_date,
-        CASE 
-          WHEN DAYOFWEEK(a.wo_due_date) IN (1) THEN a.wo_due_date - 2
-          WHEN DAYOFWEEK(a.wo_due_date) IN (2, 3) THEN a.wo_due_date - 4
-          WHEN DAYOFWEEK(a.wo_due_date) IN (4) THEN a.wo_due_date - 2
-          ELSE a.wo_due_date - 2
-        END as wo_due_date,
+        a.wo_due_date,
         a.wo_part,
         a.wo_qty_ord,
         a.wo_qty_comp,
@@ -154,17 +149,17 @@ export class GraphicsWorkOrderHandler implements ScheduledJobHandler {
         a.wo_close_date,
         c.fullDesc,
         a.wo_so_job
-      FROM [QAD_DATABASE].[dbo].[wr_route] b
+      FROM wr_route b
       LEFT JOIN (
         SELECT 
           wo_nbr, wo_ord_date, wo_rel_date, wo_due_date, wo_part, wo_qty_ord, wo_qty_comp, 
           wo_status, wo_rmks, wo_close_date, wo_so_job
-        FROM [QAD_DATABASE].[dbo].[wo_mstr] a
+        FROM wo_mstr a
         WHERE wo_domain = 'EYE'
       ) a ON a.wo_nbr = b.wr_nbr
       LEFT JOIN (
         SELECT pt_part, MAX(pt_desc1 + ' ' + pt_desc2) as fullDesc, MAX(pt_part_type) as pt_part_type
-        FROM [QAD_DATABASE].[dbo].[pt_mstr]
+        FROM pt_mstr
         WHERE pt_domain = 'EYE'
         GROUP BY pt_part
       ) c ON c.pt_part = b.wr_part
@@ -199,6 +194,13 @@ export class GraphicsWorkOrderHandler implements ScheduledJobHandler {
     // Clean description of non-printable characters
     const cleanDesc = workOrder.FULLDESC.replace(/[\x00-\x1F\x7F-\xFF]/g, '');
 
+    // Offset due date: push back 2-4 days based on day of week (avoid weekends)
+    const rawDue = new Date(workOrder.WO_DUE_DATE);
+    const dow = rawDue.getDay(); // 0=Sun,1=Mon,...,6=Sat
+    const offsetDays = (dow === 0) ? 2 : (dow === 1 || dow === 2) ? 4 : 2;
+    rawDue.setDate(rawDue.getDate() - offsetDays);
+    const adjustedDueDate = rawDue.toISOString().slice(0, 10);
+
     // Insert new graphics schedule record
     const insertSql = `
       INSERT INTO eyefidb.graphicsSchedule(
@@ -214,7 +216,7 @@ export class GraphicsWorkOrderHandler implements ScheduledJobHandler {
       cleanDesc,
       customer,
       workOrder.WO_QTY_ORD,
-      workOrder.WO_DUE_DATE,
+      adjustedDueDate,       // dueDate (offset by day-of-week)
       customerPartNumber,
       purchaseOrder,
       userId,
@@ -223,7 +225,7 @@ export class GraphicsWorkOrderHandler implements ScheduledJobHandler {
       0, // status
       partials,
       prototypeCheck,
-      workOrder.WO_DUE_DATE, // origDueDate
+      workOrder.WO_DUE_DATE, // origDueDate (raw from QAD)
       workOrder.WO_NBR, // graphicsWorkOrder
       workOrder.WO_RMKS, // instructions
       plexRequired,

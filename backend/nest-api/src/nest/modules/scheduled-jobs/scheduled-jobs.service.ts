@@ -264,10 +264,10 @@ export class ScheduledJobsService {
     let runId: number | null = null;
 
     try {
-      const [insertResult] = (await this.mysqlService.query<RowDataPacket[]>(
+      const insertResult = await this.mysqlService.execute(
         `INSERT INTO scheduled_job_run (job_name, trigger_type, status, started_at) VALUES (?, ?, 'success', NOW())`,
         [job.id, trigger],
-      )) as any;
+      );
       runId = (insertResult as any)?.insertId ?? null;
     } catch (dbErr) {
       this.logger.warn(`[${trigger}] ${job.id} - could not insert run record: ${dbErr}`);
