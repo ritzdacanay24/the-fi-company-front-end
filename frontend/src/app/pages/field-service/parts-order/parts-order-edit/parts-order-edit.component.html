@@ -37,6 +37,24 @@
       </div>
 
       <div class="card shadow-sm border-0">
+        <div class="card-header bg-light border-0 d-flex align-items-center justify-content-between" *ngIf="data && id">
+          <h5 class="mb-0">Parts Order Details</h5>
+          <div ngbDropdown placement="bottom-end" container="body" *ngIf="isAdmin || canManage">
+            <button type="button" class="btn btn-light border btn-sm d-inline-flex align-items-center" ngbDropdownToggle>
+              <i class="mdi mdi-tune-vertical me-2"></i>
+              <span class="lh-1">Select action</span>
+            </button>
+            <div ngbDropdownMenu>
+              <button ngbDropdownItem class="text-warning" (click)="onArchive()" *ngIf="canManage">
+                <i class="mdi mdi-archive-outline me-2"></i>Archive
+              </button>
+              <div class="dropdown-divider" *ngIf="canManage && isAdmin"></div>
+              <button ngbDropdownItem class="text-danger" (click)="onDelete()" *ngIf="isAdmin">
+                <i class="mdi mdi-delete-outline me-2"></i>Delete
+              </button>
+            </div>
+          </div>
+        </div>
         <div class="card-body p-4">
 
           <app-parts-order-form (setFormEmitter)="onFormReady($event)" [submitted]="submitted" [id]="id" [details]="details"></app-parts-order-form>

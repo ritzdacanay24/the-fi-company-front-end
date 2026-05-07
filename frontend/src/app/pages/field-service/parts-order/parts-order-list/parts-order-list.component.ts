@@ -135,9 +135,20 @@ export class PartsOrderListComponent implements OnInit {
       filter: "agMultiColumnFilter",
     },
     {
-      field: "created_by",
+      field: "created_by_name",
       headerName: "Created By",
       filter: "agMultiColumnFilter",
+    },
+    {
+      field: "active",
+      headerName: "Status",
+      filter: "agMultiColumnFilter",
+      cellRenderer: (params) => {
+        const isArchived = Number(params?.data?.active ?? 1) === 0;
+        return isArchived
+          ? '<span class="badge bg-warning-subtle text-warning border border-warning-subtle">Archived</span>'
+          : '<span class="badge bg-success-subtle text-success border border-success-subtle">Active</span>';
+      },
     },
     {
       field: "created_date",
@@ -156,11 +167,10 @@ export class PartsOrderListComponent implements OnInit {
       headerName: "Part Number",
       filter: "agMultiColumnFilter",
       cellRenderer: (params) => {
-        if (params?.data?.details?.length > 1) {
-          return "Multiple Parts";
-        } else {
-          return params.value;
-        }
+        const details = params?.data?.details;
+        if (!details || details.length === 0) return '';
+        if (details.length > 1) return `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 7px;font-size:0.75rem;font-weight:500;border-radius:4px;background:rgba(255,193,7,0.15);color:#997404;border:1px solid rgba(255,193,7,0.4);line-height:1;vertical-align:middle"><i class="bi bi-exclamation-triangle-fill"></i>Multiple Parts (${details.length})</span>`;
+        return details[0].part_number || '';
       },
     },
     {
@@ -168,11 +178,10 @@ export class PartsOrderListComponent implements OnInit {
       headerName: "Qty",
       filter: "agMultiColumnFilter",
       cellRenderer: (params) => {
-        if (params?.data?.details?.length > 1) {
-          return "Multiple Parts";
-        } else {
-          return params.value;
-        }
+        const details = params?.data?.details;
+        if (!details || details.length === 0) return '';
+        if (details.length > 1) return `<span class="text-muted">—</span>`;
+        return details[0].qty ?? details[0].part_qty ?? '';
       },
     },
     {

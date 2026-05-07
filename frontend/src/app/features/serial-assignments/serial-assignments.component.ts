@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, TemplateRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SharedModule } from '@app/shared/shared.module';
@@ -9,6 +9,8 @@ import { ColDef, GridOptions, GridReadyEvent } from 'ag-grid-community';
 import { interval, Subscription } from 'rxjs';
 import { takeWhile } from 'rxjs/operators';
 import { ActionCellRendererComponent } from './action-cell-renderer/action-cell-renderer.component';
+import { QadWoSearchComponent } from '@app/shared/components/qad-wo-search/qad-wo-search.component';
+import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 
 interface SerialAssignment {
   // Common fields
@@ -127,11 +129,15 @@ interface AuditEntry {
 @Component({
   selector: 'app-serial-assignments',
   standalone: true,
-  imports: [CommonModule, FormsModule, SharedModule, AgGridAngular, ActionCellRendererComponent],
+  imports: [CommonModule, FormsModule, SharedModule, AgGridAngular, QadWoSearchComponent],
   templateUrl: './serial-assignments.component.html',
   styleUrls: ['./serial-assignments.component.scss']
 })
 export class SerialAssignmentsComponent implements OnInit, OnDestroy {
+  @ViewChild('voidModalTpl') voidModalTpl!: TemplateRef<any>;
+  @ViewChild('deleteModalTpl') deleteModalTpl!: TemplateRef<any>;
+  @ViewChild('reassignModalTpl') reassignModalTpl!: TemplateRef<any>;
+  private actionModalRef?: NgbModalRef;
 
   assignments: SerialAssignment[] = [];
   filteredAssignments: SerialAssignment[] = [];
@@ -199,6 +205,7 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
   deleteReason: string = '';
   reassignReason: string = '';
   newWoNumber: string = '';
+  selectedReassignWo: any = null;
   assignmentToVoid?: SerialAssignment;
   assignmentToDelete?: SerialAssignment;
   assignmentToReassign?: SerialAssignment;
@@ -220,7 +227,8 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
 
   constructor(
     private serialAssignmentsService: SerialAssignmentsService,
-    private serialReportPrintService: SerialReportPrintService
+    private serialReportPrintService: SerialReportPrintService,
+    private modalService: NgbModal,
   ) {
     this.initializeGrid();
   }
@@ -260,7 +268,6 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
         headerName: 'Status',
         field: 'status',
         width: 120,
-        hide: true,
         cellRenderer: (params: any) => {
           if (!params.data) return '';
           if (params.data.is_voided == 1 || params.data.is_voided === true) {
@@ -356,10 +363,10 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
         }
       },
       {
-        headerName: 'Used By',
-        field: 'used_by',
-        width: 180,
-        hide: true
+        headerName: 'Created By',
+        field: 'consumed_by',
+        width: 140,
+        valueFormatter: (params: any) => params.value || '-'
       },
       {
         headerName: 'Verification',
@@ -392,13 +399,6 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
         headerName: 'Actions',
         width: 220,
         pinned: 'right',
-        cellStyle: { 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center',
-          padding: '4px',
-          overflow: 'visible'
-        },
         cellRenderer: ActionCellRendererComponent,
         cellRendererParams: {
           onPrint: (data: any) => this.printSingleAssignment(data),
@@ -409,7 +409,8 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
           onVerify: (data: any) => this.startSerialVerification(data),
           requiresVerification: (data: any) => this.requiresVerification(data),
           canHardDelete: (data: any) => this.canHardDeleteAssignment(data),
-          getLinkedAssetNumber: (data: any) => this.getLinkedAssetNumber(data)
+          getLinkedAssetNumber: (data: any) => this.getLinkedAssetNumber(data),
+          canManage: true
         }
       }
     ];
@@ -534,9 +535,24 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
     this.voidReasonTemplate = '';
     this.voidReasonNotes = '';
     this.showVoidModal = true;
+    this.actionModalRef = this.modalService.open(this.voidModalTpl, {
+      centered: true,
+      backdrop: 'static',
+      keyboard: false,
+    });
+    this.actionModalRef.result.finally(() => {
+      this.closeVoidModal(false);
+    });
   }
 
-  closeVoidModal(): void {
+  closeVoidModal(shouldDismiss: boolean = true): void {
+    if (shouldDismiss && this.actionModalRef) {
+      const modalRef = this.actionModalRef;
+      this.actionModalRef = undefined;
+      modalRef.dismiss();
+    } else {
+      this.actionModalRef = undefined;
+    }
     this.showVoidModal = false;
     this.assignmentToVoid = undefined;
     this.voidReason = '';
@@ -632,7 +648,14 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
     alert('Hard delete is disabled. Use Void Assignment or Reassign Work Order instead.');
   }
 
-  closeDeleteModal(): void {
+  closeDeleteModal(shouldDismiss: boolean = true): void {
+    if (shouldDismiss && this.actionModalRef) {
+      const modalRef = this.actionModalRef;
+      this.actionModalRef = undefined;
+      modalRef.dismiss();
+    } else {
+      this.actionModalRef = undefined;
+    }
     this.showDeleteModal = false;
     this.assignmentToDelete = undefined;
     this.deleteReason = '';
@@ -680,23 +703,40 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
     this.assignmentToReassign = assignment;
     this.newWoNumber = '';
     this.reassignReason = '';
+    this.selectedReassignWo = null;
     this.showReassignModal = true;
+    this.actionModalRef = this.modalService.open(this.reassignModalTpl, {
+      centered: true,
+      backdrop: 'static',
+      keyboard: false,
+    });
+    this.actionModalRef.result.finally(() => {
+      this.closeReassignModal(false);
+    });
   }
 
-  closeReassignModal(): void {
+  closeReassignModal(shouldDismiss: boolean = true): void {
+    if (shouldDismiss && this.actionModalRef) {
+      const modalRef = this.actionModalRef;
+      this.actionModalRef = undefined;
+      modalRef.dismiss();
+    } else {
+      this.actionModalRef = undefined;
+    }
     this.showReassignModal = false;
     this.assignmentToReassign = undefined;
     this.newWoNumber = '';
     this.reassignReason = '';
+    this.selectedReassignWo = null;
   }
 
   async confirmReassign(): Promise<void> {
-    if (!this.assignmentToReassign || !this.newWoNumber.trim() || !this.reassignReason.trim()) {
-      alert('Please enter both the new work order and reassignment reason');
+    if (!this.assignmentToReassign || !this.selectedReassignWo || !this.reassignReason.trim()) {
+      alert('Please select a work order and enter a reassignment reason');
       return;
     }
 
-    const targetWo = this.newWoNumber.trim();
+    const targetWo = String(this.selectedReassignWo.wo_nbr || '').trim();
     const currentWo = (this.assignmentToReassign.wo_number || this.assignmentToReassign.po_number || '').trim();
 
     if (currentWo && currentWo.toUpperCase() === targetWo.toUpperCase()) {
@@ -710,7 +750,17 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
         this.getAssignmentId(this.assignmentToReassign),
         targetWo,
         this.reassignReason,
-        this.currentUser
+        this.currentUser,
+        {
+          wo_description: this.selectedReassignWo.description ?? this.selectedReassignWo.DESCRIPTION,
+          wo_part: this.selectedReassignWo.wo_part,
+          wo_qty_ord: this.selectedReassignWo.wo_qty_ord,
+          wo_due_date: this.selectedReassignWo.wo_due_date,
+          wo_routing: this.selectedReassignWo.wo_routing,
+          wo_line: this.selectedReassignWo.wo_line,
+          cp_cust_part: this.selectedReassignWo.cp_cust_part ?? this.selectedReassignWo.CP_CUST_PART,
+          cp_cust: this.selectedReassignWo.customer ?? this.selectedReassignWo.CUSTOMER,
+        }
       );
 
       if (response.success) {

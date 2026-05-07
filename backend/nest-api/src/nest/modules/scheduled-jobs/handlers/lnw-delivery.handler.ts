@@ -95,12 +95,18 @@ export class LnwDeliveryHandler implements ScheduledJobHandler {
           .map((r) => r.email)
           .filter((e): e is string => typeof e === 'string' && e.trim().length > 0);
 
+        const ccRows = await this.emailNotificationService.find({ location: 'lnw_shipping_report_notification_cc' });
+        const cc = (ccRows as Array<{ email?: string }>)
+          .map((r) => r.email)
+          .filter((e): e is string => typeof e === 'string' && e.trim().length > 0);
+
         if (to.length > 0) {
           const html = this.emailTemplateService.render('lnw-delivery', {
             grouped: this.toEmailGroups(grouped),
           });
           await this.emailService.sendMail({
             to,
+            cc: cc.length > 0 ? cc : undefined,
             subject: `LNW DELIVERY ${next3Weekdays.join(', ')}`,
             html,
           });

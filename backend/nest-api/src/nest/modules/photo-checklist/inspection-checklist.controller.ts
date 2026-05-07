@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Put, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CurrentUserId } from '@/nest/decorators/current-user-id.decorator';
 import { Permissions, RolePermissionGuard } from '../access-control';
@@ -193,8 +193,9 @@ export class InspectionChecklistController {
   async updateInstanceItemCompletion(
     @Param('id', ParseIntPipe) id: number,
     @Body() payload: { item_id: number } & Record<string, unknown>,
+    @CurrentUserId() currentUserId: number,
   ) {
-    return this.service.updateInstanceItemCompletion(id, Number(payload.item_id), payload);
+    return this.service.updateInstanceItemCompletion(id, Number(payload.item_id), payload, currentUserId);
   }
 
   @Post('media/upload')
@@ -205,11 +206,13 @@ export class InspectionChecklistController {
     @Body('item_id', ParseIntPipe) itemId: number,
     @Body('capture_source') captureSource: string | undefined,
     @Body('user_id') userId: string | undefined,
+    @CurrentUserId() currentUserId: number,
     @UploadedFile() file?: { originalname?: string; mimetype?: string; size?: number; buffer?: Buffer },
   ) {
     return this.service.uploadMedia(instanceId, itemId, file, {
       captureSource,
       userId,
+      callerId: currentUserId,
     });
   }
 
@@ -251,11 +254,73 @@ export class InspectionChecklistController {
     return this.service.deleteInstance(id);
   }
 
+  // ── Owner-lock endpoints ──────────────────────────────────────────────────
+
+  @Post('instances/:id/claim')
+  @Permissions('write')
+  async claimInstance(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUserId() userId: number,
+    @Body() body: { user_name?: string },
+  ) {
+    return this.service.claimInstance(id, userId, body.user_name ?? '');
+  }
+
+  @Post('instances/:id/release')
+  @Permissions('write')
+  async releaseInstance(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUserId() userId: number,
+  ) {
+    return this.service.releaseInstance(id, userId);
+  }
+
+  @Post('instances/:id/heartbeat')
+  @Permissions('write')
+  async heartbeatInstance(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUserId() userId: number,
+  ) {
+    return this.service.heartbeatInstance(id, userId);
+  }
+
+  @Post('instances/:id/transfer')
+  @Permissions('write')
+  async transferInstance(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUserId() callerId: number,
+    @Body() body: { to_user_id: number; to_user_name: string },
+  ) {
+    return this.service.transferInstance(id, callerId, Number(body.to_user_id), body.to_user_name ?? '');
+  }
+
+  @Post('instances/:id/transfer-admin')
+  @Permissions('manage')
+  async transferInstanceAdmin(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { to_user_id: number; to_user_name: string },
+  ) {
+    return this.service.transferInstanceAdmin(id, Number(body.to_user_id), body.to_user_name ?? '');
+  }
+
+  @Post('instances/transfer-bulk')
+  @Permissions('manage')
+  async transferInstancesBulk(
+    @Body() body: { instance_ids: number[]; to_user_id: number; to_user_name: string },
+  ) {
+    return this.service.bulkTransferInstancesAdmin(
+      body?.instance_ids || [],
+      Number(body?.to_user_id),
+      body?.to_user_name ?? '',
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+
   @Get('config')
   async getConfig() {
     return this.service.getConfig();
   }
-
   @Post('config')
   @Permissions('manage')
   async updateConfig(@Body() updates: Record<string, string>) {

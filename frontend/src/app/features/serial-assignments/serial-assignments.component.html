@@ -100,199 +100,194 @@
 </div>
 
 <!-- Void Modal -->
-<div class="modal fade" [class.show]="showVoidModal" [style.display]="showVoidModal ? 'block' : 'none'" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">
-          <i class="mdi mdi-cancel me-2"></i>
-          Void Assignment
-        </h5>
-        <button type="button" class="btn-close" (click)="showVoidModal = false"></button>
-      </div>
-      <div class="modal-body">
-        <div class="alert alert-warning">
-          <i class="mdi mdi-alert me-2"></i>
-          <strong>This will free up the EyeFi serial and UL label for reuse.</strong>
-          <br>
-          Linked asset records are retained for audit history.
-        </div>
-        
-        <div *ngIf="assignmentToVoid">
-          <p><strong>Assignment ID:</strong> {{ assignmentToVoid.unique_id }}</p>
-          <p><strong>EyeFi Serial:</strong> {{ assignmentToVoid.eyefi_serial_number }}</p>
-          <p><strong>UL Label:</strong> {{ assignmentToVoid.ul_number || 'N/A' }}</p>
-          <p><strong>Asset Number:</strong> {{ assignmentToVoid.part_number || 'N/A' }}</p>
-          <p><strong>Work Order:</strong> {{ assignmentToVoid.wo_number || assignmentToVoid.po_number || 'N/A' }}</p>
-        </div>
-        
-        <div class="mb-3">
-          <label for="voidReasonTemplate" class="form-label">Reason template <span class="text-danger">*</span></label>
-          <select
-            id="voidReasonTemplate"
-            class="form-select"
-            [(ngModel)]="voidReasonTemplate">
-            <option value="">Select a reason...</option>
-            <option *ngFor="let option of voidReasonTemplates" [value]="option.value">{{ option.label }}</option>
-          </select>
-        </div>
+<ng-template #voidModalTpl let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title">
+      <i class="mdi mdi-cancel me-2"></i>
+      Void Assignment
+    </h5>
+    <button type="button" class="btn-close" (click)="closeVoidModal()"></button>
+  </div>
+  <div class="modal-body">
+    <div class="alert alert-warning">
+      <i class="mdi mdi-alert me-2"></i>
+      <strong>This will free up the EyeFi serial and UL label for reuse.</strong>
+      <br>
+      Linked asset records are retained for audit history.
+    </div>
 
-        <div class="mb-3">
-          <label for="voidReasonNotes" class="form-label">
-            Notes
-            <span class="text-danger" *ngIf="voidReasonTemplate === 'other'">*</span>
-          </label>
-          <textarea 
-            id="voidReasonNotes" 
-            class="form-control" 
-            rows="3" 
-            [(ngModel)]="voidReasonNotes"
-            placeholder="Optional details for audit trail (required when selecting Other)"></textarea>
-        </div>
+    <div *ngIf="assignmentToVoid">
+      <p><strong>Assignment ID:</strong> {{ assignmentToVoid.unique_id }}</p>
+      <p><strong>Created/Used By:</strong> {{ assignmentToVoid.used_by || 'N/A' }}</p>
+      <p><strong>EyeFi Serial:</strong> {{ assignmentToVoid.eyefi_serial_number }}</p>
+      <p><strong>UL Label:</strong> {{ assignmentToVoid.ul_number || 'N/A' }}</p>
+      <p><strong>Asset Number:</strong> {{ assignmentToVoid.part_number || 'N/A' }}</p>
+      <p><strong>Work Order:</strong> {{ assignmentToVoid.wo_number || assignmentToVoid.po_number || 'N/A' }}</p>
+    </div>
 
-        <div class="small text-muted" *ngIf="voidReasonTemplate">
-          Logged reason preview:
-          <strong>
-            {{ getVoidReasonPreview() }}
-          </strong>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" (click)="showVoidModal = false">Cancel</button>
-        <button 
-          type="button" 
-          class="btn btn-warning" 
-          (click)="confirmVoid()" 
-          [disabled]="!voidReasonTemplate || (voidReasonTemplate === 'other' && (!voidReasonNotes || voidReasonNotes.trim().length === 0))">
-          <i class="mdi mdi-cancel me-1"></i>
-          Void Assignment
-        </button>
-      </div>
+    <div class="mb-3">
+      <label for="voidReasonTemplate" class="form-label">Reason template <span class="text-danger">*</span></label>
+      <select
+        id="voidReasonTemplate"
+        class="form-select"
+        [(ngModel)]="voidReasonTemplate">
+        <option value="">Select a reason...</option>
+        <option *ngFor="let option of voidReasonTemplates" [value]="option.value">{{ option.label }}</option>
+      </select>
+    </div>
+
+    <div class="mb-3">
+      <label for="voidReasonNotes" class="form-label">
+        Notes
+        <span class="text-danger" *ngIf="voidReasonTemplate === 'other'">*</span>
+      </label>
+      <textarea
+        id="voidReasonNotes"
+        class="form-control"
+        rows="3"
+        [(ngModel)]="voidReasonNotes"
+        placeholder="Optional details for audit trail (required when selecting Other)"></textarea>
+    </div>
+
+    <div class="small text-muted" *ngIf="voidReasonTemplate">
+      Logged reason preview:
+      <strong>
+        {{ getVoidReasonPreview() }}
+      </strong>
     </div>
   </div>
-</div>
-<div class="modal-backdrop fade" [class.show]="showVoidModal" *ngIf="showVoidModal"></div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="closeVoidModal()">Cancel</button>
+    <button
+      type="button"
+      class="btn btn-warning"
+      (click)="confirmVoid()"
+      [disabled]="!voidReasonTemplate || (voidReasonTemplate === 'other' && (!voidReasonNotes || voidReasonNotes.trim().length === 0))">
+      <i class="mdi mdi-cancel me-1"></i>
+      Void Assignment
+    </button>
+  </div>
+</ng-template>
 
 <!-- Delete Modal -->
-<div class="modal fade" [class.show]="showDeleteModal" [style.display]="showDeleteModal ? 'block' : 'none'" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header bg-danger text-white">
-        <h5 class="modal-title">
-          <i class="mdi mdi-delete me-2"></i>
-          Delete Assignment
-        </h5>
-        <button type="button" class="btn-close btn-close-white" (click)="showDeleteModal = false"></button>
-      </div>
-      <div class="modal-body">
-        <div class="alert alert-danger">
-          <i class="mdi mdi-alert me-2"></i>
-          <strong>Warning: This will permanently delete this assignment!</strong>
-          <br>
-          The EyeFi serial and UL label will be freed for reuse.
-          <br>
-          This action cannot be undone.
-        </div>
-        <div *ngIf="assignmentToDelete && !canHardDeleteAssignment(assignmentToDelete)" class="alert alert-warning">
-          <i class="mdi mdi-shield-alert me-2"></i>
-          This assignment is linked to asset {{ getLinkedAssetNumber(assignmentToDelete) }}.
-          Hard delete is blocked. Use Void Assignment instead.
-        </div>
-        
-        <div *ngIf="assignmentToDelete">
-          <p><strong>Assignment ID:</strong> {{ assignmentToDelete.unique_id }}</p>
-          <p><strong>EyeFi Serial:</strong> {{ assignmentToDelete.eyefi_serial_number }}</p>
-          <p><strong>UL Label:</strong> {{ assignmentToDelete.ul_number || 'N/A' }}</p>
-          <p><strong>Asset Number:</strong> {{ assignmentToDelete.part_number || 'N/A' }}</p>
-          <p><strong>Work Order:</strong> {{ assignmentToDelete.wo_number || assignmentToDelete.po_number || 'N/A' }}</p>
-        </div>
-        
-        <div class="mb-3">
-          <label for="deleteReason" class="form-label">Reason for deletion <span class="text-danger">*</span></label>
-          <textarea 
-            id="deleteReason" 
-            class="form-control" 
-            rows="3" 
-            [(ngModel)]="deleteReason"
-            placeholder="e.g., Data entry error, test record, etc."></textarea>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" (click)="showDeleteModal = false">Cancel</button>
-        <button 
-          type="button" 
-          class="btn btn-danger" 
-          (click)="confirmDelete()" 
-          [disabled]="!deleteReason || deleteReason.trim().length === 0 || (assignmentToDelete && !canHardDeleteAssignment(assignmentToDelete))">
-          <i class="mdi mdi-delete me-1"></i>
-          Delete Permanently
-        </button>
-      </div>
+<ng-template #deleteModalTpl let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title">
+      <i class="mdi mdi-delete me-2"></i>
+      Delete Assignment
+    </h5>
+    <button type="button" class="btn-close" (click)="closeDeleteModal()"></button>
+  </div>
+  <div class="modal-body">
+    <div class="alert alert-danger">
+      <i class="mdi mdi-alert me-2"></i>
+      <strong>Warning: This will permanently delete this assignment!</strong>
+      <br>
+      The EyeFi serial and UL label will be freed for reuse.
+      <br>
+      This action cannot be undone.
+    </div>
+    <div *ngIf="assignmentToDelete && !canHardDeleteAssignment(assignmentToDelete)" class="alert alert-warning">
+      <i class="mdi mdi-shield-alert me-2"></i>
+      This assignment is linked to asset {{ getLinkedAssetNumber(assignmentToDelete) }}.
+      Hard delete is blocked. Use Void Assignment instead.
+    </div>
+
+    <div *ngIf="assignmentToDelete">
+      <p><strong>Assignment ID:</strong> {{ assignmentToDelete.unique_id }}</p>
+      <p><strong>Created/Used By:</strong> {{ assignmentToDelete.used_by || 'N/A' }}</p>
+      <p><strong>EyeFi Serial:</strong> {{ assignmentToDelete.eyefi_serial_number }}</p>
+      <p><strong>UL Label:</strong> {{ assignmentToDelete.ul_number || 'N/A' }}</p>
+      <p><strong>Asset Number:</strong> {{ assignmentToDelete.part_number || 'N/A' }}</p>
+      <p><strong>Work Order:</strong> {{ assignmentToDelete.wo_number || assignmentToDelete.po_number || 'N/A' }}</p>
+    </div>
+
+    <div class="mb-3">
+      <label for="deleteReason" class="form-label">Reason for deletion <span class="text-danger">*</span></label>
+      <textarea
+        id="deleteReason"
+        class="form-control"
+        rows="3"
+        [(ngModel)]="deleteReason"
+        placeholder="e.g., Data entry error, test record, etc."></textarea>
     </div>
   </div>
-</div>
-<div class="modal-backdrop fade" [class.show]="showDeleteModal" *ngIf="showDeleteModal"></div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="closeDeleteModal()">Cancel</button>
+    <button
+      type="button"
+      class="btn btn-danger"
+      (click)="confirmDelete()"
+      [disabled]="!deleteReason || deleteReason.trim().length === 0 || (assignmentToDelete && !canHardDeleteAssignment(assignmentToDelete))">
+      <i class="mdi mdi-delete me-1"></i>
+      Delete Permanently
+    </button>
+  </div>
+</ng-template>
 
 <!-- Reassign Modal -->
-<div class="modal fade" [class.show]="showReassignModal" [style.display]="showReassignModal ? 'block' : 'none'" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header bg-info text-white">
-        <h5 class="modal-title">
-          <i class="mdi mdi-swap-horizontal me-2"></i>
-          Reassign Work Order
-        </h5>
-        <button type="button" class="btn-close btn-close-white" (click)="closeReassignModal()"></button>
-      </div>
-      <div class="modal-body">
-        <div class="alert alert-info">
-          <i class="mdi mdi-information me-2"></i>
-          This keeps the assignment, EyeFi serial, UL, and linked asset together, and only moves the record to a new work order.
-        </div>
+<ng-template #reassignModalTpl let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title">
+      <i class="mdi mdi-swap-horizontal me-2"></i>
+      Reassign Work Order
+    </h5>
+    <button type="button" class="btn-close" (click)="closeReassignModal()"></button>
+  </div>
+  <div class="modal-body">
+    <div class="alert alert-info">
+      <i class="mdi mdi-information me-2"></i>
+      This keeps the assignment, EyeFi serial, UL, and linked asset together, and only moves the record to a new work order.
+    </div>
 
-        <div *ngIf="assignmentToReassign">
-          <p><strong>Assignment ID:</strong> {{ assignmentToReassign.unique_id }}</p>
-          <p><strong>EyeFi Serial:</strong> {{ assignmentToReassign.eyefi_serial_number }}</p>
-          <p><strong>UL Label:</strong> {{ assignmentToReassign.ul_number || 'N/A' }}</p>
-          <p><strong>Asset Number:</strong> {{ getLinkedAssetNumber(assignmentToReassign) }}</p>
-          <p><strong>Current WO:</strong> {{ assignmentToReassign.wo_number || assignmentToReassign.po_number || 'N/A' }}</p>
-        </div>
+    <div *ngIf="assignmentToReassign">
+      <p><strong>Assignment ID:</strong> {{ assignmentToReassign.unique_id }}</p>
+      <p><strong>Created/Used By:</strong> {{ assignmentToReassign.used_by || 'N/A' }}</p>
+      <p><strong>EyeFi Serial:</strong> {{ assignmentToReassign.eyefi_serial_number }}</p>
+      <p><strong>UL Label:</strong> {{ assignmentToReassign.ul_number || 'N/A' }}</p>
+      <p><strong>Asset Number:</strong> {{ getLinkedAssetNumber(assignmentToReassign) }}</p>
+      <p><strong>Current WO:</strong> {{ assignmentToReassign.wo_number || assignmentToReassign.po_number || 'N/A' }}</p>
+    </div>
 
-        <div class="mb-3">
-          <label for="newWoNumber" class="form-label">New Work Order <span class="text-danger">*</span></label>
-          <input
-            id="newWoNumber"
-            type="text"
-            class="form-control"
-            [(ngModel)]="newWoNumber"
-            placeholder="e.g., 41762">
-        </div>
-
-        <div class="mb-3">
-          <label for="reassignReason" class="form-label">Reason for reassignment <span class="text-danger">*</span></label>
-          <textarea
-            id="reassignReason"
-            class="form-control"
-            rows="3"
-            [(ngModel)]="reassignReason"
-            placeholder="e.g., Assigned to wrong WO, moving to corrected WO"></textarea>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" (click)="closeReassignModal()">Cancel</button>
-        <button
-          type="button"
-          class="btn btn-info"
-          (click)="confirmReassign()"
-          [disabled]="!newWoNumber || newWoNumber.trim().length === 0 || !reassignReason || reassignReason.trim().length === 0">
-          <i class="mdi mdi-check me-1"></i>
-          Reassign
-        </button>
+    <div class="mb-3">
+      <app-qad-wo-search
+        [showLabel]="true"
+        form_label="New Work Order"
+        [required]="true"
+        [autoFocus]="true"
+        appendToBody="body"
+        (notifyParent)="selectedReassignWo = $event">
+      </app-qad-wo-search>
+      <div *ngIf="selectedReassignWo" class="mt-2 small text-muted">
+        <span class="me-3"><strong>WO:</strong> {{ selectedReassignWo.wo_nbr }}</span>
+        <span class="me-3"><strong>Part:</strong> {{ selectedReassignWo.wo_part }}</span>
+        <span class="me-3"><strong>Customer:</strong> {{ selectedReassignWo.customer || selectedReassignWo.CUSTOMER || 'N/A' }}</span>
+        <span><strong>Due:</strong> {{ selectedReassignWo.wo_due_date || 'N/A' }}</span>
       </div>
     </div>
+
+    <div class="mb-3">
+      <label for="reassignReason" class="form-label">Reason for reassignment <span class="text-danger">*</span></label>
+      <textarea
+        id="reassignReason"
+        class="form-control"
+        rows="3"
+        [(ngModel)]="reassignReason"
+        placeholder="e.g., Assigned to wrong WO, moving to corrected WO"></textarea>
+    </div>
   </div>
-</div>
-<div class="modal-backdrop fade" [class.show]="showReassignModal" *ngIf="showReassignModal"></div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="closeReassignModal()">Cancel</button>
+    <button
+      type="button"
+      class="btn btn-info"
+      (click)="confirmReassign()"
+      [disabled]="!selectedReassignWo || !reassignReason || reassignReason.trim().length === 0">
+      <i class="mdi mdi-check me-1"></i>
+      Reassign
+    </button>
+  </div>
+</ng-template>
 
 <!-- ========================================
      VERIFICATION MODAL (NEW)

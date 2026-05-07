@@ -484,6 +484,11 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   currentUserId: number | null = null;
   currentUserName?: string;
 
+  // Owner-lock state
+  isOwner = false;
+  lockOwnerName: string | null = null;
+  private heartbeatInterval: ReturnType<typeof setInterval> | null = null;
+
   // Configuration values
   maxPhotoSizeMB = 10;
   maxVideoSizeMB = 50; // Default to 50MB for videos
@@ -1787,6 +1792,12 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     
     // Save notes immediately before component destruction
     this.saveNotesImmediately();
+
+    // Release owner-lock
+    this.stopHeartbeat();
+    if (this.isOwner && this.instanceId && this.currentUserId) {
+      this.photoChecklistService.releaseInstance(this.instanceId).subscribe({ error: () => {} });
+    }
   }
 
   get showLandscapeOverlay(): boolean {
@@ -2117,8 +2128,34 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
           return;
         }
 
-        // Submitted checklists are read-only
-        this.canModifyChecklist = canViewChecklist && instance.status !== 'submitted';
+        // Submitted checklists are read-only; start locked until claim resolves
+        const wouldBeEditable = canViewChecklist && instance.status !== 'submitted';
+        this.canModifyChecklist = false; // hold until claim confirms ownership
+        this.isOwner = false;
+        this.lockOwnerName = null;
+
+        // Attempt to claim the owner-lock before enabling edits
+        if (wouldBeEditable && this.currentUserId && this.currentUserName) {
+          this.photoChecklistService.claimInstance(this.instanceId, this.currentUserName).subscribe({
+            next: (res) => {
+              this.isOwner = res.success;
+              if (res.success) {
+                this.canModifyChecklist = true;
+                this.lockOwnerName = null;
+                this.startHeartbeat();
+              } else {
+                this.canModifyChecklist = false;
+                this.lockOwnerName = res.owner_name ?? null;
+              }
+              this.cdr.detectChanges();
+            },
+            error: () => {
+              // Network error — allow read-only access
+              this.canModifyChecklist = false;
+              this.cdr.detectChanges();
+            },
+          });
+        }
         
         if (!instance.template_id) {
           this.loading = false;
@@ -2135,9 +2172,47 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         this.loading = false;
         this.isLoadingInstance = false;
         alert(`Error loading checklist instance #${this.instanceId}. It may have been deleted or you don't have permission to access it.`);
-        this.router.navigate(['/quality/checklist/list']);
+        this.router.navigate(['/inspection-checklist/execution']);
       }
     });
+  }
+
+  transferOwnershipToMe(): void {
+    if (!this.currentUserId || !this.currentUserName || !this.instanceId) return;
+    const lockedBy = this.lockOwnerName ?? 'another user';
+    const confirmed = confirm(
+      `This checklist is currently locked by "${lockedBy}".\n\nTransfer ownership to yourself so you can make edits?`
+    );
+    if (!confirmed) return;
+
+    this.photoChecklistService.transferInstance(this.instanceId, this.currentUserId, this.currentUserName).subscribe({
+      next: () => {
+        this.isOwner = true;
+        this.canModifyChecklist = true;
+        this.lockOwnerName = null;
+        this.startHeartbeat();
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        alert(`Could not transfer ownership: ${err?.error?.message ?? err?.message ?? 'Unknown error'}`);
+      },
+    });
+  }
+
+  private startHeartbeat(): void {    this.stopHeartbeat();
+    // Send heartbeat every 4 minutes to keep 10-minute lease alive
+    this.heartbeatInterval = setInterval(() => {
+      if (this.instanceId && this.isOwner) {
+        this.photoChecklistService.heartbeatInstance(this.instanceId).subscribe({ error: () => {} });
+      }
+    }, 4 * 60 * 1000);
+  }
+
+  private stopHeartbeat(): void {
+    if (this.heartbeatInterval != null) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+    }
   }
 
   private ensureCanModify(interactive = true): boolean {
@@ -2149,7 +2224,8 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     }
     if (!this.canModifyChecklist) {
       if (interactive) {
-        alert('This checklist is read-only.');
+        const lockedBy = this.lockOwnerName ? ` It is currently locked by ${this.lockOwnerName}.` : '';
+        alert(`This checklist is read-only.${lockedBy}`);
       }
       return false;
     }
@@ -2264,7 +2340,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     
     // Flatten items to include sub-items from children arrays
     const flattenedItems = this.flattenItems(this.template.items);
-    const instanceItems = Array.isArray(this.instance?.items) ? this.instance!.items : [];
+    const instanceItems = Array.isArray(this.instance?.media_by_item) ? this.instance!.media_by_item : [];
     const usedInstanceItemIndexes = new Set<number>();
     
     const itemProgress: ChecklistItemProgress[] = flattenedItems.map((item, index) => {
@@ -2390,6 +2466,15 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         if (this.photoValidation.areSubmissionRequirementsMet(mergedPhotos.length, mergedVideos.length, item)) {
           completed = true;
           completionDate = completionDate || new Date();
+        }
+      }
+
+      // Backfill completedByName from photo metadata when DB entry pre-dates attribution tracking
+      if (!completedByName && mergedPhotos.length > 0) {
+        const firstPhotoUrl = mergedPhotos[0];
+        const metaFromLocal = photoMeta?.[firstPhotoUrl];
+        if ((metaFromLocal as any)?.uploadedBy) {
+          completedByName = (metaFromLocal as any).uploadedBy;
         }
       }
       

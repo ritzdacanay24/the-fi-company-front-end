@@ -131,7 +131,16 @@ export class SerialAssignmentsService {
   }
 
   async reassignAssignment(id: number, dto: ReassignAssignmentDto) {
-    const result = await this.repository.reassignOne(id, dto.new_wo_number, dto.reason, dto.performed_by);
+    const result = await this.repository.reassignOne(id, dto.new_wo_number, dto.reason, dto.performed_by, {
+      wo_description: dto.wo_description,
+      wo_part: dto.wo_part,
+      wo_qty_ord: dto.wo_qty_ord,
+      wo_due_date: dto.wo_due_date,
+      wo_routing: dto.wo_routing,
+      wo_line: dto.wo_line,
+      cp_cust_part: dto.cp_cust_part,
+      cp_cust: dto.cp_cust,
+    });
     return {
       success: true,
       message: `Assignment reassigned to WO ${result.new_wo_number}`,

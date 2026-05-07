@@ -27,6 +27,7 @@ export class PartsOrderRepository extends BaseRepository<RowDataPacket> {
     'return_tracking_number',
     'serial_number',
     'details',
+    'active',
   ]);
 
   constructor(@Inject(MysqlService) mysqlService: MysqlService) {
@@ -43,5 +44,14 @@ export class PartsOrderRepository extends BaseRepository<RowDataPacket> {
 
   async getBySoLineNumber(soNumber: string): Promise<RowDataPacket | null> {
     return this.findOne({ so_number: soNumber });
+  }
+
+  async findAllWithUser(): Promise<RowDataPacket[]> {
+    return this.rawQuery<RowDataPacket>(`
+      SELECT a.*, CONCAT(b.first, ' ', b.last) AS created_by_name
+      FROM eyefidb.fs_parts_order a
+      LEFT JOIN db.users b ON b.id = a.created_by
+      ORDER BY a.id DESC
+    `);
   }
 }

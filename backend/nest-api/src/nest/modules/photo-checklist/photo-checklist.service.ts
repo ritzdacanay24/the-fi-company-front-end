@@ -245,9 +245,39 @@ export class PhotoChecklistService {
       });
     }
 
+    // Load photos from photo_submissions (source of truth for media)
+    const photoRows = await this.repository.getPhotoSubmissionsByInstanceId(id);
+
+    // Group by item_id and build per-item photo arrays
+    const photosByItemId = new Map<number, { file_url: string; file_type: string; capture_source: string | null; created_at: string | null }[]>();
+    for (const row of photoRows) {
+      const itemId = Number(row.item_id);
+      if (!photosByItemId.has(itemId)) photosByItemId.set(itemId, []);
+      const meta = this.safeParseJson<Record<string, unknown>>(row.photo_metadata, {});
+      photosByItemId.get(itemId)!.push({
+        file_url: this.normalizeChecklistMediaUrl(String(row.file_url || ''), { subFolder: 'inspectionCheckList' }),
+        file_type: String(row.file_type || 'image'),
+        capture_source: (meta?.capture_source as string | null) ?? null,
+        created_at: row.created_at ? String(row.created_at) : null,
+      });
+    }
+
+    // Convert map to items array for frontend consumption
+    type InstanceMediaItem = { file_url: string; file_type: string; capture_source: string | null; created_at: string | null };
+    type InstanceItem = { item_id: number; photos: InstanceMediaItem[]; videos: InstanceMediaItem[] };
+    const items: InstanceItem[] = [];
+    for (const [itemId, media] of photosByItemId.entries()) {
+      items.push({
+        item_id: itemId,
+        photos: media.filter(m => m.file_type !== 'video'),
+        videos: media.filter(m => m.file_type === 'video'),
+      });
+    }
+
     return {
       ...instance,
       item_completion: this.normalizeInstanceItemCompletionMediaUrls(instance.item_completion),
+      media_by_item: items,
     };
   }
 
@@ -256,7 +286,110 @@ export class PhotoChecklistService {
     return { success: true };
   }
 
-  async updateInstanceItemCompletion(instanceId: number, itemId: number, payload: Record<string, unknown>) {
+  // ──────────────────────────────────────────────────────────────────────────
+  // Owner-lock operations
+  // ──────────────────────────────────────────────────────────────────────────
+
+  private isLockExpired(lockExpiresAt: string | null): boolean {
+    if (!lockExpiresAt) return true;
+    return new Date(lockExpiresAt).getTime() < Date.now();
+  }
+
+  async claimInstance(instanceId: number, userId: number, userName: string): Promise<{ success: boolean; owner_id?: number; owner_name?: string; message?: string }> {
+    const lock = await this.repository.getInstanceLock(instanceId);
+    const alreadyLocked = lock.owner_id != null && !this.isLockExpired(lock.lock_expires_at);
+
+    // Case 1: someone else holds an active (non-expired) lock → deny
+    if (alreadyLocked && lock.owner_id !== userId) {
+      return {
+        success: false,
+        owner_id: lock.owner_id ?? undefined,
+        owner_name: lock.owner_name ?? undefined,
+        message: `Instance is currently locked by ${lock.owner_name ?? 'another user'}`,
+      };
+    }
+
+    // Case 2: lock is free/expired but instance is assigned to someone else → deny
+    // Only the assigned operator can reclaim after expiry; admins must use transfer endpoint.
+    if (!alreadyLocked && lock.operator_id != null && lock.operator_id !== userId) {
+      return {
+        success: false,
+        owner_id: lock.operator_id ?? undefined,
+        owner_name: lock.operator_name ?? undefined,
+        message: `This checklist is assigned to ${lock.operator_name ?? 'another user'}`,
+      };
+    }
+
+    await this.repository.claimInstanceLock(instanceId, userId, userName);
+    return { success: true, owner_id: userId, owner_name: userName };
+  }
+
+  async releaseInstance(instanceId: number, userId: number): Promise<{ success: boolean }> {
+    await this.repository.releaseInstanceLock(instanceId, userId);
+    return { success: true };
+  }
+
+  async heartbeatInstance(instanceId: number, userId: number): Promise<{ success: boolean }> {
+    await this.repository.heartbeatInstanceLock(instanceId, userId);
+    return { success: true };
+  }
+
+  async transferInstance(instanceId: number, callerId: number, toUserId: number, toUserName: string): Promise<{ success: boolean; message?: string }> {
+    const lock = await this.repository.getInstanceLock(instanceId);
+    const callerIsOwner = lock.owner_id === callerId;
+    const lockExpired = this.isLockExpired(lock.lock_expires_at);
+    // Allow transfer if: caller is owner, lock is expired/free, or will be handled by controller-level admin check
+    if (!callerIsOwner && !lockExpired && lock.owner_id != null) {
+      throw new ForbiddenException(`Only the current owner (${lock.owner_name ?? 'unknown'}) can transfer this lock.`);
+    }
+    await this.repository.transferInstanceAssignment(instanceId, toUserId, toUserName);
+    return { success: true };
+  }
+
+  async transferInstanceAdmin(instanceId: number, toUserId: number, toUserName: string): Promise<{ success: boolean }> {
+    await this.repository.transferInstanceAssignment(instanceId, toUserId, toUserName);
+    return { success: true };
+  }
+
+  async bulkTransferInstancesAdmin(
+    instanceIds: number[],
+    toUserId: number,
+    toUserName: string,
+  ): Promise<{ success: boolean; requested: number; transferred: number; skipped: number }> {
+    const normalizedIds = Array.from(new Set((instanceIds || []).map((id) => Number(id)).filter((id) => id > 0)));
+    if (!normalizedIds.length) {
+      return { success: false, requested: 0, transferred: 0, skipped: 0 };
+    }
+
+    const transferred = await this.repository.bulkTransferInstanceAssignment(normalizedIds, toUserId, toUserName);
+    const requested = normalizedIds.length;
+    return {
+      success: true,
+      requested,
+      transferred,
+      skipped: Math.max(0, requested - transferred),
+    };
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Throws ForbiddenException if the caller does not hold a valid (non-expired) lock.
+   * Callers with no userId supplied skip the check (legacy/system calls).
+   */
+  private async assertIsLockOwner(instanceId: number, callerId: number | null | undefined): Promise<void> {
+    if (!callerId) return; // no user context — allow (system call)
+    const lock = await this.repository.getInstanceLock(instanceId);
+    if (lock.owner_id == null || this.isLockExpired(lock.lock_expires_at)) return; // no active lock — allow
+    if (lock.owner_id !== callerId) {
+      throw new ForbiddenException(
+        `This checklist is currently locked by ${lock.owner_name ?? 'another user'}. Transfer ownership before making changes.`,
+      );
+    }
+  }
+
+  async updateInstanceItemCompletion(instanceId: number, itemId: number, payload: Record<string, unknown>, callerId?: number) {
+    await this.assertIsLockOwner(instanceId, callerId ?? null);
     await this.repository.updateInstanceItemCompletion(instanceId, itemId, payload);
     return { success: true, instance_id: instanceId, item_id: itemId };
   }
@@ -265,8 +398,9 @@ export class PhotoChecklistService {
     instanceId: number,
     itemId: number,
     file?: { originalname?: string; mimetype?: string; size?: number; buffer?: Buffer },
-    options?: { captureSource?: string; userId?: string },
+    options?: { captureSource?: string; userId?: string; callerId?: number },
   ) {
+    await this.assertIsLockOwner(instanceId, options?.callerId ?? null);
     const subFolder = 'inspectionCheckList';
     const fileName = await this.fileStorageService.storeUploadedFile(file, subFolder);
     const baseLink = this.fileStorageService.resolveLink(fileName, subFolder)

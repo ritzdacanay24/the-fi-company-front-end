@@ -881,6 +881,16 @@ export class SerialAssignmentsRepository extends BaseRepository<RowDataPacket> {
     newWoNumber: string,
     reason: string,
     performedBy: string,
+    woDetails?: {
+      wo_description?: string;
+      wo_part?: string;
+      wo_qty_ord?: number;
+      wo_due_date?: string;
+      wo_routing?: string;
+      wo_line?: string;
+      cp_cust_part?: string;
+      cp_cust?: string;
+    },
   ): Promise<{ old_wo_number: string | null; new_wo_number: string; eyefi_serial_number: string | null }> {
     const targetWo = String(newWoNumber || '').trim();
     if (!targetWo) {
@@ -904,9 +914,28 @@ export class SerialAssignmentsRepository extends BaseRepository<RowDataPacket> {
 
       await conn.execute(
         `UPDATE \`${TABLE}\`
-         SET wo_number = ?, po_number = ?
+         SET wo_number = ?, po_number = ?,
+             wo_description = COALESCE(?, wo_description),
+             wo_part = COALESCE(?, wo_part),
+             wo_qty_ord = COALESCE(?, wo_qty_ord),
+             wo_due_date = COALESCE(?, wo_due_date),
+             wo_routing = COALESCE(?, wo_routing),
+             wo_line = COALESCE(?, wo_line),
+             cp_cust_part = COALESCE(?, cp_cust_part),
+             cp_cust = COALESCE(?, cp_cust)
          WHERE id = ?`,
-        [targetWo, targetWo, id],
+        [
+          targetWo, targetWo,
+          woDetails?.wo_description ?? null,
+          woDetails?.wo_part ?? null,
+          woDetails?.wo_qty_ord ?? null,
+          woDetails?.wo_due_date ?? null,
+          woDetails?.wo_routing ?? null,
+          woDetails?.wo_line ?? null,
+          woDetails?.cp_cust_part ?? null,
+          woDetails?.cp_cust ?? null,
+          id,
+        ],
       );
 
       const auditReason = `Reassigned WO ${oldWo || 'N/A'} -> ${targetWo}. ${reason}`.trim();

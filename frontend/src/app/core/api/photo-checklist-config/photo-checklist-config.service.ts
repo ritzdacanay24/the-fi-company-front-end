@@ -144,13 +144,17 @@ export interface ChecklistInstance {
   operator_id: number;
   operator_name: string;
   operator_image?: string; // User's profile image URL
+  owner_id?: number | null;
+  owner_name?: string | null;
+  lock_expires_at?: string | null;
   status: 'draft' | 'in_progress' | 'review' | 'completed' | 'submitted';
   progress_percentage: number;
   item_completion?: any; // Persisted per-item completion/notes (JSON)
   photo_count?: number;
   required_items?: number;
   completed_required?: number;
-  items?: ChecklistItem[];
+  items?: ChecklistItem[]; // Template items (used by photos view, progress calc)
+  media_by_item?: Array<{ item_id: number; photos: Array<{ file_url: string; file_type: string; capture_source?: string | null; created_at?: string | null }>; videos: Array<{ file_url: string; file_type: string; capture_source?: string | null; created_at?: string | null }> }>; // Photo submissions per item from DB
   started_at?: string;
   completed_at?: string;
   submitted_at?: string;
@@ -531,6 +535,36 @@ export class PhotoChecklistConfigService {
       `${this.nestPhotoChecklistBaseUrl}/instances/${id}`
     ).pipe(
       tap(() => this.getInstances().subscribe())
+    );
+  }
+
+  // Owner-lock operations
+
+  claimInstance(id: number, userName: string): Observable<{ success: boolean; owner_id?: number; owner_name?: string; message?: string }> {
+    return this.http.post<{ success: boolean; owner_id?: number; owner_name?: string; message?: string }>(
+      `${this.nestPhotoChecklistBaseUrl}/instances/${id}/claim`,
+      { user_name: userName },
+    );
+  }
+
+  releaseInstance(id: number): Observable<{ success: boolean }> {
+    return this.http.post<{ success: boolean }>(
+      `${this.nestPhotoChecklistBaseUrl}/instances/${id}/release`,
+      {},
+    );
+  }
+
+  heartbeatInstance(id: number): Observable<{ success: boolean }> {
+    return this.http.post<{ success: boolean }>(
+      `${this.nestPhotoChecklistBaseUrl}/instances/${id}/heartbeat`,
+      {},
+    );
+  }
+
+  transferInstance(id: number, toUserId: number, toUserName: string): Observable<{ success: boolean; message?: string }> {
+    return this.http.post<{ success: boolean; message?: string }>(
+      `${this.nestPhotoChecklistBaseUrl}/instances/${id}/transfer`,
+      { to_user_id: toUserId, to_user_name: toUserName },
     );
   }
 

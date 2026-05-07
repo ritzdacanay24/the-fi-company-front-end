@@ -62,6 +62,32 @@ export class PhotoChecklistV2Service {
     return this.http.patch<{ success: boolean; error?: string }>(`${this.baseUrl}/instances/${id}/archive`, {});
   }
 
+  transferInstanceAdmin(
+    id: number,
+    toUserId: number,
+    toUserName: string,
+  ): Observable<{ success: boolean; message?: string }> {
+    return this.http.post<{ success: boolean; message?: string }>(`${this.baseUrl}/instances/${id}/transfer-admin`, {
+      to_user_id: toUserId,
+      to_user_name: toUserName,
+    });
+  }
+
+  transferInstancesBulkAdmin(
+    instanceIds: number[],
+    toUserId: number,
+    toUserName: string,
+  ): Observable<{ success: boolean; requested: number; transferred: number; skipped: number }> {
+    return this.http.post<{ success: boolean; requested: number; transferred: number; skipped: number }>(
+      `${this.baseUrl}/instances/transfer-bulk`,
+      {
+        instance_ids: instanceIds,
+        to_user_id: toUserId,
+        to_user_name: toUserName,
+      },
+    );
+  }
+
   getConfig(): Observable<ChecklistConfig[]> {
     return this.http.get<ChecklistConfig[]>(`${this.baseUrl}/config`);
   }

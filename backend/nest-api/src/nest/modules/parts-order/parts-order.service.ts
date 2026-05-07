@@ -26,7 +26,7 @@ export class PartsOrderService {
   ) {}
 
   async getAll(view?: string): Promise<PartsOrderRow[]> {
-    const rows = (await this.repository.find()) as PartsOrderRow[];
+    const rows = (await this.repository.findAllWithUser()) as PartsOrderRow[];
 
     const soNumbers = Array.from(
       new Set(
@@ -60,7 +60,10 @@ export class PartsOrderService {
     });
 
     if (normalizedView === 'open') {
-      return mappedRows.filter((row) => !this.hasTrackingNumber(row.tracking_number));
+      return mappedRows.filter((row) => {
+        const isActive = Number(row.active ?? 1) === 1;
+        return isActive && !this.hasTrackingNumber(row.tracking_number);
+      });
     }
 
     return mappedRows;
@@ -121,6 +124,15 @@ export class PartsOrderService {
 
   async delete(id: number): Promise<{ success: true }> {
     const affectedRows = await this.repository.deleteById(id);
+    if (!affectedRows) {
+      throw new NotFoundException(`Parts order ${id} not found`);
+    }
+
+    return { success: true };
+  }
+
+  async archive(id: number): Promise<{ success: true }> {
+    const affectedRows = await this.repository.updateById(id, { active: 0 });
     if (!affectedRows) {
       throw new NotFoundException(`Parts order ${id} not found`);
     }

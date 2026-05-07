@@ -12,6 +12,8 @@ export class LinkRendererV2Component implements ICellRendererComp {
     this.params = params;
     if (params.isLink) {
       this.eGui = document.createElement("div");
+      this.eGui.style.cssText =
+        "height:100%;display:flex;align-items:center;";
       this.eButton = document.createElement("a");
       this.eButton.style.cssText =
         "text-decoration: underline;text-underline-offset: 2px;";
@@ -23,8 +25,11 @@ export class LinkRendererV2Component implements ICellRendererComp {
       this.eGui.appendChild(this.eButton);
     } else {
       this.eGui = document.createElement("div");
+      this.eGui.style.cssText =
+        "height:100%;display:flex;align-items:center;";
       this.eButton = document.createElement("button");
-      this.eButton.className = "btn btn-primary pt-0 pb-0 ps-3 pe-3";
+      this.eButton.className =
+        "btn btn-primary btn-sm d-inline-flex align-items-center";
       this.eButton.textContent = params.value;
       this.eButton.addEventListener("click", this.onClick);
       this.eGui.appendChild(this.eButton);

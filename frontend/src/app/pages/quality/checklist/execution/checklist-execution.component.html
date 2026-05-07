@@ -35,7 +35,7 @@
       </div>
 
       <div class="card shadow-sm border-0">
-        <div class="card-header">
+        <div class="card-header position-relative">
           <div class="d-flex align-items-center gap-2">
             <div class="form-icon" style="width: 280px;">
               <input type="search" class="form-control form-control-icon" placeholder="Search checklists..."
@@ -45,7 +45,22 @@
             <button class="btn btn-outline-secondary" (click)="loadOpenChecklists()" title="Refresh">
               <i class="mdi mdi-refresh"></i>
             </button>
+            @if (canManageTransfers) {
+              <div class="ms-auto">
+                <button class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1"
+                        type="button"
+                        [disabled]="!canOpenTransferPanel"
+                        (click)="openReassignModal()"
+                        title="Select checklist rows first, then reassign">
+                  <i class="mdi mdi-account-switch"></i>
+                  Reassign Selected
+                  <span class="badge bg-primary-subtle text-primary">{{selectedTransferCount}}</span>
+                </button>
+              </div>
+            }
           </div>
+
+
         </div>
 
         <ul ngbNav #nav="ngbNav" [activeId]="activeTab" (navChange)="onTabChange($event.nextId)"
@@ -54,7 +69,7 @@
           <li [ngbNavItem]="tab.value" class="py-1">
             <a ngbNavLink>
               <i [ngClass]="tab.icon"></i> {{tab.name}}
-              @if (tab.count > 0) {
+              @if (tab.count > 0 && tab.value !== 'submitted' && tab.value !== 'all') {
                 <span class="ms-1 px-2 rounded-pill"
                   [class.bg-primary]="tab.countStyle === 'primary'"
                   [class.bg-warning]="tab.countStyle === 'warning'"
@@ -77,7 +92,11 @@
             [rowData]="filteredChecklists"
             [domLayout]="'normal'"
             [defaultColDef]="defaultColDef"
-            [suppressRowClickSelection]="false"
+            [suppressRowClickSelection]="true"
+            [rowSelection]="'multiple'"
+            [rowMultiSelectWithClick]="true"
+            (gridReady)="onGridReady($event)"
+            (selectionChanged)="onSelectionChanged($event)"
             (cellClicked)="onGridCellClicked($event)">
           </ag-grid-angular>
         </div>
@@ -86,6 +105,54 @@
     </div>
   </div>
 </div>
+
+<ng-template #reassignConfirmModal let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title">Reassign Ownership</h5>
+    <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss('cancel')"></button>
+  </div>
+
+  <div class="modal-body">
+    <p class="mb-3 text-muted small">
+      Reassigning <strong>{{selectedTransferCount}}</strong> selected checklist instance(s).
+      This will update the assignment owner and active lock owner for each selected record.
+    </p>
+
+    <label class="form-label fw-semibold">Transfer to</label>
+    <select class="form-select mb-3" [(ngModel)]="transferTargetUserId">
+      <option [ngValue]="null">Select target user...</option>
+      @for (u of transferUsers; track u.id) {
+        <option [ngValue]="u.id">{{u.name}}</option>
+      }
+    </select>
+
+    <div class="d-flex gap-2">
+      <button class="btn btn-outline-secondary btn-sm"
+              [disabled]="transferLoading || filteredChecklists.length === 0"
+              (click)="selectAllFilteredRows()">
+        <i class="mdi mdi-select-all me-1"></i>Select All Filtered ({{filteredChecklists.length}})
+      </button>
+      <button class="btn btn-outline-secondary btn-sm"
+              [disabled]="transferLoading || selectedTransferCount === 0"
+              (click)="clearSelectedRows()">
+        <i class="mdi mdi-close me-1"></i>Clear Selection
+      </button>
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn btn-light" (click)="modal.dismiss('cancel')">Cancel</button>
+    <button type="button"
+            class="btn btn-primary"
+            [disabled]="transferLoading || selectedTransferCount === 0 || !transferTargetUserId"
+            (click)="transferSelectedInstances(modal)">
+      @if (transferLoading) {
+        <span class="spinner-border spinner-border-sm me-1"></span>
+      }
+      Reassign ({{selectedTransferCount}})
+    </button>
+  </div>
+</ng-template>
 
 <!-- Available Templates Section -->
 <div class="container-fluid mt-4" *ngIf="checklistTemplates && checklistTemplates.length > 0">

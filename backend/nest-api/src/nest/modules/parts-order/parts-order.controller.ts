@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { Permissions, RolePermissionGuard } from '../access-control';
 import { PartsOrderService } from './parts-order.service';
 
@@ -49,5 +49,11 @@ export class PartsOrderController {
   @Permissions('delete')
   async delete(@Param('id', ParseIntPipe) id: number) {
     return this.service.delete(id);
+  }
+
+  @Patch(':id/archive')
+  @Permissions('manage')
+  async archive(@Param('id', ParseIntPipe) id: number) {
+    return this.service.archive(id);
   }
 }

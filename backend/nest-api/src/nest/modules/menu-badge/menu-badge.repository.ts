@@ -183,8 +183,11 @@ export class MenuBadgeRepository {
 
       SELECT 'partsOrderOpen' AS menu_id, COUNT(*) AS count
       FROM eyefidb.fs_parts_order po
-      WHERE po.tracking_number IS NULL
+      WHERE po.active = 1
+        AND (
+             po.tracking_number IS NULL
          OR TRIM(po.tracking_number) = ''
+        )
 
       UNION ALL
 

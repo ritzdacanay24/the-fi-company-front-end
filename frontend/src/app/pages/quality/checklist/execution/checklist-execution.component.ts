@@ -1,16 +1,17 @@
 import { PhotosService } from './photos/photos.service';
-import { Component, Inject, OnDestroy, OnInit, Renderer2, ElementRef } from '@angular/core';
+import { Component, Inject, OnDestroy, OnInit, Renderer2, ElementRef, TemplateRef, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { first } from 'rxjs/operators';
 import { WorkOrderInfoService } from '@app/core/api/work-order/work-order-info.service';
 import { PhotoChecklistConfigService, ChecklistTemplate, ChecklistInstance } from '@app/core/api/photo-checklist-config/photo-checklist-config.service';
 import { PhotoChecklistV2Service } from '@app/core/api/photo-checklist-config/photo-checklist-v2.service';
+import { AccessControlApiService, AccessControlUserSummary } from '@app/core/api/access-control/access-control.service';
 import { SharedModule } from '@app/shared/shared.module';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import { DOCUMENT } from '@angular/common';
 import { AgGridModule } from 'ag-grid-angular';
-import { ColDef } from 'ag-grid-community';
-import { NgbNavModule } from '@ng-bootstrap/ng-bootstrap';
+import { ColDef, GridApi, GridReadyEvent, SelectionChangedEvent } from 'ag-grid-community';
+import { NgbModal, NgbNavModule } from '@ng-bootstrap/ng-bootstrap';
 
 @Component({
   standalone:true, 
@@ -20,6 +21,7 @@ import { NgbNavModule } from '@ng-bootstrap/ng-bootstrap';
   styleUrls: ['./checklist-execution.component.scss']
 })
 export class ChecklistExecutionComponent implements OnInit, OnDestroy {
+  @ViewChild('reassignConfirmModal') reassignConfirmModal?: TemplateRef<any>;
 
   readonly defaultColDef: ColDef = {
     sortable: true,
@@ -32,6 +34,18 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
 
   // Grid column definitions
   columnDefs: ColDef[] = [
+    {
+      headerName: '',
+      width: 44,
+      maxWidth: 44,
+      minWidth: 44,
+      sortable: false,
+      filter: false,
+      resizable: false,
+      pinned: 'left',
+      checkboxSelection: true,
+      headerCheckboxSelection: true,
+    },
     {
       field: 'id',
       headerName: '',
@@ -81,15 +95,30 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
       minWidth: 120
     },
     {
+      field: 'owner_name',
+      headerName: 'Owner',
+      minWidth: 140,
+      cellRenderer: (params: any) => {
+        const ownerName = params?.data?.owner_name || params?.data?.operator_name;
+        if (!ownerName) {
+          return '<span class="text-muted">Unassigned</span>';
+        }
+        return `<span class="d-inline-flex align-items-center gap-1"><i class="mdi mdi-account-lock-outline text-primary"></i>${ownerName}</span>`;
+      }
+    },
+    {
       field: 'status',
       headerName: 'Status',
       minWidth: 110,
       cellRenderer: (params: any) => {
-        const status = params.value || '';
+        const status = this.normalizeChecklistStatus(params.value || '');
         const badgeClass = status === 'completed' ? 'bg-success' : 
                           status === 'in_progress' ? 'bg-warning' : 
                           status === 'submitted' ? 'bg-info' : 'bg-secondary';
-        return `<span class="badge ${badgeClass}">${status.charAt(0).toUpperCase() + status.slice(1)}</span>`;
+        const label = status === 'in_progress'
+          ? 'In Progress'
+          : status.charAt(0).toUpperCase() + status.slice(1);
+        return `<span class="badge ${badgeClass}">${label}</span>`;
       }
     },
     {
@@ -136,26 +165,53 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
   loading: boolean;
 
   // Tab navigation
-  activeTab = 'my_assignments';
+  activeTab = 'open';
   navOptions = [
     { name: 'My Assignments', value: 'my_assignments', icon: 'mdi mdi-account-check-outline me-1 align-bottom', count: 0, countStyle: 'primary' },
-    { name: 'In Progress',    value: 'in_progress',    icon: 'mdi mdi-progress-clock me-1 align-bottom',        count: 0, countStyle: 'warning' },
-    { name: 'Completed',      value: 'completed',      icon: 'mdi mdi-check-circle-outline me-1 align-bottom',  count: 0, countStyle: 'success' },
+    { name: 'Open',           value: 'open',           icon: 'mdi mdi-progress-clock me-1 align-bottom',        count: 0, countStyle: 'warning' },
     { name: 'Submitted',      value: 'submitted',      icon: 'mdi mdi-send-check-outline me-1 align-bottom',    count: 0, countStyle: 'info'    },
     { name: 'All',            value: 'all',            icon: 'mdi mdi-format-list-bulleted me-1 align-bottom',  count: 0, countStyle: 'secondary' },
   ];
   currentUser: any = null;
   quickSearch = '';
   isStandaloneMode = false;
+  gridApi: GridApi | null = null;
+  selectedInstanceIds: number[] = [];
+  transferUsers: AccessControlUserSummary[] = [];
+  transferTargetUserId: number | null = null;
+  transferLoading = false;
+  showTransferPanel = false;
+  transferOrigin: 'selection' | 'single-row' = 'selection';
   private readonly standaloneBodyClass = 'standalone-checklist-execution';
+
+  get canManageTransfers(): boolean {
+    const isAdmin = Number(this.currentUser?.isAdmin || 0) === 1;
+    const employeeType = Number(this.currentUser?.employeeType ?? this.currentUser?.employee_type ?? 0);
+    return isAdmin || employeeType !== 0;
+  }
+
+  get selectedTransferCount(): number {
+    return this.selectedInstanceIds.length;
+  }
+
+  get canOpenTransferPanel(): boolean {
+    return this.selectedTransferCount > 0;
+  }
+
+  get selectedTransferUserName(): string {
+    const found = this.transferUsers.find((u) => Number(u.id) === Number(this.transferTargetUserId || 0));
+    return found?.name || '';
+  }
 
   constructor(
     private photosService: PhotosService,
     private workOrderInfoService: WorkOrderInfoService,
     private photoChecklistConfigService: PhotoChecklistConfigService,
     private photoChecklistV2Service: PhotoChecklistV2Service,
+    private accessControlApiService: AccessControlApiService,
     private router: Router,
     private authService: AuthenticationService,
+    private modalService: NgbModal,
     private renderer: Renderer2,
     @Inject(DOCUMENT) private document: Document
   ) {
@@ -250,10 +306,14 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
           c.operator_id?.toString() === currentUserId ||
           c.operator_name?.toLowerCase() === currentUserName
         ).length;
+      } else if (tab.value === 'open') {
+        tab.count = this.openChecklists.filter(c => this.isOpenTabStatus(c.status)).length;
       } else if (tab.value === 'all') {
         tab.count = this.openChecklists.length;
       } else {
-        tab.count = this.openChecklists.filter(c => c.status === tab.value).length;
+        tab.count = this.openChecklists.filter(
+          c => this.normalizeChecklistStatus(c.status) === tab.value
+        ).length;
       }
     }
   }
@@ -272,8 +332,12 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
         c.operator_id?.toString() === currentUserId ||
         c.operator_name?.toLowerCase() === currentUserName
       );
+    } else if (this.activeTab === 'open') {
+      this.filteredChecklists = this.openChecklists.filter(c => this.isOpenTabStatus(c.status));
     } else {
-      this.filteredChecklists = this.openChecklists.filter(c => c.status === this.activeTab);
+      this.filteredChecklists = this.openChecklists.filter(
+        c => this.normalizeChecklistStatus(c.status) === this.activeTab
+      );
     }
 
     if (this.quickSearch?.trim()) {
@@ -294,6 +358,19 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
 
   private normalizeText(value: unknown): string {
     return (value || '').toString().trim().toLowerCase().replace(/\s+/g, ' ');
+  }
+
+  private normalizeChecklistStatus(status: unknown): string {
+    const normalized = String(status || '').trim().toLowerCase().replace(/\s+/g, '_');
+    if (normalized === 'draft' || normalized === 'inprocess' || normalized === 'in_process' || normalized === 'in_progress') {
+      return 'in_progress';
+    }
+    return normalized;
+  }
+
+  private isOpenTabStatus(status: unknown): boolean {
+    const normalized = this.normalizeChecklistStatus(status);
+    return normalized === 'in_progress' || normalized === 'completed';
   }
 
   private getCurrentUserName(currentUser: any): string {
@@ -361,6 +438,153 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
     }
   }
 
+  onGridReady(event: GridReadyEvent): void {
+    this.gridApi = event.api;
+  }
+
+  onSelectionChanged(event: SelectionChangedEvent): void {
+    const rows = event.api.getSelectedRows() as ChecklistInstance[];
+    this.selectedInstanceIds = (rows || []).map((r) => Number(r?.id || 0)).filter((id) => id > 0);
+    if (!this.selectedInstanceIds.length) {
+      this.transferOrigin = 'selection';
+    }
+  }
+
+  private async loadTransferUsers(): Promise<void> {
+    if (!this.canManageTransfers) return;
+    try {
+      const users = await this.accessControlApiService.getUsers();
+      this.transferUsers = (users || [])
+        .filter((u) => Number(u?.active ?? 1) === 1)
+        .sort((a, b) => String(a?.name || '').localeCompare(String(b?.name || '')));
+    } catch {
+      this.transferUsers = [];
+    }
+  }
+
+  openReassignModal(): void {
+    if (!this.canManageTransfers) {
+      alert('Only managers/admins can transfer ownership.');
+      return;
+    }
+    if (!this.selectedInstanceIds.length) {
+      alert('Select at least one checklist instance first.');
+      return;
+    }
+    if (!this.reassignConfirmModal) {
+      alert('Modal template not found. Please refresh and try again.');
+      return;
+    }
+    this.modalService.open(this.reassignConfirmModal, {
+      centered: true,
+      size: 'md',
+      backdrop: 'static',
+    });
+  }
+
+  openReassignConfirmModal(modalTpl: TemplateRef<any> | null = null): void {
+    if (!this.canManageTransfers) {
+      alert('Only managers/admins can transfer ownership.');
+      return;
+    }
+    if (!this.selectedInstanceIds.length) {
+      alert('Select at least one checklist instance first.');
+      return;
+    }
+    if (!this.transferTargetUserId || !this.selectedTransferUserName) {
+      alert('Select a target user to transfer ownership to.');
+      return;
+    }
+
+    const resolvedTpl = modalTpl || this.reassignConfirmModal || null;
+    if (!resolvedTpl) {
+      alert('Unable to open confirmation dialog. Please refresh and try again.');
+      return;
+    }
+
+    this.modalService.open(resolvedTpl, {
+      centered: true,
+      size: 'md',
+      backdrop: 'static',
+    });
+  }
+
+  transferSelectedInstances(modalRef?: { close: () => void }): void {
+    if (!this.canManageTransfers) {
+      alert('Only managers/admins can transfer ownership.');
+      return;
+    }
+    if (!this.selectedInstanceIds.length) {
+      alert('Select at least one checklist instance first.');
+      return;
+    }
+    if (!this.transferTargetUserId || !this.selectedTransferUserName) {
+      alert('Select a target user to transfer ownership to.');
+      return;
+    }
+
+    const confirmMsg = `Transfer ${this.selectedInstanceIds.length} selected instance(s) to ${this.selectedTransferUserName}?`;
+    if (!modalRef && !confirm(confirmMsg)) return;
+
+    this.transferLoading = true;
+    this.photoChecklistV2Service
+      .transferInstancesBulkAdmin(this.selectedInstanceIds, Number(this.transferTargetUserId), this.selectedTransferUserName)
+      .pipe(first())
+      .subscribe({
+        next: (res) => {
+          this.transferLoading = false;
+          const transferred = Number(res?.transferred || 0);
+          const skipped = Number(res?.skipped || 0);
+          alert(`Transfer complete. Updated: ${transferred}${skipped > 0 ? `, Skipped: ${skipped}` : ''}.`);
+          this.selectedInstanceIds = [];
+          modalRef?.close();
+          this.gridApi?.deselectAll();
+          this.showTransferPanel = false;
+          this.getOpenChecklists();
+        },
+        error: (err) => {
+          this.transferLoading = false;
+          alert(err?.error?.message || 'Bulk transfer failed.');
+        },
+      });
+  }
+
+  toggleTransferPanel(): void {
+    if (!this.showTransferPanel && !this.canOpenTransferPanel) {
+      alert('Select one or more checklist rows first, then click Reassign Selected.');
+      return;
+    }
+    this.showTransferPanel = !this.showTransferPanel;
+  }
+
+  openTransferPanelForSingleInstance(instanceId: number): void {
+    if (!this.gridApi) return;
+    this.transferOrigin = 'single-row';
+    this.gridApi.deselectAll();
+    this.gridApi.forEachNode((node) => {
+      if (Number(node?.data?.id || 0) === instanceId) {
+        node.setSelected(true);
+      }
+    });
+    this.showTransferPanel = true;
+  }
+
+  selectAllFilteredRows(): void {
+    if (!this.gridApi) return;
+    this.gridApi.forEachNodeAfterFilterAndSort((node) => {
+      node.setSelected(true);
+    });
+    this.selectedInstanceIds = this.gridApi
+      .getSelectedRows()
+      .map((r: any) => Number(r?.id || 0))
+      .filter((id: number) => id > 0);
+  }
+
+  clearSelectedRows(): void {
+    this.gridApi?.deselectAll();
+    this.selectedInstanceIds = [];
+  }
+
   private _actionsMenu: HTMLElement | null = null;
   private _actionsMenuRemoveClickListener: (() => void) | null = null;
 
@@ -373,6 +597,9 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
         <a class="action-archive" href="javascript:void(0)" style="display:flex;align-items:center;padding:8px 16px;color:#f0ad4e;text-decoration:none;font-size:14px;white-space:nowrap;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
           <i class="mdi mdi-archive-outline" style="margin-right:8px;"></i>Archive
         </a>
+        ${this.canManageTransfers ? `<a class="action-transfer" href="javascript:void(0)" style="display:flex;align-items:center;padding:8px 16px;color:#0d6efd;text-decoration:none;font-size:14px;white-space:nowrap;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
+          <i class="mdi mdi-account-switch" style="margin-right:8px;"></i>Transfer Ownership
+        </a>` : ''}
         <a class="action-delete" href="javascript:void(0)" style="display:flex;align-items:center;padding:8px 16px;color:#dc3545;text-decoration:none;font-size:14px;white-space:nowrap;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
           <i class="mdi mdi-trash-can-outline" style="margin-right:8px;"></i>Delete
         </a>
@@ -394,6 +621,10 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
     inner.querySelector('.action-archive')?.addEventListener('click', () => {
       this.closeActionsMenu();
       this.onArchiveInstance(instanceId);
+    });
+    inner.querySelector('.action-transfer')?.addEventListener('click', () => {
+      this.closeActionsMenu();
+      this.openTransferPanelForSingleInstance(instanceId);
     });
     inner.querySelector('.action-delete')?.addEventListener('click', () => {
       this.closeActionsMenu();
@@ -470,6 +701,7 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
     
     this.getOpenChecklists();
     this.filteredChecklists = [...this.openChecklists]; // Initialize filtered list
+    void this.loadTransferUsers();
   }
 
   ngOnDestroy(): void {

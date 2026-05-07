@@ -48,6 +48,9 @@ export class PartsOrderService extends DataService<any> {
     override delete = async (id: number): Promise<any> =>
         firstValueFrom(this.http.delete<any>(`${partsOrderV2Url}/${id}`));
 
+    archive = async (id: number): Promise<any> =>
+        firstValueFrom(this.http.patch<any>(`${partsOrderV2Url}/${id}/archive`, {}));
+
     updateAndSendEmail(id, params) {
         return firstValueFrom(this.http.put(`${partsOrderV2Url}/updateAndSendEmail/${id}`, params))
     }

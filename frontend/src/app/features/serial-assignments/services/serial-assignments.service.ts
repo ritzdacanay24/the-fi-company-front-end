@@ -92,12 +92,28 @@ export class SerialAssignmentsService {
     );
   }
 
-  async reassignAssignment(id: number, newWoNumber: string, reason: string, performedBy: string): Promise<any> {
+  async reassignAssignment(
+    id: number,
+    newWoNumber: string,
+    reason: string,
+    performedBy: string,
+    woDetails?: {
+      wo_description?: string;
+      wo_part?: string;
+      wo_qty_ord?: number;
+      wo_due_date?: string;
+      wo_routing?: string;
+      wo_line?: string;
+      cp_cust_part?: string;
+      cp_cust?: string;
+    }
+  ): Promise<any> {
     return firstValueFrom(
       this.http.post(`${this.API_URL}/${id}/reassign`, {
         new_wo_number: newWoNumber,
         reason,
         performed_by: performedBy,
+        ...woDetails,
       })
     );
   }

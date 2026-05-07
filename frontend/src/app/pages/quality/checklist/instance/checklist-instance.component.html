@@ -86,6 +86,16 @@
               <span *ngIf="instance?.operator_id === currentUserId">You</span>
               <span *ngIf="instance?.operator_id !== currentUserId">{{ instance?.operator_name || ('User #' + instance?.operator_id) }}</span>
             </span>
+
+            <!-- Owner-lock indicator -->
+            <span class="badge rounded-pill bg-success bg-opacity-10 text-success border border-success px-3 py-2 fw-semibold"
+                  *ngIf="isOwner" title="You have an active edit lock on this checklist">
+              <i class="mdi mdi-lock-check me-1"></i>Editing
+            </span>
+            <span class="badge rounded-pill bg-warning bg-opacity-10 text-warning border border-warning px-3 py-2 fw-semibold"
+                  *ngIf="!isOwner && lockOwnerName" title="Another user holds the edit lock">
+              <i class="mdi mdi-lock-alert me-1"></i>Locked by {{lockOwnerName}}
+            </span>
             
             <!-- Action Buttons -->
             <button
@@ -143,7 +153,23 @@
         </div>
       </div>
       <!-- End Header Section -->
-        
+
+      <!-- Owner-lock read-only banner -->
+      <div *ngIf="!isOwner && lockOwnerName"
+           class="alert alert-warning alert-dismissible mb-0 rounded-0 border-0 border-bottom border-warning d-flex align-items-center gap-3 px-3 py-2 flex-shrink-0"
+           style="border-left: 4px solid var(--bs-warning) !important;">
+        <i class="mdi mdi-lock-alert fs-5 text-warning flex-shrink-0"></i>
+        <div class="flex-grow-1 small">
+          <strong>Read-only.</strong>
+          This checklist is currently being edited by <strong>{{lockOwnerName}}</strong>.
+          To upload photos or make changes, you need to transfer ownership to yourself.
+        </div>
+        <button type="button" class="btn btn-warning btn-sm d-inline-flex align-items-center gap-1 flex-shrink-0"
+                (click)="transferOwnershipToMe()">
+          <i class="mdi mdi-account-arrow-right"></i>Transfer to Me
+        </button>
+      </div>
+
       <div class="d-flex flex-row flex-grow-1 position-relative" style="min-height: 0;">
         
     <!-- Navigation Sidebar Panel -->
@@ -557,6 +583,11 @@
                       <div class="fw-semibold">Photos are optional for this item.</div>
                       <div class="text-muted small" *ngIf="!progress.completed">Verify completion now, or add an optional photo.</div>
                       <div class="text-muted small" *ngIf="progress.completed">This item has been verified without photos.</div>
+                      <div class="small text-muted d-flex align-items-center gap-1 mt-1" *ngIf="progress.completed && progress.completedByName">
+                        <i class="mdi mdi-account-check-outline"></i>
+                        Verified by <strong>{{progress.completedByName}}</strong>
+                        <span *ngIf="progress.completedAt"> &middot; {{progress.completedAt | date:'short'}}</span>
+                      </div>
                     </div>
 
                     <div class="d-flex gap-2 justify-content-center flex-wrap">
@@ -592,6 +623,11 @@
                       <div class="fw-semibold">No media required for this item.</div>
                       <div class="text-muted small" *ngIf="!progress.completed">Review the instruction details above, then mark complete when verified.</div>
                       <div class="text-muted small" *ngIf="progress.completed">This item has been verified.</div>
+                      <div class="small text-muted d-flex align-items-center gap-1 mt-1" *ngIf="progress.completed && progress.completedByName">
+                        <i class="mdi mdi-account-check-outline"></i>
+                        Verified by <strong>{{progress.completedByName}}</strong>
+                        <span *ngIf="progress.completedAt"> &middot; {{progress.completedAt | date:'short'}}</span>
+                      </div>
                     </div>
 
                     <div class="alert alert-warning border-0 py-2 px-3 mb-3 text-start"
@@ -669,6 +705,7 @@
                   <div class="h-100">
                     <h6 class="text-primary mb-3 d-flex align-items-center">
                       <i class="mdi mdi-camera me-2"></i>Take Photo
+                      <span class="text-muted ms-2 small fw-normal opacity-50" style="font-size:10px;">#{{progress.item.id}}</span>
                       <span class="badge bg-success ms-auto" *ngIf="isRecentlyUploaded(progress.item.id)">
                         <i class="mdi mdi-check-circle me-1"></i>Uploaded!
                       </span>
@@ -782,6 +819,11 @@
                       <div class="alert alert-warning mt-2 mb-0 py-2 px-3 small" role="alert">
                         <i class="mdi mdi-alert-outline me-1"></i>
                         To replace this photo, delete the current photo first.
+                      </div>
+                      <div class="mt-1 px-1 small text-muted d-flex align-items-center gap-1" *ngIf="progress.completedByName">
+                        <i class="mdi mdi-account-check-outline"></i>
+                        Uploaded by <strong>{{progress.completedByName}}</strong>
+                        <span *ngIf="progress.completedAt"> &middot; {{progress.completedAt | date:'short'}}</span>
                       </div>
                     </div>
 

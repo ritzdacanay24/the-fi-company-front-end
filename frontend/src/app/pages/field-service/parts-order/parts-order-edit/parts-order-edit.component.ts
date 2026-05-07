@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, OnInit } from '@angular/core';
 import { FormArray, FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
@@ -9,6 +9,8 @@ import { NAVIGATION_ROUTE } from '../parts-order-constant';
 import { AttachmentsService } from '@app/core/api/attachments/attachments.service';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { FileViewerModalComponent } from '@app/shared/components/file-viewer-modal/file-viewer-modal.component';
+import { AuthenticationService } from '@app/core/services/auth.service';
+import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
 
 @Component({
   standalone: true,
@@ -25,7 +27,7 @@ export class PartsOrderEditComponent {
     private attachmentsService: AttachmentsService,
     private modalService: NgbModal,
     private fb: FormBuilder,
-
+    private authenticationService: AuthenticationService,
   ) { }
 
   ngOnInit(): void {
@@ -50,6 +52,59 @@ export class PartsOrderEditComponent {
 
   @Input() goBack: Function = () => {
     this.router.navigate([NAVIGATION_ROUTE.LIST], { queryParamsHandling: 'merge' });
+  }
+
+  get isAdmin(): boolean {
+    const user = this.authenticationService.currentUserValue || {};
+    return user?.isAdmin === true || user?.isAdmin === 1 || user?.isAdmin === '1';
+  }
+
+  get canManage(): boolean {
+    const user = this.authenticationService.currentUserValue || {};
+    const employeeType = Number(user?.employeeType ?? 0);
+    return this.isAdmin || employeeType !== 0;
+  }
+
+  async onDelete(): Promise<void> {
+    const result = await SweetAlert.confirm({
+      title: 'Delete Parts Order',
+      text: 'Are you sure you want to permanently delete this parts order? This cannot be undone.',
+      confirmButtonText: 'Delete',
+      confirmButtonColor: '#dc3545',
+    });
+    if (!result.value) return;
+
+    try {
+      this.isLoading = true;
+      await this.api.delete(this.id);
+      this.toastrService.success('Parts order deleted');
+      this.router.navigate([NAVIGATION_ROUTE.LIST], { queryParamsHandling: 'merge' });
+    } catch {
+      this.toastrService.error('Failed to delete parts order');
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
+  async onArchive(): Promise<void> {
+    const result = await SweetAlert.confirm({
+      title: 'Archive Parts Order',
+      text: 'Are you sure you want to archive this parts order?',
+      confirmButtonText: 'Archive',
+      confirmButtonColor: '#6c757d',
+    });
+    if (!result.value) return;
+
+    try {
+      this.isLoading = true;
+      await this.api.archive(this.id);
+      this.toastrService.success('Parts order archived');
+      this.router.navigate([NAVIGATION_ROUTE.LIST], { queryParamsHandling: 'merge' });
+    } catch {
+      this.toastrService.error('Failed to archive parts order');
+    } finally {
+      this.isLoading = false;
+    }
   }
 
   data: any;

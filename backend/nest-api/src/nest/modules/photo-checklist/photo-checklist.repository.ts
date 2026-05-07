@@ -257,7 +257,8 @@ export class PhotoChecklistRepository {
 
     const sql = `
       SELECT ci.id, ci.template_id, ci.work_order_number, ci.part_number, ci.serial_number,
-             ci.operator_id, ci.operator_name, ci.status, ci.progress_percentage,
+             ci.operator_id, ci.operator_name, ci.owner_id, ci.owner_name, ci.lock_expires_at,
+             ci.status, ci.progress_percentage,
              ci.created_at, ci.updated_at, ci.started_at, ci.completed_at, ci.submitted_at,
              ct.name AS template_name, ct.category, ct.version AS template_version, ct.customer_name,
              (SELECT COUNT(*) FROM photo_submissions ps2
@@ -1052,6 +1053,96 @@ export class PhotoChecklistRepository {
     params.push(id);
     await this.mysqlService.execute(`UPDATE checklist_instances SET ${updates.join(', ')} WHERE id = ?`, params);
   }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Owner-lock helpers
+  // ──────────────────────────────────────────────────────────────────────────
+
+  async getInstanceLock(id: number): Promise<{ owner_id: number | null; owner_name: string | null; lock_expires_at: string | null; operator_id: number | null; operator_name: string | null }> {
+    const rows = await this.mysqlService.query<RowDataPacket[]>(
+      'SELECT owner_id, owner_name, lock_expires_at, operator_id, operator_name FROM checklist_instances WHERE id = ? LIMIT 1',
+      [id],
+    );
+    const row = rows?.[0];
+    if (!row) return { owner_id: null, owner_name: null, lock_expires_at: null, operator_id: null, operator_name: null };
+    return {
+      owner_id: row.owner_id != null ? Number(row.owner_id) : null,
+      owner_name: row.owner_name ?? null,
+      lock_expires_at: row.lock_expires_at ? String(row.lock_expires_at) : null,
+      operator_id: row.operator_id != null ? Number(row.operator_id) : null,
+      operator_name: row.operator_name ?? null,
+    };
+  }
+
+  async claimInstanceLock(id: number, userId: number, userName: string): Promise<void> {
+    await this.mysqlService.execute(
+      `UPDATE checklist_instances
+         SET owner_id = ?, owner_name = ?, lock_expires_at = DATE_ADD(NOW(), INTERVAL 10 MINUTE)
+       WHERE id = ?`,
+      [userId, userName, id],
+    );
+  }
+
+  async releaseInstanceLock(id: number, userId: number): Promise<void> {
+    // Only clear the lock if the caller is the current owner (prevents accidental clears)
+    await this.mysqlService.execute(
+      `UPDATE checklist_instances
+         SET owner_id = NULL, owner_name = NULL, lock_expires_at = NULL
+       WHERE id = ? AND owner_id = ?`,
+      [id, userId],
+    );
+  }
+
+  async heartbeatInstanceLock(id: number, userId: number): Promise<void> {
+    await this.mysqlService.execute(
+      `UPDATE checklist_instances
+         SET lock_expires_at = DATE_ADD(NOW(), INTERVAL 10 MINUTE)
+       WHERE id = ? AND owner_id = ?`,
+      [id, userId],
+    );
+  }
+
+  async forceTransferInstanceLock(id: number, toUserId: number, toUserName: string): Promise<void> {
+    await this.mysqlService.execute(
+      `UPDATE checklist_instances
+         SET owner_id = ?, owner_name = ?, lock_expires_at = DATE_ADD(NOW(), INTERVAL 10 MINUTE)
+       WHERE id = ?`,
+      [toUserId, toUserName, id],
+    );
+  }
+
+  async transferInstanceAssignment(id: number, toUserId: number, toUserName: string): Promise<void> {
+    await this.mysqlService.execute(
+      `UPDATE checklist_instances
+         SET operator_id = ?,
+             operator_name = ?,
+             owner_id = ?,
+             owner_name = ?,
+             lock_expires_at = DATE_ADD(NOW(), INTERVAL 10 MINUTE)
+       WHERE id = ?
+         AND status <> 'submitted'`,
+      [toUserId, toUserName, toUserId, toUserName, id],
+    );
+  }
+
+  async bulkTransferInstanceAssignment(instanceIds: number[], toUserId: number, toUserName: string): Promise<number> {
+    if (!instanceIds.length) return 0;
+    const placeholders = instanceIds.map(() => '?').join(',');
+    const result = await this.mysqlService.execute<ResultSetHeader>(
+      `UPDATE checklist_instances
+         SET operator_id = ?,
+             operator_name = ?,
+             owner_id = ?,
+             owner_name = ?,
+             lock_expires_at = DATE_ADD(NOW(), INTERVAL 10 MINUTE)
+       WHERE id IN (${placeholders})
+         AND status <> 'submitted'`,
+      [toUserId, toUserName, toUserId, toUserName, ...instanceIds],
+    );
+    return Number(result.affectedRows || 0);
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
 
   async updateInstanceItemCompletion(instanceId: number, itemId: number, payload: Record<string, unknown>): Promise<void> {
     const existingRows = await this.mysqlService.query<RowDataPacket[]>('SELECT item_completion FROM checklist_instances WHERE id = ? LIMIT 1', [instanceId]);
