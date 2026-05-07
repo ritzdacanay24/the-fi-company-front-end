@@ -55,15 +55,15 @@ export interface ProjectManagerTasksState {
 
 @Injectable({ providedIn: 'root' })
 export class ProjectManagerTasksDataService {
-  private readonly storageKey = 'pm_tasks_state_v1';
   private readonly apiUrl = environment.pmApiUrl;
+  private readonly stateCache = new Map<string, ProjectManagerTasksState>();
 
   constructor(private readonly http: HttpClient) {}
 
-  /** Observable API: load task state from server. Falls back to localStorage on error. */
+  /** Observable API: load task state from server. Falls back to in-memory cache on error. */
   loadState$(projectId: string): Observable<ProjectManagerTasksState> {
     if (!this.isApiMode || !projectId) {
-      return of(this.loadStateFromLocalStorage(projectId));
+      return of(this.loadStateFromCache(projectId));
     }
     return this.http.get<ProjectManagerTasksState>(`${this.apiUrl}/${projectId}/tasks`).pipe(
       map(res => ({
@@ -71,53 +71,31 @@ export class ProjectManagerTasksDataService {
         taskRecords: this.normalizeTaskRecords(res.taskRecords || []),
         subgroupCatalog: this.normalizeSubgroupCatalog(res.subgroupCatalog || {}),
       })),
-      catchError(() => of(this.loadStateFromLocalStorage(projectId))),
+      catchError(() => of(this.loadStateFromCache(projectId))),
     );
   }
 
-  /** Observable API: save task state to server. Falls back to localStorage on error. */
+  /** Observable API: save task state to server. Falls back to in-memory cache on error. */
   saveState$(state: ProjectManagerTasksState, projectId: string): Observable<void> {
     if (!this.isApiMode || !projectId) {
-      this.saveStateToLocalStorage(state, projectId);
+      this.saveStateToCache(state, projectId);
       return of(undefined);
     }
     return this.http.put<void>(`${this.apiUrl}/${projectId}/tasks`, { taskRecords: state.taskRecords }).pipe(
       catchError(() => {
-        this.saveStateToLocalStorage(state, projectId);
+        this.saveStateToCache(state, projectId);
         return of(undefined);
       }),
     );
   }
 
-  /** Synchronous entry point — delegates to localStorage or API depending on mode. */
+  /** Synchronous entry point — delegates to in-memory or API depending on mode. */
   loadState(projectId = ''): ProjectManagerTasksState {
     if (this.isApiMode) {
       return this.loadStateFromApi(projectId);
     }
 
-    const raw = localStorage.getItem(this.getStorageKey(projectId));
-    if (!raw) {
-      return this.createDefaultState();
-    }
-
-    try {
-      const parsed = JSON.parse(raw) as Partial<ProjectManagerTasksState>;
-      if (!parsed || !Array.isArray(parsed.taskRecords)) {
-        return this.createDefaultState();
-      }
-
-      const nextId = Number(parsed.nextId || 0);
-      const safeNextId = Number.isFinite(nextId) && nextId > 0 ? nextId : this.computeNextId(parsed.taskRecords as PmTaskRecord[]);
-      const subgroupCatalog = this.normalizeSubgroupCatalog(parsed.subgroupCatalog || {});
-
-      return {
-        nextId: safeNextId,
-        taskRecords: this.normalizeTaskRecords(parsed.taskRecords as PmTaskRecord[]),
-        subgroupCatalog
-      };
-    } catch {
-      return this.createDefaultState();
-    }
+    return this.loadStateFromCache(projectId);
   }
 
   saveState(state: ProjectManagerTasksState, projectId = ''): void {
@@ -126,11 +104,7 @@ export class ProjectManagerTasksDataService {
       return;
     }
 
-    try {
-      localStorage.setItem(this.getStorageKey(projectId), JSON.stringify(state));
-    } catch {
-      // Ignore storage quota/storage access errors in test mode.
-    }
+    this.saveStateToCache(state, projectId);
   }
 
   private get isApiMode(): boolean {
@@ -138,48 +112,35 @@ export class ProjectManagerTasksDataService {
   }
 
   private loadStateFromApi(projectId: string): ProjectManagerTasksState {
-    // Synchronous callers get localStorage; use loadState$() for API data.
-    return this.loadStateFromLocalStorage(projectId);
+    // Synchronous callers get in-memory state; use loadState$() for API data.
+    return this.loadStateFromCache(projectId);
   }
 
   private saveStateToApi(state: ProjectManagerTasksState, projectId: string): void {
-    // Fire-and-forget via Observable; also persist to localStorage as cache.
-    this.saveStateToLocalStorage(state, projectId);
+    // Fire-and-forget via Observable; also persist to in-memory cache.
+    this.saveStateToCache(state, projectId);
     this.saveState$(state, projectId).subscribe();
   }
 
-  private loadStateFromLocalStorage(projectId: string): ProjectManagerTasksState {
-    const raw = localStorage.getItem(this.getStorageKey(projectId));
-    if (!raw) {
+  private loadStateFromCache(projectId: string): ProjectManagerTasksState {
+    const cached = this.stateCache.get(projectId);
+    if (!cached) {
       return this.createDefaultState();
     }
 
-    try {
-      const parsed = JSON.parse(raw) as Partial<ProjectManagerTasksState>;
-      if (!parsed || !Array.isArray(parsed.taskRecords)) {
-        return this.createDefaultState();
-      }
-
-      const nextId = Number(parsed.nextId || 0);
-      const safeNextId = Number.isFinite(nextId) && nextId > 0 ? nextId : this.computeNextId(parsed.taskRecords as PmTaskRecord[]);
-      const subgroupCatalog = this.normalizeSubgroupCatalog(parsed.subgroupCatalog || {});
-
-      return {
-        nextId: safeNextId,
-        taskRecords: this.normalizeTaskRecords(parsed.taskRecords as PmTaskRecord[]),
-        subgroupCatalog
-      };
-    } catch {
-      return this.createDefaultState();
-    }
+    return {
+      nextId: cached.nextId,
+      taskRecords: this.normalizeTaskRecords(cached.taskRecords),
+      subgroupCatalog: this.normalizeSubgroupCatalog(cached.subgroupCatalog)
+    };
   }
 
-  private saveStateToLocalStorage(state: ProjectManagerTasksState, projectId: string): void {
-    try {
-      localStorage.setItem(this.getStorageKey(projectId), JSON.stringify(state));
-    } catch {
-      // Ignore storage quota/storage access errors in test mode.
-    }
+  private saveStateToCache(state: ProjectManagerTasksState, projectId: string): void {
+    this.stateCache.set(projectId, {
+      nextId: state.nextId,
+      taskRecords: this.normalizeTaskRecords(state.taskRecords),
+      subgroupCatalog: this.normalizeSubgroupCatalog(state.subgroupCatalog)
+    });
   }
 
   private createDefaultState(): ProjectManagerTasksState {
@@ -188,10 +149,6 @@ export class ProjectManagerTasksDataService {
       taskRecords: [],
       subgroupCatalog: {}
     };
-  }
-
-  private getStorageKey(projectId: string): string {
-    return `${this.storageKey}_${projectId || '__default__'}`;
   }
 
   private computeNextId(records: PmTaskRecord[]): number {

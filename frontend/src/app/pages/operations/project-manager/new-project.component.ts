@@ -63,7 +63,6 @@ export class NewProjectComponent implements OnDestroy {
     'gate1', 'gate2', 'gate3', 'gate4', 'gate5', 'gate6'
   ];
   private isApplyingProjectState = false;
-  private readonly intakeStoragePrefix = 'pm_project_intake_v1_';
 
   customers = ['Aristocrat', 'Light & Wonder', 'IGT', 'Konami', 'Ainsworth', 'Custom'];
   projectCategories = ['New', 'Revision', 'Cost Down', 'Custom'];
@@ -1075,10 +1074,6 @@ export class NewProjectComponent implements OnDestroy {
     return gateMap[normalized] || null;
   }
 
-  private getIntakeStorageKey(projectId: string): string {
-    return `${this.intakeStoragePrefix}${projectId}`;
-  }
-
   private persistProjectIntakeState(projectId: string): void {
     if (!projectId) {
       return;
@@ -1098,13 +1093,7 @@ export class NewProjectComponent implements OnDestroy {
       }
     };
 
-    try {
-      localStorage.setItem(this.getIntakeStorageKey(projectId), JSON.stringify(payload));
-    } catch {
-      // Ignore localStorage write issues in test mode.
-    }
-
-    // Fire-and-forget: also persist to API
+    // Persist to API
     this.projectsService.saveIntakeState$(projectId, payload).subscribe();
   }
 

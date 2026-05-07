@@ -67,11 +67,9 @@ type IntakeStoragePayload = {
 
 @Injectable({ providedIn: 'root' })
 export class ProjectManagerProjectsService {
-  private readonly projectsStorageKey = 'pm_projects_v1';
-  private readonly selectedProjectStorageKey = 'pm_selected_project_v1';
-  private readonly intakeStoragePrefix = 'pm_project_intake_v1_';
-  private readonly tasksStoragePrefix = 'pm_tasks_state_v1_';
-  private readonly workflowStoragePrefix = 'pm_workflow_engine_v1_';
+  private readonly projectsCache: ProjectDashboardItem[] = [];
+  private selectedProjectIdCache = '';
+  private readonly intakeStateCache = new Map<string, IntakeStoragePayload>();
 
   private readonly gateFieldMap: Record<GateKey, string[]> = {
     gate1: [
@@ -125,29 +123,29 @@ export class ProjectManagerProjectsService {
 
   // ─── Observable API (used by components) ───────────────────────────────────
 
-  /** Fetch all projects. In API mode, loads from server and caches to localStorage. */
+  /** Fetch all projects. In API mode, loads from server and caches in memory. */
   getProjects$(): Observable<ProjectDashboardItem[]> {
     if (!this.isApiMode) {
-      return of(this.getProjectsFromLocalStorage());
+      return of(this.getProjectsFromCache());
     }
 
     return this.http.get<any[]>(environment.pmApiUrl).pipe(
       map(rows => rows.map(row => this.apiRowToDashboardItem(row))),
-      tap(projects => this.saveProjectsToLocalStorage(projects)),
+      tap(projects => this.saveProjectsToCache(projects)),
       catchError(err => {
-        console.error('[PM] getProjects$ failed, falling back to localStorage', err);
-        return of(this.getProjectsFromLocalStorage());
+        console.error('[PM] getProjects$ failed, falling back to in-memory cache', err);
+        return of(this.getProjectsFromCache());
       })
     );
   }
 
-  /** Upsert a project to API + localStorage. Returns the saved dashboard item. */
+  /** Upsert a project to API and update in-memory cache. Returns the saved dashboard item. */
   upsertProject$(input: ProjectCreationInput): Observable<ProjectDashboardItem> {
     const project = this.buildDashboardItem(input);
 
     if (!this.isApiMode) {
-      const projects = [project, ...this.getProjectsFromLocalStorage().filter(p => p.id !== project.id)];
-      this.saveProjectsToLocalStorage(projects);
+      const projects = [project, ...this.getProjectsFromCache().filter(p => p.id !== project.id)];
+      this.saveProjectsToCache(projects);
       this.setSelectedProjectId(project.id);
       return of(project);
     }
@@ -172,27 +170,27 @@ export class ProjectManagerProjectsService {
     }).pipe(
       map(row => this.apiRowToDashboardItem(row)),
       tap(saved => {
-        const projects = [saved, ...this.getProjectsFromLocalStorage().filter(p => p.id !== saved.id)];
-        this.saveProjectsToLocalStorage(projects);
+        const projects = [saved, ...this.getProjectsFromCache().filter(p => p.id !== saved.id)];
+        this.saveProjectsToCache(projects);
         this.setSelectedProjectId(saved.id);
       }),
       catchError(err => {
-        console.error('[PM] upsertProject$ failed, saving to localStorage only', err);
-        const projects = [project, ...this.getProjectsFromLocalStorage().filter(p => p.id !== project.id)];
-        this.saveProjectsToLocalStorage(projects);
+        console.error('[PM] upsertProject$ failed, keeping in-memory state only', err);
+        const projects = [project, ...this.getProjectsFromCache().filter(p => p.id !== project.id)];
+        this.saveProjectsToCache(projects);
         this.setSelectedProjectId(project.id);
         return of(project);
       })
     );
   }
 
-  /** Delete a project from API + localStorage. */
+  /** Delete a project from API and in-memory cache. */
   deleteProject$(projectId: string): Observable<void> {
     if (!projectId) {
       return of(undefined);
     }
 
-    this.removeProjectFromLocalStorage(projectId);
+    this.removeProjectFromCache(projectId);
 
     if (!this.isApiMode) {
       return of(undefined);
@@ -221,14 +219,11 @@ export class ProjectManagerProjectsService {
           activeGate: raw.activeGate || 1,
           gateCompletedAt: raw.gateCompletedAt || {},
         };
-        // Cache to localStorage so sync fallbacks still work.
-        try {
-          localStorage.setItem(this.getIntakeStorageKey(projectId), JSON.stringify(payload));
-        } catch { /* ignore */ }
+        this.intakeStateCache.set(projectId, payload);
         return payload;
       }),
       catchError(err => {
-        console.error('[PM] getIntakeState$ failed, falling back to localStorage', err);
+        console.error('[PM] getIntakeState$ failed, falling back to in-memory cache', err);
         return of(this.loadIntakeState(projectId));
       })
     );
@@ -238,10 +233,7 @@ export class ProjectManagerProjectsService {
   saveIntakeState$(projectId: string, payload: IntakeStoragePayload): Observable<void> {
     if (!projectId) return of(undefined);
 
-    // Always write to localStorage immediately for responsiveness.
-    try {
-      localStorage.setItem(this.getIntakeStorageKey(projectId), JSON.stringify(payload));
-    } catch { /* ignore */ }
+    this.intakeStateCache.set(projectId, payload);
 
     if (!this.isApiMode) {
       return of(undefined);
@@ -254,7 +246,7 @@ export class ProjectManagerProjectsService {
       gateCompletedAt: payload.gateCompletedAt || {},
     }).pipe(
       catchError(err => {
-        console.error('[PM] saveIntakeState$ failed (localStorage already updated)', err);
+        console.error('[PM] saveIntakeState$ failed (in-memory cache already updated)', err);
         return of(undefined);
       })
     );
@@ -263,32 +255,32 @@ export class ProjectManagerProjectsService {
   // ─── Synchronous helpers (retained for backward compatibility) ──────────────
 
   getProjects(): ProjectDashboardItem[] {
-    return this.getProjectsFromLocalStorage();
+    return this.getProjectsFromCache();
   }
 
   saveProjects(projects: ProjectDashboardItem[]): void {
-    this.saveProjectsToLocalStorage(projects);
+    this.saveProjectsToCache(projects);
   }
 
   getSelectedProjectId(projects: ProjectDashboardItem[]): string {
-    return this.getSelectedProjectIdFromLocalStorage(projects);
+    return this.getSelectedProjectIdFromCache(projects);
   }
 
   setSelectedProjectId(projectId: string): void {
-    localStorage.setItem(this.selectedProjectStorageKey, projectId);
+    this.selectedProjectIdCache = projectId;
   }
 
   createProject(input: ProjectCreationInput): ProjectDashboardItem {
     const newProject = this.buildDashboardItem(input);
-    const projects = [newProject, ...this.getProjectsFromLocalStorage().filter(project => project.id !== input.id)];
-    this.saveProjectsToLocalStorage(projects);
+    const projects = [newProject, ...this.getProjectsFromCache().filter(project => project.id !== input.id)];
+    this.saveProjectsToCache(projects);
     this.setSelectedProjectId(newProject.id);
     return newProject;
   }
 
   deleteProject(projectId: string): void {
     if (!projectId) return;
-    this.removeProjectFromLocalStorage(projectId);
+    this.removeProjectFromCache(projectId);
   }
 
   generateProjectId(): string {
@@ -330,14 +322,14 @@ export class ProjectManagerProjectsService {
     };
   }
 
-  private removeProjectFromLocalStorage(projectId: string): void {
-    const remaining = this.getProjectsFromLocalStorage().filter(p => p.id !== projectId);
-    this.saveProjectsToLocalStorage(remaining);
+  private removeProjectFromCache(projectId: string): void {
+    const remaining = this.getProjectsFromCache().filter(p => p.id !== projectId);
+    this.saveProjectsToCache(remaining);
     const next = remaining[0]?.id || '';
     if (next) {
       this.setSelectedProjectId(next);
     } else {
-      localStorage.removeItem(this.selectedProjectStorageKey);
+      this.selectedProjectIdCache = '';
     }
     this.removeScopedProjectState(projectId);
   }
@@ -378,51 +370,33 @@ export class ProjectManagerProjectsService {
   }
 
   private getIntakeStorageKey(projectId: string): string {
-    return `${this.intakeStoragePrefix}${projectId}`;
+    return projectId;
   }
 
   private loadIntakeState(projectId: string): IntakeStoragePayload | null {
-    try {
-      const raw = localStorage.getItem(this.getIntakeStorageKey(projectId));
-      if (!raw) return null;
-      return JSON.parse(raw) as IntakeStoragePayload;
-    } catch {
-      return null;
+    return this.intakeStateCache.get(projectId) || null;
+  }
+
+  private getProjectsFromCache(): ProjectDashboardItem[] {
+    return this.projectsCache.map(project => this.syncProjectFromIntake(project));
+  }
+
+  private saveProjectsToCache(projects: ProjectDashboardItem[]): void {
+    this.projectsCache.splice(0, this.projectsCache.length, ...projects);
+    if (!this.selectedProjectIdCache && this.projectsCache.length) {
+      this.selectedProjectIdCache = this.projectsCache[0].id;
     }
   }
 
-  private getProjectsFromLocalStorage(): ProjectDashboardItem[] {
-    const raw = localStorage.getItem(this.projectsStorageKey);
-    if (!raw) {
-      return [];
-    }
-
-    try {
-      const parsed = JSON.parse(raw) as ProjectDashboardItem[];
-      return Array.isArray(parsed) ? parsed.map(project => this.syncProjectFromIntake(project)) : [];
-    } catch {
-      return [];
-    }
-  }
-
-  private saveProjectsToLocalStorage(projects: ProjectDashboardItem[]): void {
-    try {
-      localStorage.setItem(this.projectsStorageKey, JSON.stringify(projects));
-    } catch {
-      // Ignore localStorage write issues in browser test mode.
-    }
-  }
-
-  private getSelectedProjectIdFromLocalStorage(projects: ProjectDashboardItem[]): string {
-    const saved = localStorage.getItem(this.selectedProjectStorageKey);
-    if (saved && projects.some(project => project.id === saved)) {
-      return saved;
+  private getSelectedProjectIdFromCache(projects: ProjectDashboardItem[]): string {
+    if (this.selectedProjectIdCache && projects.some(project => project.id === this.selectedProjectIdCache)) {
+      return this.selectedProjectIdCache;
     }
     return projects[0]?.id || '';
   }
 
-  private setSelectedProjectIdToLocalStorage(projectId: string): void {
-    localStorage.setItem(this.selectedProjectStorageKey, projectId);
+  private setSelectedProjectIdInCache(projectId: string): void {
+    this.selectedProjectIdCache = projectId;
   }
 
   private toGateLabel(gate: 1 | 2 | 3 | 4 | 5 | 6): string {
@@ -723,59 +697,7 @@ export class ProjectManagerProjectsService {
       return base;
     }
 
-    try {
-      const raw = localStorage.getItem(`${this.tasksStoragePrefix}${projectId}`);
-      if (!raw) {
-        return base;
-      }
-
-      const parsed = JSON.parse(raw) as { taskRecords?: Array<{ gate?: string; completion?: number; status?: string }> };
-      const taskRecords = Array.isArray(parsed.taskRecords) ? parsed.taskRecords : [];
-      const byGate: Record<GateKey, number[]> = {
-        gate1: [],
-        gate2: [],
-        gate3: [],
-        gate4: [],
-        gate5: [],
-        gate6: []
-      };
-
-      taskRecords.forEach((task) => {
-        const gateMap: Record<string, GateKey> = {
-          G1: 'gate1',
-          G2: 'gate2',
-          G3: 'gate3',
-          G4: 'gate4',
-          G5: 'gate5',
-          G6: 'gate6'
-        };
-        const gate = gateMap[String(task.gate || '').toUpperCase()];
-        if (!gate) {
-          return;
-        }
-
-        const rawCompletion = Number(task.completion ?? 0);
-        const normalized = task.status === 'Completed'
-          ? 100
-          : Math.max(0, Math.min(100, Number.isFinite(rawCompletion) ? rawCompletion : 0));
-        byGate[gate].push(Math.round(normalized));
-      });
-
-      (Object.keys(base) as GateKey[]).forEach((gate) => {
-        const values = byGate[gate];
-        if (!values.length) {
-          base[gate] = 0;
-          return;
-        }
-
-        const total = values.reduce((sum, value) => sum + value, 0);
-        base[gate] = Math.round(total / values.length);
-      });
-
-      return base;
-    } catch {
-      return base;
-    }
+    return base;
   }
 
   private isGateTaskMismatched(checklistCompletion: number, taskCompletion: number): boolean {
@@ -912,13 +834,7 @@ export class ProjectManagerProjectsService {
   }
 
   private removeScopedProjectState(projectId: string): void {
-    try {
-      localStorage.removeItem(`${this.intakeStoragePrefix}${projectId}`);
-      localStorage.removeItem(`${this.tasksStoragePrefix}${projectId}`);
-      localStorage.removeItem(`${this.workflowStoragePrefix}${projectId}`);
-    } catch {
-      // Ignore localStorage cleanup issues in test mode.
-    }
+    this.intakeStateCache.delete(projectId);
   }
 
 }

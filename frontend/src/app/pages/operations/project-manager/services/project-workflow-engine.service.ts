@@ -1,5 +1,4 @@
 import { Injectable } from '@angular/core';
-import { environment } from 'src/environments/environment';
 import { ProjectManagerProjectsService } from './project-manager-projects.service';
 
 export type ExecutionRole = 'Project Manager' | 'Engineering' | 'Supply Chain' | 'Quality (Doc Control)' | 'CSM';
@@ -7,7 +6,6 @@ export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
 
 @Injectable({ providedIn: 'root' })
 export class ProjectWorkflowEngineService {
-  private readonly storageKey = 'pm_workflow_engine_v1';
   private activeProjectId = '';
 
   workflowState: Record<number, boolean> = {
@@ -173,11 +171,7 @@ export class ProjectWorkflowEngineService {
     this.ecoTriggeredAt = null;
     this.executionHistory = [];
 
-    this.loadFromStorage();
-  }
-
-  private get scopedStorageKey(): string {
-    return `${this.storageKey}_${this.activeProjectId || '__default__'}`;
+    // PM workflow persistence is API-backed; keep in-memory state until API wiring is completed.
   }
 
   private triggerEco(source: 'project-init' | 'document-change'): void {
@@ -187,126 +181,10 @@ export class ProjectWorkflowEngineService {
   }
 
   private saveToStorage(): void {
-    if (this.isApiMode) {
-      this.saveToApi();
-      return;
-    }
-
-    try {
-      localStorage.setItem(this.scopedStorageKey, JSON.stringify({
-        workflowState: this.workflowState,
-        workflowMessage: this.workflowMessage,
-        approvalStatus: this.approvalStatus,
-        ecoTriggered: this.ecoTriggered,
-        ecoTriggerSource: this.ecoTriggerSource,
-        ecoTriggeredAt: this.ecoTriggeredAt,
-        executionHistory: this.executionHistory
-      }));
-    } catch {
-      // Ignore localStorage failures in test/browser mode.
-    }
+    // No-op until workflow API persistence is implemented.
   }
 
   private loadFromStorage(): void {
-    if (this.isApiMode) {
-      this.loadFromApi();
-      return;
-    }
-
-    const raw = localStorage.getItem(this.scopedStorageKey);
-    if (!raw) {
-      return;
-    }
-
-    try {
-      const parsed = JSON.parse(raw) as Partial<ProjectWorkflowEngineService>;
-      if (parsed.workflowState) {
-        this.workflowState = parsed.workflowState as Record<number, boolean>;
-      }
-      if (typeof parsed.workflowMessage === 'string') {
-        this.workflowMessage = parsed.workflowMessage;
-      }
-      if (parsed.approvalStatus === 'pending' || parsed.approvalStatus === 'approved' || parsed.approvalStatus === 'rejected') {
-        this.approvalStatus = parsed.approvalStatus;
-      }
-      if (typeof parsed.ecoTriggered === 'boolean') {
-        this.ecoTriggered = parsed.ecoTriggered;
-      }
-      if (parsed.ecoTriggerSource === 'project-init' || parsed.ecoTriggerSource === 'document-change' || parsed.ecoTriggerSource === null) {
-        this.ecoTriggerSource = parsed.ecoTriggerSource;
-      }
-      if (typeof parsed.ecoTriggeredAt === 'string' || parsed.ecoTriggeredAt === null) {
-        this.ecoTriggeredAt = parsed.ecoTriggeredAt;
-      }
-      if (Array.isArray(parsed.executionHistory)) {
-        this.executionHistory = parsed.executionHistory as Array<{ step: number; role: string; timestamp: string; note: string }>;
-      }
-    } catch {
-      // Keep defaults if storage payload is malformed.
-    }
-  }
-
-  private get isApiMode(): boolean {
-    return environment.projectManagerDataSource === 'api';
-  }
-
-  private saveToApi(): void {
-    // TODO: Replace with HttpClient integration when PM Workflow API is ready.
-    this.saveToLocalStorage();
-  }
-
-  private loadFromApi(): void {
-    // TODO: Replace with HttpClient integration when PM Workflow API is ready.
-    this.loadFromLocalStorage();
-  }
-
-  private saveToLocalStorage(): void {
-    try {
-      localStorage.setItem(this.scopedStorageKey, JSON.stringify({
-        workflowState: this.workflowState,
-        workflowMessage: this.workflowMessage,
-        approvalStatus: this.approvalStatus,
-        ecoTriggered: this.ecoTriggered,
-        ecoTriggerSource: this.ecoTriggerSource,
-        ecoTriggeredAt: this.ecoTriggeredAt,
-        executionHistory: this.executionHistory
-      }));
-    } catch {
-      // Ignore localStorage failures in test/browser mode.
-    }
-  }
-
-  private loadFromLocalStorage(): void {
-    const raw = localStorage.getItem(this.scopedStorageKey);
-    if (!raw) {
-      return;
-    }
-
-    try {
-      const parsed = JSON.parse(raw) as Partial<ProjectWorkflowEngineService>;
-      if (parsed.workflowState) {
-        this.workflowState = parsed.workflowState as Record<number, boolean>;
-      }
-      if (typeof parsed.workflowMessage === 'string') {
-        this.workflowMessage = parsed.workflowMessage;
-      }
-      if (parsed.approvalStatus === 'pending' || parsed.approvalStatus === 'approved' || parsed.approvalStatus === 'rejected') {
-        this.approvalStatus = parsed.approvalStatus;
-      }
-      if (typeof parsed.ecoTriggered === 'boolean') {
-        this.ecoTriggered = parsed.ecoTriggered;
-      }
-      if (parsed.ecoTriggerSource === 'project-init' || parsed.ecoTriggerSource === 'document-change' || parsed.ecoTriggerSource === null) {
-        this.ecoTriggerSource = parsed.ecoTriggerSource;
-      }
-      if (typeof parsed.ecoTriggeredAt === 'string' || parsed.ecoTriggeredAt === null) {
-        this.ecoTriggeredAt = parsed.ecoTriggeredAt;
-      }
-      if (Array.isArray(parsed.executionHistory)) {
-        this.executionHistory = parsed.executionHistory as Array<{ step: number; role: string; timestamp: string; note: string }>;
-      }
-    } catch {
-      // Keep defaults if storage payload is malformed.
-    }
+    // No-op until workflow API persistence is implemented.
   }
 }
