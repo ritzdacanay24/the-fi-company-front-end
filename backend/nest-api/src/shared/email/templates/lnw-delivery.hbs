@@ -1,0 +1,63 @@
+<html>
+  <body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f4f6f8; color: #1f2933;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 980px; background-color: #ffffff; border: 1px solid #dde3ea; border-radius: 10px; overflow: hidden;">
+            {{> email-header}}
+            <tr>
+              <td style="padding: 20px 24px; background-color: #0b5cab; color: #ffffff;">
+                <h2 style="margin: 0; font-size: 20px; font-weight: 600;">LNW Delivery Schedule</h2>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 20px 24px; font-size: 14px; line-height: 1.6;">
+                <p style="margin: 0 0 14px 0;">Hello Team,</p>
+                <p style="margin: 0 0 16px 0;">Below is what we have on the schedule for the next 3 weekdays.</p>
+
+                {{#each grouped}}
+                <div style="margin: 0 0 8px 0; font-weight: 700; color: #0b4f8a;">Scheduled for {{this.date}}</div>
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse; margin-bottom: 14px; border: 1px solid #cfd8e3;">
+                  <thead>
+                    <tr style="background: #eef3fb; color: #163b6f; text-align: left;">
+                      <th style="padding: 8px; border: 1px solid #cfd8e3; font-size: 12px;">SO #</th>
+                      <th style="padding: 8px; border: 1px solid #cfd8e3; font-size: 12px;">PO #</th>
+                      <th style="padding: 8px; border: 1px solid #cfd8e3; font-size: 12px;">Part</th>
+                      <th style="padding: 8px; border: 1px solid #cfd8e3; font-size: 12px;">Cust Part #</th>
+                      <th style="padding: 8px; border: 1px solid #cfd8e3; font-size: 12px;">Qty Open</th>
+                      <th style="padding: 8px; border: 1px solid #cfd8e3; font-size: 12px;">Description</th>
+                      <th style="padding: 8px; border: 1px solid #cfd8e3; font-size: 12px;">QAD Comments</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {{#if this.hasRows}}
+                      {{#each this.rows}}
+                      <tr>
+                        <td style="padding: 7px 8px; border: 1px solid #dbe2eb; font-size: 12px;">{{this.sodNbr}}</td>
+                        <td style="padding: 7px 8px; border: 1px solid #dbe2eb; font-size: 12px;">{{this.sodContrId}}</td>
+                        <td style="padding: 7px 8px; border: 1px solid #dbe2eb; font-size: 12px;">{{this.sodPart}}</td>
+                        <td style="padding: 7px 8px; border: 1px solid #dbe2eb; font-size: 12px;">{{this.sodCustPart}}</td>
+                        <td style="padding: 7px 8px; border: 1px solid #dbe2eb; font-size: 12px;">{{this.openQty}}</td>
+                        <td style="padding: 7px 8px; border: 1px solid #dbe2eb; font-size: 12px;">{{this.fullDesc}}</td>
+                        <td style="padding: 7px 8px; border: 1px solid #dbe2eb; font-size: 12px;">{{this.comments}}</td>
+                      </tr>
+                      {{/each}}
+                    {{else}}
+                      <tr>
+                        <td colspan="7" style="padding: 9px; border: 1px solid #dbe2eb; text-align: center; color: #516071; font-size: 12px;">No orders found.</td>
+                      </tr>
+                    {{/if}}
+                  </tbody>
+                </table>
+                {{/each}}
+
+                <p style="margin: 8px 0 0 0; color: #5a6b7b; font-size: 12px;">This is an automated message from The Fi Company Dashboard.</p>
+              </td>
+            </tr>
+            {{> email-footer}}
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

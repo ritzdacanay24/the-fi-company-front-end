@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from "@angular/core";
+import { Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild } from "@angular/core";
 import { NgbModalConfig } from "@ng-bootstrap/ng-bootstrap";
 import { TitleService } from "./shared/services/title.service";
 import { environment } from "@environments/environment";
@@ -12,7 +12,7 @@ import { ToastrService } from "ngx-toastr";
 import { Router, NavigationEnd } from "@angular/router";
 import { filter } from "rxjs/operators";
 import { AuthenticationService } from "./core/services/auth.service";
-import { HealthService } from "./core/api/operations/health/health.service";
+import { QadHealthStatusService } from "./core/services/qad-health-status.service";
 
 export function setThemeColor(data) {
   setTimeout(function () {
@@ -35,9 +35,8 @@ export function setThemeColor(data) {
   styleUrls: ["./app.component.scss"],
 })
 export class AppComponent implements OnInit, OnDestroy {
-  private readonly validationStatusPollMs = 60000;
   private routerEventsSubscription?: Subscription;
-  private validationStatusSubscription?: Subscription;
+  private qadHealthStateSubscription?: Subscription;
   @ViewChild("qadValidationBanner") qadValidationBanner?: ElementRef<HTMLElement>;
 
   constructor(
@@ -48,7 +47,8 @@ export class AppComponent implements OnInit, OnDestroy {
     private toastr: ToastrService,
     private router: Router,
     private authenticationService: AuthenticationService,
-    private healthService: HealthService,
+    @Inject(QadHealthStatusService)
+    private qadHealthStatusService: QadHealthStatusService,
   ) {
     ngbModalConfig.backdrop = "static";
     ngbModalConfig.keyboard = false;
@@ -73,6 +73,7 @@ export class AppComponent implements OnInit, OnDestroy {
   hasUpdate = false;
 
   enableSwUpdate = false;
+  showQadStatusBanner = environment.production ? true : environment.showQadStatusBanner;
   isAuthenticated = false;
   isValidationServiceAvailable = true;
   isValidationServiceChecking = false;
@@ -80,13 +81,13 @@ export class AppComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.isMobile = isMobile();
-    void this.refreshAuthAndValidationBanner();
-    this.startValidationStatusPolling();
+    this.subscribeToQadHealthState();
+    this.syncAuthAndHealthTracking();
 
     this.routerEventsSubscription = this.router.events
       .pipe(filter((event) => event instanceof NavigationEnd))
       .subscribe(() => {
-        void this.refreshAuthAndValidationBanner();
+        this.syncAuthAndHealthTracking();
       });
 
     if (localStorage.getItem(THE_FI_COMPANY_LAYOUT)) {
@@ -162,13 +163,27 @@ export class AppComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.routerEventsSubscription?.unsubscribe();
-    this.validationStatusSubscription?.unsubscribe();
+    this.qadHealthStateSubscription?.unsubscribe();
+    this.qadHealthStatusService.stop();
     this.clearBannerLayoutOffset();
   }
 
-  private async refreshAuthAndValidationBanner(): Promise<void> {
-    this.isAuthenticated = !!this.authenticationService.currentUserValue;
-    if (!this.isAuthenticated) {
+  private subscribeToQadHealthState(): void {
+    this.qadHealthStateSubscription?.unsubscribe();
+    this.qadHealthStateSubscription = this.qadHealthStatusService.state$.subscribe(
+      (state) => {
+        this.isValidationServiceAvailable = state.isConnected;
+        this.validationServiceMessage = state.message;
+        this.isValidationServiceChecking = state.isChecking;
+        this.scheduleBannerLayoutSync();
+      }
+    );
+  }
+
+  private syncAuthAndHealthTracking(): void {
+    if (!this.showQadStatusBanner) {
+      this.qadHealthStatusService.stop();
+      this.qadHealthStatusService.reset();
       this.isValidationServiceAvailable = true;
       this.validationServiceMessage = "";
       this.isValidationServiceChecking = false;
@@ -176,31 +191,22 @@ export class AppComponent implements OnInit, OnDestroy {
       return;
     }
 
-    await this.checkValidationConnection();
-    this.scheduleBannerLayoutSync();
-  }
+    const wasAuthenticated = this.isAuthenticated;
+    this.isAuthenticated = !!this.authenticationService.currentUserValue;
 
-  private startValidationStatusPolling(): void {
-    this.validationStatusSubscription?.unsubscribe();
-    this.validationStatusSubscription = interval(this.validationStatusPollMs).subscribe(() => {
-      if (!this.isValidationServiceChecking) {
-        void this.refreshAuthAndValidationBanner();
-      }
-    });
-  }
-
-  private async checkValidationConnection(): Promise<void> {
-    this.isValidationServiceChecking = true;
-    try {
-      const status = await this.healthService.getQadConnectionStatus();
-      this.isValidationServiceAvailable = !!status?.isConnected;
-      this.validationServiceMessage = status?.message || "";
-    } catch {
-      this.isValidationServiceAvailable = false;
-      this.validationServiceMessage = "QAD validation is currently unavailable. Item validation will be bypassed.";
-    } finally {
+    if (!this.isAuthenticated) {
+      this.qadHealthStatusService.stop();
+      this.qadHealthStatusService.reset();
+      this.isValidationServiceAvailable = true;
+      this.validationServiceMessage = "";
       this.isValidationServiceChecking = false;
       this.scheduleBannerLayoutSync();
+      return;
+    }
+
+    this.qadHealthStatusService.start();
+    if (!wasAuthenticated) {
+      void this.qadHealthStatusService.refresh(true);
     }
   }
 
@@ -209,7 +215,8 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private syncBannerLayoutOffset(): void {
-    const shouldShowBanner = this.isAuthenticated && !this.isValidationServiceAvailable && !this.isValidationServiceChecking;
+    const shouldShowBanner =
+      this.showQadStatusBanner && this.isAuthenticated && !this.isValidationServiceAvailable;
     if (!shouldShowBanner) {
       this.clearBannerLayoutOffset();
       return;

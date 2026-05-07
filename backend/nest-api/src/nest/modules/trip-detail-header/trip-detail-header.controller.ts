@@ -17,11 +17,6 @@ export class TripDetailHeaderController {
     return this.service.find(query);
   }
 
-  @Get(':id')
-  async getById(@Param('id', ParseIntPipe) id: number) {
-    return this.service.getById(id);
-  }
-
   @Post()
   @Permissions('write')
   async create(@Body() payload: Record<string, unknown>) {
@@ -48,5 +43,10 @@ export class TripDetailHeaderController {
   @Get('multipleGroups')
   async multipleGroups(@Query('id', ParseIntPipe) id: number) {
     return this.service.multipleGroups(id);
+  }
+
+  @Get(':id')
+  async getById(@Param('id', ParseIntPipe) id: number) {
+    return this.service.getById(id);
   }
 }

@@ -5,7 +5,6 @@ import { SharedModule } from "@app/shared/shared.module";
 import { TripDetailsFormComponent } from "../trip-details-form/trip-details-form.component";
 import { TripDetailService } from "@app/core/api/field-service/trip-detail/trip-detail.service";
 import { NAVIGATION_ROUTE } from "../trip-details-constant";
-import { TripDetailsSummaryComponent } from "../trip-details-summary/trip-details-summary.component";
 import { _compressToEncodedURIComponent } from "src/assets/js/util/jslzString";
 import { SweetAlert } from "@app/shared/sweet-alert/sweet-alert.service";
 import moment from "moment";
@@ -18,7 +17,6 @@ import { TripDetailHeaderService } from "@app/core/api/field-service/trip-detail
   imports: [
     SharedModule,
     TripDetailsFormComponent,
-    TripDetailsSummaryComponent,
   ],
   selector: "app-trip-details-edit",
   templateUrl: "./trip-details-edit.component.html",
@@ -97,10 +95,9 @@ export class TripDetailsEditComponent {
 
   setDatData: any;
   async onSubmit() {
+    const fsId = Number(this.form?.value?.fsId || 0);
     try {
-      let data = await this.tripDetailHeaderService.multipleGroups(
-        this.form.value.fsId
-      );
+      let data = await this.tripDetailHeaderService.multipleGroups(fsId);
 
       if (data) {
         alert("This FSID cannot be in two different groups. ");

@@ -6,13 +6,12 @@ import { ToastrService } from "ngx-toastr";
 import { NAVIGATION_ROUTE } from "../trip-details-constant";
 import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErrors";
 import { TripDetailService } from "@app/core/api/field-service/trip-detail/trip-detail.service";
-import { TripDetailsFormComponent } from "../trip-details-form/trip-details-form.component";
 import { TripDetailHeaderService } from "@app/core/api/field-service/trip-detail-header/trip-detail-header.service";
 import { _compressToEncodedURIComponent } from "src/assets/js/util/jslzString";
 
 @Component({
   standalone: true,
-  imports: [SharedModule, TripDetailsFormComponent],
+  imports: [SharedModule],
   selector: "app-trip-details-create",
   templateUrl: "./trip-details-create.component.html",
 })
@@ -53,16 +52,17 @@ export class TripDetailsCreateComponent {
   }
 
   onSubmit = async () => {
-    try {
-      let data = await this.tripDetailHeaderService.multipleGroups(
-        this.form.value.fsId
-      );
+    const fsId = Number(this.form?.value?.fsId || 0);
+    if (Number.isInteger(fsId) && fsId > 0) {
+      try {
+        let data = await this.tripDetailHeaderService.multipleGroups(fsId);
 
-      if (data) {
-        alert("This FSID cannot be in two different groups. ");
-        return;
-      }
-    } catch (err) {}
+        if (data) {
+          alert("This FSID cannot be in two different groups. ");
+          return;
+        }
+      } catch (err) {}
+    }
 
     this.submitted = true;
 
@@ -85,9 +85,9 @@ export class TripDetailsCreateComponent {
   };
 
   async createNewGroup() {
-    let { insertId } = await this.tripDetailHeaderService.create({});
+    let { id } = await this.tripDetailHeaderService.create({});
 
-    this.currentFsIdGroupSelection = insertId;
+    this.currentFsIdGroupSelection = id;
     this.router.navigate([NAVIGATION_ROUTE.SUMMARY_EDIT], {
       queryParamsHandling: "merge",
       queryParams: {

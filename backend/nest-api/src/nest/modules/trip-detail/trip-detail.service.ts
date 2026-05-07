@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import PDFDocument from 'pdfkit';
 import { EmailService } from '@/shared/email/email.service';
+import { EmailTemplateService } from '@/shared/email/email-template.service';
 import { TripDetailRepository } from './trip-detail.repository';
 
 @Injectable()
@@ -8,6 +9,7 @@ export class TripDetailService {
   constructor(
     private readonly repository: TripDetailRepository,
     private readonly emailService: EmailService,
+    private readonly emailTemplateService: EmailTemplateService,
   ) {}
 
   async getAll() {
@@ -120,17 +122,12 @@ export class TripDetailService {
     const jobsCount = jobs.length;
     const detailsCount = details.length;
 
-    return `
-      <html>
-        <body>
-          <h3>Trip Itinerary #${fsId}</h3>
-          <p>The professional itinerary is attached as a PDF for your trip planning and execution.</p>
-          <p><strong>Team:</strong> ${teamSummary}</p>
-          <p><strong>Summary:</strong> ${jobsCount} job(s), ${detailsCount} itinerary item(s)</p>
-          <p>Please review the attachment for full schedule, addresses, confirmations, and travel notes.</p>
-        </body>
-      </html>
-    `;
+    return this.emailTemplateService.render('trip-itinerary', {
+      fsId,
+      teamSummary,
+      jobsCount,
+      detailsCount,
+    });
   }
 
   private async generateItineraryPdf(
@@ -140,7 +137,7 @@ export class TripDetailService {
     details: Array<Record<string, unknown>>,
   ): Promise<Buffer> {
     return new Promise<Buffer>((resolve, reject) => {
-      const doc = new PDFDocument({ size: 'A4', layout: 'landscape', margin: 28 });
+      const doc = new PDFDocument({ size: 'A4', layout: 'landscape', margin: 28, bufferPages: true });
       const chunks: Buffer[] = [];
 
       doc.on('data', (chunk: Buffer) => chunks.push(chunk));
@@ -152,17 +149,55 @@ export class TripDetailService {
       const right = pageWidth - 28;
       const bottom = doc.page.height - 28;
       const contentWidth = right - left;
+      const generatedAt = new Date();
 
-      doc.font('Helvetica-Bold').fontSize(18).text('Field Service Trip Itinerary', left, 36);
+      const toTitleCase = (value: unknown): string =>
+        String(value ?? '')
+          .trim()
+          .replace(/[_-]+/g, ' ')
+          .replace(/\s+/g, ' ')
+          .replace(/\b\w/g, (c) => c.toUpperCase());
+
+      const formatDateTime = (value: unknown): string => {
+        const raw = String(value ?? '').trim();
+        if (!raw) {
+          return '-';
+        }
+
+        const parsed = new Date(raw);
+        if (!Number.isNaN(parsed.getTime())) {
+          return parsed.toLocaleString('en-US', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true,
+          });
+        }
+
+        return raw;
+      };
+
+      doc.rect(left, 28, contentWidth, 42).fill('#0b4f8a');
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(17)
+        .fillColor('#ffffff')
+        .text('Field Service Trip Itinerary', left + 12, 41)
+        .fillColor('#000000');
+
       doc
         .font('Helvetica')
         .fontSize(10)
         .fillColor('#444444')
-        .text(`Group # ${fsId}`, left, 58)
-        .text(`Generated: ${new Date().toLocaleString()}`, left + 110, 58)
+        .text(`Group # ${fsId}`, left, 78)
+        .text(`Generated: ${generatedAt.toLocaleString()}`, left + 110, 78)
+        .text(`Jobs: ${jobs.length}`, left + 350, 78)
+        .text(`Stops: ${details.length}`, left + 430, 78)
         .fillColor('#000000');
 
-      let y = 86;
+      let y = 104;
 
       const ensureSpace = (neededHeight: number): void => {
         if (y + neededHeight > bottom) {
@@ -172,14 +207,15 @@ export class TripDetailService {
       };
 
       const writeSectionHeader = (title: string): void => {
-        ensureSpace(24);
+        ensureSpace(32);
+        doc.moveTo(left, y - 2).lineTo(right, y - 2).strokeColor('#d6e0ef').stroke();
         doc
           .font('Helvetica-Bold')
           .fontSize(12)
           .fillColor('#0b4f8a')
           .text(title, left, y)
           .fillColor('#000000');
-        y = doc.y + 8;
+        y = doc.y + 12;
       };
 
       const normalize = (value: unknown): string => {
@@ -206,7 +242,7 @@ export class TripDetailService {
           headers.forEach((headerText, idx) => {
             doc
               .rect(x, y, widths[idx], headerHeight)
-              .fillAndStroke('#e8effa', '#c8d6ef');
+              .fillAndStroke('#e2ecfb', '#b9cae7');
 
             doc
               .fillColor('#1c3f72')
@@ -272,7 +308,7 @@ export class TripDetailService {
         : [['-', 'No assigned technicians']];
       drawTable(['#', 'Technician'], [56, contentWidth - 56], techRows);
 
-      y += 4;
+      y += 12;
       writeSectionHeader('Jobs');
       const jobsRows = jobs.length
         ? jobs.map((job) => {
@@ -285,7 +321,7 @@ export class TripDetailService {
             normalize(job.fsId),
             normalize(job.customer),
             normalize(job.service_type),
-            normalize(dateTime),
+            formatDateTime(dateTime),
             normalize(job.property),
             normalize(address),
           ];
@@ -294,19 +330,19 @@ export class TripDetailService {
 
       drawTable(
         ['FSID', 'Customer', 'Service Type', 'Date/Time', 'Property', 'Address'],
-        [56, 120, 96, 104, 100, contentWidth - 476],
+        [52, 108, 86, 124, 94, contentWidth - 464],
         jobsRows,
       );
 
-      y += 4;
+      y += 12;
       writeSectionHeader('Trip Details');
       const detailRows = details.length
         ? details.map((row) => [
-          normalize(row.type_of_travel),
+          normalize(toTitleCase(row.type_of_travel)),
           normalize(row.fsId),
           normalize(row.address_name),
-          normalize(row.start_datetime),
-          normalize(row.end_datetime),
+          formatDateTime(row.start_datetime),
+          formatDateTime(row.end_datetime),
           normalize(row.confirmation),
           normalize(row.notes),
         ])
@@ -314,9 +350,23 @@ export class TripDetailService {
 
       drawTable(
         ['Type', 'FSID', 'Name', 'Start', 'End', 'Confirmation', 'Notes'],
-        [74, 56, 120, 88, 88, 90, contentWidth - 516],
+        [70, 52, 104, 96, 96, 76, contentWidth - 494],
         detailRows,
       );
+
+      const pageRange = doc.bufferedPageRange();
+      for (let i = 0; i < pageRange.count; i += 1) {
+        doc.switchToPage(i);
+        doc
+          .font('Helvetica')
+          .fontSize(8)
+          .fillColor('#6b7280')
+          .text(`Page ${i + 1} of ${pageRange.count}`, right - 70, bottom + 4, {
+            width: 70,
+            align: 'right',
+          })
+          .fillColor('#000000');
+      }
 
       doc.end();
     });

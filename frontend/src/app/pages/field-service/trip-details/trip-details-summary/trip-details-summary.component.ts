@@ -59,6 +59,7 @@ export class TripDetailsSummaryComponent implements OnInit {
   data: any;
 
   getData = async () => {
+    if (!this.fsId) return;
     try {
       if (this.useTravelId) {
         this.data = await this.api.findByGroupFsId(this.fsId);

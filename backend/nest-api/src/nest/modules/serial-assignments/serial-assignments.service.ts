@@ -55,12 +55,20 @@ export class SerialAssignmentsService {
     }
 
     if (normalized === 'igt') {
-      const raw = await this.repository.bulkCreateIgtWorkflow(assignments, performedBy || 'System');
+      const raw = await this.igtSerialNumbersService.bulkCreate(assignments as any[], 'skip');
       return {
         success: true,
-        message: `Created ${raw.count} IGT serial assignment${raw.count === 1 ? '' : 's'}`,
-        count: raw.count,
-        data: raw.data,
+        message: 'Bulk IGT assignments processed',
+        count: assignments.length,
+        data: assignments.map((item) => ({
+          generated_asset_number:
+            (item['igt_serial_number'] as string) ||
+            (item['assetNumber'] as string) ||
+            (item['serial_number'] as string) ||
+            null,
+          customer_asset_id: (item['igt_asset_id'] as number) || null,
+          serialNumber: (item['eyefi_serial_number'] as string) || (item['serialNumber'] as string) || undefined,
+        })),
         raw,
       };
     }

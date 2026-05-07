@@ -19,11 +19,12 @@ export class TripDetailHeaderService {
 
   async create(payload: Record<string, unknown>) {
     const sanitized = this.repository.sanitizePayload(payload);
-    if (Object.keys(sanitized).length === 0) {
-      throw new BadRequestException('Payload is empty');
-    }
 
-    const insertId = await this.repository.create(sanitized);
+    const insertId =
+      Object.keys(sanitized).length === 0
+        ? await this.repository.createDefaultRow()
+        : await this.repository.create(sanitized);
+
     const created = await this.repository.getById(insertId);
     if (!created) {
       throw new NotFoundException('Trip detail header not found after create');

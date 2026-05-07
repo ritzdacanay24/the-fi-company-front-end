@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { RowDataPacket } from 'mysql2/promise';
 import { QadOdbcService } from '@/shared/database/qad-odbc.service';
 import { EmailService } from '@/shared/email/email.service';
+import { EmailTemplateService } from '@/shared/email/email-template.service';
 import { EmailNotificationService } from '@/nest/modules/email-notification/email-notification.service';
 import { ScheduledJobHandler, ScheduledJobRunResultDto } from './scheduled-job.handler';
 
@@ -15,6 +16,22 @@ interface LnwRow extends RowDataPacket {
   cmt_cmmt: string;
 }
 
+interface LnwEmailRow {
+  sodNbr: string;
+  sodContrId: string;
+  sodPart: string;
+  sodCustPart: string;
+  openQty: string;
+  fullDesc: string;
+  comments: string;
+}
+
+interface LnwEmailGroup {
+  date: string;
+  hasRows: boolean;
+  rows: LnwEmailRow[];
+}
+
 @Injectable()
 export class LnwDeliveryHandler implements ScheduledJobHandler {
   private readonly logger = new Logger(LnwDeliveryHandler.name);
@@ -22,6 +39,7 @@ export class LnwDeliveryHandler implements ScheduledJobHandler {
   constructor(
     private readonly qadOdbcService: QadOdbcService,
     private readonly emailService: EmailService,
+    private readonly emailTemplateService: EmailTemplateService,
     private readonly emailNotificationService: EmailNotificationService,
   ) {}
 
@@ -78,7 +96,9 @@ export class LnwDeliveryHandler implements ScheduledJobHandler {
           .filter((e): e is string => typeof e === 'string' && e.trim().length > 0);
 
         if (to.length > 0) {
-          const html = this.buildEmail(grouped);
+          const html = this.emailTemplateService.render('lnw-delivery', {
+            grouped: this.toEmailGroups(grouped),
+          });
           await this.emailService.sendMail({
             to,
             subject: `LNW DELIVERY ${next3Weekdays.join(', ')}`,
@@ -151,25 +171,19 @@ export class LnwDeliveryHandler implements ScheduledJobHandler {
     return dates;
   }
 
-  private buildEmail(grouped: Array<{ date: string; rows: LnwRow[] }>): string {
-    let html = 'Hello Team,<br><br>Below is what we have on schedule for the next 3 weekdays.<br><br>';
-
-    for (const group of grouped) {
-      html += `<strong>Scheduled for ${group.date}</strong><br/>`;
-      html += '<table rules="all" style="border-color:#666" cellpadding="5" border="1">';
-      html += '<tr style="background:#eee"><th>SO #</th><th>PO #</th><th>Part</th><th>Cust Part #</th><th>Qty Open</th><th>Description</th><th>QAD Comments</th></tr>';
-
-      if (group.rows.length === 0) {
-        html += '<tr><td colspan="7" style="text-align:center">No orders found.</td></tr>';
-      } else {
-        for (const row of group.rows) {
-          html += `<tr><td>${row.sod_nbr}</td><td>${row.sod_contr_id || ''}</td><td>${row.sod_part || ''}</td><td>${row.sod_custpart || ''}</td><td>${row.openqty || 0}</td><td>${row.fulldesc || ''}</td><td>${String(row.cmt_cmmt || '').replace(/;/g, '')}</td></tr>`;
-        }
-      }
-
-      html += '</table><br><hr>';
-    }
-
-    return html;
+  private toEmailGroups(grouped: Array<{ date: string; rows: LnwRow[] }>): LnwEmailGroup[] {
+    return grouped.map((group) => ({
+      date: group.date,
+      hasRows: group.rows.length > 0,
+      rows: group.rows.map((row) => ({
+        sodNbr: String(row.sod_nbr || ''),
+        sodContrId: String(row.sod_contr_id || ''),
+        sodPart: String(row.sod_part || ''),
+        sodCustPart: String(row.sod_custpart || ''),
+        openQty: String(row.openqty ?? 0),
+        fullDesc: String(row.fulldesc || ''),
+        comments: String(row.cmt_cmmt || '').replace(/;/g, ''),
+      })),
+    }));
   }
 }

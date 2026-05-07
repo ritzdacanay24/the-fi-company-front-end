@@ -1,0 +1,162 @@
+
+
+.workflow-page {
+  height: calc(100vh - 84px);
+  height: calc(100vh - 84px);
+}
+
+.workflow-main-grid {
+  min-height: 620px;
+}
+
+.workflow-pane-left {
+  border-right: var(--bs-border-width) var(--bs-border-style) var(--bs-border-color);
+}
+
+.workflow-pane-right {
+  padding: 1rem;
+}
+
+.sidebar-pane,
+.content-pane {
+  padding: 1rem;
+}
+
+.sidebar-pane {
+  gap: 0.75rem;
+}
+
+.sidebar-section-body,
+.content-pane-body {
+  flex: 1;
+}
+
+.sidebar-search-icon {
+  position: absolute;
+  top: 50%;
+  left: 0.85rem;
+  transform: translateY(-50%);
+  color: var(--bs-secondary-color);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.sidebar-section-header {
+  padding-bottom: 0.15rem;
+}
+
+.sidebar-section-body {
+  padding-top: 0.2rem;
+  padding-bottom: 0.2rem;
+}
+
+.sidebar-section-footer {
+  margin-top: 0.35rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--bs-border-color);
+}
+
+.group-list-scroll {
+  height: calc(100vh - 550px);
+  max-height: calc(100vh - 449px);
+  overflow: auto;
+}
+
+.group-header,
+.group-name-editor,
+.group-header-top {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.group-header {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.group-header-top {
+  justify-content: space-between;
+}
+
+.group-name-editor .form-control {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.group-name-editor .btn,
+.workflow-header-actions .btn,
+.content-actions .btn,
+.sidebar-section-footer .btn {
+  white-space: nowrap;
+}
+
+.workflow-summary {
+  border-bottom: 1px solid var(--bs-border-color);
+  padding: 0.35rem 0.25rem 0.7rem;
+}
+
+.content-pane-header {
+  margin-bottom: 0.85rem;
+}
+
+.content-pane-body {
+  padding-top: 0.1rem;
+}
+
+.group-chip,
+.trip-tile {
+  border: 1px solid var(--bs-primary-border-subtle, #9ec5fe) !important;
+  border-radius: 0.65rem;
+  background: var(--bs-body-bg);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.015);
+  padding: 0.65rem 0.75rem;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.group-chip:hover,
+.trip-tile:hover {
+  border-color: var(--bs-primary) !important;
+}
+
+.group-chip.active,
+.trip-tile.active {
+  border-color: var(--bs-primary) !important;
+  background: var(--bs-primary-bg-subtle);
+}
+
+.required-asterisk {
+  color: var(--bs-danger);
+}
+
+.control-shell.invalid-control {
+  border: 1px solid var(--bs-danger);
+  border-radius: var(--bs-border-radius);
+}
+
+@media (max-width: 1199px) {
+  .workflow-main-grid {
+    min-height: auto;
+  }
+
+  .workflow-pane-left {
+    border-right: 0;
+    border-bottom: var(--bs-border-width) var(--bs-border-style) var(--bs-border-color);
+  }
+
+  .workflow-pane-right,
+  .sidebar-pane,
+  .content-pane {
+    padding: 0.75rem;
+  }
+
+  .group-list-scroll {
+    max-height: 320px;
+  }
+
+  .group-name-editor,
+  .workflow-header-actions,
+  .content-actions {
+    flex-wrap: wrap;
+  }
+}

@@ -5,6 +5,7 @@ import { TripDetailsComponent } from "./trip-details.component";
 import { TripDetailsListComponent } from "./trip-details-list/trip-details-list.component";
 import { TripDetailsEditComponent } from "./trip-details-edit/trip-details-edit.component";
 import { TripSummaryEditComponent } from "./trip-summary-edit/trip-summary-edit.component";
+import { TripItineraryWorkflowComponent } from "./trip-itinerary-workflow/trip-itinerary-workflow.component";
 
 const routes: Routes = [
   {
@@ -19,6 +20,10 @@ const routes: Routes = [
       {
         path: "list",
         component: TripDetailsListComponent,
+      },
+      {
+        path: "workflow",
+        component: TripItineraryWorkflowComponent,
       },
       {
         path: "edit",

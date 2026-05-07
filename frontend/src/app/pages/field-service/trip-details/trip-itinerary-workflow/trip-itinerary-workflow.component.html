@@ -1,0 +1,441 @@
+<div class="workflow-page container-fluid">
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item">
+        <a href="#" class="text-decoration-none" (click)="$event.preventDefault()">
+          <i class="mdi mdi-home-outline me-1"></i>Field Service
+        </a>
+      </li>
+      <li class="breadcrumb-item">
+        <a href="#" class="text-decoration-none" (click)="$event.preventDefault()">Trip Management</a>
+      </li>
+      <li class="breadcrumb-item active" aria-current="page">Workflow</li>
+    </ol>
+  </nav>
+
+  <div class="workflow-header mb-4">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <div class="d-flex align-items-center">
+        <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+          <i class="mdi mdi-routes text-white fs-4"></i>
+        </div>
+        <div>
+          <h2 class="mb-1 text-primary">Trip Itinerary Workflow</h2>
+          <p class="text-muted mb-0">
+            Choose or create a group first. Then the group panel switches to stops for fast itinerary entry.
+          </p>
+        </div>
+      </div>
+      <div class="d-flex gap-2 flex-wrap workflow-header-actions">
+        <button
+          class="btn btn-outline-secondary"
+          type="button"
+          [attr.aria-expanded]="showWorkflowGuide"
+          (click)="showWorkflowGuide = !showWorkflowGuide"
+        >
+          <i class="mdi mdi-help-circle-outline me-1"></i>
+          {{ showWorkflowGuide ? 'Hide Help' : 'Help' }}
+        </button>
+        <button class="btn btn-outline-primary" [routerLink]="['/field-service/trip-details/list']">
+          <i class="mdi mdi-table me-1"></i>Legacy Grid
+        </button>
+        <button class="btn btn-primary" (click)="setCreateMode(selectedGroupId || undefined)" [disabled]="!hasSelectedGroup">
+          <i class="mdi mdi-plus me-1"></i>New Stop In Current Group
+        </button>
+      </div>
+    </div>
+
+    <div class="alert alert-secondary py-2 px-3 mt-2 mb-0" *ngIf="showWorkflowGuide">
+      <div class="small fw-semibold mb-1">How this works</div>
+      <div class="small text-body-secondary mb-0">Pick or create a group, choose an existing stop or start a new one, then save.</div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm workflow-main-card">
+    <div class="card-body p-0">
+      <div class="row g-0 workflow-main-grid">
+    <div class="col-12 col-xl-4 workflow-pane workflow-pane-left">
+      <div class="sidebar-pane h-100 d-flex flex-column">
+        <div class="sidebar-section-header" *ngIf="!hasSelectedGroup">
+          <div class="fw-semibold mb-2">Select Group</div>
+          <div class="position-relative">
+            <i class="mdi mdi-magnify sidebar-search-icon"></i>
+            <input
+              type="search"
+              class="form-control ps-5"
+              placeholder="Search by group, FSID, city, or type"
+              [(ngModel)]="searchText"
+              (ngModelChange)="rebuildGroups()"
+            />
+          </div>
+
+          <div class="input-group mt-2">
+            <input
+              type="text"
+              class="form-control"
+              placeholder="Enter new group name (e.g., Vegas Week 3)"
+              [(ngModel)]="newGroupName"
+            />
+            <button class="btn btn-primary" (click)="createNewGroupAndUse()">
+              Create
+            </button>
+          </div>
+        </div>
+
+        <div class="sidebar-section-header" *ngIf="hasSelectedGroup">
+          <div class="group-header">
+            <div class="group-header-top">
+              <div class="fw-semibold">Stops In {{ selectedGroupName || ('Group ' + selectedGroupId) }}</div>
+              <button class="btn btn-sm btn-outline-secondary" (click)="changeGroup()">
+                Change Group
+              </button>
+            </div>
+
+            <div class="group-name-editor mt-2">
+              <input
+                class="form-control form-control-sm"
+                [(ngModel)]="selectedGroupNameDraft"
+                placeholder="Enter group name"
+              />
+              <button class="btn btn-sm btn-outline-primary" (click)="saveSelectedGroupName()">
+                Save Name
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="sidebar-section-body group-list-scroll">
+          <div *ngIf="isLoading" class="text-center p-4">
+            <div class="spinner-border spinner-border-sm text-primary"></div>
+            <div class="small text-muted mt-2">Loading groups...</div>
+          </div>
+
+          <div class="alert alert-warning mx-2 mt-2" *ngIf="!isLoading && loadErrorMessage">
+            <div class="small mb-2">{{ loadErrorMessage }}</div>
+            <button class="btn btn-sm btn-outline-secondary" (click)="loadTrips()">
+              Retry Load
+            </button>
+          </div>
+
+          <div class="empty-block text-center p-4" *ngIf="!isLoading && !hasSelectedGroup && !groups.length">
+            <i class="mdi mdi-map-search-outline mb-2 d-block"></i>
+            <div class="small text-muted fw-semibold">No groups found yet</div>
+            <div class="small text-muted">Create and select a group to start building itinerary stops.</div>
+          </div>
+
+          <div class="group-list d-flex flex-column gap-2" *ngIf="!isLoading && !hasSelectedGroup && groups.length">
+            <button
+              type="button"
+              class="btn text-start group-chip"
+              [class.active]="group.id === selectedGroupId"
+              *ngFor="let group of groups"
+              (click)="selectGroup(group.id)"
+            >
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">{{ group.name }}</span>
+                <span class="badge text-bg-light border">{{ group.trips.length }}</span>
+              </div>
+              <div class="small text-muted mt-1">ID {{ group.id }} • {{ group.trips[0]?.city || 'No city' }}</div>
+            </button>
+          </div>
+
+          <div class="group-list d-flex flex-column gap-2" *ngIf="!isLoading && hasSelectedGroup">
+            <button
+              class="btn trip-tile text-start w-100"
+              [class.active]="trip.id === selectedTripId"
+              (click)="selectTrip(trip)"
+              *ngFor="let trip of selectedGroupTrips"
+            >
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="fw-semibold text-capitalize">{{ trip.type_of_travel?.replace('_', ' ') }}</span>
+                <span [class]="getStatusClass(trip)">{{ getStatus(trip) }}</span>
+              </div>
+              <div class="small text-muted">{{ trip.location_name || trip.address_name || 'No location name' }}</div>
+              <div class="small">{{ trip.start_datetime | date: 'MMM d, y h:mm a' }}</div>
+            </button>
+
+            <div class="text-center py-3 text-muted small" *ngIf="!selectedGroupTrips.length">
+              No stops in this group yet.
+            </div>
+          </div>
+        </div>
+
+        <div class="sidebar-section-footer">
+          <button
+            class="btn btn-outline-success w-100 mb-2"
+            [disabled]="!hasSelectedGroup || !selectedGroupTrips.length || isSaving"
+            (click)="emailTechForSelectedGroup()"
+          >
+            <i class="mdi mdi-email-fast-outline me-1"></i>Email Entire Itinerary
+          </button>
+          <button class="btn btn-outline-primary w-100" (click)="setCreateMode(selectedGroupId || undefined)" [disabled]="!hasSelectedGroup">
+            <i class="mdi mdi-plus me-1"></i>Go To Create In Group {{ selectedGroupId || '-' }}
+          </button>
+          <button class="btn btn-outline-dark w-100 mt-2" *ngIf="!hasSelectedGroup" (click)="createNewGroupAndUse()">
+            <i class="mdi mdi-layers-plus me-1"></i>Create And Select New Group
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-xl-8 workflow-pane workflow-pane-right">
+      <div class="workflow-summary small text-body-secondary mb-2">
+        Group <strong>{{ selectedGroupName || '-' }}</strong>
+        <span class="mx-2">|</span>
+        ID <strong>{{ selectedGroupId || '-' }}</strong>
+        <span class="mx-2">|</span>
+        Stops <strong>{{ selectedGroupCount }}</strong>
+        <span class="mx-2">|</span>
+        Confirmed <strong>{{ confirmedCount }}</strong>
+        <span class="mx-2">|</span>
+        Mode <strong class="text-capitalize">{{ mode }}</strong>
+      </div>
+
+      <div class="content-pane h-100 d-flex flex-column">
+        <div class="content-pane-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">{{ mode === 'edit' ? 'Edit Stop' : 'Create Stop' }}</h5>
+          <div class="d-flex gap-2 content-actions">
+            <button class="btn btn-sm btn-outline-secondary" (click)="setCreateMode(selectedGroupId || undefined)">
+              {{ mode === 'edit' ? 'Exit Edit Mode' : 'Reset Stop Form' }}
+            </button>
+            <button
+              class="btn btn-sm btn-outline-danger"
+              *ngIf="mode === 'edit' && selectedTripId"
+              (click)="deleteSelected()"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+
+        <div class="content-pane-body">
+          <div class="alert alert-secondary" *ngIf="!hasSelectedGroup">
+            Select or create a group in the left panel to start adding itinerary stops.
+          </div>
+
+          <ng-container *ngIf="hasSelectedGroup">
+          <div class="alert alert-info" *ngIf="hasSelectedGroup && !hasSelectedStop && mode === 'create'">
+            You are creating a new stop in Group {{ selectedGroupId }}.
+          </div>
+
+          <form [formGroup]="form" class="workflow-form">
+            <div class="border rounded-3 p-3 mb-3 bg-body-tertiary">
+              <div class="small text-uppercase fw-semibold text-body-secondary mb-2">Core Details</div>
+              <div class="small text-body-secondary mb-2">Required to create or update a stop.</div>
+              <div class="row g-2">
+                <div class="col-12 col-md-6">
+                  <label class="form-label">Travel Type <span class="required-asterisk">*</span></label>
+                  <select
+                    class="form-select"
+                    formControlName="type_of_travel"
+                    [class.is-invalid]="isFieldInvalid('type_of_travel')"
+                  >
+                    <option *ngFor="let item of travelTypes" [value]="item.value">
+                      {{ item.label }}
+                    </option>
+                  </select>
+                  <div class="text-danger small mt-1" *ngIf="isFieldInvalid('type_of_travel')">
+                    Travel Type is required.
+                  </div>
+                </div>
+                <div class="col-12 col-md-6">
+                  <label class="form-label">FSID <span class="required-asterisk">*</span></label>
+                  <div class="control-shell" [class.invalid-control]="isFieldInvalid('fsId')">
+                    <app-job-search
+                      [showLabel]="false"
+                      [value]="form.value.fsId"
+                      (notifyParent)="onJobSelected($event)"
+                    ></app-job-search>
+                  </div>
+                  <div class="text-danger small mt-1" *ngIf="isFieldInvalid('fsId')">
+                    FSID is required.
+                  </div>
+                </div>
+                <ng-container *ngIf="mode === 'edit'; else createGroupContext">
+                  <div class="col-12 col-md-8">
+                    <label class="form-label">Move To Group</label>
+                    <select class="form-select" formControlName="fs_travel_header_id">
+                      <option [ngValue]="null">-- Select Group --</option>
+                      <option *ngFor="let group of groups" [ngValue]="group.id">
+                        {{ group.name }} (ID {{ group.id }})
+                      </option>
+                    </select>
+                  </div>
+                  <div class="col-12 col-md-4 d-flex align-items-end">
+                    <button type="button" class="btn btn-outline-primary w-100" (click)="createNewGroupAndUse()">
+                      <i class="mdi mdi-layers-plus me-1"></i>New Group
+                    </button>
+                  </div>
+                  <div class="col-12">
+                    <div class="small text-muted mt-1">Use this only when transferring this stop to another existing group.</div>
+                  </div>
+                </ng-container>
+
+                <ng-template #createGroupContext>
+                  <div class="col-12">
+                    <label class="form-label">Group</label>
+                    <div class="form-control d-flex justify-content-between align-items-center">
+                      <span>{{ selectedGroupName || ('Group ' + selectedGroupId) }}</span>
+                      <span class="small text-muted">ID {{ selectedGroupId }}</span>
+                    </div>
+                    <div class="small text-muted mt-1">New stops are created in the currently selected group.</div>
+                  </div>
+                </ng-template>
+                <div class="col-12 col-md-6">
+                  <label class="form-label">Start Label <span class="required-asterisk">*</span></label>
+                  <input
+                    class="form-control"
+                    formControlName="start_datetime_name"
+                    [class.is-invalid]="isFieldInvalid('start_datetime_name')"
+                  />
+                  <div class="text-danger small mt-1" *ngIf="isFieldInvalid('start_datetime_name')">
+                    Start Label is required.
+                  </div>
+                </div>
+                <div class="col-12 col-md-6">
+                  <label class="form-label">End Label <span class="required-asterisk">*</span></label>
+                  <input
+                    class="form-control"
+                    formControlName="end_datetime_name"
+                    [class.is-invalid]="isFieldInvalid('end_datetime_name')"
+                  />
+                  <div class="text-danger small mt-1" *ngIf="isFieldInvalid('end_datetime_name')">
+                    End Label is required.
+                  </div>
+                </div>
+                <div class="col-12 col-md-6">
+                  <label class="form-label">Start Date/Time <span class="required-asterisk">*</span></label>
+                  <input
+                    class="form-control"
+                    type="datetime-local"
+                    formControlName="start_datetime"
+                    [class.is-invalid]="isFieldInvalid('start_datetime')"
+                  />
+                  <div class="text-danger small mt-1" *ngIf="isFieldInvalid('start_datetime')">
+                    Start Date/Time is required.
+                  </div>
+                </div>
+                <div class="col-12 col-md-6">
+                  <label class="form-label">End Date/Time <span class="required-asterisk">*</span></label>
+                  <input
+                    class="form-control"
+                    type="datetime-local"
+                    formControlName="end_datetime"
+                    [class.is-invalid]="isFieldInvalid('end_datetime')"
+                  />
+                  <div class="text-danger small mt-1" *ngIf="isFieldInvalid('end_datetime')">
+                    End Date/Time is required.
+                  </div>
+                </div>
+                <div class="col-12">
+                  <label class="form-label">Location Label <span class="required-asterisk">*</span></label>
+                  <input
+                    class="form-control"
+                    formControlName="location_name"
+                    [class.is-invalid]="isFieldInvalid('location_name')"
+                  />
+                  <div class="text-danger small mt-1" *ngIf="isFieldInvalid('location_name')">
+                    Location Label is required.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              class="btn btn-outline-secondary w-100 mb-2"
+              (click)="showAdvancedDetails = !showAdvancedDetails"
+            >
+              <span>
+                <i class="mdi me-1" [class.mdi-chevron-down]="!showAdvancedDetails" [class.mdi-chevron-up]="showAdvancedDetails"></i>
+                {{ showAdvancedDetails ? 'Hide Advanced Details' : 'Show Advanced Details' }}
+              </span>
+            </button>
+
+            <div class="border rounded-3 p-3 mb-3 bg-body-tertiary" *ngIf="showAdvancedDetails">
+              <div class="small text-uppercase fw-semibold text-body-secondary mb-2">Advanced Details</div>
+              <div class="small text-body-secondary mb-2">Optional fields for booking metadata, transportation specifics, and full location details.</div>
+              <div class="row g-2">
+                <div class="col-12">
+                  <label class="form-label">Confirmation</label>
+                  <input class="form-control" formControlName="confirmation" placeholder="Enter booking or confirmation number" />
+                </div>
+                <div class="col-12 col-md-6" *ngIf="form.value.type_of_travel === 'flight'">
+                  <label class="form-label">Flight Out</label>
+                  <input class="form-control" formControlName="flight_out" placeholder="Enter outbound flight number" />
+                </div>
+                <div class="col-12 col-md-6" *ngIf="form.value.type_of_travel === 'flight'">
+                  <label class="form-label">Flight In</label>
+                  <input class="form-control" formControlName="flight_in" placeholder="Enter return flight number" />
+                </div>
+                <div class="col-12" *ngIf="form.value.type_of_travel === 'rental_car'">
+                  <label class="form-label">Rental Car Driver</label>
+                  <input class="form-control" formControlName="rental_car_driver" placeholder="Enter rental car driver name" />
+                </div>
+
+                <div class="col-12 mt-2">
+                  <label class="form-label">Address Search</label>
+                  <div class="control-shell">
+                    <app-address-search
+                      [minTermLength]="1"
+                      [editableSearchTerm]="false"
+                      [hideSelected]="false"
+                      [showLabel]="false"
+                      [showCategories]="true"
+                      [required]="false"
+                      [value]="form.value.address"
+                      [addTag]="false"
+                      [placeholder]="'Search by name or address'"
+                      (notifyParent)="onAddressSelected($event)"
+                    ></app-address-search>
+                  </div>
+                </div>
+                <div class="col-12 col-md-6">
+                  <label class="form-label">Company Name</label>
+                  <input class="form-control" formControlName="address_name" placeholder="Enter company or site name" />
+                </div>
+                <div class="col-12 col-md-6">
+                  <label class="form-label">Address</label>
+                  <input class="form-control" formControlName="address" placeholder="Enter street address" />
+                </div>
+                <div class="col-12">
+                  <label class="form-label">Address 2</label>
+                  <input class="form-control" formControlName="address1" placeholder="Enter suite, unit, or building (optional)" />
+                </div>
+                <div class="col-12 col-md-4">
+                  <label class="form-label">City</label>
+                  <input class="form-control" formControlName="city" placeholder="Enter city" />
+                </div>
+                <div class="col-12 col-md-4">
+                  <label class="form-label">State</label>
+                  <select class="form-select" formControlName="state">
+                    <option value="">-- Select State --</option>
+                    <option *ngFor="let row of states" [value]="row.abbreviation">{{ row.name }}</option>
+                  </select>
+                </div>
+                <div class="col-12 col-md-4">
+                  <label class="form-label">Zip</label>
+                  <input class="form-control" formControlName="zip_code" placeholder="Enter zip code" />
+                </div>
+                <div class="col-12">
+                  <label class="form-label">Notes</label>
+                  <textarea class="form-control" rows="3" formControlName="notes" placeholder="Add travel notes, access details, or special instructions"></textarea>
+                </div>
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-end mt-3">
+              <button type="button" class="btn btn-primary" [disabled]="isSaving" (click)="save()">
+                <span *ngIf="isSaving" class="spinner-border spinner-border-sm me-1"></span>
+                {{ mode === 'edit' ? 'Update Stop' : 'Create Stop' }}
+              </button>
+            </div>
+          </form>
+          </ng-container>
+        </div>
+      </div>
+    </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,24 +1,18 @@
 import { Component, Input, OnInit } from "@angular/core";
-import { ActivatedRoute, Router } from "@angular/router";
 import { FormGroup } from "@angular/forms";
 import {
   NgbActiveModal,
-  NgbCarouselModule,
-  NgbScrollSpyModule,
 } from "@ng-bootstrap/ng-bootstrap";
 import { SharedModule } from "@app/shared/shared.module";
 import { Injectable } from "@angular/core";
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { TripDetailsFormComponent } from "../trip-details-form/trip-details-form.component";
 import { TripDetailService } from "@app/core/api/field-service/trip-detail/trip-detail.service";
-import { TripDetailsSummaryComponent } from "../trip-details-summary/trip-details-summary.component";
 import { ToastrService } from "ngx-toastr";
 import { TripDetailHeaderService } from "@app/core/api/field-service/trip-detail-header/trip-detail-header.service";
-import { JobSearchComponent } from "@app/shared/components/job-search/job-search.component";
 import { UploadService } from "@app/core/api/upload/upload.service";
 import { first } from "rxjs";
 import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
-import { uniqueId } from "lodash";
 
 @Injectable({
   providedIn: "root",
@@ -49,22 +43,13 @@ export class TripDetailsModalService {
   standalone: true,
   imports: [
     SharedModule,
-    TripDetailsModalComponent,
-    NgbScrollSpyModule,
     TripDetailsFormComponent,
-    NgbCarouselModule,
-    TripDetailsSummaryComponent,
-    TripDetailsFormComponent,
-    JobSearchComponent,
   ],
   selector: "app-trip-details-modal",
   templateUrl: "./trip-details-modal.component.html",
-  styleUrls: [],
 })
 export class TripDetailsModalComponent implements OnInit {
   constructor(
-    public route: ActivatedRoute,
-    public router: Router,
     private ngbActiveModal: NgbActiveModal,
     private api: TripDetailService,
     private tripDetailHeaderService: TripDetailHeaderService,
@@ -154,16 +139,17 @@ export class TripDetailsModalComponent implements OnInit {
   }
 
   async onSubmit() {
-    try {
-      let data = await this.tripDetailHeaderService.multipleGroups(
-        this.form.value.fsId
-      );
+    const fsId = Number(this.form?.value?.fsId || 0);
+    if (Number.isInteger(fsId) && fsId > 0) {
+      try {
+        let data = await this.tripDetailHeaderService.multipleGroups(fsId);
 
-      if (data) {
-        alert("This FSID cannot be in two different groups. ");
-        return;
-      }
-    } catch (err) {}
+        if (data) {
+          alert("This FSID cannot be in two different groups. ");
+          return;
+        }
+      } catch (err) {}
+    }
 
     if (this.id) {
       this.update();

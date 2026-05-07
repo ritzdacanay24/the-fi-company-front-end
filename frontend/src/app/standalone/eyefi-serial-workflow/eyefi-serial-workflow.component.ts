@@ -186,8 +186,108 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
   customerOptions: string[] = [
     'IGT',
     'Light and Wonder',
+    'Bally',
+    'Scientific Games',
     'AGS',
+    'AINGAM',
+    'AMEGAM',
     'ATI',
+    'AVAGAM',
+    'BalGam',
+    'BALTEC',
+    'BETRIT',
+    'CHUGOL',
+    'EVIGAM',
+    'GAMART',
+    'IGT_EUR',
+    'INTGAM',
+    'JACENT',
+    'KONGAM',
+    'MCBHOL',
+    'MCBJOH',
+    'NORPRE',
+    'NOVAME',
+    'PECRES',
+    'SANMAN',
+    'SIGCON',
+    'SMSLLC',
+    'STYGAM',
+    'VegasSig',
+    'YELFIS',
+    'VGT',
+    'MIAVAL',
+    'ODACAS',
+    'ABPRE',
+    'CAEENT',
+    'USARMY',
+    'IGT_CAN',
+    'GAMCAP',
+    'VECGAM',
+    'ARUGAM',
+    'GTSOURCE',
+    'A&WENT',
+    'ADVGAM',
+    'AEROSPAC',
+    'MGM-BELL',
+    'BOYGAM',
+    'CENGAM-M',
+    'CHINATRA',
+    'COLEKEPR',
+    'DIAGAM',
+    'FLEXINT',
+    'GOLDROUT',
+    'GRANDVIS',
+    'INTUICOD',
+    'JPSLOT',
+    'NEXGAM',
+    'PARPRONV',
+    'PERGAM',
+    'SWSLOTCO',
+    'TOVISCO',
+    'VSRIND',
+    'WINMARK',
+    'WORLDWID',
+    'METAGAM',
+    'SANTFE',
+    'QUICHA',
+    'SYNBLUE',
+    'ELDOREST',
+    'CIRCCIRC',
+    'SILVLEGC',
+    'TURNSTON',
+    'MGMINTL',
+    'METSIG',
+    'RAINROCK',
+    'EPICTECH',
+    'PROTO-A',
+    'BVGA',
+    'WESTGATE',
+    'ELDORADO',
+    'ZITROUSA',
+    'BELLAGIO',
+    'TREASURE',
+    'BETRITE',
+    'HILAND',
+    'RAMPART',
+    'BLUBERI',
+    'AGLC',
+    'MICCO',
+    'MONROE',
+    'HAAS',
+    'OSPLLC',
+    'AVI',
+    'JRSHOS',
+    'INCRED',
+    'SONNY',
+    'KIRON',
+    'RHC',
+    'RTSINC',
+    'ECLIPSE',
+    'GALAXY',
+    'PLUSS',
+    'EXCEED',
+    'TIOLI',
+    'INTERB',
     'Other'
   ];
 
@@ -426,8 +526,10 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
           }
         } else {
           console.log('⚠️ Customer', workOrder.cp_cust, 'not found in customer options list. Will need manual selection.');
-          this.selectedCustomer = '';
-          this.customOtherCustomerName = '';
+          // Optionally set to "Other" and pre-fill the custom name
+          this.selectedCustomer = 'Other';
+          this.customOtherCustomerName = workOrder.cp_cust;
+          this.toastrService.info(`Customer set to "Other": ${workOrder.cp_cust}`, 'Auto-Selection');
         }
       } else {
         console.log('ℹ️ No cp_cust in work order. Customer selection required.');
@@ -1319,9 +1421,6 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
             eyefi_serial_id: typeof generated.serial === 'string' ? null : generated.serial.id,
             ulNumber: generated.ulNumber?.ul_number || '',
             ul_label_id: generated.ulNumber?.id || null,
-            ul_category: generated.ulNumber?.category ?? null,
-            category: this.category,
-            partNumber: this.workOrderDetails?.cp_cust_part || '',
             sgAssetNumber: generated.assetNumber?.trim() || '', // Use manually entered asset number for USED (trimmed)
             manualUpdate: '1', // Flag as manual entry so sequence logic ignores this row
             sgPartNumber: this.workOrderDetails?.cp_cust_part || '',
@@ -1346,9 +1445,6 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
             eyefi_serial_id: typeof assignment.serial === 'string' ? null : assignment.serial.id,
             ulNumber: assignment.ulNumber?.ul_number || '',
             ul_label_id: assignment.ulNumber?.id || null,
-            ul_category: assignment.ulNumber?.category ?? null,
-            category: this.category,
-            partNumber: this.workOrderDetails?.cp_cust_part || '',
             sgPartNumber: this.workOrderDetails?.cp_cust_part || '', //this is a customer field for sg
         poNumber: this.workOrderNumber,
         property_site: '', // Add if needed
@@ -1418,9 +1514,6 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
         eyefi_serial_id: typeof assignment.serial === 'string' ? null : assignment.serial.id,
         ulNumber: assignment.ulNumber?.ul_number || '',
         ul_label_id: assignment.ulNumber?.id || null,
-        ul_category: assignment.ulNumber?.category ?? null,
-        category: this.category,
-        partNumber: this.workOrderDetails?.cp_cust_part || '',
         sgPartNumber: this.workOrderDetails?.cp_cust_part || '',
         poNumber: this.workOrderNumber,
         property_site: '', // Add if needed
@@ -1489,8 +1582,6 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
         eyefi_serial_id: typeof generated.serial === 'string' ? null : generated.serial.id,
         ulNumber: generated.ulNumber?.ul_number || '',
         ul_label_id: generated.ulNumber?.id || null,
-        ul_category: generated.ulNumber?.category ?? null,
-        category: this.category,
         partNumber: this.workOrderDetails?.wo_part || '',
         poNumber: this.workOrderNumber,
         active: 1,
@@ -1561,8 +1652,6 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
         eyefi_serial_id: typeof assignment.serial === 'string' ? null : assignment.serial.id,
         ulNumber: assignment.ulNumber?.ul_number || '',
         ul_label_id: assignment.ulNumber?.id || null,
-        ul_category: assignment.ulNumber?.category ?? null,
-        category: this.category,
         partNumber: this.workOrderDetails?.wo_part || '',
         poNumber: this.workOrderNumber,
         customer_name: customerName, // Use determined customer name
@@ -1770,8 +1859,6 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
       case 'AGS':
       case 'AMEGAM':
         return 'ags';
-      case 'ATI':
-        return 'other';
       case 'Other':
         return 'other'; // Just assignment, no asset generation
       default:

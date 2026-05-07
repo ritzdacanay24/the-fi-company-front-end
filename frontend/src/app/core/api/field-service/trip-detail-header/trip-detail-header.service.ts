@@ -38,7 +38,16 @@ export class TripDetailHeaderService extends DataService<any> {
     return firstValueFrom(this.http.get(`${tripDetailHeaderV2Url}/getByGroup`));
   }
 
-  multipleGroups(id) {
-    return firstValueFrom(this.http.get(`${tripDetailHeaderV2Url}/multipleGroups?id=${id}`));
+  multipleGroups(id: number) {
+    const normalizedId = Number(id);
+    if (!Number.isInteger(normalizedId) || normalizedId <= 0) {
+      throw new Error("multipleGroups requires a valid numeric fsId");
+    }
+
+    return firstValueFrom(
+      this.http.get(`${tripDetailHeaderV2Url}/multipleGroups`, {
+        params: { id: String(normalizedId) },
+      })
+    );
   }
 }

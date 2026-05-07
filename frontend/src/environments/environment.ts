@@ -27,6 +27,7 @@ export const environment = {
   useApiV2VehicleList: true,
   useApiV2SafetyIncident: true,
   useApiV2TrainingSessions: false,
+  showQadStatusBanner: false,
   legacyApiBaseUrl: 'https://dashboard.eye-fi.com/server/Api',
   wipApiBaseUrl: 'http://localhost:3002',
   vehicleApiBaseUrl: 'http://localhost:3002',

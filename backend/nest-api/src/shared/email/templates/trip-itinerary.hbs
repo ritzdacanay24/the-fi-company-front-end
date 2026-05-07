@@ -1,0 +1,29 @@
+<html>
+  <body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f4f6f8; color: #1f2933;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 620px; background-color: #ffffff; border: 1px solid #dde3ea; border-radius: 10px; overflow: hidden;">
+            {{> email-header}}
+            <tr>
+              <td style="padding: 20px 24px; background-color: #0b5cab; color: #ffffff;">
+                <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Trip Itinerary #{{fsId}}</h2>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 24px; font-size: 14px; line-height: 1.6;">
+                <p style="margin-top: 0;">Hello Team,</p>
+                <p style="margin: 0 0 14px 0;">Your trip itinerary is attached as a PDF for planning and execution.</p>
+                <p style="margin: 0 0 8px 0;"><strong>Team:</strong> {{teamSummary}}</p>
+                <p style="margin: 0 0 14px 0;"><strong>Summary:</strong> {{jobsCount}} job(s), {{detailsCount}} itinerary item(s)</p>
+                <p style="margin: 0 0 16px 0;">Please review the attachment for full schedule, addresses, confirmations, and travel notes.</p>
+                <p style="margin: 0; color: #5a6b7b; font-size: 12px;">This is an automated message from The Fi Company Dashboard.</p>
+              </td>
+            </tr>
+            {{> email-footer}}
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

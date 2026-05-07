@@ -19,32 +19,52 @@
   }
 
   .app-loading {
-    align-items: center;
-    background: #f8f9fa;
+    position: relative;
     display: flex;
     flex-direction: column;
-    gap: 14px;
-    height: 100vh;
+    align-items: center;
     justify-content: center;
-    width: 100%;
+    height: 100vh;
+  }
+
+  .app-loading .loader-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 180px;
+    height: 180px;
+  }
+
+  .app-loading .logo {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .app-loading .logo img {
-    width: 180px;
+    width: 110px;
     max-width: 70vw;
     height: auto;
   }
 
   .app-loading .spinner {
-    animation: rotate 1.6s linear infinite;
-    height: 42px;
-    width: 42px;
+    height: 180px;
+    width: 180px;
+    animation: rotate 2s linear infinite;
+    transform-origin: center center;
+    position: absolute;
+    top: 0;
+    left: 0;
   }
 
   .app-loading .spinner .path {
-    animation: dash 1.2s ease-in-out infinite;
-    stroke: #2e3230;
+    stroke-dasharray: 1, 200;
+    stroke-dashoffset: 0;
+    animation: dash 1.5s ease-in-out infinite;
     stroke-linecap: round;
+    stroke: #2271b1;
   }
 
   @keyframes rotate {
@@ -55,18 +75,18 @@
 
   @keyframes dash {
     0% {
-      stroke-dasharray: 1, 150;
+      stroke-dasharray: 1, 200;
       stroke-dashoffset: 0;
     }
 
     50% {
-      stroke-dasharray: 90, 150;
-      stroke-dashoffset: -35;
+      stroke-dasharray: 89, 200;
+      stroke-dashoffset: -35px;
     }
 
     100% {
-      stroke-dasharray: 90, 150;
-      stroke-dashoffset: -124;
+      stroke-dasharray: 89, 200;
+      stroke-dashoffset: -124px;
     }
   }
 </style>
@@ -74,12 +94,14 @@
 <body>
   <app-root>
     <div class="app-loading">
-      <div class="logo">
-        <img src="assets/images/logo-dark.png" alt="The Fi Company logo">
+      <div class="loader-wrap">
+        <div class="logo">
+          <img src="assets/images/fi-color.png" alt="The Fi Company logo">
+        </div>
+        <svg class="spinner" viewBox="25 25 50 50" aria-hidden="true">
+          <circle class="path" cx="50" cy="50" r="20" fill="none" stroke-width="1" stroke-miterlimit="10"></circle>
+        </svg>
       </div>
-      <svg class="spinner" viewBox="25 25 50 50" aria-hidden="true">
-        <circle class="path" cx="50" cy="50" r="20" fill="none" stroke-width="2" stroke-miterlimit="10"></circle>
-      </svg>
     </div>
   </app-root>
   <noscript>Please enable JavaScript to continue using this application.</noscript>
