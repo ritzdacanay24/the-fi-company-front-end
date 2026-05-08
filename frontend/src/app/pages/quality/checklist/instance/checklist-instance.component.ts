@@ -16,6 +16,7 @@ import { ShareReportModalComponent } from './components/share-report/share-repor
 
 // Import services
 import { ChecklistStateService, ChecklistItemProgress } from './services/checklist-state.service';
+import { TransferOwnershipModalComponent } from '@app/shared/components/transfer-ownership-modal/transfer-ownership-modal.component';
 import { PhotoValidationService } from './services/photo-validation.service';
 import { PhotoOperationsService } from './services/photo-operations.service';
 import { ItemIdExtractorService } from './services/item-id-extractor.service';
@@ -483,6 +484,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   canModifyChecklist = false;
   currentUserId: number | null = null;
   currentUserName?: string;
+  isCurrentUserAdmin = false;
 
   // Owner-lock state
   isOwner = false;
@@ -535,6 +537,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     const currentUser = this.authService.currentUserValue;
     this.currentUserId = currentUser?.id || null;
     this.currentUserName = this.getUserDisplayName(currentUser);
+    this.isCurrentUserAdmin = currentUser?.isAdmin == 1;
   }
 
   private ensureChecklistWebsocket(): void {
@@ -2175,6 +2178,36 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         this.router.navigate(['/inspection-checklist/execution']);
       }
     });
+  }
+
+  openTransferOwnerModal(): void {
+    if (!this.instanceId) return;
+    const instanceId = this.instanceId;
+    const currentUserId = this.currentUserId;
+    const ref = this.modalService.open(TransferOwnershipModalComponent, { size: 'md', centered: true, backdrop: 'static' });
+    ref.componentInstance.title = 'Transfer Ownership';
+    ref.componentInstance.subtitle =
+      this.lockOwnerName
+        ? `This checklist is currently owned by ${this.lockOwnerName}. Select a user to transfer ownership to.`
+        : 'Select a user to transfer ownership of this checklist to.';
+    ref.componentInstance.currentUserId = currentUserId;
+    ref.componentInstance.excludeCurrentUser = false;
+    ref.componentInstance.transferFn = (user: any) =>
+      this.photoChecklistService.transferInstance(instanceId, user.id, user.name);
+    ref.result.then((user: any) => {
+      if (user.id === this.currentUserId) {
+        this.isOwner = true;
+        this.canModifyChecklist = true;
+        this.lockOwnerName = null;
+        this.startHeartbeat();
+      } else {
+        this.isOwner = false;
+        this.canModifyChecklist = false;
+        this.lockOwnerName = user.name;
+        this.stopHeartbeat();
+      }
+      this.cdr.detectChanges();
+    }).catch(() => {});
   }
 
   transferOwnershipToMe(): void {

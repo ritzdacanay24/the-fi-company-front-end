@@ -165,8 +165,9 @@
           To upload photos or make changes, you need to transfer ownership to yourself.
         </div>
         <button type="button" class="btn btn-warning btn-sm d-inline-flex align-items-center gap-1 flex-shrink-0"
-                (click)="transferOwnershipToMe()">
-          <i class="mdi mdi-account-arrow-right"></i>Transfer to Me
+                *ngIf="isCurrentUserAdmin"
+                (click)="openTransferOwnerModal()">
+          <i class="mdi mdi-account-switch"></i>Transfer Ownership
         </button>
       </div>
 
@@ -2315,6 +2316,13 @@
       <button type="button" class="list-group-item list-group-item-action"
               (click)="openActionFromOffcanvas(offcanvas, 'fullView')">
         <i class="mdi mdi-table me-2"></i>Full View
+      </button>
+
+      <button type="button"
+              class="list-group-item list-group-item-action"
+              *ngIf="(isOwner || isCurrentUserAdmin) && (isOwner || lockOwnerName)"
+              (click)="offcanvas.dismiss(); openTransferOwnerModal()">
+        <i class="mdi mdi-account-switch me-2"></i>Transfer Ownership
       </button>
 
       <button type="button"

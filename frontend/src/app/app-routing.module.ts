@@ -251,6 +251,15 @@ const routes: Routes = [
         data: { allTickets: { forceCurrentUser: true, showUserColumns: false } },
       },
       {
+        path: "new",
+        loadComponent: () =>
+          import("./features/support-tickets/support-tickets-list.component").then(
+            (m) => m.SupportTicketsListComponent,
+          ),
+        title: "Create Ticket",
+        data: { allTickets: { autoOpenNew: true } },
+      },
+      {
         path: ":id",
         loadComponent: () =>
           import("./features/support-tickets/support-ticket-detail.component").then(

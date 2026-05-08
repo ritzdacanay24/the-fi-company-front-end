@@ -281,6 +281,15 @@ export class SupportTicketsListComponent implements OnInit {
         this.focusTicketId.set(parsed);
       }
     }
+
+    const autoOpenNew = Boolean(routeConfig?.autoOpenNew)
+      || queryParams.get('new') === '1'
+      || queryParams.get('action') === 'create';
+
+    if (autoOpenNew) {
+      // Defer to next tick so page and providers are fully initialized.
+      setTimeout(() => this.openNewTicket(), 0);
+    }
   }
 
   private syncUserColumnVisibility(): void {

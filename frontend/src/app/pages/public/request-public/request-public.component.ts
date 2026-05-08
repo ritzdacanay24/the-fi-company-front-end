@@ -195,7 +195,6 @@ export class RequestPublicComponent implements OnInit, OnDestroy {
         status: 'failed',
         errorMessage: this.extractSubmissionErrorMessage(err),
       });
-      alert("Sorry. Something went wrong.");
       SweetAlert.close(0);
     }
   }
@@ -581,7 +580,6 @@ export class RequestPublicComponent implements OnInit, OnDestroy {
       this.getComments();
       SweetAlert.close();
     } catch (err) {
-      alert(`Something went wrong. Please contact administrator`);
       SweetAlert.close(0);
     }
   }

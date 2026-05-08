@@ -1,6 +1,10 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { randomBytes } from 'crypto';
+import { EmailService } from '@/shared/email/email.service';
+import { EmailTemplateService } from '@/shared/email/email-template.service';
+import { UrlBuilder } from '@/shared/url/url-builder';
 import { AttachmentsService } from '../attachments/attachments.service';
+import { EmailNotificationsService } from '../email-notifications';
 import { RequestCommentsService } from '../request-comments';
 import { RequestService } from '../request';
 import { CreatePublicRequestCommentDto } from './dto/create-public-request-comment.dto';
@@ -8,10 +12,16 @@ import { CreatePublicRequestDto } from './dto/create-public-request.dto';
 
 @Injectable()
 export class PublicFieldServiceService {
+  private readonly logger = new Logger(PublicFieldServiceService.name);
+
   constructor(
     private readonly requestService: RequestService,
     private readonly requestCommentsService: RequestCommentsService,
     private readonly attachmentsService: AttachmentsService,
+    private readonly emailService: EmailService,
+    private readonly emailTemplateService: EmailTemplateService,
+    private readonly urlBuilder: UrlBuilder,
+    private readonly emailNotificationsService: EmailNotificationsService,
   ) {}
 
   private normalizeToken(token?: string): string {
@@ -78,6 +88,9 @@ export class PublicFieldServiceService {
     const created = (await this.requestService.create(requestPayload)) as Record<string, unknown>;
     const id = Number(created?.id || 0) || null;
 
+    // Fire-and-forget — do not await so the response is not delayed
+    void this.sendNewRequestNotification(id, token, payload);
+
     return {
       id,
       requestId: id,
@@ -85,6 +98,60 @@ export class PublicFieldServiceService {
       tokenExpiresAt: null,
       message: 'Request submitted',
     };
+  }
+
+  private async sendNewRequestNotification(
+    requestId: number | null,
+    token: string,
+    payload: Record<string, unknown>,
+  ): Promise<void> {
+    try {
+      const schedulerRecipients = await this.emailNotificationsService.getRecipients(
+        'field_service_comment_notification_request_form',
+      );
+
+      const submitterEmail = String(payload['email'] || '').trim();
+      const rawCcEmail = payload['cc_email'];
+      const ccEmails = Array.isArray(rawCcEmail)
+        ? (rawCcEmail as string[]).map((e) => String(e).trim()).filter(Boolean)
+        : String(rawCcEmail || '')
+            .split(',')
+            .map((e) => e.trim())
+            .filter(Boolean);
+
+      const toRecipients = [
+        ...new Set([submitterEmail, ...schedulerRecipients].filter(Boolean)),
+      ];
+
+      if (toRecipients.length === 0) {
+        this.logger.warn('[email] No recipients for new field service request notification; skipping');
+        return;
+      }
+
+      const customerLink = this.urlBuilder.fieldService.requestConfirmation(token);
+      const internalLink = requestId ? this.urlBuilder.fieldService.requestEdit(requestId) : '';
+      const subject = String(payload['subject'] || `New Field Service Request${requestId ? ` #${requestId}` : ''}`).trim();
+
+      await this.emailService.sendMail({
+        to: toRecipients,
+        cc: ccEmails.length > 0 ? ccEmails : undefined,
+        subject,
+        html: this.emailTemplateService.render('field-service-request-created', {
+          requestId: requestId ?? '',
+          requestDate: String(payload['date_of_service'] || '').trim(),
+          requestTime: String(payload['start_time'] || '').trim(),
+          customerCo: String(payload['customer_co_number'] || '').trim(),
+          soNumber: String(payload['so_number'] || '').trim(),
+          property: String(payload['property'] || '').trim(),
+          state: String(payload['state'] || '').trim(),
+          city: String(payload['city'] || '').trim(),
+          customerLink,
+          internalLink,
+        }),
+      });
+    } catch (err) {
+      this.logger.error('[email] Failed to send new field service request notification', err);
+    }
   }
 
   async getRequestStatus(requestId: number, token?: string) {
@@ -192,14 +259,11 @@ export class PublicFieldServiceService {
 
   async listAttachments(requestId: number, token?: string) {
     await this.getTokenBoundRequest(requestId, token);
-    const [requestAttachments, schedulerAttachments] = await Promise.all([
-      this.attachmentsService.find({ field: 'Field Service Request', uniqueId: String(requestId) }),
-      this.attachmentsService.find({ field: 'Field Service', uniqueId: String(requestId) }),
-    ]);
+    const attachments = await this.attachmentsService.find({ field: 'Field Service Request', uniqueId: String(requestId) });
 
     return {
       id: requestId,
-      attachments: [...requestAttachments, ...schedulerAttachments],
+      attachments,
     };
   }
 }

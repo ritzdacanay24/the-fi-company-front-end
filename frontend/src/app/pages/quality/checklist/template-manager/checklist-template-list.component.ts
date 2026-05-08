@@ -7,6 +7,7 @@ import { ColDef, GetRowIdParams, GridApi, GridReadyEvent, RowDoubleClickedEvent 
 import { Subscription } from 'rxjs';
 
 import { PhotoChecklistConfigService, ChecklistTemplate } from '@app/core/api/photo-checklist-config/photo-checklist-config.service';
+import { AuthenticationService } from '@app/core/services/auth.service';
 import { TemplateManagerActionsRendererComponent } from './components/template-manager-actions-renderer.component';
 
 @Component({
@@ -244,10 +245,16 @@ export class ChecklistTemplateListComponent implements OnInit, OnDestroy {
         const isLatest = data
           ? (data.is_draft || !latestVersion || String(data.version) === latestVersion)
           : false;
+        const currentUserId = Number(this.authService.currentUserValue?.id ?? 0);
+        const d = data;
+        // Null expiry with an owner set = active lock (backfilled rows have no expiry)
+        const lockedByOther = !!(d?.is_draft && d?.draft_owner_id && d.draft_owner_id !== currentUserId);
         return {
           onEdit: (t: ChecklistTemplate) => this.editTemplate(t),
           onView: (t: ChecklistTemplate) => this.viewTemplate(t),
           isLatest,
+          lockedByOther,
+          draftOwnerName: d?.draft_owner_name ?? null,
         };
       }
     },
@@ -366,13 +373,40 @@ export class ChecklistTemplateListComponent implements OnInit, OnDestroy {
       width: 140,
       minWidth: 120,
       valueGetter: (params: any) => params.data?.created_by_name || ''
+    },
+    {
+      headerName: 'Draft Editor',
+      colId: 'draft_owner',
+      width: 150,
+      minWidth: 120,
+      sortable: true,
+      filter: false,
+      valueGetter: (params: any) => {
+        const d = params.data as ChecklistTemplate | undefined;
+        if (!d?.is_draft) return '';
+        return d.draft_owner_name ?? '';
+      },
+      cellRenderer: (params: any) => {
+        const d = params.data as ChecklistTemplate | undefined;
+        if (!d?.is_draft || !d.draft_owner_name) return '';
+        const currentUserId = Number(this.authService.currentUserValue?.id ?? 0);
+        // Null expiry with an owner set = active lock (backfilled rows have no expiry)
+        const isCurrentUser = d.draft_owner_id === currentUserId;
+        const isActive = !!d.draft_owner_id;
+        const badgeClass = isActive
+          ? (isCurrentUser ? 'badge bg-success' : 'badge bg-warning text-dark')
+          : 'badge bg-secondary';
+        const icon = isActive && !isCurrentUser ? '🔒 ' : '';
+        return `<span class="${badgeClass}">${icon}${d.draft_owner_name}</span>`;
+      }
     }
   ];
 
   constructor(
     private readonly configService: PhotoChecklistConfigService,
     private readonly router: Router,
-    private readonly route: ActivatedRoute
+    private readonly route: ActivatedRoute,
+    private readonly authService: AuthenticationService
   ) {}
 
   ngOnInit(): void {

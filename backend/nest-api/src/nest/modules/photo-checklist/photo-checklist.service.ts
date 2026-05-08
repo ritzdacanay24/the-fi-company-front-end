@@ -95,7 +95,8 @@ export class PhotoChecklistService {
     return { success: true, template_id: templateId, template };
   }
 
-  async updateTemplate(id: number, payload: Record<string, unknown>) {
+  async updateTemplate(id: number, payload: Record<string, unknown>, callerId?: number) {
+    await this.assertIsTemplateDraftOwner(id, callerId ?? null);
     await this.repository.updateTemplate(id, payload);
     const template = await this.getTemplateById(id, { includeInactive: true });
     return { success: true, template_id: id, template };
@@ -290,16 +291,11 @@ export class PhotoChecklistService {
   // Owner-lock operations
   // ──────────────────────────────────────────────────────────────────────────
 
-  private isLockExpired(lockExpiresAt: string | null): boolean {
-    if (!lockExpiresAt) return true;
-    return new Date(lockExpiresAt).getTime() < Date.now();
-  }
-
   async claimInstance(instanceId: number, userId: number, userName: string): Promise<{ success: boolean; owner_id?: number; owner_name?: string; message?: string }> {
     const lock = await this.repository.getInstanceLock(instanceId);
-    const alreadyLocked = lock.owner_id != null && !this.isLockExpired(lock.lock_expires_at);
+    const alreadyLocked = lock.owner_id != null;
 
-    // Case 1: someone else holds an active (non-expired) lock → deny
+    // Case 1: someone else holds an active lock → deny
     if (alreadyLocked && lock.owner_id !== userId) {
       return {
         success: false,
@@ -309,8 +305,8 @@ export class PhotoChecklistService {
       };
     }
 
-    // Case 2: lock is free/expired but instance is assigned to someone else → deny
-    // Only the assigned operator can reclaim after expiry; admins must use transfer endpoint.
+    // Case 2: lock is free but instance is assigned to someone else → deny
+    // Only the assigned operator can claim; admins must use the transfer endpoint.
     if (!alreadyLocked && lock.operator_id != null && lock.operator_id !== userId) {
       return {
         success: false,
@@ -329,17 +325,10 @@ export class PhotoChecklistService {
     return { success: true };
   }
 
-  async heartbeatInstance(instanceId: number, userId: number): Promise<{ success: boolean }> {
-    await this.repository.heartbeatInstanceLock(instanceId, userId);
-    return { success: true };
-  }
-
   async transferInstance(instanceId: number, callerId: number, toUserId: number, toUserName: string): Promise<{ success: boolean; message?: string }> {
     const lock = await this.repository.getInstanceLock(instanceId);
     const callerIsOwner = lock.owner_id === callerId;
-    const lockExpired = this.isLockExpired(lock.lock_expires_at);
-    // Allow transfer if: caller is owner, lock is expired/free, or will be handled by controller-level admin check
-    if (!callerIsOwner && !lockExpired && lock.owner_id != null) {
+    if (!callerIsOwner && lock.owner_id != null) {
       throw new ForbiddenException(`Only the current owner (${lock.owner_name ?? 'unknown'}) can transfer this lock.`);
     }
     await this.repository.transferInstanceAssignment(instanceId, toUserId, toUserName);
@@ -380,10 +369,71 @@ export class PhotoChecklistService {
   private async assertIsLockOwner(instanceId: number, callerId: number | null | undefined): Promise<void> {
     if (!callerId) return; // no user context — allow (system call)
     const lock = await this.repository.getInstanceLock(instanceId);
-    if (lock.owner_id == null || this.isLockExpired(lock.lock_expires_at)) return; // no active lock — allow
+    if (lock.owner_id == null) return; // no active lock — allow
     if (lock.owner_id !== callerId) {
       throw new ForbiddenException(
         `This checklist is currently locked by ${lock.owner_name ?? 'another user'}. Transfer ownership before making changes.`,
+      );
+    }
+  }
+
+  // ── Draft template owner-lock operations ─────────────────────────────────
+
+  async claimTemplateDraft(templateId: number, userId: number, userName: string): Promise<{ success: boolean; draft_owner_id?: number; draft_owner_name?: string; message?: string }> {
+    const lock = await this.repository.getTemplateLock(templateId);
+
+    if (!lock.is_draft) {
+      return { success: false, message: 'Template is not a draft — no lock needed.' };
+    }
+
+    // A null expiry with an owner set (e.g. backfilled rows) is treated as an active lock —
+    // the owner must explicitly release it. Only a truly expired timestamp frees the slot.
+    const lockIsActive = lock.draft_owner_id != null;
+
+    // Someone else holds an active lock → deny
+    if (lockIsActive && lock.draft_owner_id !== userId) {
+      return {
+        success: false,
+        draft_owner_id: lock.draft_owner_id ?? undefined,
+        draft_owner_name: lock.draft_owner_name ?? undefined,
+        message: `Draft is currently being edited by ${lock.draft_owner_name ?? 'another user'}`,
+      };
+    }
+
+    await this.repository.claimTemplateLock(templateId, userId, userName);
+    return { success: true, draft_owner_id: userId, draft_owner_name: userName };
+  }
+
+  async releaseTemplateDraft(templateId: number, userId: number): Promise<{ success: boolean }> {
+    await this.repository.releaseTemplateLock(templateId, userId);
+    return { success: true };
+  }
+
+  async transferTemplateDraft(templateId: number, callerId: number, toUserId: number, toUserName: string): Promise<{ success: boolean; message?: string }> {
+    const lock = await this.repository.getTemplateLock(templateId);
+    const callerIsOwner = lock.draft_owner_id === callerId;
+    const lockIsActive = lock.draft_owner_id != null;
+    if (!callerIsOwner && lockIsActive) {
+      throw new ForbiddenException(`Only the current draft owner (${lock.draft_owner_name ?? 'unknown'}) can transfer this draft.`);
+    }
+    await this.repository.transferTemplateDraftOwner(templateId, toUserId, toUserName);
+    return { success: true };
+  }
+
+  async transferTemplateDraftAdmin(templateId: number, toUserId: number, toUserName: string): Promise<{ success: boolean }> {
+    await this.repository.transferTemplateDraftOwner(templateId, toUserId, toUserName);
+    return { success: true };
+  }
+
+  private async assertIsTemplateDraftOwner(templateId: number, callerId: number | null | undefined): Promise<void> {
+    if (!callerId) return;
+    const lock = await this.repository.getTemplateLock(templateId);
+    if (!lock.is_draft) return; // published templates are not locked
+    const hasActiveLock = lock.draft_owner_id != null;
+    if (!hasActiveLock) return; // no active lock — allow
+    if (lock.draft_owner_id !== callerId) {
+      throw new ForbiddenException(
+        `This draft is currently being edited by ${lock.draft_owner_name ?? 'another user'}. Transfer ownership before making changes.`,
       );
     }
   }

@@ -364,9 +364,18 @@
                   </button>
                   </ng-container>
                   <!-- View-only banner shown inline next to Back button -->
-                  <span *ngIf="isViewOnly" class="badge bg-warning text-dark ms-2 align-self-center">
+                  <span *ngIf="isViewOnly && !draftLockedByName" class="badge bg-warning text-dark ms-2 align-self-center">
                     <i class="mdi mdi-eye-lock-outline me-1"></i>View Only — Older Version
                   </span>
+                  <span *ngIf="isViewOnly && draftLockedByName" class="badge bg-danger text-white ms-2 align-self-center">
+                    <i class="mdi mdi-lock me-1"></i>Draft Locked — View Only
+                  </span>
+                  <!-- Transfer draft button for the current owner or admins -->
+                  <button type="button" class="btn btn-sm btn-outline-secondary ms-2"
+                          *ngIf="editingTemplate?.is_draft && (!isViewOnly || isCurrentUserAdmin)"
+                          (click)="openTransferDraftModal()" title="Transfer draft ownership to another user">
+                    <i class="mdi mdi-account-switch me-1"></i>Transfer Draft
+                  </button>
                 </div>
 
               </div>
@@ -386,6 +395,15 @@
                   </ul>
                 </div>
                 <button type="button" class="btn-close btn-close-sm" aria-label="Dismiss" (click)="publishValidationErrors = []"></button>
+              </div>
+            </div>
+
+            <!-- Draft locked — always visible regardless of active panel -->
+            <div class="alert alert-danger border-danger border-opacity-25 bg-danger bg-opacity-10 mb-0 rounded-0 py-2 px-4 flex-shrink-0" role="alert"
+                 *ngIf="editingTemplate && editingTemplate.is_draft && isViewOnly && draftLockedByName">
+              <div class="d-flex align-items-center gap-2">
+                <i class="mdi mdi-lock text-danger flex-shrink-0 fs-5"></i>
+                <span class="small"><strong>Draft Locked — View Only.</strong> This draft is currently being edited by <strong>{{ draftLockedByName }}</strong>. Ask them to transfer ownership if you need to make changes.</span>
               </div>
             </div>
 
@@ -428,6 +446,8 @@
                     </div>
                   </div>
                 </div>
+
+                <!-- Draft locked banner is shown above the scroll area (always visible) -->
 
                 <div class="alert alert-warning border-warning border-opacity-25 bg-warning bg-opacity-10 mb-4" role="alert"
                      *ngIf="editingTemplate && editingTemplate.is_draft && !autoSaveEnabled">

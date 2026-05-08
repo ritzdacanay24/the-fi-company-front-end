@@ -95,4 +95,29 @@ export class PhotoChecklistV2Service {
   updateConfig(updates: Record<string, string>): Observable<{ success: boolean }> {
     return this.http.post<{ success: boolean }>(`${this.baseUrl}/config`, updates);
   }
+
+  // ── Draft template owner-lock API ─────────────────────────────────────────
+
+  claimTemplateDraft(id: number, userName: string): Observable<{ success: boolean; draft_owner_id?: number; draft_owner_name?: string; message?: string }> {
+    return this.http.post<{ success: boolean; draft_owner_id?: number; draft_owner_name?: string; message?: string }>(
+      `${this.baseUrl}/templates/${id}/claim`, { user_name: userName });
+  }
+
+  releaseTemplateDraft(id: number): Observable<{ success: boolean }> {
+    return this.http.post<{ success: boolean }>(`${this.baseUrl}/templates/${id}/release`, {});
+  }
+
+  heartbeatTemplateDraft(id: number): Observable<{ success: boolean }> {
+    return this.http.post<{ success: boolean }>(`${this.baseUrl}/templates/${id}/heartbeat`, {});
+  }
+
+  transferTemplateDraft(id: number, toUserId: number, toUserName: string): Observable<{ success: boolean; message?: string }> {
+    return this.http.post<{ success: boolean; message?: string }>(
+      `${this.baseUrl}/templates/${id}/transfer`, { to_user_id: toUserId, to_user_name: toUserName });
+  }
+
+  transferTemplateDraftAdmin(id: number, toUserId: number, toUserName: string): Observable<{ success: boolean }> {
+    return this.http.post<{ success: boolean }>(
+      `${this.baseUrl}/templates/${id}/transfer-admin`, { to_user_id: toUserId, to_user_name: toUserName });
+  }
 }

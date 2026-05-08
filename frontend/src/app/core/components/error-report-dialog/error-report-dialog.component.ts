@@ -231,7 +231,7 @@ import { AuthenticationService } from '@app/core/services/auth.service';
             <label for="steps" class="form-label">Steps to Reproduce (Optional)</label>
             <div class="quill-editor-container quill-editor-steps">
               <quill-editor
-                style="width:100%;height:200px"
+                style="width:100%"
                 formControlName="steps"
                 [modules]="quillModules"
                 (onEditorCreated)="onTicketEditorCreated($event)"

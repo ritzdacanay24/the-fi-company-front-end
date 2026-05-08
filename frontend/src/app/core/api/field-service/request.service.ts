@@ -78,7 +78,7 @@ export class RequestService extends DataService<any> {
     ).then((response) => response?.comments ?? []);
   }
 
-  onRequestChanges(params, sendEmail = false) {
+  onRequestChanges(params) {
     const requestId = Number(params?.fs_request_id ?? params?.request_id ?? 0);
     const token = String(params?.token || '').trim();
 
@@ -93,7 +93,6 @@ export class RequestService extends DataService<any> {
           name: params?.name,
           comment: params?.comment,
           request_change: !!params?.request_change,
-          sendEmail,
         },
       ),
     );

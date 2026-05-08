@@ -13,6 +13,9 @@ export class NewUserService extends DataService<any> {
     super(usersV2Url, http);
   }
 
+  getActiveUsers = async (): Promise<any[]> =>
+    firstValueFrom(this.http.get<any[]>(`${usersV2Url}/find?active=1`));
+
   override getById = async (id: number) =>
     firstValueFrom(this.http.get<any>(`${usersV2Url}/${id}`));
 

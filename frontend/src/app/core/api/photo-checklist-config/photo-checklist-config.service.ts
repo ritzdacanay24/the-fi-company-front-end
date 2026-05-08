@@ -32,6 +32,10 @@ export interface ChecklistTemplate {
   created_by?: string;
   created_by_name?: string;
   published_at?: string | null;
+  // Draft owner-lock fields
+  draft_owner_id?: number | null;
+  draft_owner_name?: string | null;
+  draft_lock_expires_at?: string | null;
   active_instances?: number;
   item_count?: number;
   pending_media_items?: number;

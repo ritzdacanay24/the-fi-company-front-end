@@ -28,8 +28,12 @@ export class InspectionChecklistController {
 
   @Put('templates/:id')
   @Permissions('write')
-  async updateTemplate(@Param('id', ParseIntPipe) id: number, @Body() payload: Record<string, unknown>) {
-    return this.service.updateTemplate(id, payload);
+  async updateTemplate(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() payload: Record<string, unknown>,
+    @CurrentUserId() currentUserId: number,
+  ) {
+    return this.service.updateTemplate(id, payload, currentUserId);
   }
 
   @Delete('templates/:id')
@@ -73,6 +77,48 @@ export class InspectionChecklistController {
   async restoreTemplate(@Param('id', ParseIntPipe) id: number) {
     return this.service.restoreTemplate(id);
   }
+
+  // ── Draft template owner-lock endpoints ──────────────────────────────────
+
+  @Post('templates/:id/claim')
+  @Permissions('write')
+  async claimTemplateDraft(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUserId() userId: number,
+    @Body() body: { user_name?: string },
+  ) {
+    return this.service.claimTemplateDraft(id, userId, body.user_name ?? '');
+  }
+
+  @Post('templates/:id/release')
+  @Permissions('write')
+  async releaseTemplateDraft(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUserId() userId: number,
+  ) {
+    return this.service.releaseTemplateDraft(id, userId);
+  }
+
+  @Post('templates/:id/transfer')
+  @Permissions('write')
+  async transferTemplateDraft(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUserId() callerId: number,
+    @Body() body: { to_user_id: number; to_user_name: string },
+  ) {
+    return this.service.transferTemplateDraft(id, callerId, Number(body.to_user_id), body.to_user_name ?? '');
+  }
+
+  @Post('templates/:id/transfer-admin')
+  @Permissions('manage')
+  async transferTemplateDraftAdmin(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { to_user_id: number; to_user_name: string },
+  ) {
+    return this.service.transferTemplateDraftAdmin(id, Number(body.to_user_id), body.to_user_name ?? '');
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
 
   @Get('templates/history')
   async getTemplateHistory(@Query('group_id') groupId?: string, @Query('template_id') templateId?: string) {
@@ -273,15 +319,6 @@ export class InspectionChecklistController {
     @CurrentUserId() userId: number,
   ) {
     return this.service.releaseInstance(id, userId);
-  }
-
-  @Post('instances/:id/heartbeat')
-  @Permissions('write')
-  async heartbeatInstance(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUserId() userId: number,
-  ) {
-    return this.service.heartbeatInstance(id, userId);
   }
 
   @Post('instances/:id/transfer')

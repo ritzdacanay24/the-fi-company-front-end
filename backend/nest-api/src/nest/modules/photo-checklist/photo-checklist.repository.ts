@@ -314,15 +314,27 @@ export class PhotoChecklistRepository {
         customer_part_number, customer_name, revision, original_filename, review_date,
         revision_number, revision_details, revised_by, product_type, category,
         version, parent_template_id, is_active, created_by, template_group_id,
-        is_draft, published_at, last_autosave_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        is_draft, published_at, last_autosave_at,
+        draft_owner_id, draft_owner_name
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const initialTemplateGroupId = Number(payload?.template_group_id || 0);
     const isDraft = payload?.is_draft === 1 || payload?.is_draft === true ? 1 : 0;
     const isActive = payload?.is_active === 0 || payload?.is_active === false ? 0 : 1;
+    const createdBy = payload?.created_by ?? null;
 
     return this.mysqlService.withTransaction<number>(async (connection) => {
+      // Resolve the creator's display name to set as initial draft owner
+      let ownerName: string | null = null;
+      if (isDraft && createdBy) {
+        const [userRows] = await connection.execute<RowDataPacket[]>(
+          `SELECT TRIM(CONCAT(COALESCE(first, ''), ' ', COALESCE(last, ''))) AS display_name FROM db.users WHERE id = ? LIMIT 1`,
+          [createdBy],
+        );
+        ownerName = (userRows as any[])[0]?.display_name || null;
+      }
+
       const [insertResult] = await connection.execute<ResultSetHeader>(templatesSql, [
         payload?.quality_document_id ?? null,
         payload?.quality_revision_id ?? null,
@@ -342,11 +354,13 @@ export class PhotoChecklistRepository {
         payload?.version || '1.0',
         payload?.parent_template_id ?? null,
         isActive,
-        payload?.created_by ?? null,
+        createdBy,
         initialTemplateGroupId,
         isDraft,
         payload?.published_at ?? null,
         payload?.last_autosave_at ?? null,
+        isDraft ? (createdBy ?? null) : null,
+        isDraft ? ownerName : null,
       ]);
 
       const templateId = insertResult.insertId;
@@ -601,8 +615,9 @@ export class PhotoChecklistRepository {
           customer_part_number, customer_name, revision, original_filename, review_date,
           revision_number, revision_details, revised_by, product_type, category,
           version, parent_template_id, is_active, created_by, template_group_id,
-          is_draft, published_at, last_autosave_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, 1, ?, ?, 1, NULL, NULL)`,
+          is_draft, published_at, last_autosave_at,
+          draft_owner_id, draft_owner_name
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, 1, ?, ?, 1, NULL, NULL, ?, ?)`,
         [
           source.quality_document_id ?? null,
           source.quality_revision_id ?? null,
@@ -622,6 +637,15 @@ export class PhotoChecklistRepository {
           nextMajorVersion,
           userId ?? null,
           groupId,
+          userId ?? null,
+          await (async () => {
+            if (!userId) return null;
+            const [uRows] = await connection.execute<RowDataPacket[]>(
+              `SELECT TRIM(CONCAT(COALESCE(first, ''), ' ', COALESCE(last, ''))) AS display_name FROM db.users WHERE id = ? LIMIT 1`,
+              [userId],
+            );
+            return (uRows as any[])[0]?.display_name || null;
+          })(),
         ],
       );
 
@@ -1058,17 +1082,16 @@ export class PhotoChecklistRepository {
   // Owner-lock helpers
   // ──────────────────────────────────────────────────────────────────────────
 
-  async getInstanceLock(id: number): Promise<{ owner_id: number | null; owner_name: string | null; lock_expires_at: string | null; operator_id: number | null; operator_name: string | null }> {
+  async getInstanceLock(id: number): Promise<{ owner_id: number | null; owner_name: string | null; operator_id: number | null; operator_name: string | null }> {
     const rows = await this.mysqlService.query<RowDataPacket[]>(
-      'SELECT owner_id, owner_name, lock_expires_at, operator_id, operator_name FROM checklist_instances WHERE id = ? LIMIT 1',
+      'SELECT owner_id, owner_name, operator_id, operator_name FROM checklist_instances WHERE id = ? LIMIT 1',
       [id],
     );
     const row = rows?.[0];
-    if (!row) return { owner_id: null, owner_name: null, lock_expires_at: null, operator_id: null, operator_name: null };
+    if (!row) return { owner_id: null, owner_name: null, operator_id: null, operator_name: null };
     return {
       owner_id: row.owner_id != null ? Number(row.owner_id) : null,
       owner_name: row.owner_name ?? null,
-      lock_expires_at: row.lock_expires_at ? String(row.lock_expires_at) : null,
       operator_id: row.operator_id != null ? Number(row.operator_id) : null,
       operator_name: row.operator_name ?? null,
     };
@@ -1077,7 +1100,7 @@ export class PhotoChecklistRepository {
   async claimInstanceLock(id: number, userId: number, userName: string): Promise<void> {
     await this.mysqlService.execute(
       `UPDATE checklist_instances
-         SET owner_id = ?, owner_name = ?, lock_expires_at = DATE_ADD(NOW(), INTERVAL 10 MINUTE)
+         SET owner_id = ?, owner_name = ?, lock_expires_at = NULL
        WHERE id = ?`,
       [userId, userName, id],
     );
@@ -1093,19 +1116,10 @@ export class PhotoChecklistRepository {
     );
   }
 
-  async heartbeatInstanceLock(id: number, userId: number): Promise<void> {
-    await this.mysqlService.execute(
-      `UPDATE checklist_instances
-         SET lock_expires_at = DATE_ADD(NOW(), INTERVAL 10 MINUTE)
-       WHERE id = ? AND owner_id = ?`,
-      [id, userId],
-    );
-  }
-
   async forceTransferInstanceLock(id: number, toUserId: number, toUserName: string): Promise<void> {
     await this.mysqlService.execute(
       `UPDATE checklist_instances
-         SET owner_id = ?, owner_name = ?, lock_expires_at = DATE_ADD(NOW(), INTERVAL 10 MINUTE)
+         SET owner_id = ?, owner_name = ?, lock_expires_at = NULL
        WHERE id = ?`,
       [toUserId, toUserName, id],
     );
@@ -1118,7 +1132,7 @@ export class PhotoChecklistRepository {
              operator_name = ?,
              owner_id = ?,
              owner_name = ?,
-             lock_expires_at = DATE_ADD(NOW(), INTERVAL 10 MINUTE)
+             lock_expires_at = NULL
        WHERE id = ?
          AND status <> 'submitted'`,
       [toUserId, toUserName, toUserId, toUserName, id],
@@ -1134,7 +1148,7 @@ export class PhotoChecklistRepository {
              operator_name = ?,
              owner_id = ?,
              owner_name = ?,
-             lock_expires_at = DATE_ADD(NOW(), INTERVAL 10 MINUTE)
+             lock_expires_at = NULL
        WHERE id IN (${placeholders})
          AND status <> 'submitted'`,
       [toUserId, toUserName, toUserId, toUserName, ...instanceIds],
@@ -1333,5 +1347,57 @@ export class PhotoChecklistRepository {
         [String(value), key],
       );
     }
+  }
+
+  // ── Draft template owner-lock ─────────────────────────────────────────────
+
+  async getTemplateLock(id: number): Promise<{
+    draft_owner_id: number | null;
+    draft_owner_name: string | null;
+    created_by: number | null;
+    is_draft: number;
+  }> {
+    const rows = await this.mysqlService.query<RowDataPacket[]>(
+      'SELECT draft_owner_id, draft_owner_name, created_by, is_draft FROM checklist_templates WHERE id = ? LIMIT 1',
+      [id],
+    );
+    const row = rows?.[0];
+    if (!row) return { draft_owner_id: null, draft_owner_name: null, created_by: null, is_draft: 0 };
+    return {
+      draft_owner_id: row.draft_owner_id != null ? Number(row.draft_owner_id) : null,
+      draft_owner_name: row.draft_owner_name ?? null,
+      created_by: row.created_by != null ? Number(row.created_by) : null,
+      is_draft: Number(row.is_draft ?? 0),
+    };
+  }
+
+  async claimTemplateLock(id: number, userId: number, userName: string): Promise<void> {
+    await this.mysqlService.execute(
+      `UPDATE checklist_templates
+         SET draft_owner_id = ?, draft_owner_name = ?, draft_lock_expires_at = NULL
+       WHERE id = ? AND is_draft = 1
+         AND (draft_owner_id IS NULL OR draft_owner_id = ?)`,
+      [userId, userName, id, userId],
+    );
+  }
+
+  async releaseTemplateLock(id: number, userId: number): Promise<void> {
+    await this.mysqlService.execute(
+      `UPDATE checklist_templates
+         SET draft_owner_id = NULL, draft_owner_name = NULL, draft_lock_expires_at = NULL
+       WHERE id = ? AND draft_owner_id = ?`,
+      [id, userId],
+    );
+  }
+
+  async transferTemplateDraftOwner(id: number, toUserId: number, toUserName: string): Promise<void> {
+    await this.mysqlService.execute(
+      `UPDATE checklist_templates
+         SET draft_owner_id = ?,
+             draft_owner_name = ?,
+             draft_lock_expires_at = NULL
+       WHERE id = ? AND is_draft = 1`,
+      [toUserId, toUserName, id],
+    );
   }
 }

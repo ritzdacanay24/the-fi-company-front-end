@@ -26,4 +26,13 @@ export const SUPPORT_MENU: MenuItem[] = [
     hideCheckBox: true,
     accessRequired: false,
   },
+  {
+    id: 4,
+    label: "Create Ticket",
+    link: "/support-tickets/new",
+    description: "Open a new support ticket",
+    icon: "las la-plus-circle",
+    hideCheckBox: true,
+    accessRequired: false,
+  },
 ];

@@ -13,6 +13,7 @@ import { debounceTime } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 
 import { PhotoChecklistConfigService, ChecklistTemplate, ChecklistItem } from '@app/core/api/photo-checklist-config/photo-checklist-config.service';
+import { PhotoChecklistV2Service } from '@app/core/api/photo-checklist-config/photo-checklist-v2.service';
 import { AttachmentsService } from '@app/core/api/attachments/attachments.service';
 import { UploadService } from '@app/core/api/upload/upload.service';
 import { PhotoChecklistUploadService } from '@app/core/api/photo-checklist/photo-checklist-upload.service';
@@ -24,6 +25,7 @@ import { PdfParserService } from './services/pdf-parser.service';
 import { WordParserService } from './services/word-parser.service';
 import { RevisionDescriptionDialogComponent } from './components/revision-description-dialog.component';
 import { FileViewerModalComponent } from '@app/shared/components/file-viewer-modal/file-viewer-modal.component';
+import { TransferOwnershipModalComponent } from '@app/shared/components/transfer-ownership-modal/transfer-ownership-modal.component';
 
 interface SampleImage {
   id?: string;
@@ -183,6 +185,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   @ViewChild('sampleImagesModalTemplate') sampleImagesModalTemplate: any;
   @ViewChild('sampleVideoModalTemplate') sampleVideoModalTemplate: any;
 
+
   // Image preview
   previewImageUrl: string | null = null;
   // Video preview
@@ -206,8 +209,11 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   private routeQueryParamSub?: Subscription;
   private templateFormChangesSub?: Subscription;
   private navItemsSub?: Subscription;
+  private activeDraftLockId: number | null = null;
   private requestedNavItemIndex: number | null = null;
   private pendingUrlItemRestore = false;
+
+
   private restoreNavSelectionTimeout: ReturnType<typeof setTimeout> | null = null;
   private pendingSelectedItemQueryParamTimeout: ReturnType<typeof setTimeout> | null = null;
   private pendingStickyAncestorsRaf = false;
@@ -232,6 +238,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     public route: ActivatedRoute,
     private router: Router,
     private configService: PhotoChecklistConfigService,
+    private checklistV2Service: PhotoChecklistV2Service,
     private authenticationService: AuthenticationService,
     private modalService: NgbModal,
     private attachmentsService: AttachmentsService,
@@ -241,7 +248,8 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     private ngZone: NgZone,
     private pdfParser: PdfParserService,
     private wordParser: WordParserService,
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
+
   ) {
     this.ensureQuillFileLinksEnabled();
     this.templateForm = this.createTemplateForm();
@@ -533,7 +541,9 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
     // Keep selected item in URL (?item=INDEX) and restore on refresh/load.
     this.routeQueryParamSub = this.route.queryParamMap.subscribe((params) => {
-      this.isViewOnly = params.get('readonly') === '1';
+      // Preserve draft-lock view-only state — do not overwrite it when query params change.
+      // Draft lock sets draftLockedByName; the readonly query param is for version view-only.
+      this.isViewOnly = params.get('readonly') === '1' || !!this.draftLockedByName;
 
       const raw = params.get('item');
       const parsed = raw !== null ? Number(raw) : NaN;
@@ -561,6 +571,8 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     });
   }
   isViewOnly = false;
+  draftLockedByName: string | null = null;
+  isCurrentUserAdmin = this.authenticationService.currentUserValue?.isAdmin == 1;
 
   isPublishedLocked(): boolean {
     if (this.isViewOnly) return true;
@@ -834,13 +846,53 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     return this.items.at(index) as FormGroup;
   }
 
+  private claimDraftLock(templateId: number): void {
+    const user = this.authenticationService.currentUserValue;
+    const userName = user?.username || user?.name || user?.email || '';
+    this.checklistV2Service.claimTemplateDraft(templateId, userName).subscribe({
+      next: (result) => {
+        if (result.success) {
+          this.activeDraftLockId = templateId;
+        } else {
+          // Claim rejected — another user owns it; open as view-only
+          this.isViewOnly = true;
+          this.draftLockedByName = result.draft_owner_name ?? 'another user';
+        }
+      },
+      error: () => { /* non-fatal */ }
+    });
+  }
+
+  openTransferDraftModal(): void {
+    if (!this.editingTemplate) return;
+    const templateId = this.editingTemplate.id;
+    const currentUserId = Number(this.authenticationService.currentUserValue?.id ?? 0);
+    const ref = this.modalService.open(TransferOwnershipModalComponent, { size: 'md', centered: true, backdrop: 'static' });
+    ref.componentInstance.title = 'Transfer Draft Ownership';
+    ref.componentInstance.subtitle = 'Select a user to transfer this draft to. They will become the new owner and you will lose edit access.';
+    ref.componentInstance.submitLabel = 'Transfer Draft';
+    ref.componentInstance.currentUserId = currentUserId;
+    ref.componentInstance.excludeCurrentUser = true;
+    ref.componentInstance.transferFn = (user: any) =>
+      this.checklistV2Service.transferTemplateDraft(templateId, user.id, user.name);
+    ref.result.then((user: any) => {
+      this.activeDraftLockId = null;
+      this.isViewOnly = true;
+      this.draftLockedByName = user.name;
+    }).catch(() => {});
+  }
+
   loadTemplate(id: number): void {
+    // Release any existing draft lock before loading a new template
+    if (this.activeDraftLockId != null && this.activeDraftLockId !== id) {
+      this.checklistV2Service.releaseTemplateDraft(this.activeDraftLockId).subscribe({ error: () => {} });
+      this.activeDraftLockId = null;
+    }
     this.loading = true;
     this.configService.getTemplateIncludingInactive(id).subscribe({
       next: (template) => {
         if (!template) {
           console.error('Template not found');
-          alert('Template not found. Redirecting to template manager.');
           this.navigateToTemplateManager(id);
           this.loading = false;
           return;
@@ -877,11 +929,29 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
         this.scheduleRestoreRequestedNavItemSelection();
 
         this.loadDraftParentVersion(this.editingTemplate);
+
+        // Only claim the draft lock when there is no owner or we are already the owner.
+        // Never silently overwrite another user's ownership — open as view-only instead.
+        if (this.editingTemplate.is_draft) {
+          const currentUserId = Number(this.authenticationService.currentUserValue?.id ?? 0);
+          const existingOwnerId = this.editingTemplate.draft_owner_id ?? null;
+          const lockIsActive = existingOwnerId != null;
+
+          if (lockIsActive && existingOwnerId !== currentUserId) {
+            // Another user owns this draft — open as view-only
+            this.isViewOnly = true;
+            this.draftLockedByName = this.editingTemplate.draft_owner_name ?? 'another user';
+          } else {
+            this.draftLockedByName = null;
+            this.claimDraftLock(this.editingTemplate.id);
+          }
+        } else {
+          this.draftLockedByName = null;
+        }
       },
       error: (error) => {
         console.error('Error loading template:', error);
         this.loading = false;
-        alert('Error loading template: ' + (error.message || 'Unknown error'));
         this.navigateToTemplateManager(id);
       }
     });
@@ -4528,6 +4598,11 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     this.teardownIntersectionObserver();
     this.teardownScrollListener();
     this.teardownSidebarNavScrollListener();
+
+    if (this.activeDraftLockId != null) {
+      this.checklistV2Service.releaseTemplateDraft(this.activeDraftLockId).subscribe({ error: () => {} });
+      this.activeDraftLockId = null;
+    }
 
     this.routeParamSub?.unsubscribe();
     this.routeQueryParamSub?.unsubscribe();
