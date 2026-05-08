@@ -53,6 +53,7 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
       maxWidth: 80,
       sortable: false,
       filter: false,
+      pinned: 'right',
       cellRenderer: () => `<button class="btn btn-primary btn-sm">View</button>`
     },
     {
@@ -91,8 +92,9 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
     },
     {
       field: 'operator_name',
-      headerName: 'Operator',
-      minWidth: 120
+      headerName: 'Created By',
+      minWidth: 120,
+      pinned: 'right'
     },
     {
       field: 'owner_name',
@@ -289,7 +291,6 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
       this.loading = false;
       // Load all checklists and let ag-grid handle filtering/sorting in-grid.
       this.openChecklists = data || [];
-      this.updateTabCounts();
       this.applyTabFilter();
     }, () => this.loading = false);
   }
@@ -299,57 +300,8 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
     this.getOpenChecklists();
   }
 
-  onTabChange(tabValue: string): void {
-    this.activeTab = tabValue;
-    this.applyTabFilter();
-  }
-
-  private updateTabCounts(): void {
-    const currentUserId = this.authService.currentUser()?.id?.toString();
-    const currentUserName = (() => {
-      const u = this.authService.currentUser();
-      return `${u?.firstName || u?.first_name || ''} ${u?.lastName || u?.last_name || ''}`.trim().toLowerCase();
-    })();
-
-    for (const tab of this.navOptions) {
-      if (tab.value === 'my_assignments') {
-        tab.count = this.openChecklists.filter(c =>
-          c.operator_id?.toString() === currentUserId ||
-          c.operator_name?.toLowerCase() === currentUserName
-        ).length;
-      } else if (tab.value === 'open') {
-        tab.count = this.openChecklists.filter(c => this.isOpenTabStatus(c.status)).length;
-      } else if (tab.value === 'all') {
-        tab.count = this.openChecklists.length;
-      } else {
-        tab.count = this.openChecklists.filter(
-          c => this.normalizeChecklistStatus(c.status) === tab.value
-        ).length;
-      }
-    }
-  }
-
   private applyTabFilter(): void {
-    const currentUserId = this.authService.currentUser()?.id?.toString();
-    const currentUserName = (() => {
-      const u = this.authService.currentUser();
-      return `${u?.firstName || u?.first_name || ''} ${u?.lastName || u?.last_name || ''}`.trim().toLowerCase();
-    })();
-
-    if (this.activeTab === 'all') {
-      this.filteredChecklists = [...this.openChecklists];
-    } else if (this.activeTab === 'my_assignments') {
-      this.filteredChecklists = this.openChecklists.filter(c =>
-        c.operator_id?.toString() === currentUserId ||
-        c.operator_name?.toLowerCase() === currentUserName
-      );
-    } else if (this.activeTab === 'open') {
-      this.filteredChecklists = this.openChecklists.filter(c => this.isOpenTabStatus(c.status));
-    } else {
-      this.filteredChecklists = this.openChecklists.filter(
-        c => this.normalizeChecklistStatus(c.status) === this.activeTab
-      );
-    }
+    this.filteredChecklists = [...this.openChecklists];
 
     if (this.quickSearch?.trim()) {
       const term = this.quickSearch.trim().toLowerCase();

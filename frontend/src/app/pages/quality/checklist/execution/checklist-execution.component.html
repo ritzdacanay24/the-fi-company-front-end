@@ -63,31 +63,10 @@
 
         </div>
 
-        <ul ngbNav #nav="ngbNav" [activeId]="activeTab" (navChange)="onTabChange($event.nextId)"
-          class="nav nav-tabs nav-tabs-custom nav-primary">
-          @for (tab of navOptions; track tab.value) {
-          <li [ngbNavItem]="tab.value" class="py-1">
-            <a ngbNavLink>
-              <i [ngClass]="tab.icon"></i> {{tab.name}}
-              @if (tab.count > 0 && tab.value !== 'submitted' && tab.value !== 'all') {
-                <span class="ms-1 px-2 rounded-pill"
-                  [class.bg-primary]="tab.countStyle === 'primary'"
-                  [class.bg-warning]="tab.countStyle === 'warning'"
-                  [class.bg-success]="tab.countStyle === 'success'"
-                  [class.bg-info]="tab.countStyle === 'info'"
-                  [class.bg-secondary]="tab.countStyle === 'secondary'"
-                  [class.bg-opacity-25]="true"
-                  style="font-size: 0.75rem; font-weight: 600; color: inherit;">{{tab.count}}</span>
-              }
-            </a>
-          </li>
-          }
-        </ul>
-
         <div class="card-body p-0">
           <ag-grid-angular
             class="ag-theme-quartz"
-            style="height: calc(100vh - 363px); width: 100%;"
+            style="height: calc(100vh - 300px); width: 100%;"
             [columnDefs]="columnDefs"
             [rowData]="filteredChecklists"
             [domLayout]="'normal'"
