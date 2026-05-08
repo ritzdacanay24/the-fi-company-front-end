@@ -8,8 +8,8 @@ import {
 import { BehaviorSubject, Observable, throwError } from "rxjs";
 import { catchError, filter, switchMap, take } from "rxjs/operators";
 import { AuthenticationService } from "../services/auth.service";
-import { ToastrService } from "ngx-toastr";
 import { THE_FI_COMPANY_TWOSTEP_TOKEN } from "../guards/admin.guard";
+import { NotificationService } from "../services/notification.service";
 import { Router } from "@angular/router";
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { AccessControlApiService } from "../api/access-control/access-control.service";
@@ -28,8 +28,8 @@ export class ErrorInterceptor implements HttpInterceptor {
     private modalService: NgbModal,
   ) {}
 
-  private get toastService() {
-    return this.injector.get(ToastrService);
+  private get notificationService() {
+    return this.injector.get(NotificationService);
   }
 
   private get accessControlService() {
@@ -104,7 +104,7 @@ export class ErrorInterceptor implements HttpInterceptor {
       const permission = permissions.find((p: any) => p.name === permissionName);
 
       if (!permission) {
-        this.toastService.error('Could not find permission in system. Please contact your administrator.', 'Error');
+        this.notificationService.error('Could not find permission in system. Please contact your administrator.', false);
         return;
       }
 
@@ -115,14 +115,10 @@ export class ErrorInterceptor implements HttpInterceptor {
         reason,
       });
 
-      this.toastService.success(
-        'Your access request has been submitted to your administrator for approval.',
-        'Request Submitted',
-        { timeOut: 5000 }
-      );
+      this.notificationService.success('Your access request has been submitted to your administrator for approval.');
     } catch (err) {
       console.error('Error submitting permission request:', err);
-      this.toastService.error('Failed to submit access request. Please try again.', 'Error');
+      this.notificationService.error('Failed to submit access request. Please try again.', false);
     }
   }
 
@@ -222,10 +218,7 @@ export class ErrorInterceptor implements HttpInterceptor {
           (typeof error?.error !== "object" ||
           error?.error?.showPopup !== false)
         ) {
-          this.toastService.error(errorMessage, error?.statusText, {
-            timeOut: 100000000,
-            newestOnTop: true,
-          });
+          this.notificationService.error(error);
         }
         return throwError(error);
       })

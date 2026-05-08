@@ -3,7 +3,7 @@ import { BehaviorSubject } from 'rxjs';
 import { NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs/operators';
 
-export type AppType = 'main' | 'field-service' | 'admin' | 'serial-management' | 'training' | 'inspection' | 'project-manager';
+export type AppType = 'main' | 'field-service' | 'admin' | 'serial-management' | 'training' | 'inspection' | 'project-manager' | 'support';
 
 export interface AppInfo {
   id: AppType;
@@ -77,6 +77,14 @@ export class AppSwitcherService {
       icon: 'las la-briefcase',
       baseRoute: '/project-manager/dashboard',
       isActive: false
+    },
+    {
+      id: 'support',
+      name: 'Support Tickets',
+      description: 'Submit and manage support requests',
+      icon: 'las la-ticket-alt',
+      baseRoute: '/support-tickets',
+      isActive: false
     }
   ];
 
@@ -109,6 +117,8 @@ export class AppSwitcherService {
       next = 'inspection';
     } else if (url.startsWith('/project-manager')) {
       next = 'project-manager';
+    } else if (url.startsWith('/support-tickets')) {
+      next = 'support';
     } else {
       next = 'main';
     }
@@ -183,6 +193,10 @@ export class AppSwitcherService {
 
   isProjectManagerApp(): boolean {
     return this.getCurrentApp() === 'project-manager';
+  }
+
+  isSupportApp(): boolean {
+    return this.getCurrentApp() === 'support';
   }
 
   getAppTitle(): string {

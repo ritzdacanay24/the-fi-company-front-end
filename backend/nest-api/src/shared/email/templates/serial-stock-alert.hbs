@@ -1,0 +1,71 @@
+<html>
+  <body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f4f6f8; color: #1f2933;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 720px; background-color: #ffffff; border: 1px solid #dde3ea; border-radius: 10px; overflow: hidden;">
+            {{> email-header}}
+            <tr>
+              <td style="padding: 20px 24px; background-color: #0b5cab; color: #ffffff;">
+                <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Serial Stock Report</h2>
+                <p style="margin: 4px 0 0; font-size: 13px; opacity: 0.85;">{{reportDate}} (Pacific Time)</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 24px; font-size: 14px; line-height: 1.6;">
+
+                {{#if hasCritical}}
+                <div style="background-color: #dc3545; color: #ffffff; padding: 14px 18px; border-radius: 8px; margin-bottom: 20px; font-size: 14px;">
+                  <strong>🚨 CRITICAL ALERT:</strong> {{criticalNames}} {{criticalVerb}} critically low (below 30% of threshold). Immediate action required.
+                </div>
+                {{else}}
+                <div style="background-color: #fd7e14; color: #ffffff; padding: 14px 18px; border-radius: 8px; margin-bottom: 20px; font-size: 14px;">
+                  <strong>⚠️ STOCK ALERT:</strong> {{lowNames}} {{lowVerb}} below the minimum threshold.
+                </div>
+                {{/if}}
+
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse; font-size: 14px;">
+                  <thead>
+                    <tr style="background-color: #f8f9fa;">
+                      <th style="padding: 10px 12px; text-align: left; border-bottom: 2px solid #dee2e6;">Pool</th>
+                      <th style="padding: 10px 12px; text-align: center; border-bottom: 2px solid #dee2e6;">Available</th>
+                      <th style="padding: 10px 12px; text-align: center; border-bottom: 2px solid #dee2e6;">Threshold</th>
+                      <th style="padding: 10px 12px; text-align: center; border-bottom: 2px solid #dee2e6;">Shortfall / Buffer</th>
+                      <th style="padding: 10px 12px; text-align: center; border-bottom: 2px solid #dee2e6;">Coverage</th>
+                      <th style="padding: 10px 12px; text-align: center; border-bottom: 2px solid #dee2e6;">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {{#each pools}}
+                    <tr>
+                      <td style="padding: 10px 12px; border-bottom: 1px solid #e9ecef;">{{label}}</td>
+                      <td style="padding: 10px 12px; border-bottom: 1px solid #e9ecef; text-align: center; font-weight: 600;">{{availableFormatted}}</td>
+                      <td style="padding: 10px 12px; border-bottom: 1px solid #e9ecef; text-align: center;">{{thresholdFormatted}}</td>
+                      <td style="padding: 10px 12px; border-bottom: 1px solid #e9ecef; text-align: center; font-weight: {{shortfallFontWeight}}; color: {{shortfallColor}};">{{shortfallDisplay}}</td>
+                      <td style="padding: 10px 12px; border-bottom: 1px solid #e9ecef;">
+                        <div style="background: #e9ecef; border-radius: 4px; height: 8px; width: 100%; min-width: 80px;">
+                          <div style="background: {{barColor}}; height: 8px; border-radius: 4px; width: {{pct}}%;"></div>
+                        </div>
+                        <small style="color: #6c757d;">{{pct}}%</small>
+                      </td>
+                      <td style="padding: 10px 12px; border-bottom: 1px solid #e9ecef; text-align: center;">
+                        <span style="background: {{statusColor}}; color: #fff; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 600;">{{statusLabel}}</span>
+                      </td>
+                    </tr>
+                    {{/each}}
+                  </tbody>
+                </table>
+
+                <p style="margin-top: 24px; font-size: 13px; color: #6c757d;">
+                  This report is sent daily at 7:00 AM PT when one or more serial pools are at or below their threshold.
+                  To manage serial pools, visit the <strong>Serial Management Dashboard</strong> in the EyeFi portal.
+                </p>
+              </td>
+            </tr>
+            {{> email-footer}}
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

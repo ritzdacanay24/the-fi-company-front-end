@@ -1,0 +1,22 @@
+<div #bannerContainer class="app-global-banner-stack">
+
+  <!-- Version update banner — highest priority -->
+  <div *ngIf="showUpdateBanner" class="app-update-banner d-flex align-items-center px-3 py-2">
+    <i class="mdi mdi-update me-2 fs-5"></i>
+    <div class="flex-grow-1">
+      <strong>A new version of the dashboard is available.</strong>
+      Save any open work before reloading to get the latest features and fixes.
+    </div>
+    <button class="btn btn-sm btn-light fw-semibold ms-3" (click)="reloadSite()">Update Now</button>
+  </div>
+
+  <!-- QAD health status banner -->
+  <div *ngIf="showQadBanner" class="app-qad-status-banner d-flex align-items-start px-3 py-2">
+    <i class="mdi mdi-alert-circle-outline me-2 fs-5"></i>
+    <div>
+      <strong>QAD is currently unreachable.</strong>
+      Some features may be limited until connectivity is restored. You can continue working normally in the meantime.
+    </div>
+  </div>
+
+</div>

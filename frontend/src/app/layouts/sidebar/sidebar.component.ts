@@ -29,6 +29,7 @@ import { SERIAL_MANAGEMENT_MENU } from "./serial-management-menu-data";
 import { TRAINING_MENU } from "./training-menu-data";
 import { INSPECTION_MENU } from "./inspection-menu-data";
 import { PROJECT_MANAGER_MENU } from "./project-manager-menu-data";
+import { SUPPORT_MENU } from "./support-menu-data";
 import { MENU } from "./menu";
 import {
   SidebarMenuBadgeCounts,
@@ -64,6 +65,7 @@ export class SidebarComponent implements OnInit {
     'inspectionChecklistExecutionInProgress',
     'pmProjectsOpen',
     'pmTasksOpen',
+    'supportTicketsOpen',
   ]);
 
   private readonly badgeVariantByKey: Record<keyof SidebarMenuBadgeCounts, string> = {
@@ -89,6 +91,7 @@ export class SidebarComponent implements OnInit {
     inspectionChecklistExecutionInProgress: 'sidebar-count-badge--critical',
     pmProjectsOpen: 'sidebar-count-badge--attention',
     pmTasksOpen: 'sidebar-count-badge--attention',
+    supportTicketsOpen: 'sidebar-count-badge--attention',
   };
 
   menu: any;
@@ -152,6 +155,7 @@ export class SidebarComponent implements OnInit {
     inspectionChecklistExecutionInProgress: 0,
     pmProjectsOpen: 0,
     pmTasksOpen: 0,
+    supportTicketsOpen: 0,
   };
 
   get appRailItems() {
@@ -342,6 +346,10 @@ export class SidebarComponent implements OnInit {
       this.currentMenuType = 'project-manager';
       this.originalMenuItems = [...PROJECT_MANAGER_MENU];
       this.menuItems = [...PROJECT_MANAGER_MENU];
+    } else if (this.appSwitcherService.isSupportApp()) {
+      this.currentMenuType = 'support';
+      this.originalMenuItems = [...SUPPORT_MENU];
+      this.menuItems = [...SUPPORT_MENU];
     } else {
       this.currentMenuType = 'main';
       const menuData = await this.menuService.getMenu();
@@ -457,6 +465,8 @@ export class SidebarComponent implements OnInit {
         return INSPECTION_MENU;
       case 'project-manager':
         return PROJECT_MANAGER_MENU;
+      case 'support':
+        return SUPPORT_MENU;
       case 'main':
       default:
         return MENU;

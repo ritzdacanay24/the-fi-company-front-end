@@ -1,0 +1,61 @@
+CREATE TABLE IF NOT EXISTS eyefidb.support_tickets (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  ticket_number VARCHAR(20) NOT NULL,
+  type ENUM('bug','feature_request','question','improvement','maintenance','access_permissions','data_correction','incident_outage') NOT NULL DEFAULT 'question',
+  title VARCHAR(255) NOT NULL,
+  description LONGTEXT NOT NULL,
+  user_id INT UNSIGNED NULL,
+  user_email VARCHAR(255) NULL,
+  status ENUM('open','in_progress','resolved','closed') NOT NULL DEFAULT 'open',
+  priority ENUM('low','medium','high','urgent') NOT NULL DEFAULT 'medium',
+  assigned_to INT UNSIGNED NULL,
+  screenshot_path VARCHAR(500) NULL,
+  metadata JSON NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  resolved_at TIMESTAMP NULL DEFAULT NULL,
+  closed_at TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_support_tickets_ticket_number (ticket_number),
+  KEY idx_support_tickets_user_status (user_id, status),
+  KEY idx_support_tickets_status_created (status, created_at),
+  KEY idx_support_tickets_priority_created (priority, created_at),
+  KEY idx_support_tickets_assigned (assigned_to),
+  KEY idx_support_tickets_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS eyefidb.support_ticket_comments (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  ticket_id INT UNSIGNED NOT NULL,
+  user_id INT UNSIGNED NOT NULL,
+  user_name VARCHAR(255) NULL,
+  user_email VARCHAR(255) NULL,
+  comment LONGTEXT NOT NULL,
+  is_internal TINYINT(1) NOT NULL DEFAULT 0,
+  is_system_generated TINYINT(1) NOT NULL DEFAULT 0,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  edited_at TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (id),
+  KEY idx_support_ticket_comments_ticket_id (ticket_id),
+  KEY idx_support_ticket_comments_created (created_at),
+  CONSTRAINT fk_support_ticket_comments_ticket FOREIGN KEY (ticket_id) REFERENCES eyefidb.support_tickets(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS eyefidb.support_ticket_attachments (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  ticket_id INT UNSIGNED NOT NULL,
+  comment_id INT UNSIGNED NULL,
+  file_name VARCHAR(255) NOT NULL,
+  file_url VARCHAR(1000) NOT NULL,
+  mime_type VARCHAR(150) NULL,
+  file_size BIGINT NULL,
+  uploaded_by INT UNSIGNED NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_support_ticket_attachments_ticket_id (ticket_id),
+  KEY idx_support_ticket_attachments_comment_id (comment_id),
+  KEY idx_support_ticket_attachments_uploaded_by (uploaded_by),
+  CONSTRAINT fk_support_ticket_attachments_ticket FOREIGN KEY (ticket_id) REFERENCES eyefidb.support_tickets(id) ON DELETE CASCADE,
+  CONSTRAINT fk_support_ticket_attachments_comment FOREIGN KEY (comment_id) REFERENCES eyefidb.support_ticket_comments(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

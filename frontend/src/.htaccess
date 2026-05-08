@@ -3,8 +3,22 @@ RewriteEngine On
 RewriteCond %{REQUEST_URI} ^/dist/web/request [NC]
 RewriteRule ^dist/web/request(/.*)?$ /request%1 [R=301,L]
 
-# No-cache headers for /request
 <IfModule mod_headers.c>
+	# CRITICAL: index.html, ngsw.json, and ngsw-worker.js must NEVER be cached.
+	# The Angular service worker checks ngsw.json on every load to detect new versions.
+	# If ngsw.json or index.html are cached by the browser, updates are invisible.
+	<FilesMatch "^(index\.html|ngsw\.json|ngsw-worker\.js)$">
+		Header always set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+		Header always set Pragma "no-cache"
+		Header always set Expires "0"
+	</FilesMatch>
+
+	# All Angular hashed JS/CSS assets are safe to cache forever (content-hash in filename).
+	<FilesMatch "\.(js|css)$">
+		Header always set Cache-Control "public, max-age=31536000, immutable"
+	</FilesMatch>
+
+	# No-cache headers for /request
 	<If "%{REQUEST_URI} =~ m#^/request#">
 		Header always set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
 		Header always set Pragma "no-cache"
@@ -19,19 +33,3 @@ RewriteRule ^ - [L]
 # If the requested resource doesn't exist, use index.html
 RewriteRule ^(.*)$ index.html
 
-## EXPIRES CACHING ##
-#<IfModule mod_expires.c>
-#ExpiresActive On
-#ExpiresByType image/jpg "access 1 year"
-#ExpiresByType image/jpeg "access 1 year"
-#ExpiresByType image/gif "access 1 year"
-#ExpiresByType image/png "access 1 year"
-#ExpiresByType text/css "access 1 month"
-#ExpiresByType text/html "access 1 month"
-#ExpiresByType application/pdf "access 1 month"
-#ExpiresByType text/x-javascript "access 1 month"
-#ExpiresByType application/x-shockwave-flash "access 1 month"
-#ExpiresByType image/x-icon "access 1 year"
-#ExpiresDefault "access 1 month"
-#</IfModule>
-## EXPIRES CACHING ##

@@ -22,6 +22,7 @@ import { TwoColumnSidebarComponent } from './two-column-sidebar/two-column-sideb
 import { GridLayoutComponent } from '@app/shared/grid-layout/grid-layout.component';
 import { AppSwitcherComponent } from '@app/components/app-switcher/app-switcher.component';
 import { FormsLauncherComponent } from '@app/shared/forms-launcher/forms-launcher.component';
+import { AppBannersComponent } from './banners/app-banners.component';
 
 
 
@@ -55,7 +56,11 @@ import { FormsLauncherComponent } from '@app/shared/forms-launcher/forms-launche
     NgbTooltipModule,
     DragDropModule,
     GridLayoutComponent,
-    FormsLauncherComponent
+    FormsLauncherComponent,
+    AppBannersComponent
+  ],
+  exports: [
+    AppBannersComponent
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })

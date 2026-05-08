@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
+import { ErrorReportDialogService } from '@app/core/services/error-report-dialog.service';
 import { SharedModule } from '@app/shared/shared.module';
 
 interface FormLink {
@@ -31,11 +32,20 @@ export class FormsLauncherComponent {
     { label: 'Forklift Insp.',   icon: 'mdi mdi-forklift',              route: '/operations/forms/forklift-inspection/create', color: 'text-warning' },
     { label: 'Vehicle Insp.',    icon: 'mdi mdi-car-wrench',            route: '/operations/forms/vehicle-inspection/create',  color: 'text-secondary'},
     { label: 'Training',         icon: 'mdi mdi-school',                route: '/training/setup',                              color: 'text-primary'  },
+    { label: 'Support',          icon: 'mdi mdi-ticket-outline',        route: '/support-tickets',                            color: 'text-warning'  },
   ];
 
-  constructor(private router: Router) {}
+  constructor(
+    private router: Router,
+    private errorReportDialogService: ErrorReportDialogService,
+  ) {}
 
   navigate(route: string) {
+    if (route === '/support-tickets') {
+      void this.errorReportDialogService.open();
+      return;
+    }
+
     this.router.navigateByUrl(route);
   }
 }

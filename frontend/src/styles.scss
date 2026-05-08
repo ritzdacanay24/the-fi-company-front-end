@@ -1,25 +1,62 @@
+/* Angular Material prebuilt theme — required for MatSnackBar and other Material components */
+@import '@angular/material/prebuilt-themes/indigo-pink.css';
+
+/* Snackbar overlay — must sit above the top navbar */
+.cdk-overlay-container {
+  z-index: 99999 !important;
+}
+
+/* Snackbar panel styles */
+.mat-mdc-snack-bar-container {
+  &.error-snackbar   { --mdc-snackbar-container-color: #d32f2f; --mdc-snackbar-supporting-text-color: #fff; }
+  &.success-snackbar { --mdc-snackbar-container-color: #388e3c; --mdc-snackbar-supporting-text-color: #fff; }
+  &.info-snackbar    { --mdc-snackbar-container-color: #1976d2; --mdc-snackbar-supporting-text-color: #fff; }
+  &.warning-snackbar { --mdc-snackbar-container-color: #f57c00; --mdc-snackbar-supporting-text-color: #fff; }
+}
+
 /* You can add global styles to this file, and also import other style files */
 
 :root {
   --qad-validation-banner-height: 0px;
 }
 
-.app-global-status-banner {
-  position: fixed !important;
+/* Banner stack container — both banners live here, stacked */
+.app-global-banner-stack {
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
   z-index: 1003;
-  border-left: 0;
-  border-right: 0;
-  border-top: 0;
-  background-color: #b45309 !important;
-  color: #fff !important;
-  border-bottom: 1px solid #92400e !important;
+}
 
-  i, strong {
-    color: #fff !important;
+/* Version update banner — blue, highest priority */
+.app-update-banner {
+  background-color: #1d4ed8;
+  color: #fff;
+  border-bottom: 1px solid #1e40af;
+  font-size: 0.875rem;
+  line-height: 1.4;
+
+  i, strong { color: #fff !important; }
+
+  .btn-light {
+    background-color: #fff;
+    color: #1d4ed8;
+    border: none;
+    white-space: nowrap;
+    &:hover { background-color: #e0e7ff; }
   }
+}
+
+/* QAD health banner — amber */
+.app-qad-status-banner {
+  background-color: #b45309;
+  color: #fff;
+  border-bottom: 1px solid #92400e;
+  font-size: 0.875rem;
+  line-height: 1.4;
+
+  i, strong { color: #fff !important; }
 }
 
 body.qad-validation-banner-visible #page-topbar {
@@ -37,6 +74,24 @@ body.qad-validation-banner-visible .checklist-fullscreen-wrapper {
 
 body.qad-validation-banner-visible .public-form-wrapper {
   padding-top: var(--qad-validation-banner-height) !important;
+}
+
+body.qad-validation-banner-visible app-shared-header nav {
+  top: var(--qad-validation-banner-height) !important;
+}
+
+/* All standalone/public pages that use auth-one-bg-position as their root layout */
+body.qad-validation-banner-visible .auth-one-bg-position {
+  padding-top: var(--qad-validation-banner-height) !important;
+}
+
+/* Standalone form page intro offset — clears fixed shared-header (56px) + banner when active */
+.public-form-wrapper .form-content .has-header {
+  margin-top: 56px;
+}
+
+body.qad-validation-banner-visible .public-form-wrapper .form-content .has-header {
+  margin-top: calc(56px + var(--qad-validation-banner-height));
 }
 
 body.qad-validation-banner-visible app-menu {

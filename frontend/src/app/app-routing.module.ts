@@ -227,6 +227,39 @@ const routes: Routes = [
       },
     ],
   },
+  {
+    path: "support-tickets",
+    component: LayoutComponent,
+    canActivate: [AuthGuard],
+    runGuardsAndResolvers: "always",
+    children: [
+      {
+        path: "",
+        loadComponent: () =>
+          import("./features/support-tickets/support-tickets-list.component").then(
+            (m) => m.SupportTicketsListComponent,
+          ),
+        title: "Support Tickets",
+      },
+      {
+        path: "my-tickets",
+        loadComponent: () =>
+          import("./features/support-tickets/support-tickets-list.component").then(
+            (m) => m.SupportTicketsListComponent,
+          ),
+        title: "My Tickets",
+        data: { allTickets: { forceCurrentUser: true, showUserColumns: false } },
+      },
+      {
+        path: ":id",
+        loadComponent: () =>
+          import("./features/support-tickets/support-ticket-detail.component").then(
+            (m) => m.SupportTicketDetailComponent,
+          ),
+        title: "Support Ticket Detail",
+      },
+    ],
+  },
   { path: "", redirectTo: "menu", pathMatch: "full" },
   // Operations routes (moved from dashboard)
   {

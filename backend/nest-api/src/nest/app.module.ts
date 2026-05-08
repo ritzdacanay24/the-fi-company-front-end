@@ -80,6 +80,7 @@ import { SchedulerEventModule } from './modules/scheduler-event';
 import { CalendarEventModule } from './modules/calendar-event';
 import { EventModule } from './modules/event';
 import { TicketEventModule } from './modules/ticket-event';
+import { SupportTicketsModule } from './modules/support-tickets/support-tickets.module';
 import { JobConnectionModule } from './modules/job-connection';
 import { KanbanPrioritiesModule } from './modules/kanban-priorities';
 import { StatusCategoryModule } from './modules/status-category';
@@ -220,6 +221,7 @@ import { UrlModule } from '../shared/url/url.module';
     CalendarEventModule,
     EventModule,
     TicketEventModule,
+    SupportTicketsModule,
     JobConnectionModule,
     KanbanPrioritiesModule,
     StatusCategoryModule,

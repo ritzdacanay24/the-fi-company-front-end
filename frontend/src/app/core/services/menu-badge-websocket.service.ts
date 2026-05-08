@@ -28,6 +28,7 @@ export interface SidebarMenuBadgeCounts {
   inspectionChecklistExecutionInProgress: number;
   pmProjectsOpen: number;
   pmTasksOpen: number;
+  supportTicketsOpen: number;
 }
 
 // ─── Websocket message types (mirrors backend event names) ───────────────────
@@ -70,6 +71,7 @@ const ZERO_COUNTS: SidebarMenuBadgeCounts = {
   inspectionChecklistExecutionInProgress: 0,
   pmProjectsOpen: 0,
   pmTasksOpen: 0,
+  supportTicketsOpen: 0,
 };
 
 /**
@@ -211,6 +213,7 @@ export class MenuBadgeWebsocketService implements OnDestroy {
       inspectionChecklistExecutionInProgress: toNum(pick('inspectionChecklistExecutionInProgress'), current.inspectionChecklistExecutionInProgress),
       pmProjectsOpen:                          toNum(pick('pmProjectsOpen'),                          current.pmProjectsOpen),
       pmTasksOpen:                             toNum(pick('pmTasksOpen'),                             current.pmTasksOpen),
+      supportTicketsOpen:                      toNum(pick('supportTicketsOpen'),                      current.supportTicketsOpen),
     });
   }
 

@@ -49,6 +49,8 @@ import { DragulaModule } from "ng2-dragula";
 
 import { provideGlobalGridOptions } from "ag-grid-community";
 import { agGridOptions } from "./shared/config/ag-grid.config";
+import { MatSnackBarModule } from "@angular/material/snack-bar";
+import { SupportTicketMinimizedTabComponent } from "./core/components/support-ticket-minimized-tab/support-ticket-minimized-tab.component";
 import { AccessGuard } from "./core/guards/access.guard";
 import { Deactivate } from "./core/guards/deactivate.guard";
 import { TwostepGuard } from "./core/guards/twostep.guard";
@@ -108,6 +110,8 @@ export function createTranslateLoader(http: HttpClient): any {
     }),
     LightboxModule,
     FlatpickrModule.forRoot(),
+    MatSnackBarModule,
+    SupportTicketMinimizedTabComponent,
   ],
   providers: [
     { provide: HTTP_INTERCEPTORS, useClass: CancelDuplicateRequestsInterceptor, multi: true },

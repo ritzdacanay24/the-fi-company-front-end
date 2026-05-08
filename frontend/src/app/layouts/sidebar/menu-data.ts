@@ -471,7 +471,8 @@ export const MENU_DATA: MenuItem[] = [
             //     activatedRoutes: "/inspection/*"
             // },
         ],
-    }
+    },
+    
 ];
 
 // Function to recursively sort menu items by ID, then by label

@@ -36,6 +36,7 @@ import { setThemeColor } from "@app/app.component";
 import { environment } from "@environments/environment";
 import { MrAlertTopbarFacadeService } from "@app/core/services/mr-alert-topbar.facade.service";
 import { MrPushNotificationService } from "@app/core/services/mr-push-notification.service";
+import { ErrorReportDialogService } from "@app/core/services/error-report-dialog.service";
 
 export const THE_FI_COMPANY_LAYOUT = "THE_FI_COMPANY_LAYOUT";
 
@@ -118,6 +119,7 @@ export class TopbarComponent implements OnInit, OnDestroy {
     private offcanvasService: NgbOffcanvas,
     private mrAlertFacade: MrAlertTopbarFacadeService,
     private mrPushNotificationService: MrPushNotificationService,
+    private errorReportDialogService: ErrorReportDialogService,
   ) {}
 
   ngOnInit(): void {
@@ -294,6 +296,10 @@ export class TopbarComponent implements OnInit, OnDestroy {
 
   sendTestPushNotification(): void {
     void this.mrPushNotificationService.sendTestPush();
+  }
+
+  openSupportTicketModal(): void {
+    void this.errorReportDialogService.open();
   }
 
   changeModeZoom(row) {

@@ -380,6 +380,13 @@ export const MENU: MenuItem[] = [
         link: '/field-service/ticket/overview',
       },
     ]
+  },
+
+  {
+    id: 6,
+    label: 'Support Tickets',
+    icon: 'las la-question-circle',
+    link: '/support-tickets'
   }
 
 ];

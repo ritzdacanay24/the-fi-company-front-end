@@ -1,0 +1,222 @@
+<div class="container-fluid">
+  <div class="row justify-content-center">
+    <div class="col-12">
+
+      <!-- Breadcrumb Navigation -->
+      <div class="d-none d-lg-block mb-3">
+        <app-breadcrumb [items]="breadcrumbItems()"></app-breadcrumb>
+      </div>
+
+      <!-- Page Header -->
+      <div class="mb-4">
+        <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
+          <div>
+            <button class="btn btn-link px-0 mb-2" (click)="goBack()">
+              <i class="mdi mdi-arrow-left me-1"></i>Back to Tickets
+            </button>
+            <h2 class="mb-2 text-primary">{{ ticket()?.title || 'Ticket' }}</h2>
+            <p class="text-muted mb-0">
+              <code>{{ ticket()?.ticket_number }}</code>
+              <span class="ms-2">Created {{ ticket()?.created_at | date:'short' }}</span>
+            </p>
+          </div>
+          @if (ticket() && ticket()!.status !== 'closed') {
+            <button class="btn btn-outline-danger" (click)="closeTicket()" [disabled]="isSaving()">
+              <i class="mdi mdi-check-circle me-1"></i>Close Ticket
+            </button>
+          }
+        </div>
+      </div>
+
+      @if (isLoading()) {
+        <div class="card">
+          <div class="card-body text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
+        </div>
+      } @else if (!ticket()) {
+        <div class="card">
+          <div class="card-body text-center py-5">
+            <p class="text-muted mb-0">Ticket not found.</p>
+          </div>
+        </div>
+      } @else {
+        <div class="row g-3">
+          <!-- Main Content -->
+          <div class="col-lg-8">
+            <!-- Description Card -->
+            <div class="card mb-3 border-0 shadow-sm">
+              <div class="card-header d-flex align-items-center bg-body-tertiary border-0 fw-semibold">
+                <i class="mdi mdi-file-document text-primary me-2"></i>
+                <h6 class="mb-0">Description</h6>
+              </div>
+              <div class="card-body bg-body">
+                <div class="text-break" [innerHTML]="ticket()!.description"></div>
+              </div>
+            </div>
+
+            <!-- Comments Section -->
+            <div class="card mb-3 border-0 shadow-sm">
+              <div class="card-header d-flex align-items-center bg-body-tertiary border-0 fw-semibold">
+                <i class="mdi mdi-chat-multiple text-primary me-2"></i>
+                <h6 class="mb-0">Conversation ({{ comments().length }} comments)</h6>
+              </div>
+              <div class="card-body bg-body overflow-auto">
+                @if (comments().length === 0) {
+                  <p class="text-body-secondary mb-0">No comments yet.</p>
+                } @else {
+                  @for (comment of comments(); track comment.id) {
+                    <div class="pb-3 mb-3">
+                      <div class="d-flex align-items-start gap-2 mb-2">
+                        <div class="flex-grow-1">
+                          <div class="fw-semibold">
+                            {{ comment.user_name || comment.user_email || 'System' }}
+                          </div>
+                          <small class="text-body-secondary">
+                            {{ comment.created_at | date:'short' }}
+                          </small>
+                        </div>
+                        @if (comment.is_internal) {
+                          <span class="badge bg-warning">Internal</span>
+                        }
+                      </div>
+                      <div class="text-break">{{ comment.comment }}</div>
+                    </div>
+                  }
+                }
+              </div>
+            </div>
+
+            <!-- Add Comment -->
+            <div class="card border-0 shadow-sm">
+              <div class="card-header d-flex align-items-center bg-body-tertiary border-0 fw-semibold">
+                <i class="mdi mdi-pencil text-primary me-2"></i>
+                <h6 class="mb-0">Add Comment</h6>
+              </div>
+              <div class="card-body bg-body">
+                <form [formGroup]="commentForm" (ngSubmit)="submitComment()">
+                  <textarea
+                    rows="4"
+                    class="form-control bg-body-tertiary border-0"
+                    formControlName="comment"
+                    placeholder="Type your comment here..."
+                    [disabled]="isSaving()">
+                  </textarea>
+                  <div class="d-flex gap-2 mt-3">
+                    <button
+                      type="submit"
+                      class="btn btn-primary"
+                      [disabled]="commentForm.invalid || isSaving()">
+                      @if (isSaving()) {
+                        <span class="spinner-border spinner-border-sm me-2"></span>
+                      }
+                      Post Comment
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sidebar -->
+          <div class="col-lg-4">
+            <div class="card border-0 shadow-sm">
+              <div class="card-header bg-body-tertiary border-0 fw-semibold">Ticket Details</div>
+              <div class="card-body bg-body">
+                <div class="mb-4">
+                  <div class="d-flex align-items-center justify-content-between mb-2">
+                    <div class="text-body-secondary small">Status</div>
+                    <button class="btn btn-sm btn-outline-primary" (click)="isEditingStatus.set(true)" *ngIf="!isEditingStatus()">
+                      <i class="mdi mdi-pencil"></i>
+                    </button>
+                  </div>
+
+                  @if (!isEditingStatus()) {
+                    <span class="badge {{ getStatusBadgeClass(ticket()!.status) }} fs-6">
+                      {{ SUPPORT_TICKET_STATUS_LABELS[ticket()!.status] }}
+                    </span>
+                  } @else {
+                    <form [formGroup]="statusForm" (ngSubmit)="updateStatus()" class="d-flex gap-2">
+                      <select class="form-select form-select-sm" formControlName="status">
+                        @for (status of statusOptions; track status) {
+                          <option [value]="status">{{ SUPPORT_TICKET_STATUS_LABELS[status] }}</option>
+                        }
+                      </select>
+                      <button type="submit" class="btn btn-sm btn-success" [disabled]="statusForm.invalid || isSaving()">
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-outline-secondary"
+                        (click)="isEditingStatus.set(false)">
+                        Cancel
+                      </button>
+                    </form>
+                  }
+                </div>
+
+                <hr class="my-3">
+
+                <div class="mb-4">
+                  <div class="d-flex align-items-center justify-content-between mb-2">
+                    <div class="text-body-secondary small">Priority</div>
+                    <button class="btn btn-sm btn-outline-primary" (click)="isEditingPriority.set(true)" *ngIf="!isEditingPriority()">
+                      <i class="mdi mdi-pencil"></i>
+                    </button>
+                  </div>
+
+                  @if (!isEditingPriority()) {
+                    <span class="badge {{ getPriorityBadgeClass(ticket()!.priority) }} fs-6">
+                      {{ SUPPORT_TICKET_PRIORITY_LABELS[ticket()!.priority] }}
+                    </span>
+                  } @else {
+                    <form [formGroup]="priorityForm" (ngSubmit)="updatePriority()" class="d-flex gap-2">
+                      <select class="form-select form-select-sm" formControlName="priority">
+                        @for (priority of priorityOptions; track priority) {
+                          <option [value]="priority">{{ SUPPORT_TICKET_PRIORITY_LABELS[priority] }}</option>
+                        }
+                      </select>
+                      <button type="submit" class="btn btn-sm btn-success" [disabled]="priorityForm.invalid || isSaving()">
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-outline-secondary"
+                        (click)="isEditingPriority.set(false)">
+                        Cancel
+                      </button>
+                    </form>
+                  }
+                </div>
+
+                <hr class="my-3">
+
+                <div class="row mb-2">
+                  <div class="col-6 text-body-secondary small">Type:</div>
+                  <div class="col-6">{{ SUPPORT_TICKET_TYPE_LABELS[ticket()!.type] }}</div>
+                </div>
+                <div class="row mb-2">
+                  <div class="col-6 text-body-secondary small">Created:</div>
+                  <div class="col-6 small">{{ ticket()!.created_at | date:'medium' }}</div>
+                </div>
+                <div class="row mb-2">
+                  <div class="col-6 text-body-secondary small">Updated:</div>
+                  <div class="col-6 small">{{ ticket()!.updated_at | date:'medium' }}</div>
+                </div>
+                @if (ticket()!.resolved_at) {
+                  <div class="row">
+                    <div class="col-6 text-body-secondary small">Resolved:</div>
+                    <div class="col-6 small">{{ ticket()!.resolved_at | date:'medium' }}</div>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+    </div>
+  </div>
+</div>

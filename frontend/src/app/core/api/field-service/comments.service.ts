@@ -20,7 +20,11 @@ export class CommentsService extends DataService<any> {
   }
 
   createComment(token, toEmail, params) {
-    return firstValueFrom(this.http.post(`${commentsV2Url}?token=${token}&toEmail=${toEmail}`, params));
+    const query = new URLSearchParams();
+    if (token) query.set('token', token);
+    if (toEmail) query.set('toEmail', toEmail);
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    return firstValueFrom(this.http.post(`${commentsV2Url}${qs}`, params));
   }
 
   updateById(id, params) {

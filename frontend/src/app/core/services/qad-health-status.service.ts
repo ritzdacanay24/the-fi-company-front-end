@@ -89,7 +89,6 @@ export class QadHealthStatusService {
           isChecking: false,
           lastUpdatedAt: Date.now(),
         };
-
         this.setState(nextState);
         return nextState;
       } catch {
