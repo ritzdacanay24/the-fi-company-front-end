@@ -168,7 +168,7 @@ export class GraphicsWorkOrderHandler implements ScheduledJobHandler {
       AND (a.wo_qty_ord - a.wo_qty_comp) > 0
       ${woNotInClause}
       AND c.pt_part_type = 'Graphic'
-      AND LEN(a.wo_nbr) = 5
+      AND LENGTH(a.wo_nbr) = 5
       AND a.wo_status != 'C'
     `;
 

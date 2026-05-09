@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ForbiddenException,
+  InternalServerErrorException,
   Injectable,
   Logger,
   NotFoundException,
@@ -21,6 +22,7 @@ import {
 import { SupportTicketsRepository } from './support-tickets.repository';
 import { EmailService } from '@/shared/email/email.service';
 import { EmailTemplateService } from '@/shared/email/email-template.service';
+import { FileStorageService } from '@/nest/modules/file-storage/file-storage.service';
 
 interface RequestUser {
   id: number;
@@ -35,6 +37,7 @@ export class SupportTicketsService {
     private readonly emailService: EmailService,
     private readonly emailTemplateService: EmailTemplateService,
     private readonly configService: ConfigService,
+    private readonly fileStorageService: FileStorageService,
   ) {}
 
   async create(dto: CreateSupportTicketDto, user: RequestUser): Promise<SupportTicket> {
@@ -227,6 +230,39 @@ export class SupportTicketsService {
 
     if (!created) {
       throw new NotFoundException('Attachment not found after creation');
+    }
+
+    return created;
+  }
+
+  async uploadAttachment(
+    ticketId: number,
+    file: { originalname?: string; buffer?: Buffer; mimetype?: string; size?: number } | undefined,
+    user: RequestUser,
+  ): Promise<SupportTicketAttachment> {
+    const userContext = await this.requireUserContext(user.id);
+    await this.findOne(ticketId, user);
+
+    const subFolder = 'support-tickets';
+    const storedFileName = await this.fileStorageService.storeUploadedFile(file, subFolder);
+    const fileUrl = this.fileStorageService.resolveLink(storedFileName, subFolder);
+    if (!fileUrl) {
+      throw new InternalServerErrorException('Failed to resolve uploaded file URL');
+    }
+    const attachmentId = await this.repository.createAttachment(
+      ticketId,
+      {
+        file_name: file?.originalname || storedFileName,
+        file_url: fileUrl,
+        mime_type: file?.mimetype || undefined,
+        file_size: file?.size || undefined,
+      },
+      userContext.id,
+    );
+
+    const created = await this.repository.findAttachmentById(attachmentId);
+    if (!created) {
+      throw new NotFoundException('Attachment not found after upload');
     }
 
     return created;

@@ -9,10 +9,13 @@ import {
   Put,
   Query,
   Req,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { AuthGuard } from '@/nest/guards/auth.guard';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { SupportTicketsService } from './support-tickets.service';
 import {
   CreateSupportTicketAttachmentDto,
@@ -97,6 +100,16 @@ export class SupportTicketsController {
     @Req() req: Request,
   ) {
     return this.supportTicketsService.addAttachment(ticketId, dto, this.getRequestUser(req));
+  }
+
+  @Post(':id/attachments/upload')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadAttachment(
+    @Param('id', ParseIntPipe) ticketId: number,
+    @UploadedFile() file?: { originalname?: string; buffer?: Buffer; mimetype?: string; size?: number },
+    @Req() req?: Request,
+  ) {
+    return this.supportTicketsService.uploadAttachment(ticketId, file, this.getRequestUser(req as Request));
   }
 
   @Delete(':ticketId/attachments/:attachmentId')

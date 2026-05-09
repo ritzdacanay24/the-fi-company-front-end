@@ -73,6 +73,10 @@ export class SupportTicketsService {
     return this.http.post<SupportTicketAttachment>(`${SUPPORT_TICKETS_API}/${ticketId}/attachments`, payload);
   }
 
+  uploadAttachment(ticketId: number, formData: FormData): Observable<SupportTicketAttachment> {
+    return this.http.post<SupportTicketAttachment>(`${SUPPORT_TICKETS_API}/${ticketId}/attachments/upload`, formData);
+  }
+
   deleteAttachment(ticketId: number, attachmentId: number): Observable<void> {
     return this.http.delete<void>(`${SUPPORT_TICKETS_API}/${ticketId}/attachments/${attachmentId}`);
   }

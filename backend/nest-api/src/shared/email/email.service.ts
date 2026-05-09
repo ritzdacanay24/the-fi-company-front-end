@@ -14,6 +14,7 @@ export class EmailService {
   constructor(private readonly configService: ConfigService) {
     const nodeEnv = this.configService.getOrThrow<string>('NODE_ENV').toLowerCase();
     this.isDevelopment = nodeEnv === 'development';
+    console.log(`EmailService initialized in ${this.isDevelopment }`);
     this.defaultFrom = this.configService.getOrThrow<string>('MAIL_FROM');
     this.devEmailRerouteTo = this.configService.getOrThrow<string>('DEV_EMAIL_REROUTE_TO');
     this.mailTransport = this.configService.get<'smtp' | 'sendmail'>('MAIL_TRANSPORT') ?? 'smtp';
@@ -63,23 +64,6 @@ export class EmailService {
       ...options,
     };
 
-    // Test mode: redirect all emails to testModeRedirectTo
-    if (this.testModeRedirectTo) {
-      await this.transporter.sendMail({
-        ...payload,
-        to: this.testModeRedirectTo,
-        cc: undefined,
-        bcc: undefined,
-        headers: {
-          ...(typeof payload.headers === 'object' && payload.headers ? payload.headers : {}),
-          'X-Original-To': this.recipientsToText(options.to),
-          'X-Original-Cc': this.recipientsToText(options.cc),
-          'X-Original-Bcc': this.recipientsToText(options.bcc),
-          'X-Test-Mode': `true (redirected to: ${this.testModeRedirectTo})`,
-        },
-      });
-      return;
-    }
 
     if (this.isDevelopment) {
       // In dev: redirect ALL emails to DEV_EMAIL_REROUTE_TO only — never send to real recipients

@@ -1,7 +1,7 @@
 import { Component, inject, signal, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
+import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { HttpClient } from '@angular/common/http';
 import { NotificationService } from '@app/core/services/notification.service';
 import {
@@ -10,13 +10,13 @@ import {
   TicketType,
   TicketUrgencyLevel,
   TICKET_IMPACT_LABELS,
-  TICKET_PRIORITY_LABELS,
   TICKET_TYPE_LABELS,
   TICKET_URGENCY_LABELS,
 } from '@app/shared/interfaces/ticket.interface';
 import { QuillModule } from 'ngx-quill';
 import { SupportTicketDraft, SupportTicketDraftService } from '@app/core/services/support-ticket-draft.service';
 import { AuthenticationService } from '@app/core/services/auth.service';
+import { FileViewerModalComponent } from '@app/shared/components/file-viewer-modal/file-viewer-modal.component';
 
 /**
  * Submit Ticket Dialog
@@ -39,7 +39,19 @@ import { AuthenticationService } from '@app/core/services/auth.service';
     .modal-title { margin-bottom: 0; }
     .quill-editor-container { width: 100%; }
     .quill-editor-container .ql-editor { min-height: 150px; }
-    .quill-editor-steps .ql-editor { min-height: 150px; }
+    .quill-editor-steps {
+      width: 100%;
+      --steps-editor-height: 180px;
+    }
+    :host ::ng-deep .quill-editor-steps .ql-container {
+      height: var(--steps-editor-height);
+      min-height: var(--steps-editor-height);
+    }
+    :host ::ng-deep .quill-editor-steps .ql-editor {
+      height: 100%;
+      min-height: 100%;
+      overflow-y: auto;
+    }
     .quill-editor-container.is-invalid .ql-toolbar,
     .quill-editor-container.is-invalid .ql-container { border-color: var(--bs-danger) !important; }
     .header-actions .btn.btn-icon {
@@ -72,22 +84,13 @@ import { AuthenticationService } from '@app/core/services/auth.service';
     <div class="modal-body" (paste)="onPaste($event)">
       <form [formGroup]="form">
         <div class="row">
-          <div class="col-md-6 mb-3">
+          <div class="col-md-12 mb-3">
             <label for="type" class="form-label">
               Ticket Type <span class="text-danger">*</span>
             </label>
             <select id="type" class="form-select" formControlName="type">
               @for (typeOption of ticketTypes; track typeOption.value) {
                 <option [value]="typeOption.value">{{ typeOption.label }}</option>
-              }
-            </select>
-          </div>
-
-          <div class="col-md-6 mb-3">
-            <label for="priority" class="form-label">Priority</label>
-            <select id="priority" class="form-select" formControlName="priority">
-              @for (priorityOption of priorities; track priorityOption.value) {
-                <option [value]="priorityOption.value">{{ priorityOption.label }}</option>
               }
             </select>
           </div>
@@ -235,10 +238,10 @@ import { AuthenticationService } from '@app/core/services/auth.service';
                 formControlName="steps"
                 [modules]="quillModules"
                 (onEditorCreated)="onTicketEditorCreated($event)"
-                placeholder="1. Go to...&#10;2. Click on...&#10;3. See error">
+                [placeholder]="stepsPlaceholder">
               </quill-editor>
             </div>
-            <small class="text-muted">Provide step-by-step instructions to reproduce the issue</small>
+            <small class="text-muted d-block mt-2">Provide step-by-step instructions to reproduce the issue</small>
           </div>
         </div>
 
@@ -263,14 +266,25 @@ import { AuthenticationService } from '@app/core/services/auth.service';
               (dragover)="onDragOver($event)"
               (drop)="onFilesDropped($event)">
               <div class="fw-semibold">Drag & drop images here</div>
-              <div class="small text-muted">Click to browse or paste a screenshot</div>
+              <div class="small text-muted">Click to browse files</div>
+              <div class="small text-muted">Or press Ctrl+V to paste a screenshot anywhere in this dialog</div>
             </div>
 
             @if (selectedFiles().length > 0) {
               <div class="mt-2">
                 @for (file of selectedFiles(); track $index) {
                   <div class="d-flex align-items-center justify-content-between border rounded p-2 mb-2">
-                    <span class="text-truncate">{{ file.name }}</span>
+                    <button
+                      type="button"
+                      class="btn btn-link text-start text-decoration-none p-0 d-flex align-items-center gap-2 flex-grow-1 me-2"
+                      (click)="openAttachmentPreview(file)">
+                      <img
+                        [src]="getPreviewUrl(file)"
+                        [alt]="file.name"
+                        class="attachment-thumb rounded border"
+                        loading="lazy">
+                      <span class="text-truncate">{{ file.name }}</span>
+                    </button>
                     <button
                       type="button"
                       class="btn btn-sm btn-outline-danger"
@@ -313,8 +327,10 @@ export class ErrorReportDialogComponent implements OnDestroy {
   private readonly notification = inject(NotificationService);
   private readonly draftService = inject(SupportTicketDraftService);
   private readonly authService = inject(AuthenticationService);
+  private readonly modalService = inject(NgbModal);
 
   readonly highUrgencyLevel = TicketUrgencyLevel.HIGH;
+  readonly stepsPlaceholder = '1. Go to...\n2. Click on...\n3. See error';
 
   private readonly previewUrlMap = new Map<File, string>();
 
@@ -322,7 +338,6 @@ export class ErrorReportDialogComponent implements OnDestroy {
   selectedFiles = signal<File[]>([]);
 
   ticketTypes = Object.entries(TICKET_TYPE_LABELS).map(([value, label]) => ({ value, label }));
-  priorities = Object.entries(TICKET_PRIORITY_LABELS).map(([value, label]) => ({ value, label }));
   impactLevels = Object.entries(TICKET_IMPACT_LABELS).map(([value, label]) => ({ value, label }));
   urgencyLevels = Object.entries(TICKET_URGENCY_LABELS).map(([value, label]) => ({ value, label }));
 
@@ -493,6 +508,24 @@ export class ErrorReportDialogComponent implements OnDestroy {
     return url;
   }
 
+  openAttachmentPreview(file: File): void {
+    const previewUrl = this.getPreviewUrl(file);
+    if (!previewUrl) {
+      this.notification.error('Preview is not available for this file.');
+      return;
+    }
+
+    const modalRef = this.modalService.open(FileViewerModalComponent, {
+      size: 'xl',
+      centered: true,
+      backdrop: 'static',
+      scrollable: false,
+    });
+
+    modalRef.componentInstance.url = previewUrl;
+    modalRef.componentInstance.fileName = file.name;
+  }
+
   private revokePreviewUrl(file: File): void {
     const url = this.previewUrlMap.get(file);
     if (!url) return;
@@ -536,11 +569,19 @@ export class ErrorReportDialogComponent implements OnDestroy {
 
       const createdTicket: any = await this.http.post('apiV2/support-tickets', ticket).toPromise();
 
+      let failedFiles: string[] = [];
       if (this.selectedFiles().length > 0 && createdTicket?.id) {
-        await this.uploadAttachments(createdTicket.id);
+        failedFiles = await this.uploadAttachments(createdTicket.id);
       }
 
-      this.notification.success('Ticket submitted successfully! We will get back to you soon.');
+      if (failedFiles.length > 0) {
+        this.notification.error(
+          `Ticket was created, but some attachments failed to save: ${failedFiles.join(', ')}`,
+          false,
+        );
+      } else {
+        this.notification.success('Ticket submitted successfully! We will get back to you soon.');
+      }
       this.draftService.clearDraft();
       this.activeModal.close(true);
     } catch (error) {
@@ -551,16 +592,50 @@ export class ErrorReportDialogComponent implements OnDestroy {
     }
   }
 
-  private async uploadAttachments(ticketId: number): Promise<void> {
+  private async uploadAttachments(ticketId: number): Promise<string[]> {
     const files = this.selectedFiles();
+    const failedFiles: string[] = [];
+
     for (const file of files) {
       try {
-        const formData = new FormData();
-        formData.append('file', file);
-        await this.http.post(`apiV2/support-tickets/${ticketId}/attachments`, formData).toPromise();
+        await this.uploadAttachmentViaTicketEndpoint(ticketId, file);
       } catch (err) {
-        console.warn(`Failed to upload attachment ${file.name}:`, err);
+        console.warn(`Ticket endpoint upload failed for ${file.name}, trying fallback flow:`, err);
+        try {
+          await this.uploadAttachmentViaFallbackFlow(ticketId, file);
+        } catch (fallbackError) {
+          console.warn(`Fallback upload also failed for ${file.name}:`, fallbackError);
+          failedFiles.push(file.name);
+        }
       }
     }
+
+    return failedFiles;
+  }
+
+  private async uploadAttachmentViaTicketEndpoint(ticketId: number, file: File): Promise<void> {
+    const uploadFormData = new FormData();
+    uploadFormData.append('file', file);
+    await this.http.post(`apiV2/support-tickets/${ticketId}/attachments/upload`, uploadFormData).toPromise();
+  }
+
+  private async uploadAttachmentViaFallbackFlow(ticketId: number, file: File): Promise<void> {
+    const uploadFormData = new FormData();
+    uploadFormData.append('file', file);
+    uploadFormData.append('subFolder', 'support-tickets');
+
+    const uploaded: any = await this.http.post('apiV2/attachments/upload', uploadFormData).toPromise();
+    const uploadedUrl = String(uploaded?.url || uploaded?.file_url || uploaded?.link || '').trim();
+
+    if (!uploadedUrl) {
+      throw new Error('Fallback upload API did not return file URL');
+    }
+
+    await this.http.post(`apiV2/support-tickets/${ticketId}/attachments`, {
+      file_name: file.name,
+      file_url: uploadedUrl,
+      mime_type: file.type || null,
+      file_size: file.size || null,
+    }).toPromise();
   }
 }

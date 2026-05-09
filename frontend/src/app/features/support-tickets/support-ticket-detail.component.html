@@ -14,7 +14,7 @@
             <button class="btn btn-link px-0 mb-2" (click)="goBack()">
               <i class="mdi mdi-arrow-left me-1"></i>Back to Tickets
             </button>
-            <h2 class="mb-2 text-primary">{{ ticket()?.title || 'Ticket' }}</h2>
+            <h2 class="mb-2">{{ ticket()?.title || 'Ticket' }}</h2>
             <p class="text-muted mb-0">
               <code>{{ ticket()?.ticket_number }}</code>
               <span class="ms-2">Created {{ ticket()?.created_at | date:'short' }}</span>
@@ -47,23 +47,104 @@
           <!-- Main Content -->
           <div class="col-lg-8">
             <!-- Description Card -->
-            <div class="card mb-3 border-0 shadow-sm">
-              <div class="card-header d-flex align-items-center bg-body-tertiary border-0 fw-semibold">
-                <i class="mdi mdi-file-document text-primary me-2"></i>
+            <div class="card mb-3">
+              <div class="card-header d-flex align-items-center fw-semibold">
+                <i class="mdi mdi-file-document me-2"></i>
                 <h6 class="mb-0">Description</h6>
               </div>
-              <div class="card-body bg-body">
+              <div class="card-body">
                 <div class="text-break" [innerHTML]="ticket()!.description"></div>
               </div>
             </div>
 
+            <div class="card mb-3">
+              <div class="card-header d-flex align-items-center fw-semibold">
+                <i class="mdi mdi-paperclip me-2"></i>
+                <h6 class="mb-0">Attachments & Screenshots ({{ mediaItems().length }})</h6>
+              </div>
+              <div class="card-body">
+                <div class="border rounded p-3 mb-3">
+                  <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline-primary"
+                      (click)="mediaPicker.click()"
+                      [disabled]="isUploadingMedia() || isSaving()">
+                      <i class="mdi mdi-upload me-1"></i>
+                      Add Attachments
+                    </button>
+
+                    @if (isUploadingMedia()) {
+                      <span class="badge bg-info-subtle text-info-emphasis border">
+                        <span class="spinner-border spinner-border-sm me-1"></span>
+                        Uploading...
+                      </span>
+                    }
+
+                    <input
+                      #mediaPicker
+                      type="file"
+                      multiple
+                      accept="*/*"
+                      class="d-none"
+                      (change)="onMediaFilesSelected($event)">
+                  </div>
+
+                  @if (uploadError()) {
+                    <div class="alert alert-danger py-2 mb-2" role="alert">
+                      {{ uploadError() }}
+                    </div>
+                  }
+
+                  <small class="text-muted">Files upload as soon as you select them.</small>
+                </div>
+
+                @if (mediaItems().length === 0) {
+                  <p class="text-body-secondary mb-0">No attachments uploaded yet.</p>
+                } @else {
+                  <div class="list-group list-group-flush">
+                    @for (item of mediaItems(); track item.id) {
+                      <button
+                        type="button"
+                        class="list-group-item list-group-item-action d-flex align-items-center gap-3"
+                        (click)="openMedia(item)">
+                        @if (isImageUrl(item.url)) {
+                          <img
+                            [src]="item.url"
+                            [alt]="item.fileName"
+                            class="rounded border"
+                            style="width: 40px; height: 40px; object-fit: cover;">
+                        } @else {
+                          <span class="d-inline-flex align-items-center justify-content-center rounded border" style="width: 40px; height: 40px;">
+                            <i class="mdi mdi-file-outline"></i>
+                          </span>
+                        }
+
+                        <div class="flex-grow-1 text-start">
+                          <div class="fw-medium text-truncate">{{ item.fileName }}</div>
+                          <small class="text-body-secondary">
+                            {{ item.source === 'screenshot' ? 'Ticket screenshot' : 'Attachment' }}
+                            @if (item.createdAt) {
+                              <span class="ms-1">• {{ item.createdAt | date:'short' }}</span>
+                            }
+                          </small>
+                        </div>
+
+                        <i class="mdi mdi-open-in-new"></i>
+                      </button>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+
             <!-- Comments Section -->
-            <div class="card mb-3 border-0 shadow-sm">
-              <div class="card-header d-flex align-items-center bg-body-tertiary border-0 fw-semibold">
-                <i class="mdi mdi-chat-multiple text-primary me-2"></i>
+            <div class="card mb-3">
+              <div class="card-header d-flex align-items-center fw-semibold">
+                <i class="mdi mdi-chat-multiple me-2"></i>
                 <h6 class="mb-0">Conversation ({{ comments().length }} comments)</h6>
               </div>
-              <div class="card-body bg-body overflow-auto">
+              <div class="card-body overflow-auto">
                 @if (comments().length === 0) {
                   <p class="text-body-secondary mb-0">No comments yet.</p>
                 } @else {
@@ -90,16 +171,16 @@
             </div>
 
             <!-- Add Comment -->
-            <div class="card border-0 shadow-sm">
-              <div class="card-header d-flex align-items-center bg-body-tertiary border-0 fw-semibold">
-                <i class="mdi mdi-pencil text-primary me-2"></i>
+            <div class="card">
+              <div class="card-header d-flex align-items-center fw-semibold">
+                <i class="mdi mdi-pencil me-2"></i>
                 <h6 class="mb-0">Add Comment</h6>
               </div>
-              <div class="card-body bg-body">
+              <div class="card-body">
                 <form [formGroup]="commentForm" (ngSubmit)="submitComment()">
                   <textarea
                     rows="4"
-                    class="form-control bg-body-tertiary border-0"
+                    class="form-control"
                     formControlName="comment"
                     placeholder="Type your comment here..."
                     [disabled]="isSaving()">
@@ -122,74 +203,62 @@
 
           <!-- Sidebar -->
           <div class="col-lg-4">
-            <div class="card border-0 shadow-sm">
-              <div class="card-header bg-body-tertiary border-0 fw-semibold">Ticket Details</div>
-              <div class="card-body bg-body">
-                <div class="mb-4">
-                  <div class="d-flex align-items-center justify-content-between mb-2">
-                    <div class="text-body-secondary small">Status</div>
-                    <button class="btn btn-sm btn-outline-primary" (click)="isEditingStatus.set(true)" *ngIf="!isEditingStatus()">
-                      <i class="mdi mdi-pencil"></i>
-                    </button>
+            <div class="card">
+              <div class="card-header fw-semibold">Ticket Details</div>
+              <div class="card-body">
+                <form [formGroup]="detailsForm" (ngSubmit)="saveDetails()" class="d-grid gap-3 mb-3">
+                  <div>
+                    <label class="form-label form-label-sm text-body-secondary mb-1">Status</label>
+                    <select class="form-select form-select-sm" formControlName="status" [disabled]="isSaving()">
+                      @for (status of statusOptions; track status) {
+                        <option [value]="status">{{ SUPPORT_TICKET_STATUS_LABELS[status] }}</option>
+                      }
+                    </select>
                   </div>
 
-                  @if (!isEditingStatus()) {
-                    <span class="badge {{ getStatusBadgeClass(ticket()!.status) }} fs-6">
-                      {{ SUPPORT_TICKET_STATUS_LABELS[ticket()!.status] }}
-                    </span>
-                  } @else {
-                    <form [formGroup]="statusForm" (ngSubmit)="updateStatus()" class="d-flex gap-2">
-                      <select class="form-select form-select-sm" formControlName="status">
-                        @for (status of statusOptions; track status) {
-                          <option [value]="status">{{ SUPPORT_TICKET_STATUS_LABELS[status] }}</option>
-                        }
-                      </select>
-                      <button type="submit" class="btn btn-sm btn-success" [disabled]="statusForm.invalid || isSaving()">
-                        Save
-                      </button>
-                      <button
-                        type="button"
-                        class="btn btn-sm btn-outline-secondary"
-                        (click)="isEditingStatus.set(false)">
-                        Cancel
-                      </button>
-                    </form>
-                  }
-                </div>
-
-                <hr class="my-3">
-
-                <div class="mb-4">
-                  <div class="d-flex align-items-center justify-content-between mb-2">
-                    <div class="text-body-secondary small">Priority</div>
-                    <button class="btn btn-sm btn-outline-primary" (click)="isEditingPriority.set(true)" *ngIf="!isEditingPriority()">
-                      <i class="mdi mdi-pencil"></i>
-                    </button>
+                  <div>
+                    <label class="form-label form-label-sm text-body-secondary mb-1">Priority</label>
+                    <select class="form-select form-select-sm" formControlName="priority" [disabled]="isSaving()">
+                      @for (priority of priorityOptions; track priority) {
+                        <option [value]="priority">{{ SUPPORT_TICKET_PRIORITY_LABELS[priority] }}</option>
+                      }
+                    </select>
                   </div>
 
-                  @if (!isEditingPriority()) {
-                    <span class="badge {{ getPriorityBadgeClass(ticket()!.priority) }} fs-6">
-                      {{ SUPPORT_TICKET_PRIORITY_LABELS[ticket()!.priority] }}
-                    </span>
-                  } @else {
-                    <form [formGroup]="priorityForm" (ngSubmit)="updatePriority()" class="d-flex gap-2">
-                      <select class="form-select form-select-sm" formControlName="priority">
-                        @for (priority of priorityOptions; track priority) {
-                          <option [value]="priority">{{ SUPPORT_TICKET_PRIORITY_LABELS[priority] }}</option>
-                        }
-                      </select>
-                      <button type="submit" class="btn btn-sm btn-success" [disabled]="priorityForm.invalid || isSaving()">
-                        Save
-                      </button>
-                      <button
-                        type="button"
-                        class="btn btn-sm btn-outline-secondary"
-                        (click)="isEditingPriority.set(false)">
-                        Cancel
-                      </button>
-                    </form>
-                  }
-                </div>
+                  <div>
+                    <label class="form-label form-label-sm text-body-secondary mb-1">Impact</label>
+                    <select class="form-select form-select-sm" formControlName="impactLevel" [disabled]="isSaving()">
+                      @for (impact of impactOptions; track impact) {
+                        <option [value]="impact">{{ TICKET_IMPACT_LABELS[impact] }}</option>
+                      }
+                    </select>
+                  </div>
+
+                  <div>
+                    <label class="form-label form-label-sm text-body-secondary mb-1">Urgency</label>
+                    <select class="form-select form-select-sm" formControlName="urgencyLevel" [disabled]="isSaving()">
+                      @for (urgency of urgencyOptions; track urgency) {
+                        <option [value]="urgency">{{ TICKET_URGENCY_LABELS[urgency] }}</option>
+                      }
+                    </select>
+                  </div>
+
+                  <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-sm btn-success" [disabled]="detailsForm.invalid || isSaving()">
+                      @if (isSaving()) {
+                        <span class="spinner-border spinner-border-sm me-1"></span>
+                      }
+                      Save Details
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline-secondary"
+                      (click)="resetDetailsForm()"
+                      [disabled]="isSaving()">
+                      Reset
+                    </button>
+                  </div>
+                </form>
 
                 <hr class="my-3">
 
