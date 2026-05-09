@@ -49,4 +49,10 @@ export class IgtTransferController {
   ) {
     return this.igtTransferService.automatedIgtTransfer(idRaw, payload);
   }
+
+  @Post()
+  @Permissions('write')
+  async create(@Body() payload?: unknown) {
+    return this.igtTransferService.create(payload);
+  }
 }

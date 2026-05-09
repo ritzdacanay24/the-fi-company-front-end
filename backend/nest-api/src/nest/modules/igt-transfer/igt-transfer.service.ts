@@ -1,6 +1,6 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { RowDataPacket } from 'mysql2/promise';
+import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import PDFDocument from 'pdfkit';
 import { MysqlService } from '@/shared/database/mysql.service';
 import { QadOdbcService } from '@/shared/database/qad-odbc.service';
@@ -56,6 +56,33 @@ interface AutomatedIgtTransferPayload {
   main?: AutomatedIgtTransferMain;
   details?: AutomatedIgtTransferDetail[];
   printedName?: string;
+}
+
+interface CreateIgtTransferMain {
+  transfer_reference?: string;
+  transfer_reference_description?: string;
+  date?: string;
+  so_number?: string;
+  from_location?: string;
+  created_by?: number | string;
+  active?: number | string;
+  to_location?: string;
+  email_sent_datetime?: string | null;
+  email_sent_created_by_name?: string | null;
+}
+
+interface CreateIgtTransferDetail {
+  so_line?: number | string;
+  part_number?: string;
+  qty?: number | string;
+  serial_numbers?: string;
+  description?: string;
+  pallet_count?: number | string;
+}
+
+interface CreateIgtTransferPayload {
+  main?: CreateIgtTransferMain;
+  details?: CreateIgtTransferDetail[];
 }
 
 interface SoDueDateRow {
@@ -174,6 +201,105 @@ export class IgtTransferService {
     `;
 
     return this.qadOdbcService.queryWithParams<IgtTransferSoLineRow[]>(sql, [soNumber]);
+  }
+
+  async create(payload?: unknown): Promise<{ message: string; insertId: number }> {
+    const data = (payload || {}) as CreateIgtTransferPayload;
+    const main = data.main || {};
+    const details = Array.isArray(data.details) ? data.details : [];
+
+    const toInt = (value: unknown, fallback = 0): number => {
+      const num = Number(value);
+      if (!Number.isFinite(num)) {
+        return fallback;
+      }
+      return Math.trunc(num);
+    };
+
+    const toText = (value: unknown): string => String(value ?? '').trim();
+    const toNullableText = (value: unknown): string | null => {
+      const text = toText(value);
+      return text ? text : null;
+    };
+
+    const createdBy = toInt(main.created_by, 0);
+    const active = toInt(main.active, 1);
+
+    if (!toText(main.transfer_reference)) {
+      throw new BadRequestException('transfer_reference is required');
+    }
+
+    if (!toText(main.to_location)) {
+      throw new BadRequestException('to_location is required');
+    }
+
+    const insertId = await this.mysqlService.withTransaction<number>(async (connection) => {
+      const [headerResult] = await connection.execute<ResultSetHeader>(
+        `
+          insert into igt_transfer (
+            transfer_reference,
+            transfer_reference_description,
+            date,
+            so_number,
+            from_location,
+            created_by,
+            active,
+            to_location,
+            email_sent_datetime,
+            email_sent_created_by_name
+          ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+        [
+          toText(main.transfer_reference),
+          toText(main.transfer_reference_description),
+          toText(main.date),
+          toText(main.so_number),
+          toText(main.from_location),
+          createdBy,
+          active,
+          toText(main.to_location),
+          toNullableText(main.email_sent_datetime),
+          toNullableText(main.email_sent_created_by_name),
+        ],
+      );
+
+      const newId = Number(headerResult.insertId || 0);
+      if (!newId) {
+        throw new BadRequestException('Failed to create IGT transfer header');
+      }
+
+      for (const row of details) {
+        await connection.execute(
+          `
+            insert into igt_transfer_details (
+              igt_transfer_ID,
+              so_line,
+              part_number,
+              qty,
+              serial_numbers,
+              description,
+              pallet_count
+            ) values (?, ?, ?, ?, ?, ?, ?)
+          `,
+          [
+            newId,
+            toText(row?.so_line),
+            toText(row?.part_number),
+            toInt(row?.qty, 0),
+            toText(row?.serial_numbers),
+            toText(row?.description),
+            toText(row?.pallet_count),
+          ],
+        );
+      }
+
+      return newId;
+    });
+
+    return {
+      message: 'Successfully Created',
+      insertId,
+    };
   }
 
   async automatedIgtTransfer(idRaw?: string, payload?: unknown): Promise<{ ok: true }> {

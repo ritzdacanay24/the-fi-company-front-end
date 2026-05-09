@@ -2232,13 +2232,9 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     });
   }
 
-  private startHeartbeat(): void {    this.stopHeartbeat();
-    // Send heartbeat every 4 minutes to keep 10-minute lease alive
-    this.heartbeatInterval = setInterval(() => {
-      if (this.instanceId && this.isOwner) {
-        this.photoChecklistService.heartbeatInstance(this.instanceId).subscribe({ error: () => {} });
-      }
-    }, 4 * 60 * 1000);
+  private startHeartbeat(): void {
+    // Heartbeat endpoint has been removed; keep this as a no-op for compatibility.
+    this.stopHeartbeat();
   }
 
   private stopHeartbeat(): void {
