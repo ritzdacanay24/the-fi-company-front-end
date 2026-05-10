@@ -20,6 +20,8 @@ import { SweetAlert } from "@app/shared/sweet-alert/sweet-alert.service";
 import { AutosizeModule } from "ngx-autosize";
 import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErrors";
 import { RequestChangeModalService } from "@app/pages/field-service/request/request-change/request-change-modal.component";
+import { ErrorReportDialogService } from "@app/core/services/error-report-dialog.service";
+import { TicketPriority, TicketType } from "@app/shared/interfaces/ticket.interface";
 
 @Component({
   encapsulation: ViewEncapsulation.None,
@@ -37,7 +39,8 @@ export class RequestPublicComponent implements OnInit, OnDestroy {
     private router: Router,
     private cdref: ChangeDetectorRef,
     private attachmentsService: AttachmentsService,
-    private requestChangeModalService: RequestChangeModalService
+    private requestChangeModalService: RequestChangeModalService,
+    private errorReportDialogService: ErrorReportDialogService
   ) { }
 
   // Form and request properties
@@ -294,6 +297,14 @@ export class RequestPublicComponent implements OnInit, OnDestroy {
           errorMessage: draft.status === 'failed' ? draft.errorMessage : null,
         });
       });
+  }
+
+  async openSupportTicketModal(): Promise<void> {
+    await this.errorReportDialogService.open({
+      type: TicketType.QUESTION,
+      title: 'Public Request Portal Support',
+      priority: TicketPriority.MEDIUM,
+    });
   }
 
   private initializeDraftEditingSession() {
