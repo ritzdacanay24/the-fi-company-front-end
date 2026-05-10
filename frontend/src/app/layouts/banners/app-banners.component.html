@@ -10,6 +10,16 @@
     <button class="btn btn-sm btn-light fw-semibold ms-3" (click)="reloadSite()">Update Now</button>
   </div>
 
+  <!-- Deploy mode banner -->
+  <div *ngIf="showDeployBanner" class="app-deploy-status-banner d-flex align-items-center px-3 py-2">
+    <i class="mdi mdi-progress-clock me-2 fs-5"></i>
+    <div class="flex-grow-1">
+      <strong>Deployment in progress.</strong>
+      {{ deployMessage }}
+    </div>
+    <div class="small ms-3 text-nowrap">Auto-retrying in ~{{ deployRetryAfterSeconds }}s</div>
+  </div>
+
   <!-- QAD health status banner -->
   <div *ngIf="showQadBanner" class="app-qad-status-banner d-flex align-items-start px-3 py-2">
     <i class="mdi mdi-alert-circle-outline me-2 fs-5"></i>
