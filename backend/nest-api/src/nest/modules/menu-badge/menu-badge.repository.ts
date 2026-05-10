@@ -186,9 +186,12 @@ export class MenuBadgeRepository {
       FROM eyefidb.fs_parts_order po
       WHERE po.active = 1
         AND (
-             po.tracking_number IS NULL
-         OR TRIM(po.tracking_number) = ''
-        )
+          CASE
+            WHEN TRIM(COALESCE(po.status, '')) <> '' THEN LOWER(TRIM(po.status))
+            WHEN TRIM(COALESCE(po.tracking_number, '')) <> '' THEN 'shipped'
+            ELSE 'open'
+          END
+        ) IN ('open', 'ordered')
 
       UNION ALL
 

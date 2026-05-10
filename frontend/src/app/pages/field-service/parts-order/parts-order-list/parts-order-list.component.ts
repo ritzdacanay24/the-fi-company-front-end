@@ -140,14 +140,27 @@ export class PartsOrderListComponent implements OnInit {
       filter: "agMultiColumnFilter",
     },
     {
-      field: "active",
+      field: "status",
       headerName: "Status",
       filter: "agMultiColumnFilter",
       cellRenderer: (params) => {
         const isArchived = Number(params?.data?.active ?? 1) === 0;
-        return isArchived
-          ? '<span class="badge bg-warning-subtle text-warning border border-warning-subtle">Archived</span>'
-          : '<span class="badge bg-success-subtle text-success border border-success-subtle">Active</span>';
+        if (isArchived) {
+          return '<span class="badge bg-warning-subtle text-warning border border-warning-subtle">Archived</span>';
+        }
+
+        const status = String(params?.data?.status || "Open");
+        const styles: Record<string, string> = {
+          Open: 'bg-secondary-subtle text-secondary border border-secondary-subtle',
+          Ordered: 'bg-info-subtle text-info border border-info-subtle',
+          Shipped: 'bg-primary-subtle text-primary border border-primary-subtle',
+          Delivered: 'bg-success-subtle text-success border border-success-subtle',
+          Completed: 'bg-success-subtle text-success border border-success-subtle',
+          Cancelled: 'bg-danger-subtle text-danger border border-danger-subtle',
+        };
+        const badgeClass = styles[status] || styles['Open'];
+
+        return `<span class="badge ${badgeClass}">${status}</span>`;
       },
     },
     {

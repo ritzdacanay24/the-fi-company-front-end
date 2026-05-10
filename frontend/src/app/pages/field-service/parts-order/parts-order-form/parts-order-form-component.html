@@ -99,6 +99,18 @@
     <div class="row g-3">
       <div class="col-12">
         <div class="row align-items-lg-center g-2">
+          <label class="col-12 col-lg-3 col-form-label">Status</label>
+          <div class="col-12 col-lg-9">
+            <select class="form-select" formControlName="status"
+              [ngClass]="{ 'is-invalid': submitted && f.status.errors }">
+              <option *ngFor="let status of statusOptions" [ngValue]="status">{{ status }}</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="row align-items-lg-center g-2">
           <label class="col-12 col-lg-3 col-form-label">OEM</label>
           <div class="col-12 col-lg-9">
             <ng-select [items]="customers" bindLabel="cm_addr" placeholder="--SELECT--" formControlName="oem"

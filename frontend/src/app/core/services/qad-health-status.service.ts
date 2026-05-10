@@ -1,5 +1,5 @@
 import { Injectable, NgZone } from "@angular/core";
-import { BehaviorSubject, Subscription, fromEvent, interval } from "rxjs";
+import { BehaviorSubject } from "rxjs";
 import { HealthService } from "@app/core/api/operations/health/health.service";
 
 export interface QadHealthState {
@@ -13,8 +13,6 @@ export interface QadHealthState {
   providedIn: "root",
 })
 export class QadHealthStatusService {
-  private readonly defaultPollMs = 60000;
-
   private readonly stateSubject = new BehaviorSubject<QadHealthState>({
     isConnected: true,
     message: "",
@@ -24,9 +22,6 @@ export class QadHealthStatusService {
 
   readonly state$ = this.stateSubject.asObservable();
 
-  private pollSubscription?: Subscription;
-  private focusSubscription?: Subscription;
-  private onlineSubscription?: Subscription;
   private inFlightPromise?: Promise<QadHealthState>;
 
   constructor(
@@ -34,33 +29,12 @@ export class QadHealthStatusService {
     private readonly ngZone: NgZone
   ) {}
 
-  start(pollMs = this.defaultPollMs): void {
-    if (this.pollSubscription) {
-      return;
-    }
-
-    this.ngZone.runOutsideAngular(() => {
-      this.pollSubscription = interval(pollMs).subscribe(() => {
-        void this.refresh(false);
-      });
-
-      this.focusSubscription = fromEvent(window, "focus").subscribe(() => {
-        void this.refresh(false);
-      });
-
-      this.onlineSubscription = fromEvent(window, "online").subscribe(() => {
-        void this.refresh(true);
-      });
-    });
+  start(): void {
+    // Polling intentionally disabled. Refresh is triggered by app init/login flow.
   }
 
   stop(): void {
-    this.pollSubscription?.unsubscribe();
-    this.focusSubscription?.unsubscribe();
-    this.onlineSubscription?.unsubscribe();
-    this.pollSubscription = undefined;
-    this.focusSubscription = undefined;
-    this.onlineSubscription = undefined;
+    // No polling subscriptions to clean up.
   }
 
   reset(): void {

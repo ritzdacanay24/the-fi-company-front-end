@@ -21,6 +21,7 @@ export class PartsOrderRepository extends BaseRepository<RowDataPacket> {
     'created_by',
     'created_date',
     'so_number',
+    'status',
     'tracking_number',
     'tracking_number_carrier',
     'return_tracking_number_carrier',

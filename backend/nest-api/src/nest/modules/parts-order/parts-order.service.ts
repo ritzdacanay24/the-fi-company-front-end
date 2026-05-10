@@ -8,6 +8,7 @@ import { PartsOrderRepository } from './parts-order.repository';
 interface PartsOrderRow extends Record<string, unknown> {
   id: number;
   so_number?: string | null;
+  status?: string | null;
   tracking_number?: string | null;
   details?: string | Array<Record<string, unknown>>;
   arrival_date?: string | null;
@@ -53,6 +54,7 @@ export class PartsOrderService {
 
       return {
         ...row,
+        status: this.resolveStatus(row),
         details: parsedDetails,
         qad_info: qadInfo,
         isPastDue,
@@ -165,7 +167,48 @@ export class PartsOrderService {
       normalized.oem = String((oem as Record<string, unknown>).cm_addr || '');
     }
 
+    const status = this.normalizeStatus(normalized.status);
+    if (status) {
+      normalized.status = status;
+    } else if (!normalized.id) {
+      normalized.status = 'Open';
+    }
+
     return normalized;
+  }
+
+  private normalizeStatus(value: unknown): string | null {
+    if (value === undefined || value === null) {
+      return null;
+    }
+
+    const normalized = String(value).trim().toLowerCase();
+    const statusMap: Record<string, string> = {
+      open: 'Open',
+      ordered: 'Ordered',
+      shipped: 'Shipped',
+      delivered: 'Delivered',
+      completed: 'Completed',
+      cancelled: 'Cancelled',
+      canceled: 'Cancelled',
+      archived: 'Archived',
+    };
+
+    return statusMap[normalized] ?? null;
+  }
+
+  private resolveStatus(row: PartsOrderRow): string {
+    const isArchived = Number(row.active ?? 1) === 0;
+    if (isArchived) {
+      return 'Archived';
+    }
+
+    const normalized = this.normalizeStatus(row.status);
+    if (normalized) {
+      return normalized;
+    }
+
+    return this.hasTrackingNumber(row.tracking_number) ? 'Shipped' : 'Open';
   }
 
   private parseDetails(details: unknown): Array<Record<string, unknown>> {
