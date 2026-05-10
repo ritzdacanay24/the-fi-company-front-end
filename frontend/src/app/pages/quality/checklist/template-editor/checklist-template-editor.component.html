@@ -10,8 +10,8 @@
 
     <!-- Reorder feedback toast -->
     <div class="reorder-feedback-toast" role="status" aria-live="polite" *ngIf="reorderFeedbackMessage">
-      <div class="alert alert-success border-success border-opacity-25 bg-success bg-opacity-95 py-2 px-3 d-flex align-items-center justify-content-between gap-3 mb-0 shadow">
-        <span class="small mb-0">{{ reorderFeedbackMessage }}</span>
+      <div class="alert tce-reorder-toast-alert py-2 px-3 d-flex align-items-center justify-content-between gap-3 mb-0 shadow">
+        <span class="small mb-0 fw-semibold">{{ reorderFeedbackMessage }}</span>
         <div class="d-flex align-items-center gap-2">
           <button type="button" class="btn btn-sm btn-outline-success" (click)="undoLastReorder()"><i class="mdi mdi-undo me-1"></i>Undo</button>
           <button type="button" class="btn btn-sm btn-outline-secondary" (click)="clearReorderFeedback()">Dismiss</button>
@@ -87,7 +87,7 @@
           <button
             type="button"
             class="d-flex align-items-center gap-2 rounded tce-info-entry"
-            (click)="activePanel = 'template-info'">
+            (click)="openTemplateInfoPanel()">
             <i class="mdi mdi-information-outline fs-5"></i>
             <span class="fw-medium">Template Info</span>
             <span class="badge bg-danger ms-auto" *ngIf="templateForm.get('name')?.invalid && templateForm.get('name')?.touched">!</span>
@@ -97,7 +97,7 @@
         <!-- Items section header -->
         <div class="d-flex align-items-center px-2 pb-1 tce-items-header" [class.pt-3]="activePanel !== 'template-info'" [class.pt-2]="activePanel === 'template-info'">
           <span class="text-muted small text-uppercase fw-semibold flex-grow-1">Items ({{ items.length }})</span>
-          <button type="button" class="btn btn-sm btn-soft-primary" (click)="addItem()" [disabled]="isPublishedLocked()" title="Add item">
+          <button type="button" class="btn btn-sm btn-soft-primary" (click)="addItem()" [disabled]="isPublishedLocked() || !editingTemplate" [title]="editingTemplate ? 'Add item' : 'Create template first'">
             <i class="mdi mdi-plus align-bottom"></i> Add
           </button>
         </div>
@@ -124,8 +124,9 @@
           <!-- Empty state -->
           <div *ngIf="items.length === 0" class="text-center py-5 px-3">
             <i class="mdi mdi-clipboard-list-outline text-muted d-block mb-2 fs-1"></i>
-            <p class="text-muted small mb-3">No checklist items yet</p>
-            <button type="button" class="btn btn-sm btn-primary" (click)="addItem()" [disabled]="isPublishedLocked()">
+            <p class="text-muted small mb-2">No checklist items yet</p>
+            <p class="text-muted small mb-3" *ngIf="!editingTemplate">Create the template first, then add your first item.</p>
+            <button type="button" class="btn btn-sm btn-primary" (click)="addItem()" [disabled]="isPublishedLocked() || !editingTemplate" [title]="editingTemplate ? 'Add first item' : 'Create template first'">
               <i class="mdi mdi-plus me-1"></i>Add First Item
             </button>
           </div>
@@ -207,7 +208,7 @@
                   </button>
                   <div ngbDropdownMenu class="dropdown-menu-end">
                     <!-- Add child -->
-                    <button ngbDropdownItem type="button" (click)="addSubItem(i)">
+                    <button ngbDropdownItem type="button" (click)="addSubItem(i)" [disabled]="!editingTemplate">
                       <i class="mdi mdi-subdirectory-arrow-right me-2"></i>Add Sub-item
                     </button>
 
@@ -289,11 +290,11 @@
       <div class="user-chat tce-detail">
 
             <!-- Topbar -->
-            <div class="p-3 user-chat-topbar border-bottom flex-shrink-0">
-              <div class="d-flex align-items-center justify-content-between gap-3">
+            <div class="p-3 user-chat-topbar border-bottom flex-shrink-0 tce-topbar">
+              <div class="tce-topbar-row">
 
                 <!-- Left: title + context -->
-                <div class="d-flex align-items-center gap-3 overflow-hidden">
+                <div class="d-flex align-items-center gap-3 overflow-hidden tce-topbar-context">
                   <div class="avatar-xs flex-shrink-0">
                     <span class="avatar-title rounded-circle" [class.bg-primary]="activePanel === 'template-info'" [class.bg-secondary]="activePanel !== 'template-info'">
                       <i class="mdi" [class.mdi-information-outline]="activePanel === 'template-info'" [class.mdi-clipboard-check-outline]="activePanel !== 'template-info'"></i>
@@ -311,23 +312,31 @@
                 </div>
 
                 <!-- Right: actions -->
-                <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                <div class="tce-topbar-actions">
+
+                  <span *ngIf="saving" class="badge bg-info-subtle text-info border border-info-subtle">
+                    <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Saving...
+                  </span>
+
+                  <span *ngIf="!saving && hasTemplateUnsavedChangesForUi()" class="badge bg-warning text-dark">
+                    <i class="mdi mdi-file-document-edit-outline me-1"></i>Unsaved Template
+                  </span>
 
                   <!-- Item-level actions when item panel is active -->
                   <ng-container *ngIf="activePanel === 'item' && selectedFormItemIndex !== null && !isPublishedLocked()">
-                    <button type="button" class="btn btn-sm btn-soft-primary" (click)="addSubItem(selectedFormItemIndex!)" title="Add sub-item">
-                      <i class="mdi mdi-subdirectory-arrow-right align-bottom me-1"></i>Sub-item
+                    <span *ngIf="isCurrentItemDirty()" class="badge bg-warning text-dark">
+                      <i class="mdi mdi-content-save-alert-outline me-1"></i>Unsaved Item
+                    </span>
+                    <button type="button" class="btn btn-sm btn-outline-primary" (click)="addSubItem(selectedFormItemIndex!)" [disabled]="!editingTemplate" [title]="editingTemplate ? 'Add sub-item' : 'Create template first'">
+                      <i class="mdi mdi-subdirectory-arrow-right align-bottom me-1"></i>Add Sub-item
                     </button>
                   </ng-container>
 
                   <!-- Save / Publish / Draft actions -->
-                  <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="saving" (click)="cancel()">
-                    <i class="mdi mdi-close me-1"></i>{{ isViewOnly ? 'Back' : 'Cancel' }}
-                  </button>
                   <ng-container *ngIf="!isViewOnly">
-                  <div ngbDropdown class="d-inline-block">
+                  <div ngbDropdown class="d-inline-block" container="body" placement="bottom-end">
                     <button type="button" class="btn btn-sm btn-outline-primary" ngbDropdownToggle [disabled]="saving">
-                      <i class="mdi mdi-content-save-edit-outline me-1"></i>Drafts
+                      <i class="mdi mdi-content-save-edit-outline me-1"></i>Draft Actions
                     </button>
                     <div ngbDropdownMenu class="dropdown-menu-end">
                       <button ngbDropdownItem type="button" (click)="saveDraft()" *ngIf="!editingTemplate || editingTemplate.is_draft">
@@ -336,10 +345,10 @@
                       <button ngbDropdownItem type="button" (click)="saveDraft()" *ngIf="editingTemplate && !editingTemplate.is_draft">
                         <i class="mdi mdi-content-save-edit-outline me-2"></i>Start Sub-Version Draft
                       </button>
-                      <button ngbDropdownItem type="button" (click)="startMajorVersionDraft()" *ngIf="editingTemplate && !editingTemplate.is_draft">
+                      <button ngbDropdownItem type="button" (click)="onStartMajorVersionDraftRequested()" *ngIf="editingTemplate && !editingTemplate.is_draft">
                         <i class="mdi mdi-source-branch me-2"></i>Start Major Version Draft
                       </button>
-                      <button ngbDropdownItem type="button" (click)="openCopyAsNewParentModal()" *ngIf="editingTemplate && !editingTemplate.is_draft">
+                      <button ngbDropdownItem type="button" (click)="onOpenCopyAsNewParentRequested()" *ngIf="editingTemplate && !editingTemplate.is_draft">
                         <i class="mdi mdi-content-copy me-2"></i>Copy as New Parent
                       </button>
                       <div class="dropdown-divider" *ngIf="editingTemplate?.is_draft"></div>
@@ -348,14 +357,14 @@
                       </button>
                     </div>
                   </div>
-                  <button type="button" class="btn btn-sm btn-success" *ngIf="!editingTemplate || editingTemplate.is_draft" [disabled]="saving" (click)="saveTemplate()">
+                  <button type="button" class="btn btn-sm btn-success" *ngIf="!editingTemplate || editingTemplate.is_draft" [disabled]="saving" (click)="onPrimarySaveRequested()">
                     @if (saving) {
                       <span class="spinner-border spinner-border-sm me-1" role="status"></span>Saving...
                     } @else {
                       <i class="mdi mdi-content-save me-1"></i>{{ editingTemplate ? 'Publish Draft' : 'Create Template' }}
                     }
                   </button>
-                  <button type="button" class="btn btn-sm btn-success" *ngIf="editingTemplate && !editingTemplate.is_draft && canReorderPublishedTemplateInPlace()" [disabled]="saving" (click)="saveTemplate()">
+                  <button type="button" class="btn btn-sm btn-success" *ngIf="editingTemplate && !editingTemplate.is_draft && canReorderPublishedTemplateInPlace()" [disabled]="saving" (click)="onPrimarySaveRequested()">
                     @if (saving) {
                       <span class="spinner-border spinner-border-sm me-1" role="status"></span>Saving...
                     } @else {
@@ -373,9 +382,15 @@
                   <!-- Transfer draft button for the current owner or admins -->
                   <button type="button" class="btn btn-sm btn-outline-secondary ms-2"
                           *ngIf="editingTemplate?.is_draft && (!isViewOnly || isCurrentUserAdmin)"
-                          (click)="openTransferDraftModal()" title="Transfer draft ownership to another user">
+                      (click)="onTransferDraftRequested()" title="Transfer draft ownership to another user">
                     <i class="mdi mdi-account-switch me-1"></i>Transfer Draft
                   </button>
+
+                  <span class="tce-topbar-exit-wrap">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="saving" (click)="onCancelRequested()" title="Exit editor and return">
+                      <i class="mdi mdi-close me-1"></i>{{ isViewOnly ? 'Back' : 'Exit' }}
+                    </button>
+                  </span>
                 </div>
 
               </div>
@@ -425,10 +440,10 @@
                         <button type="button" class="btn btn-outline-primary btn-sm" [disabled]="saving" (click)="saveDraft()">
                           <i class="mdi mdi-content-save-edit-outline me-1"></i>Start Sub-Version Draft
                         </button>
-                        <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="saving" (click)="startMajorVersionDraft()">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="saving" (click)="onStartMajorVersionDraftRequested()">
                           <i class="mdi mdi-source-branch me-1"></i>Start Major Version Draft
                         </button>
-                        <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="saving" (click)="openCopyAsNewParentModal()">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="saving" (click)="onOpenCopyAsNewParentRequested()">
                           <i class="mdi mdi-content-copy me-1"></i>Copy as New Parent
                         </button>
                       </div>
@@ -554,7 +569,7 @@
                     </div>
                     <h4 class="mb-2">No Item Selected</h4>
                     <p class="text-muted mb-4">Select an item from the list or add a new one.</p>
-                    <button type="button" class="btn btn-primary" (click)="addItem()" [disabled]="isPublishedLocked()">
+                    <button type="button" class="btn btn-primary" (click)="addItem()" [disabled]="isPublishedLocked() || !editingTemplate" [title]="editingTemplate ? 'Add item' : 'Create template first'">
                       <i class="mdi mdi-plus me-1"></i>Add Item
                     </button>
                   </div>
@@ -620,18 +635,18 @@
                             </div>
 
                             <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
-                              <span class="small text-muted">Counts toward progress</span>
                               <div class="form-check form-switch mb-0">
                                 <input class="form-check-input" type="checkbox" formControlName="is_required" [id]="'required-' + selectedFormItemIndex">
                                 <label class="form-check-label" [for]="'required-' + selectedFormItemIndex">Required</label>
                               </div>
+                              <span class="small text-muted">Counts toward progress</span>
                             </div>
 
-                            <div class="d-flex align-items-center gap-2 mt-2">
+                            <div class="mt-2">
                               <div class="form-check form-switch mb-0">
                                 <input class="form-check-input" type="checkbox" formControlName="needs_media_upload" [id]="'needs-media-' + selectedFormItemIndex">
+                                <label class="form-check-label text-muted" [for]="'needs-media-' + selectedFormItemIndex">Needs media follow-up</label>
                               </div>
-                              <label class="small text-muted mb-0" [for]="'needs-media-' + selectedFormItemIndex">Needs media follow-up</label>
                             </div>
                             <div class="small text-muted mt-1">
                               Mark this if sample photo/video is not ready yet and you need to return later.
@@ -747,6 +762,30 @@
 
             </div>
             <!-- end scroll area -->
+
+            <div *ngIf="activePanel === 'item' && selectedFormItemIndex !== null && !isPublishedLocked()"
+                 class="tce-item-action-footer border-top flex-shrink-0 px-4 py-3">
+              <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap">
+                <div class="small fw-medium" [ngClass]="isCurrentItemDirty() ? 'text-warning' : 'text-muted'">
+                  <i class="mdi me-1" [ngClass]="isCurrentItemDirty() ? 'mdi-content-save-alert-outline' : 'mdi-check-circle-outline'"></i>
+                  {{ isCurrentItemDirty() ? 'You have unsaved item changes' : 'Item changes are saved' }}
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  <button type="button" class="btn btn-outline-danger"
+                          (click)="cancelCurrentItemChanges()"
+                          [disabled]="saving || !isCurrentItemDirty()"
+                          title="Discard current item changes">
+                    <i class="mdi mdi-restore align-bottom me-1"></i>Discard Item
+                  </button>
+                  <button type="button" class="btn btn-primary"
+                          (click)="saveCurrentItem()"
+                          [disabled]="saving || !isCurrentItemDirty()"
+                          title="Save current item changes">
+                    <i class="mdi mdi-content-save-edit-outline align-bottom me-1"></i>Save Item
+                  </button>
+                </div>
+              </div>
+            </div>
 
       </div>
       <!-- end right panel -->

@@ -14,8 +14,10 @@
 .swal2-popup{
   padding-bottom: 24px;
   border-radius: $modal-content-border-radius;
+  box-shadow: 0 0.75rem 2rem rgba(16, 24, 40, 0.18);
   background-color: var(--#{$prefix}secondary-bg);
   color: var(--#{$prefix}body-color);
+  border: 1px solid rgba(var(--#{$prefix}border-color-rgb), 0.85);
 
   .swal2-title{
     color: var(--#{$prefix}heading-color);
@@ -24,6 +26,16 @@
   .swal2-html-container{
     color: var(--#{$prefix}body-color);
   }
+}
+
+// App-wide SweetAlert2 look-and-feel.
+// Keep this centralized so all dialogs inherit the same visual language.
+.swal2-popup.swal2-modal {
+  border-radius: 14px;
+}
+
+.swal2-actions {
+  gap: 0.5rem;
 }
 
 .swal2-footer{
@@ -56,8 +68,20 @@
 }
 
 .swal2-styled{
+  border-radius: 0.55rem;
+  font-weight: $font-weight-medium;
+  padding: 0.5rem 1rem;
+
   &:focus{
-    box-shadow: none;
+    box-shadow: 0 0 0 0.2rem rgba($primary, 0.18);
+  }
+
+  &.swal2-confirm {
+    background: $primary;
+  }
+
+  &.swal2-cancel {
+    background: $gray-600;
   }
 }
 

@@ -72,6 +72,12 @@ interface ReorderUndoState {
   activeNavItemIndex: number;
 }
 
+interface ItemEditSnapshot {
+  itemValue: any;
+  sampleImages: SampleImage | SampleImage[] | null;
+  sampleVideos: SampleVideo | SampleVideo[] | null;
+}
+
 @Component({
   selector: 'app-checklist-template-editor',
   standalone: true,
@@ -203,7 +209,11 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   private suppressChangeTracking = false;
   private changeSeq = 0;
   private savedSeq = 0;
+  private savedFormSignature = 'null';
+  templateUnsavedChanges = false;
   private changeTrackingReady = false;
+  private itemBaselineSignatures = new WeakMap<FormGroup, string>();
+  private itemBaselineSnapshots = new WeakMap<FormGroup, ItemEditSnapshot>();
 
   private routeParamSub?: Subscription;
   private routeQueryParamSub?: Subscription;
@@ -291,7 +301,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     window.print();
   }
 
-  setTemplateActiveStatus(makeActive: boolean): void {
+  async setTemplateActiveStatus(makeActive: boolean): Promise<void> {
     if (!this.editingTemplate || this.saving || this.loading) {
       return;
     }
@@ -312,7 +322,13 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       ? `Activate this template? It will be available for new checklist instances.`
       : `Deactivate this template? It will no longer be available for new checklist instances.`;
 
-    if (!confirm(confirmMessage)) {
+    const confirmed = await this.showConfirmDialog(confirmMessage, {
+      title: nextActive ? 'Activate template?' : 'Deactivate template?',
+      confirmButtonText: nextActive ? 'Activate' : 'Deactivate',
+      cancelButtonText: 'Cancel'
+    });
+
+    if (!confirmed) {
       return;
     }
 
@@ -342,7 +358,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       next: (response) => {
         this.saving = false;
         if ((response as any)?.success === false) {
-          alert((response as any)?.error || (response as any)?.message || `Failed to ${actionLabel} template.`);
+          this.showErrorDialog((response as any)?.error || (response as any)?.message || `Failed to ${actionLabel} template.`, 'Template update failed');
           return;
         }
 
@@ -491,6 +507,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       }
 
       this.changeSeq++;
+      this.templateUnsavedChanges = this.getCurrentFormSignature() !== this.savedFormSignature;
     });
 
     // React to route ID changes (e.g., Save Draft navigates to a new template ID).
@@ -527,6 +544,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
       this.changeSeq = 0;
       this.savedSeq = 0;
+      this.templateUnsavedChanges = false;
       this.templateForm.markAsPristine();
       this.suppressChangeTracking = false;
 
@@ -602,7 +620,10 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
             this.router.navigate(['/inspection-checklist/template-editor', existingDraftId], { replaceUrl: true });
             return;
           }
-          alert(response?.error || response?.message || 'Unable to start major version draft.');
+          const backendMessage = response?.error || response?.message || 'Unable to start major version draft.';
+          if (!this.shouldSuppressPermissionAlert(response, backendMessage)) {
+            this.showErrorDialog(backendMessage, 'Unable to start major draft');
+          }
           return;
         }
 
@@ -613,7 +634,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
           return;
         }
 
-        alert('Unable to start major version draft.');
+        this.showErrorDialog('Unable to start major version draft.', 'Unable to start major draft');
       },
       error: (error) => {
         console.error('Error creating major version draft:', error);
@@ -712,7 +733,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
           return;
         }
 
-        alert('Template copy created, but no template ID was returned by the server.');
+        this.showWarningDialog('Template copy created, but no template ID was returned by the server.', 'Template copy incomplete');
       },
       error: (error) => {
         console.error('Error copying template as new parent:', error);
@@ -722,37 +743,366 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   }
 
   private hasUnsavedChanges(): boolean {
-    return this.changeSeq > this.savedSeq;
+    if (!this.changeTrackingReady) {
+      return false;
+    }
+
+    if (this.templateUnsavedChanges) {
+      return true;
+    }
+
+    this.templateUnsavedChanges = this.getCurrentFormSignature() !== this.savedFormSignature;
+    return this.templateUnsavedChanges;
+  }
+
+  hasTemplateUnsavedChangesForUi(): boolean {
+    return this.hasUnsavedChanges();
+  }
+
+  private getCurrentFormSignature(): string {
+    return this.sortedStringify(this.templateForm.getRawValue());
+  }
+
+  private hasAnyUnsavedChanges(): boolean {
+    return this.hasUnsavedChanges() || this.isCurrentItemDirty();
+  }
+
+  private async ensureSavedBeforeAction(actionLabel: string): Promise<boolean> {
+    if (this.saving) {
+      return false;
+    }
+
+    if (!this.hasAnyUnsavedChanges()) {
+      return true;
+    }
+
+    const hasItemChanges = this.isCurrentItemDirty();
+    const hasTemplateChanges = this.hasUnsavedChanges();
+    const title = hasItemChanges && hasTemplateChanges
+      ? 'Unsaved item and template changes'
+      : hasItemChanges
+        ? 'Unsaved item changes'
+        : 'Unsaved template changes';
+
+    const scope = hasItemChanges && hasTemplateChanges
+      ? 'Save your item and template changes'
+      : hasItemChanges
+        ? 'Save your item changes'
+        : 'Save your template changes';
+
+    const result = await Swal.fire({
+      icon: 'warning',
+      title,
+      text: `${scope} before ${actionLabel}?`,
+      showCancelButton: true,
+      confirmButtonText: 'Save Draft First',
+      cancelButtonText: 'Stay Here',
+      reverseButtons: true
+    });
+
+    if (!result.isConfirmed) {
+      return false;
+    }
+
+    return this.saveDraft();
+  }
+
+  async onTransferDraftRequested(): Promise<void> {
+    const canProceed = await this.ensureSavedBeforeAction('transferring draft ownership');
+    if (!canProceed) {
+      return;
+    }
+
+    this.openTransferDraftModal();
+  }
+
+  async onPrimarySaveRequested(): Promise<void> {
+    // Publishing a draft transfers it from editable working state to released state.
+    // Require a clean saved baseline first so the publish action is explicit and predictable.
+    if (this.editingTemplate?.is_draft) {
+      const canProceed = await this.ensureSavedBeforeAction('publishing this draft');
+      if (!canProceed) {
+        return;
+      }
+    }
+
+    this.saveTemplate();
+  }
+
+  async onCancelRequested(): Promise<void> {
+    const canProceed = await this.ensureSavedBeforeAction('leaving this editor');
+    if (!canProceed) {
+      return;
+    }
+
+    this.cancel();
+  }
+
+  async onStartMajorVersionDraftRequested(): Promise<void> {
+    const canProceed = await this.ensureSavedBeforeAction('starting a major version draft');
+    if (!canProceed) {
+      return;
+    }
+
+    this.startMajorVersionDraft();
+  }
+
+  async onOpenCopyAsNewParentRequested(): Promise<void> {
+    const canProceed = await this.ensureSavedBeforeAction('copying as a new parent template');
+    if (!canProceed) {
+      return;
+    }
+
+    this.openCopyAsNewParentModal();
   }
 
   private markSaved(startedSeq?: number): void {
     // Treat all changes up to this point as saved.
-    this.savedSeq = Math.max(this.savedSeq, this.changeSeq, startedSeq ?? 0);
+    const savedAtSeq = Math.max(this.changeSeq, startedSeq ?? 0);
+    this.savedSeq = Math.max(this.savedSeq, savedAtSeq);
+    this.savedFormSignature = this.getCurrentFormSignature();
+    this.templateUnsavedChanges = false;
     this.hasReorderMutations = false;
 
     // Reset form dirty/pristine state without incrementing change tracking.
     this.suppressChangeTracking = true;
     this.templateForm.markAsPristine();
     this.suppressChangeTracking = false;
+    this.refreshAllItemBaselines();
 
     // Some controls (notably rich text editors) can emit delayed value updates.
-    // Re-baseline once on next tick to avoid false "unsaved changes" prompts.
+    // Re-baseline once on next tick only if no new edits happened after save;
+    // otherwise we would incorrectly clear real unsaved changes.
     setTimeout(() => {
-      this.savedSeq = Math.max(this.savedSeq, this.changeSeq);
+      if (this.changeSeq > savedAtSeq) {
+        return;
+      }
+
+      this.savedSeq = Math.max(this.savedSeq, this.changeSeq, savedAtSeq);
+      this.savedFormSignature = this.getCurrentFormSignature();
+      this.templateUnsavedChanges = false;
       this.suppressChangeTracking = true;
       this.templateForm.markAsPristine();
       this.suppressChangeTracking = false;
+      this.refreshAllItemBaselines();
     }, 0);
   }
 
-  canDeactivate(): boolean {
-    if (this.saving) {
-      return window.confirm('A save is currently in progress. Leave this page anyway?');
+  private clonePlainData<T>(value: T): T {
+    if (value === undefined || value === null) {
+      return value;
     }
-    if (!this.hasUnsavedChanges()) {
+
+    return JSON.parse(JSON.stringify(value)) as T;
+  }
+
+  private captureItemSnapshot(control: FormGroup): ItemEditSnapshot | null {
+    const itemIndex = this.items.controls.indexOf(control);
+    if (itemIndex < 0) {
+      return null;
+    }
+
+    return {
+      itemValue: this.clonePlainData(control.getRawValue()),
+      sampleImages: this.clonePlainData(this.sampleImages[itemIndex] ?? null),
+      sampleVideos: this.clonePlainData(this.sampleVideos[itemIndex] ?? null)
+    };
+  }
+
+  private buildItemSnapshotSignature(snapshot: ItemEditSnapshot | null): string {
+    if (!snapshot) {
+      return 'null';
+    }
+
+    return this.sortedStringify(snapshot);
+  }
+
+  private setItemBaseline(control: FormGroup): void {
+    const snapshot = this.captureItemSnapshot(control);
+    if (!snapshot) {
+      return;
+    }
+
+    this.itemBaselineSnapshots.set(control, snapshot);
+    this.itemBaselineSignatures.set(control, this.buildItemSnapshotSignature(snapshot));
+  }
+
+  private refreshAllItemBaselines(): void {
+    this.items.controls.forEach((control) => {
+      this.setItemBaseline(control as FormGroup);
+    });
+  }
+
+  private hasItemUnsavedChanges(control: FormGroup): boolean {
+    const baselineSignature = this.itemBaselineSignatures.get(control);
+    if (!baselineSignature) {
+      if (control.dirty) {
+        return true;
+      }
+
+      // Establish a baseline lazily for newly materialized controls.
+      // This avoids a permanent "always clean" state when the WeakMap entry
+      // is missing after save/rebind cycles.
+      this.setItemBaseline(control);
+      return false;
+    }
+
+    // Prefer Angular's dirty flag for immediate keystroke feedback.
+    // Signature comparison remains as a fallback for non-form mutations
+    // such as media array changes that may bypass normal control dirtiness.
+    if (control.dirty) {
       return true;
     }
-    return window.confirm('You have unsaved changes. Leave this page without saving?');
+
+    const currentSignature = this.buildItemSnapshotSignature(this.captureItemSnapshot(control));
+    return currentSignature !== baselineSignature;
+  }
+
+  isCurrentItemDirty(): boolean {
+    if (this.activePanel !== 'item' || this.selectedFormItemIndex === null) {
+      return false;
+    }
+
+    const control = this.getItemFormGroup(this.selectedFormItemIndex);
+    if (!control) {
+      return false;
+    }
+
+    return this.hasItemUnsavedChanges(control);
+  }
+
+  private restoreCurrentItemFromBaseline(): boolean {
+    if (this.activePanel !== 'item' || this.selectedFormItemIndex === null) {
+      return true;
+    }
+
+    const itemIndex = this.selectedFormItemIndex;
+    const control = this.getItemFormGroup(itemIndex);
+    if (!control) {
+      return false;
+    }
+
+    const baseline = this.itemBaselineSnapshots.get(control);
+    if (!baseline) {
+      return false;
+    }
+
+    const baselineValue = this.clonePlainData(baseline.itemValue || {});
+    const baselineLinks = Array.isArray(baselineValue.links) ? baselineValue.links : [];
+
+    this.suppressChangeTracking = true;
+    control.patchValue({ ...baselineValue, links: undefined });
+    control.setControl('links', this.buildLinksFormArray(baselineLinks));
+    this.sampleImages[itemIndex] = this.clonePlainData(baseline.sampleImages);
+    this.sampleVideos[itemIndex] = this.clonePlainData(baseline.sampleVideos);
+    control.markAsPristine();
+    this.suppressChangeTracking = false;
+
+    this.setItemBaseline(control);
+    this.cdr.detectChanges();
+    return true;
+  }
+
+  async cancelCurrentItemChanges(): Promise<void> {
+    if (!this.isCurrentItemDirty()) {
+      return;
+    }
+
+    const restored = this.restoreCurrentItemFromBaseline();
+    if (!restored) {
+      this.showErrorDialog('Unable to restore this item. Please reload the template and try again.', 'Restore failed');
+    }
+  }
+
+  async saveCurrentItem(): Promise<boolean> {
+    return this.saveDraft();
+  }
+
+  private async resolveCurrentItemUnsavedChanges(promptTitle: string, promptText: string): Promise<boolean> {
+    if (!this.isCurrentItemDirty()) {
+      return true;
+    }
+
+    const prompt = await Swal.fire({
+      icon: 'warning',
+      title: promptTitle,
+      text: promptText,
+      showCancelButton: true,
+      showDenyButton: true,
+      confirmButtonText: 'Save Item',
+      denyButtonText: 'Discard Changes',
+      cancelButtonText: 'Stay Here',
+      reverseButtons: true
+    });
+
+    if (prompt.isConfirmed) {
+      const saved = await this.saveCurrentItem();
+      return saved;
+    }
+
+    if (prompt.isDenied) {
+      return this.restoreCurrentItemFromBaseline();
+    }
+
+    return false;
+  }
+
+  private async confirmItemSwitchIfNeeded(nextItemIndex: number | null): Promise<boolean> {
+    if (this.activePanel !== 'item' || this.selectedFormItemIndex === null) {
+      return true;
+    }
+
+    if (nextItemIndex !== null && nextItemIndex === this.selectedFormItemIndex) {
+      return true;
+    }
+
+    const outline = this.getOutlineNumber(this.selectedFormItemIndex);
+    return this.resolveCurrentItemUnsavedChanges(
+      `Item ${outline} has unsaved changes`,
+      'Save this item before moving to another section?'
+    );
+  }
+
+  async openTemplateInfoPanel(): Promise<void> {
+    const canProceed = await this.confirmItemSwitchIfNeeded(null);
+    if (!canProceed) {
+      return;
+    }
+
+    this.activePanel = 'template-info';
+    this.selectedFormItemIndex = null;
+    this.scheduleSelectedItemQueryParamUpdate(null);
+  }
+
+  async canDeactivate(): Promise<boolean> {
+    if (this.saving) {
+      const result = await Swal.fire({
+        icon: 'warning',
+        title: 'Save in progress',
+        text: 'A save is currently in progress. Leave this page anyway?',
+        showCancelButton: true,
+        confirmButtonText: 'Leave Page',
+        cancelButtonText: 'Stay Here',
+        reverseButtons: true
+      });
+      return result.isConfirmed;
+    }
+
+    if (!this.hasAnyUnsavedChanges()) {
+      return true;
+    }
+
+    const result = await Swal.fire({
+      icon: 'warning',
+      title: 'Unsaved changes',
+      text: 'You have unsaved changes. Leave this page without saving?',
+      showCancelButton: true,
+      confirmButtonText: 'Leave Without Saving',
+      cancelButtonText: 'Stay Here',
+      reverseButtons: true
+    });
+
+    return result.isConfirmed;
   }
 
   @HostListener('window:beforeunload', ['$event'])
@@ -1316,7 +1666,28 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     this.modalService.open(this.linksModalTemplate, { size: 'lg', centered: true });
   }
 
-  addItem(): void {
+  private ensureTemplateCreatedBeforeAddingItems(): boolean {
+    if (this.editingTemplate) {
+      return true;
+    }
+
+    this.showInfoDialog('Create the template first, then add checklist items.');
+    return false;
+  }
+
+  async addItem(): Promise<void> {
+    if (!this.ensureTemplateCreatedBeforeAddingItems()) {
+      return;
+    }
+
+    const canProceed = await this.resolveCurrentItemUnsavedChanges(
+      'Current item has unsaved changes',
+      'Save this item before adding a new item?'
+    );
+    if (!canProceed) {
+      return;
+    }
+
     const newIndex = this.items.length;
     this.items.push(this.createItemFormGroup());
     this.recalculateOrderIndices();
@@ -1325,16 +1696,32 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     this.cdr.detectChanges();
     this.scheduleActiveItemTrackingRefresh();
     setTimeout(() => {
-      this.selectItem(newIndex);
-      this.scrollToItem(newIndex, { fromNavigation: true });
-      this.scrollNavItemIntoViewSoon(newIndex);
+      this.selectItem(newIndex).then((selected) => {
+        if (!selected) {
+          return;
+        }
+        this.scrollToItem(newIndex, { fromNavigation: true });
+        this.scrollNavItemIntoViewSoon(newIndex);
+      });
     }, 0);
   }
 
   /**
    * Add a sub-item (child) under a parent item at the next nesting level
    */
-  addSubItem(parentIndex: number): void {
+  async addSubItem(parentIndex: number): Promise<void> {
+    if (!this.ensureTemplateCreatedBeforeAddingItems()) {
+      return;
+    }
+
+    const canProceed = await this.resolveCurrentItemUnsavedChanges(
+      'Current item has unsaved changes',
+      'Save this item before adding a sub-item?'
+    );
+    if (!canProceed) {
+      return;
+    }
+
     const parentItem = this.items.at(parentIndex);
     const parentLevel = parentItem.get('level')?.value || 0;
     const parentOrderIndex = parentItem.get('order_index')?.value || (parentIndex + 1);
@@ -1439,9 +1826,13 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     this.updateNavSearchSets();
     setTimeout(() => {
       this.scheduleActiveItemTrackingRefresh(0);
-      this.selectItem(insertIndex);
-      this.scrollToItem(insertIndex, { fromNavigation: true });
-      this.scrollNavItemIntoViewSoon(insertIndex);
+      this.selectItem(insertIndex).then((selected) => {
+        if (!selected) {
+          return;
+        }
+        this.scrollToItem(insertIndex, { fromNavigation: true });
+        this.scrollNavItemIntoViewSoon(insertIndex);
+      });
     }, 0);
   }
 
@@ -2542,7 +2933,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
           console.error('Upload failed:', error);
         }
       } else {
-        alert('Please select an image file (JPG, PNG, GIF, WebP)');
+        this.showWarningDialog('Please select an image file (JPG, PNG, GIF, WebP).', 'Invalid file');
       }
     };
 
@@ -2559,14 +2950,14 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       // Validate file size against template override or default (image)
       const maxSize = this.getMaxUploadBytes('image');
       if (file.size > maxSize) {
-        alert('File size too large. Maximum size is ' + Math.round(maxSize / (1024 * 1024)) + 'MB');
+        this.showWarningDialog('File size too large. Maximum size is ' + Math.round(maxSize / (1024 * 1024)) + 'MB.', 'Upload blocked');
         return;
       }
 
       // Validate file type
       const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
       if (!allowedTypes.includes(file.type.toLowerCase())) {
-        alert('Invalid file type. Only JPEG, PNG, GIF, and WebP images are allowed');
+        this.showWarningDialog('Invalid file type. Only JPEG, PNG, GIF, and WebP images are allowed.', 'Upload blocked');
         return;
       }
 
@@ -2628,7 +3019,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
         stack: error.stack
       });
 
-      alert('Upload Error: ' + errorMessage);
+      this.showErrorDialog('Upload Error: ' + errorMessage, 'Image upload failed');
     } finally {
       this.uploadingImage = false;
     }
@@ -2780,7 +3171,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
           console.error('Upload failed:', error);
         }
       } else {
-        alert('Please select an image file (JPG, PNG, GIF, WebP)');
+        this.showWarningDialog('Please select an image file (JPG, PNG, GIF, WebP).', 'Invalid file');
       }
     };
 
@@ -2840,7 +3231,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       }
     } catch (error) {
       console.error('Error uploading primary sample image:', error);
-      alert('Error uploading image. Please try again.');
+      this.showErrorDialog('Error uploading image. Please try again.', 'Image upload failed');
     } finally {
       this.uploadingImage = false;
     }
@@ -3118,17 +3509,29 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     }
   }
 
-  onNavItemSelected(itemIndex: number): void {
+  async onNavItemSelected(itemIndex: number): Promise<void> {
+    const selected = await this.selectItem(itemIndex);
+    if (!selected) {
+      return;
+    }
+
     this.updateSelectedItemQueryParam(itemIndex);
     this.scrollToItem(itemIndex, { fromNavigation: true });
   }
 
-  selectItem(index: number): void {
+  async selectItem(index: number, options?: { force?: boolean }): Promise<boolean> {
+    if (!options?.force) {
+      const canProceed = await this.confirmItemSwitchIfNeeded(index);
+      if (!canProceed) {
+        return false;
+      }
+    }
+
     if (this.activePanel === 'item' && this.selectedFormItemIndex === index && !this.selectingItem) {
       this.updateStickyParentFromActive(index);
       this.scheduleSelectedItemQueryParamUpdate(index);
       this.scheduleSidebarStickyAncestorsUpdate();
-      return;
+      return true;
     }
 
     this.updateStickyParentFromActive(index);
@@ -3146,7 +3549,13 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       this.scheduleSelectedItemQueryParamUpdate(index);
       this.scheduleSidebarStickyAncestorsUpdate();
       this.cdr.detectChanges();
+      const control = this.getItemFormGroup(index);
+      if (control) {
+        this.setItemBaseline(control);
+      }
     }, 0);
+
+    return true;
   }
 
   private scheduleSelectedItemQueryParamUpdate(itemIndex: number | null): void {
@@ -3208,11 +3617,16 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     }
 
     this.pendingUrlItemRestore = false;
-    this.selectItem(index);
-    this.scrollToItem(index, { fromNavigation: true });
-    this.expandParentsOfItem(index);
-    this.cdr.detectChanges();
-    this.scrollNavItemIntoViewSoon(index);
+    this.selectItem(index).then((selected) => {
+      if (!selected) {
+        return;
+      }
+
+      this.scrollToItem(index, { fromNavigation: true });
+      this.expandParentsOfItem(index);
+      this.cdr.detectChanges();
+      this.scrollNavItemIntoViewSoon(index);
+    });
   }
 
   private scheduleRestoreRequestedNavItemSelection(): void {
@@ -4660,7 +5074,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
   openReferenceImageUpload(itemIndex: number): void {
     if (this.getReferenceImageCount(itemIndex) >= 5) {
-      alert('Maximum of 5 reference images allowed');
+      this.showWarningDialog('Maximum of 5 reference images allowed.', 'Limit reached');
       return;
     }
 
@@ -4678,7 +5092,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
           console.error('Upload failed:', error);
         }
       } else {
-        alert('Please select an image file');
+        this.showWarningDialog('Please select an image file.', 'Invalid file');
       }
     };
 
@@ -4689,7 +5103,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
   async uploadReferenceImage(itemIndex: number, file: File): Promise<void> {
     if (this.getReferenceImageCount(itemIndex) >= 5) {
-      alert('Maximum of 5 reference images allowed');
+      this.showWarningDialog('Maximum of 5 reference images allowed.', 'Limit reached');
       return;
     }
 
@@ -4741,7 +5155,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       }
     } catch (error) {
       console.error('Error uploading reference image:', error);
-      alert('Error uploading image. Please try again.');
+      this.showErrorDialog('Error uploading image. Please try again.', 'Image upload failed');
     } finally {
       this.uploadingImage = false;
     }
@@ -4798,7 +5212,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
           console.error('Video upload failed:', error);
         }
       } else {
-        alert('Please select a video file (mp4, webm, mov)');
+        this.showWarningDialog('Please select a video file (mp4, webm, mov).', 'Invalid file');
       }
     };
 
@@ -4833,7 +5247,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       });
 
       if (maxDuration && duration > maxDuration) {
-        alert(`Video duration is ${Math.round(duration)}s which exceeds the allowed ${maxDuration}s`);
+        this.showWarningDialog(`Video duration is ${Math.round(duration)}s which exceeds the allowed ${maxDuration}s.`, 'Video too long');
         return;
       }
 
@@ -4874,7 +5288,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       }
     } catch (error: any) {
       console.error('Sample video upload error:', error);
-      alert('Failed to upload video: ' + (error?.message || error));
+      this.showErrorDialog('Failed to upload video: ' + (error?.message || error), 'Video upload failed');
     } finally {
       this.uploadingVideo = false;
     }
@@ -4998,7 +5412,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       const changes = this.detectTemplateChanges(this.editingTemplate, templateData);
 
       if (!changes?.has_changes) {
-        alert('No changes to save.');
+        this.showInfoDialog('No changes to save.');
         return;
       }
 
@@ -5006,7 +5420,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
       if (!allowPublishedReorderSave) {
         this.saving = false;
-        alert('Published templates can only be saved in place for item sorting changes. Start a draft for content edits.');
+        this.showWarningDialog('Published templates can only be saved in place for item sorting changes. Start a draft for content edits.', 'Save blocked');
         return;
       }
 
@@ -5051,7 +5465,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       this.publishValidationErrors = errors;
       // Navigate to first invalid item so user sees it highlighted
       if (firstInvalidItemIndex !== null) {
-        this.selectItem(firstInvalidItemIndex);
+        this.selectItem(firstInvalidItemIndex, { force: true });
       } else {
         this.activePanel = 'template-info';
       }
@@ -5145,9 +5559,9 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     });
   }
 
-  saveDraft(): void {
+  async saveDraft(): Promise<boolean> {
     if (this.saving) {
-      return;
+      return false;
     }
 
     this.saving = true;
@@ -5167,25 +5581,19 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       (templateData as any).template_group_id = groupId;
       (templateData as any).source_template_id = this.editingTemplate.id;
 
-      this.configService.getTemplatesIncludingInactive().subscribe({
-        next: (templates: any[]) => {
-          const nextVersion = this.computeNextMinorForMajorLine(templates || [], groupId, major);
-          (templateData as any).version = nextVersion;
+      try {
+        const templates = await firstValueFrom(this.configService.getTemplatesIncludingInactive());
+        const nextVersion = this.computeNextMinorForMajorLine(templates || [], groupId, major);
+        (templateData as any).version = nextVersion;
+      } catch (error) {
+        console.error('Error loading templates for version calculation:', error);
+        // Fall back to current version + 1
+        (templateData as any).version = this.getNextVersion(this.editingTemplate!.version || '1.0');
+      }
 
-          // CREATE a new draft row — never mutate the published template.
-          const saveRequest = this.configService.createTemplate(templateData);
-          this.subscribeToDraftSave(saveRequest, startedSeq, templateData);
-        },
-        error: (error) => {
-          console.error('Error loading templates for version calculation:', error);
-          // Fall back to current version + 1
-          (templateData as any).version = this.getNextVersion(this.editingTemplate!.version || '1.0');
-
-          const saveRequest = this.configService.createTemplate(templateData);
-          this.subscribeToDraftSave(saveRequest, startedSeq, templateData);
-        }
-      });
-      return;
+      // CREATE a new draft row — never mutate the published template.
+      const saveRequest = this.configService.createTemplate(templateData);
+      return this.subscribeToDraftSave(saveRequest, startedSeq, templateData);
     }
 
     // Preserve the version already assigned to this draft (e.g. 2.0 for a major version draft).
@@ -5197,69 +5605,83 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       ? this.configService.updateTemplate(this.editingTemplate.id, templateData)
       : this.configService.createTemplate(templateData);
 
-    this.subscribeToDraftSave(saveRequest, startedSeq, templateData);
+    return this.subscribeToDraftSave(saveRequest, startedSeq, templateData);
   }
 
-  private subscribeToDraftSave(saveRequest: any, startedSeq: number, templateData?: any): void {
-    saveRequest.subscribe({
-      next: (response: any) => {
-        if (response?.success === false) {
-          // Root fix: if backend reports existing draft, persist current edits there immediately.
-          const existingDraftId = Number(response?.existing_draft_id || 0);
-          if (response?.code === 'DRAFT_ALREADY_EXISTS' && existingDraftId > 0 && templateData) {
-            const retryPayload = { ...templateData, is_draft: 1 };
-            const retryRequest = this.configService.updateTemplate(existingDraftId, retryPayload);
-            this.subscribeToDraftSave(retryRequest, startedSeq, retryPayload);
-            return;
-          }
+  private async subscribeToDraftSave(saveRequest: any, startedSeq: number, templateData?: any): Promise<boolean> {
+    try {
+      const response: any = await firstValueFrom(saveRequest);
 
-          this.saving = false;
-          this.handleTemplateSaveFailureResponse(response, 'draft');
-          return;
+      if (response?.success === false) {
+        // Root fix: if backend reports existing draft, persist current edits there immediately.
+        const existingDraftId = Number(response?.existing_draft_id || 0);
+        if (response?.code === 'DRAFT_ALREADY_EXISTS' && existingDraftId > 0 && templateData) {
+          const retryPayload = { ...templateData, is_draft: 1 };
+          const retryRequest = this.configService.updateTemplate(existingDraftId, retryPayload);
+          return this.subscribeToDraftSave(retryRequest, startedSeq, retryPayload);
         }
 
         this.saving = false;
-        this.lastSavedAt = new Date();
-
-        // Clear unsaved-change prompts after a confirmed successful save.
-        // Note: this treats any edits made during the request as “saved” from the UX perspective.
-        this.markSaved(startedSeq);
-
-        // Backend may create/switch to a draft template. Apply returned template data first
-        // and align URL to the returned template_id so refresh loads the same saved draft.
-        const responseTemplateId = Number(response?.template_id || 0);
-        const currentTemplateId = Number(this.editingTemplate?.id || 0);
-
-        if (response?.template) {
-          const rawTemplate: any = { ...response.template };
-          if (responseTemplateId > 0) {
-            rawTemplate.id = responseTemplateId;
-          }
-
-          const normalizedTemplate: any = this.normalizeTemplateFlags(rawTemplate);
-
-          this.editingTemplate = normalizedTemplate as ChecklistTemplate;
-          this.populateForm(this.editingTemplate);
-          this.updateComponentWithSavedTemplate(normalizedTemplate);
-        } else if (responseTemplateId > 0) {
-          // Fallback when backend does not include template payload.
-          this.loadTemplate(responseTemplateId);
-        }
-
-        if (responseTemplateId > 0 && responseTemplateId !== currentTemplateId) {
-          this.router.navigate(['/quality/checklist/template-editor', responseTemplateId], { replaceUrl: true });
-        }
-
-        // updateComponentWithSavedTemplate may patch values; re-baseline again.
-        this.markSaved(startedSeq);
-
-        // (navigation handled above)
-      },
-      error: (error) => {
-        console.error('Error saving draft:', error);
-        this.saving = false;
+        this.handleTemplateSaveFailureResponse(response, 'draft');
+        return false;
       }
-    });
+
+      this.saving = false;
+      this.lastSavedAt = new Date();
+
+      // Clear unsaved-change prompts after a confirmed successful save.
+      // Note: this treats any edits made during the request as “saved” from the UX perspective.
+      this.markSaved(startedSeq);
+
+      // Backend may create/switch to a draft template. Apply returned template data first
+      // and align URL to the returned template_id so refresh loads the same saved draft.
+      const responseTemplateId = Number(response?.template_id || 0);
+      const currentTemplateId = Number(this.editingTemplate?.id || 0);
+
+      if (response?.template) {
+        const rawTemplate: any = { ...response.template };
+        if (responseTemplateId > 0) {
+          rawTemplate.id = responseTemplateId;
+        }
+
+        const normalizedTemplate: any = this.normalizeTemplateFlags(rawTemplate);
+
+        this.editingTemplate = normalizedTemplate as ChecklistTemplate;
+        this.populateForm(this.editingTemplate);
+        this.updateComponentWithSavedTemplate(normalizedTemplate);
+      } else if (responseTemplateId > 0) {
+        // Fallback when backend does not include template payload.
+        this.loadTemplate(responseTemplateId);
+      }
+
+      if (responseTemplateId > 0 && responseTemplateId !== currentTemplateId) {
+        this.router.navigate(['/quality/checklist/template-editor', responseTemplateId], { replaceUrl: true });
+      }
+
+      // updateComponentWithSavedTemplate may patch values; re-baseline again.
+      this.markSaved(startedSeq);
+      return true;
+    } catch (error: any) {
+      console.error('Error saving draft:', error);
+      this.saving = false;
+      const backendMessage = error?.error?.error || error?.error?.message || error?.message || 'Unable to save draft. Please check your connection and try again.';
+      if (!this.shouldSuppressPermissionAlert(error, backendMessage)) {
+        const retry = await Swal.fire({
+          icon: 'error',
+          title: 'Draft save failed',
+          text: `${backendMessage} You can retry now or keep editing without losing your current changes.`,
+          showCancelButton: true,
+          confirmButtonText: 'Retry Save Draft',
+          cancelButtonText: 'Keep Editing',
+          reverseButtons: true
+        });
+
+        if (retry.isConfirmed) {
+          return this.saveDraft();
+        }
+      }
+      return false;
+    }
   }
 
   private computeNextMinorForMajorLine(templates: any[], templateGroupId: number, major: number): string {
@@ -5311,8 +5733,14 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     }
 
     const draftName = this.editingTemplate.name || 'this draft';
-    const confirmed = confirm(
-      `Discard draft "${draftName}"? This will permanently remove the draft and all unsaved draft changes.`
+    const confirmed = await this.showConfirmDialog(
+      `Discard draft "${draftName}"? This will permanently remove the draft and all unsaved draft changes.`,
+      {
+        title: 'Discard draft?',
+        confirmButtonText: 'Discard Draft',
+        cancelButtonText: 'Keep Draft',
+        confirmButtonColor: '#dc3545'
+      }
     );
 
     if (!confirmed) {
@@ -5332,15 +5760,15 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
       const backendError = response?.error || response?.message || 'Unable to discard draft.';
       if (response?.instance_count && response.instance_count > 0) {
-        alert(`${backendError} This draft has ${response.instance_count} instance(s).`);
+        this.showWarningDialog(`${backendError} This draft has ${response.instance_count} instance(s).`, 'Discard blocked');
         return;
       }
 
-      alert(backendError);
+      this.showErrorDialog(backendError, 'Unable to discard draft');
     } catch (error: any) {
       console.error('Error discarding current draft:', error);
       this.saving = false;
-      alert(error?.error?.error || error?.message || 'An error occurred while discarding the draft.');
+      this.showErrorDialog(error?.error?.error || error?.message || 'An error occurred while discarding the draft.', 'Discard failed');
     }
   }
 
@@ -5924,7 +6352,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     const timeoutId = setTimeout(() => {
       console.error('Save operation timed out after 30 seconds');
       this.saving = false;
-      alert('Save operation timed out. Please try again.');
+      this.showErrorDialog('Save operation timed out. Please try again.', 'Save timed out');
     }, 30000);
 
     saveRequest.subscribe({
@@ -5949,7 +6377,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
         if (!templateId) {
           console.error('No template ID available');
           this.saving = false;
-          alert('Error: Template ID not available');
+          this.showErrorDialog('Error: Template ID not available', 'Save failed');
           return;
         }
 
@@ -5980,13 +6408,25 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
           this.createDocument(templateId, templateData.name, 'Initial revision', templateData);
         } else if (!createVersion && this.editingTemplate?.is_draft) {
           this.saving = false;
-          alert('Draft published successfully!');
-          this.navigateToTemplateManager(templateId);
+          void Swal.fire({
+            icon: 'success',
+            title: 'Draft published',
+            text: 'Your draft was published successfully.',
+            confirmButtonText: 'Back to Templates'
+          }).then(() => {
+            this.navigateToTemplateManager(templateId);
+          });
         } else {
           // Direct update without revision tracking (shouldn't happen with current flow)
           this.saving = false;
-          alert('Template updated successfully!');
-          this.navigateToTemplateManager(templateId);
+          void Swal.fire({
+            icon: 'success',
+            title: 'Template updated',
+            text: 'Template changes were saved successfully.',
+            confirmButtonText: 'Back to Templates'
+          }).then(() => {
+            this.navigateToTemplateManager(templateId);
+          });
         }
       },
       error: (error) => {
@@ -6001,29 +6441,130 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     const existingDraftId = Number(response?.existing_draft_id || 0);
 
     if (responseCode === 'DRAFT_ALREADY_EXISTS' && existingDraftId > 0) {
-      alert('A working draft already exists. Opening the existing draft now.');
-      this.router.navigate(['/quality/checklist/template-editor', existingDraftId], { replaceUrl: true });
-      this.loadTemplate(existingDraftId);
+      void Swal.fire({
+        icon: 'info',
+        title: 'Draft already exists',
+        text: 'A working draft already exists. Opening it now.',
+        confirmButtonText: 'Continue'
+      }).then(() => {
+        this.router.navigate(['/quality/checklist/template-editor', existingDraftId], { replaceUrl: true });
+        this.loadTemplate(existingDraftId);
+      });
       return;
     }
 
     if (responseCode === 'UNSAFE_ITEM_ID_MUTATION_BLOCKED') {
       const count = Number(response?.instance_count || 0);
       const suffix = count > 0 ? ` (${count} instance${count === 1 ? '' : 's'} detected).` : '.';
-      const createSubVersion = confirm(
-        'Save blocked to protect existing checklist progress. This reorder cannot be applied safely in-place' +
-        suffix +
-        ' Create a new sub-version draft now?'
-      );
-      if (createSubVersion) {
-        this.saveDraft();
-      }
+      void Swal.fire({
+        icon: 'warning',
+        title: 'Save blocked for data safety',
+        text: 'This reorder cannot be applied safely in-place' + suffix + ' Create a new sub-version draft now?',
+        showCancelButton: true,
+        confirmButtonText: 'Create Sub-Version Draft',
+        cancelButtonText: 'Keep Editing',
+        reverseButtons: true
+      }).then((result) => {
+        if (result.isConfirmed) {
+          void this.saveDraft();
+        }
+      });
       return;
     }
 
     const fallback = context === 'draft' ? 'Unable to save draft.' : 'Unable to save template.';
     const message = response?.error || response?.message || fallback;
-    alert(message);
+    if (!this.shouldSuppressPermissionAlert(response, message)) {
+      const confirmLabel = context === 'draft' ? 'Retry Save Draft' : 'Retry Save';
+      void Swal.fire({
+        icon: 'error',
+        title: context === 'draft' ? 'Draft save failed' : 'Save failed',
+        text: `${message} You can retry now or keep editing without losing your current changes.`,
+        showCancelButton: true,
+        confirmButtonText: confirmLabel,
+        cancelButtonText: 'Keep Editing',
+        reverseButtons: true
+      }).then((result) => {
+        if (result.isConfirmed) {
+          if (context === 'draft') {
+            void this.saveDraft();
+          } else {
+            this.saveTemplate();
+          }
+        }
+      });
+    }
+  }
+
+  private shouldSuppressPermissionAlert(source: any, message?: string): boolean {
+    const status = Number(source?.status || source?.error?.status || 0);
+    const errorCode = String(source?.code || source?.error?.code || '').toUpperCase();
+    const normalized = String(message || source?.error?.error || source?.error?.message || source?.message || '').toLowerCase();
+
+    if (errorCode === 'PERMISSION_REQUIRED' || errorCode === 'DRAFT_LOCKED' || errorCode === 'FORBIDDEN') {
+      return true;
+    }
+
+    if (status === 401 || status === 403) {
+      return true;
+    }
+
+    return (
+      normalized.includes('currently being edited by') ||
+      normalized.includes('currently locked by') ||
+      normalized.includes('transfer ownership before making changes') ||
+      normalized.includes('permission required')
+    );
+  }
+
+  private showInfoDialog(message: string, title = 'Notice'): void {
+    void Swal.fire({
+      icon: 'info',
+      title,
+      text: message,
+      confirmButtonText: 'OK'
+    });
+  }
+
+  private showWarningDialog(message: string, title = 'Attention'): void {
+    void Swal.fire({
+      icon: 'warning',
+      title,
+      text: message,
+      confirmButtonText: 'OK'
+    });
+  }
+
+  private showErrorDialog(message: string, title = 'Something went wrong'): void {
+    void Swal.fire({
+      icon: 'error',
+      title,
+      text: message,
+      confirmButtonText: 'OK'
+    });
+  }
+
+  private async showConfirmDialog(
+    message: string,
+    options?: {
+      title?: string;
+      confirmButtonText?: string;
+      cancelButtonText?: string;
+      confirmButtonColor?: string;
+    }
+  ): Promise<boolean> {
+    const result = await Swal.fire({
+      icon: 'question',
+      title: options?.title || 'Please confirm',
+      text: message,
+      showCancelButton: true,
+      confirmButtonText: options?.confirmButtonText || 'Confirm',
+      cancelButtonText: options?.cancelButtonText || 'Cancel',
+      reverseButtons: true,
+      confirmButtonColor: options?.confirmButtonColor
+    });
+
+    return result.isConfirmed;
   }
 
   /**
@@ -6044,8 +6585,14 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     this.configService.createChecklistDocument(documentData).subscribe({
       next: (result) => {
                 this.saving = false;
-        alert(`✓ Document created: ${result.document_number}, Rev ${result.revision_number}\n\n${result.message}`);
-        this.navigateToTemplateManager(templateId);
+        void Swal.fire({
+          icon: 'success',
+          title: 'Document created',
+          text: `${result.document_number}, Rev ${result.revision_number}. ${result.message}`,
+          confirmButtonText: 'Back to Templates'
+        }).then(() => {
+          this.navigateToTemplateManager(templateId);
+        });
       },
       error: (error) => {
         console.error('Error creating document:', error);
@@ -6082,8 +6629,14 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     this.configService.createChecklistRevision(revisionData).subscribe({
       next: (result) => {
                 this.saving = false;
-        alert(`✓ Revision created: ${result.document_number}, Rev ${result.revision_number}\n\n${result.message}`);
-        this.navigateToTemplateManager(templateId);
+        void Swal.fire({
+          icon: 'success',
+          title: 'Revision created',
+          text: `${result.document_number}, Rev ${result.revision_number}. ${result.message}`,
+          confirmButtonText: 'Back to Templates'
+        }).then(() => {
+          this.navigateToTemplateManager(templateId);
+        });
       },
       error: (error) => {
         console.error('Error creating revision:', error);
@@ -6181,7 +6734,13 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
         this.saveImportedTemplate();
       }, 100);
 
-      alert(`Successfully imported and saved ${parsedTemplate.items.length} items from ${file.name}`);
+      void Swal.fire({
+        icon: 'success',
+        title: 'Import complete',
+        text: `Imported ${parsedTemplate.items.length} items from ${file.name}.`,
+        timer: 2200,
+        showConfirmButton: false
+      });
     } catch (error: any) {
       console.error('Import error:', error);
       this.importError = error.message || 'Failed to import file. Please check the format and try again.';
@@ -6210,7 +6769,13 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       this.saveImportedTemplate();
     }, 100);
 
-    alert(`Successfully created template with ${parsedTemplate.items.length} items`);
+    void Swal.fire({
+      icon: 'success',
+      title: 'Template created',
+      text: `Created a template with ${parsedTemplate.items.length} items.`,
+      timer: 2200,
+      showConfirmButton: false
+    });
   }
 
   /**
@@ -6241,7 +6806,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
         await Promise.all(uploadPromises);
               } catch (error) {
         console.error('❌ Some images failed to upload:', error);
-        alert('Some images could not be uploaded. The template will be saved without those images.');
+                this.showWarningDialog('Some images could not be uploaded. The template will be saved without those images.', 'Partial upload');
       }
     }
 
@@ -6425,6 +6990,9 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     if (event) {
       event.stopPropagation();
     }
+    if (!this.ensureTemplateCreatedBeforeAddingItems()) {
+      return;
+    }
     const currentItem = this.items.at(index);
     const currentLevel = currentItem.get('level')?.value || 0;
     const parentId = currentItem.get('parent_id')?.value ?? null;
@@ -6455,6 +7023,9 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   addItemBelow(index: number, event?: Event): void {
     if (event) {
       event.stopPropagation();
+    }
+    if (!this.ensureTemplateCreatedBeforeAddingItems()) {
+      return;
     }
     const currentItem = this.items.at(index);
     const currentLevel = currentItem.get('level')?.value || 0;
@@ -6687,7 +7258,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     return null;
   }
 
-  deleteItemFromNav(index: number, event?: Event): void {
+  async deleteItemFromNav(index: number, event?: Event): Promise<void> {
     if (event) {
       event.stopPropagation();
     }
@@ -6695,7 +7266,17 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     const item = this.items.at(index);
     const itemTitle = item.get('title')?.value || 'this item';
 
-    if (confirm(`Are you sure you want to delete "${itemTitle}" and all its sub-items?`)) {
+    const confirmed = await this.showConfirmDialog(
+      `Are you sure you want to delete "${itemTitle}" and all its sub-items?`,
+      {
+        title: 'Delete item?',
+        confirmButtonText: 'Delete',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#dc3545'
+      }
+    );
+
+    if (confirmed) {
       this.removeItem(index);
     }
   }

@@ -467,6 +467,92 @@
       text-overflow: ellipsis;
     }
 
+    .tce-topbar {
+      background: color-mix(in srgb, var(--tce-surface) 94%, transparent);
+      backdrop-filter: blur(2px);
+    }
+
+    .tce-topbar-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.9rem;
+      flex-wrap: nowrap;
+      min-width: 0;
+    }
+
+    .tce-topbar-context {
+      min-width: 0;
+      flex: 1 1 auto;
+      overflow: hidden;
+    }
+
+    .tce-topbar-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: nowrap;
+      gap: 0.4rem;
+      flex: 0 1 auto;
+      min-width: 0;
+      white-space: nowrap;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scrollbar-width: thin;
+    }
+
+    .tce-topbar-actions::-webkit-scrollbar {
+      height: 6px;
+    }
+
+    .tce-topbar-actions::-webkit-scrollbar-thumb {
+      background: color-mix(in srgb, var(--bs-secondary-color) 45%, transparent);
+      border-radius: 999px;
+    }
+
+    .tce-topbar-actions .badge.bg-warning {
+      background-color: #f5c24d !important;
+      color: #2f2303 !important;
+      border: 1px solid #d39a1d;
+      font-weight: 700;
+    }
+
+    .tce-topbar-actions .badge.bg-warning i {
+      color: #2f2303;
+    }
+
+    .tce-topbar-exit-wrap {
+      display: inline-flex;
+      align-items: center;
+      margin-left: 0.35rem;
+      padding-left: 0.55rem;
+      border-left: 1px solid color-mix(in srgb, var(--bs-border-color) 82%, var(--bs-emphasis-color) 18%);
+    }
+
+    :host-context([data-bs-theme="dark"]) .tce-topbar-exit-wrap {
+      border-left-color: color-mix(in srgb, var(--bs-border-color) 66%, #ffffff 34%);
+    }
+
+    .tce-item-action-footer {
+      position: sticky;
+      bottom: 0;
+      z-index: 7;
+      background: color-mix(in srgb, var(--tce-surface) 96%, transparent);
+      backdrop-filter: blur(2px);
+    }
+
+
+    @media (max-width: 576px) {
+      .tce-topbar-actions {
+        gap: 0.35rem;
+      }
+
+      .tce-item-action-footer {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+      }
+    }
+
     /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
     .print-only {
