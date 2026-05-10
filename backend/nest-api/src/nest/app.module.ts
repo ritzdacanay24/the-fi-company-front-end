@@ -12,6 +12,7 @@ import { DataScrubModule } from './modules/data-scrub';
 import { DepartmentsModule } from './modules/departments/departments.module';
 import { envValidationSchema } from './config/env.validation';
 import { LoggingInterceptor } from './interceptors/logging.interceptor';
+import { DeployMaintenanceInterceptor } from './interceptors/deploy-maintenance.interceptor';
 import { RequestContextMiddleware } from './middlewares/request-context.middleware';
 import { AttachmentsModule } from './modules/attachments/attachments.module';
 import { BomStructureModule } from './modules/bom-structure/bom-structure.module';
@@ -263,6 +264,10 @@ import { UrlModule } from '../shared/url/url.module';
     ProjectManagerModule,
   ],
   providers: [
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: DeployMaintenanceInterceptor,
+    },
     {
       provide: APP_INTERCEPTOR,
       useClass: LoggingInterceptor,

@@ -375,7 +375,7 @@ export class PhotoChecklistRepository {
     });
   }
 
-  async updateTemplate(id: number, payload: any): Promise<void> {
+  async updateTemplate(id: number, payload: any): Promise<{ unsafeMutationBlocked?: boolean; instanceCount?: number; blockedItemIds?: number[] }> {
     const updateSql = `
       UPDATE checklist_templates
       SET
@@ -419,7 +419,14 @@ export class PhotoChecklistRepository {
       ? (payload?.published_at ?? wasPublished ?? new Date().toISOString().slice(0, 19).replace('T', ' '))
       : null;
 
-    await this.mysqlService.withTransaction<void>(async (connection) => {
+    return this.mysqlService.withTransaction<{ unsafeMutationBlocked?: boolean; instanceCount?: number; blockedItemIds?: number[] }>(async (connection) => {
+      if (Array.isArray(payload?.items)) {
+        const mutationGuard = await this.detectUnsafeItemMutationInTransaction(connection, id, payload.items);
+        if (mutationGuard.unsafeMutationBlocked) {
+          return mutationGuard;
+        }
+      }
+
       await connection.execute(updateSql, [
         payload?.quality_document_id ?? null,
         payload?.quality_revision_id ?? null,
@@ -449,6 +456,8 @@ export class PhotoChecklistRepository {
       if (Array.isArray(payload?.items)) {
         await this.replaceTemplateItemsInTransaction(connection, id, payload.items);
       }
+
+      return {};
     });
   }
 
@@ -1227,11 +1236,21 @@ export class PhotoChecklistRepository {
   }
 
   private async replaceTemplateItemsInTransaction(connection: any, templateId: number, items: any[]): Promise<void> {
-    await connection.execute('DELETE FROM checklist_items WHERE template_id = ?', [templateId]);
-
     if (!Array.isArray(items) || items.length === 0) {
+      await connection.execute('DELETE FROM checklist_items WHERE template_id = ?', [templateId]);
       return;
     }
+
+    const [existingRowsRaw] = await connection.query(
+      'SELECT id FROM checklist_items WHERE template_id = ?',
+      [templateId],
+    );
+    const existingRows = (existingRowsRaw || []) as Array<{ id?: number | string | null }>;
+    const existingIds = new Set<number>(
+      (existingRows || [])
+        .map((row: { id?: number | string | null }) => Number(row.id || 0))
+        .filter((id: number) => id > 0),
+    );
 
     const insertSql = `
       INSERT INTO checklist_items (
@@ -1245,6 +1264,7 @@ export class PhotoChecklistRepository {
     // Rebuilt per-save so parent_id always reflects the actual DB auto-increment IDs
     // regardless of whether the frontend sent a parent_id or not.
     const insertedIdByLevel: Array<number | null> = [];
+    const seenIds = new Set<number>();
 
     for (const item of items) {
       let normalizedLevel = Number(item?.level ?? 0);
@@ -1255,31 +1275,136 @@ export class PhotoChecklistRepository {
       // Trim the stack to the current level so we always reference the nearest ancestor.
       insertedIdByLevel.length = normalizedLevel;
       const persistedParentId = normalizedLevel > 0 ? (insertedIdByLevel[normalizedLevel - 1] ?? null) : null;
+      const candidateId = Number(item?.id || 0);
+      const canUpdateExisting = candidateId > 0 && existingIds.has(candidateId);
 
       const needsMediaUpload = this.computeNeedsMediaUpload(item);
-      const [insertResult] = await connection.execute(insertSql, [
-        templateId,
-        Number(item?.order_index || 0),
-        persistedParentId,
-        normalizedLevel,
-        item?.title || '',
-        item?.description ?? null,
-        item?.submission_type || 'photo',
-        item?.is_required === false ? 0 : 1,
-        item?.validation_rules ? JSON.stringify(item.validation_rules) : null,
-        item?.photo_requirements ? JSON.stringify(item.photo_requirements) : null,
-        item?.sample_image_url ?? null,
-        item?.sample_images ? JSON.stringify(item.sample_images) : null,
-        item?.video_requirements ? JSON.stringify(item.video_requirements) : null,
-        item?.sample_video_url ?? null,
-        item?.sample_videos ? JSON.stringify(item.sample_videos) : null,
-        needsMediaUpload,
-        item?.links ? JSON.stringify(item.links) : null,
-      ]) as [ResultSetHeader, any];
+      if (canUpdateExisting) {
+        await connection.execute(
+          `UPDATE checklist_items
+           SET order_index = ?, parent_id = ?, level = ?, title = ?, description = ?, submission_type = ?,
+               is_required = ?, validation_rules = ?, photo_requirements = ?, sample_image_url = ?, sample_images = ?,
+               video_requirements = ?, sample_video_url = ?, sample_videos = ?, needs_media_upload = ?, links = ?
+           WHERE id = ? AND template_id = ?`,
+          [
+            Number(item?.order_index || 0),
+            persistedParentId,
+            normalizedLevel,
+            item?.title || '',
+            item?.description ?? null,
+            item?.submission_type || 'photo',
+            item?.is_required === false ? 0 : 1,
+            item?.validation_rules ? JSON.stringify(item.validation_rules) : null,
+            item?.photo_requirements ? JSON.stringify(item.photo_requirements) : null,
+            item?.sample_image_url ?? null,
+            item?.sample_images ? JSON.stringify(item.sample_images) : null,
+            item?.video_requirements ? JSON.stringify(item.video_requirements) : null,
+            item?.sample_video_url ?? null,
+            item?.sample_videos ? JSON.stringify(item.sample_videos) : null,
+            needsMediaUpload,
+            item?.links ? JSON.stringify(item.links) : null,
+            candidateId,
+            templateId,
+          ],
+        );
 
-      // Record this row's auto-increment ID so children can reference it.
-      insertedIdByLevel[normalizedLevel] = insertResult.insertId;
+        insertedIdByLevel[normalizedLevel] = candidateId;
+        seenIds.add(candidateId);
+      } else {
+        const [insertResult] = await connection.execute(insertSql, [
+          templateId,
+          Number(item?.order_index || 0),
+          persistedParentId,
+          normalizedLevel,
+          item?.title || '',
+          item?.description ?? null,
+          item?.submission_type || 'photo',
+          item?.is_required === false ? 0 : 1,
+          item?.validation_rules ? JSON.stringify(item.validation_rules) : null,
+          item?.photo_requirements ? JSON.stringify(item.photo_requirements) : null,
+          item?.sample_image_url ?? null,
+          item?.sample_images ? JSON.stringify(item.sample_images) : null,
+          item?.video_requirements ? JSON.stringify(item.video_requirements) : null,
+          item?.sample_video_url ?? null,
+          item?.sample_videos ? JSON.stringify(item.sample_videos) : null,
+          needsMediaUpload,
+          item?.links ? JSON.stringify(item.links) : null,
+        ]) as [ResultSetHeader, any];
+
+        // Record this row's auto-increment ID so children can reference it.
+        insertedIdByLevel[normalizedLevel] = insertResult.insertId;
+      }
     }
+
+    const deleteCandidates = [...existingIds].filter((existingId) => !seenIds.has(existingId));
+    if (deleteCandidates.length > 0) {
+      const placeholders = deleteCandidates.map(() => '?').join(',');
+      await connection.execute(
+        `DELETE FROM checklist_items WHERE template_id = ? AND id IN (${placeholders})`,
+        [templateId, ...deleteCandidates],
+      );
+    }
+  }
+
+  private async detectUnsafeItemMutationInTransaction(
+    connection: any,
+    templateId: number,
+    items: any[],
+  ): Promise<{ unsafeMutationBlocked: boolean; instanceCount?: number; blockedItemIds?: number[] }> {
+    const [existingRowsRaw] = await connection.query(
+      'SELECT id FROM checklist_items WHERE template_id = ?',
+      [templateId],
+    );
+    const existingRows = (existingRowsRaw || []) as Array<{ id?: number | string | null }>;
+
+    const existingIds = (existingRows || [])
+      .map((row: { id?: number | string | null }) => Number(row.id || 0))
+      .filter((id: number) => id > 0);
+
+    if (existingIds.length === 0) {
+      return { unsafeMutationBlocked: false };
+    }
+
+    const incomingExistingIds = new Set<number>(
+      (Array.isArray(items) ? items : [])
+        .map((item) => Number(item?.id || 0))
+        .filter((id: number) => id > 0),
+    );
+
+    const removedItemIds = existingIds.filter((id: number) => !incomingExistingIds.has(id));
+    if (removedItemIds.length === 0) {
+      return { unsafeMutationBlocked: false };
+    }
+
+    const placeholders = removedItemIds.map(() => '?').join(',');
+    const [submissionRowsRaw] = await connection.query(
+      `SELECT item_id, instance_id FROM photo_submissions WHERE item_id IN (${placeholders})`,
+      removedItemIds,
+    );
+    const submissionRows = (submissionRowsRaw || []) as Array<{ item_id?: number | string | null; instance_id?: number | string | null }>;
+
+    if (!submissionRows || submissionRows.length === 0) {
+      return { unsafeMutationBlocked: false };
+    }
+
+    const blockedIds = Array.from(
+      new Set<number>(
+        submissionRows
+          .map((row: { item_id?: number | string | null }) => Number(row.item_id || 0))
+          .filter((id: number) => id > 0),
+      ),
+    );
+    const instanceCount = new Set(
+      submissionRows
+        .map((row: { instance_id?: number | string | null }) => Number(row.instance_id || 0))
+        .filter((id: number) => id > 0),
+    ).size;
+
+    return {
+      unsafeMutationBlocked: true,
+      instanceCount,
+      blockedItemIds: blockedIds,
+    };
   }
 
   private computeNeedsMediaUpload(item: any): number {

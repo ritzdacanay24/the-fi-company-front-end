@@ -59,6 +59,20 @@
   i, strong { color: #fff !important; }
 }
 
+/* Deploy mode banner */
+.app-deploy-status-banner {
+  background-color: #1d4ed8;
+  color: #fff;
+  border-bottom: 1px solid #1e40af;
+  font-size: 0.875rem;
+  line-height: 1.4;
+
+  i,
+  strong {
+    color: #fff !important;
+  }
+}
+
 body.qad-validation-banner-visible #page-topbar {
   top: var(--qad-validation-banner-height) !important;
 }

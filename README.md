@@ -30,6 +30,19 @@ Angular workspace for Eyefi operations and quality workflows.
 
 - Run `npm --prefix frontend run test`
 
+## Single-Server Deploy (Maintenance Mode)
+
+- Script: `backend/scripts/deploy/deploy-with-maintenance.sh`
+- Purpose: toggles deploy mode ON/OFF around `systemctl restart` so users see a predictable deployment banner and write requests receive friendly `503 + Retry-After` during rollout.
+- Example:
+	- `chmod +x backend/scripts/deploy/deploy-with-maintenance.sh`
+	- `BACKEND_SERVICE=nest-api FRONTEND_SERVICE=nginx DEPLOY_STATUS_FILE=/var/www/modern/backend/nest-api/deploy-status.json backend/scripts/deploy/deploy-with-maintenance.sh`
+
+- Manual helper (emergency ON/OFF): `backend/scripts/deploy/set-deploy-mode.sh`
+	- `chmod +x backend/scripts/deploy/set-deploy-mode.sh`
+	- Force ON: `DEPLOY_STATUS_FILE=/var/www/modern/backend/nest-api/deploy-status.json backend/scripts/deploy/set-deploy-mode.sh on`
+	- Force OFF: `DEPLOY_STATUS_FILE=/var/www/modern/backend/nest-api/deploy-status.json backend/scripts/deploy/set-deploy-mode.sh off`
+
 ## Documentation
 
 - Main documentation index: [docs/README.md](docs/README.md)

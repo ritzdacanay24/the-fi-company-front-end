@@ -4,8 +4,9 @@ import {
   HttpHandler,
   HttpEvent,
   HttpInterceptor,
+  HttpErrorResponse,
 } from "@angular/common/http";
-import { BehaviorSubject, Observable, throwError } from "rxjs";
+import { BehaviorSubject, Observable, throwError, timer } from "rxjs";
 import { catchError, filter, switchMap, take } from "rxjs/operators";
 import { AuthenticationService } from "../services/auth.service";
 import { THE_FI_COMPANY_TWOSTEP_TOKEN } from "../guards/admin.guard";
@@ -14,6 +15,7 @@ import { Router } from "@angular/router";
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { AccessControlApiService } from "../api/access-control/access-control.service";
 import { PermissionRequiredComponent, PermissionRequiredData } from "../../shared/modals/permission-required/permission-required.component";
+import { DeployStatusService } from "../services/deploy-status.service";
 
 @Injectable()
 export class ErrorInterceptor implements HttpInterceptor {
@@ -34,6 +36,38 @@ export class ErrorInterceptor implements HttpInterceptor {
 
   private get accessControlService() {
     return this.injector.get(AccessControlApiService);
+  }
+
+  private get deployStatusService() {
+    return this.injector.get(DeployStatusService);
+  }
+
+  private getRetryAfterSeconds(error: HttpErrorResponse): number {
+    const headerValue = error.headers?.get('Retry-After');
+    const payloadValue = Number(error?.error?.retryAfterSeconds || 0);
+    const headerSeconds = Number(headerValue || 0);
+    const raw = Number.isFinite(headerSeconds) && headerSeconds > 0 ? headerSeconds : payloadValue;
+    if (!Number.isFinite(raw) || raw < 1) {
+      return 15;
+    }
+
+    return Math.min(Math.round(raw), 300);
+  }
+
+  private isDeployInProgressError(error: HttpErrorResponse): boolean {
+    return error.status === 503 && (
+      error?.error?.deployInProgress === true
+      || typeof error?.error?.retryAfterSeconds !== 'undefined'
+      || String(error?.error?.message || '').toLowerCase().includes('deploy')
+    );
+  }
+
+  private shouldAutoRetryDeployRequest(request: HttpRequest<any>): boolean {
+    if (request.headers.has('x-deploy-retry')) {
+      return false;
+    }
+
+    return !request.url.includes('/health/deploy-status');
   }
 
   private async showPermissionRequiredModal(details: any, canRequest: boolean): Promise<void> {
@@ -168,6 +202,17 @@ export class ErrorInterceptor implements HttpInterceptor {
   ): Observable<HttpEvent<any>> {
     return next.handle(request).pipe(
       catchError((error) => {
+        if (this.isDeployInProgressError(error)) {
+          const retryAfterSeconds = this.getRetryAfterSeconds(error);
+          const message = error?.error?.message || 'A new version is currently being deployed. Please retry in a moment.';
+          this.deployStatusService.markDeploying(message, retryAfterSeconds);
+
+          if (this.shouldAutoRetryDeployRequest(request)) {
+            const retryRequest = request.clone({ setHeaders: { 'x-deploy-retry': '1' } });
+            return timer(retryAfterSeconds * 1000).pipe(switchMap(() => next.handle(retryRequest)));
+          }
+        }
+
         if (request.url.includes('/auth/login') || request.url.includes('/auth/login/card')) {
           return throwError(() => error);
         }

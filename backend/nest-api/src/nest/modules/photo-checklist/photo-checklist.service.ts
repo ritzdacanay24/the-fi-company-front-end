@@ -97,7 +97,17 @@ export class PhotoChecklistService {
 
   async updateTemplate(id: number, payload: Record<string, unknown>, callerId?: number) {
     await this.assertIsTemplateDraftOwner(id, callerId ?? null);
-    await this.repository.updateTemplate(id, payload);
+    const result = await this.repository.updateTemplate(id, payload);
+    if (result?.unsafeMutationBlocked) {
+      return {
+        success: false,
+        code: 'UNSAFE_ITEM_ID_MUTATION_BLOCKED',
+        message: 'Save blocked to protect existing checklist progress. This change would remove item IDs referenced by saved submissions.',
+        instance_count: Number(result.instanceCount || 0),
+        blocked_item_ids: result.blockedItemIds || [],
+      };
+    }
+
     const template = await this.getTemplateById(id, { includeInactive: true });
     return { success: true, template_id: id, template };
   }

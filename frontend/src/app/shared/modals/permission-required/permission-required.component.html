@@ -1,5 +1,5 @@
 <div class="modal-header permission-modal-header border-bottom">
-  <h5 class="modal-title fw-semibold text-dark d-flex align-items-center gap-2 mb-0">
+  <h5 class="modal-title fw-semibold text-body-emphasis d-flex align-items-center gap-2 mb-0">
     <span class="permission-modal-icon">
       <i class="mdi mdi-shield-lock-outline"></i>
     </span>
@@ -9,8 +9,8 @@
 </div>
 
 <div class="modal-body permission-modal-body">
-  <p class="mb-1 fw-semibold text-dark">{{ data.message }}</p>
-  <div class="small text-secondary mb-4">
+  <p class="mb-1 fw-semibold text-body-emphasis">{{ data.message }}</p>
+  <div class="small text-body-secondary mb-4">
     {{ data.failedCheck === 'role' ? 'Missing required role' : 'Missing required permission' }}
     <span *ngIf="data.userName">for <strong>{{ data.userName }}</strong></span>
   </div>
@@ -41,7 +41,7 @@
   </div>
 
   <div *ngIf="data.canRequest" class="permission-request-panel mb-0">
-    <p class="small text-secondary mb-2 fw-semibold">
+    <p class="small text-body-secondary mb-2 fw-semibold">
       <i class="mdi mdi-email-outline me-2"></i>Request access from your administrator
     </p>
     <label for="permission-reason-input" class="form-label small fw-semibold mb-2">
@@ -108,7 +108,7 @@
       <div class="permission-section">
         <strong class="permission-section-title d-block">
           Your Active Grants
-          <span class="text-secondary fw-normal small" *ngIf="data.requiredDomain">
+          <span class="text-body-secondary fw-normal small" *ngIf="data.requiredDomain">
             ({{ data.requiredDomain }})
           </span>
         </strong>

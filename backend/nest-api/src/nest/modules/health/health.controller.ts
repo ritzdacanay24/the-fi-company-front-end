@@ -1,11 +1,15 @@
 import { Controller, Get } from '@nestjs/common';
 import { Public } from '@/nest/decorators/public.decorator';
 import { QadOdbcService } from '@/shared/database/qad-odbc.service';
+import { DeployStatusService } from './deploy-status.service';
 
 @Controller()
 @Public()
 export class HealthController {
-  constructor(private readonly qadOdbcService: QadOdbcService) {}
+  constructor(
+    private readonly qadOdbcService: QadOdbcService,
+    private readonly deployStatusService: DeployStatusService,
+  ) {}
 
   @Get('health')
   getHealth() {
@@ -39,5 +43,10 @@ export class HealthController {
       message: 'QAD is currently unreachable. QAD-dependent features will be bypassed until connectivity is restored.',
       details: probeErrors,
     };
+  }
+
+  @Get('health/deploy-status')
+  async getDeployStatus() {
+    return this.deployStatusService.getStatus();
   }
 }
