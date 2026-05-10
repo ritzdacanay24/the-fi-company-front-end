@@ -176,11 +176,11 @@ export class VehicleInspectionFormComponent implements OnInit {
       this.form.value.truck_license_plate
     );
     if (this.failureErrors?.length > 0) {
-      this.failureClass = "alert alert-danger";
+      this.failureClass = "alert-warning";
       this.failureMessage = `Vehicle Status Update: This vehicle currently has a total of ${this.failureErrors?.length} unresolved failures that need to be addressed.`;
       this.hasUnresolvedFailures.emit(true);
     } else {
-      this.failureClass = "alert alert-success";
+      this.failureClass = "alert-success";
       this.failureMessage = `Vehicle Status Update: This vehicle is in excellent condition and does not have any reported failures. `;
       this.hasUnresolvedFailures.emit(false);
     }

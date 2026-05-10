@@ -256,6 +256,19 @@ export class VehicleInspectionEditComponent {
     return this.getVehiclePhotosByTitles(this.vehiclePhotoTitles[side]);
   }
 
+  getVehiclePhotoBadgeLabel(attachment: any, fallback: string): string {
+    const title = String(attachment?.title || '').trim();
+    if (!title) {
+      return fallback;
+    }
+
+    return title
+      .replace(/^Vehicle\s+/i, '')
+      .replace(/\s+View$/i, '')
+      .replace(/\s+Photo\s*\d*$/i, '')
+      .trim() || fallback;
+  }
+
   getAdditionalVehiclePhotos() {
     if (!Array.isArray(this.attachments)) return [];
     return this.attachments.filter((attachment) =>

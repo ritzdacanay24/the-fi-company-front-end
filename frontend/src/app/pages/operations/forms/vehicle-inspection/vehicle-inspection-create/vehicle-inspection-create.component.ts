@@ -259,17 +259,6 @@ export class VehicleInspectionCreateComponent {
       return;
     }
 
-    // Check if all vehicle photos are uploaded
-    if (!this.areAllVehiclePhotosUploaded()) {
-      this.toastrService.error(
-        this.useSplitSidePhotos
-          ? "Please upload all required vehicle photos (front, rear, left front, left rear, right front, and right rear views)."
-          : "Please upload all required vehicle photos (front, rear, left, and right views).",
-        "Missing Vehicle Photos"
-      );
-      return;
-    }
-
     try {
       this.isLoading = true;
       let { insertId } = await this.api._create(this.form.value);

@@ -32,74 +32,9 @@
               [showInspectorName]="false"></app-vehicle-inspection-form>
 
           <div class="mt-4 pt-4" *ngIf="!form?.value?.not_used">
-            <div class="mb-3">
-              <h5 class="mb-1"><i class="mdi mdi-camera me-2"></i>Vehicle Photos</h5>
-              <p class="text-muted mb-0">Capture photos of the vehicle from all required angles</p>
-            </div>
-
-            <div class="mb-3">
-              <div class="form-check form-switch">
-                <input class="form-check-input" type="checkbox" id="splitSidePhotos" [(ngModel)]="useSplitSidePhotos" [ngModelOptions]="{standalone: true}" (ngModelChange)="onSplitModeChange()">
-                <label class="form-check-label" for="splitSidePhotos">
-                  Long vehicle (capture two photos per side)
-                </label>
-              </div>
-              <div class="form-text">Enable this for box trucks or long vehicles that need front/rear side shots.</div>
-            </div>
-            
-            <!-- Angle selector + capture row -->
-            <div class="row g-2 mb-3 align-items-end">
-              <div class="col-12 col-sm-6">
-                <label class="form-label fw-semibold mb-1">
-                  <i class="mdi mdi-camera-outline me-1"></i>Select View Angle
-                </label>
-                <select class="form-select" [(ngModel)]="selectedPhotoSlot" [ngModelOptions]="{standalone: true}">
-                  <option *ngFor="let slot of photoSlots" [ngValue]="slot.key">
-                    {{ vehiclePhotos[slot.key] ? '\u2713 ' : '' }}{{ slot.label }}
-                  </option>
-                </select>
-              </div>
-              <div class="col-12 col-sm-6">
-                <label class="form-label fw-semibold mb-1">Capture / Upload</label>
-                <input type="file" accept="image/*" capture="environment" class="form-control"
-                       (change)="onVehiclePhotoChange($event, selectedPhotoSlot)">
-              </div>
-            </div>
-
-            <!-- Slot status badges -->
-            <div class="d-flex flex-wrap gap-2 mb-3">
-              <span *ngFor="let slot of photoSlots"
-                    class="badge rounded-pill px-3 py-2"
-                    style="font-size:0.8rem; cursor:pointer; user-select:none;"
-                    [ngClass]="vehiclePhotos[slot.key] ? 'bg-success' : 'bg-light text-dark border'"
-                    (click)="selectedPhotoSlot = slot.key">
-                <i class="mdi me-1" [ngClass]="vehiclePhotos[slot.key] ? 'mdi-check-circle-outline' : 'mdi-circle-outline'"></i>
-                {{ slot.label }}
-              </span>
-            </div>
-
-            <!-- Captured thumbnails -->
-            <div class="row g-2 mb-3" *ngIf="anyCaptured">
-              <ng-container *ngFor="let slot of photoSlots; trackBy: trackBySlotKey">
-                <div class="col-6 col-sm-4 col-md-3" *ngIf="vehiclePhotos[slot.key]">
-                  <div class="card border-success">
-                    <img [src]="vehiclePhotoPreviews[slot.key]" class="card-img-top"
-                         style="height:90px; object-fit:cover;">
-                    <div class="card-body p-2 text-center">
-                      <small class="d-block fw-semibold mb-1" style="font-size:0.7rem; line-height:1.2;">{{ slot.label }}</small>
-                      <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2"
-                              (click)="removeVehiclePhoto(slot.key)">
-                        <i class="mdi mdi-close me-1"></i>Remove
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </ng-container>
-            </div>
-
-            <div class="mt-4 pt-3 border-top">
+            <div>
               <div class="mb-3">
-                <h6 class="mb-1"><i class="mdi mdi-image-multiple me-2"></i>Additional Photos (Optional)</h6>
+                <h6 class="mb-1"><i class="mdi mdi-image-multiple me-2"></i>Vehicle Photos (Optional)</h6>
                 <p class="text-muted mb-0">Capture extra photos on the spot (damage, decals, interior, etc.).</p>
               </div>
               <input type="file" accept="image/*" capture="environment" class="form-control"
@@ -130,9 +65,9 @@
             <i class="mdi mdi-close me-1"></i>Cancel
           </button>
           <button type="submit" class="btn btn-primary ms-auto" 
-                  [disabled]="isLoading || hasUnresolvedFailures || !areAllVehiclePhotosUploaded()" 
+              [disabled]="isLoading || hasUnresolvedFailures" 
                   (click)="onSubmit()"
-                  [title]="hasUnresolvedFailures ? 'Cannot submit with unresolved failures' : !areAllVehiclePhotosUploaded() ? 'All vehicle photos are required' : 'Create Inspection'">
+              [title]="hasUnresolvedFailures ? 'Cannot submit with unresolved failures' : 'Create Inspection'">
             @if (isLoading) {
               <span class="spinner-border spinner-border-sm me-2" role="status"></span>
               Creating...

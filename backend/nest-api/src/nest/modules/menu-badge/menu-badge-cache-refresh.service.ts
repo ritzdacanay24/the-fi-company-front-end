@@ -73,6 +73,17 @@ export class MenuBadgeCacheRefreshService implements OnModuleInit {
           SUM(CASE
             WHEN wr_op = 10
               AND wr_qty_ord != wr_qty_comp
+              AND (
+                CASE
+                  WHEN COALESCE(wo.wo_so_job, '') = 'dropin' THEN wr_due
+                  ELSE CASE
+                    WHEN DAYOFWEEK(wr_due) IN (1, 2, 3) THEN wr_due - 4
+                    WHEN DAYOFWEEK(wr_due) IN (4, 5, 6) THEN wr_due - 2
+                    WHEN DAYOFWEEK(wr_due) IN (7) THEN wr_due - 3
+                    ELSE wr_due - 2
+                  END
+                END
+              ) <= CURDATE()
             THEN 1
             ELSE 0
           END) pick_and_stage_open,
@@ -91,6 +102,8 @@ export class MenuBadgeCacheRefreshService implements OnModuleInit {
             ELSE 0
           END) final_test_qc_open
         FROM wr_route
+        LEFT JOIN wo_mstr wo ON wo.wo_nbr = wr_route.wr_nbr
+          AND wo.wo_domain = 'EYE'
         WHERE wr_domain = 'EYE'
           AND wr_status != 'c'
           AND wr_op IN (10, 20, 30)

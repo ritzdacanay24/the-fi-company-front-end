@@ -80,6 +80,7 @@ export class AllRoutingComponent implements OnInit {
   gridApi: GridApi;
   setGridApi($event) {
     this.gridApi = $event.api;
+    void this.getTableSettings();
   }
 
   dataRenderered = false;
@@ -90,8 +91,13 @@ export class AllRoutingComponent implements OnInit {
     this.tableList = await this.tableSettingsService.getTableByUserId({
       pageId: this.pageId,
     });
-    this.gridApi!.applyColumnState({
-      state: this.tableList.currentView.data,
+    const columnState = this.tableList?.currentView?.data;
+    if (!this.gridApi || !columnState) {
+      return;
+    }
+
+    this.gridApi.applyColumnState({
+      state: columnState,
       applyOrder: true,
     });
   }
@@ -108,8 +114,8 @@ export class AllRoutingComponent implements OnInit {
       this.gridApi?.showLoadingOverlay();
       this.data = await this.api.getMasterProduction(this.routing);
 
-      if (this.gridApi.isDestroyed()) return;
-      this.gridApi!.redrawRows();
+      if (this.gridApi?.isDestroyed()) return;
+      this.gridApi?.redrawRows();
 
       this.gridApi?.hideOverlay();
     } catch (err) {

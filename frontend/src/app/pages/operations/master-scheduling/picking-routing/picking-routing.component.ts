@@ -35,7 +35,6 @@ export class PickingRoutingComponent implements OnInit {
       this.routing = params["routing"] || this.routing;
     });
     this.getData();
-    this.getTableSettings();
   }
 
   statusCount = {
@@ -105,6 +104,7 @@ export class PickingRoutingComponent implements OnInit {
 
   setGridApi($event) {
     this.gridApi = $event.api;
+    void this.getTableSettings();
   }
 
   tableList: any;
@@ -113,8 +113,13 @@ export class PickingRoutingComponent implements OnInit {
     this.tableList = await this.tableSettingsService.getTableByUserId({
       pageId: this.pageId,
     });
-    this.gridApi!.applyColumnState({
-      state: this.tableList.currentView.data,
+    const columnState = this.tableList?.currentView?.data;
+    if (!this.gridApi || !columnState) {
+      return;
+    }
+
+    this.gridApi.applyColumnState({
+      state: columnState,
       applyOrder: true,
     });
   }
@@ -132,8 +137,8 @@ export class PickingRoutingComponent implements OnInit {
       this.data = await this.api.getMasterProduction(this.routing);
 
       this.statusCount = this.calculateStatus();
-      if (this.gridApi.isDestroyed()) return;
-      this.gridApi!.redrawRows();
+      if (this.gridApi?.isDestroyed()) return;
+      this.gridApi?.redrawRows();
 
       this.gridApi?.hideOverlay();
     } catch (err) {

@@ -133,7 +133,7 @@
                 <div class="card h-100">
                   <div class="card-body text-center">
                     <div class="mb-2">
-                      <span class="badge bg-primary">Front</span>
+                      <span class="badge bg-primary">{{ getVehiclePhotoBadgeLabel(attachment, 'Front') }}</span>
                     </div>
                     <img [src]="getImageUrl(attachment)" class="img-thumbnail mb-2"
                          style="max-height: 200px; width: 100%; object-fit: cover; cursor: pointer;"
@@ -149,7 +149,7 @@
                 <div class="card h-100">
                   <div class="card-body text-center">
                     <div class="mb-2">
-                      <span class="badge bg-primary">Rear</span>
+                      <span class="badge bg-primary">{{ getVehiclePhotoBadgeLabel(attachment, 'Rear') }}</span>
                     </div>
                     <img [src]="getImageUrl(attachment)" class="img-thumbnail mb-2"
                          style="max-height: 200px; width: 100%; object-fit: cover; cursor: pointer;"
@@ -165,7 +165,7 @@
                 <div class="card h-100">
                   <div class="card-body text-center">
                     <div class="mb-2">
-                      <span class="badge bg-primary">Left Side</span>
+                      <span class="badge bg-primary">{{ getVehiclePhotoBadgeLabel(attachment, 'Left Side') }}</span>
                     </div>
                     <img [src]="getImageUrl(attachment)" class="img-thumbnail mb-2"
                          style="max-height: 200px; width: 100%; object-fit: cover; cursor: pointer;"
@@ -181,7 +181,7 @@
                 <div class="card h-100">
                   <div class="card-body text-center">
                     <div class="mb-2">
-                      <span class="badge bg-primary">Right Side</span>
+                      <span class="badge bg-primary">{{ getVehiclePhotoBadgeLabel(attachment, 'Right Side') }}</span>
                     </div>
                     <img [src]="getImageUrl(attachment)" class="img-thumbnail mb-2"
                          style="max-height: 200px; width: 100%; object-fit: cover; cursor: pointer;"
@@ -197,7 +197,7 @@
                 <div class="card h-100">
                   <div class="card-body text-center">
                     <div class="mb-2">
-                      <span class="badge bg-primary">Additional</span>
+                      <span class="badge bg-primary">{{ getVehiclePhotoBadgeLabel(attachment, 'Additional') }}</span>
                     </div>
                     <img [src]="getImageUrl(attachment)" class="img-thumbnail mb-2"
                          style="max-height: 200px; width: 100%; object-fit: cover; cursor: pointer;"

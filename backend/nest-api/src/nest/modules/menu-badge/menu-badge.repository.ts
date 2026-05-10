@@ -171,6 +171,7 @@ export class MenuBadgeRepository {
       FROM eyefidb.graphicsSchedule gp
       WHERE gp.active = 1
         AND gp.qty - gp.qtyShipped <> 0
+        AND gp.dueDate <= CURDATE()
 
       UNION ALL
 
