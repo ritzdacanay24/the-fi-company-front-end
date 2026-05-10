@@ -12,6 +12,7 @@ import { AuthenticationService } from "@app/core/services/auth.service";
 import { THE_FI_COMPANY_CURRENT_USER } from "@app/core/guards/admin.guard";
 import { PermitChecklistsService } from "@app/core/api/quality/permit-checklists.service";
 import { NgbDropdownModule, NgbModal, NgbModalModule, NgbModalRef } from "@ng-bootstrap/ng-bootstrap";
+import { ToastrService } from "ngx-toastr";
 import * as mammoth from "mammoth";
 import { TextFieldModule } from "@angular/cdk/text-field";
 
@@ -603,7 +604,8 @@ export class PermitChecklistsComponent implements OnInit {
     private readonly authenticationService: AuthenticationService,
     private readonly sanitizer: DomSanitizer,
     private readonly modalService: NgbModal,
-    private readonly permitChecklistsService: PermitChecklistsService
+    private readonly permitChecklistsService: PermitChecklistsService,
+    private readonly toastr: ToastrService,
   ) {}
 
   ngOnInit(): void {
@@ -630,8 +632,8 @@ export class PermitChecklistsComponent implements OnInit {
       const targetTicket = this.tickets.find((ticket) => ticket.ticketId === ticketId);
       if (targetTicket) {
         this.activeTicketId = ticketId;
-        const isFinalized = targetTicket.status === "finalized";
-        this.viewMode = view === "summary" || isFinalized ? "summary" : "form";
+        const isClosed = targetTicket.status === "finalized" || targetTicket.status === "archived";
+        this.viewMode = isClosed ? "form" : (view === "summary" ? "summary" : "form");
         this.statusMessage = "";
         return;
       }
@@ -2256,6 +2258,7 @@ export class PermitChecklistsComponent implements OnInit {
     this.refreshRecentTickets();
     this.persistLocalData();
     this.statusMessage = "Attachment removed.";
+    this.toastr.success("Attachment deleted successfully.");
   }
 
   async openAttachmentPreview(attachment: PermitChecklistAttachment): Promise<void> {
@@ -2320,8 +2323,7 @@ export class PermitChecklistsComponent implements OnInit {
 
   openTicket(ticketId: string): void {
     this.activeTicketId = ticketId;
-    const ticket = this.tickets.find((item) => item.ticketId === ticketId);
-    this.viewMode = ticket?.status === "finalized" ? "summary" : "form";
+    this.viewMode = "form";
     this.syncUrlState();
     this.statusMessage = "Ticket opened.";
   }
@@ -2352,6 +2354,41 @@ export class PermitChecklistsComponent implements OnInit {
     this.refreshRecentTickets();
     this.persistLocalData();
     this.statusMessage = `Ticket ${ticket.ticketId} archived.`;
+  }
+
+  reopenCurrentTicket(): void {
+    const ticket = this.activeTicket;
+    if (!ticket) {
+      return;
+    }
+
+    if (ticket.status !== "finalized") {
+      this.statusMessage = "Only finalized tickets can be reopened.";
+      return;
+    }
+
+    const confirmed = window.confirm(`Reopen checklist ${ticket.ticketId}? It will become editable again.`);
+    if (!confirmed) {
+      return;
+    }
+
+    ticket.status = "draft";
+    ticket.finalizedAt = undefined;
+    ticket.updatedAt = new Date().toISOString();
+
+    this.appendTransaction(ticket.ticketId, "field_update", {
+      fieldKey: "status",
+      oldValue: "finalized",
+      newValue: "draft",
+      source: "ticket",
+    });
+
+    this.viewMode = "form";
+    this.refreshRecentTickets();
+    this.persistLocalData();
+    this.syncUrlState();
+    this.statusMessage = `Ticket ${ticket.ticketId} reopened.`;
+    this.toastr.success("Ticket reopened successfully.");
   }
 
   deleteCurrentTicket(): void {
@@ -2409,6 +2446,7 @@ export class PermitChecklistsComponent implements OnInit {
     }
     this.syncUrlState();
     this.statusMessage = `Ticket ${ticket.ticketId} permanently deleted.`;
+    this.toastr.success("Ticket deleted successfully.");
   }
 
   goToFormView(): void {
@@ -2476,6 +2514,7 @@ export class PermitChecklistsComponent implements OnInit {
     this.persistLocalData();
     void this.persistTicketToApi(ticket);
     this.statusMessage = `Ticket ${ticket.ticketId} saved.`;
+    this.toastr.success("Ticket saved successfully.");
   }
 
   submitAndPrint(): void {
@@ -2538,9 +2577,9 @@ export class PermitChecklistsComponent implements OnInit {
     this.persistLocalData();
     void this.flushTransactionsToApi(ticket.ticketId);
 
-    this.viewMode = "summary";
+    this.viewMode = "form";
     this.syncUrlState();
-    this.statusMessage = `Ticket ${ticket.ticketId} finalized. Review summary and print.`;
+    this.statusMessage = `Ticket ${ticket.ticketId} finalized.`;
   }
 
   deleteTicket(ticketId: string, skipConfirm = false): void {
@@ -2571,6 +2610,7 @@ export class PermitChecklistsComponent implements OnInit {
     void this.deleteTicketFromApi(ticketId);
     this.syncUrlState();
     this.statusMessage = `Ticket ${ticketId} soft-deleted (archived).`;
+    this.toastr.success("Ticket deleted successfully.");
   }
 
   clearCurrent(): void {

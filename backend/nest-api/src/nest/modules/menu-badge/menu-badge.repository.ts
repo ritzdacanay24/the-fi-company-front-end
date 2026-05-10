@@ -162,8 +162,7 @@ export class MenuBadgeRepository {
 
       SELECT 'shippingRequestOpen' AS menu_id, COUNT(*) AS count
       FROM forms.shipping_request sr
-      WHERE sr.active = 1
-        AND sr.completedDate IS NULL
+      WHERE LOWER(TRIM(COALESCE(sr.status, 'open'))) IN ('open', 'pending', 'in transit')
 
       UNION ALL
 

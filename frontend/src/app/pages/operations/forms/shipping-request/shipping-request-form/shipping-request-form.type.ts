@@ -24,4 +24,5 @@ export interface IShippingRequestForm {
   completedBy: string;
   trackingNumber: string;
   active: number;
+  status: string;
 }

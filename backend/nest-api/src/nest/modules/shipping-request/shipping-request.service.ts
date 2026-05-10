@@ -10,6 +10,7 @@ import { EmailNotificationsService } from '../email-notifications';
 @Injectable()
 export class ShippingRequestService {
   private readonly logger = new Logger(ShippingRequestService.name);
+  private static readonly VALID_STATUSES = ['Open', 'Pending', 'In Transit', 'Completed', 'Cancelled'] as const;
 
   constructor(
     private readonly repository: ShippingRequestRepository,
@@ -54,14 +55,27 @@ export class ShippingRequestService {
   }
 
   async create(payload: Record<string, unknown>) {
-    const insertId = await this.repository.create(payload);
+    const explicitStatus = this.normalizeExplicitStatus(payload.status);
+    const payloadWithStatus = {
+      ...payload,
+      status: explicitStatus || this.calculateStatus(payload),
+    };
+
+    const insertId = await this.repository.create(payloadWithStatus);
     await this.sendCreateNotification(insertId);
     return { insertId };
   }
 
   async updateById(id: number, payload: Record<string, unknown>) {
-    await this.getById(id);
-    const rowCount = await this.repository.updateById(id, payload);
+    const existing = await this.getById(id);
+    const merged = { ...existing, ...payload };
+    const explicitStatus = this.normalizeExplicitStatus(payload.status);
+    const payloadWithStatus = {
+      ...payload,
+      status: explicitStatus || this.calculateStatus(merged),
+    };
+
+    const rowCount = await this.repository.updateById(id, payloadWithStatus);
 
     const sendTrackingEmail = Boolean(payload.sendTrackingEmail);
     if (sendTrackingEmail) {
@@ -77,6 +91,46 @@ export class ShippingRequestService {
     await this.getById(id);
     const rowCount = await this.repository.deleteById(id);
     return { rowCount };
+  }
+
+  private calculateStatus(record: Record<string, unknown>): (typeof ShippingRequestService.VALID_STATUSES)[number] {
+    const activeValue = record.active;
+    const activeNumber = Number(activeValue);
+    const isInactive =
+      activeValue === false
+      || activeValue === 'false'
+      || activeValue === '0'
+      || (Number.isFinite(activeNumber) && activeNumber === 0);
+
+    if (isInactive) {
+      return 'Cancelled';
+    }
+
+    const completedDate = String(record.completedDate ?? '').trim();
+    if (completedDate && completedDate.toLowerCase() !== 'n/a') {
+      return 'Completed';
+    }
+
+    const trackingNumber = String(record.trackingNumber ?? '').trim();
+    const normalizedTracking = trackingNumber.toLowerCase();
+    if (trackingNumber && !['n/a', 'na', 'null', 'none', '-'].includes(normalizedTracking)) {
+      return 'In Transit';
+    }
+
+    return 'Open';
+  }
+
+  private normalizeExplicitStatus(input: unknown): (typeof ShippingRequestService.VALID_STATUSES)[number] | null {
+    const normalized = String(input ?? '').trim();
+    if (!normalized) {
+      return null;
+    }
+
+    if ((ShippingRequestService.VALID_STATUSES as readonly string[]).includes(normalized)) {
+      return normalized as (typeof ShippingRequestService.VALID_STATUSES)[number];
+    }
+
+    return null;
   }
 
   private async sendCreateNotification(id: number) {

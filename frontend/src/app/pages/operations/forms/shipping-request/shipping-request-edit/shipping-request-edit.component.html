@@ -48,7 +48,10 @@
           </div>
           <div>
             <h2 class="mb-1 text-primary">{{title}}</h2>
-            <p class="text-muted mb-0" *ngIf="id">Edit existing shipping request #{{id}}</p>
+            <p class="text-muted mb-0" *ngIf="id">
+              Edit existing shipping request #{{id}}
+              <span class="badge ms-2" [ngClass]="getStatusBadgeClass()">{{getStatus()}}</span>
+            </p>
           </div>
         </div>
 

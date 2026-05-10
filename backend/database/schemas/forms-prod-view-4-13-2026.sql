@@ -579,6 +579,7 @@ CREATE TABLE IF NOT EXISTS `shipping_request` (
   `createdDate` datetime NOT NULL,
   `createdById` int(11) NOT NULL,
   `active` int(11) NOT NULL DEFAULT '1',
+  `status` varchar(30) NOT NULL DEFAULT 'Pending',
   `serviceType` varchar(50) NOT NULL,
   `completedDate` timestamp NULL DEFAULT NULL,
   `completedBy` varchar(50) DEFAULT NULL,

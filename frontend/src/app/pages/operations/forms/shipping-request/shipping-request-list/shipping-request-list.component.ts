@@ -72,6 +72,19 @@ export class ShippingRequestListComponent implements OnInit {
       filter: "agMultiColumnFilter",
     },
     {
+      field: "status",
+      headerName: "Status",
+      filter: "agSetColumnFilter",
+      minWidth: 150,
+      maxWidth: 170,
+      valueGetter: (params) => this.resolveStatus(params.data),
+      cellRenderer: (params: any) => {
+        const status = this.resolveStatus(params?.data);
+        const badgeClass = this.getStatusBadgeClass(status);
+        return `<span class="badge ${badgeClass}">${status}</span>`;
+      },
+    },
+    {
       headerName: "Contact Info",
       children: [
         {
@@ -193,17 +206,18 @@ export class ShippingRequestListComponent implements OnInit {
   selectedViewOptions = [
     {
       name: "Open",
-      value: 0,
       selected: false,
     },
     {
-      name: "Active",
-      value: 1,
+      name: "In Transit",
       selected: false,
     },
     {
-      name: "Inactive",
-      value: 0,
+      name: "Completed",
+      selected: false,
+    },
+    {
+      name: "Cancelled",
       selected: false,
     },
     {
@@ -257,6 +271,41 @@ export class ShippingRequestListComponent implements OnInit {
         gridParams,
       },
     });
+  }
+
+  private resolveStatus(row: any): string {
+    const persistedStatus = String(row?.status || "").trim();
+    if (persistedStatus) {
+      return persistedStatus;
+    }
+
+    if (row?.completedDate && row.completedDate !== "N/A") {
+      return "Completed";
+    }
+
+    const trackingNumber = String(row?.trackingNumber || "").trim();
+    if (trackingNumber && !["n/a", "na", "null", "none", "-"].includes(trackingNumber.toLowerCase())) {
+      return "In Transit";
+    }
+
+    if (row?.active === false || Number(row?.active) === 0) {
+      return "Cancelled";
+    }
+
+    return "Open";
+  }
+
+  private getStatusBadgeClass(status: string): string {
+    switch (status) {
+      case "Completed":
+        return "bg-success";
+      case "In Transit":
+        return "bg-info";
+      case "Cancelled":
+        return "bg-danger";
+      default:
+        return "bg-warning";
+    }
   }
 
   async getData() {

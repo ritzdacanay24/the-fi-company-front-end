@@ -27,6 +27,7 @@ export class ShippingRequestRepository extends BaseRepository<RowDataPacket> {
     'createdDate',
     'createdById',
     'active',
+    'status',
     'serviceType',
     'completedDate',
     'completedBy',
@@ -57,12 +58,18 @@ export class ShippingRequestRepository extends BaseRepository<RowDataPacket> {
       queryParams.push(params.dateFrom, params.dateTo);
     }
 
-    if (params.selectedViewType === 'Open') {
-      sql += ' AND a.active = 1 AND a.completedDate IS NULL';
-    } else if (params.selectedViewType === 'Active') {
-      sql += ' AND a.active = 1';
-    } else if (params.selectedViewType === 'Inactive') {
-      sql += ' AND a.active = 0';
+    const normalizedView = String(params.selectedViewType || 'Open').trim().toLowerCase();
+
+    if (normalizedView === 'open' || normalizedView === 'active') {
+      sql += " AND LOWER(TRIM(COALESCE(a.status, 'open'))) IN ('open', 'pending', 'in transit')";
+    } else if (normalizedView === 'inactive' || normalizedView === 'cancelled') {
+      sql += " AND LOWER(TRIM(COALESCE(a.status, 'open'))) = 'cancelled'";
+    } else if (normalizedView === 'pending') {
+      sql += " AND LOWER(TRIM(COALESCE(a.status, 'open'))) = 'pending'";
+    } else if (normalizedView === 'in transit') {
+      sql += " AND LOWER(TRIM(COALESCE(a.status, 'open'))) = 'in transit'";
+    } else if (normalizedView === 'completed') {
+      sql += " AND LOWER(TRIM(COALESCE(a.status, 'open'))) = 'completed'";
     }
 
     sql += ' ORDER BY a.createdDate DESC';

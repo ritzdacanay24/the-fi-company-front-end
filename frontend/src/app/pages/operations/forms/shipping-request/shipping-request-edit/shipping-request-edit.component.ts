@@ -119,6 +119,41 @@ export class ShippingRequestEditComponent {
     this.goBack();
   }
 
+  getStatus(): string {
+    const status = String(this.data?.status || '').trim();
+    if (status) {
+      return status;
+    }
+
+    if (this.data?.completedDate && this.data.completedDate !== 'N/A') {
+      return 'Completed';
+    }
+
+    if (this.data?.trackingNumber && this.data.trackingNumber !== 'N/A') {
+      return 'In Transit';
+    }
+
+    if (this.data?.active === false || Number(this.data?.active) === 0) {
+      return 'Cancelled';
+    }
+
+    return 'Pending';
+  }
+
+  getStatusBadgeClass(): string {
+    const status = this.getStatus();
+    switch (status) {
+      case 'Completed':
+        return 'bg-success';
+      case 'In Transit':
+        return 'bg-info';
+      case 'Cancelled':
+        return 'bg-danger';
+      default:
+        return 'bg-warning';
+    }
+  }
+
   onEdit() {
     this.formDisabled = false;
     this.toastrService.info("Edit mode enabled");

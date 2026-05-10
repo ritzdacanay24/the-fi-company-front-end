@@ -60,10 +60,10 @@ export class ShippingRequestFormComponent implements OnChanges {
 
   private applyDisabledState() {
     if (this.isFormDisabled) {
-      // Disable entire form, then enable trackingNumber so it remains editable
+      // Disable entire form, then enable fields that are allowed during edit mode.
       this.form.disable({ emitEvent: false });
-      // Ensure trackingNumber stays enabled when present
       if (this.form.get("trackingNumber")) this.form.get("trackingNumber").enable({ emitEvent: false });
+      if (this.form.get("status")) this.form.get("status").enable({ emitEvent: false });
     } else {
       this.form.enable({ emitEvent: false });
     }
@@ -82,6 +82,7 @@ export class ShippingRequestFormComponent implements OnChanges {
 
   states = states;
   formData = shippingRequestFormJson;
+  readonly statusOptions = ["Pending", "In Transit", "Completed", "Cancelled"];
 
   form = new FormGroup<ControlsOf<IShippingRequestForm>>({
     requestorName: new FormControl("", [Validators.required]),
@@ -108,6 +109,7 @@ export class ShippingRequestFormComponent implements OnChanges {
     completedBy: new FormControl(""),
     trackingNumber: new FormControl(""),
     active: new FormControl(1),
+    status: new FormControl("Pending", [Validators.required]),
   });
 
   setBooleanToNumber(key) {

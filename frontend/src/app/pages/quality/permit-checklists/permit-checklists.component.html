@@ -184,9 +184,15 @@
           <h2 class="mb-0 text-primary">Permit Checklist Form</h2>
         </div>
       </div>
-      <button class="btn btn-outline-secondary" type="button" (click)="goHome()">
-        <i class="mdi mdi-arrow-left me-1"></i>Back to Tickets
-      </button>
+      <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
+        <div class="alert alert-info d-flex align-items-center py-2 px-3 mb-0" role="status">
+          <i class="mdi mdi-content-save-check-outline me-2"></i>
+          Changes are saved automatically
+        </div>
+        <button class="btn btn-outline-secondary" type="button" (click)="goHome()">
+          <i class="mdi mdi-arrow-left me-1"></i>Back to Tickets
+        </button>
+      </div>
     </div>
   </div>
 
@@ -210,13 +216,12 @@
               <tbody>
                 <tr *ngFor="let field of visibleHeaderFields">
                   <th scope="row" [class.field-filled]="isFieldPopulated(field.key)" [class.field-empty]="!isFieldPopulated(field.key)">{{ field.label }}</th>
-                  <td [class.field-filled]="isFieldPopulated(field.key)" [class.field-empty]="!isFieldPopulated(field.key)"
-                    (dblclick)="onFieldEditorDoubleClick(field.key)">
+                  <td [class.field-filled]="isFieldPopulated(field.key)" [class.field-empty]="!isFieldPopulated(field.key)">
                     <ng-container *ngIf="isCustomerField(field.key); else assignedArchitectFieldInput">
                       <div class="d-flex flex-wrap align-items-center gap-2">
                         <select [id]="getFieldEditorId(field.key)" class="form-select"
                           [ngModel]="getFieldEditValue(field.key)" (ngModelChange)="updateFieldDraft(field.key, $event)"
-                          (blur)="onFieldEditorBlur(field.key)" (dblclick)="onFieldEditorDoubleClick(field.key)"
+                          (focus)="beginFieldEdit(field.key, false)" (blur)="onFieldEditorBlur(field.key)"
                           (keydown.tab)="onFieldTab($event, field.key)"
                           [disabled]="!canEditActiveTicket">
                           <option value="">Select customer</option>
@@ -232,7 +237,7 @@
                           <select [id]="getFieldEditorId(field.key)" class="form-select"
                             [ngModel]="getFieldEditValue(field.key)"
                             (ngModelChange)="updateFieldDraft(field.key, $event)"
-                            (blur)="onFieldEditorBlur(field.key)" (dblclick)="onFieldEditorDoubleClick(field.key)"
+                            (focus)="beginFieldEdit(field.key, false)" (blur)="onFieldEditorBlur(field.key)"
                             (keydown.tab)="onFieldTab($event, field.key)"
                             [disabled]="!canEditActiveTicket">
                             <option value="">Select architect</option>
@@ -272,10 +277,10 @@
                           <input [id]="getFieldEditorId(field.key)" class="form-control" type="date"
                             [ngModel]="getFieldEditValue(field.key)"
                             (ngModelChange)="updateFieldDraft(field.key, $event)"
-                            (blur)="onFieldEditorBlur(field.key)" (dblclick)="onFieldEditorDoubleClick(field.key)"
+                            (focus)="beginFieldEdit(field.key, false)" (blur)="onFieldEditorBlur(field.key)"
                             (keydown.tab)="onFieldTab($event, field.key)"
-                            [disabled]="!canEditActiveTicket" [readonly]="!isFieldEditing(field.key)" />
-                          <button *ngIf="isFieldEditing(field.key)" class="btn btn-outline-secondary" type="button"
+                            [disabled]="!canEditActiveTicket" />
+                          <button class="btn btn-outline-secondary" type="button"
                             (click)="setDraftFieldNow(field.key)">
                             Now
                           </button>
@@ -285,9 +290,9 @@
                     <ng-template #headerTextInput>
                       <input [id]="getFieldEditorId(field.key)" class="form-control" [type]="resolveFieldType(field)"
                         [ngModel]="getFieldEditValue(field.key)" (ngModelChange)="updateFieldDraft(field.key, $event)"
-                        (blur)="onFieldEditorBlur(field.key)" (dblclick)="onFieldEditorDoubleClick(field.key)"
+                        (focus)="beginFieldEdit(field.key, false)" (blur)="onFieldEditorBlur(field.key)"
                         (keydown.tab)="onFieldTab($event, field.key)"
-                        [disabled]="!canEditActiveTicket" [readonly]="!isFieldEditing(field.key)"
+                        [disabled]="!canEditActiveTicket"
                         [placeholder]="field.placeholder || 'Enter value'" />
                     </ng-template>
                   </td>
@@ -305,16 +310,15 @@
               <tbody>
                 <tr *ngFor="let field of visibleProcessFields">
                   <th scope="row" [class.field-filled]="isFieldPopulated(field.key)" [class.field-empty]="!isFieldPopulated(field.key)">{{ field.label }}</th>
-                  <td [class.field-filled]="isFieldPopulated(field.key)" [class.field-empty]="!isFieldPopulated(field.key)"
-                    (dblclick)="onFieldEditorDoubleClick(field.key)">
+                  <td [class.field-filled]="isFieldPopulated(field.key)" [class.field-empty]="!isFieldPopulated(field.key)">
                     <ng-container *ngIf="resolveFieldType(field) === 'date'; else processTextInput">
                       <div class="input-group">
                         <input [id]="getFieldEditorId(field.key)" class="form-control timeline-input" type="date"
                           [ngModel]="getFieldEditValue(field.key)" (ngModelChange)="updateFieldDraft(field.key, $event)"
-                          (blur)="onFieldEditorBlur(field.key)" (dblclick)="onFieldEditorDoubleClick(field.key)"
+                          (focus)="beginFieldEdit(field.key, false)" (blur)="onFieldEditorBlur(field.key)"
                           (keydown.tab)="onFieldTab($event, field.key)"
-                          [disabled]="!canEditActiveTicket" [readonly]="!isFieldEditing(field.key)" />
-                        <button *ngIf="isFieldEditing(field.key)" class="btn btn-outline-secondary" type="button"
+                          [disabled]="!canEditActiveTicket" />
+                        <button class="btn btn-outline-secondary" type="button"
                           (click)="setDraftFieldNow(field.key)">
                           Now
                         </button>
@@ -330,9 +334,9 @@
                         <input [id]="getFieldEditorId(field.key)" class="form-control timeline-input"
                           [type]="resolveFieldType(field)" [ngModel]="getFieldEditValue(field.key)"
                           (ngModelChange)="updateFieldDraft(field.key, $event)"
-                          (blur)="onFieldEditorBlur(field.key)" (dblclick)="onFieldEditorDoubleClick(field.key)"
+                          (focus)="beginFieldEdit(field.key, false)" (blur)="onFieldEditorBlur(field.key)"
                           (keydown.tab)="onFieldTab($event, field.key)"
-                          [disabled]="!canEditActiveTicket" [readonly]="!isFieldEditing(field.key)"
+                          [disabled]="!canEditActiveTicket"
                           placeholder="Date or status update" />
                         <button class="btn btn-outline-secondary" type="button"
                           [ngClass]="hasProcessNote(field.key) ? 'text-primary' : ''"
@@ -638,6 +642,12 @@
                   <button class="dropdown-item" type="button" ngbDropdownItem [disabled]="completionPercent < 100"
                     (click)="submitAndPrint()">
                     Print PDF
+                  </button>
+                </li>
+                <li>
+                  <button class="dropdown-item" type="button" ngbDropdownItem
+                    [disabled]="!activeTicket || activeTicket.status !== 'finalized'" (click)="reopenCurrentTicket()">
+                    Reopen Checklist
                   </button>
                 </li>
                 <li>
