@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { EmailService } from '@/shared/email/email.service';
+import { parseDateInput } from '@/shared/utils/date.util';
 import * as XLSX from 'xlsx';
 import { TripExpenseTransactionsRepository } from './trip-expense-transactions.repository';
 import { UploadedSpreadsheetFile } from './types';
@@ -53,8 +54,16 @@ export class TripExpenseTransactionsService {
     const bySeries: Record<string, Record<string, number>> = {};
 
     const dateList: Date[] = [];
-    const start = new Date(dateFrom);
-    const end = new Date(dateTo);
+    const start = parseDateInput(dateFrom);
+    const end = parseDateInput(dateTo);
+    if (!start || !end) {
+      return {
+        obj: [],
+        chart: {},
+        chartnew: {},
+      };
+    }
+
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
       const day = d.getDay();
       if (day !== 0 && day !== 6) {
@@ -97,8 +106,8 @@ export class TripExpenseTransactionsService {
 
     for (const row of rows) {
       const rawDate = String(row.sod_per_date || '');
-      const parsed = new Date(rawDate);
-      if (Number.isNaN(parsed.getTime())) {
+      const parsed = parseDateInput(rawDate);
+      if (!parsed) {
         continue;
       }
 

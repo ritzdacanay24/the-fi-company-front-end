@@ -20,6 +20,7 @@ import {
   TicketEventChartRow,
 } from './reports.repository';
 import { toJsonSafe } from '@/shared/utils/json-safe.util';
+import { parseDateInput } from '@/shared/utils/date.util';
 import { DailyReportService } from './daily-report.service';
 
 type ReportView = 'Weekly' | 'Monthly' | 'Annually' | 'Daily' | 'Quarterly';
@@ -346,9 +347,9 @@ export class ReportsService {
 
   private buildWeekLabels(weekStart: string, weekEnd: string): string[] {
     const labels: string[] = [];
-    const start = new Date(weekStart);
-    const end = new Date(weekEnd);
-    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    const start = parseDateInput(weekStart);
+    const end = parseDateInput(weekEnd);
+    if (!start || !end) {
       return labels;
     }
 
@@ -362,15 +363,18 @@ export class ReportsService {
 
   private buildPseudoWeeklyDates(weekStart: string, weekEnd: string): string[] {
     const dates: string[] = [];
-    const start = new Date(weekStart);
-    const end = new Date(weekEnd);
-    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    const start = parseDateInput(weekStart);
+    const end = parseDateInput(weekEnd);
+    if (!start || !end) {
       return dates;
     }
 
     const cursor = new Date(start);
     while (cursor < end) {
-      dates.push(cursor.toISOString().slice(0, 10));
+      const year = cursor.getFullYear();
+      const month = String(cursor.getMonth() + 1).padStart(2, '0');
+      const day = String(cursor.getDate()).padStart(2, '0');
+      dates.push(`${year}-${month}-${day}`);
       cursor.setDate(cursor.getDate() + 5);
     }
     return dates;
@@ -398,38 +402,6 @@ export class ReportsService {
     return 'Monthly';
   }
 
-  private parseDateOnly(value: string): Date | null {
-    const normalized = String(value || '').trim();
-    if (!normalized) {
-      return null;
-    }
-
-    const match = normalized.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    if (match) {
-      const year = Number(match[1]);
-      const monthIndex = Number(match[2]) - 1;
-      const day = Number(match[3]);
-      const parsed = new Date(year, monthIndex, day);
-
-      if (
-        parsed.getFullYear() === year
-        && parsed.getMonth() === monthIndex
-        && parsed.getDate() === day
-      ) {
-        return parsed;
-      }
-
-      return null;
-    }
-
-    const parsed = new Date(normalized);
-    if (Number.isNaN(parsed.getTime())) {
-      return null;
-    }
-
-    return parsed;
-  }
-
   private buildChart(
     rows:
       | ChartRow[]
@@ -445,8 +417,18 @@ export class ReportsService {
     const chartnew: Record<string, { dataset: number[]; label: string; backgroundColor?: string }> = {};
 
     const uniqueCustomers = Array.from(new Set(rows.map((row) => String(row.label || '')).filter(Boolean)));
-    const cursor = new Date(dateFrom);
-    const end = new Date(dateTo);
+    const cursorDate = parseDateInput(dateFrom);
+    const end = parseDateInput(dateTo);
+    if (!cursorDate || !end) {
+      return {
+        obj: { label: [] },
+        chart: [],
+        chartnew: {},
+        uniqueCustomers,
+      };
+    }
+
+    const cursor = new Date(cursorDate);
 
     while (cursor <= end) {
       const context = this.getLabelContext(cursor, typeOfView);
@@ -461,8 +443,8 @@ export class ReportsService {
             continue;
           }
 
-          const rowDate = new Date(String(row.request_date || ''));
-          if (Number.isNaN(rowDate.getTime())) {
+          const rowDate = parseDateInput(String(row.request_date || ''));
+          if (!rowDate) {
             continue;
           }
 
@@ -658,8 +640,18 @@ export class ReportsService {
       }
     }
 
-    const cursor = new Date(dateFrom);
-    const end = new Date(dateTo);
+    const cursorDate = parseDateInput(dateFrom);
+    const end = parseDateInput(dateTo);
+    if (!cursorDate || !end) {
+      return {
+        label: [],
+        chart: {},
+        results: rows,
+        overall,
+      };
+    }
+
+    const cursor = new Date(cursorDate);
     const currentCompareKey = this.getRevenueCompareKey(now, typeOfView);
 
     while (cursor <= end) {
@@ -682,8 +674,8 @@ export class ReportsService {
             return sum;
           }
 
-          const rowDate = new Date(String(row.daten ?? ''));
-          if (Number.isNaN(rowDate.getTime())) {
+          const rowDate = parseDateInput(String(row.daten ?? ''));
+          if (!rowDate) {
             return sum;
           }
 
@@ -795,8 +787,8 @@ export class ReportsService {
     const backgroundColor: string[] = [];
     const goal = 200000;
 
-    const cursorDate = this.parseDateOnly(from);
-    const end = this.parseDateOnly(to);
+    const cursorDate = parseDateInput(from);
+    const end = parseDateInput(to);
     if (!cursorDate || !end) {
       throw new BadRequestException('Invalid date format. Expected YYYY-MM-DD');
     }
@@ -811,7 +803,7 @@ export class ReportsService {
         for (const row of rows) {
           const shpDate = String(row['abs_shp_date'] ?? row['ABS_SHP_DATE'] ?? '');
           if (!shpDate) continue;
-          const parsedShpDate = this.parseDateOnly(shpDate);
+          const parsedShpDate = parseDateInput(shpDate);
           if (!parsedShpDate) continue;
 
           const rowKey = this.formatDateKey(parsedShpDate, view);

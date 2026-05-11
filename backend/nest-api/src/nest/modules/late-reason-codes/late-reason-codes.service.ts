@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { ResultSetHeader } from 'mysql2/promise';
 import { RowDataPacket } from 'mysql2/promise';
 import { MysqlService } from '@/shared/database/mysql.service';
+import { parseDateInput } from '@/shared/utils/date.util';
 
 @Injectable()
 export class LateReasonCodesService {
@@ -177,9 +178,9 @@ export class LateReasonCodesService {
   ): Record<string, unknown> {
     const chartNew: Record<string, unknown> = {};
 
-    const start = new Date(params.dateFrom);
-    const end = new Date(params.dateTo);
-    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    const start = parseDateInput(params.dateFrom);
+    const end = parseDateInput(params.dateTo);
+    if (!start || !end) {
       return chartNew;
     }
 
@@ -211,7 +212,12 @@ export class LateReasonCodesService {
         continue;
       }
 
-      const key = formatLabel(new Date(String(rawDate)));
+      const parsedDate = parseDateInput(String(rawDate));
+      if (!parsedDate) {
+        continue;
+      }
+
+      const key = formatLabel(parsedDate);
       totalsByLabel[key] = (totalsByLabel[key] || 0) + shipped;
     }
 

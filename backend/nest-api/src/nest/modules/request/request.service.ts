@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { parseDateInput } from '@/shared/utils/date.util';
 import { RequestRepository } from './request.repository';
 
 interface ChartPoint {
@@ -105,9 +106,9 @@ export class RequestService {
     const labels: string[] = [];
     const chart1: Record<string, ChartPoint> = {};
 
-    const startDate = new Date(weekStartDate);
-    const endDate = new Date(weekEndDate);
-    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+    const startDate = parseDateInput(weekStartDate);
+    const endDate = parseDateInput(weekEndDate);
+    if (!startDate || !endDate) {
       return { obj: { label: [] }, chart: [], chartnew: {} };
     }
 
@@ -130,8 +131,8 @@ export class RequestService {
               continue;
             }
 
-            const rowDate = new Date(String(row.sod_per_date || ''));
-            if (Number.isNaN(rowDate.getTime())) {
+            const rowDate = parseDateInput(String(row.sod_per_date || ''));
+            if (!rowDate) {
               continue;
             }
 
@@ -148,8 +149,8 @@ export class RequestService {
       } else {
         let value = 0;
         for (const row of rows) {
-          const rowDate = new Date(String(row.sod_per_date || ''));
-          if (Number.isNaN(rowDate.getTime())) {
+          const rowDate = parseDateInput(String(row.sod_per_date || ''));
+          if (!rowDate) {
             continue;
           }
 

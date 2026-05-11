@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { RowDataPacket } from 'mysql2/promise';
 import { MysqlService } from '@/shared/database/mysql.service';
+import { parseDateInput } from '@/shared/utils/date.util';
 
 interface HitsRow extends RowDataPacket {
   hits: number;
@@ -174,10 +175,10 @@ export class FieldServiceOverviewRepository {
       other_total: [] as number[],
     };
 
-    const start = new Date(dateFrom);
-    const end = new Date(dateTo);
+    const start = parseDateInput(dateFrom);
+    const end = parseDateInput(dateTo);
 
-    if (!Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime())) {
+    if (start && end) {
       const cursor = new Date(start);
       while (cursor.getTime() < end.getTime()) {
         cursor.setMonth(cursor.getMonth() + 1);
