@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EmailService } from '@/shared/email/email.service';
+import { EmailTemplateService } from '@/shared/email/email-template.service';
 import { QadOdbcService } from '@/shared/database/qad-odbc.service';
 import { toJsonSafe } from '@/shared/utils/json-safe.util';
 import { addLowercaseAliases } from '@/shared/utils/row-alias.util';
@@ -11,6 +12,7 @@ export class WorkOrderService {
   constructor(
     private readonly repository: WorkOrderRepository,
     private readonly emailService: EmailService,
+    private readonly emailTemplateService: EmailTemplateService,
     private readonly qadOdbcService: QadOdbcService,
     private readonly configService: ConfigService,
   ) {}
@@ -369,23 +371,12 @@ export class WorkOrderService {
     status: string;
     link: string;
   }) {
-    const html = `
-      <html>
-        <body>
-          <p>${params.greeting}</p>
-          <p>A billing review is required for the following work order:</p>
-          <p>
-            <strong>Work Order ID:</strong> ${params.fsSchedulerId}<br />
-            <strong>Status:</strong> ${params.status}
-          </p>
-          <p>You can review the billing details by clicking <a href="${params.link}">this link</a>.</p>
-          <p>Thank you for your prompt attention to this matter.</p>
-          <p>Best regards,<br/>The-Fi-Company</p>
-          <hr style="margin:30px 0;" />
-          <p style="font-size: 12px;">This is an automated email. Please do not respond.<br/>Thank you.</p>
-        </body>
-      </html>
-    `;
+    const html = this.emailTemplateService.render('work-order-billing-review', {
+      greeting: params.greeting,
+      fsSchedulerId: params.fsSchedulerId,
+      status: params.status,
+      link: params.link,
+    });
 
     await this.emailService.sendMail({
       to: params.to,

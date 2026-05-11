@@ -92,13 +92,13 @@
                                         <i class="mdi mdi-domain me-2 text-muted"></i>
                                         {{ column.value }}
                                         <!-- Tariff Multiplier Indicator -->
-                                        <span *ngIf="isTariffMultiplierCustomer(column.value)"
+                                        <span *ngIf="isTariffMultiplierCustomer($any(column.value))"
                                             class="badge bg-warning ms-2" [attr.data-bs-theme]="null"
                                             title="This customer uses 9.0x tariff multiplier (AMEGAM, ZITRO, ECLIPSE)">
                                             <i class="mdi mdi-calculator-variant me-1"></i>9.0x
                                         </span>
                                         <!-- Tariff Products Only Indicator -->
-                                        <span *ngIf="isTariffProductsOnlyCustomer(column.value)"
+                                        <span *ngIf="isTariffProductsOnlyCustomer($any(column.value))"
                                             class="badge bg-info ms-2" [attr.data-bs-theme]="null"
                                             title="This customer has tariff-specific products (INTGAM, BLUBERI, BALTEC)">
                                             <i class="mdi mdi-tag-outline me-1"></i>TAR
@@ -106,7 +106,7 @@
                                     </span>
 
                                     <span *ngIf="i != 0" class="revenue-value">
-                                        <span class="currency-amount">{{ column.value | currency }}</span>
+                                        <span class="currency-amount">{{ $any(column.value) | currency }}</span>
                                         <i *ngIf="['Grand Total', 'Customer'].indexOf($any(column.key)) === -1"
                                             class="mdi mdi-chevron-right ms-2 expand-icon"></i>
                                     </span>

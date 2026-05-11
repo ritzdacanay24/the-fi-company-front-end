@@ -398,6 +398,38 @@ export class ReportsService {
     return 'Monthly';
   }
 
+  private parseDateOnly(value: string): Date | null {
+    const normalized = String(value || '').trim();
+    if (!normalized) {
+      return null;
+    }
+
+    const match = normalized.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (match) {
+      const year = Number(match[1]);
+      const monthIndex = Number(match[2]) - 1;
+      const day = Number(match[3]);
+      const parsed = new Date(year, monthIndex, day);
+
+      if (
+        parsed.getFullYear() === year
+        && parsed.getMonth() === monthIndex
+        && parsed.getDate() === day
+      ) {
+        return parsed;
+      }
+
+      return null;
+    }
+
+    const parsed = new Date(normalized);
+    if (Number.isNaN(parsed.getTime())) {
+      return null;
+    }
+
+    return parsed;
+  }
+
   private buildChart(
     rows:
       | ChartRow[]
@@ -763,8 +795,13 @@ export class ReportsService {
     const backgroundColor: string[] = [];
     const goal = 200000;
 
-    const cursor = new Date(from);
-    const end = new Date(to);
+    const cursorDate = this.parseDateOnly(from);
+    const end = this.parseDateOnly(to);
+    if (!cursorDate || !end) {
+      throw new BadRequestException('Invalid date format. Expected YYYY-MM-DD');
+    }
+
+    const cursor = new Date(cursorDate);
 
     while (cursor <= end) {
       const { label, compareKey } = this.getLabelContext(cursor, view);
@@ -774,7 +811,10 @@ export class ReportsService {
         for (const row of rows) {
           const shpDate = String(row['abs_shp_date'] ?? row['ABS_SHP_DATE'] ?? '');
           if (!shpDate) continue;
-          const rowKey = this.formatDateKey(new Date(shpDate), view);
+          const parsedShpDate = this.parseDateOnly(shpDate);
+          if (!parsedShpDate) continue;
+
+          const rowKey = this.formatDateKey(parsedShpDate, view);
           if (rowKey === compareKey) {
             periodTotal += Number(row['shipped_qty'] ?? row['SHIPPED_QTY'] ?? 0);
           }

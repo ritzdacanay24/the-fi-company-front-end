@@ -124,12 +124,61 @@ export class RevenueByCustomerComponent implements OnInit {
   }
 
   originalOrder = (
-    a: KeyValue<number, string>,
-    b: KeyValue<number, string>
+    a: KeyValue<string, any>,
+    b: KeyValue<string, any>
   ): number => {
+    const leftKey = String(a.key);
+    const rightKey = String(b.key);
 
-    return 0;
+    if (leftKey === rightKey) {
+      return 0;
+    }
+
+    if (leftKey === "Customer") {
+      return -1;
+    }
+    if (rightKey === "Customer") {
+      return 1;
+    }
+
+    if (leftKey === "Grand Total") {
+      return 1;
+    }
+    if (rightKey === "Grand Total") {
+      return -1;
+    }
+
+    const leftPeriod = this.getPeriodSortValue(leftKey);
+    const rightPeriod = this.getPeriodSortValue(rightKey);
+
+    if (leftPeriod !== null && rightPeriod !== null) {
+      return leftPeriod - rightPeriod;
+    }
+    if (leftPeriod !== null) {
+      return -1;
+    }
+    if (rightPeriod !== null) {
+      return 1;
+    }
+
+    return leftKey.localeCompare(rightKey);
   };
+
+  private getPeriodSortValue(key: string): number | null {
+    const match = key.match(/^(\d{1,2})-(\d{4})$/);
+    if (!match) {
+      return null;
+    }
+
+    const month = Number(match[1]);
+    const year = Number(match[2]);
+
+    if (!Number.isInteger(month) || month < 1 || month > 12 || !Number.isInteger(year)) {
+      return null;
+    }
+
+    return year * 100 + month;
+  }
 
   // sumSub(value) {
   //   let total = 0;

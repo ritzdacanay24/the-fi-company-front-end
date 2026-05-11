@@ -1,0 +1,42 @@
+<html>
+  <body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f4f6f8; color: #1f2933;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 720px; background-color: #ffffff; border: 1px solid #dde3ea; border-radius: 10px; overflow: hidden;">
+            {{> email-header}}
+            <tr>
+              <td style="padding: 20px 24px; background-color: #0b5cab; color: #ffffff;">
+                <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Billing Review Required</h2>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 24px; font-size: 14px; line-height: 1.6;">
+                <p style="margin: 0 0 14px 0;">{{greeting}}</p>
+                <p style="margin: 0 0 14px 0;">A billing review is required for the following work order:</p>
+
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse; margin-bottom: 16px;">
+                  <tbody>
+                    <tr>
+                      <td style="border: 1px solid #dde3ea; padding: 10px; background: #f8fafc; font-weight: 600; width: 180px;">Work Order ID</td>
+                      <td style="border: 1px solid #dde3ea; padding: 10px;">{{fsSchedulerId}}</td>
+                    </tr>
+                    <tr>
+                      <td style="border: 1px solid #dde3ea; padding: 10px; background: #f8fafc; font-weight: 600;">Status</td>
+                      <td style="border: 1px solid #dde3ea; padding: 10px;">{{status}}</td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <p style="margin: 0 0 14px 0;">You can review the billing details by clicking <a href="{{link}}">this link</a>.</p>
+                <p style="margin: 0 0 14px 0;">Thank you for your prompt attention to this matter.</p>
+                <p style="margin: 0;">Best regards,<br />The-Fi-Company</p>
+              </td>
+            </tr>
+            {{> email-footer}}
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
