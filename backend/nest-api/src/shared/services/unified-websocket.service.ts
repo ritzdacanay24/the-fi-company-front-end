@@ -1,6 +1,8 @@
 import * as WebSocket from 'ws';
 import { Server } from 'http';
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import * as jwt from 'jsonwebtoken';
 import { MenuBadgeService } from '@/nest/modules/menu-badge/menu-badge.service';
 
 export enum WebSocketMessageType {
@@ -31,6 +33,14 @@ interface ClientConnection {
   channels: Set<string>;
 }
 
+interface DecodedToken {
+  id?: number | string;
+  userId?: number | string;
+  data?: {
+    id?: number | string;
+  };
+}
+
 @Injectable()
 export class UnifiedWebSocketService implements OnModuleDestroy {
   private readonly logger = new Logger(UnifiedWebSocketService.name);
@@ -45,7 +55,10 @@ export class UnifiedWebSocketService implements OnModuleDestroy {
 
   private mrAlertRequestHandler: ((clientId: string, userId: number) => Promise<void>) | null = null;
 
-  constructor(private readonly menuBadgeService: MenuBadgeService) {}
+  constructor(
+    private readonly menuBadgeService: MenuBadgeService,
+    private readonly configService: ConfigService,
+  ) {}
 
   setHttpServer(server: Server): void {
     if (this.httpServer) {
@@ -68,8 +81,7 @@ export class UnifiedWebSocketService implements OnModuleDestroy {
   private setupWebSocketServer(): void {
     this.wss.on('connection', (ws: WebSocket, req: any) => {
       const clientId = this.generateClientId();
-      const url = new URL(req.url || '', `http://${req.headers.host}`);
-      const userId = Number(url.searchParams.get('userId') || 0);
+      const userId = this.resolveUserIdFromHandshake(req);
 
       this.clients.set(clientId, {
         ws,
@@ -313,6 +325,30 @@ export class UnifiedWebSocketService implements OnModuleDestroy {
 
   private generateClientId(): string {
     return `client_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+  }
+
+  private resolveUserIdFromHandshake(req: any): number {
+    try {
+      const url = new URL(req.url || '', `http://${req.headers.host}`);
+      const token = url.searchParams.get('token');
+
+      if (!token) {
+        return 0;
+      }
+
+      const jwtSecret =
+        this.configService.get<string>('JWT_SECRET') || 'your-secret-key-change-in-production';
+      const decoded = jwt.verify(token, jwtSecret) as DecodedToken;
+      const candidate = Number(decoded?.id ?? decoded?.userId ?? decoded?.data?.id ?? 0);
+
+      if (!Number.isFinite(candidate) || candidate <= 0) {
+        return 0;
+      }
+
+      return candidate;
+    } catch {
+      return 0;
+    }
   }
 
   onModuleDestroy(): void {

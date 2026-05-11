@@ -303,26 +303,15 @@ export class PhotoChecklistService {
 
   async claimInstance(instanceId: number, userId: number, userName: string): Promise<{ success: boolean; owner_id?: number; owner_name?: string; message?: string }> {
     const lock = await this.repository.getInstanceLock(instanceId);
-    const alreadyLocked = lock.owner_id != null;
+    const assignedOwnerId = lock.owner_id ?? lock.operator_id;
+    const assignedOwnerName = lock.owner_name ?? lock.operator_name;
 
-    // Case 1: someone else holds an active lock → deny
-    if (alreadyLocked && lock.owner_id !== userId) {
+    if (assignedOwnerId != null && assignedOwnerId !== userId) {
       return {
         success: false,
-        owner_id: lock.owner_id ?? undefined,
-        owner_name: lock.owner_name ?? undefined,
-        message: `Instance is currently locked by ${lock.owner_name ?? 'another user'}`,
-      };
-    }
-
-    // Case 2: lock is free but instance is assigned to someone else → deny
-    // Only the assigned operator can claim; admins must use the transfer endpoint.
-    if (!alreadyLocked && lock.operator_id != null && lock.operator_id !== userId) {
-      return {
-        success: false,
-        owner_id: lock.operator_id ?? undefined,
-        owner_name: lock.operator_name ?? undefined,
-        message: `This checklist is assigned to ${lock.operator_name ?? 'another user'}`,
+        owner_id: assignedOwnerId ?? undefined,
+        owner_name: assignedOwnerName ?? undefined,
+        message: `This checklist is assigned to ${assignedOwnerName ?? 'another user'}`,
       };
     }
 

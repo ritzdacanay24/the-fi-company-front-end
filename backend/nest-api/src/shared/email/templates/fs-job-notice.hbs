@@ -1,0 +1,41 @@
+<html>
+  <body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f4f6f8; color: #1f2933;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 720px; background-color: #ffffff; border: 1px solid #dde3ea; border-radius: 10px; overflow: hidden;">
+            {{> email-header}}
+            <tr>
+              <td style="padding: 20px 24px; background-color: #0b5cab; color: #ffffff;">
+                <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Appointment Notice</h2>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 24px; font-size: 14px; line-height: 1.6;">
+                <p style="margin: 0 0 12px 0;"><strong>Request ID:</strong> {{requestId}}</p>
+                <p style="margin: 0 0 16px 0;">
+                  <strong>View Request:</strong>
+                  <a href="{{link}}" target="_blank" rel="noopener noreferrer">Open Request</a>
+                </p>
+                <p style="margin: 0 0 12px 0;">Dear {{requestedBy}},</p>
+                <p style="margin: 0 0 12px 0;">
+                  This email is to confirm your upcoming appointment on {{requestDate}} at {{startTime}} at {{property}}.
+                </p>
+                <p style="margin: 0 0 12px 0;">
+                  Please let us know if you have any questions or concerns before the day of your appointment.
+                </p>
+                <p style="margin: 0 0 12px 0;">
+                  Also, please note that our cancellation policy states that all cancellations must be made at least
+                  48 hours in advance or a full fee may be charged.
+                </p>
+                <p style="margin: 0 0 12px 0;">We look forward to seeing you soon!</p>
+                <p style="margin: 0;">Sincerely,<br />The Fi Company</p>
+              </td>
+            </tr>
+            {{> email-footer}}
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

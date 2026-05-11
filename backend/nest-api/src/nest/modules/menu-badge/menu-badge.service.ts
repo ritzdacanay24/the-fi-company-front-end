@@ -25,6 +25,7 @@ const DEFAULT_COUNTS: SidebarMenuBadgeCounts = {
   pmProjectsOpen: 0,
   pmTasksOpen: 0,
   supportTicketsOpen: 0,
+  supportMyTicketsOpen: 0,
 };
 
 @Injectable()

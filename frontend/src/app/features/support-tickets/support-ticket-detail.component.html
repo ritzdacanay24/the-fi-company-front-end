@@ -1,30 +1,48 @@
 <div class="container-fluid">
   <div class="row justify-content-center">
-    <div class="col-12">
+    <div class="col-12 col-xl-10 col-xxl-9">
 
       <!-- Breadcrumb Navigation -->
-      <div class="d-none d-lg-block mb-3">
+      <div class="mb-3">
         <app-breadcrumb [items]="breadcrumbItems()"></app-breadcrumb>
       </div>
 
       <!-- Page Header -->
       <div class="mb-4">
-        <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
-          <div>
-            <button class="btn btn-link px-0 mb-2" (click)="goBack()">
-              <i class="mdi mdi-arrow-left me-1"></i>Back to Tickets
+        <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-start gap-3">
+          <div class="d-flex align-items-start flex-grow-1" style="min-width: 0;">
+            <button
+              type="button"
+              class="btn btn-outline-secondary me-3 flex-shrink-0 align-self-center"
+              (click)="goBack()"
+              title="Back to Tickets">
+              <i class="mdi mdi-arrow-left me-2"></i>Back
             </button>
-            <h2 class="mb-2">{{ ticket()?.title || 'Ticket' }}</h2>
-            <p class="text-muted mb-0">
-              <code>{{ ticket()?.ticket_number }}</code>
-              <span class="ms-2">Created {{ ticket()?.created_at | date:'short' }}</span>
-            </p>
+
+            <div class="bg-primary bg-gradient rounded-circle me-3 d-none d-md-flex align-items-center justify-content-center ticket-page-icon">
+              <i class="mdi mdi-ticket-outline text-white fs-4"></i>
+            </div>
+
+            <div class="flex-grow-1" style="min-width: 0;">
+              <h2 class="mb-1 app-page-title">{{ ticket()?.title || 'Ticket' }}</h2>
+              <p class="text-muted mb-0 app-page-subtitle">
+                {{ ticket()?.ticket_number }}
+                <span class="mx-2">•</span>
+                {{ SUPPORT_TICKET_TYPE_LABELS[ticket()!.type] }}
+              </p>
+            </div>
           </div>
-          @if (ticket() && ticket()!.status !== 'closed') {
-            <button class="btn btn-outline-danger" (click)="closeTicket()" [disabled]="isSaving()">
-              <i class="mdi mdi-check-circle me-1"></i>Close Ticket
+
+          <div class="d-flex flex-wrap gap-2 ticket-header-actions">
+            @if (ticket() && ticket()!.status !== 'closed') {
+              <button class="btn btn-outline-success" (click)="closeTicket()" [disabled]="isSaving()">
+                <i class="mdi mdi-check-circle-outline me-1"></i>Close
+              </button>
+            }
+            <button class="btn btn-outline-danger" (click)="deleteTicket()" [disabled]="isSaving()">
+              <i class="mdi mdi-delete-outline me-1"></i>Delete
             </button>
-          }
+          </div>
         </div>
       </div>
 
@@ -43,17 +61,52 @@
           </div>
         </div>
       } @else {
-        <div class="row g-3">
+        <div class="row g-4 align-items-start">
           <!-- Main Content -->
           <div class="col-lg-8">
-            <!-- Description Card -->
+            <!-- Ticket Overview Card -->
             <div class="card mb-3">
               <div class="card-header d-flex align-items-center fw-semibold">
-                <i class="mdi mdi-file-document me-2"></i>
-                <h6 class="mb-0">Description</h6>
+                <h6 class="mb-0">Ticket Overview</h6>
               </div>
               <div class="card-body">
-                <div class="text-break" [innerHTML]="ticket()!.description"></div>
+                <h6 class="mb-2">Description</h6>
+                <div class="text-break border rounded p-3 ticket-rich-content" [innerHTML]="ticket()!.description"></div>
+
+                <div class="mt-4">
+                  <h6 class="mb-2">Request Details</h6>
+                  <div class="border rounded p-3">
+                    <div class="mb-3">
+                      <label class="form-label form-label-sm text-body-secondary mb-1">Request For</label>
+                      <input class="form-control form-control-sm" [value]="ticket()!.user_email || ''" readonly>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label form-label-sm text-body-secondary mb-1">On Behalf Of Someone Else</label>
+                      <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" [checked]="false" disabled>
+                        <label class="form-check-label small">Yes, submitted on behalf of someone else</label>
+                      </div>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label form-label-sm text-body-secondary mb-1">Impact</label>
+                      <input
+                        class="form-control form-control-sm"
+                        [value]="getTicketImpactLabel(ticket()!)"
+                        readonly>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label form-label-sm text-body-secondary mb-1">Urgency</label>
+                      <input
+                        class="form-control form-control-sm"
+                        [value]="getTicketUrgencyLabel(ticket()!)"
+                        readonly>
+                    </div>
+                    <div class="mb-0">
+                      <label class="form-label form-label-sm text-body-secondary mb-1">Update Recipients</label>
+                      <input class="form-control form-control-sm" [value]="ticket()!.user_email || ''" readonly>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -203,13 +256,27 @@
 
           <!-- Sidebar -->
           <div class="col-lg-4">
-            <div class="card">
-              <div class="card-header fw-semibold">Ticket Details</div>
+            <div class="card ticket-details-panel ticket-details-sidebar">
+              <div class="card-header fw-semibold">Details</div>
               <div class="card-body">
-                <form [formGroup]="detailsForm" (ngSubmit)="saveDetails()" class="d-grid gap-3 mb-3">
+                <div class="mb-3 ticket-detail-row">
+                  <span class="ticket-detail-label">Ticket #</span>
+                  <span class="ticket-detail-value fw-semibold">{{ ticket()!.ticket_number }}</span>
+                </div>
+
+                <form [formGroup]="detailsForm" class="d-grid gap-3 mb-3">
+                  <div>
+                    <label class="form-label form-label-sm text-body-secondary mb-1">Type</label>
+                    <select class="form-select form-select-sm" formControlName="type" [disabled]="isSaving()" (change)="onDetailsFieldChange()">
+                      @for (type of typeOptions; track type) {
+                        <option [value]="type">{{ SUPPORT_TICKET_TYPE_LABELS[type] }}</option>
+                      }
+                    </select>
+                  </div>
+
                   <div>
                     <label class="form-label form-label-sm text-body-secondary mb-1">Status</label>
-                    <select class="form-select form-select-sm" formControlName="status" [disabled]="isSaving()">
+                    <select class="form-select form-select-sm" formControlName="status" [disabled]="isSaving()" (change)="onDetailsFieldChange()">
                       @for (status of statusOptions; track status) {
                         <option [value]="status">{{ SUPPORT_TICKET_STATUS_LABELS[status] }}</option>
                       }
@@ -218,7 +285,7 @@
 
                   <div>
                     <label class="form-label form-label-sm text-body-secondary mb-1">Priority</label>
-                    <select class="form-select form-select-sm" formControlName="priority" [disabled]="isSaving()">
+                    <select class="form-select form-select-sm" formControlName="priority" [disabled]="isSaving()" (change)="onDetailsFieldChange()">
                       @for (priority of priorityOptions; track priority) {
                         <option [value]="priority">{{ SUPPORT_TICKET_PRIORITY_LABELS[priority] }}</option>
                       }
@@ -227,7 +294,7 @@
 
                   <div>
                     <label class="form-label form-label-sm text-body-secondary mb-1">Impact</label>
-                    <select class="form-select form-select-sm" formControlName="impactLevel" [disabled]="isSaving()">
+                    <select class="form-select form-select-sm" formControlName="impactLevel" [disabled]="isSaving()" (change)="onDetailsFieldChange()">
                       @for (impact of impactOptions; track impact) {
                         <option [value]="impact">{{ TICKET_IMPACT_LABELS[impact] }}</option>
                       }
@@ -236,48 +303,28 @@
 
                   <div>
                     <label class="form-label form-label-sm text-body-secondary mb-1">Urgency</label>
-                    <select class="form-select form-select-sm" formControlName="urgencyLevel" [disabled]="isSaving()">
+                    <select class="form-select form-select-sm" formControlName="urgencyLevel" [disabled]="isSaving()" (change)="onDetailsFieldChange()">
                       @for (urgency of urgencyOptions; track urgency) {
                         <option [value]="urgency">{{ TICKET_URGENCY_LABELS[urgency] }}</option>
                       }
                     </select>
                   </div>
-
-                  <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-sm btn-success" [disabled]="detailsForm.invalid || isSaving()">
-                      @if (isSaving()) {
-                        <span class="spinner-border spinner-border-sm me-1"></span>
-                      }
-                      Save Details
-                    </button>
-                    <button
-                      type="button"
-                      class="btn btn-sm btn-outline-secondary"
-                      (click)="resetDetailsForm()"
-                      [disabled]="isSaving()">
-                      Reset
-                    </button>
-                  </div>
                 </form>
 
                 <hr class="my-3">
 
-                <div class="row mb-2">
-                  <div class="col-6 text-body-secondary small">Type:</div>
-                  <div class="col-6">{{ SUPPORT_TICKET_TYPE_LABELS[ticket()!.type] }}</div>
+                <div class="ticket-detail-row mb-2">
+                  <span class="ticket-detail-label">Created</span>
+                  <span class="ticket-detail-value small">{{ ticket()!.created_at | date:'medium' }}</span>
                 </div>
-                <div class="row mb-2">
-                  <div class="col-6 text-body-secondary small">Created:</div>
-                  <div class="col-6 small">{{ ticket()!.created_at | date:'medium' }}</div>
-                </div>
-                <div class="row mb-2">
-                  <div class="col-6 text-body-secondary small">Updated:</div>
-                  <div class="col-6 small">{{ ticket()!.updated_at | date:'medium' }}</div>
+                <div class="ticket-detail-row mb-2">
+                  <span class="ticket-detail-label">Updated</span>
+                  <span class="ticket-detail-value small">{{ ticket()!.updated_at | date:'medium' }}</span>
                 </div>
                 @if (ticket()!.resolved_at) {
-                  <div class="row">
-                    <div class="col-6 text-body-secondary small">Resolved:</div>
-                    <div class="col-6 small">{{ ticket()!.resolved_at | date:'medium' }}</div>
+                  <div class="ticket-detail-row mb-0">
+                    <span class="ticket-detail-label">Resolved</span>
+                    <span class="ticket-detail-value small">{{ ticket()!.resolved_at | date:'medium' }}</span>
                   </div>
                 }
               </div>
@@ -285,7 +332,6 @@
           </div>
         </div>
       }
-
     </div>
   </div>
 </div>

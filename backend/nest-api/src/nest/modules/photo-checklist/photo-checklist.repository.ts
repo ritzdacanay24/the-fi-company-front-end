@@ -289,8 +289,8 @@ export class PhotoChecklistRepository {
     const sql = `
       INSERT INTO checklist_instances (
         template_id, work_order_number, part_number, serial_number,
-        operator_id, operator_name, status, progress_percentage
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        operator_id, operator_name, owner_id, owner_name, status, progress_percentage
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const result = await this.mysqlService.execute<ResultSetHeader>(sql, [
@@ -298,6 +298,8 @@ export class PhotoChecklistRepository {
       payload.work_order_number,
       payload.part_number || null,
       payload.serial_number || null,
+      payload.operator_id ?? null,
+      payload.operator_name || null,
       payload.operator_id ?? null,
       payload.operator_name || null,
       payload.status || 'draft',
@@ -1116,10 +1118,10 @@ export class PhotoChecklistRepository {
   }
 
   async releaseInstanceLock(id: number, userId: number): Promise<void> {
-    // Only clear the lock if the caller is the current owner (prevents accidental clears)
+    // Ownership is durable now; release no longer clears owner assignment.
     await this.mysqlService.execute(
       `UPDATE checklist_instances
-         SET owner_id = NULL, owner_name = NULL, lock_expires_at = NULL
+         SET lock_expires_at = NULL
        WHERE id = ? AND owner_id = ?`,
       [id, userId],
     );
@@ -1137,14 +1139,12 @@ export class PhotoChecklistRepository {
   async transferInstanceAssignment(id: number, toUserId: number, toUserName: string): Promise<void> {
     await this.mysqlService.execute(
       `UPDATE checklist_instances
-         SET operator_id = ?,
-             operator_name = ?,
-             owner_id = ?,
+         SET owner_id = ?,
              owner_name = ?,
              lock_expires_at = NULL
        WHERE id = ?
          AND status <> 'submitted'`,
-      [toUserId, toUserName, toUserId, toUserName, id],
+      [toUserId, toUserName, id],
     );
   }
 
@@ -1153,14 +1153,12 @@ export class PhotoChecklistRepository {
     const placeholders = instanceIds.map(() => '?').join(',');
     const result = await this.mysqlService.execute<ResultSetHeader>(
       `UPDATE checklist_instances
-         SET operator_id = ?,
-             operator_name = ?,
-             owner_id = ?,
+         SET owner_id = ?,
              owner_name = ?,
              lock_expires_at = NULL
        WHERE id IN (${placeholders})
          AND status <> 'submitted'`,
-      [toUserId, toUserName, toUserId, toUserName, ...instanceIds],
+      [toUserId, toUserName, ...instanceIds],
     );
     return Number(result.affectedRows || 0);
   }

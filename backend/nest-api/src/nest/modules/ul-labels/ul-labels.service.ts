@@ -181,32 +181,17 @@ export class UlLabelsService {
     }
   }
 
-  async voidLabel(idRaw?: string, reason?: string, performedBy?: string): Promise<ApiResponse> {
+  async voidLabel(idRaw?: string, reason?: string, notes?: string, performedBy?: string): Promise<ApiResponse> {
     const id = Number(idRaw);
     if (!Number.isFinite(id) || id <= 0) {
       return { success: false, message: 'ID is required' };
     }
 
-    try {
-      const assignmentRows = await this.mysqlService.query<Array<RowDataPacket & { id: number }>>(
-        'SELECT id FROM serial_assignments WHERE ul_label_id = ? LIMIT 1',
-        [id],
-      );
-      if (assignmentRows.length > 0) {
-        return {
-          success: false,
-          message: 'Cannot mark as used. UL label is already linked to a serial assignment.',
-        };
-      }
-    } catch (error) {
-      return {
-        success: false,
-        message: `Error validating serial assignment link: ${this.getErrorMessage(error)}`,
-      };
-    }
-
+    const trimmedNotes = String(notes || '').trim();
     const consumedBy = reason
-      ? `${reason} (${performedBy ?? 'system'})`
+      ? (trimmedNotes
+          ? `${reason} - ${trimmedNotes} (${performedBy ?? 'system'})`
+          : `${reason} (${performedBy ?? 'system'})`)
       : (performedBy ?? null);
 
     try {

@@ -66,6 +66,7 @@ export class SidebarComponent implements OnInit {
     'pmProjectsOpen',
     'pmTasksOpen',
     'supportTicketsOpen',
+    'supportMyTicketsOpen',
   ]);
 
   private readonly badgeVariantByKey: Record<keyof SidebarMenuBadgeCounts, string> = {
@@ -92,6 +93,7 @@ export class SidebarComponent implements OnInit {
     pmProjectsOpen: 'sidebar-count-badge--attention',
     pmTasksOpen: 'sidebar-count-badge--attention',
     supportTicketsOpen: 'sidebar-count-badge--attention',
+    supportMyTicketsOpen: 'sidebar-count-badge--attention',
   };
 
   menu: any;
@@ -156,6 +158,7 @@ export class SidebarComponent implements OnInit {
     pmProjectsOpen: 0,
     pmTasksOpen: 0,
     supportTicketsOpen: 0,
+    supportMyTicketsOpen: 0,
   };
 
   get appRailItems() {

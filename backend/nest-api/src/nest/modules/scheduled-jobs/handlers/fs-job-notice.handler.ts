@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { RowDataPacket } from 'mysql2/promise';
 import { MysqlService } from '@/shared/database/mysql.service';
 import { EmailService } from '@/shared/email/email.service';
+import { EmailTemplateService } from '@/shared/email/email-template.service';
 import { UrlBuilder } from '@/shared/url/url-builder';
 import { ScheduledJobHandler, ScheduledJobRunResultDto } from './scheduled-job.handler';
 
@@ -24,6 +25,7 @@ export class FsJobNoticeHandler implements ScheduledJobHandler {
   constructor(
     private readonly mysqlService: MysqlService,
     private readonly emailService: EmailService,
+    private readonly emailTemplateService: EmailTemplateService,
     private readonly urlBuilder: UrlBuilder,
   ) {}
 
@@ -115,34 +117,30 @@ export class FsJobNoticeHandler implements ScheduledJobHandler {
       const requestDate = job.request_date;
       const startTime = job.start_time;
       const property = job.property;
-      const email = job.email as string;
+      const email = String(job.email ?? '').trim();
       const requestedBy = job.requested_by as string;
       const token = job.token as string;
 
       try {
+        if (!email || !email.includes('@')) {
+          this.logger.warn(`Skipping fs-job-notice for job ${jobId}: invalid requester email '${email}'`);
+          continue;
+        }
+
         const link = this.urlBuilder.fieldService.requestConfirmation(token);
-        const message = `
-          <html>
-            <body>
-              <p>Request ID: ${requestId} <br/>
-              View Request: <a href="${link}" target="_blank">Request</a> <br/><br/>
-              Dear ${requestedBy}, <br/> <br/>
-              This email is to confirm your upcoming appointment on ${requestDate} at ${startTime} at ${property}. 
-              Please let us know if you have any questions or concerns before the day of your appointment.<br/><br/>
-              Also, please note that our cancellation policy states that all cancellations must be made at least 48 hours 
-              in advance or a full fee may be charged.<br/><br/>
-              We look forward to seeing you soon!<br/><br/>
-              Sincerely,<br/>
-              The Fi Company
-            </p>
-            </body>
-          </html>
-        `;
+        const html = this.emailTemplateService.render('fs-job-notice', {
+          requestId,
+          link,
+          requestedBy,
+          requestDate,
+          startTime,
+          property,
+        });
 
         await this.emailService.sendMail({
           to: email,
           subject: `Appointment Notice - Request ID ${requestId}`,
-          html: message,
+          html,
         });
 
         await this.mysqlService.query(
@@ -166,7 +164,10 @@ export class FsJobNoticeHandler implements ScheduledJobHandler {
 
     if (noticeDetails.length > 0) {
       try {
-        const summaryHtml = this.buildFieldServiceNoticeSummary(noticeDetails);
+        const summaryHtml = this.emailTemplateService.render('fs-job-notice-summary', {
+          details: noticeDetails,
+          totalNotices: noticeDetails.length,
+        });
         await this.emailService.sendMail({
           to: 'schedulinglv@the-fi-company.com',
           subject: 'Field Service Notice Email Summary',
@@ -178,44 +179,5 @@ export class FsJobNoticeHandler implements ScheduledJobHandler {
     }
 
     return sentCount;
-  }
-
-  private buildFieldServiceNoticeSummary(details: Array<Record<string, unknown>>): string {
-    let html = `
-      <html><body>
-      <p><strong>Field Service Notice Email Summary</strong></p>
-      <table rules="all" style="border-color: #666; border-collapse: collapse;" cellpadding="5" border="1">
-      <tr style="background: #eee;">
-        <td><strong>Request ID</strong></td>
-        <td><strong>Request Date</strong></td>
-        <td><strong>Start Time</strong></td>
-        <td><strong>Requested By</strong></td>
-        <td><strong>Property</strong></td>
-        <td><strong>Email Sent</strong></td>
-      </tr>
-    `;
-
-    for (const detail of details) {
-      html += `
-      <tr>
-        <td>${detail['request_id']}</td>
-        <td>${detail['request_date']}</td>
-        <td>${detail['start_time']}</td>
-        <td>${detail['requested_by']}</td>
-        <td>${detail['property']}</td>
-        <td>${detail['email_sent']}</td>
-      </tr>
-      `;
-    }
-
-    html += `
-      </table>
-      <p style="margin-top: 20px; font-size: 12px; color: #666;">
-        Total notices sent: ${details.length}
-      </p>
-      </body></html>
-    `;
-
-    return html;
   }
 }

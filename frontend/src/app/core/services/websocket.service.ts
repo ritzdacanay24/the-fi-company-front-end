@@ -101,16 +101,27 @@ export class WebsocketService {
     }
 
     private buildWebSocketUrl(): string {
+        const currentUser = this.authenticationService.currentUserValue || this.userInfo;
+        const token = currentUser?.token ? String(currentUser.token) : null;
+
         const base = environment.nestApiBaseUrl;
         if (base) {
             // Absolute URL (e.g. http://localhost:3002) — replace protocol with ws/wss
             const url = new URL(base);
             const protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
-            return `${protocol}//${url.host}/api/ws`;
+            const wsUrl = new URL(`${protocol}//${url.host}/api/ws`);
+            if (token) {
+                wsUrl.searchParams.set('token', token);
+            }
+            return wsUrl.toString();
         }
         // Relative (same origin in production)
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        return `${protocol}//${window.location.host}/api/ws`;
+        const wsUrl = new URL(`${protocol}//${window.location.host}/api/ws`);
+        if (token) {
+            wsUrl.searchParams.set('token', token);
+        }
+        return wsUrl.toString();
     }
 
 }

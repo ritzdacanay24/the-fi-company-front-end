@@ -1,0 +1,48 @@
+<html>
+  <body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f4f6f8; color: #1f2933;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 760px; background-color: #ffffff; border: 1px solid #dde3ea; border-radius: 10px; overflow: hidden;">
+            {{> email-header}}
+            <tr>
+              <td style="padding: 20px 24px; background-color: #0b5cab; color: #ffffff;">
+                <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Field Service Notice Email Summary</h2>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 24px; font-size: 14px; line-height: 1.6;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse; margin-bottom: 16px;">
+                  <thead>
+                    <tr>
+                      <th align="left" style="border: 1px solid #dde3ea; background: #f8fafc; padding: 10px;">Request ID</th>
+                      <th align="left" style="border: 1px solid #dde3ea; background: #f8fafc; padding: 10px;">Request Date</th>
+                      <th align="left" style="border: 1px solid #dde3ea; background: #f8fafc; padding: 10px;">Start Time</th>
+                      <th align="left" style="border: 1px solid #dde3ea; background: #f8fafc; padding: 10px;">Requested By</th>
+                      <th align="left" style="border: 1px solid #dde3ea; background: #f8fafc; padding: 10px;">Property</th>
+                      <th align="left" style="border: 1px solid #dde3ea; background: #f8fafc; padding: 10px;">Email Sent</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {{#each details}}
+                    <tr>
+                      <td style="border: 1px solid #dde3ea; padding: 10px;">{{request_id}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 10px;">{{request_date}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 10px;">{{start_time}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 10px;">{{requested_by}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 10px;">{{property}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 10px;">{{email_sent}}</td>
+                    </tr>
+                    {{/each}}
+                  </tbody>
+                </table>
+                <p style="margin: 0; color: #5a6b7b; font-size: 12px;">Total notices sent: {{totalNotices}}</p>
+              </td>
+            </tr>
+            {{> email-footer}}
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

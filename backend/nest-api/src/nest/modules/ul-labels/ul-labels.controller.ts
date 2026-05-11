@@ -66,9 +66,9 @@ export class UlLabelsController {
   @Permissions('write')
   async voidLabel(
     @Param('id') idRaw: string,
-    @Body() body: { reason?: string; performed_by?: string } = {},
+    @Body() body: { reason?: string; notes?: string; performed_by?: string } = {},
   ) {
-    return this.ulLabelsService.voidLabel(idRaw, body.reason, body.performed_by);
+    return this.ulLabelsService.voidLabel(idRaw, body.reason, body.notes, body.performed_by);
   }
 
   @Post(':id/write-off')

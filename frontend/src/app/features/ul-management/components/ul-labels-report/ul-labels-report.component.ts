@@ -77,6 +77,7 @@ export class ULLabelsReportComponent implements OnInit {
   selectedMarkAsUsedLabelId: number | null = null;
   selectedMarkAsUsedUlNumber = '';
   markAsUsedReason: 'Used in Production' | 'Sample/Demo' | 'In-house Testing' | 'Other' = 'Used in Production';
+  markAsUsedNotes = '';
   markAsUsedAcknowledged = false;
   isCheckingMarkAsUsedHistory = false;
   markAsUsedHistoryCount = 0;
@@ -297,13 +298,12 @@ export class ULLabelsReportComponent implements OnInit {
           this.applyFilters();
           this.updateDashboardCharts();
         } else {
-          this.toastr.error(response.message || 'Failed to load UL Labels');
+          console.warn(response.message || 'Failed to load UL Labels');
         }
       },
       error: (error) => {
         this.isLoading = false;
         console.error('Load error:', error);
-        this.toastr.error('Error loading UL Labels');
       }
     });
   }
@@ -531,7 +531,7 @@ export class ULLabelsReportComponent implements OnInit {
 
   editULLabel(id: number): void {
     if (!this.canEditLabels()) {
-      this.toastr.error('Only admins can edit UL labels.');
+      this.toastr.warning('Only admins can edit UL labels.');
       return;
     }
 
@@ -566,7 +566,6 @@ export class ULLabelsReportComponent implements OnInit {
       },
       error: (error) => {
         console.error('Export error:', error);
-        this.toastr.error('Error exporting UL Labels');
       }
     });
   }
@@ -689,7 +688,7 @@ export class ULLabelsReportComponent implements OnInit {
 
   openEditModal(ulLabel: ULLabel): void {
     if (!ulLabel.id) {
-      this.toastr.error('Unable to edit this UL label. Missing ID.');
+      this.toastr.warning('Unable to edit this UL label. Missing ID.');
       return;
     }
 
@@ -712,7 +711,7 @@ export class ULLabelsReportComponent implements OnInit {
 
   saveEditedLabel(): void {
     if (!this.selectedEditLabelId) {
-      this.toastr.error('Unable to save changes. Missing UL label ID.');
+      this.toastr.warning('Unable to save changes. Missing UL label ID.');
       return;
     }
 
@@ -738,7 +737,6 @@ export class ULLabelsReportComponent implements OnInit {
       error: (error) => {
         this.isSavingEdit = false;
         console.error('Error updating UL label:', error);
-        this.toastr.error('Failed to update UL label');
       }
     });
   }
@@ -800,7 +798,7 @@ export class ULLabelsReportComponent implements OnInit {
     }
   }
 
-  voidULLabel(id: string, reason: string, performedBy: string): void {
+  voidULLabel(id: string, reason: string, notes: string, performedBy: string): void {
     const idNumber = parseInt(id);
     const ulLabel = this.ulLabels.find(label => label.id === idNumber);
 
@@ -809,14 +807,18 @@ export class ULLabelsReportComponent implements OnInit {
       return;
     }
 
-    this.ulLabelService.voidLabel(idNumber, reason, performedBy).subscribe({
-      next: () => {
+    this.ulLabelService.voidLabel(idNumber, reason, notes, performedBy).subscribe({
+      next: (response) => {
+        if (response?.success === false) {
+          this.toastr.warning(response?.message || 'Failed to mark UL label as used');
+          return;
+        }
+
         this.toastr.success('UL label marked as used');
         this.loadULLabels();
       },
       error: (error) => {
         console.error('Error marking UL label as used:', error);
-        this.toastr.error('Failed to mark UL label as used');
       }
     });
   }
@@ -831,13 +833,9 @@ export class ULLabelsReportComponent implements OnInit {
     this.selectedMarkAsUsedLabelId = id;
     this.selectedMarkAsUsedUlNumber = label.ul_number;
     this.markAsUsedReason = 'Used in Production';
+    this.markAsUsedNotes = '';
     this.markAsUsedAcknowledged = false;
-    this.markAsUsedHistoryCount = 0;
-    this.markAsUsedAssignmentConflictCount = 0;
-    this.markAsUsedHistoryError = '';
-    this.isCheckingMarkAsUsedHistory = false;
     this.markAsUsedModalRef = this.modalService.open(this.markAsUsedModal, { centered: true, size: 'lg' });
-    this.loadMarkAsUsedHistory(label.ul_number || '');
   }
 
   private isVoidedRow(row: any): boolean {
@@ -877,18 +875,20 @@ export class ULLabelsReportComponent implements OnInit {
     this.markAsUsedAssignmentConflictCount = 0;
     this.markAsUsedHistoryError = '';
     this.isCheckingMarkAsUsedHistory = false;
+    this.markAsUsedNotes = '';
   }
 
   confirmMarkAsUsed(): void {
     if (!this.selectedMarkAsUsedLabelId || !this.markAsUsedAcknowledged) return;
-    if (this.markAsUsedAssignmentConflictCount > 0) {
-      this.toastr.warning('This UL has an active serial assignment. Resolve assignment first.');
-      return;
-    }
     const currentUser = this.authenticationService.currentUserValue;
     const performedBy = (currentUser as any)?.full_name || (currentUser as any)?.username || 'system';
     this.isMarkingAsUsed = true;
-    this.voidULLabel(String(this.selectedMarkAsUsedLabelId), this.markAsUsedReason, performedBy);
+    this.voidULLabel(
+      String(this.selectedMarkAsUsedLabelId),
+      this.markAsUsedReason,
+      this.markAsUsedNotes,
+      performedBy,
+    );
     this.closeMarkAsUsedModal();
     this.isMarkingAsUsed = false;
   }
@@ -923,7 +923,6 @@ export class ULLabelsReportComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error writing off UL label:', error);
-        this.toastr.error('Failed to write off UL label');
         this.isWritingOff = false;
       }
     });
@@ -932,7 +931,7 @@ export class ULLabelsReportComponent implements OnInit {
   openRestoreModal(id: number): void {
     const ulLabel = this.ulLabels.find(label => label.id === id);
     if (!ulLabel) {
-      this.toastr.error('UL label not found.');
+      this.toastr.warning('UL label not found.');
       return;
     }
 
@@ -994,7 +993,9 @@ export class ULLabelsReportComponent implements OnInit {
       error: (error) => {
         const apiMessage = error?.error?.message;
         console.error('Error restoring UL label:', error);
-        this.toastr.error(apiMessage || 'Failed to restore UL label');
+        if (apiMessage) {
+          this.toastr.warning(apiMessage);
+        }
         this.isRestoring = false;
       }
     });
@@ -1003,7 +1004,7 @@ export class ULLabelsReportComponent implements OnInit {
   async openUsageDetailsModal(id: number): Promise<void> {
     const ulLabel = this.ulLabels.find(label => label.id === id);
     if (!ulLabel) {
-      this.toastr.error('UL label not found.');
+      this.toastr.warning('UL label not found.');
       return;
     }
     this.serialAssignmentUsageDetailsModalService.open(ulLabel.ul_number);

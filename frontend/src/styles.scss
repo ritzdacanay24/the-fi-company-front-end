@@ -14,6 +14,21 @@
   &.warning-snackbar { --mdc-snackbar-container-color: #f57c00; --mdc-snackbar-supporting-text-color: #fff; }
 }
 
+/* Ensure snackbar action button remains readable on colored backgrounds */
+.mat-mdc-snack-bar-container.success-snackbar,
+.mat-mdc-snack-bar-container.info-snackbar,
+.mat-mdc-snack-bar-container.warning-snackbar,
+.mat-mdc-snack-bar-container.error-snackbar {
+  --mdc-snackbar-action-color: #ffffff;
+}
+
+.mat-mdc-snack-bar-container.success-snackbar .mat-mdc-snack-bar-action,
+.mat-mdc-snack-bar-container.info-snackbar .mat-mdc-snack-bar-action,
+.mat-mdc-snack-bar-container.warning-snackbar .mat-mdc-snack-bar-action,
+.mat-mdc-snack-bar-container.error-snackbar .mat-mdc-snack-bar-action {
+  color: #ffffff !important;
+}
+
 /* You can add global styles to this file, and also import other style files */
 
 :root {

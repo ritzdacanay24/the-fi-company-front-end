@@ -19,6 +19,7 @@ export const SUPPORT_MENU: MenuItem[] = [
   },
   {
     id: 3,
+    badgeId: "supportMyTicketsOpen",
     label: "My Tickets",
     link: "/support-tickets/my-tickets",
     description: "View your submitted tickets",

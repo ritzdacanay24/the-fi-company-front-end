@@ -275,25 +275,8 @@
     <div class="alert alert-warning mb-3" role="alert">
       Damaged or lost labels should use <strong>Write Off</strong>, not Mark as Used.
     </div>
-    <div class="alert alert-secondary d-flex align-items-center gap-2 mb-3" role="status" *ngIf="isCheckingMarkAsUsedHistory">
-      <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
-      Checking prior usage history...
-    </div>
-    <div class="alert alert-warning mb-3" role="alert" *ngIf="!isCheckingMarkAsUsedHistory && markAsUsedHistoryCount > 0">
-      <div class="fw-semibold mb-1">Prior usage history found</div>
-      This UL appears in <strong>{{ markAsUsedHistoryCount }}</strong> historical record(s).
-      Proceed only if this is a new physical consumption event.
-    </div>
-    <div class="alert alert-danger mb-3" role="alert" *ngIf="!isCheckingMarkAsUsedHistory && markAsUsedAssignmentConflictCount > 0">
-      <div class="fw-semibold mb-1">Active assignment found</div>
-      This UL has <strong>{{ markAsUsedAssignmentConflictCount }}</strong> non-voided serial assignment record(s).
-      Resolve the assignment first. Manual Mark as Used is blocked for this label.
-    </div>
-    <div class="alert alert-light border mb-3" role="alert" *ngIf="!isCheckingMarkAsUsedHistory && !markAsUsedHistoryError && markAsUsedHistoryCount === 0">
-      No prior usage history found for this UL.
-    </div>
-    <div class="alert alert-danger mb-3" role="alert" *ngIf="!isCheckingMarkAsUsedHistory && markAsUsedHistoryError">
-      {{ markAsUsedHistoryError }}
+    <div class="alert alert-secondary mb-3" role="alert">
+      Serial assignment validation is not required for this manual inventory correction action.
     </div>
     <div class="mb-2">
       <label class="form-label fw-semibold">Reason <span class="text-danger">*</span></label>
@@ -303,6 +286,10 @@
         <option value="In-house Testing">In-house Testing</option>
         <option value="Other">Other</option>
       </select>
+    </div>
+    <div class="mb-2">
+      <label class="form-label fw-semibold">Comments <span class="text-muted fw-normal">(optional)</span></label>
+      <textarea class="form-control" rows="2" [(ngModel)]="markAsUsedNotes" placeholder="Add audit notes for this action"></textarea>
     </div>
     <div class="form-check mt-3">
       <input
@@ -318,7 +305,7 @@
   </div>
   <div class="modal-footer">
     <button type="button" class="btn btn-outline-secondary" (click)="closeMarkAsUsedModal()" [disabled]="isMarkingAsUsed">Cancel</button>
-    <button type="button" class="btn btn-success" (click)="confirmMarkAsUsed()" [disabled]="isMarkingAsUsed || !markAsUsedAcknowledged || markAsUsedAssignmentConflictCount > 0">
+    <button type="button" class="btn btn-success" (click)="confirmMarkAsUsed()" [disabled]="isMarkingAsUsed || !markAsUsedAcknowledged">
       <span *ngIf="isMarkingAsUsed" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
       Mark as Used
     </button>

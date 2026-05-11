@@ -5,6 +5,7 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators, FormGroup } from '@angular/forms';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { SupportTicketsService } from '@app/core/api/support-tickets/support-tickets.service';
+import { NotificationService } from '@app/core/services/notification.service';
 import { BreadcrumbComponent } from '@app/shared/components/breadcrumb/breadcrumb.component';
 import { FileViewerModalComponent } from '@app/shared/components/file-viewer-modal/file-viewer-modal.component';
 import {
@@ -16,6 +17,7 @@ import {
   SupportTicketComment,
   SupportTicketStatus,
   SupportTicketPriority,
+  SupportTicketType,
 } from '@app/shared/models/support-ticket.model';
 import {
   TicketImpactLevel,
@@ -39,7 +41,90 @@ type TicketMediaItem = {
   selector: 'app-support-ticket-detail',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterModule, BreadcrumbComponent],
-  templateUrl: './support-ticket-detail.component.html'
+  templateUrl: './support-ticket-detail.component.html',
+  styles: [
+    `
+      .ticket-page-icon {
+        width: 60px;
+        height: 60px;
+      }
+
+      .app-page-title {
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+
+      .app-page-subtitle {
+        font-size: 0.95rem;
+      }
+
+      .ticket-details-panel {
+        background-color: var(--vz-card-bg, #ffffff) !important;
+      }
+
+      .ticket-details-panel .card-body {
+        background-color: var(--vz-card-bg, #ffffff) !important;
+      }
+
+      .ticket-details-panel .card-header {
+        background-color: var(--vz-card-cap-bg, var(--vz-card-bg, #ffffff)) !important;
+      }
+
+      :host-context([data-bs-theme='dark']) .ticket-details-panel,
+      :host-context([data-bs-theme='dark']) .ticket-details-panel .card-body {
+        background-color: var(--vz-card-bg, #212529) !important;
+      }
+
+      :host-context([data-bs-theme='dark']) .ticket-details-panel .card-header {
+        background-color: var(--vz-card-cap-bg, #2a3042) !important;
+      }
+
+      .ticket-details-sidebar {
+        position: static;
+      }
+
+      .ticket-detail-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 1rem;
+        padding-bottom: 0.75rem;
+        margin-bottom: 0.75rem;
+        border-bottom: 1px solid var(--bs-border-color-translucent);
+      }
+
+      .ticket-detail-label {
+        color: var(--bs-secondary-color);
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+
+      .ticket-detail-value {
+        text-align: right;
+        word-break: break-word;
+      }
+
+      .ticket-rich-content {
+        line-height: 1.5;
+        word-break: break-word;
+      }
+
+      @media (max-width: 767.98px) {
+        .ticket-header-actions {
+          width: 100%;
+        }
+      }
+
+      @media (min-width: 992px) {
+        .ticket-details-sidebar {
+          position: sticky;
+          top: 1rem;
+        }
+      }
+    `
+  ]
 })
 export class SupportTicketDetailComponent implements OnInit {
   readonly SUPPORT_TICKET_TYPE_LABELS = SUPPORT_TICKET_TYPE_LABELS;
@@ -52,6 +137,7 @@ export class SupportTicketDetailComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly formBuilder = inject(FormBuilder);
   private readonly supportTicketsService = inject(SupportTicketsService);
+  private readonly notification = inject(NotificationService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly modalService = inject(NgbModal);
 
@@ -69,6 +155,16 @@ export class SupportTicketDetailComponent implements OnInit {
 
   statusOptions: SupportTicketStatus[] = ['open', 'in_progress', 'resolved', 'closed'];
   priorityOptions: SupportTicketPriority[] = ['low', 'medium', 'high', 'urgent'];
+  typeOptions: SupportTicketType[] = [
+    'bug',
+    'feature_request',
+    'question',
+    'improvement',
+    'maintenance',
+    'access_permissions',
+    'data_correction',
+    'incident_outage',
+  ];
   impactOptions: TicketImpactLevel[] = [TicketImpactLevel.HIGH, TicketImpactLevel.MEDIUM, TicketImpactLevel.LOW];
   urgencyOptions: TicketUrgencyLevel[] = [TicketUrgencyLevel.HIGH, TicketUrgencyLevel.MEDIUM, TicketUrgencyLevel.LOW];
 
@@ -76,7 +172,7 @@ export class SupportTicketDetailComponent implements OnInit {
 
   breadcrumbItems = computed(() => [
     { label: 'Home', link: '/' },
-    { label: 'Support Tickets', link: '/support-tickets' },
+    { label: 'My Tickets', link: '/support-tickets' },
     { label: this.ticket()?.ticket_number || 'Ticket', active: true }
   ]);
 
@@ -120,6 +216,7 @@ export class SupportTicketDetailComponent implements OnInit {
       comment: ['', [Validators.required, Validators.minLength(2)]],
     });
     this.detailsForm = this.formBuilder.group({
+      type: ['bug', Validators.required],
       status: ['open', Validators.required],
       priority: ['medium', Validators.required],
       impactLevel: [TicketImpactLevel.LOW, Validators.required],
@@ -211,10 +308,11 @@ export class SupportTicketDetailComponent implements OnInit {
       return;
     }
 
-    const { status, priority, impactLevel, urgencyLevel } = this.detailsForm.value;
+    const { type, status, priority, impactLevel, urgencyLevel } = this.detailsForm.value;
 
     this.isSaving.set(true);
     this.supportTicketsService.updateTicket(this.ticketId, {
+      type,
       status,
       priority,
       metadata: {
@@ -229,12 +327,22 @@ export class SupportTicketDetailComponent implements OnInit {
           this.ticket.set(updatedTicket);
           this.patchDetailsForm(updatedTicket);
           this.isSaving.set(false);
+          this.notification.success('Ticket details updated.');
         },
         error: (error) => {
           console.error('Failed to update ticket details:', error);
           this.isSaving.set(false);
+          this.notification.error(error, false);
         },
       });
+  }
+
+  onDetailsFieldChange(): void {
+    if (this.detailsForm.invalid || this.isSaving()) {
+      return;
+    }
+
+    this.saveDetails();
   }
 
   resetDetailsForm(): void {
@@ -262,6 +370,31 @@ export class SupportTicketDetailComponent implements OnInit {
       });
   }
 
+  deleteTicket(): void {
+    if (!this.ticket()) {
+      return;
+    }
+
+    const confirmed = window.confirm('Delete this ticket? This action cannot be undone.');
+    if (!confirmed) {
+      return;
+    }
+
+    this.isSaving.set(true);
+    this.supportTicketsService.deleteTicket(this.ticketId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.isSaving.set(false);
+          this.router.navigate(['/support-tickets']);
+        },
+        error: (error) => {
+          console.error('Failed to delete ticket:', error);
+          this.isSaving.set(false);
+        },
+      });
+  }
+
   getStatusBadgeClass(status: string): string {
     const classes: Record<string, string> = {
       'open': 'bg-primary',
@@ -280,6 +413,18 @@ export class SupportTicketDetailComponent implements OnInit {
       'urgent': 'bg-danger'
     };
     return classes[priority] || 'bg-secondary';
+  }
+
+  getTicketImpactLabel(ticket: SupportTicket): string {
+    const impactRaw = this.getTicketMetadata(ticket)['impactLevel'];
+    const impact = String(impactRaw ?? TicketImpactLevel.LOW) as TicketImpactLevel;
+    return this.TICKET_IMPACT_LABELS[impact] || this.TICKET_IMPACT_LABELS[TicketImpactLevel.LOW];
+  }
+
+  getTicketUrgencyLabel(ticket: SupportTicket): string {
+    const urgencyRaw = this.getTicketMetadata(ticket)['urgencyLevel'];
+    const urgency = String(urgencyRaw ?? TicketUrgencyLevel.LOW) as TicketUrgencyLevel;
+    return this.TICKET_URGENCY_LABELS[urgency] || this.TICKET_URGENCY_LABELS[TicketUrgencyLevel.LOW];
   }
 
   goBack(): void {
@@ -368,6 +513,7 @@ export class SupportTicketDetailComponent implements OnInit {
   private patchDetailsForm(ticket: SupportTicket): void {
     const metadata = this.getTicketMetadata(ticket);
     this.detailsForm.patchValue({
+      type: ticket.type,
       status: ticket.status,
       priority: ticket.priority,
       impactLevel: (metadata.impactLevel as TicketImpactLevel) || TicketImpactLevel.LOW,

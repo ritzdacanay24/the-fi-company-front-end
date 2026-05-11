@@ -32,8 +32,8 @@ export class ULLabelService {
     return this.http.delete(`${this.API_URL}/${id}`);
   }
 
-  voidLabel(id: number, reason?: string, performedBy?: string): Observable<any> {
-    return this.http.patch(`${this.API_URL}/${id}/void`, { reason, performed_by: performedBy });
+  voidLabel(id: number, reason?: string, notes?: string, performedBy?: string): Observable<any> {
+    return this.http.patch(`${this.API_URL}/${id}/void`, { reason, notes, performed_by: performedBy });
   }
 
   writeOffLabel(id: number, reason: 'Damaged' | 'Lost' | 'Other', notes: string, performedBy: string): Observable<any> {
