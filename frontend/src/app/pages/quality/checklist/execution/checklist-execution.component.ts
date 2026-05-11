@@ -143,6 +143,7 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
       field: 'created_at',
       headerName: 'Created Date',
       minWidth: 140,
+      sort: 'desc',
       cellRenderer: (params: any) => {
         const date = new Date(params.value);
         return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -152,7 +153,6 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
       field: 'updated_at',
       headerName: 'Updated Date',
       minWidth: 140,
-      sort: 'desc',
       cellRenderer: (params: any) => {
         if (!params.value) return '<span class="text-muted">—</span>';
         const date = new Date(params.value);
