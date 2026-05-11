@@ -3221,12 +3221,11 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
 
     this.saving = true;
     this.photoChecklistService
+      // Keep creator identity immutable after creation: never send operator fields during progress updates.
       .updateInstanceItemCompletion(this.instanceId, dbItemId, {
         completion,
         progress_percentage: progressPercent,
         status,
-        operator_id: this.currentUserId || undefined,
-        operator_name: this.currentUserName || undefined,
         updated_at: new Date().toISOString(),
       })
       .subscribe({

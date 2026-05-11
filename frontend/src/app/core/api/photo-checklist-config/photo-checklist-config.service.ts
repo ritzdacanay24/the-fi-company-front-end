@@ -512,12 +512,11 @@ export class PhotoChecklistConfigService {
   updateInstanceItemCompletion(
     instanceId: number,
     itemId: number,
+    // Keep creator identity immutable after creation: do not include operator_id/operator_name in update payloads.
     payload: {
       completion: any;
       progress_percentage?: number;
       status?: ChecklistInstance['status'];
-      operator_id?: number;
-      operator_name?: string;
       updated_at?: string;
     }
   ): Observable<{ success: boolean; instance_id?: number; item_id?: number; error?: string }> {

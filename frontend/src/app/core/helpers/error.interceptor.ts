@@ -70,6 +70,12 @@ export class ErrorInterceptor implements HttpInterceptor {
     return !request.url.includes('/health/deploy-status');
   }
 
+  private isLikelyDeployDowntimeError(error: HttpErrorResponse): boolean {
+    const status = Number(error?.status || 0);
+    const deploying = this.deployStatusService.snapshot.deploying === true;
+    return deploying && (status === 0 || status === 502 || status === 503 || status === 504);
+  }
+
   private async showPermissionRequiredModal(details: any, canRequest: boolean): Promise<void> {
     if (this.isPermissionModalOpen) {
       return;
@@ -202,7 +208,10 @@ export class ErrorInterceptor implements HttpInterceptor {
   ): Observable<HttpEvent<any>> {
     return next.handle(request).pipe(
       catchError((error) => {
-        if (this.isDeployInProgressError(error)) {
+        const isDeployInProgress = this.isDeployInProgressError(error);
+        const isDeployDowntime = this.isLikelyDeployDowntimeError(error);
+
+        if (isDeployInProgress) {
           const retryAfterSeconds = this.getRetryAfterSeconds(error);
           const message = error?.error?.message || 'A new version is currently being deployed. Please retry in a moment.';
           this.deployStatusService.markDeploying(message, retryAfterSeconds);
@@ -255,7 +264,11 @@ export class ErrorInterceptor implements HttpInterceptor {
             : error?.statusText;
 
         // Check for suppress flags from our serial number component
-        const suppressGlobalError = error?._suppressGlobalError || error?._handledLocally;
+        const suppressGlobalError =
+          error?._suppressGlobalError
+          || error?._handledLocally
+          || isDeployInProgress
+          || isDeployDowntime;
 
         // Only show toast if backend did not set showPopup === false AND we haven't suppressed it
         if (

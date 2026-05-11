@@ -26,6 +26,10 @@ export class DeployStatusService {
 
   constructor(private readonly http: HttpClient) {}
 
+  get snapshot(): DeployStatusState {
+    return this.stateSubject.value;
+  }
+
   start(): void {
     if (this.started) {
       return;

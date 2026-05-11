@@ -1052,11 +1052,10 @@ export class PhotoChecklistRepository {
   }
 
   async updateInstance(id: number, payload: Record<string, unknown>): Promise<void> {
+    // Keep creator identity immutable after insert: do not add operator_id/operator_name here.
     const allowedFields = [
       'status',
       'progress_percentage',
-      'operator_id',
-      'operator_name',
       'part_number',
       'serial_number',
       'work_order_number',
@@ -1182,14 +1181,13 @@ export class PhotoChecklistRepository {
 
     completion[String(itemId)] = payload?.completion ?? null;
 
+    // Keep creator identity immutable after insert: do not update operator_id/operator_name here.
     await this.mysqlService.execute(
-      'UPDATE checklist_instances SET item_completion = ?, progress_percentage = COALESCE(?, progress_percentage), status = COALESCE(?, status), operator_id = COALESCE(?, operator_id), operator_name = COALESCE(?, operator_name) WHERE id = ?',
+      'UPDATE checklist_instances SET item_completion = ?, progress_percentage = COALESCE(?, progress_percentage), status = COALESCE(?, status) WHERE id = ?',
       [
         JSON.stringify(completion),
         payload?.progress_percentage ?? null,
         payload?.status ?? null,
-        payload?.operator_id ?? null,
-        payload?.operator_name ?? null,
         instanceId,
       ],
     );
