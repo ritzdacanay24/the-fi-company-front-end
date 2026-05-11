@@ -57,6 +57,8 @@ export class RevenueByCustomerComponent implements OnInit {
   data: any;
   test: any;
   chart2: any;
+  auditRowsByCustomer: Record<string, any[]> = {};
+  auditRowsForRange: any[] = [];
 
   data1: any;
   d: any;
@@ -292,6 +294,9 @@ export class RevenueByCustomerComponent implements OnInit {
         this.excludeTariffFees
       );
 
+      this.auditRowsByCustomer = this.buildCustomerAuditRows(this.data1?.results || []);
+      this.auditRowsForRange = this.buildAuditRowsForRange(this.data1?.results || []);
+
       const uniqueNames: any = [
         ...new Set(this.data1.results.map((user) => user.SO_CUST)),
       ];
@@ -379,8 +384,152 @@ export class RevenueByCustomerComponent implements OnInit {
 
       this.isLoadingSubData = false;
     } catch (err) {
+      this.auditRowsByCustomer = {};
+      this.auditRowsForRange = [];
       this.isLoadingSubData = false;
     }
+  }
+
+  private toNumber(value: any): number {
+    const normalized = Number(value);
+    return Number.isFinite(normalized) ? normalized : 0;
+  }
+
+  private buildCustomerAuditRows(rows: any[]): Record<string, any[]> {
+    const grouped: Record<string, any[]> = {};
+
+    for (const row of rows || []) {
+      const customer = String(row.SO_CUST || '').toUpperCase();
+      if (!customer) {
+        continue;
+      }
+
+      const qtyOrdered = this.toNumber(row.SOD_QTY_ORD);
+      const qtyShipped = this.toNumber(row.SOD_QTY_SHIP);
+      const openBalanceQty = this.toNumber(
+        row.OPEN_BALANCE_QTY !== undefined ? row.OPEN_BALANCE_QTY : qtyOrdered - qtyShipped,
+      );
+      const unitPrice = this.toNumber(row.SOD_PRICE);
+      const openBalanceAmount = this.toNumber(
+        row.OPEN_BALANCE_AMOUNT !== undefined
+          ? row.OPEN_BALANCE_AMOUNT
+          : row.TOTAL !== undefined
+            ? row.TOTAL
+            : unitPrice * openBalanceQty,
+      );
+
+      if (!grouped[customer]) {
+        grouped[customer] = [];
+      }
+
+      grouped[customer].push({
+        performanceDate: row.DATE1,
+        salesOrder: row.SO_NBR,
+        line: this.toNumber(row.SOD_LINE),
+        part: row.SOD_PART,
+        productLine: row.SOD_PRODLINE,
+        qtyOrdered,
+        qtyShipped,
+        openBalanceQty,
+        unitPrice,
+        openBalanceAmount,
+        tariffAmount: this.toNumber(row.TARIFF_AMOUNT),
+        netRevenue: this.toNumber(row.NET_REVENUE),
+      });
+    }
+
+    for (const key of Object.keys(grouped)) {
+      grouped[key].sort((a, b) => {
+        const leftDate = moment(a.performanceDate).valueOf();
+        const rightDate = moment(b.performanceDate).valueOf();
+
+        if (leftDate !== rightDate) {
+          return leftDate - rightDate;
+        }
+
+        if (a.salesOrder !== b.salesOrder) {
+          return String(a.salesOrder).localeCompare(String(b.salesOrder));
+        }
+
+        return this.toNumber(a.line) - this.toNumber(b.line);
+      });
+    }
+
+    return grouped;
+  }
+
+  getCustomerAuditRows(customerCode: string): any[] {
+    return this.auditRowsByCustomer[String(customerCode || '').toUpperCase()] || [];
+  }
+
+  private buildAuditRowsForRange(rows: any[]): any[] {
+    const allRows: any[] = [];
+
+    for (const row of rows || []) {
+      const customer = String(row.SO_CUST || '').toUpperCase();
+      if (!customer) {
+        continue;
+      }
+
+      const qtyOrdered = this.toNumber(row.SOD_QTY_ORD);
+      const qtyShipped = this.toNumber(row.SOD_QTY_SHIP);
+      const openBalanceQty = this.toNumber(
+        row.OPEN_BALANCE_QTY !== undefined ? row.OPEN_BALANCE_QTY : qtyOrdered - qtyShipped,
+      );
+      const unitPrice = this.toNumber(row.SOD_PRICE);
+      const openBalanceAmount = this.toNumber(
+        row.OPEN_BALANCE_AMOUNT !== undefined
+          ? row.OPEN_BALANCE_AMOUNT
+          : row.TOTAL !== undefined
+            ? row.TOTAL
+            : unitPrice * openBalanceQty,
+      );
+
+      allRows.push({
+        customer,
+        performanceDate: row.DATE1,
+        salesOrder: row.SO_NBR,
+        line: this.toNumber(row.SOD_LINE),
+        part: row.SOD_PART,
+        productLine: row.SOD_PRODLINE,
+        qtyOrdered,
+        qtyShipped,
+        openBalanceQty,
+        unitPrice,
+        openBalanceAmount,
+        tariffAmount: this.toNumber(row.TARIFF_AMOUNT),
+        netRevenue: this.toNumber(row.NET_REVENUE),
+      });
+    }
+
+    allRows.sort((a, b) => {
+      const leftDate = moment(a.performanceDate).valueOf();
+      const rightDate = moment(b.performanceDate).valueOf();
+
+      if (leftDate !== rightDate) {
+        return leftDate - rightDate;
+      }
+
+      if (a.customer !== b.customer) {
+        return String(a.customer).localeCompare(String(b.customer));
+      }
+
+      if (a.salesOrder !== b.salesOrder) {
+        return String(a.salesOrder).localeCompare(String(b.salesOrder));
+      }
+
+      return this.toNumber(a.line) - this.toNumber(b.line);
+    });
+
+    return allRows;
+  }
+
+  sumAuditRows(rows: any[], key: string): number {
+    let total = 0;
+    for (const row of rows || []) {
+      total += this.toNumber(row?.[key]);
+    }
+    return total;
   }
 
   // Updated customer classifications with detailed logic descriptions

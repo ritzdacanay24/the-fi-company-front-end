@@ -161,7 +161,16 @@ export interface FutureRevenueByCustomerSummaryRow extends RowDataPacket {
 
 export interface FutureRevenueByCustomerWeeklyRow extends RowDataPacket {
   so_cust: string;
+  so_nbr: string;
+  sod_line: number;
+  sod_part: string;
+  sod_prodline: string;
   date1: string;
+  sod_price: number;
+  sod_qty_ord: number;
+  sod_qty_ship: number;
+  open_balance_qty: number;
+  open_balance_amount: number;
   total: number;
   revenue_after_tariff: number;
   tariff_amount: number;
@@ -705,7 +714,16 @@ export class ReportsRepository extends BaseRepository<RowDataPacket> {
   ): Promise<FutureRevenueByCustomerWeeklyRow[]> {
     const sql = `
       SELECT c.so_cust AS so_cust,
+             a.sod_nbr AS so_nbr,
+             a.sod_line AS sod_line,
+             a.sod_part AS sod_part,
+             a.sod_prodline AS sod_prodline,
              a.sod_per_date AS date1,
+             a.sod_price AS sod_price,
+             a.sod_qty_ord AS sod_qty_ord,
+             a.sod_qty_ship AS sod_qty_ship,
+             (a.sod_qty_ord - a.sod_qty_ship) AS open_balance_qty,
+             (a.sod_price * (a.sod_qty_ord - a.sod_qty_ship)) AS open_balance_amount,
              (a.sod_price * (a.sod_qty_ord - a.sod_qty_ship)) AS total,
              CASE
                WHEN c.so_cust IN ('AMEGAM', 'ZITRO', 'ECLIPSE') THEN (a.sod_price * (a.sod_qty_ord - a.sod_qty_ship)) * 0.91

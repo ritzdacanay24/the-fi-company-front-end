@@ -4,7 +4,6 @@ import { PartsOrderService } from '@app/core/api/field-service/parts-order/parts
 import { QadService } from '@app/core/api/qad/sales-order-search.service';
 import { AddressSearchComponent } from '@app/shared/components/address-search/address-search.component';
 import { QadPartSearchComponent } from '@app/shared/components/qad-part-search/qad-part-search.component';
-import { QirSearchComponent } from '@app/shared/components/qir-search/qir-search.component';
 import { SharedModule } from '@app/shared/shared.module';
 import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
 import { NgSelectModule } from '@ng-select/ng-select';
@@ -17,7 +16,6 @@ import Swal from 'sweetalert2';
     imports: [
         SharedModule,
         ReactiveFormsModule,
-        QirSearchComponent,
         QadPartSearchComponent,
         AddressSearchComponent,
         AutosizeModule,
@@ -29,7 +27,7 @@ import Swal from 'sweetalert2';
 })
 export class PartsOrderFormComponent {
 
-    readonly statusOptions = ['Open', 'Ordered', 'Shipped', 'Delivered', 'Completed', 'Cancelled'];
+    readonly statusOptions = ['Completed'];
 
 
     notifyQadParent($event) {
@@ -139,7 +137,7 @@ export class PartsOrderFormComponent {
 
     form = this.fb.group({
         id: null,
-        status: ['Open'],
+        status: ['Completed'],
         oem: [null],
         casino_name: [null],
         arrival_date: [null],

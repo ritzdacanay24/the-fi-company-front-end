@@ -64,7 +64,8 @@ export class PartsOrderService {
     if (normalizedView === 'open') {
       return mappedRows.filter((row) => {
         const isActive = Number(row.active ?? 1) === 1;
-        return isActive && !this.hasTrackingNumber(row.tracking_number);
+        const status = String(row.status ?? '').trim().toLowerCase();
+        return isActive && status === 'open';
       });
     }
 
@@ -167,12 +168,8 @@ export class PartsOrderService {
       normalized.oem = String((oem as Record<string, unknown>).cm_addr || '');
     }
 
-    const status = this.normalizeStatus(normalized.status);
-    if (status) {
-      normalized.status = status;
-    } else if (!normalized.id) {
-      normalized.status = 'Open';
-    }
+    const isArchived = Number(normalized.active ?? 1) === 0;
+    normalized.status = isArchived ? 'Archived' : 'Completed';
 
     return normalized;
   }
