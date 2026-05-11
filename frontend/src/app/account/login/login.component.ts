@@ -15,6 +15,7 @@ import {
 } from "@app/core/guards/admin.guard";
 import { TwostepService } from "@app/core/api/twostep/twostep.service";
 import { ToastrService } from "ngx-toastr";
+import { SupportEntryService } from "@app/core/services/support-entry.service";
 
 @Component({
   selector: "app-login",
@@ -42,7 +43,8 @@ export class LoginComponent implements OnInit {
     private route: ActivatedRoute,
     public toastservice: ToastService,
     private twostepService: TwostepService,
-    private toastrService: ToastrService
+    private toastrService: ToastrService,
+    private supportEntryService: SupportEntryService,
   ) {
     // redirect to home if already logged in
     if (this.authenticationService.currentUserValue) {
@@ -124,5 +126,9 @@ export class LoginComponent implements OnInit {
    */
   toggleFieldTextType() {
     this.fieldTextType = !this.fieldTextType;
+  }
+
+  openSupport(): void {
+    void this.supportEntryService.openSupport({ source: 'login' });
   }
 }

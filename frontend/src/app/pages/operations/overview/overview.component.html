@@ -1,1 +1,107 @@
-overview
+<div class="container-fluid overview-page">
+	<div class="row justify-content-center">
+		<div class="col-12 col-xxl-11">
+			<div class="mb-4">
+				<div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
+					<div>
+						<h2 class="mb-2">Overview</h2>
+						<p class="text-muted mb-0">Quick access to the most-used operational pages and support entry points.</p>
+					</div>
+				</div>
+			</div>
+
+			<div class="card border-0 shadow-sm support-card mb-4">
+				<div class="card-body p-4">
+					<div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+						<div>
+							<p class="support-eyebrow text-uppercase fw-semibold small mb-1">Need Help?</p>
+							<h5 class="support-title mb-1">Support Center</h5>
+							<div class="text-white-50 small">Use one support form and choose Dashboard/App or IT/Access in the form.</div>
+						</div>
+						<div class="d-flex flex-wrap gap-2">
+							<button
+								*ngFor="let action of featuredActions"
+								type="button"
+								class="btn support-btn"
+								[class.btn-danger]="true"
+								(click)="openSupportAction()">
+								<i [class]="action.icon + ' me-2'"></i>
+								{{ action.label }}
+							</button>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="card border-0 shadow-sm mb-4">
+				<div class="card-body p-4">
+					<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+						<div>
+							<h5 class="mb-1">Overview Metrics</h5>
+							<p class="text-muted mb-0">Select which live badge counts you want to track in this view.</p>
+						</div>
+						<button type="button" class="btn btn-sm btn-outline-secondary" (click)="resetMetricPreferences()">
+							Reset Defaults
+						</button>
+					</div>
+
+					<div class="metric-picker mb-2">
+						<button
+							*ngFor="let metric of featuredMetricOptions"
+							type="button"
+							class="metric-chip"
+							[class.metric-chip--selected]="isMetricSelected(metric.key)"
+							(click)="toggleMetric(metric.key)">
+							<i [class]="metric.icon + ' me-1'"></i>
+							{{ metric.label }}
+						</button>
+
+						<div class="dropdown d-inline-block" ngbDropdown [autoClose]="'outside'" container="body">
+							<button type="button" class="metric-chip metric-chip--more" ngbDropdownToggle>
+								<i class="mdi mdi-dots-horizontal me-1"></i>
+								More
+								<span *ngIf="moreSelectedCount > 0" class="metric-more-badge">{{ moreSelectedCount }}</span>
+							</button>
+							<div class="dropdown-menu p-2" ngbDropdownMenu style="min-width:300px;max-height:340px;overflow-y:auto;border-radius:0.75rem;box-shadow:0 8px 28px rgba(15,23,42,.12)">
+								<p class="text-muted small px-2 mb-2">Additional metrics</p>
+								<button
+									*ngFor="let metric of moreMetricOptions"
+									type="button"
+									class="dropdown-item metric-more-item rounded"
+									[class.active]="isMetricSelected(metric.key)"
+									(click)="toggleMetric(metric.key)">
+									<i [class]="metric.icon + ' me-2'"></i>
+									<span class="flex-grow-1">{{ metric.label }}</span>
+									<span class="badge bg-secondary-subtle text-secondary ms-2 small">{{ metric.group }}</span>
+									<i class="mdi mdi-check ms-2 metric-more-check" *ngIf="isMetricSelected(metric.key)"></i>
+								</button>
+							</div>
+						</div>
+					</div>
+					<p class="text-muted small mb-4">Click a chip to show or hide its metric card below.</p>
+
+					<div class="row g-3" *ngIf="selectedMetricOptions.length > 0">
+						<div class="col-12 col-md-6 col-xl-4" *ngFor="let metric of selectedMetricOptions">
+							<button type="button" class="metric-card metric-card-btn h-100 w-100 text-start" [title]="'Open ' + metric.label" (click)="openMetric(metric)">
+								<div class="d-flex align-items-start justify-content-between gap-3">
+									<div>
+										<p class="metric-group mb-1">{{ metric.group }}</p>
+										<h6 class="metric-label mb-2">{{ metric.label }}</h6>
+										<div class="metric-value">{{ getMetricCount(metric.key) }}</div>
+									</div>
+									<div class="metric-icon-wrap">
+										<i [class]="metric.icon"></i>
+									</div>
+								</div>
+							</button>
+						</div>
+					</div>
+
+					<div class="text-muted small" *ngIf="selectedMetricOptions.length === 0">
+						No metrics selected. Pick at least one metric above.
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>

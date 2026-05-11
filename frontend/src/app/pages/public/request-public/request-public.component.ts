@@ -20,7 +20,7 @@ import { SweetAlert } from "@app/shared/sweet-alert/sweet-alert.service";
 import { AutosizeModule } from "ngx-autosize";
 import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErrors";
 import { RequestChangeModalService } from "@app/pages/field-service/request/request-change/request-change-modal.component";
-import { ErrorReportDialogService } from "@app/core/services/error-report-dialog.service";
+import { SupportEntryService } from "@app/core/services/support-entry.service";
 import { TicketPriority, TicketType } from "@app/shared/interfaces/ticket.interface";
 
 @Component({
@@ -40,7 +40,7 @@ export class RequestPublicComponent implements OnInit, OnDestroy {
     private cdref: ChangeDetectorRef,
     private attachmentsService: AttachmentsService,
     private requestChangeModalService: RequestChangeModalService,
-    private errorReportDialogService: ErrorReportDialogService
+    private supportEntryService: SupportEntryService,
   ) { }
 
   // Form and request properties
@@ -300,10 +300,11 @@ export class RequestPublicComponent implements OnInit, OnDestroy {
   }
 
   async openSupportTicketModal(): Promise<void> {
-    await this.errorReportDialogService.open({
-      type: TicketType.QUESTION,
-      title: 'Public Request Portal Support',
-      priority: TicketPriority.MEDIUM,
+    await this.supportEntryService.openSupport({
+      source: 'request-public',
+      dashboardType: TicketType.QUESTION,
+      dashboardPriority: TicketPriority.MEDIUM,
+      dashboardTitle: 'Public Request Portal Support',
     });
   }
 

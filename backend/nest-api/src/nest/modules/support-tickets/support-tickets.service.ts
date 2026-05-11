@@ -65,6 +65,37 @@ export class SupportTicketsService {
     return ticket;
   }
 
+  async createPublic(dto: CreateSupportTicketDto & { submitter_name?: string; submitter_email?: string }): Promise<SupportTicket> {
+    const screenshotPath = this.extractScreenshotPath(dto.screenshot);
+
+    const ticketId = await this.repository.create({
+      ...dto,
+      user_id: null,
+      user_email: dto.submitter_email?.trim() || null,
+      screenshot_path: screenshotPath,
+      metadata: {
+        ...(dto.metadata || {}),
+        submitter_name: dto.submitter_name?.trim() || null,
+        submitter_email: dto.submitter_email?.trim() || null,
+        source: 'public-support',
+        ...(dto.steps ? { steps: dto.steps } : {}),
+      },
+    });
+
+    const ticket = await this.repository.findById(ticketId);
+    if (!ticket) {
+      throw new NotFoundException('Ticket not found after creation');
+    }
+
+    await this.sendTicketCreatedNotification(ticket, {
+      email: dto.submitter_email?.trim() || null,
+      first: dto.submitter_name?.trim() || null,
+      last: null,
+    });
+
+    return ticket;
+  }
+
   async findAll(filters: SupportTicketFilters, user: RequestUser): Promise<SupportTicket[]> {
     const userContext = await this.requireUserContext(user.id);
 
@@ -413,7 +444,7 @@ export class SupportTicketsService {
 
   private async sendTicketCreatedNotification(
     ticket: SupportTicket,
-    userContext: { email: string | null; first: string | null; last: string | null },
+    userContext?: { email: string | null; first: string | null; last: string | null },
   ): Promise<void> {
     try {
       const recipients = this.getAdminRecipients();
@@ -423,10 +454,13 @@ export class SupportTicketsService {
         return;
       }
 
+      const metadata = (ticket.metadata || {}) as Record<string, unknown>;
+      const publicSubmittedBy = String(metadata.submitter_name || '').trim();
       const submittedBy =
-        [userContext.first, userContext.last].filter(Boolean).join(' ').trim() ||
-        userContext.email ||
-        `User #${ticket.user_id || 'unknown'}`;
+        (userContext
+          ? [userContext.first, userContext.last].filter(Boolean).join(' ').trim() || userContext.email
+          : publicSubmittedBy) ||
+        `User #${ticket.user_id || 'public'}`;
       const safeDescription = (ticket.description || '').replace(/<[^>]*>/g, '').slice(0, 1200);
       const link = this.buildTicketLink(ticket.id);
       const html = this.emailTemplateService.render('support-ticket-created', {
@@ -443,7 +477,7 @@ export class SupportTicketsService {
 
       await this.emailService.sendMail({
         to: recipients,
-        cc: userContext.email || undefined,
+        cc: userContext?.email || undefined,
         subject: `[Support Ticket] ${ticket.ticket_number} - ${ticket.title}`,
         html,
       });

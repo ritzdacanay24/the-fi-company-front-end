@@ -11,6 +11,7 @@ import {
 } from '@app/shared/models/support-ticket.model';
 
 const SUPPORT_TICKETS_API = 'apiV2/support-tickets';
+const PUBLIC_SUPPORT_TICKETS_API = 'apiV2/public/support-tickets';
 
 @Injectable({
   providedIn: 'root',
@@ -35,6 +36,10 @@ export class SupportTicketsService {
 
   createTicket(payload: CreateSupportTicketDto): Observable<SupportTicket> {
     return this.http.post<SupportTicket>(SUPPORT_TICKETS_API, payload);
+  }
+
+  createPublicTicket(payload: CreateSupportTicketDto & { submitter_name?: string; submitter_email?: string }): Observable<SupportTicket> {
+    return this.http.post<SupportTicket>(PUBLIC_SUPPORT_TICKETS_API, payload);
   }
 
   updateTicket(id: number, payload: Partial<SupportTicket>): Observable<SupportTicket> {

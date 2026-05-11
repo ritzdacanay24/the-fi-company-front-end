@@ -18,6 +18,7 @@ import { StandaloneULUsageFormComponent } from "./standalone/ul-usage-form/ul-us
 import { StandaloneShippingPriorityDisplayComponent } from "./standalone/shipping-priority-display/shipping-priority-display.component";
 import { PublicFormsMenuComponent } from "./standalone/public-forms-menu/public-forms-menu.component";
 import { SafetyDashboardComponent } from "./pages/operations/forms/safety-incident/safety-dashboard/safety-dashboard.component";
+import { SupportRequestComponent } from "./pages/public/support-request/support-request.component";
 
 import { FlagBasedPreloadingStrategy } from "./shared/providers/preload";
 import { MenuComponent } from "./pages/menu/menu.component";
@@ -36,6 +37,7 @@ const routes: Routes = [
   { path: "request", component: RequestPublicComponent },
   { path: "request-v2", component: RequestPublicV2HorizontalComponent },
   { path: "request-v2-horizontal", component: RequestPublicV2HorizontalComponent },
+  { path: "support", component: SupportRequestComponent },
   { path: "quality-incident-request", component: QirCreatePublicComponent },
   
   // Public Forms Portal

@@ -1,0 +1,89 @@
+<div class="support-request-page auth-one-bg-position auth-one-bg" id="auth-particles">
+  <div class="bg-overlay"></div>
+  <div class="shape">
+    <svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1440 120">
+      <path d="M 0,36 C 144,53.6 432,123.2 720,124 C 1008,124.8 1296,56.8 1440,40L1440 140L0 140z"></path>
+    </svg>
+  </div>
+
+  <div class="container py-4 position-relative" style="min-height: 100vh;">
+    <div class="row justify-content-center">
+      <div class="col-12 col-xl-10 col-xxl-9">
+        <div class="text-center mb-4 p-4 rounded support-request-header">
+          <a routerLink="/auth/login" class="d-inline-block auth-logo">
+            <img src="assets/images/the-fi-cropped.png" alt="The Fi Company Logo" width="190" class="mb-3">
+          </a>
+          <h2 class="mb-2 fw-bold support-request-title">Create Support Ticket</h2>
+          <p class="mb-0 support-request-subtitle">Use this form if you are not signed in and need help with the dashboard or related systems.</p>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+          <div class="card-body p-4 p-lg-5">
+            <div *ngIf="successTicketNumber" class="alert alert-success mb-4">
+              <div class="fw-semibold mb-1">Ticket submitted successfully</div>
+              <div class="small">Your ticket number is <strong>#{{ successTicketNumber }}</strong>. We’ll review it and follow up using the email you provided.</div>
+            </div>
+
+            <div *ngIf="successTicketNumber" class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+              <button type="button" class="btn btn-outline-secondary" (click)="goToLogin()">Back to Login</button>
+              <button type="button" class="btn btn-primary" (click)="createAnotherTicket()">Create Another Ticket</button>
+            </div>
+
+            <form [formGroup]="form" (ngSubmit)="submit()" *ngIf="!successTicketNumber">
+              <div class="row g-3">
+                <div class="col-12 col-md-6">
+                  <label class="form-label">Your Name</label>
+                  <input type="text" class="form-control" formControlName="submitter_name" placeholder="Enter your name">
+                  <div class="invalid-feedback d-block" *ngIf="submitted && controls.submitter_name.invalid">Name is required.</div>
+                </div>
+                <div class="col-12 col-md-6">
+                  <label class="form-label">Your Email</label>
+                  <input type="email" class="form-control" formControlName="submitter_email" placeholder="Enter your email">
+                  <div class="invalid-feedback d-block" *ngIf="submitted && controls.submitter_email.invalid">Enter a valid email.</div>
+                </div>
+                <div class="col-12">
+                  <label class="form-label">Support Category</label>
+                  <select class="form-select" formControlName="support_category">
+                    <option value="" disabled>Select category</option>
+                    <option *ngFor="let item of supportCategories" [value]="item.value">{{ item.label }}</option>
+                  </select>
+                  <div class="invalid-feedback d-block" *ngIf="submitted && controls.support_category.invalid">Select whether this is Dashboard/App or IT/Access related.</div>
+                </div>
+                <div class="col-12 col-md-6">
+                  <label class="form-label">Issue Type</label>
+                  <select class="form-select" formControlName="type">
+                    <option *ngFor="let item of ticketTypes" [value]="item.value">{{ item.label }}</option>
+                  </select>
+                </div>
+                <div class="col-12 col-md-6">
+                  <label class="form-label">Priority</label>
+                  <select class="form-select" formControlName="priority">
+                    <option *ngFor="let item of priorityOptions" [value]="item.value">{{ item.label }}</option>
+                  </select>
+                </div>
+                <div class="col-12">
+                  <label class="form-label">Title</label>
+                  <input type="text" class="form-control" formControlName="title" placeholder="Short summary of the issue">
+                  <div class="invalid-feedback d-block" *ngIf="submitted && controls.title.invalid">Title is required.</div>
+                </div>
+                <div class="col-12">
+                  <label class="form-label">Description</label>
+                  <textarea class="form-control" rows="6" formControlName="description" placeholder="Describe what happened, what you expected, and what you need help with."></textarea>
+                  <div class="invalid-feedback d-block" *ngIf="submitted && controls.description.invalid">Please provide at least a short description.</div>
+                </div>
+              </div>
+
+              <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4">
+                <button type="button" class="btn btn-outline-secondary" (click)="goToLogin()">Back to Login</button>
+                <button type="submit" class="btn btn-primary" [disabled]="isSubmitting">
+                  <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2"></span>
+                  Submit Ticket
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

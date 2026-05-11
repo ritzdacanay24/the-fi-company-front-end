@@ -1,0 +1,26 @@
+:host {
+  display: block;
+}
+
+.support-request-page {
+  --support-theme-blue: var(--vz-primary, #1a3a6f);
+  background: linear-gradient(120deg, #173867 0%, var(--support-theme-blue) 52%, #2a62ad 100%);
+}
+
+.support-request-page .bg-overlay {
+  background: linear-gradient(135deg, rgba(14, 38, 75, 0.96) 0%, rgba(26, 58, 111, 0.93) 52%, rgba(33, 71, 133, 0.86) 100%);
+  opacity: 0.58;
+}
+
+.support-request-header {
+  background: transparent;
+  box-shadow: none;
+}
+
+.support-request-title {
+  color: #f4f8ff;
+}
+
+.support-request-subtitle {
+  color: #dbe8fb;
+}

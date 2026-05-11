@@ -27,7 +27,7 @@ import Swal from 'sweetalert2';
 })
 export class PartsOrderFormComponent {
 
-    readonly statusOptions = ['Completed'];
+    readonly statusOptions = ['Open', 'Completed'];
 
 
     notifyQadParent($event) {
@@ -137,7 +137,7 @@ export class PartsOrderFormComponent {
 
     form = this.fb.group({
         id: null,
-        status: ['Completed'],
+        status: ['Open'],
         oem: [null],
         casino_name: [null],
         arrival_date: [null],

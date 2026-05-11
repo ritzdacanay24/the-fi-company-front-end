@@ -3,6 +3,19 @@ import { ActivatedRoute, Router } from "@angular/router";
 import { SharedModule } from "@app/shared/shared.module";
 import { PathUtilsService } from "@app/core/services/path-utils.service";
 import { environment } from "@environments/environment";
+import { SupportEntryService } from "@app/core/services/support-entry.service";
+
+interface MenuItem {
+  name: string;
+  link: string;
+  icon: string;
+  color: string;
+}
+
+interface MenuSection {
+  section: string;
+  items: MenuItem[];
+}
 
 @Component({
   standalone: true,
@@ -15,7 +28,8 @@ export class MenuComponent implements OnInit {
   constructor(
     public route: ActivatedRoute, 
     public router: Router,
-    private pathUtils: PathUtilsService
+    private pathUtils: PathUtilsService,
+    private supportEntryService: SupportEntryService,
   ) {}
 
   ngOnInit(): void {}
@@ -24,7 +38,7 @@ export class MenuComponent implements OnInit {
     this.router.navigate(['/operations']);
   }
 
-  data = [
+  data: MenuSection[] = [
     {
       section: 'Dashboards',
       items: [
@@ -61,7 +75,11 @@ export class MenuComponent implements OnInit {
     },
   ];
 
-  isLink(row) {
+  openSupport(): void {
+    void this.supportEntryService.openSupport({ source: 'menu' });
+  }
+
+  isLink(row: MenuItem): void {
     if (row.name == "SouthFi") {
       window.open(row.link, row.name, "height=800,width=800");
 

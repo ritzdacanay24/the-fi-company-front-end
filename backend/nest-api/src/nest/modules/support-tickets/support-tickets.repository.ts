@@ -34,7 +34,7 @@ export class SupportTicketsRepository {
     return rows[0] ?? null;
   }
 
-  async create(ticket: CreateSupportTicketDto & { user_id: number; user_email: string | null; screenshot_path: string | null; metadata: Record<string, unknown> | null }): Promise<number> {
+  async create(ticket: CreateSupportTicketDto & { user_id: number | null; user_email: string | null; screenshot_path: string | null; metadata: Record<string, unknown> | null }): Promise<number> {
     const ticketNumber = await this.generateTicketNumber();
 
     const result = await this.mysqlService.execute<ResultSetHeader>(

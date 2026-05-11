@@ -11,6 +11,7 @@ import { QirPublicFormComponent } from "../qir-public-form/qir-public-form.compo
 import { SweetAlert } from "@app/shared/sweet-alert/sweet-alert.service";
 import { LocationStrategy } from "@angular/common";
 import { AuthenticationService } from "@app/core/services/auth.service";
+import { SupportEntryService } from "@app/core/services/support-entry.service";
 
 @Component({
   standalone: true,
@@ -26,7 +27,8 @@ export class QirCreatePublicComponent {
     private api: QirService,
     private attachmentsService: AttachmentsService,
     private location: LocationStrategy,
-    private authService: AuthenticationService
+    private authService: AuthenticationService,
+    private supportEntryService: SupportEntryService,
   ) {
     history.pushState(null, null, window.location.href);
     this.location.onPopState(() => {
@@ -48,6 +50,10 @@ export class QirCreatePublicComponent {
 
   goToInternalForm(): void {
     this.router.navigate([NAVIGATION_ROUTE.CREATE]);
+  }
+
+  openSupportTicket(): void {
+    void this.supportEntryService.openSupport({ source: 'qir-public' });
   }
 
   ngOnInit(): void {

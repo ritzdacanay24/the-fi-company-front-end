@@ -37,7 +37,7 @@
 		flex: 0 0 52px;
 		width: 52px;
 		height: 100%;
-		padding: 0.75rem 6px 0;
+		padding: 0.75rem 6px 0.75rem;
 		border-right: 1px solid rgba(255, 255, 255, 0.08);
 		background: rgba(0, 0, 0, 0.18);
 		overflow: visible;
@@ -118,7 +118,7 @@
 
 			&.rail-config-btn {
 				margin-top: auto;
-				margin-bottom: 8px;
+				margin-bottom: 2px;
 				background: transparent;
 				color: rgba(255, 255, 255, 0.82);
 
@@ -129,6 +129,21 @@
 				&:hover {
 					background: rgba(255, 255, 255, 0.14);
 				}
+			}
+
+			&.rail-support-btn {
+				border: 1px solid rgba(255, 255, 255, 0.22);
+			}
+
+			&.rail-support-btn--dashboard {
+				background: rgba(220, 53, 69, 0.3);
+				border-color: rgba(220, 53, 69, 0.56);
+			}
+
+			&.rail-support-btn--it {
+				background: rgba(13, 110, 253, 0.26);
+				border-color: rgba(13, 110, 253, 0.52);
+				margin-bottom: 4px;
 			}
 
 		}

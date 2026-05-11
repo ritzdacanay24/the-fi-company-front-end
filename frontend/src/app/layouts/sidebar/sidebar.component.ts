@@ -23,6 +23,7 @@ import { PageAccessService } from "@app/core/api/page-access/page-access.service
 import { MenuService } from "@app/core/api/menu/menu.service";
 import { AppSwitcherService, AppType } from "@app/services/app-switcher.service";
 import { PathUtilsService } from "@app/core/services/path-utils.service";
+import { SupportEntryService } from "@app/core/services/support-entry.service";
 import { FIELD_SERVICE_MENU } from "./field-service-menu-data";
 import { ADMIN_MENU } from "./admin-menu-data";
 import { SERIAL_MANAGEMENT_MENU } from "./serial-management-menu-data";
@@ -203,7 +204,8 @@ export class SidebarComponent implements OnInit {
     private appSwitcherService: AppSwitcherService,
     private pathUtils: PathUtilsService,
     private modalService: NgbModal,
-    private menuBadgeWebsocketService: MenuBadgeWebsocketService
+    private menuBadgeWebsocketService: MenuBadgeWebsocketService,
+    private supportEntryService: SupportEntryService,
   ) {
     this.getMenu();
     
@@ -1011,6 +1013,10 @@ export class SidebarComponent implements OnInit {
     
     // Save the sidebar size preference
     this.saveUserPreferences();
+  }
+
+  openSupportFromSidebar(): void {
+    void this.supportEntryService.openSupport({ source: 'sidebar' });
   }
 
   // Configuration Modal Methods

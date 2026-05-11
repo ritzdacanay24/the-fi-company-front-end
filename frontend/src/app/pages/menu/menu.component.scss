@@ -17,6 +17,27 @@
   z-index: 2;
 }
 
+:host .support-card {
+  border: 1px solid rgba(13, 110, 253, 0.2);
+  background: linear-gradient(135deg, rgba(13, 110, 253, 0.08) 0%, rgba(255, 193, 7, 0.08) 100%);
+}
+
+:host .support-eyebrow {
+  color: rgba(255, 255, 255, 0.86);
+  letter-spacing: 0.04em;
+}
+
+:host .support-title {
+  color: #ffffff;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+:host .support-btn {
+  min-width: 190px;
+  font-weight: 600;
+}
+
 :host .menu-topbar {
   position: sticky;
   top: 0.75rem;
@@ -51,5 +72,10 @@
     gap: 0.75rem;
     padding-top: 0.75rem;
     padding-bottom: 0.75rem;
+  }
+
+  :host .support-btn {
+    width: 100%;
+    min-width: 100%;
   }
 }
