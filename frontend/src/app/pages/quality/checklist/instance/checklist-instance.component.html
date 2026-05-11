@@ -67,14 +67,6 @@
                 <span class="badge bg-body-secondary text-body border" *ngIf="template?.part_number || instance?.part_number">
                   P/N: {{ template?.part_number || instance?.part_number }}
                 </span>
-                <span class="badge bg-body-secondary text-body border"
-                      *ngIf="instance?.operator_name || instance?.operator_id">
-                  <i class="mdi mdi-account-key-outline me-1"></i>Creator: {{ instance?.operator_name || ('User #' + instance?.operator_id) }}
-                </span>
-                <span class="badge bg-body-secondary text-body border"
-                      *ngIf="instance?.owner_name || instance?.owner_id || instance?.operator_name || instance?.operator_id">
-                  <i class="mdi mdi-account-outline me-1"></i>Owner: {{ instance?.owner_name || instance?.operator_name || ('User #' + (instance?.owner_id || instance?.operator_id)) }}
-                </span>
               </div>
             </div>
           </div>
@@ -87,16 +79,6 @@
               <i class="mdi mdi-barcode me-1"></i>
               S/N: {{instance.serial_number}}
             </span>
-            <!-- Owner-lock indicator -->
-            <span class="badge rounded-pill bg-success bg-opacity-10 text-success border border-success px-3 py-2 fw-semibold"
-                  *ngIf="isOwner" title="You have an active edit lock on this checklist">
-              <i class="mdi mdi-lock-check me-1"></i>Editing
-            </span>
-            <span class="badge rounded-pill bg-warning bg-opacity-10 text-warning border border-warning px-3 py-2 fw-semibold"
-                  *ngIf="!isOwner && lockOwnerName" title="Another user holds the edit lock">
-              <i class="mdi mdi-lock-alert me-1"></i>Locked by {{lockOwnerName}}
-            </span>
-            
             <!-- Action Buttons -->
             <button
               type="button"
@@ -2129,59 +2111,49 @@
     </h5>
     <button type="button" class="btn-close btn-close-white" aria-label="Close" (click)="offcanvas.dismiss()"></button>
   </div>
-  <div class="offcanvas-body">
-    <div *ngIf="instance">
-      <!-- Work Order Details -->
-      <div class="mb-4" *ngIf="instance.work_order_number">
-        <label class="text-muted text-uppercase small fw-semibold mb-2">Work Order Number</label>
-        <div class="p-3 bg-light rounded">
-          <h5 class="text-primary mb-0">{{ instance.work_order_number }}</h5>
+  <div class="offcanvas-body p-2 p-sm-3">
+    <div *ngIf="instance" class="d-flex flex-column gap-2">
+      <div class="border rounded bg-light p-2">
+        <div class="text-muted text-uppercase small fw-semibold mb-1">Core Info</div>
+        <div class="d-flex flex-wrap gap-1">
+          <span class="badge bg-primary-subtle text-primary border" *ngIf="instance.work_order_number">WO: {{ instance.work_order_number }}</span>
+          <span class="badge bg-success-subtle text-success border" *ngIf="instance.serial_number">S/N: {{ instance.serial_number }}</span>
+          <span class="badge bg-body-secondary text-body border" *ngIf="instance.part_number">P/N: {{ instance.part_number }}</span>
+          <span class="badge bg-body-secondary text-body border" *ngIf="template?.version">v{{ template.version }}</span>
         </div>
       </div>
 
-      <div class="mb-4" *ngIf="instance.part_number">
-        <label class="text-muted text-uppercase small fw-semibold mb-2">Part Number</label>
-        <div class="p-3 bg-light rounded">
-          <span class="text-dark">{{ instance.part_number }}</span>
+      <div class="border rounded p-2">
+        <div class="text-muted text-uppercase small fw-semibold mb-2">People and Lock</div>
+        <div class="small mb-2" *ngIf="instance.operator_name || instance.operator_id">
+          <div class="text-muted">Creator</div>
+          <div class="fw-semibold"><i class="mdi mdi-account-key-outline me-1"></i>{{ instance.operator_name || ('User #' + instance.operator_id) }}</div>
+        </div>
+        <div class="small mb-2" *ngIf="instance.owner_name || instance.owner_id || instance.operator_name || instance.operator_id">
+          <div class="text-muted">Owner</div>
+          <div class="fw-semibold"><i class="mdi mdi-account-outline me-1"></i>{{ instance.owner_name || instance.operator_name || ('User #' + (instance.owner_id || instance.operator_id)) }}</div>
+        </div>
+        <div class="small">
+          <div class="text-muted">Lock Status</div>
+          <div class="d-flex align-items-center flex-wrap gap-2">
+            <span class="badge rounded-pill bg-success-subtle text-success border border-success" *ngIf="isOwner">
+              <i class="mdi mdi-lock-check me-1"></i>Editing
+            </span>
+            <span class="badge rounded-pill bg-warning-subtle text-warning border border-warning" *ngIf="!isOwner && lockOwnerName">
+              <i class="mdi mdi-lock-alert me-1"></i>Locked by {{ lockOwnerName }}
+            </span>
+            <span class="badge rounded-pill bg-secondary-subtle text-secondary border" *ngIf="!isOwner && !lockOwnerName">
+              <i class="mdi mdi-lock-open-variant-outline me-1"></i>No active lock
+            </span>
+          </div>
         </div>
       </div>
 
-      <div class="mb-4" *ngIf="instance.serial_number">
-        <label class="text-muted text-uppercase small fw-semibold mb-2">Serial Number</label>
-        <div class="p-3 bg-light rounded">
-          <span class="text-dark">{{ instance.serial_number }}</span>
-        </div>
-      </div>
-
-      <div class="mb-4" *ngIf="instance.operator_name">
-        <label class="text-muted text-uppercase small fw-semibold mb-2">Operator</label>
-        <div class="p-3 bg-light rounded">
-          <span class="text-dark">{{ instance.operator_name }}</span>
-        </div>
-      </div>
-
-      <hr class="my-4">
-
-      <!-- Template Information -->
-      <div class="mb-4" *ngIf="template?.version">
-        <label class="text-muted text-uppercase small fw-semibold mb-2">Template Version</label>
-        <div class="p-3 bg-light rounded">
-          <span class="text-muted">{{ template.version }}</span>
-        </div>
-      </div>
-
-      <div class="mb-4" *ngIf="template?.description">
-        <label class="text-muted text-uppercase small fw-semibold mb-2">Template Description</label>
-        <div class="p-3 bg-light rounded">
-          <span class="text-muted">{{ template.description }}</span>
-        </div>
-      </div>
-
-      <!-- Status Information -->
-      <div class="mb-4">
-        <label class="text-muted text-uppercase small fw-semibold mb-2">Checklist Status</label>
-        <div class="p-3 bg-light rounded">
-          <span class="badge" 
+      <div class="border rounded p-2">
+        <div class="text-muted text-uppercase small fw-semibold mb-2">Status and Dates</div>
+        <div class="d-flex align-items-center justify-content-between small mb-1">
+          <span class="text-muted">Checklist Status</span>
+          <span class="badge"
                 [class.bg-success]="instance.status === 'completed' || instance.status === 'submitted'"
                 [class.bg-warning]="instance.status === 'in_progress'"
                 [class.bg-secondary]="instance.status === 'draft'"
@@ -2189,20 +2161,19 @@
             {{ instance.status | titlecase }}
           </span>
         </div>
-      </div>
-
-      <div class="mb-4" *ngIf="instance.created_at">
-        <label class="text-muted text-uppercase small fw-semibold mb-2">Created</label>
-        <div class="p-3 bg-light rounded">
-          <small class="text-muted">{{ instance.created_at | date:'medium' }}</small>
+        <div class="small d-flex justify-content-between" *ngIf="instance.created_at">
+          <span class="text-muted">Created</span>
+          <span>{{ instance.created_at | date:'short' }}</span>
+        </div>
+        <div class="small d-flex justify-content-between" *ngIf="instance.updated_at">
+          <span class="text-muted">Updated</span>
+          <span>{{ instance.updated_at | date:'short' }}</span>
         </div>
       </div>
 
-      <div class="mb-4" *ngIf="instance.updated_at">
-        <label class="text-muted text-uppercase small fw-semibold mb-2">Last Updated</label>
-        <div class="p-3 bg-light rounded">
-          <small class="text-muted">{{ instance.updated_at | date:'medium' }}</small>
-        </div>
+      <div class="border rounded bg-light p-2" *ngIf="template?.description">
+        <div class="text-muted text-uppercase small fw-semibold mb-1">Template Description</div>
+        <div class="small text-muted">{{ template.description }}</div>
       </div>
     </div>
 

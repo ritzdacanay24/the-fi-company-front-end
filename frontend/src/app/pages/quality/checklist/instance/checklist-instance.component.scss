@@ -426,6 +426,33 @@
   }
 }
 
+/* Offcanvas is rendered in overlay; use ::ng-deep for panel sizing overrides. */
+:host ::ng-deep .work-order-offcanvas {
+  --bs-offcanvas-width: min(420px, 92vw);
+
+  .offcanvas-header {
+    padding: 0.7rem 0.9rem;
+  }
+
+  .offcanvas-body {
+    padding: 0.65rem;
+  }
+}
+
+@media (max-width: 991.98px) {
+  :host ::ng-deep .work-order-offcanvas {
+    --bs-offcanvas-width: min(360px, 94vw);
+
+    .offcanvas-header {
+      padding: 0.6rem 0.8rem;
+    }
+
+    .offcanvas-title {
+      font-size: 1rem;
+    }
+  }
+}
+
 .item-title-truncate {
   overflow: hidden;
   text-overflow: ellipsis;
