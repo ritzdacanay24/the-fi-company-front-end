@@ -550,9 +550,11 @@ export class SgAssetRepository extends BaseRepository<SgAssetRecord> {
       const lastRecord = lastRows[0];
       const lastSequence = Number(lastRecord?.generatedAssetNumber || 0);
       const lastWeekNumber = this.getWeekNumber(String(lastRecord?.dateCreated || nowDate));
+      const currentWeekNumber = this.getWeekNumber(nowDate);
 
       // Track current sequence in memory as we loop
       let currentSequence = lastSequence;
+      let sequenceWeekNumber = lastWeekNumber;
 
       for (const assignment of assignments) {
         const serialNumber = String(assignment.serialNumber || '');
@@ -569,9 +571,10 @@ export class SgAssetRepository extends BaseRepository<SgAssetRecord> {
         let generatedAssetNumber = String(assignment.sgAssetNumber || assignment.generated_SG_asset || '');
 
         if (!useManualAsset) {
-          // Use the tracked sequence, increment it
-          generatedAssetNumber = this.generateNextSgAssetNumber(currentSequence, lastWeekNumber);
-          currentSequence = Number(generatedAssetNumber.slice(-2)); // Extract last 2 digits for next iteration
+          // Use tracked week/sequence so week-rollover resets once, then increments within the batch.
+          generatedAssetNumber = this.generateNextSgAssetNumber(currentSequence, sequenceWeekNumber);
+          currentSequence = Number(generatedAssetNumber.slice(-2));
+          sequenceWeekNumber = currentWeekNumber;
         }
 
         const [insertResult] = await conn.execute<ResultSetHeader>(
