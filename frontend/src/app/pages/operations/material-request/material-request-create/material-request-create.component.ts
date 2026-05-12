@@ -92,9 +92,7 @@ export class MaterialRequestCreateComponent {
       this.isLoading = false;
       this.toastrService.success('Successfully Created');
 
-      await this.router.navigate([NAVIGATION_ROUTE.VALIDATION], {
-        queryParams: { id: insertId },
-      });
+      await this.router.navigate([NAVIGATION_ROUTE.CREATE]);
       return;
 
     } catch (err) {
