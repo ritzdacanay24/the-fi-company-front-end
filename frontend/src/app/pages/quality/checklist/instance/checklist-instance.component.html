@@ -538,10 +538,16 @@
                   <div *ngFor="let sampleImage of referenceImages; let idx = index">
                     <div class="reference-thumbnail-container position-relative"
                          [title]="sampleImage.label || 'Reference image ' + (idx + 1)">
-                      <img [src]="getPhotoUrl(sampleImage.url)" 
+                      <div *ngIf="isImageLoading(getPhotoUrl(sampleImage.url))"
+                           class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-body bg-opacity-50 rounded">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                      </div>
+                      <img [src]="getTrackedPhotoUrl(sampleImage.url)" 
+                           loading="lazy"
                            class="reference-thumbnail rounded border border-2 border-info cursor-pointer" 
                            style="width: 80px; height: 80px; object-fit: cover;"
                            [alt]="sampleImage.label || 'Reference image ' + (idx + 1)"
+                          (load)="onImageLoadComplete(getPhotoUrl(sampleImage.url))"
                            (error)="onSampleImageError($event)"
                            (click)="previewImage(getPhotoUrl(sampleImage.url))">
                       <span *ngIf="sampleImage.type || sampleImage.image_type" 
@@ -660,12 +666,20 @@
                          style="min-height: 280px; display: flex; flex-direction: column; align-items: center; justify-content: center;"
                          *ngIf="progress.item.sample_images && progress.item.sample_images.length > 0; else noSampleImage">
                       <div class="text-center">
-                        <img [src]="getPhotoUrl(progress.item.sample_images[0].url)" 
-                             class="img-fluid rounded shadow-sm cursor-pointer" 
-                             style="max-height: 200px; object-fit: contain;"
-                             [alt]="progress.item.sample_images[0].label || 'Sample reference for ' + progress.item.title"
-                             (error)="onSampleImageError($event)"
-                             (click)="previewImage(getPhotoUrl(progress.item.sample_images[0].url))">
+                        <div class="position-relative d-inline-block">
+                          <div *ngIf="isImageLoading(getPhotoUrl(progress.item.sample_images[0].url))"
+                               class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-body bg-opacity-50 rounded">
+                            <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                          </div>
+                          <img [src]="getTrackedPhotoUrl(progress.item.sample_images[0].url)" 
+                               loading="lazy"
+                               class="img-fluid rounded shadow-sm cursor-pointer" 
+                               style="max-height: 200px; object-fit: contain;"
+                               [alt]="progress.item.sample_images[0].label || 'Sample reference for ' + progress.item.title"
+                             (load)="onImageLoadComplete(getPhotoUrl(progress.item.sample_images[0].url))"
+                               (error)="onSampleImageError($event)"
+                               (click)="previewImage(getPhotoUrl(progress.item.sample_images[0].url))">
+                        </div>
                         <div class="mt-2" *ngIf="progress.item.sample_images[0].label || progress.item.sample_images[0].description">
                           <small class="text-muted d-block" *ngIf="progress.item.sample_images[0].label">
                             <strong>{{progress.item.sample_images[0].label}}</strong>
@@ -784,11 +798,16 @@
                     <div *ngIf="progress.photos && progress.photos.length > 0">
                       <div class="position-relative border border-2 border-dashed border-secondary rounded" 
                            style="min-height: 280px; display: flex; align-items: center; justify-content: center;">
-                    <img [src]="getPhotoUrl(progress.photos[0])" 
+                        <div *ngIf="isImageLoading(getPhotoUrl(progress.photos[0]))"
+                            class="position-absolute top-50 start-50 translate-middle d-flex align-items-center justify-content-center bg-body bg-opacity-50 rounded px-3 py-2">
+                          <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                        </div>
+                      <img [src]="getTrackedPhotoUrl(progress.photos[0])" 
+                         loading="lazy"
                          class="img-fluid rounded shadow-sm cursor-pointer" 
                          style="max-height: 250px; max-width: 100%; object-fit: contain;"
-                      (error)="onUploadedPhotoError($event, progress.photos[0])"
-                      (load)="onUploadedPhotoLoad($event)"
+                       (error)="onUploadedPhotoError($event, progress.photos[0])"
+                       (load)="onUploadedPhotoLoad($event)"
                          (click)="openLightboxForProgress(progress, 0, 'photo')"
                          title="Click to preview">
                         <span *ngIf="getPhotoSourceLabel(progress, progress.photos[0]) as src"
@@ -826,12 +845,20 @@
                       <div class="border border-2 border-dashed border-secondary rounded p-3"
                            style="min-height: 280px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
                         <div class="text-center">
-                          <img [src]="getPhotoUrl(progress.item.sample_images[0].url)"
-                               class="img-fluid rounded shadow-sm cursor-pointer"
-                               style="max-height: 200px; object-fit: contain;"
-                               [alt]="progress.item.sample_images[0].label || 'Sample reference for ' + progress.item.title"
-                               (error)="onSampleImageError($event)"
-                               (click)="previewImage(getPhotoUrl(progress.item.sample_images[0].url))">
+                          <div class="position-relative d-inline-block">
+                            <div *ngIf="isImageLoading(getPhotoUrl(progress.item.sample_images[0].url))"
+                                 class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-body bg-opacity-50 rounded">
+                              <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                            </div>
+                            <img [src]="getTrackedPhotoUrl(progress.item.sample_images[0].url)"
+                                 loading="lazy"
+                                 class="img-fluid rounded shadow-sm cursor-pointer"
+                                 style="max-height: 200px; object-fit: contain;"
+                                 [alt]="progress.item.sample_images[0].label || 'Sample reference for ' + progress.item.title"
+                                 (load)="onImageLoadComplete(getPhotoUrl(progress.item.sample_images[0].url))"
+                                 (error)="onSampleImageError($event)"
+                                 (click)="previewImage(getPhotoUrl(progress.item.sample_images[0].url))">
+                          </div>
                           <div class="mt-2" *ngIf="progress.item.sample_images[0].label || progress.item.sample_images[0].description">
                             <small class="text-muted d-block" *ngIf="progress.item.sample_images[0].label">
                               <strong>{{progress.item.sample_images[0].label}}</strong>
@@ -1190,7 +1217,12 @@
                 <!-- Photos Display -->
                 <div *ngIf="progress.photos && progress.photos.length > 0">
                   <div class="mb-2 position-relative" style="display: inline-block;">
-                    <img [src]="getPhotoUrl(progress.photos[0])" 
+                    <div *ngIf="isImageLoading(getPhotoUrl(progress.photos[0]))"
+                         class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-body bg-opacity-50 rounded">
+                      <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                    </div>
+                    <img [src]="getTrackedPhotoUrl(progress.photos[0])" 
+                         loading="lazy"
                          class="rounded shadow-sm cursor-pointer" 
                          style="width: 120px; height: 120px; object-fit: cover;"
                       (error)="onUploadedPhotoError($event, progress.photos[0])"

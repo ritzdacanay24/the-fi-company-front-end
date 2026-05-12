@@ -404,6 +404,9 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   private videoRecordingInterval: any = null;
   private videoStopFallbackTimer: any = null;
 
+  // Image loading state tracking for loading spinners
+  imageLoadingStates = new Map<string, boolean>();
+
   // Auto-advance after photo capture
   autoAdvanceAfterPhoto = false;
 
@@ -3329,7 +3332,9 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       return;
     }
 
-    console.warn('Failed to load uploaded photo:', this.getPhotoUrl(photo));
+    const failedUrl = this.getPhotoUrl(photo);
+    console.warn('Failed to load uploaded photo:', failedUrl);
+    this.imageLoadingStates.set(failedUrl, false);
     img.style.opacity = '0.35';
   }
 
@@ -3340,6 +3345,33 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     }
 
     img.style.opacity = '1';
+    
+    // Mark image as loaded
+    const src = img.src;
+    if (src) {
+      this.imageLoadingStates.set(src, false);
+    }
+  }
+
+  /**
+   * Track when an image starts loading
+   */
+  onImageLoadStart(url: string): void {
+    this.imageLoadingStates.set(url, true);
+  }
+
+  /**
+   * Track when an image finishes loading
+   */
+  onImageLoadComplete(url: string): void {
+    this.imageLoadingStates.set(url, false);
+  }
+
+  /**
+   * Check if an image is currently loading
+   */
+  isImageLoading(url: string): boolean {
+    return this.imageLoadingStates.get(url) ?? false;
   }
 
   getCurrentItemsToShow(): ChecklistItemProgress[] {
@@ -3363,6 +3395,10 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     }
     return this.lastVisibleItems;
   }
+
+  /**
+   * Format video duration in seconds to MM:SS format
+   */
 
   private getExecutionRoute(): string {
     const returnTo = this.route.snapshot.queryParams['returnTo'];
@@ -4201,8 +4237,25 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     return files ? Array.from(files) : [];
   }
 
+  /**
+   * Cache buster to prevent stale cached images on tablets
+   * Uses app load timestamp to force fresh image fetches
+   */
+  private readonly cacheBuster = new Date().getTime();
+
   getPhotoUrl(photo: string | any): string {
-    return this.photoOps.getPhotoUrl(photo);
+    const url = this.photoOps.getPhotoUrl(photo);
+    // Add cache-busting query parameter to prevent Service Worker/browser cache issues
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}v=${this.cacheBuster}`;
+  }
+
+  getTrackedPhotoUrl(photo: string | any): string {
+    const url = this.getPhotoUrl(photo);
+    if (!this.imageLoadingStates.has(url)) {
+      this.imageLoadingStates.set(url, true);
+    }
+    return url;
   }
 
   /**
@@ -4682,7 +4735,11 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
    * Handle sample image loading errors
    */
   onSampleImageError(event: any): void {
-    console.warn('Failed to load sample image:', event.target.src);
+    const src = event?.target?.src;
+    if (src) {
+      this.imageLoadingStates.set(src, false);
+      console.warn('Failed to load sample image:', src);
+    }
     event.target.style.display = 'none';
   }
 
