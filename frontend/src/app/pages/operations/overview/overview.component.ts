@@ -1,5 +1,6 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { CdkDragDrop, CdkDrag, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
 import { SharedModule } from '@app/shared/shared.module';
 import { SupportEntryService } from '@app/core/services/support-entry.service';
 import { MenuBadgeWebsocketService, SidebarMenuBadgeCounts } from '@app/core/services/menu-badge-websocket.service';
@@ -24,7 +25,7 @@ interface MetricOption {
 
 @Component({
   standalone: true,
-  imports: [SharedModule],
+  imports: [SharedModule, CdkDropList, CdkDrag],
   selector: 'app-overview',
   templateUrl: './overview.component.html',
   styleUrls: ['./overview.component.scss']
@@ -83,6 +84,9 @@ export class OverviewComponent implements OnInit {
   ];
 
   selectedMetricKeys = new Set<keyof SidebarMenuBadgeCounts>(this.defaultSelectedMetricKeys);
+  selectedMetricOrder: Array<keyof SidebarMenuBadgeCounts> = [...this.defaultSelectedMetricKeys];
+  private suppressMetricCardOpen = false;
+  isDraggingMetricCard = false;
   showMoreMetrics = false;
   lastUpdateTime: Date = new Date();
   menuBadgeCounts: SidebarMenuBadgeCounts = {
@@ -140,7 +144,10 @@ export class OverviewComponent implements OnInit {
   }
 
   get selectedMetricOptions(): MetricOption[] {
-    return this.metricOptions.filter((metric) => this.selectedMetricKeys.has(metric.key));
+    const optionsByKey = new Map(this.metricOptions.map((metric) => [metric.key, metric] as const));
+    return this.selectedMetricOrder
+      .map((key) => optionsByKey.get(key))
+      .filter((metric): metric is MetricOption => !!metric && this.selectedMetricKeys.has(metric.key));
   }
 
   get featuredMetricOptions(): MetricOption[] {
@@ -162,12 +169,16 @@ export class OverviewComponent implements OnInit {
   toggleMetric(key: keyof SidebarMenuBadgeCounts): void {
     if (this.selectedMetricKeys.has(key)) {
       this.selectedMetricKeys.delete(key);
+      this.selectedMetricOrder = this.selectedMetricOrder.filter((item) => item !== key);
     } else {
       this.selectedMetricKeys.add(key);
+      this.selectedMetricOrder = [...this.selectedMetricOrder, key];
     }
 
     if (this.selectedMetricKeys.size === 0) {
-      this.selectedMetricKeys.add(this.defaultSelectedMetricKeys[0]);
+      const fallbackKey = this.defaultSelectedMetricKeys[0];
+      this.selectedMetricKeys.add(fallbackKey);
+      this.selectedMetricOrder = [fallbackKey];
     }
 
     this.saveMetricPreferences();
@@ -175,7 +186,31 @@ export class OverviewComponent implements OnInit {
 
   resetMetricPreferences(): void {
     this.selectedMetricKeys = new Set<keyof SidebarMenuBadgeCounts>(this.defaultSelectedMetricKeys);
+    this.selectedMetricOrder = [...this.defaultSelectedMetricKeys];
     this.saveMetricPreferences();
+  }
+
+  dropMetricCard(event: CdkDragDrop<MetricOption[]>): void {
+    if (event.previousIndex === event.currentIndex) {
+      return;
+    }
+
+    moveItemInArray(this.selectedMetricOrder, event.previousIndex, event.currentIndex);
+    this.saveMetricPreferences();
+  }
+
+  onMetricDragStarted(): void {
+    this.isDraggingMetricCard = true;
+    this.suppressMetricCardOpen = true;
+  }
+
+  onMetricDragEnded(): void {
+    this.isDraggingMetricCard = false;
+
+    // Prevent the drop release click from navigating into the card route.
+    setTimeout(() => {
+      this.suppressMetricCardOpen = false;
+    }, 120);
   }
 
   getMetricCount(metricKey: keyof SidebarMenuBadgeCounts): number {
@@ -183,6 +218,10 @@ export class OverviewComponent implements OnInit {
   }
 
   openMetric(metric: MetricOption): void {
+    if (this.suppressMetricCardOpen) {
+      return;
+    }
+
     if (!metric.route) {
       return;
     }
@@ -216,22 +255,37 @@ export class OverviewComponent implements OnInit {
         return;
       }
 
-      const parsed = JSON.parse(raw) as string[];
+      const parsed = JSON.parse(raw) as string[] | { selectedMetricOrder?: string[]; selectedMetricKeys?: string[] };
       const allowedKeys = new Set(this.metricOptions.map((item) => item.key));
-      const validKeys = parsed.filter((key): key is keyof SidebarMenuBadgeCounts =>
+      const storedKeys = Array.isArray(parsed)
+        ? parsed
+        : Array.isArray(parsed.selectedMetricOrder)
+          ? parsed.selectedMetricOrder
+          : Array.isArray(parsed.selectedMetricKeys)
+            ? parsed.selectedMetricKeys
+            : [];
+
+      const validKeys = storedKeys.filter((key): key is keyof SidebarMenuBadgeCounts =>
         allowedKeys.has(key as keyof SidebarMenuBadgeCounts),
       );
 
       if (validKeys.length > 0) {
         this.selectedMetricKeys = new Set<keyof SidebarMenuBadgeCounts>(validKeys);
+        this.selectedMetricOrder = validKeys;
       }
     } catch {
       this.selectedMetricKeys = new Set<keyof SidebarMenuBadgeCounts>(this.defaultSelectedMetricKeys);
+      this.selectedMetricOrder = [...this.defaultSelectedMetricKeys];
     }
   }
 
   private saveMetricPreferences(): void {
-    const selected = Array.from(this.selectedMetricKeys);
-    localStorage.setItem(this.metricPrefsStorageKey, JSON.stringify(selected));
+    localStorage.setItem(
+      this.metricPrefsStorageKey,
+      JSON.stringify({
+        selectedMetricOrder: this.selectedMetricOrder,
+        selectedMetricKeys: Array.from(this.selectedMetricKeys),
+      }),
+    );
   }
 }

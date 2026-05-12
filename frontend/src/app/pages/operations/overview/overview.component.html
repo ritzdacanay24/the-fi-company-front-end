@@ -80,9 +80,16 @@
 					</div>
 					<p class="text-muted small mb-4">Click a chip to show or hide its metric card below.</p>
 
-					<div class="row g-3" *ngIf="selectedMetricOptions.length > 0">
-						<div class="col-12 col-md-6 col-xl-4" *ngFor="let metric of selectedMetricOptions">
-							<button type="button" class="metric-card metric-card-btn h-100 w-100 text-start" [title]="'Open ' + metric.label" (click)="openMetric(metric)">
+					<div class="row g-3 metric-grid" *ngIf="selectedMetricOptions.length > 0" cdkDropList cdkDropListOrientation="mixed" [cdkDropListData]="selectedMetricOptions" (cdkDropListDropped)="dropMetricCard($event)">
+						<div class="col-12 col-md-6 col-xl-4 metric-grid-item" *ngFor="let metric of selectedMetricOptions" cdkDrag cdkDragPreviewContainer="parent" cdkDragPreviewClass="metric-card-drag-preview" [cdkDragData]="metric" (cdkDragStarted)="onMetricDragStarted()" (cdkDragEnded)="onMetricDragEnded()">
+							<div
+								class="metric-card metric-card-btn h-100 w-100 text-start"
+								role="button"
+								tabindex="0"
+								[title]="'Open ' + metric.label"
+								(click)="openMetric(metric)"
+								(keydown.enter)="openMetric(metric)"
+								(keydown.space)="$event.preventDefault(); openMetric(metric)">
 								<div class="d-flex align-items-start justify-content-between gap-3">
 									<div>
 										<p class="metric-group mb-1">{{ metric.group }}</p>
@@ -90,11 +97,16 @@
 										<div class="metric-value">{{ getMetricCount(metric.key) }}</div>
 										<p class="metric-last-update text-muted small mt-2 mb-0">{{ getRelativeTime(lastUpdateTime) }}</p>
 									</div>
-									<div class="metric-icon-wrap">
-										<i [class]="metric.icon"></i>
+									<div class="metric-card-actions">
+										<span class="metric-drag-handle" cdkDragHandle title="Drag to reorder" aria-label="Drag to reorder">
+											<i class="mdi mdi-drag"></i>
+										</span>
+										<div class="metric-icon-wrap">
+											<i [class]="metric.icon"></i>
+										</div>
 									</div>
 								</div>
-							</button>
+							</div>
 						</div>
 					</div>
 

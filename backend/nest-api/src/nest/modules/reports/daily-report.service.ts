@@ -183,10 +183,11 @@ export class DailyReportService {
 
     const data = rows.map((row) => {
       const parsedData = typeof row.data === 'string' ? JSON.parse(row.data) : row.data;
+      const normalizedData = this.normalizeHistoricalSnapshot(parsedData as Record<string, unknown>);
       return {
         id: Number(row.id),
         createdDate: row.createdDate,
-        data: parsedData,
+        data: normalizedData,
         status: 'active',
       };
     });
@@ -202,5 +203,37 @@ export class DailyReportService {
   private toNumber(value: unknown): number {
     const numeric = Number(value ?? 0);
     return Number.isFinite(numeric) ? numeric : 0;
+  }
+
+  private normalizeHistoricalSnapshot(raw: Record<string, unknown> | null | undefined): Record<string, unknown> {
+    const normalized: Record<string, unknown> = { ...(raw || {}) };
+
+    // Backward compatibility: older snapshots used `futureOpenRevenueCurrentMonth`
+    // while the current frontend reads `futuerOpenRevenueCurrentMonth`.
+    if (!normalized['futuerOpenRevenueCurrentMonth'] && normalized['futureOpenRevenueCurrentMonth']) {
+      normalized['futuerOpenRevenueCurrentMonth'] = normalized['futureOpenRevenueCurrentMonth'];
+    }
+
+    // Backward compatibility: some snapshots store this metric under openLinesCurrentMonth.
+    // The current card reads `openBalanceCurrentMonth` (Ready to Ship, this period).
+    if (normalized['openBalanceCurrentMonth'] === undefined) {
+      const fallback = normalized['openLinesCurrentMonth'];
+      if (typeof fallback === 'object' && fallback !== null) {
+        const fallbackObject = fallback as Record<string, unknown>;
+        normalized['openBalanceCurrentMonth'] = this.toNumber(
+          fallbackObject['value'] ?? fallbackObject['VALUE'] ?? 0,
+        );
+      } else {
+        normalized['openBalanceCurrentMonth'] = this.toNumber(fallback);
+      }
+    }
+
+    // Backward compatibility: older snapshots may use `nextThreeMonths` instead of
+    // `getThreeMonthsRevenue`.
+    if (!normalized['getThreeMonthsRevenue'] && normalized['nextThreeMonths']) {
+      normalized['getThreeMonthsRevenue'] = normalized['nextThreeMonths'];
+    }
+
+    return normalized;
   }
 }
