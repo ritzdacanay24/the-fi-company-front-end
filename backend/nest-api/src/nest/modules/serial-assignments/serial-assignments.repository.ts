@@ -237,7 +237,7 @@ export class SerialAssignmentsRepository extends BaseRepository<RowDataPacket> {
           throw new Error('EyeFi serial number is required for IGT workflow');
         }
 
-        const [serialRows] = await conn.execute<RowDataPacket[]>(
+        let [serialRows] = await conn.execute<RowDataPacket[]>(
           `SELECT id, serial_number, status, is_consumed
            FROM eyefi_serial_numbers
            WHERE serial_number = ?
@@ -246,9 +246,26 @@ export class SerialAssignmentsRepository extends BaseRepository<RowDataPacket> {
           [eyefiSerialNumber],
         );
 
-        const serial = serialRows[0];
+        let serial = serialRows[0];
+        
+        // Auto-create EyeFi serial if it doesn't exist (for manually entered serials in IGT workflow)
         if (!serial) {
-          throw new Error(`EyeFi serial '${eyefiSerialNumber}' not found`);
+          const [insertResult] = await conn.execute<ResultSetHeader>(
+            `INSERT INTO eyefi_serial_numbers (serial_number, status, created_by, created_at)
+             VALUES (?, 'available', ?, NOW())`,
+            [eyefiSerialNumber, 'System IGT Auto-Create'],
+          );
+          
+          // Fetch the newly created serial
+          const [newSerialRows] = await conn.execute<RowDataPacket[]>(
+            `SELECT id, serial_number, status, is_consumed
+             FROM eyefi_serial_numbers
+             WHERE id = ?
+             LIMIT 1
+             FOR UPDATE`,
+            [insertResult.insertId],
+          );
+          serial = newSerialRows[0];
         }
 
         const [existingRows] = await conn.execute<RowDataPacket[]>(
