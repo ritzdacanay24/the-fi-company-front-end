@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
-import { ErrorReportDialogService } from '@app/core/services/error-report-dialog.service';
+import { SupportEntryService } from '@app/core/services/support-entry.service';
 import { SharedModule } from '@app/shared/shared.module';
 
 interface FormLink {
@@ -37,12 +37,12 @@ export class FormsLauncherComponent {
 
   constructor(
     private router: Router,
-    private errorReportDialogService: ErrorReportDialogService,
+    private supportEntryService: SupportEntryService,
   ) {}
 
   navigate(route: string) {
     if (route === '/support-tickets') {
-      void this.errorReportDialogService.open();
+      void this.supportEntryService.openSupport({ source: 'quick-forms' });
       return;
     }
 

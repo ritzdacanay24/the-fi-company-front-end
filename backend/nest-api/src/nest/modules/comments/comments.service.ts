@@ -4,6 +4,7 @@ import { CommentsRepository } from './comments.repository';
 import { MysqlService } from '@/shared/database/mysql.service';
 import { AccessControlService } from '../access-control';
 import { EmailService } from '@/shared/email/email.service';
+import { EmailTemplateService } from '@/shared/email/email-template.service';
 
 type GenericRow = Record<string, unknown>;
 
@@ -14,6 +15,7 @@ export class CommentsService {
     private readonly mysqlService: MysqlService,
     private readonly accessControlService: AccessControlService,
     private readonly emailService: EmailService,
+    private readonly emailTemplateService: EmailTemplateService,
   ) {}
 
   async find(orderNum?: string, type?: string, active?: string) {
@@ -171,22 +173,25 @@ export class CommentsService {
     }
 
     const safeComment = this.stripHtml(input.comments).slice(0, 2000);
-    const link = input.locationPath || '';
+    const baseLink = input.locationPath || '';
+    const queryParams = new URLSearchParams({
+      comment: input.orderNum,
+      type: input.type,
+    }).toString();
+    const link = baseLink ? `${baseLink}?${queryParams}` : '';
     const subject = `[Comment Mention] ${input.type}: ${input.orderNum}`;
+
+    const html = this.emailTemplateService.render('mention-comment', {
+      type: input.type,
+      orderNum: input.orderNum,
+      comment: safeComment,
+      link,
+    });
 
     await this.emailService.sendMail({
       to: recipients,
       subject,
-      html: `
-        <html>
-          <body>
-            <p>You were mentioned in a comment on <strong>${this.escapeHtml(input.type)}</strong> for <strong>${this.escapeHtml(input.orderNum)}</strong>.</p>
-            <p><a href="${this.escapeHtml(link)}">Open the comment</a></p>
-            <hr />
-            <div>${this.escapeHtml(safeComment).replace(/\n/g, '<br />')}</div>
-          </body>
-        </html>
-      `,
+      html,
     });
   }
 

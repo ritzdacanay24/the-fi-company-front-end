@@ -39,6 +39,78 @@
 
                 <app-forms-launcher></app-forms-launcher>
 
+                <div *ngIf="false" class="header-item d-flex align-items-center ms-2" ngbDropdown #smartSearchMenu="ngbDropdown" placement="bottom-start" container="body">
+                    <button
+                        type="button"
+                        class="btn btn-outline-secondary d-flex align-items-center gap-2 px-3 py-1 topbar-smart-search-toggle"
+                        ngbDropdownToggle>
+                        <i class="ri-search-2-line fs-16"></i>
+                        <span class="fw-medium">Search Menu</span>
+                        <span class="badge text-bg-dark d-none d-lg-inline">CTRL K</span>
+                    </button>
+
+                    <div class="dropdown-menu p-0 topbar-smart-search-menu" ngbDropdownMenu>
+                        <div class="p-3 border-bottom">
+                            <label class="form-label small text-muted mb-2">Smart Search</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="ri-search-2-line"></i></span>
+                                <input
+                                    type="search"
+                                    class="form-control"
+                                    placeholder="Search menu, quick forms, WO, SO, BOM..."
+                                    [(ngModel)]="menuSearchQuery"
+                                    (keydown.enter)="runSmartSearch(); smartSearchMenu.close(); $event.preventDefault()" />
+                            </div>
+                        </div>
+
+                        <div class="topbar-smart-search-body">
+                            <div class="topbar-smart-section" *ngIf="smartSearchActions.length > 0">
+                                <h6 class="topbar-smart-title">Smart Actions</h6>
+                                <button
+                                    type="button"
+                                    class="topbar-smart-row"
+                                    *ngFor="let action of smartSearchActions"
+                                    (click)="runSmartSearch(action); smartSearchMenu.close()">
+                                    <span class="topbar-smart-icon"><i [class]="action.icon"></i></span>
+                                    <span class="topbar-smart-content">
+                                        <span class="topbar-smart-label">{{ action.label }}</span>
+                                        <small class="text-muted">{{ action.description }}</small>
+                                    </span>
+                                </button>
+                            </div>
+
+                            <div class="topbar-smart-section">
+                                <h6 class="topbar-smart-title">Menu Items</h6>
+                                <button
+                                    type="button"
+                                    class="topbar-smart-row"
+                                    *ngFor="let item of filteredTopbarMenuItems"
+                                    (click)="goToMenuItem(item); smartSearchMenu.close()">
+                                    <span class="topbar-smart-icon"><i [class]="item.icon || 'ri-file-list-3-line'"></i></span>
+                                    <span class="topbar-smart-content">
+                                        <span class="topbar-smart-label">{{ item.label }}</span>
+                                        <small class="text-muted">{{ item.link }}</small>
+                                    </span>
+                                </button>
+                            </div>
+
+                            <div class="topbar-smart-section">
+                                <h6 class="topbar-smart-title">Quick Forms</h6>
+                                <div class="topbar-smart-quick-grid">
+                                    <button
+                                        type="button"
+                                        class="topbar-smart-quick-item"
+                                        *ngFor="let form of filteredQuickFormItems"
+                                        (click)="openQuickForm(form); smartSearchMenu.close()">
+                                        <i [class]="form.icon + ' ' + form.color"></i>
+                                        <span>{{ form.label }}</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- App Search-->
                 <!-- <form class="app-search d-none d-md-block">
                     <div class="position-relative">

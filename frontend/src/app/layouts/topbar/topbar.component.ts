@@ -40,6 +40,28 @@ import { SupportEntryService } from "@app/core/services/support-entry.service";
 
 export const THE_FI_COMPANY_LAYOUT = "THE_FI_COMPANY_LAYOUT";
 
+interface TopbarLinkItem {
+  label: string;
+  link: string;
+  icon?: string;
+  description?: string;
+}
+
+interface QuickFormItem {
+  label: string;
+  icon: string;
+  route: string;
+  color: string;
+}
+
+interface SmartSearchAction {
+  label: string;
+  description: string;
+  icon: string;
+  query: string;
+  type?: "sales-order" | "work-order" | "part-number" | "bom-structure";
+}
+
 @Component({
   selector: "app-topbar",
   templateUrl: "./topbar.component.html",
@@ -67,6 +89,24 @@ export class TopbarComponent implements OnInit, OnDestroy {
   @ViewChild("mrAlertsOffcanvas") mrAlertsOffcanvas!: TemplateRef<any>;
   notifyId: any;
   menuItems;
+  menuSearchQuery = "";
+  flatMenuItems: TopbarLinkItem[] = [];
+  quickFormItems: QuickFormItem[] = [
+    { label: "EyeFi Serial Workflow", icon: "mdi mdi-vector-combine", route: "/standalone/eyefi-workflow", color: "text-primary" },
+    { label: "QIR", icon: "mdi mdi-alert-circle-outline", route: "/quality/qir/create", color: "text-danger" },
+    { label: "RMA", icon: "mdi mdi-refresh", route: "/quality/rma/create", color: "text-warning" },
+    { label: "Safety Incident", icon: "mdi mdi-shield-alert", route: "/operations/forms/safety-incident/create", color: "text-danger" },
+    { label: "Shipping Request", icon: "mdi mdi-truck-delivery", route: "/operations/forms/shipping-request/create", color: "text-primary" },
+    { label: "IGT Transfer", icon: "mdi mdi-swap-horizontal", route: "/operations/forms/igt-transfer/create", color: "text-info" },
+    { label: "Parts Order", icon: "mdi mdi-package-variant-closed", route: "/operations/parts-order/create", color: "text-success" },
+    { label: "Material Request", icon: "mdi mdi-clipboard-list", route: "/operations/material-request/create", color: "text-primary" },
+    { label: "RFQ", icon: "mdi mdi-file-document", route: "/operations/forms/rfq/create", color: "text-secondary" },
+    { label: "Placard", icon: "mdi mdi-card-text", route: "/operations/forms/placard/create", color: "text-dark" },
+    { label: "Forklift Insp.", icon: "mdi mdi-forklift", route: "/operations/forms/forklift-inspection/create", color: "text-warning" },
+    { label: "Vehicle Insp.", icon: "mdi mdi-car-wrench", route: "/operations/forms/vehicle-inspection/create", color: "text-secondary" },
+    { label: "Training", icon: "mdi mdi-school", route: "/training/setup", color: "text-primary" },
+    { label: "Support", icon: "mdi mdi-ticket-outline", route: "/support-tickets", color: "text-warning" },
+  ];
 
   @HostListener("window:keydown.control.k", ["$event"])
   bigFont(e: Event) {
@@ -150,6 +190,7 @@ export class TopbarComponent implements OnInit, OnDestroy {
     });
 
     this.menuItems = MENU;
+    this.flatMenuItems = this.flattenMenuItems(MENU);
 
     window.addEventListener("storage", (e: any) => {
       if (e.key == "THE_FI_COMPANY_LAYOUT") {
@@ -309,6 +350,211 @@ export class TopbarComponent implements OnInit, OnDestroy {
 
   openSearch() {
     this.searchModalService.open();
+  }
+
+  get filteredTopbarMenuItems(): TopbarLinkItem[] {
+    const q = this.menuSearchQuery.trim().toLowerCase();
+    if (!q) {
+      return this.flatMenuItems.slice(0, 10);
+    }
+
+    return this.flatMenuItems
+      .filter((item) =>
+        (item.label || "").toLowerCase().includes(q) ||
+        (item.link || "").toLowerCase().includes(q) ||
+        (item.description || "").toLowerCase().includes(q)
+      )
+      .slice(0, 12);
+  }
+
+  get filteredQuickFormItems(): QuickFormItem[] {
+    const q = this.menuSearchQuery.trim().toLowerCase();
+    if (!q) {
+      return this.quickFormItems;
+    }
+
+    return this.quickFormItems.filter((item) =>
+      item.label.toLowerCase().includes(q)
+    );
+  }
+
+  get smartSearchActions(): SmartSearchAction[] {
+    const raw = this.menuSearchQuery.trim();
+    if (!raw) {
+      return [];
+    }
+
+    const normalized = this.normalizeLookupQuery(raw);
+    const detectedType = this.detectLookupType(raw);
+    const actions: SmartSearchAction[] = [
+      {
+        label: `Smart Search: ${normalized}`,
+        description: "Open Universal Lookup and auto-run the best matching search.",
+        icon: "mdi mdi-magnify",
+        query: normalized,
+      },
+    ];
+
+    actions.push({
+      label: "Search as Sales Order",
+      description: "Run this value in Sales Order mode.",
+      icon: "mdi mdi-package-variant",
+      query: normalized,
+      type: "sales-order",
+    });
+
+    actions.push({
+      label: "Search as Work Order",
+      description: "Run this value in Work Order mode.",
+      icon: "mdi mdi-wrench",
+      query: normalized,
+      type: "work-order",
+    });
+
+    actions.push({
+      label: "Search as BOM",
+      description: "Run this value in BOM Structure mode.",
+      icon: "mdi mdi-file-tree",
+      query: normalized,
+      type: "bom-structure",
+    });
+
+    if (detectedType) {
+      return [
+        {
+          label: `Detected ${this.prettyLookupType(detectedType)}: ${normalized}`,
+          description: "Use detected type from your input and auto-run.",
+          icon: "mdi mdi-lightbulb-on-outline",
+          query: normalized,
+          type: detectedType,
+        },
+        ...actions,
+      ];
+    }
+
+    return actions;
+  }
+
+  runSmartSearch(action?: SmartSearchAction): void {
+    const raw = this.menuSearchQuery.trim();
+    if (!raw && !action) {
+      return;
+    }
+
+    const query = action?.query || this.normalizeLookupQuery(raw);
+    const detectedType = action?.type || this.detectLookupType(raw);
+    const queryParams: Record<string, string | number> = {
+      q: query,
+      auto: 1,
+    };
+
+    if (detectedType) {
+      queryParams["type"] = detectedType;
+    }
+
+    this.router.navigate(["/operations/universal-lookup"], { queryParams });
+  }
+
+  goToMenuItem(item: TopbarLinkItem): void {
+    this.router.navigate([item.link]);
+  }
+
+  openQuickForm(item: QuickFormItem): void {
+    if (item.route === "/support-tickets") {
+      void this.supportEntryService.openSupport({ source: "quick-forms-search" });
+      return;
+    }
+
+    this.router.navigateByUrl(item.route);
+  }
+
+  private flattenMenuItems(items: any[]): TopbarLinkItem[] {
+    const result: TopbarLinkItem[] = [];
+
+    const walk = (nodeList: any[]) => {
+      nodeList.forEach((item) => {
+        if (item?.link) {
+          result.push({
+            label: item?.label || item?.title || item?.name || item?.link,
+            link: item.link,
+            icon: item?.icon,
+            description: item?.description,
+          });
+        }
+
+        if (item?.subItems?.length) {
+          walk(item.subItems);
+        }
+      });
+    };
+
+    walk(items || []);
+
+    const deduped = new Map<string, TopbarLinkItem>();
+    result.forEach((item) => {
+      if (!deduped.has(item.link)) {
+        deduped.set(item.link, item);
+      }
+    });
+
+    return Array.from(deduped.values());
+  }
+
+  private normalizeLookupQuery(value: string): string {
+    return value
+      .replace(/^(work\s*order|wo|sales\s*order|so|bom)\s*[:#-]?\s*/i, "")
+      .trim();
+  }
+
+  private detectLookupType(value: string): "sales-order" | "work-order" | "part-number" | "bom-structure" | null {
+    const raw = value.trim();
+    const upper = raw.toUpperCase();
+
+    if (!raw) {
+      return null;
+    }
+
+    if (/\bBOM\b/i.test(raw)) {
+      return "bom-structure";
+    }
+
+    if (/^SO\s*[-#:]?\s*\d+$/i.test(raw) || /\bSALES\s*ORDER\b/i.test(raw)) {
+      return "sales-order";
+    }
+
+    if (/^WO\s*[-#:]?\s*\d+$/i.test(raw) || /\bWORK\s*ORDER\b/i.test(raw)) {
+      return "work-order";
+    }
+
+    const normalized = this.normalizeLookupQuery(raw).toUpperCase();
+    if (/^SO\d+$/i.test(normalized)) {
+      return "sales-order";
+    }
+
+    if (/^WO\d+$/i.test(normalized) || /^\d{4,8}$/.test(normalized)) {
+      return "work-order";
+    }
+
+    if (/^[A-Z0-9._-]{3,25}$/.test(upper)) {
+      return "part-number";
+    }
+
+    return null;
+  }
+
+  private prettyLookupType(type: "sales-order" | "work-order" | "part-number" | "bom-structure"): string {
+    switch (type) {
+      case "sales-order":
+        return "Sales Order";
+      case "work-order":
+        return "Work Order";
+      case "part-number":
+        return "Part Number";
+      case "bom-structure":
+        return "BOM";
+      default:
+        return "Search";
+    }
   }
 
   /**

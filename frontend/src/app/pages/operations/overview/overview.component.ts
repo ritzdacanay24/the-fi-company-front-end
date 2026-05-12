@@ -54,10 +54,10 @@ export class OverviewComponent implements OnInit {
     { key: 'qualityIssuesOpen',      label: 'Quality Issues Open',       group: 'Quality',              icon: 'mdi mdi-alert-circle-outline',     route: '/quality/qir',                               featured: true },
     { key: 'shippingRequestOpen',    label: 'Shipping Requests Open',    group: 'Shipping',             icon: 'mdi mdi-truck-fast-outline',       route: '/operations/forms/shipping-request',         featured: true },
     { key: 'shortagesOpen',          label: 'Shortages Open',            group: 'Operations',           icon: 'mdi mdi-alert-octagon-outline',    route: '/operations/shortages/list',                 featured: true },
-    { key: 'safetyIncidentOpen',     label: 'Safety Incidents Open',     group: 'Safety',               icon: 'mdi mdi-shield-alert-outline',     route: '/operations/forms/safety-incident/list',     featured: true },
+    { key: 'safetyIncidentOpen',     label: 'Safety Incidents Open',     group: 'Safety',               icon: 'mdi mdi-alert-circle',             route: '/operations/forms/safety-incident/list',     featured: true },
     // ── More ───────────────────────────────────────────────────────────────
     { key: 'fieldsServiceRequestsOpen',           label: 'Field Service Requests Open',       group: 'Field Service',        icon: 'mdi mdi-account-hard-hat',         route: '/field-service/request/list' },
-    { key: 'supportMyTicketsOpen',                label: 'My Support Tickets',                group: 'Support',              icon: 'mdi mdi-account-alert-outline',    route: '/support-tickets/my-tickets' },
+    { key: 'supportMyTicketsOpen',                label: 'My Support Tickets',                group: 'Support',              icon: 'mdi mdi-alert-circle',             route: '/support-tickets/my-tickets' },
     { key: 'returnsRmaOpen',                      label: 'RMA Open',                          group: 'Quality',              icon: 'mdi mdi-refresh',                  route: '/quality/rma/list' },
     { key: 'correctiveActionsOpen',               label: 'Corrective Actions Open',           group: 'Quality',              icon: 'mdi mdi-check-circle-outline',     route: '/quality/car/list' },
     { key: 'permitChecklistOpen',                 label: 'Permit Checklists Open',            group: 'Quality',              icon: 'mdi mdi-file-document-outline',    route: '/quality/permit-checklists' },

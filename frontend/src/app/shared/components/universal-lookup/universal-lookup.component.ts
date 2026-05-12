@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { SharedModule } from '@app/shared/shared.module';
 import { OrderLookupComponent } from '../order-lookup/order-lookup.component';
 import { PartLookupComponent } from '../part-lookup/part-lookup.component';
@@ -65,8 +66,37 @@ export class UniversalLookupComponent implements OnInit {
     }
   ];
 
+  constructor(private readonly route: ActivatedRoute) {}
+
   ngOnInit(): void {
-    // Initialize component
+    this.route.queryParamMap.subscribe((params) => {
+      const q = (params.get('q') || '').trim();
+      if (!q) {
+        return;
+      }
+
+      const requestedType = (params.get('type') || '').trim();
+      const auto = params.get('auto') === '1' || params.get('auto') === 'true';
+
+      this.searchQuery = q;
+
+      if (requestedType && this.searchTypes.some((item) => item.value === requestedType)) {
+        this.selectedSearchType = requestedType;
+      } else {
+        const detectedType = this.detectSearchType(q);
+        if (detectedType !== 'ambiguous') {
+          this.selectedSearchType = detectedType;
+        }
+      }
+
+      this.showAmbiguousSelection = false;
+      this.ambiguousQuery = '';
+      this.onSearchQueryChange();
+
+      if (auto) {
+        this.onSearch();
+      }
+    });
   }
 
   onSearchTypeChange(searchType: string): void {

@@ -37,15 +37,15 @@ export type SupportEntrySelection = 'dashboard' | 'it';
         </button>
 
         <button type="button" class="decision-card decision-card--dashboard" (click)="select('dashboard')">
-          <div class="decision-card__title">Dashboard / App</div>
-          <div class="decision-card__desc">Workflow bugs, wrong data, page errors, or missing app actions.</div>
+          <div class="decision-card__title">DB Issue / App</div>
+          <div class="decision-card__desc">Data mismatches, workflow bugs, page errors, or missing app actions.</div>
         </button>
       </div>
 
       <div class="decision-help mb-3">
         <div class="decision-help__title">Best decision to choose:</div>
         <div class="decision-help__line"><strong>Choose IT / Access (Avvero)</strong> if it impacts your computer, account, email, network, or device.</div>
-        <div class="decision-help__line"><strong>Choose Dashboard / App</strong> if the issue is inside this application workflow.</div>
+        <div class="decision-help__line"><strong>Choose DB Issue / App</strong> if the issue is inside this application workflow or related to dashboard data.</div>
       </div>
 
       <div class="text-center">
