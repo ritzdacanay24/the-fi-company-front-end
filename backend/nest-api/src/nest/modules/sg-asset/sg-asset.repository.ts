@@ -397,6 +397,10 @@ export class SgAssetRepository extends BaseRepository<SgAssetRecord> {
     return `${defaultFirst}${currentWeekNumber}${currentYear}${sequence}`;
   }
 
+  private buildSgAssetNumber(weekNumber: string, yearTwoDigits: string, sequence: number): string {
+    return `US14${weekNumber}${yearTwoDigits}${String(sequence).padStart(2, '0')}`;
+  }
+
   private async getLastGeneratedState(): Promise<{
     generatedAssetNumber: number;
     dateCreated: string;
@@ -534,158 +538,173 @@ export class SgAssetRepository extends BaseRepository<SgAssetRecord> {
       const conn = connection as {
         execute: <T = unknown>(sql: string, params?: Record<string, unknown>) => Promise<[T, unknown]>;
       };
-
-      // Query last record ONCE at the start
-      const [lastRows] = await conn.execute<Array<RowDataPacket & { generatedAssetNumber: string; dateCreated: string }>>(
-        `
-          SELECT RIGHT(generated_SG_asset, 2) AS generatedAssetNumber,
-                 DATE(timeStamp) AS dateCreated
-          FROM ${table}
-          WHERE manualUpdate IS NULL OR manualUpdate = ''
-          ORDER BY id DESC
-          LIMIT 1
-        `,
-      );
-
-      const lastRecord = lastRows[0];
-      const lastSequence = Number(lastRecord?.generatedAssetNumber || 0);
-      const lastWeekNumber = this.getWeekNumber(String(lastRecord?.dateCreated || nowDate));
       const currentWeekNumber = this.getWeekNumber(nowDate);
 
-      // Track current sequence in memory as we loop
-      let currentSequence = lastSequence;
-      let sequenceWeekNumber = lastWeekNumber;
+      const currentYearTwoDigits = String(new Date(nowDate).getUTCFullYear()).slice(-2);
+      const lockName = 'sg_asset_sequence_lock';
 
-      for (const assignment of assignments) {
-        const serialNumber = String(assignment.serialNumber || '');
-        let eyefiSerialId = assignment.eyefi_serial_id;
+      const [lockRows] = await conn.execute<Array<RowDataPacket & { lock_acquired: number }>>(
+        `SELECT GET_LOCK(:lock_name, 10) AS lock_acquired`,
+        { lock_name: lockName },
+      );
 
-        if (serialNumber && !eyefiSerialId) {
-          eyefiSerialId = await this.findOrCreateEyeFiSerial(connection, serialNumber);
-        }
-
-        const useManualAsset =
-          (assignment.sgAssetNumber && String(assignment.sgAssetNumber).trim() !== '') ||
-          (assignment.generated_SG_asset && String(assignment.generated_SG_asset).trim() !== '');
-
-        let generatedAssetNumber = String(assignment.sgAssetNumber || assignment.generated_SG_asset || '');
-
-        if (!useManualAsset) {
-          // Use tracked week/sequence so week-rollover resets once, then increments within the batch.
-          generatedAssetNumber = this.generateNextSgAssetNumber(currentSequence, sequenceWeekNumber);
-          currentSequence = Number(generatedAssetNumber.slice(-2));
-          sequenceWeekNumber = currentWeekNumber;
-        }
-
-        const [insertResult] = await conn.execute<ResultSetHeader>(
-          `
-            INSERT INTO ${table} (
-              timeStamp,
-              poNumber,
-              property_site,
-              sgPartNumber,
-              inspectorName,
-              generated_SG_asset,
-              serialNumber,
-              lastUpdate,
-              manualUpdate
-            ) VALUES (
-              :timeStamp,
-              :poNumber,
-              :property_site,
-              :sgPartNumber,
-              :inspectorName,
-              :generated_SG_asset,
-              :serialNumber,
-              :lastUpdate,
-              :manualUpdate
-            )
-          `,
-          {
-            timeStamp: nowDate,
-            poNumber: assignment.poNumber || null,
-            property_site: assignment.property_site || null,
-            sgPartNumber: assignment.sgPartNumber || null,
-            inspectorName: assignment.inspector_name || userFullName,
-            generated_SG_asset: generatedAssetNumber,
-            serialNumber: serialNumber || null,
-            lastUpdate: nowDate,
-            manualUpdate: useManualAsset ? '1' : null,
-          },
-        );
-
-        if (!eyefiSerialId) {
-          throw new Error('EyeFi serial is required to create serial assignment');
-        }
-
-        const ulLabel = await this.resolveAvailableUlLabel(conn, assignment);
-        const serialAssignmentId = await this.createSerialAssignment(conn, {
-          eyefiSerialId: Number(eyefiSerialId),
-          eyefiSerialNumber: serialNumber,
-          customerAssetId: Number(insertResult.insertId),
-          generatedAssetNumber,
-          assignment,
-          batchId,
-          userFullName,
-          ulLabel,
-        });
-
-        if (eyefiSerialId) {
-          await conn.execute(
-            `
-              UPDATE eyefi_serial_numbers
-              SET status = 'assigned',
-                  is_consumed = TRUE,
-                  consumed_at = NOW(),
-                  consumed_by = :consumed_by
-              WHERE id = :id
-                AND is_consumed = FALSE
-            `,
-            {
-              id: eyefiSerialId,
-              consumed_by: assignment.consumed_by || userFullName,
-            },
-          );
-        }
-
-        if (ulLabel) {
-          await conn.execute(
-            `
-              UPDATE ul_labels
-              SET is_consumed = TRUE,
-                  consumed_at = NOW(),
-                  consumed_by = :consumed_by
-              WHERE id = :id
-                AND is_consumed = FALSE
-            `,
-            {
-              id: ulLabel.id,
-              consumed_by: assignment.consumed_by || userFullName,
-            },
-          );
-        }
-
-        await conn.execute(
-          `
-            INSERT INTO \`${SERIAL_ASSIGNMENT_AUDIT_TABLE}\` (assignment_id, action, serial_type, serial_id, serial_number, reason, performed_by, performed_at)
-            VALUES (:assignment_id, 'created', 'eyefi', :serial_id, :serial_number, 'Created from SG serial assignment workflow', :performed_by, NOW())
-          `,
-          {
-            assignment_id: serialAssignmentId,
-            serial_id: eyefiSerialId,
-            serial_number: serialNumber,
-            performed_by: assignment.consumed_by || userFullName,
-          },
-        );
-
-        rows.push({
-          generated_asset_number: generatedAssetNumber,
-          customer_asset_id: Number(insertResult.insertId),
-          serialNumber: serialNumber || undefined,
-        });
+      if (Number(lockRows[0]?.lock_acquired || 0) !== 1) {
+        throw new Error('Could not acquire SG sequence lock. Please retry.');
       }
 
-      return rows;
+      try {
+        const [sequenceRows] = await conn.execute<Array<RowDataPacket & { max_sequence: number }>>(
+          `
+            SELECT COALESCE(MAX(CAST(RIGHT(generated_SG_asset, 2) AS UNSIGNED)), 0) AS max_sequence
+            FROM ${table}
+            WHERE (manualUpdate IS NULL OR manualUpdate = '')
+              AND generated_SG_asset REGEXP '^US14[0-9]{6}$'
+              AND SUBSTRING(generated_SG_asset, 5, 2) = :week_number
+              AND SUBSTRING(generated_SG_asset, 7, 2) = :year_number
+          `,
+          {
+            week_number: currentWeekNumber,
+            year_number: currentYearTwoDigits,
+          },
+        );
+
+        // Sequence source-of-truth for this transaction. Manual entries are excluded.
+        let currentSequence = Number(sequenceRows[0]?.max_sequence || 0);
+
+        for (const assignment of assignments) {
+          const serialNumber = String(assignment.serialNumber || '');
+          let eyefiSerialId = assignment.eyefi_serial_id;
+
+          if (serialNumber && !eyefiSerialId) {
+            eyefiSerialId = await this.findOrCreateEyeFiSerial(connection, serialNumber);
+          }
+
+          const useManualAsset =
+            (assignment.sgAssetNumber && String(assignment.sgAssetNumber).trim() !== '') ||
+            (assignment.generated_SG_asset && String(assignment.generated_SG_asset).trim() !== '');
+
+          let generatedAssetNumber = String(assignment.sgAssetNumber || assignment.generated_SG_asset || '');
+
+          if (!useManualAsset) {
+            currentSequence += 1;
+            if (currentSequence > 99) {
+              throw new Error(`SG weekly sequence overflow for week ${currentWeekNumber}/${currentYearTwoDigits}`);
+            }
+            generatedAssetNumber = this.buildSgAssetNumber(currentWeekNumber, currentYearTwoDigits, currentSequence);
+          }
+
+          const [insertResult] = await conn.execute<ResultSetHeader>(
+            `
+              INSERT INTO ${table} (
+                timeStamp,
+                poNumber,
+                property_site,
+                sgPartNumber,
+                inspectorName,
+                generated_SG_asset,
+                serialNumber,
+                lastUpdate,
+                manualUpdate
+              ) VALUES (
+                :timeStamp,
+                :poNumber,
+                :property_site,
+                :sgPartNumber,
+                :inspectorName,
+                :generated_SG_asset,
+                :serialNumber,
+                :lastUpdate,
+                :manualUpdate
+              )
+            `,
+            {
+              timeStamp: nowDate,
+              poNumber: assignment.poNumber || null,
+              property_site: assignment.property_site || null,
+              sgPartNumber: assignment.sgPartNumber || null,
+              inspectorName: assignment.inspector_name || userFullName,
+              generated_SG_asset: generatedAssetNumber,
+              serialNumber: serialNumber || null,
+              lastUpdate: nowDate,
+              manualUpdate: useManualAsset ? '1' : null,
+            },
+          );
+
+          if (!eyefiSerialId) {
+            throw new Error('EyeFi serial is required to create serial assignment');
+          }
+
+          const ulLabel = await this.resolveAvailableUlLabel(conn, assignment);
+          const serialAssignmentId = await this.createSerialAssignment(conn, {
+            eyefiSerialId: Number(eyefiSerialId),
+            eyefiSerialNumber: serialNumber,
+            customerAssetId: Number(insertResult.insertId),
+            generatedAssetNumber,
+            assignment,
+            batchId,
+            userFullName,
+            ulLabel,
+          });
+
+          if (eyefiSerialId) {
+            await conn.execute(
+              `
+                UPDATE eyefi_serial_numbers
+                SET status = 'assigned',
+                    is_consumed = TRUE,
+                    consumed_at = NOW(),
+                    consumed_by = :consumed_by
+                WHERE id = :id
+                  AND is_consumed = FALSE
+              `,
+              {
+                id: eyefiSerialId,
+                consumed_by: assignment.consumed_by || userFullName,
+              },
+            );
+          }
+
+          if (ulLabel) {
+            await conn.execute(
+              `
+                UPDATE ul_labels
+                SET is_consumed = TRUE,
+                    consumed_at = NOW(),
+                    consumed_by = :consumed_by
+                WHERE id = :id
+                  AND is_consumed = FALSE
+              `,
+              {
+                id: ulLabel.id,
+                consumed_by: assignment.consumed_by || userFullName,
+              },
+            );
+          }
+
+          await conn.execute(
+            `
+              INSERT INTO \`${SERIAL_ASSIGNMENT_AUDIT_TABLE}\` (assignment_id, action, serial_type, serial_id, serial_number, reason, performed_by, performed_at)
+              VALUES (:assignment_id, 'created', 'eyefi', :serial_id, :serial_number, 'Created from SG serial assignment workflow', :performed_by, NOW())
+            `,
+            {
+              assignment_id: serialAssignmentId,
+              serial_id: eyefiSerialId,
+              serial_number: serialNumber,
+              performed_by: assignment.consumed_by || userFullName,
+            },
+          );
+
+          rows.push({
+            generated_asset_number: generatedAssetNumber,
+            customer_asset_id: Number(insertResult.insertId),
+            serialNumber: serialNumber || undefined,
+          });
+        }
+
+        return rows;
+      } finally {
+        await conn.execute(`SELECT RELEASE_LOCK(:lock_name)`, { lock_name: lockName });
+      }
     });
 
     return {

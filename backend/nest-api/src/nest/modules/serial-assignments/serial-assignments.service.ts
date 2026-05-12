@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { SerialAssignmentsRepository } from './serial-assignments.repository';
 import { SgAssetService } from '../sg-asset/sg-asset.service';
 import { AgsSerialService } from '../ags-serial/ags-serial.service';
-import { IgtSerialNumbersService } from '../igt-serial-numbers/igt-serial-numbers.service';
 import {
   AssignmentsFilterDto,
   VoidAssignmentDto,
@@ -18,7 +17,6 @@ export class SerialAssignmentsService {
     private readonly repository: SerialAssignmentsRepository,
     private readonly sgAssetService: SgAssetService,
     private readonly agsSerialService: AgsSerialService,
-    private readonly igtSerialNumbersService: IgtSerialNumbersService,
   ) {}
 
   async getAssignments(filters: AssignmentsFilterDto) {
@@ -55,20 +53,13 @@ export class SerialAssignmentsService {
     }
 
     if (normalized === 'igt') {
-      const raw = await this.igtSerialNumbersService.bulkCreate(assignments as any[], 'skip');
+      const raw = await this.repository.bulkCreateIgtWorkflow(assignments, performedBy || 'System');
       return {
         success: true,
         message: 'Bulk IGT assignments processed',
-        count: assignments.length,
-        data: assignments.map((item) => ({
-          generated_asset_number:
-            (item['igt_serial_number'] as string) ||
-            (item['assetNumber'] as string) ||
-            (item['serial_number'] as string) ||
-            null,
-          customer_asset_id: (item['igt_asset_id'] as number) || null,
-          serialNumber: (item['eyefi_serial_number'] as string) || (item['serialNumber'] as string) || undefined,
-        })),
+        count: raw.count,
+        data: raw.data,
+        missingIgt: raw.missingIgt,
         raw,
       };
     }

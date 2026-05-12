@@ -69,13 +69,18 @@ export class SafetyIncidentService {
     return safetyIncident;
   }
 
-  async create(dto: CreateSafetyIncidentDto, userId: number): Promise<SafetyIncidentRecord> {
+  async create(dto: CreateSafetyIncidentDto, userId?: number): Promise<SafetyIncidentRecord> {
+    const payload: Record<string, unknown> = {
+      ...(dto as Record<string, unknown>),
+      status: dto.status ?? 'Open',
+    };
+
+    if (userId && Number.isInteger(userId) && userId > 0) {
+      payload.created_by = userId;
+    }
+
     const insertId = await this.safetyIncidentRepository.createIncident(
-      {
-        ...(dto as Record<string, unknown>),
-        created_by: userId,
-        status: dto.status ?? 'Open',
-      },
+      payload,
     );
 
     await this.sendCreateNotification(insertId);

@@ -67,6 +67,11 @@ export class SafetyIncidentController {
     return this.safetyIncidentService.create(dto, this.getRequiredUserId(request));
   }
 
+  @Post('create-public')
+  async createPublic(@Body() dto: CreateSafetyIncidentDto) {
+    return this.safetyIncidentService.create(dto);
+  }
+
   @Put('updateById/:id')
   @Permissions('write')
   async updateById(
