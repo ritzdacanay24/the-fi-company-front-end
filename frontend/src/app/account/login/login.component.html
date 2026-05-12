@@ -20,78 +20,86 @@
                             <p class="mb-0 request-public-subtitle">Sign in to continue to FI Dashboard.</p>
                         </div>
 
-                        <div class="card mt-4">
+                        <div class="card mt-4 border-0">
 
                         <div class="card-body p-4">
-                            <div class="p-2">
-                                <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+                            <div class="text-center mb-4">
+                                <div class="login-icon mb-3">
+                                    <i class="mdi mdi-shield-lock mdi-48px text-primary"></i>
+                                </div>
+                                <p class="text-muted mb-0">Sign in with your company email and password.</p>
+                            </div>
 
-                                    <div class="mb-3">
-                                        <label class="form-label" for="username">Email</label>
-                                        <input type="email" class="form-control" id="email" formControlName="email"
-                                            [ngClass]="{ 'is-invalid': submitted && f['email'].errors }"
-                                            placeholder="Enter email" autocomplete="false">
+                            <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
 
-                                        @if(submitted && f['email'].errors){
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold" for="email">Email Address</label>
+                                    <input type="email" class="form-control" id="email" formControlName="email"
+                                        [ngClass]="{ 'is-invalid': submitted && f['email'].errors }"
+                                        placeholder="you@the-fi-company.com" autocomplete="off">
+
+                                    @if(submitted && f['email'].errors){
+                                    <div class="invalid-feedback">
+                                        @if(f['email'].errors['required']){
+                                        <div>Email is required</div>
+                                        }
+                                        @if(f['email'].errors['email']){
+                                        <div>Email must be a valid email address</div>
+                                        }
+                                    </div>
+                                    }
+                                </div>
+
+                                <div class="mb-4">
+                                    <label class="form-label fw-semibold" for="password-input">Password</label>
+                                    <div class="position-relative auth-pass-inputgroup">
+                                        <input [type]="fieldTextType ? 'text' : 'password'"
+                                            class="form-control pe-5" placeholder="Enter your password"
+                                            id="password-input" formControlName="password"
+                                            [ngClass]="{ 'is-invalid': submitted && f['password'].errors }">
+                                        <button
+                                            class="btn btn-link position-absolute end-0 top-0 text-decoration-none text-muted"
+                                            type="button" id="password-addon"><i class="mdi align-middle" [ngClass]="{'mdi-eye-off-outline': !fieldTextType, 'mdi-eye-outline': fieldTextType
+                                      }" (click)="toggleFieldTextType()"></i></button>
+                                        @if(submitted && f['password'].errors){
                                         <div class="invalid-feedback">
-                                            @if(f['email'].errors['required']){
-                                            <div>Email is required</div>
-                                            @if(f['email'].errors['email']){
-                                            <div>Email must be a valid email address</div>
-                                            }
+                                            @if(f['password'].errors['required']){
+                                            <span>Password is required</span>
                                             }
                                         </div>
                                         }
                                     </div>
+                                </div>
 
-                                    <div class="mb-3">
-                                        <label class="form-label" for="password-input">Password</label>
-                                        <div class="position-relative auth-pass-inputgroup mb-3">
-                                            <input [type]="fieldTextType ? 'text' : 'password'"
-                                                class="form-control pe-5" placeholder="Enter password"
-                                                id="password-input" formControlName="password"
-                                                [ngClass]="{ 'is-invalid': submitted && f['password'].errors }">
-                                            <button
-                                                class="btn btn-link position-absolute end-0 top-0 text-decoration-none text-muted"
-                                                type="button" id="password-addon"><i class="mdi align-middle" [ngClass]="{'mdi-eye-off-outline': !fieldTextType, 'mdi-eye-outline': fieldTextType
-                                          }" (click)="toggleFieldTextType()"></i></button>
-                                            @if(submitted && f['password'].errors){
-                                            <div class="invalid-feedback">
-                                                @if(f['password'].errors['required']){
-                                                <span>Password is required</span>
-                                                }
-                                            </div>
-                                            }
-                                        </div>
-                                    </div>
+                                @if(error){
+                                <div class="alert alert-warning py-2 mb-3" role="alert">
+                                    <i class="mdi mdi-alert-circle-outline me-2"></i>{{ error }}
+                                </div>
+                                }
 
-                                    @if(error){
-                                    <div class="alert alert-danger py-2" role="alert">
-                                        <i class="mdi mdi-alert-circle-outline me-2"></i>{{ error }}
-                                    </div>
-                                    }
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-primary" type="submit">
+                                        <i class="mdi mdi-login me-2"></i>
+                                        Login
+                                    </button>
+                                </div>
 
-                                    <div class="mt-5">
-                                        <button class="btn btn-primary w-100" type="submit">Sign In</button>
-                                    </div>
-
-                                    <div class="login-support-footer mt-4">
-                                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                                <div class="login-support-footer mt-4">
+                                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
                                             <div>
-                                                <div class="login-support-label text-uppercase fw-semibold small mb-1">Need Help?</div>
-                                                <div class="login-support-text small">Open one support form and choose whether your issue is Dashboard/App or IT/Access.</div>
+                                                <div class="login-support-label text-uppercase fw-semibold small mb-1">Need Assistance?</div>
+                                                <div class="login-support-text small">Having trouble signing in? Open Support and select Dashboard/App or IT/Access.</div>
                                             </div>
-                                            <div class="d-flex flex-wrap gap-2">
-                                                <button type="button" class="btn btn-outline-danger btn-sm login-support-btn" (click)="openSupport()">
-                                                    <i class="las la-life-ring me-1"></i>
-                                                    Support
-                                                </button>
-                                            </div>
+                                        <div class="d-flex flex-wrap gap-2">
+                                            <button type="button" class="btn btn-outline-danger btn-sm login-support-btn" (click)="openSupport()">
+                                                <i class="mdi mdi-lifebuoy me-1"></i>
+                                                Support
+                                            </button>
                                         </div>
                                     </div>
+                                </div>
 
-                                </form>
-                            </div>
+                            </form>
                         </div>
                         <!-- end card body -->
                     </div>

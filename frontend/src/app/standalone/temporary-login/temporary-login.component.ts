@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subject, finalize, takeUntil } from 'rxjs';
 import { AuthenticationService } from '@app/core/services/auth.service';
+import { SupportEntryService } from '@app/core/services/support-entry.service';
 import { THE_FI_COMPANY_CURRENT_USER } from '@app/core/guards/admin.guard';
 
 export interface LoginResult {
@@ -37,7 +38,10 @@ export class TemporaryLoginComponent implements OnInit, OnDestroy {
   
   private destroy$ = new Subject<void>();
   
-  constructor(private authService: AuthenticationService) {}
+  constructor(
+    private authService: AuthenticationService,
+    private supportEntryService: SupportEntryService,
+  ) {}
 
   ngOnInit(): void {
     this.checkExistingUser();
@@ -158,6 +162,10 @@ export class TemporaryLoginComponent implements OnInit, OnDestroy {
     this.isAuthenticated = false;
     this.currentUser = null;
     localStorage.removeItem(THE_FI_COMPANY_CURRENT_USER);
+  }
+
+  openSupport(): void {
+    void this.supportEntryService.openSupport({ source: 'temporary-login' });
   }
 
   getUserInitials(): string {

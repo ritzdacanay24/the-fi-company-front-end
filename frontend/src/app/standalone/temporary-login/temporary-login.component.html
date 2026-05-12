@@ -94,6 +94,10 @@
             <i *ngIf="!isLoggingIn" class="mdi mdi-login me-2"></i>
             {{ isLoggingIn ? 'Authenticating...' : 'Login & Start Session' }}
           </button>
+          <button type="button" class="btn btn-outline-danger" (click)="openSupport()" [disabled]="isLoggingIn">
+            <i class="mdi mdi-lifebuoy me-2"></i>
+            Support
+          </button>
         </div>
       </form>
     </div>
