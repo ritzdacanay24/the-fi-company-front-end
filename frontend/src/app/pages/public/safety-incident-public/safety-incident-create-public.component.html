@@ -1,0 +1,29 @@
+<app-safety-incident-form-public (setFormEmitter)="setFormEmitter($event)" [submitted]="submitted"
+  (setOnPrintEmitter)="onPrint = $event"></app-safety-incident-form-public>
+
+<div class="mt-4 pt-4 border-top">
+  <div class="mb-3">
+    <h3 class="h6 mb-0">
+      Supporting Documentation
+      <span class="text-muted fw-normal small">- Upload photos, reports, or other relevant documents (optional).</span>
+    </h3>
+  </div>
+  <div class="mb-3">
+    <label for="file" class="form-label">Upload Supporting Documents</label>
+    <input id="file" type="file" multiple class="form-control" (change)="onFileChange($event)">
+  </div>
+</div>
+
+<div class="mt-4 pt-4 border-top d-flex gap-2 justify-content-end">
+  <button type="button" class="btn btn-outline-secondary" (click)="goBack()" [disabled]="isLoading">
+    <i class="mdi mdi-close me-2"></i>Cancel
+  </button>
+  <button type="button" class="btn btn-primary" (click)="onSubmit()" [disabled]="isLoading">
+    <span *ngIf="!isLoading">
+      <i class="mdi mdi-check me-2"></i>Submit Report
+    </span>
+    <span *ngIf="isLoading">
+      <span class="spinner-border spinner-border-sm me-2"></span>Submitting...
+    </span>
+  </button>
+</div>

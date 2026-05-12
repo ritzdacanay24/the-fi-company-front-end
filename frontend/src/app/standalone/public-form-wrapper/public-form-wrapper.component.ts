@@ -7,7 +7,6 @@ import { ToastrService } from 'ngx-toastr';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import { THE_FI_COMPANY_CURRENT_USER } from '@app/core/guards/admin.guard';
-import { SharedHeaderComponent } from '../shared-header/shared-header.component';
 import { TemporaryLoginComponent } from '../temporary-login/temporary-login.component';
 
 @Component({
@@ -16,7 +15,6 @@ import { TemporaryLoginComponent } from '../temporary-login/temporary-login.comp
   imports: [
     CommonModule,
     FormsModule,
-    SharedHeaderComponent,
     TemporaryLoginComponent
   ],
   templateUrl: './public-form-wrapper.component.html',
@@ -159,7 +157,7 @@ export class PublicFormWrapperComponent implements OnInit, OnDestroy {
     this.isAuthenticated = false;
     this.currentUser = null;
     this.hasValidUserImage = false;
-    localStorage.removeItem(THE_FI_COMPANY_CURRENT_USER);
+    this.authService.logout().subscribe();
     sessionStorage.removeItem(this.LAST_ACTIVITY_KEY);
     this.toastrService.info('You have been logged out.', 'Logged Out');
     this.userLoggedOut.emit();

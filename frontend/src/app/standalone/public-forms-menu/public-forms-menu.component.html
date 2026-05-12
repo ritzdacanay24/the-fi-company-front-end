@@ -1,12 +1,4 @@
 <div class="public-forms-wrapper d-flex flex-column min-vh-100">
-  <!-- Shared Header -->
-  <app-shared-header [pageTitle]="pageTitle" [pageDescription]="pageDescription" [pageIcon]="pageIcon"
-      [isAuthenticated]="isAuthenticated" [currentUser]="currentUser" [hasValidUserImage]="hasValidUserImage"
-      [sessionTimeRemaining]="getTimeRemainingFormatted()"
-      [inactivityTimeRemaining]="getInactivityTimeRemainingFormatted()" (extendSession)="extendSession()"
-      (logout)="logout()" (userImageError)="onUserImageError($event)" (goToFormsMenu)="goToFormsMenu()">
-  </app-shared-header>
-
   <!-- Main Content -->
   <div class="flex-grow-1">
     <section class="py-5 text-center container">
@@ -63,12 +55,12 @@
                 <p class="card-text">Report safety incidents, near misses, and workplace hazards. Anonymous reporting option available for confidential submissions.</p>
                 <div class="d-flex justify-content-between align-items-center mt-4">
                   <div class="btn-group">
-                    <button type="button" class="btn btn-sm btn-outline-secondary" (click)="navigateToForm('safety-incident')" [disabled]="true">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" (click)="navigateToForm('safety-incident')">
                       <i class="mdi mdi-open-in-new me-1"></i>Open Form
                     </button>
                   </div>
                   <small class="text-body-secondary">
-                    <span class="badge bg-warning">Coming Soon</span>
+                    <span class="badge bg-success">Active</span>
                   </small>
                 </div>
               </div>

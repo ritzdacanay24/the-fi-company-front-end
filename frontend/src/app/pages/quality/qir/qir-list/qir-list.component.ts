@@ -165,7 +165,7 @@ export class QirListComponent implements OnInit {
   }
 
   onView(id) {
-    this.router.navigate([NAVIGATION_ROUTE.VIEW], {
+    this.router.navigate([NAVIGATION_ROUTE.EDIT], {
       queryParamsHandling: "merge",
       queryParams: {
         id: id,

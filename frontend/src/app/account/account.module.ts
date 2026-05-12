@@ -9,6 +9,7 @@ import { AccountRoutingModule } from './account-routing.module';
 import { SigninModule } from "./auth/signin/signin.module";
 import { RegisterComponent } from './register/register.component';
 import { LoginComponent } from './login/login.component';
+import { SharedHeaderComponent } from '@app/standalone/shared-header/shared-header.component';
 
 @NgModule({
   declarations: [
@@ -22,7 +23,8 @@ import { LoginComponent } from './login/login.component';
     FormsModule,
     NgbToastModule,
     AccountRoutingModule,
-    SigninModule
+    SigninModule,
+    SharedHeaderComponent
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })

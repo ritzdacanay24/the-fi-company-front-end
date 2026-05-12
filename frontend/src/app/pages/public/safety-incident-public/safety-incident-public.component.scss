@@ -42,29 +42,3 @@
 .request-public-subtitle {
 	color: #dbe8fb;
 }
-
-.login-support-footer {
-	padding-top: 1rem;
-	border-top: 1px solid rgba(13, 27, 50, 0.08);
-}
-
-.login-support-label {
-	color: rgba(26, 58, 111, 0.78);
-}
-
-.login-support-text {
-	color: rgba(26, 58, 111, 0.72);
-}
-
-.login-support-btn {
-	min-width: 168px;
-	font-weight: 600;
-}
-
-@media (max-width: 767.98px) {
-	.login-support-btn {
-		width: 100%;
-		min-width: 100%;
-	}
-}
-

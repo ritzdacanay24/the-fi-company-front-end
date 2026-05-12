@@ -46,6 +46,13 @@ const routes: Routes = [
     component: PublicFormsMenuComponent,
     title: "Public Forms Portal"
   },
+
+  // Public Safety Incident Submission
+  {
+    path: "safety-incident-public",
+    loadChildren: () => import("./pages/public/safety-incident-public/safety-incident-public-routing.module").then(m => m.SafetyIncidentPublicRoutingModule),
+    title: "Report Safety Incident"
+  },
   
   // Standalone Forms
   { 

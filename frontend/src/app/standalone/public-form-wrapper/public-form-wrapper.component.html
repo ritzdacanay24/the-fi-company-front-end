@@ -9,14 +9,6 @@
         </div>
     </div>
 
-    <!-- Shared Header -->
-    <app-shared-header *ngIf="showHeader" [pageTitle]="pageTitle" [pageDescription]="pageDescription"
-        [pageIcon]="pageIcon" [isAuthenticated]="isAuthenticated" [currentUser]="currentUser"
-        [hasValidUserImage]="hasValidUserImage" [sessionTimeRemaining]="getTimeRemainingFormatted()"
-        [inactivityTimeRemaining]="getInactivityTimeRemainingFormatted()" (extendSession)="extendSession()"
-        (logout)="logout()" (userImageError)="onUserImageError($event)" (goToFormsMenu)="goToFormsMenu()">
-    </app-shared-header>
-
     <!-- Main Content -->
     <div class="form-content flex-grow-1" [class.menu-content]="useMenuBackground"
         [class.position-relative]="useMenuBackground">

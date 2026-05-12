@@ -1,6 +1,7 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { AuthenticationService } from '@app/core/services/auth.service';
 
 @Component({
   selector: 'app-shared-header',
@@ -9,10 +10,11 @@ import { Router } from '@angular/router';
   templateUrl: './shared-header.component.html',
   styleUrls: ['./shared-header.component.scss']
 })
-export class SharedHeaderComponent {
+export class SharedHeaderComponent implements OnInit {
   @Input() pageTitle: string = 'Public Form';
   @Input() pageDescription: string = 'Form description';
   @Input() pageIcon: string = 'mdi mdi-form-select';
+  @Input() transparent: boolean = false;
   @Input() isAuthenticated: boolean = false;
   @Input() currentUser: any = null;
   @Input() hasValidUserImage: boolean = false;
@@ -25,11 +27,60 @@ export class SharedHeaderComponent {
   @Output() userImageError = new EventEmitter<any>();
   @Output() goToFormsMenu = new EventEmitter<void>();
 
-  constructor(private router: Router) {}
+  private sessionUser: any = null;
+
+  constructor(
+    private router: Router,
+    private authService: AuthenticationService,
+  ) {}
+
+  ngOnInit(): void {
+    this.loadSessionUser();
+  }
+
+  get resolvedUser(): any {
+    return this.currentUser || this.sessionUser;
+  }
+
+  get resolvedIsAuthenticated(): boolean {
+    return this.isAuthenticated || !!this.resolvedUser;
+  }
+
+  get resolvedHasValidUserImage(): boolean {
+    if (this.hasValidUserImage) {
+      return true;
+    }
+
+    const user = this.resolvedUser;
+    return Boolean(user?.image_url || user?.image || user?.avatar);
+  }
+
+  get isLoginRoute(): boolean {
+    const currentPath = (this.router.url || '').split('?')[0];
+    return currentPath.startsWith('/auth/login');
+  }
+
+  get isMenuRoute(): boolean {
+    const currentPath = (this.router.url || '').split('?')[0];
+    return currentPath.startsWith('/menu');
+  }
+
+  private loadSessionUser(): void {
+    try {
+      const raw = localStorage.getItem('THE_FI_COMPANY_CURRENT_USER');
+      if (!raw) {
+        return;
+      }
+      this.sessionUser = JSON.parse(raw);
+    } catch {
+      this.sessionUser = null;
+    }
+  }
 
   getUserImageUrl(): string {
     // Support multiple possible image fields depending on which component provided the user
-    const img = this.currentUser?.image_url || this.currentUser?.image || this.currentUser?.avatar;
+    const user = this.resolvedUser;
+    const img = user?.image_url || user?.image || user?.avatar;
     if (!img) return '';
 
     // If it's already an absolute url, return as-is. Otherwise prefix with dashboard domain if available.
@@ -49,6 +100,14 @@ export class SharedHeaderComponent {
   onLogout(): void {
     console.log('Logout clicked');
     this.logout.emit();
+
+    // Fallback: if no parent listener is attached, perform local logout directly.
+    if (!this.logout.observed) {
+      this.authService.logout().subscribe();
+      localStorage.removeItem('temp_session_start');
+      localStorage.removeItem('temp_last_activity');
+      this.router.navigate(['/auth/login']);
+    }
   }
 
   onUserImageError(event: any): void {
@@ -60,17 +119,27 @@ export class SharedHeaderComponent {
     this.goToFormsMenu.emit();
   }
 
+  onLogin(): void {
+    this.router.navigate(['/auth/login']);
+  }
+
+  onMenu(): void {
+    this.router.navigate(['/menu']);
+  }
+
   getUserInitials(): string {
-    if (this.currentUser?.full_name) {
-      return this.currentUser.full_name
+    const user = this.resolvedUser;
+
+    if (user?.full_name) {
+      return user.full_name
         .split(' ')
         .map((n: string) => n[0])
         .join('')
         .substring(0, 2)
         .toUpperCase();
     }
-    if (this.currentUser?.username) {
-      return this.currentUser.username.substring(0, 2).toUpperCase();
+    if (user?.username) {
+      return user.username.substring(0, 2).toUpperCase();
     }
     return 'U';
   }

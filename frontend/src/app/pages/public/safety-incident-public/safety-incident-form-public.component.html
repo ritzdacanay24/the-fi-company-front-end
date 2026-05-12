@@ -1,0 +1,173 @@
+<div [formGroup]="form" class="settings-form">
+
+  <!-- Reporter Information Section -->
+  <div class="mb-4 pb-4 border-bottom">
+    <div class="mb-3">
+      <h3 class="h5 mb-1">Your Information</h3>
+      <p class="text-muted mb-0">Tell us who you are (or leave anonymous).</p>
+    </div>
+
+    <!-- Anonymous Checkbox -->
+    <div class="mb-3">
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" id="anonymousCheck" formControlName="anonymous">
+        <label class="form-check-label" for="anonymousCheck">
+          Report this incident anonymously
+        </label>
+      </div>
+      <small class="text-muted">If checked, your name and contact information will not be recorded.</small>
+    </div>
+
+    <!-- Name Fields -->
+    <div class="row g-3">
+      <div class="col-12 col-md-6">
+        <label class="form-label fw-semibold">First Name @if (isFieldRequired('first_name')) {<span class="text-danger">*</span>}</label>
+        <input class="form-control" type="text" formControlName="first_name"
+          [ngClass]="{ 'is-invalid': submitted && f.first_name.errors }" 
+          placeholder="Enter your first name" />
+        @if(submitted && isFieldRequired('first_name') && f.first_name.errors){
+        <div class="invalid-feedback">
+          @if(f.first_name.errors['required']){
+          <span>First name is required</span>
+          }
+        </div>
+        }
+      </div>
+      <div class="col-12 col-md-6">
+        <label class="form-label fw-semibold">Last Name @if (isFieldRequired('last_name')) {<span class="text-danger">*</span>}</label>
+        <input class="form-control" type="text" formControlName="last_name"
+          [ngClass]="{ 'is-invalid': submitted && f.last_name.errors }" 
+          placeholder="Enter your last name" />
+        @if(submitted && isFieldRequired('last_name') && f.last_name.errors){
+        <div class="invalid-feedback">
+          @if(f.last_name.errors['required']){
+          <span>Last name is required</span>
+          }
+        </div>
+        }
+      </div>
+    </div>
+
+    <!-- Contact Information -->
+    <div class="row g-3 mt-1">
+      <div class="col-12 col-md-6">
+        <label class="form-label fw-semibold">Email (Optional)</label>
+        <input class="form-control" type="email" formControlName="email"
+          [ngClass]="{ 'is-invalid': submitted && f.email.errors }" 
+          placeholder="your.email@example.com" />
+        @if(submitted && f.email.errors){
+        <div class="invalid-feedback">
+          @if(f.email.errors['email']){
+          <span>Please enter a valid email address</span>
+          }
+        </div>
+        }
+      </div>
+      <div class="col-12 col-md-6">
+        <label class="form-label fw-semibold">Phone (Optional)</label>
+        <input class="form-control" type="tel" formControlName="phone"
+          placeholder="(555) 123-4567" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Incident Information Section -->
+  <div class="mb-4 pb-4 border-bottom">
+    <div class="mb-3">
+      <h3 class="h5 mb-1">Incident Details</h3>
+      <p class="text-muted mb-0">Describe what happened and when.</p>
+    </div>
+
+    <!-- Date and Time -->
+    <div class="row g-3">
+      <div class="col-12 col-md-6">
+        <label class="form-label fw-semibold">Date of Incident</label>
+        <input class="form-control" type="date" formControlName="date_of_incident" />
+      </div>
+      <div class="col-12 col-md-6">
+        <label class="form-label fw-semibold">Time of Incident</label>
+        <input class="form-control" type="time" formControlName="time_of_incident" />
+      </div>
+    </div>
+
+    <!-- Type of Incident -->
+    <div class="row mt-3">
+      <div class="col-12">
+        <label class="form-label fw-semibold">Type of Incident <span class="text-danger">*</span></label>
+        <ng-select formControlName="type_of_incident"
+          [ngClass]="{ 'is-invalid': submitted && f.type_of_incident.errors }"
+          [items]="type_of_incident_options" bindLabel="name" bindValue="id" 
+          placeholder="Select incident type">
+        </ng-select>
+        @if(submitted && f.type_of_incident.errors){
+        <div class="text-danger mt-1 small">
+          @if(f.type_of_incident.errors['required']){
+          <span>Please select an incident type</span>
+          }
+        </div>
+        }
+      </div>
+    </div>
+
+    <!-- Location of Incident -->
+    <div class="row mt-3">
+      <div class="col-12">
+        <label class="form-label fw-semibold">Location of Incident <span class="text-danger">*</span></label>
+        <ng-select formControlName="location_of_incident"
+          [ngClass]="{ 'is-invalid': submitted && f.location_of_incident.errors }"
+          [items]="location_of_incident_options" bindLabel="name" bindValue="id"
+          placeholder="Select incident location"
+          (change)="onChangeLocationOfIncident()">
+        </ng-select>
+        @if(submitted && f.location_of_incident.errors){
+        <div class="text-danger mt-1 small">
+          @if(f.location_of_incident.errors['required']){
+          <span>Please select a location</span>
+          }
+        </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Description Section -->
+  <div class="mb-4 pb-4 border-bottom">
+    <div class="mb-3">
+      <h3 class="h5 mb-1">Description</h3>
+      <p class="text-muted mb-0">Provide a detailed account of what happened.</p>
+    </div>
+
+    <!-- Incident Description -->
+    <div class="mb-3">
+      <label class="form-label fw-semibold">Description of Incident <span class="text-danger">*</span></label>
+      <textarea class="form-control" rows="5" formControlName="description_of_incident" 
+        autosize [minRows]="4" 
+        [ngClass]="{ 'is-invalid': submitted && f.description_of_incident.errors }"
+        placeholder="Please describe the incident in detail..."></textarea>
+      @if(submitted && f.description_of_incident.errors){
+      <div class="invalid-feedback">
+        @if(f.description_of_incident.errors['required']){
+        <span>Please describe the incident</span>
+        }
+      </div>
+      }
+    </div>
+
+    <!-- Injury or Damage Details -->
+    <div class="mb-3">
+      <label class="form-label fw-semibold">Injury or Damage Details</label>
+      <textarea class="form-control" rows="4" formControlName="details_of_any_damage_or_personal_injury" 
+        autosize [minRows]="3"
+        placeholder="Describe any injuries or damage (optional)..."></textarea>
+    </div>
+
+    <!-- Immediate Action Taken -->
+    <div class="mb-3">
+      <label class="form-label fw-semibold">Immediate Action Taken</label>
+      <textarea class="form-control" rows="3" formControlName="immediate_action_taken" 
+        autosize [minRows]="2"
+        placeholder="What actions were taken immediately after the incident? (optional)..."></textarea>
+    </div>
+  </div>
+
+</div>

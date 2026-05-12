@@ -27,7 +27,7 @@ export class QirActionsCellRendererComponent implements ICellRendererAngularComp
   
   get isQirClosed(): boolean {
     const status = this.params?.data?.status?.toLowerCase();
-    const openStatuses = ['open', 'in process', 'awaiting verification'];
+    const openStatuses = ['open', 'in process', 'awaiting verification', 'closed'];
     return !openStatuses.includes(status);
   }
 

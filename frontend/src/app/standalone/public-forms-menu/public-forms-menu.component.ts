@@ -1,14 +1,13 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { SharedHeaderComponent } from '../shared-header/shared-header.component';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import { THE_FI_COMPANY_CURRENT_USER } from '@app/core/guards/admin.guard';
 
 @Component({
   selector: 'app-public-forms-menu',
   standalone: true,
-  imports: [CommonModule, SharedHeaderComponent],
+  imports: [CommonModule],
   templateUrl: './public-forms-menu.component.html',
   styleUrls: ['./public-forms-menu.component.scss']
 })
@@ -168,7 +167,7 @@ export class PublicFormsMenuComponent implements OnInit, OnDestroy {
         this.router.navigate(['/standalone/serial-generator']);
         break;
       case 'safety-incident':
-        this.router.navigate(['/operations/forms/safety-incident/create']);
+        this.router.navigate(['/safety-incident-public/create']);
         break;
       case 'quality-checklist':
         this.router.navigate(['/inspection-checklist']);

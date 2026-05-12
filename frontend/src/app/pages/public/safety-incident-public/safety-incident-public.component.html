@@ -1,0 +1,30 @@
+<div class="request-public-shell">
+  <div class="auth-one-bg-position auth-one-bg request-public-page" id="auth-particles">
+    <div class="bg-overlay"></div>
+    <div class="shape">
+      <svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1440 120">
+        <path d="M 0,36 C 144,53.6 432,123.2 720,124 C 1008,124.8 1296,56.8 1440,40L1440 140L0 140z"></path>
+      </svg>
+    </div>
+  </div>
+
+    <div class="request-public-content position-relative">
+    <div class="container py-4 position-relative">
+      <div class="row justify-content-center">
+        <div class="col-12 col-lg-12 col-xl-11 col-xxl-10">
+          <div class="text-center mb-4 p-4 rounded request-public-header">
+            <img src="assets/images/the-fi-cropped.png" style="width: 190px;" class="mb-3" alt="The Fi Company Logo">
+            <h2 class="mb-2 fw-bold request-public-title">{{ pageTitle }}</h2>
+            <p class="mb-3 request-public-subtitle">{{ pageDescription }}</p>
+          </div>
+
+          <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body p-4">
+              <router-outlet></router-outlet>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
+</div>

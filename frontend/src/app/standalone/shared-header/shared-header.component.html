@@ -1,11 +1,12 @@
 <!-- Navigation Bar -->
-<nav class="navbar navbar-expand-lg bg-primary navbar-dark position-fixed w-100" style="top: 0; z-index: 1055; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-  <div class="container-fluid">
+<nav class="navbar navbar-expand-lg position-fixed w-100" [class.navbar-transparent]="transparent" style="top: 0; z-index: 1055; height: 56px;">
+  <div class="container-fluid h-100">
     <!-- Brand with Logo Only -->
     <a class="navbar-brand d-flex align-items-center" href="#">
-      <img src="https://the-fi-company.com/wp-content/uploads/2024/09/The-Fi-Company-Logo-Blue-1.png"
-           alt="The Fi Company" 
-           style="height: 40px; width: auto;">
+      <img
+        src="assets/images/the-fi-cropped.png"
+        alt="The Fi Company"
+        class="fi-header-logo">
     </a>
     
     <!-- Mobile Toggle Button -->
@@ -17,63 +18,68 @@
     <!-- Collapsible Content -->
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav me-auto">
-        <!-- Forms Menu Button (Always Visible) -->
-        <li class="nav-item">
-          <button class="btn btn-outline-light btn-sm ms-2" (click)="onGoToFormsMenu()">
-            <i class="mdi mdi-view-grid me-1"></i>Forms Menu
+        <!-- Menu Button (Hidden on menu pages) -->
+        <li class="nav-item" *ngIf="!isMenuRoute">
+          <button class="btn btn-outline-light btn-sm ms-2" (click)="onMenu()">
+            <i class="mdi mdi-view-dashboard me-1"></i>Menu
           </button>
         </li>
       </ul>
       
       <!-- Authenticated User Section -->
-      <div *ngIf="isAuthenticated" class="d-flex align-items-center">
+      <div *ngIf="resolvedIsAuthenticated" class="d-flex align-items-center">
         <!-- User Avatar -->
         <div class="user-avatar me-3">
           <div class="avatar-container position-relative" style="width: 40px; height: 40px;">
             <!-- User Image -->
             <img 
-                *ngIf="hasValidUserImage"
+                *ngIf="resolvedHasValidUserImage"
                 [src]="getUserImageUrl()" 
-                [alt]="currentUser?.full_name || 'User'"
+                [alt]="resolvedUser?.full_name || 'User'"
                 class="user-avatar-img"
                 (error)="onUserImageError($event)"
-                style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.3);">
+                style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(68, 114, 177, 0.3);">
             <!-- Fallback initials -->
             <div 
-                *ngIf="!hasValidUserImage"
+                *ngIf="!resolvedHasValidUserImage"
                 class="avatar-fallback d-flex align-items-center justify-content-center" 
-                style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.3);">
-              <span class="text-white fw-bold" style="font-size: 12px;">{{ getUserInitials() }}</span>
+                style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255, 255, 255, 0.96); border: 2px solid rgba(255, 255, 255, 0.75);">
+              <span class="fw-bold" style="font-size: 12px; color: #123a73; letter-spacing: 0.2px;">{{ getUserInitials() }}</span>
             </div>
           </div>
         </div>
         
         <!-- Session Info -->
-        <div class="session-info text-white me-3">
-          <div class="fw-semibold small">{{ currentUser?.full_name }}</div>
-          <div class="small opacity-75 d-none d-sm-block">
+        <div class="session-info me-3">
+          <div class="fw-semibold small text-white">{{ resolvedUser?.full_name || resolvedUser?.username || 'User' }}</div>
+          <div class="small opacity-75 d-none d-sm-block text-white" *ngIf="sessionTimeRemaining || inactivityTimeRemaining">
             <i class="mdi mdi-timer me-1"></i>{{ sessionTimeRemaining }}
             <span class="mx-1">|</span>
             <i class="mdi mdi-account-clock me-1"></i>{{ inactivityTimeRemaining }}
           </div>
           <!-- Mobile version - show only session time -->
-          <div class="small opacity-75 d-block d-sm-none">
+          <div class="small opacity-75 d-block d-sm-none text-white" *ngIf="sessionTimeRemaining">
             <i class="mdi mdi-timer me-1"></i>{{ sessionTimeRemaining }}
           </div>
         </div>
         
         <!-- Action Buttons -->
         <div class="btn-group">
-          <button class="btn btn-outline-light" (click)="onExtendSession()">
-            <i class="mdi mdi-refresh me-1"></i>
-            <span class="d-none d-lg-inline">Extend</span>
-          </button>
-          <button class="btn btn-danger" (click)="onLogout()">
+          <button class="btn btn-outline-light btn-sm" (click)="onLogout()">
             <i class="mdi mdi-logout me-1"></i>
             <span class="d-none d-lg-inline">Logout</span>
           </button>
         </div>
       </div>
+
+      <!-- Unauthenticated User Section -->
+      <div *ngIf="!resolvedIsAuthenticated && !isLoginRoute" class="d-flex align-items-center">
+        <button class="btn btn-outline-light btn-sm" (click)="onLogin()">
+          <i class="mdi mdi-login me-1"></i>
+          <span class="d-none d-sm-inline">Login</span>
+        </button>
+      </div>
+
     </div>
   </div>
 </nav>

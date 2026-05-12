@@ -1,3 +1,48 @@
+.navbar {
+  background: linear-gradient(120deg, #173867 0%, #1a3a6f 52%, #2a62ad 100%) !important;
+  backdrop-filter: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+
+  &:hover {
+    background: linear-gradient(120deg, #173867 0%, #1a3a6f 52%, #2a62ad 100%) !important;
+  }
+
+  .navbar-brand,
+  .nav-link,
+  .text-white {
+    color: #ffffff !important;
+  }
+
+  .navbar-brand {
+    margin-right: 0.75rem;
+    padding-top: 0;
+    padding-bottom: 0;
+    line-height: 1;
+  }
+
+  .fi-header-logo {
+    display: block;
+    width: 132px;
+    max-width: 132px;
+    height: auto;
+    max-height: 44px;
+    object-fit: contain;
+  }
+}
+
+.navbar.navbar-transparent {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 2px 10px rgba(6, 18, 38, 0.22);
+
+  &:hover {
+    background: transparent !important;
+    box-shadow: 0 3px 12px rgba(6, 18, 38, 0.24);
+  }
+}
+
 .form-header {
   pointer-events: auto !important;
   

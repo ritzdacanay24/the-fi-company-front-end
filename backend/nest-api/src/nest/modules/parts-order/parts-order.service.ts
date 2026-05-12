@@ -169,7 +169,12 @@ export class PartsOrderService {
     }
 
     const isArchived = Number(normalized.active ?? 1) === 0;
-    normalized.status = isArchived ? 'Archived' : 'Completed';
+    
+    // Only set status if not already provided
+    // Default to "Open" for new orders, "Archived" if marked inactive
+    if (!normalized.status) {
+      normalized.status = isArchived ? 'Archived' : 'Open';
+    }
 
     return normalized;
   }

@@ -62,6 +62,17 @@ export class SafetyIncidentService extends DataService<any> {
     };
   };
 
+  createPublic = async (params: any): Promise<{ message: string; insertId?: number }> => {
+    const response = await firstValueFrom(
+      this.http.post<any>(`${url}/create-public`, params)
+    );
+
+    return {
+      message: 'Safety incident created successfully',
+      insertId: response?.id,
+    };
+  };
+
   override update = async (id: number | string, params: any): Promise<{ message: string }> => {
     await firstValueFrom(
       this.http.put<any>(`${url}/updateById/${id}`, params, { headers: this.userIdHeader })

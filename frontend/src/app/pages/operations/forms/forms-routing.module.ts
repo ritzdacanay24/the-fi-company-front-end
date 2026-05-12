@@ -89,7 +89,6 @@ const routes: Routes = [
           import("./safety-incident/safety-incident-routing.module").then(
             (m) => m.SafetyIncidentRoutingModule
           ),
-        canActivate: [AccessGuard],
         runGuardsAndResolvers: "always",
       },
     ],

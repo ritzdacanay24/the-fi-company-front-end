@@ -1,0 +1,19 @@
+// Safety Incident Component Styles
+
+:host {
+  display: block;
+}
+
+// Account for fixed header spacing
+::ng-deep {
+  // Ensure router outlet content is properly spaced below the fixed header
+  app-safety-incident + * {
+    margin-top: 70px;
+  }
+}
+
+// Ensure smooth transitions and proper layout
+.safety-incident-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}

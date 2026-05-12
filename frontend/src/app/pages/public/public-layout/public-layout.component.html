@@ -1,0 +1,38 @@
+<!-- Main Content with proper spacing for fixed header -->
+<div class="request-public-shell">
+  <div class="auth-one-bg-position auth-one-bg request-public-page" id="auth-particles">
+    <div class="bg-overlay"></div>
+
+    <!-- Wave Shape -->
+    <div class="shape">
+      <svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1440 120">
+        <path d="M 0,36 C 144,53.6 432,123.2 720,124 C 1008,124.8 1296,56.8 1440,40L1440 140L0 140z"></path>
+      </svg>
+    </div>
+  </div>
+
+    <div class="request-public-content position-relative">
+      <div class="container py-4 position-relative">
+        <div class="row justify-content-center">
+          <div class="col-12 col-lg-12 col-xl-11 col-xxl-10">
+            <div class="text-center py-5">
+              <a routerLink="/" class="d-inline-block auth-logo mb-4">
+                <img src="assets/images/the-fi.png" alt="The Fi Company Logo" width="190">
+              </a>
+              <h2 class="mb-3 fw-bold text-white" style="font-size: 32px;">{{ pageTitle }}</h2>
+              <p class="mb-0 text-white-70" style="font-size: 16px;">{{ pageDescription }}</p>
+            </div>
+            <div class="row justify-content-center">
+              <div class="col-md-10 col-lg-8 col-xl-7">
+                <div class="card mt-4 border-0 shadow-lg">
+                  <div class="card-body p-4 p-lg-5">
+                    <ng-content></ng-content>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+</div>

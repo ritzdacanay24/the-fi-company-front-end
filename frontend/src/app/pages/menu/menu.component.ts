@@ -4,6 +4,7 @@ import { SharedModule } from "@app/shared/shared.module";
 import { PathUtilsService } from "@app/core/services/path-utils.service";
 import { environment } from "@environments/environment";
 import { SupportEntryService } from "@app/core/services/support-entry.service";
+import { AuthenticationService } from "@app/core/services/auth.service";
 
 interface MenuItem {
   name: string;
@@ -30,12 +31,19 @@ export class MenuComponent implements OnInit {
     public router: Router,
     private pathUtils: PathUtilsService,
     private supportEntryService: SupportEntryService,
+    private authService: AuthenticationService,
   ) {}
 
   ngOnInit(): void {}
 
   goToMainApp(): void {
     this.router.navigate(['/operations']);
+  }
+
+  logoutSession(): void {
+    this.authService.logout().subscribe();
+    localStorage.removeItem('temp_session_start');
+    this.router.navigate(['/auth/login']);
   }
 
   data: MenuSection[] = [
@@ -51,7 +59,7 @@ export class MenuComponent implements OnInit {
       items: [
         { name: 'EyeFi Serial Workflow',   link: '/standalone/eyefi-workflow',     icon: 'las la-barcode',          color: 'text-primary'   },
         { name: 'Shipping Request',        link: '/operations/forms/shipping-request/create',     icon: 'las la-shipping-fast',    color: 'text-info'      },
-        { name: 'Safety Incident',         link: '/operations/forms/safety-incident/create',      icon: 'las la-shield-alt',       color: 'text-danger'    },
+        { name: 'Safety Incident',         link: '/safety-incident-public/create',                 icon: 'las la-shield-alt',       color: 'text-danger'    },
         { name: 'Field Service Request',   link: '/request',                                      icon: 'las la-clipboard',        color: 'text-success'   },
         { name: 'Quality Incident (QIR)',  link: '/quality-incident-request',                     icon: 'las la-exclamation-triangle', color: 'text-warning'},
         { name: 'IGT Transfer',            link: '/operations/forms/igt-transfer/create',         icon: 'las la-exchange-alt',     color: 'text-info'      },
