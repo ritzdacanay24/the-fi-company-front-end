@@ -475,9 +475,27 @@ export class SupportTicketsService {
         link,
       });
 
+      // Collect additional recipients from metadata
+      let ccList: string[] = [];
+      if (userContext?.email) {
+        ccList.push(userContext.email);
+      }
+      // Add 'Who Is This Request For?'
+      const requestFor = String(metadata.requestFor || '').trim();
+      if (requestFor && !ccList.includes(requestFor)) {
+        ccList.push(requestFor);
+      }
+      // Add 'Who Should Get Updates?'
+      const updateRecipients = String(metadata.updateRecipients || '').split(/[;,]/).map(e => e.trim()).filter(Boolean);
+      for (const email of updateRecipients) {
+        if (email && !ccList.includes(email)) {
+          ccList.push(email);
+        }
+      }
+
       await this.emailService.sendMail({
         to: recipients,
-        cc: userContext?.email || undefined,
+        cc: ccList.length > 0 ? ccList : undefined,
         subject: `[Support Ticket] ${ticket.ticket_number} - ${ticket.title}`,
         html,
       });

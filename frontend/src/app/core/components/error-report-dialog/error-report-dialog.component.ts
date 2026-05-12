@@ -549,22 +549,25 @@ export class ErrorReportDialogComponent implements OnDestroy {
     try {
       const { type, onBehalfOfSomeoneElse, requestFor, title, description, priority, impactLevel, urgencyLevel, updateRecipients, steps } = this.form.value;
 
+      // Always include these fields in metadata for backend notification
+      const metadata: Record<string, unknown> = {
+        requestFor: requestFor || '',
+        onBehalfOfSomeoneElse: Boolean(onBehalfOfSomeoneElse),
+        impactLevel: impactLevel || TicketImpactLevel.LOW,
+        urgencyLevel: urgencyLevel || TicketUrgencyLevel.LOW,
+        updateRecipients: updateRecipients || '',
+        browser: navigator.userAgent,
+        url: window.location.href,
+        viewport: { width: window.innerWidth, height: window.innerHeight }
+      };
+
       const ticket = {
         type: type || 'bug',
         title: title || '',
         description: description || '',
         priority: priority || 'medium',
         steps: steps || '',
-        metadata: {
-          requestFor: requestFor || '',
-          onBehalfOfSomeoneElse: Boolean(onBehalfOfSomeoneElse),
-          impactLevel: impactLevel || TicketImpactLevel.LOW,
-          urgencyLevel: urgencyLevel || TicketUrgencyLevel.LOW,
-          updateRecipients: updateRecipients || '',
-          browser: navigator.userAgent,
-          url: window.location.href,
-          viewport: { width: window.innerWidth, height: window.innerHeight }
-        }
+        metadata
       };
 
       const createdTicket: any = await this.http.post('apiV2/support-tickets', ticket).toPromise();
