@@ -120,6 +120,8 @@ export class DateAgoPipe implements PipeTransform {
 })
 export class CommentsModalComponent implements OnInit {
 
+  private readonly mentionedRecipients = new Set<string>();
+
   canDeleteComment(row: { userId?: number | string } | undefined): boolean {
     const rowUserId = Number(row?.userId);
     const currentUserId = Number(this.userInfo?.id);
@@ -221,6 +223,14 @@ export class CommentsModalComponent implements OnInit {
         source: async (searchTerm, renderList) => {
           const matchedPeople = await suggestPeople(searchTerm, this.listUsers);
           renderList(matchedPeople);
+        },
+        onSelect: (item, insertItem) => {
+          insertItem(item);
+
+          const recipientEmail = String(item?.id || '').trim();
+          if (recipientEmail) {
+            this.mentionedRecipients.add(recipientEmail);
+          }
         },
         renderLoading: () => {
           return "Loading...";
@@ -390,16 +400,15 @@ export class CommentsModalComponent implements OnInit {
   isLoading = false;
 
   async onSubmit(pid?, addCommentText?) {
-    let em = extractEmails(this.htmlText);
-    if (addCommentText) {
-      em = extractEmails(addCommentText);
-    }
+    const commentText = pid ? addCommentText : this.htmlText;
+    const mentionEmails = extractMentionEmails(commentText || '');
+    const em = Array.from(new Set([...(extractEmails(commentText || '') || []), ...mentionEmails, ...this.mentionedRecipients]));
 
     let saveParams: any = {
       insert: 1,
       locationPath: window.location.href.split("?")[0],
       pageName: location.pathname,
-      comments: pid ? addCommentText : this.htmlText,
+      comments: commentText,
       emailToSendFromMention: em,
       emailCallBackUrl: `${window.location.href.split("?")[0]}?comment=${this.orderNum
         }`,
@@ -416,6 +425,7 @@ export class CommentsModalComponent implements OnInit {
     try {
       this.isLoading = true;
       await this.commentsService.createComment(saveParams);
+      this.mentionedRecipients.clear();
       this.ngbActiveModal.close({
         ...saveParams,
         bg_class_name: "bg-success",
@@ -437,6 +447,19 @@ function suggestPeople(searchTerm: any, getUsers: any) {
 
 function extractEmails(text) {
   return text.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi);
+}
+
+function extractMentionEmails(html: string): string[] {
+  if (!html) {
+    return [];
+  }
+
+  const container = document.createElement('div');
+  container.innerHTML = html;
+
+  return Array.from(container.querySelectorAll('.mention[data-id]'))
+    .map((node) => node.getAttribute('data-id')?.trim() || '')
+    .filter(Boolean);
 }
 
 function getNestedChildren(arr, parent?) {

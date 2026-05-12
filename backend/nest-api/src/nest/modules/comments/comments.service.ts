@@ -3,6 +3,7 @@ import { RowDataPacket } from 'mysql2/promise';
 import { CommentsRepository } from './comments.repository';
 import { MysqlService } from '@/shared/database/mysql.service';
 import { AccessControlService } from '../access-control';
+import { EmailService } from '@/shared/email/email.service';
 
 type GenericRow = Record<string, unknown>;
 
@@ -12,6 +13,7 @@ export class CommentsService {
     private readonly repository: CommentsRepository,
     private readonly mysqlService: MysqlService,
     private readonly accessControlService: AccessControlService,
+    private readonly emailService: EmailService,
   ) {}
 
   async find(orderNum?: string, type?: string, active?: string) {
@@ -53,6 +55,15 @@ export class CommentsService {
       pageName: String(payload?.pageName || ''),
       commentsHtml: String(payload?.comments_html || ''),
       pid: payload?.pid === null || payload?.pid === undefined ? null : String(payload.pid),
+    });
+
+    await this.sendMentionNotifications({
+      comments,
+      orderNum,
+      type,
+      locationPath: String(payload?.locationPath || ''),
+      pageName: String(payload?.pageName || ''),
+      createdBy: userId,
     });
 
     return { success: true, insertId };
@@ -143,5 +154,85 @@ export class CommentsService {
     `;
 
     return this.mysqlService.query<RowDataPacket[]>(sql, ids);
+  }
+
+  private async sendMentionNotifications(input: {
+    comments: string;
+    orderNum: string;
+    type: string;
+    locationPath: string;
+    pageName: string;
+    createdBy: number;
+  }): Promise<void> {
+    const recipients = this.extractMentionRecipients(input.comments);
+
+    if (recipients.length === 0) {
+      return;
+    }
+
+    const safeComment = this.stripHtml(input.comments).slice(0, 2000);
+    const link = input.locationPath || '';
+    const subject = `[Comment Mention] ${input.type}: ${input.orderNum}`;
+
+    await this.emailService.sendMail({
+      to: recipients,
+      subject,
+      html: `
+        <html>
+          <body>
+            <p>You were mentioned in a comment on <strong>${this.escapeHtml(input.type)}</strong> for <strong>${this.escapeHtml(input.orderNum)}</strong>.</p>
+            <p><a href="${this.escapeHtml(link)}">Open the comment</a></p>
+            <hr />
+            <div>${this.escapeHtml(safeComment).replace(/\n/g, '<br />')}</div>
+          </body>
+        </html>
+      `,
+    });
+  }
+
+  private extractMentionRecipients(comments: string): string[] {
+    if (!comments) {
+      return [];
+    }
+
+    const recipients = new Set<string>();
+
+    const mentionDataIdPattern = /class=["'][^"']*mention[^"']*["'][^>]*data-id=["']([^"']+)["']/gi;
+    let match: RegExpExecArray | null;
+    while ((match = mentionDataIdPattern.exec(comments)) !== null) {
+      const email = String(match[1] || '').trim();
+      if (this.looksLikeEmail(email)) {
+        recipients.add(email);
+      }
+    }
+
+    if (recipients.size === 0) {
+      const plainMentionEmailPattern = /@([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})/g;
+      while ((match = plainMentionEmailPattern.exec(comments)) !== null) {
+        const email = String(match[1] || '').trim();
+        if (this.looksLikeEmail(email)) {
+          recipients.add(email);
+        }
+      }
+    }
+
+    return Array.from(recipients);
+  }
+
+  private looksLikeEmail(value: string): boolean {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  }
+
+  private stripHtml(value: string): string {
+    return String(value || '').replace(/<[^>]*>/g, '');
+  }
+
+  private escapeHtml(value: string): string {
+    return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 }
