@@ -196,6 +196,16 @@ export class ReportsController {
     return this.service.getDailyReport();
   }
 
+  @Get('daily-report-history')
+  async getDailyReportHistory(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.service.getDailyReportHistory(startDate, endDate, page, limit);
+  }
+
   @Get('one-sku-location-report')
   async getOneSkuLocationReport() {
     return this.service.getOneSkuLocationReport();

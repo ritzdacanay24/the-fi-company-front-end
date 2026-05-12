@@ -824,6 +824,10 @@ export class ReportsService {
     return this.dailyReportService.getDailyReport();
   }
 
+  async getDailyReportHistory(startDate?: string, endDate?: string, page?: string, limit?: string): Promise<unknown> {
+    return this.dailyReportService.getDailyReportHistory(startDate, endDate, page, limit);
+  }
+
   async getOneSkuLocationReport(): Promise<Record<string, unknown>[]> {
     const rows = await this.repository.getOneSkuLocationReport();
     return toJsonSafe(rows) as Record<string, unknown>[];

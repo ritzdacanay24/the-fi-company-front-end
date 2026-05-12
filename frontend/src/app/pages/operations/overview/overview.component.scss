@@ -1,3 +1,63 @@
+:host {
+  --ov-chip-bg: #ffffff;
+  --ov-chip-text: #334155;
+  --ov-chip-border: rgba(15, 23, 42, 0.12);
+  --ov-chip-hover-bg: rgba(37, 99, 235, 0.06);
+  --ov-chip-hover-text: #1e3a8a;
+  --ov-chip-hover-border: rgba(37, 99, 235, 0.45);
+  --ov-chip-selected-bg: rgba(37, 99, 235, 0.1);
+  --ov-chip-selected-text: #1e3a8a;
+  --ov-chip-selected-border: rgba(37, 99, 235, 0.5);
+
+  --ov-card-bg: #ffffff;
+  --ov-card-border: rgba(15, 23, 42, 0.09);
+  --ov-card-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+  --ov-card-hover-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+
+  --ov-group-text: #64748b;
+  --ov-label-text: #0f172a;
+  --ov-value-text: #0b1324;
+  --ov-update-text: #94a3b8;
+
+  --ov-icon-bg: rgba(37, 99, 235, 0.1);
+  --ov-icon-text: #1d4ed8;
+
+  --ov-more-dropdown-bg: #ffffff;
+  --ov-more-dropdown-border: rgba(15, 23, 42, 0.1);
+  --ov-more-dropdown-shadow: 0 8px 28px rgba(15, 23, 42, 0.12);
+  --ov-more-item-text: #334155;
+}
+
+:host-context([data-bs-theme='dark']) {
+  --ov-chip-bg: #1f2733;
+  --ov-chip-text: #d4dbe6;
+  --ov-chip-border: #364153;
+  --ov-chip-hover-bg: rgba(59, 130, 246, 0.16);
+  --ov-chip-hover-text: #dbeafe;
+  --ov-chip-hover-border: rgba(96, 165, 250, 0.55);
+  --ov-chip-selected-bg: rgba(59, 130, 246, 0.28);
+  --ov-chip-selected-text: #eff6ff;
+  --ov-chip-selected-border: rgba(147, 197, 253, 0.75);
+
+  --ov-card-bg: #1f2733;
+  --ov-card-border: #364153;
+  --ov-card-shadow: 0 4px 14px rgba(2, 6, 23, 0.35);
+  --ov-card-hover-shadow: 0 10px 24px rgba(2, 6, 23, 0.45);
+
+  --ov-group-text: #9fb0c6;
+  --ov-label-text: #e2e8f0;
+  --ov-value-text: #f8fafc;
+  --ov-update-text: #9aa9be;
+
+  --ov-icon-bg: rgba(96, 165, 250, 0.16);
+  --ov-icon-text: #93c5fd;
+
+  --ov-more-dropdown-bg: #1f2733;
+  --ov-more-dropdown-border: #364153;
+  --ov-more-dropdown-shadow: 0 8px 28px rgba(2, 6, 23, 0.5);
+  --ov-more-item-text: #d4dbe6;
+}
+
 .overview-page {
   .support-card {
     border: 1px solid rgba(13, 110, 253, 0.12);
@@ -28,9 +88,9 @@
   }
 
   .metric-chip {
-    border: 1px solid rgba(15, 23, 42, 0.12);
-    background: #fff;
-    color: #334155;
+    border: 1px solid var(--ov-chip-border);
+    background: var(--ov-chip-bg);
+    color: var(--ov-chip-text);
     border-radius: 999px;
     padding: 0.4rem 0.85rem;
     font-size: 0.82rem;
@@ -38,36 +98,36 @@
     transition: all 0.15s ease;
 
     &:hover {
-      border-color: rgba(37, 99, 235, 0.45);
-      background: rgba(37, 99, 235, 0.06);
-      color: #1e3a8a;
+      border-color: var(--ov-chip-hover-border);
+      background: var(--ov-chip-hover-bg);
+      color: var(--ov-chip-hover-text);
     }
   }
 
   .metric-chip--selected {
-    border-color: rgba(37, 99, 235, 0.5);
-    background: rgba(37, 99, 235, 0.1);
-    color: #1e3a8a;
+    border-color: var(--ov-chip-selected-border);
+    background: var(--ov-chip-selected-bg);
+    color: var(--ov-chip-selected-text);
   }
 
   .metric-card {
-    border: 1px solid rgba(15, 23, 42, 0.09);
+    border: 1px solid var(--ov-card-border);
     border-radius: 0.9rem;
-    background: #fff;
+    background: var(--ov-card-bg);
     padding: 1rem;
-    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+    box-shadow: var(--ov-card-shadow);
   }
 
   .metric-card-btn {
     appearance: none;
     -webkit-appearance: none;
-    border-color: rgba(15, 23, 42, 0.09);
+    border-color: var(--ov-card-border);
     transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 
     &:hover {
       transform: translateY(-2px);
       border-color: rgba(37, 99, 235, 0.24);
-      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+      box-shadow: var(--ov-card-hover-shadow);
     }
 
     &:focus {
@@ -81,27 +141,33 @@
     letter-spacing: 0.04em;
     font-size: 0.72rem;
     font-weight: 700;
-    color: #64748b;
+    color: var(--ov-group-text);
   }
 
   .metric-label {
-    color: #0f172a;
+    color: var(--ov-label-text);
     font-weight: 600;
   }
 
   .metric-value {
-    color: #0b1324;
+    color: var(--ov-value-text);
     font-size: 1.9rem;
     line-height: 1;
     font-weight: 700;
+  }
+
+  .metric-last-update {
+    font-size: 0.75rem;
+    color: var(--ov-update-text);
+    font-weight: 500;
   }
 
   .metric-icon-wrap {
     width: 42px;
     height: 42px;
     border-radius: 0.75rem;
-    background: rgba(37, 99, 235, 0.1);
-    color: #1d4ed8;
+    background: var(--ov-icon-bg);
+    color: var(--ov-icon-text);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -137,8 +203,9 @@
     min-width: 300px;
     max-height: 340px;
     overflow-y: auto;
-    box-shadow: 0 8px 28px rgba(15, 23, 42, 0.12);
-    border: 1px solid rgba(15, 23, 42, 0.1);
+    box-shadow: var(--ov-more-dropdown-shadow);
+    border: 1px solid var(--ov-more-dropdown-border);
+    background: var(--ov-more-dropdown-bg);
     border-radius: 0.75rem;
   }
 
@@ -147,7 +214,7 @@
     align-items: center;
     padding: 0.45rem 0.75rem;
     font-size: 0.82rem;
-    color: #334155;
+    color: var(--ov-more-item-text);
     white-space: normal;
 
     &.active {

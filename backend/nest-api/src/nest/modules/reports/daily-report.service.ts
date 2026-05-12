@@ -165,6 +165,40 @@ export class DailyReportService {
     });
   }
 
+  async getDailyReportHistory(
+    startDate?: string,
+    endDate?: string,
+    page?: string,
+    limit?: string,
+  ): Promise<unknown> {
+    const normalizedPage = Math.max(1, Number.parseInt(String(page ?? '1'), 10) || 1);
+    const normalizedLimit = Math.max(1, Math.min(200, Number.parseInt(String(limit ?? '50'), 10) || 50));
+
+    const rows = await this.repository.getDailyReportHistory(
+      startDate?.trim() || undefined,
+      endDate?.trim() || undefined,
+      normalizedPage,
+      normalizedLimit,
+    );
+
+    const data = rows.map((row) => {
+      const parsedData = typeof row.data === 'string' ? JSON.parse(row.data) : row.data;
+      return {
+        id: Number(row.id),
+        createdDate: row.createdDate,
+        data: parsedData,
+        status: 'active',
+      };
+    });
+
+    return toJsonSafe({
+      success: true,
+      data,
+      page: normalizedPage,
+      limit: normalizedLimit,
+    });
+  }
+
   private toNumber(value: unknown): number {
     const numeric = Number(value ?? 0);
     return Number.isFinite(numeric) ? numeric : 0;

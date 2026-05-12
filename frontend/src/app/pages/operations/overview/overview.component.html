@@ -62,7 +62,7 @@
 								More
 								<span *ngIf="moreSelectedCount > 0" class="metric-more-badge">{{ moreSelectedCount }}</span>
 							</button>
-							<div class="dropdown-menu p-2" ngbDropdownMenu style="min-width:300px;max-height:340px;overflow-y:auto;border-radius:0.75rem;box-shadow:0 8px 28px rgba(15,23,42,.12)">
+							<div class="dropdown-menu p-2 metric-more-dropdown" ngbDropdownMenu style="max-height:340px;overflow-y:auto;min-width:300px;">
 								<p class="text-muted small px-2 mb-2">Additional metrics</p>
 								<button
 									*ngFor="let metric of moreMetricOptions"
@@ -88,6 +88,7 @@
 										<p class="metric-group mb-1">{{ metric.group }}</p>
 										<h6 class="metric-label mb-2">{{ metric.label }}</h6>
 										<div class="metric-value">{{ getMetricCount(metric.key) }}</div>
+										<p class="metric-last-update text-muted small mt-2 mb-0">{{ getRelativeTime(lastUpdateTime) }}</p>
 									</div>
 									<div class="metric-icon-wrap">
 										<i [class]="metric.icon"></i>

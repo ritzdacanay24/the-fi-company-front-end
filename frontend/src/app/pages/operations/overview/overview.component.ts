@@ -32,6 +32,7 @@ interface MetricOption {
 export class OverviewComponent implements OnInit {
   private readonly metricPrefsStorageKey = 'overview-selected-metrics-v1';
   private badgeCountsSubscription?: Subscription;
+  private lastUpdateSubscription?: Subscription;
 
   readonly featuredActions: QuickAction[] = [
     {
@@ -62,14 +63,14 @@ export class OverviewComponent implements OnInit {
     { key: 'pmProjectsOpen',                      label: 'PM Projects Open',                  group: 'Project Management',   icon: 'mdi mdi-briefcase-outline',        route: '/project-manager/dashboard' },
     { key: 'pmTasksOpen',                         label: 'PM Tasks Open',                     group: 'Project Management',   icon: 'mdi mdi-format-list-checks',       route: '/project-manager/tasks' },
     { key: 'vehicleExpiringSoon',                 label: 'Vehicles Expiring Soon',            group: 'Safety',               icon: 'mdi mdi-car-clock',                route: '/operations/forms/vehicle-inspection' },
-    { key: 'vehicleInspectionPendingResolutions', label: 'Vehicle Insp. Pending Resolution',  group: 'Safety',               icon: 'mdi mdi-car-wrench',               route: '/operations/forms/vehicle-inspection' },
-    { key: 'pickAndStageOpen',                    label: 'Pick & Stage Open',                 group: 'Production',           icon: 'mdi mdi-package-up',               route: '/operations/pick-and-stage' },
-    { key: 'productionRoutingOpen',               label: 'Production Routing Open',           group: 'Production',           icon: 'mdi mdi-factory',                  route: '/operations/production-routing' },
-    { key: 'finalTestQcOpen',                     label: 'Final Test / QC Open',              group: 'Production',           icon: 'mdi mdi-clipboard-text-search',    route: '/operations/final-test-qc' },
-    { key: 'shippingScheduleDueNow',              label: 'Shipping Schedule Due Now',         group: 'Shipping',             icon: 'mdi mdi-calendar-clock',           route: '/operations/shipping-schedule' },
-    { key: 'graphicsProductionOpen',              label: 'Graphics Production Open',          group: 'Operations',           icon: 'mdi mdi-palette-outline',          route: '/operations/graphics-production' },
+    { key: 'vehicleInspectionPendingResolutions', label: 'Vehicle Insp. Pending Resolution',  group: 'Safety',               icon: 'mdi mdi-car-wrench',               route: '/operations/forms/vehicle-inspection/list?selectedViewType=Open&showPending=true' },
+    { key: 'pickAndStageOpen',                    label: 'Pick & Stage Open',                 group: 'Production',           icon: 'mdi mdi-package-up',               route: '/operations/master-scheduling/picking-routing' },
+    { key: 'productionRoutingOpen',               label: 'Production Routing Open',           group: 'Production',           icon: 'mdi mdi-factory',                  route: '/operations/master-scheduling/production-routing' },
+    { key: 'finalTestQcOpen',                     label: 'Final Test / QC Open',              group: 'Production',           icon: 'mdi mdi-clipboard-text-search',    route: '/operations/master-scheduling/qc-routing' },
+    { key: 'shippingScheduleDueNow',              label: 'Overdue & Due Today',               group: 'Shipping',             icon: 'mdi mdi-calendar-clock',           route: '/operations/forms/shipping-schedule' },
+    { key: 'graphicsProductionOpen',              label: 'Graphics Production Open',          group: 'Operations',           icon: 'mdi mdi-palette-outline',          route: '/operations/graphics/graphics-production' },
     { key: 'trainingLiveSessionsOpen',            label: 'Training Live Sessions',            group: 'Training',             icon: 'mdi mdi-school-outline',           route: '/training/live' },
-    { key: 'inspectionChecklistExecutionInProgress', label: 'Checklists In Progress',         group: 'Quality',              icon: 'mdi mdi-clipboard-check',          route: '/inspection-checklist/execution' },
+    { key: 'inspectionChecklistExecutionInProgress', label: 'Inspections In Progress',        group: 'Quality',              icon: 'mdi mdi-clipboard-check',          route: '/inspection-checklist/execution' },
   ];
 
   readonly defaultSelectedMetricKeys: Array<keyof SidebarMenuBadgeCounts> = [
@@ -83,6 +84,7 @@ export class OverviewComponent implements OnInit {
 
   selectedMetricKeys = new Set<keyof SidebarMenuBadgeCounts>(this.defaultSelectedMetricKeys);
   showMoreMetrics = false;
+  lastUpdateTime: Date = new Date();
   menuBadgeCounts: SidebarMenuBadgeCounts = {
     validationQueue: 0,
     pickingQueue: 0,
@@ -123,10 +125,14 @@ export class OverviewComponent implements OnInit {
     this.badgeCountsSubscription = this.menuBadgeWebsocketService.counts$.subscribe((counts) => {
       this.menuBadgeCounts = counts;
     });
+    this.lastUpdateSubscription = this.menuBadgeWebsocketService.lastUpdate$.subscribe((time) => {
+      this.lastUpdateTime = time;
+    });
   }
 
   ngOnDestroy(): void {
     this.badgeCountsSubscription?.unsubscribe();
+    this.lastUpdateSubscription?.unsubscribe();
   }
 
   openSupportAction(): void {
@@ -182,6 +188,25 @@ export class OverviewComponent implements OnInit {
     }
 
     void this.router.navigateByUrl(metric.route);
+  }
+
+  getRelativeTime(date: Date): string {
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffSecs = Math.floor(diffMs / 1000);
+    const diffMins = Math.floor(diffSecs / 60);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffSecs < 30) return 'just now';
+    if (diffMins < 1) return 'less than a minute ago';
+    if (diffMins === 1) return '1 minute ago';
+    if (diffMins < 60) return `${diffMins} minutes ago`;
+    if (diffHours === 1) return '1 hour ago';
+    if (diffHours < 24) return `${diffHours} hours ago`;
+    if (diffDays === 1) return 'yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    return date.toLocaleDateString();
   }
 
   private loadMetricPreferences(): void {

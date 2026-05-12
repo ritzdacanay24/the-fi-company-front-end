@@ -1,9 +1,10 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
+import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { AuthenticationService } from './auth.service';
 import { ErrorReportDialogService } from './error-report-dialog.service';
 import { TicketPriority, TicketType } from '@app/shared/interfaces/ticket.interface';
+import { SupportEntryModalComponent, SupportEntrySelection } from '../components/support-entry-modal/support-entry-modal.component';
 
 export interface SupportEntryOptions {
   source: string;
@@ -20,29 +21,33 @@ export class SupportEntryService {
 
   constructor(
     private readonly router: Router,
+    private readonly modalService: NgbModal,
     private readonly authService: AuthenticationService,
     private readonly errorReportDialogService: ErrorReportDialogService,
   ) {}
 
   async openSupport(options: SupportEntryOptions): Promise<void> {
-    const selection = await SweetAlert.fire({
-      title: 'What do you need help with?',
-      html: 'Choose <strong>Dashboard / App</strong> for application workflow issues or <strong>IT / Access</strong> for account, network, or device issues.',
-      icon: 'question',
-      showCancelButton: true,
-      showDenyButton: true,
-      confirmButtonText: 'Dashboard / App',
-      denyButtonText: 'IT / Access',
-      cancelButtonText: 'Cancel',
+    const modalRef = this.modalService.open(SupportEntryModalComponent, {
+      centered: true,
+      backdrop: 'static',
+      keyboard: true,
+      size: 'md',
     });
 
-    if (selection.isConfirmed) {
+    let selection: SupportEntrySelection | null = null;
+    try {
+      selection = (await modalRef.result) as SupportEntrySelection;
+    } catch {
+      selection = null;
+    }
+
+    if (selection === 'dashboard') {
       await this.openDashboardSupport(options);
       return;
     }
 
-    if (selection.isDenied) {
-      window.open(this.itSupportUrl, '_blank');
+    if (selection === 'it') {
+      window.open(this.itSupportUrl, '_blank', 'noopener,noreferrer');
     }
   }
 

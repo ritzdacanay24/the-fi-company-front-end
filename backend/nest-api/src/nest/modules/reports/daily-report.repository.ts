@@ -4,6 +4,12 @@ import { BaseRepository } from '@/shared/repositories/base.repository';
 import { MysqlService } from '@/shared/database/mysql.service';
 import { QadOdbcService } from '@/shared/database/qad-odbc.service';
 
+export interface DailyReportHistoryRow extends RowDataPacket {
+  id: number;
+  createdDate: string | Date;
+  data: unknown;
+}
+
 @Injectable()
 export class DailyReportRepository extends BaseRepository<RowDataPacket> {
   constructor(
@@ -529,6 +535,39 @@ export class DailyReportRepository extends BaseRepository<RowDataPacket> {
       `SELECT * FROM eyefidb.dailyReport ORDER BY createdDate DESC LIMIT 1`,
       [],
     );
+  }
+
+  async getDailyReportHistory(
+    startDate?: string,
+    endDate?: string,
+    page = 1,
+    limit = 50,
+  ): Promise<DailyReportHistoryRow[]> {
+    const params: unknown[] = [];
+    const whereClauses: string[] = [];
+
+    if (startDate) {
+      whereClauses.push('DATE(createdDate) >= ?');
+      params.push(startDate);
+    }
+
+    if (endDate) {
+      whereClauses.push('DATE(createdDate) <= ?');
+      params.push(endDate);
+    }
+
+    const offset = Math.max(0, (page - 1) * limit);
+    const whereSql = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '';
+    const sql = `
+      SELECT id, createdDate, data
+      FROM eyefidb.dailyReport
+      ${whereSql}
+      ORDER BY createdDate DESC
+      LIMIT ? OFFSET ?
+    `;
+
+    params.push(limit, offset);
+    return this.rawQuery<DailyReportHistoryRow>(sql, params);
   }
 
   async getDailyReportOpenBalanceCurrentMonthDetails(dateFrom: string, dateTo: string): Promise<Record<string, unknown>[]> {

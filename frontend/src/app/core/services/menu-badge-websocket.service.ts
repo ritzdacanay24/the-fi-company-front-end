@@ -93,6 +93,9 @@ export class MenuBadgeWebsocketService implements OnDestroy {
   // ── Public observable ──────────────────────────────────────────────────────
   private readonly countsSubject = new BehaviorSubject<SidebarMenuBadgeCounts>({ ...ZERO_COUNTS });
   readonly counts$ = this.countsSubject.asObservable();
+  
+  private readonly lastUpdateSubject = new BehaviorSubject<Date>(new Date());
+  readonly lastUpdate$ = this.lastUpdateSubject.asObservable();
 
   // ── Internal state ─────────────────────────────────────────────────────────
   private badgeSubscription: Subscription | null = null;
@@ -218,6 +221,9 @@ export class MenuBadgeWebsocketService implements OnDestroy {
       supportTicketsOpen:                      toNum(pick('supportTicketsOpen'),                      current.supportTicketsOpen),
       supportMyTicketsOpen:                    toNum(pick('supportMyTicketsOpen'),                    current.supportMyTicketsOpen),
     });
+    
+    // Emit timestamp whenever counts are updated
+    this.lastUpdateSubject.next(new Date());
   }
 
   ngOnDestroy(): void {
