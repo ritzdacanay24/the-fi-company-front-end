@@ -183,7 +183,10 @@ export class DailyReportService {
 
     const data = rows.map((row) => {
       const parsedData = typeof row.data === 'string' ? JSON.parse(row.data) : row.data;
-      const normalizedData = this.normalizeHistoricalSnapshot(parsedData as Record<string, unknown>);
+      const normalizedData = this.normalizeHistoricalSnapshot(
+        parsedData as Record<string, unknown>,
+        row.createdDate,
+      );
       return {
         id: Number(row.id),
         createdDate: row.createdDate,
@@ -205,7 +208,10 @@ export class DailyReportService {
     return Number.isFinite(numeric) ? numeric : 0;
   }
 
-  private normalizeHistoricalSnapshot(raw: Record<string, unknown> | null | undefined): Record<string, unknown> {
+  private normalizeHistoricalSnapshot(
+    raw: Record<string, unknown> | null | undefined,
+    createdDate?: string | Date,
+  ): Record<string, unknown> {
     const normalized: Record<string, unknown> = { ...(raw || {}) };
 
     // Backward compatibility: older snapshots used `futureOpenRevenueCurrentMonth`
@@ -233,6 +239,57 @@ export class DailyReportService {
     if (!normalized['getThreeMonthsRevenue'] && normalized['nextThreeMonths']) {
       normalized['getThreeMonthsRevenue'] = normalized['nextThreeMonths'];
     }
+
+    const created = createdDate ? new Date(createdDate) : this.getLegacyNow();
+    const referenceDate = Number.isNaN(created.getTime()) ? this.getLegacyNow() : created;
+    const fallbackStart = this.formatDate(new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 1));
+    const fallbackEnd = this.formatDate(new Date(referenceDate.getFullYear(), referenceDate.getMonth() + 1, 0));
+
+    const rawFutureRevenue = (normalized['futuerOpenRevenueCurrentMonth'] ??
+      normalized['futureOpenRevenueCurrentMonth']) as Record<string, unknown> | number | string | null | undefined;
+
+    const rawFutureRevenueObject =
+      typeof rawFutureRevenue === 'object' && rawFutureRevenue !== null
+        ? (rawFutureRevenue as Record<string, unknown>)
+        : {};
+
+    const normalizedFutureRevenue = {
+      dateFrom: String(
+        rawFutureRevenueObject['dateFrom'] ??
+          rawFutureRevenueObject['date_from'] ??
+          rawFutureRevenueObject['DATEFROM'] ??
+          fallbackStart,
+      ),
+      dateTo: String(
+        rawFutureRevenueObject['dateTo'] ??
+          rawFutureRevenueObject['date_to'] ??
+          rawFutureRevenueObject['DATETO'] ??
+          fallbackEnd,
+      ),
+      value: this.toNumber(
+        rawFutureRevenueObject['value'] ??
+          rawFutureRevenueObject['VALUE'] ??
+          rawFutureRevenue,
+      ),
+    };
+
+    normalized['futuerOpenRevenueCurrentMonth'] = normalizedFutureRevenue;
+
+    const rawThreeMonths = normalized['getThreeMonthsRevenue'] as
+      | Record<string, unknown>
+      | number
+      | string
+      | null
+      | undefined;
+
+    const rawThreeMonthsObject =
+      typeof rawThreeMonths === 'object' && rawThreeMonths !== null
+        ? (rawThreeMonths as Record<string, unknown>)
+        : {};
+
+    normalized['getThreeMonthsRevenue'] = {
+      value: this.toNumber(rawThreeMonthsObject['value'] ?? rawThreeMonthsObject['VALUE'] ?? rawThreeMonths),
+    };
 
     return normalized;
   }

@@ -33,11 +33,10 @@
       </div>
     </div>
 
-    @if(!data?.salesOrderInfo.SO_CUST){
-      <div class="row">
-        <div class="col text-center align-self-center">
-            <h4>No customer information available. Please contact management for assistance.</h4>
-        </div>
+    @if(!(data?.salesOrderInfo?.SO_CUST || data?.salesOrderInfo?.so_cust)){
+      <div class="alert alert-warning py-2 px-3 my-3" role="alert">
+        <i class="mdi mdi-alert-outline me-1"></i>
+        No customer information available. Please contact management for assistance.
       </div>
     }
 
@@ -99,7 +98,7 @@
 
         <div class="row">
           <div class="col-4 mb-2 fw-bolder text-end">SO / Cust</div>
-          <div class="col-8 mb-2"> {{data?.salesOrderInfo.SOD_NBR}} / {{data?.salesOrderInfo.SO_CUST}} </div>
+          <div class="col-8 mb-2"> {{data?.salesOrderInfo?.SOD_NBR || data?.salesOrderInfo?.sod_nbr || 'N/A'}} / {{data?.salesOrderInfo?.SO_CUST || data?.salesOrderInfo?.so_cust || 'N/A'}} </div>
         </div>
 
       </div>

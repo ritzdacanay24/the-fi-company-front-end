@@ -31,7 +31,7 @@ export class SupportEntryService {
       centered: true,
       backdrop: 'static',
       keyboard: true,
-      size: 'md',
+      size: 'lg',
     });
 
     let selection: SupportEntrySelection | null = null;

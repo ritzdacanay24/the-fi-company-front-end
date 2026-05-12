@@ -33,7 +33,7 @@ export type SupportEntrySelection = 'dashboard' | 'it';
             alt="Avvero"
             loading="lazy" />
           <div class="decision-card__title">IT / Access (Avvero)</div>
-          <div class="decision-card__desc">Account lockouts, internet, Outlook, hardware, printers, and device setup.</div>
+          <div class="decision-card__desc">Account lockouts, QAD access/issues, Citrix/VPN issues, internet, Outlook, hardware, printers, and device setup.</div>
         </button>
 
         <button type="button" class="decision-card decision-card--dashboard" (click)="select('dashboard')">
@@ -44,8 +44,11 @@ export type SupportEntrySelection = 'dashboard' | 'it';
 
       <div class="decision-help mb-3">
         <div class="decision-help__title">Best decision to choose:</div>
-        <div class="decision-help__line"><strong>Choose IT / Access (Avvero)</strong> if it impacts your computer, account, email, network, or device.</div>
-        <div class="decision-help__line"><strong>Choose DB Issue / App</strong> if the issue is inside this application workflow or related to dashboard data.</div>
+        <ul class="decision-help__list mb-2">
+          <li class="decision-help__line"><strong>Choose IT / Access (Avvero)</strong> for account lockouts, password resets, MFA, QAD access, Citrix/VPN, email, network, hardware, and printer issues.</li>
+          <li class="decision-help__line"><strong>Choose DB Issue / App</strong> for dashboard/app workflow bugs, incorrect values, missing actions, or data mismatches.</li>
+          <li class="decision-help__line"><strong>Unsure?</strong> Start with IT / Access if you cannot sign in or connect; otherwise choose DB Issue / App.</li>
+        </ul>
       </div>
 
       <div class="text-center">
@@ -58,7 +61,7 @@ export type SupportEntrySelection = 'dashboard' | 'it';
   styles: [
     `
       .support-entry-modal {
-        max-width: 640px;
+        max-width: 760px;
         margin: 0 auto;
         color: var(--sem-text);
       }
@@ -140,6 +143,15 @@ export type SupportEntrySelection = 'dashboard' | 'it';
         color: var(--sem-text);
         font-size: 0.9rem;
         line-height: 1.35;
+      }
+
+      .decision-help__list {
+        margin: 0;
+        padding-left: 1.1rem;
+      }
+
+      .decision-help__list .decision-help__line {
+        margin-bottom: 0.35rem;
       }
 
       :host-context([data-bs-theme='dark']) {

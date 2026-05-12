@@ -78,12 +78,12 @@
                   <div class="border rounded p-3">
                     <div class="mb-3">
                       <label class="form-label form-label-sm text-body-secondary mb-1">Request For</label>
-                      <input class="form-control form-control-sm" [value]="ticket()!.user_email || ''" readonly>
+                      <input class="form-control form-control-sm" [value]="getRequestForDisplay(ticket()!)" readonly>
                     </div>
                     <div class="mb-3">
                       <label class="form-label form-label-sm text-body-secondary mb-1">On Behalf Of Someone Else</label>
                       <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" [checked]="false" disabled>
+                        <input class="form-check-input" type="checkbox" [checked]="getOnBehalfOfDisplay(ticket()!)" disabled>
                         <label class="form-check-label small">Yes, submitted on behalf of someone else</label>
                       </div>
                     </div>
@@ -103,7 +103,7 @@
                     </div>
                     <div class="mb-0">
                       <label class="form-label form-label-sm text-body-secondary mb-1">Update Recipients</label>
-                      <input class="form-control form-control-sm" [value]="ticket()!.user_email || ''" readonly>
+                      <input class="form-control form-control-sm" [value]="getUpdateRecipientsDisplay(ticket()!)" readonly>
                     </div>
                   </div>
                 </div>

@@ -152,24 +152,39 @@ export class GraphicsWorkOrderHandler implements ScheduledJobHandler {
       FROM wr_route b
       LEFT JOIN (
         SELECT 
-          wo_nbr, wo_ord_date, wo_rel_date, wo_due_date, wo_part, wo_qty_ord, wo_qty_comp, 
-          wo_status, wo_rmks, wo_close_date, wo_so_job
+          wo_nbr,
+          wo_ord_date,
+          wo_rel_date,
+          CASE
+            WHEN DAYOFWEEK(wo_due_date) IN (1) THEN wo_due_date - 2
+            WHEN DAYOFWEEK(wo_due_date) IN (2, 3) THEN wo_due_date - 4
+            WHEN DAYOFWEEK(wo_due_date) IN (4) THEN wo_due_date - 2
+            ELSE wo_due_date - 2
+          END AS wo_due_date,
+          wo_part,
+          wo_qty_ord,
+          wo_qty_comp,
+          wo_status,
+          wo_rmks,
+          wo_close_date,
+          wo_so_job
         FROM wo_mstr a
         WHERE wo_domain = 'EYE'
       ) a ON a.wo_nbr = b.wr_nbr
       LEFT JOIN (
-        SELECT pt_part, MAX(pt_desc1 + ' ' + pt_desc2) as fullDesc, MAX(pt_part_type) as pt_part_type
+        SELECT pt_part, MAX(pt_desc1 || ' ' || pt_desc2) as fullDesc, MAX(pt_part_type) as pt_part_type
         FROM pt_mstr
         WHERE pt_domain = 'EYE'
         GROUP BY pt_part
       ) c ON c.pt_part = b.wr_part
       WHERE b.wr_op IN (040, 050, 060, 070)
-      AND b.wr_domain = 'EYE'
+      AND wr_domain = 'EYE'
       AND (a.wo_qty_ord - a.wo_qty_comp) > 0
       ${woNotInClause}
       AND c.pt_part_type = 'Graphic'
       AND LENGTH(a.wo_nbr) = 5
       AND a.wo_status != 'C'
+      WITH (NOLOCK)
     `;
 
     return this.qadOdbcService.query<QadWorkOrder[]>(sql);
@@ -180,7 +195,7 @@ export class GraphicsWorkOrderHandler implements ScheduledJobHandler {
    */
   private async createGraphicsScheduleRecord(workOrder: QadWorkOrder): Promise<void> {
     const nowDate = new Date().toISOString().slice(0, 19).replace('T', ' ');
-    const priority = 10; // Default priority, could be enhanced to check for conditions
+    const priority = 50; // Legacy task default for scheduled-created records
     const criticalOrder = workOrder.WO_SO_JOB === 'DROPIN' ? 1 : 0;
     const purchaseOrder = 'N/A';
     const customerPartNumber = 'N/A';
@@ -193,13 +208,6 @@ export class GraphicsWorkOrderHandler implements ScheduledJobHandler {
 
     // Clean description of non-printable characters
     const cleanDesc = workOrder.FULLDESC.replace(/[\x00-\x1F\x7F-\xFF]/g, '');
-
-    // Offset due date: push back 2-4 days based on day of week (avoid weekends)
-    const rawDue = new Date(workOrder.WO_DUE_DATE);
-    const dow = rawDue.getDay(); // 0=Sun,1=Mon,...,6=Sat
-    const offsetDays = (dow === 0) ? 2 : (dow === 1 || dow === 2) ? 4 : 2;
-    rawDue.setDate(rawDue.getDate() - offsetDays);
-    const adjustedDueDate = rawDue.toISOString().slice(0, 10);
 
     // Insert new graphics schedule record
     const insertSql = `
@@ -216,7 +224,7 @@ export class GraphicsWorkOrderHandler implements ScheduledJobHandler {
       cleanDesc,
       customer,
       workOrder.WO_QTY_ORD,
-      adjustedDueDate,       // dueDate (offset by day-of-week)
+      workOrder.WO_DUE_DATE,
       customerPartNumber,
       purchaseOrder,
       userId,
@@ -225,7 +233,7 @@ export class GraphicsWorkOrderHandler implements ScheduledJobHandler {
       0, // status
       partials,
       prototypeCheck,
-      workOrder.WO_DUE_DATE, // origDueDate (raw from QAD)
+      workOrder.WO_DUE_DATE,
       workOrder.WO_NBR, // graphicsWorkOrder
       workOrder.WO_RMKS, // instructions
       plexRequired,

@@ -427,6 +427,23 @@ export class SupportTicketDetailComponent implements OnInit {
     return this.TICKET_URGENCY_LABELS[urgency] || this.TICKET_URGENCY_LABELS[TicketUrgencyLevel.LOW];
   }
 
+  getRequestForDisplay(ticket: SupportTicket): string {
+    const metadata = this.getTicketMetadata(ticket) as Record<string, unknown>;
+    const requestFor = this.getMetadataString(metadata, ['requestFor', 'request_for']);
+    return requestFor || ticket.user_email || '';
+  }
+
+  getOnBehalfOfDisplay(ticket: SupportTicket): boolean {
+    const metadata = this.getTicketMetadata(ticket) as Record<string, unknown>;
+    return this.getMetadataBoolean(metadata, ['onBehalfOfSomeoneElse', 'on_behalf_of_someone_else']);
+  }
+
+  getUpdateRecipientsDisplay(ticket: SupportTicket): string {
+    const metadata = this.getTicketMetadata(ticket) as Record<string, unknown>;
+    const recipients = this.getMetadataString(metadata, ['updateRecipients', 'update_recipients']);
+    return recipients || ticket.user_email || '';
+  }
+
   goBack(): void {
     this.router.navigate(['/support-tickets']);
   }
@@ -540,5 +557,34 @@ export class SupportTicketDetailComponent implements OnInit {
     }
 
     return `/${trimmed}`;
+  }
+
+  private getMetadataString(metadata: Record<string, unknown>, keys: string[]): string {
+    for (const key of keys) {
+      const value = metadata[key];
+      if (typeof value === 'string' && value.trim()) {
+        return value.trim();
+      }
+    }
+    return '';
+  }
+
+  private getMetadataBoolean(metadata: Record<string, unknown>, keys: string[]): boolean {
+    for (const key of keys) {
+      const value = metadata[key];
+      if (typeof value === 'boolean') {
+        return value;
+      }
+      if (typeof value === 'string') {
+        const normalized = value.trim().toLowerCase();
+        if (normalized === 'true' || normalized === 'yes' || normalized === '1') {
+          return true;
+        }
+      }
+      if (typeof value === 'number' && value === 1) {
+        return true;
+      }
+    }
+    return false;
   }
 }
