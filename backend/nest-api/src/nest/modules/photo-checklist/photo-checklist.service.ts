@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
@@ -26,6 +26,7 @@ type ChecklistItemNode = Record<string, unknown> & {
 @Injectable()
 export class PhotoChecklistService {
   private readonly checklistMediaPublicOrigin = this.resolveChecklistMediaPublicOrigin();
+  private readonly checklistMediaRemoteBaseUrl = this.resolveChecklistMediaRemoteBaseUrl();
 
   constructor(
     private readonly repository: PhotoChecklistRepository,
@@ -224,6 +225,240 @@ export class PhotoChecklistService {
     doc.end();
     const buffer = await pdfBufferPromise;
     return { fileName, buffer };
+  }
+
+  async exportInstancePdf(instanceId: number): Promise<{ fileName: string; buffer: Buffer } | null> {
+    const instance = await this.repository.getInstanceById(instanceId);
+    if (!instance) {
+      throw new NotFoundException({
+        code: 'RC_CHECKLIST_INSTANCE_NOT_FOUND',
+        message: `Checklist instance with id ${instanceId} not found`,
+      });
+    }
+
+    const templateId = Number(instance.template_id || 0);
+    const items = templateId > 0
+      ? await this.repository.getChecklistItemsByTemplateId(templateId)
+      : [];
+    const mediaRows = await this.repository.getPhotoSubmissionsByInstanceId(instanceId);
+
+    const mediaByItemId = new Map<number, RowDataPacket[]>();
+    for (const media of mediaRows) {
+      const itemId = Number(media.item_id || 0);
+      if (!mediaByItemId.has(itemId)) {
+        mediaByItemId.set(itemId, []);
+      }
+      mediaByItemId.get(itemId)?.push(media);
+    }
+
+    const completionEntries = this.safeParseJson<Record<string, unknown>[]>(instance.item_completion, []);
+    const completionByItemId = new Map<number, Record<string, unknown>>();
+    for (const entry of completionEntries) {
+      const itemId = this.extractBaseItemId(entry?.itemId);
+      if (itemId > 0) {
+        completionByItemId.set(itemId, entry);
+      }
+    }
+
+    const templateName = String(instance.template_name || 'inspection-checklist').trim();
+    const workOrder = String(instance.work_order_number || '').trim();
+    const serialNumber = String(instance.serial_number || '').trim();
+    const baseFileName = [
+      this.toFileName(templateName),
+      workOrder ? this.toFileName(workOrder) : '',
+      serialNumber ? this.toFileName(serialNumber) : '',
+      `instance-${instanceId}`,
+      'final-submission',
+    ]
+      .filter(Boolean)
+      .join('-');
+
+    const fileName = `${baseFileName || `instance-${instanceId}-final-submission`}.pdf`;
+    const doc = new PDFDocument({ size: 'A4', margin: 36 });
+    const chunks: Buffer[] = [];
+
+    const pdfBufferPromise = new Promise<Buffer>((resolve, reject) => {
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+    });
+
+    doc.font('Helvetica-Bold').fontSize(18).text('Inspection Checklist Final Submission', {
+      align: 'left',
+    });
+    doc.moveDown(0.5);
+
+    doc.font('Helvetica').fontSize(10);
+    doc.text(`Checklist: ${templateName}`);
+    doc.text(`Instance ID: ${instanceId}`);
+    doc.text(`Status: ${String(instance.status || 'draft')}`);
+    if (workOrder) {
+      doc.text(`Work Order: ${workOrder}`);
+    }
+    if (instance.part_number) {
+      doc.text(`Part Number: ${String(instance.part_number)}`);
+    }
+    if (instance.serial_number) {
+      doc.text(`Serial Number: ${String(instance.serial_number)}`);
+    }
+    if (instance.operator_name) {
+      doc.text(`Operator: ${String(instance.operator_name)}`);
+    }
+    if (instance.submitted_at) {
+      doc.text(`Submitted At: ${new Date(String(instance.submitted_at)).toLocaleString()}`);
+    }
+    if (templateId) {
+      doc.text(`Template ID: ${templateId}`);
+    }
+    if (instance.template_revision_id) {
+      doc.text(`Template Revision ID: ${instance.template_revision_id}`);
+    }
+    doc.moveDown(0.8);
+
+    for (const item of items) {
+      const itemId = Number(item.id || 0);
+      const title = String(item.title || `Item ${itemId}`).trim();
+      const submissionType = String(item.submission_type || 'none').trim();
+      const isRequired = !!item.is_required;
+      const media = mediaByItemId.get(itemId) || [];
+      const photos = media.filter((entry) => String(entry.file_type || '') !== 'video');
+      const videos = media.filter((entry) => String(entry.file_type || '') === 'video');
+      const completion = completionByItemId.get(itemId);
+
+      const renderableImages: Buffer[] = [];
+      for (const photo of photos.slice(0, 2)) {
+        const rawUrl = String(photo.file_url || '').trim();
+        if (!rawUrl) {
+          continue;
+        }
+
+        const productionUrl = this.resolveProductionChecklistMediaUrl(rawUrl, 'inspectionCheckList');
+        const imageBuffer = await this.fetchChecklistImageBuffer(productionUrl || rawUrl, {
+          subFolder: 'inspectionCheckList',
+        });
+        if (imageBuffer) {
+          renderableImages.push(imageBuffer);
+        }
+      }
+
+      this.ensurePdfSpace(doc, 140 + (renderableImages.length * 150));
+
+      doc.font('Helvetica-Bold').fontSize(11).fillColor('#1a1a1a').text(title);
+      doc.font('Helvetica').fontSize(9).fillColor('#444444').text(
+        `Required: ${isRequired ? 'Yes' : 'No'} | Submission: ${submissionType} | Photos: ${photos.length} | Videos: ${videos.length}`,
+      );
+
+      const completed = completion && Object.prototype.hasOwnProperty.call(completion, 'completed')
+        ? !!completion.completed
+        : (photos.length + videos.length) > 0;
+      doc.text(`Completed: ${completed ? 'Yes' : 'No'}`);
+
+      const notes = String(completion?.notes || '').trim();
+      if (notes) {
+        doc.text(`Notes: ${notes}`);
+      }
+
+      const urls = media
+        .slice(0, 3)
+        .map((entry) => this.resolveProductionChecklistMediaUrl(String(entry.file_url || ''), 'inspectionCheckList'))
+        .filter(Boolean);
+
+      if (renderableImages.length > 0) {
+        doc.moveDown(0.2);
+        doc.text('Submitted Photos:');
+        for (const imageBuffer of renderableImages) {
+          const imageTop = doc.y;
+          try {
+            doc.image(imageBuffer, doc.page.margins.left, imageTop, { fit: [240, 140], valign: 'center' });
+            doc.y = imageTop + 146;
+          } catch {
+            // Ignore bad image payload and continue.
+          }
+        }
+      }
+
+      if (urls.length > 0) {
+        doc.moveDown(0.1);
+        doc.text('Media:');
+        urls.forEach((url) => {
+          doc.fillColor('#1a4f8b').text(`- ${url}`, { link: url, underline: false });
+        });
+        doc.fillColor('#444444');
+      }
+
+      doc.moveDown(0.5);
+      doc.strokeColor('#DDDDDD').lineWidth(0.5).moveTo(doc.page.margins.left, doc.y).lineTo(doc.page.width - doc.page.margins.right, doc.y).stroke();
+      doc.moveDown(0.5);
+    }
+
+    doc.end();
+    const buffer = await pdfBufferPromise;
+    return { fileName, buffer };
+  }
+
+  async generateFinalSubmissionPdf(instanceId: number) {
+    const exportResult = await this.exportInstancePdf(instanceId);
+    if (!exportResult) {
+      throw new NotFoundException({
+        code: 'RC_CHECKLIST_INSTANCE_NOT_FOUND',
+        message: `Checklist instance with id ${instanceId} not found`,
+      });
+    }
+
+    this.assertFinalPdfProductionStorageConfigured();
+
+    const subFolder = 'inspectionCheckList/final-submissions';
+    const storedFileName = await this.fileStorageService.storeUploadedFile(
+      {
+        originalname: exportResult.fileName,
+        buffer: exportResult.buffer,
+      },
+      subFolder,
+    );
+
+    const resolvedLink = this.fileStorageService.resolveLink(storedFileName, subFolder);
+    if (!resolvedLink) {
+      throw new InternalServerErrorException('Unable to resolve server URL for generated final submission PDF.');
+    }
+
+    const serverUrl = this.resolveProductionChecklistMediaUrl(resolvedLink, subFolder);
+    if (!serverUrl) {
+      throw new InternalServerErrorException('Unable to build server URL for generated final submission PDF.');
+    }
+
+    return {
+      success: true,
+      instance_id: instanceId,
+      file_name: storedFileName,
+      file_url: serverUrl,
+      download_url: serverUrl,
+      storage_folder: subFolder,
+    };
+  }
+
+  private assertFinalPdfProductionStorageConfigured(): void {
+    const configuredRoots = String(process.env.ATTACHMENTS_UPLOAD_ROOT_DIRS || '')
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean);
+
+    const allowedRoots = new Set<string>(['/attachments', '/var/www/html/attachments']);
+    const isProductionStorageRoot = configuredRoots.some((root) => allowedRoots.has(root));
+
+    if (!isProductionStorageRoot) {
+      throw new InternalServerErrorException(
+        'Final submission PDF upload blocked: ATTACHMENTS_UPLOAD_ROOT_DIRS must point to production attachments storage.',
+      );
+    }
+  }
+
+  async deleteFinalSubmissionPdfFile(fileName: string): Promise<void> {
+    const normalizedFileName = String(fileName || '').trim();
+    if (!normalizedFileName) {
+      return;
+    }
+
+    await this.fileStorageService.deleteStoredFile(normalizedFileName, 'inspectionCheckList/final-submissions');
   }
 
   async getInstances(filters?: { status?: string; workOrder?: string }) {
@@ -792,13 +1027,14 @@ export class PhotoChecklistService {
     const visibleItemIds = Array.isArray(payload.visible_item_ids) && payload.visible_item_ids.length
       ? payload.visible_item_ids.map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0)
       : null;
+    const normalizedExpiresAt = this.normalizeShareTokenExpiresAt(payload.expires_at);
 
     await this.repository.createShareToken({
       token,
       instanceId,
       visibleItemIds,
       label: payload.label || null,
-      expiresAt: payload.expires_at || null,
+      expiresAt: normalizedExpiresAt,
       createdBy: payload.created_by ?? null,
       createdByName: payload.created_by_name ?? null,
     });
@@ -806,9 +1042,41 @@ export class PhotoChecklistService {
     return {
       success: true,
       token,
-      expires_at: payload.expires_at || null,
+      expires_at: normalizedExpiresAt,
       label: payload.label || '',
     };
+  }
+
+  private normalizeShareTokenExpiresAt(value?: string | null): string | null {
+    const raw = String(value || '').trim();
+    if (!raw) {
+      return null;
+    }
+
+    // Keep valid MySQL DATETIME values unchanged.
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(raw)) {
+      return raw;
+    }
+
+    const parsed = new Date(raw);
+    if (Number.isNaN(parsed.getTime())) {
+      throw new BadRequestException({
+        code: 'RC_INVALID_SHARE_TOKEN_EXPIRY',
+        message: 'Invalid expires_at value. Provide a valid datetime.',
+      });
+    }
+
+    return this.formatDateTimeForMySql(parsed);
+  }
+
+  private formatDateTimeForMySql(date: Date): string {
+    const year = date.getUTCFullYear();
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(date.getUTCDate()).padStart(2, '0');
+    const hours = String(date.getUTCHours()).padStart(2, '0');
+    const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+    const seconds = String(date.getUTCSeconds()).padStart(2, '0');
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
   }
 
   async deleteShareToken(id: number) {
@@ -1036,6 +1304,7 @@ export class PhotoChecklistService {
 
   private resolveChecklistMediaPublicOrigin(): string {
     const candidates = [
+      process.env.ATTACHMENTS_PUBLIC_BASE_URL,
       process.env.ATTACHMENTS_PUBLIC_ORIGIN,
       process.env.DASHBOARD_WEB_BASE_URL,
       process.env.ATTACHMENTS_FS_REMOTE_BASE_URL,
@@ -1056,6 +1325,92 @@ export class PhotoChecklistService {
     }
 
     return '';
+  }
+
+  private resolveChecklistMediaRemoteBaseUrl(): string {
+    const configured = String(
+      process.env.ATTACHMENTS_PUBLIC_BASE_URL
+      || process.env.ATTACHMENTS_FS_REMOTE_BASE_URL
+      || '',
+    ).trim();
+    if (configured) {
+      return configured.replace(/\/+$/, '');
+    }
+
+    return '/attachments';
+  }
+
+  private resolveProductionChecklistMediaUrl(rawUrl: string, subFolder = 'inspectionCheckList'): string {
+    const raw = String(rawUrl || '').trim();
+    if (!raw) {
+      return '';
+    }
+
+    const encodePath = (value: string) => value
+      .split('/')
+      .filter(Boolean)
+      .map((segment) => encodeURIComponent(segment))
+      .join('/');
+
+    const mapPathToRemote = (pathValue: string): string | null => {
+      const normalizedPath = String(pathValue || '').trim().startsWith('/')
+        ? String(pathValue || '').trim()
+        : `/${String(pathValue || '').trim()}`;
+
+      if (!normalizedPath || normalizedPath === '/') {
+        return null;
+      }
+
+      if (normalizedPath.startsWith('/attachments/')) {
+        const tail = normalizedPath.slice('/attachments/'.length).replace(/^\/+/, '');
+        return `${this.checklistMediaRemoteBaseUrl}/${encodePath(tail)}`;
+      }
+
+      if (normalizedPath.startsWith('/uploads/')) {
+        const tail = normalizedPath.slice('/uploads/'.length).replace(/^\/+/, '');
+        return `${this.checklistMediaRemoteBaseUrl}/${encodePath(tail)}`;
+      }
+
+      return null;
+    };
+
+    if (/^https?:\/\//i.test(raw)) {
+      try {
+        const parsed = new URL(raw);
+        const mapped = mapPathToRemote(parsed.pathname || '');
+        if (mapped) {
+          return mapped;
+        }
+        return raw;
+      } catch {
+        // Fall through to path-based normalization.
+      }
+    }
+
+    const normalizedPath = raw.startsWith('/') ? raw : `/${raw}`;
+    const mappedLocalPath = mapPathToRemote(normalizedPath);
+    if (mappedLocalPath) {
+      return mappedLocalPath;
+    }
+
+    const uploadsPrefix = `/uploads/${subFolder}/`;
+    const attachmentsPrefix = `/attachments/${subFolder}/`;
+
+    if (normalizedPath.startsWith(uploadsPrefix)) {
+      const fileName = normalizedPath.slice(uploadsPrefix.length).replace(/^\/+/, '');
+      return `${this.checklistMediaRemoteBaseUrl}/${subFolder}/${encodePath(fileName)}`;
+    }
+
+    if (normalizedPath.startsWith(attachmentsPrefix)) {
+      const fileName = normalizedPath.slice(attachmentsPrefix.length).replace(/^\/+/, '');
+      return `${this.checklistMediaRemoteBaseUrl}/${subFolder}/${encodePath(fileName)}`;
+    }
+
+    if (!raw.includes('/')) {
+      return `${this.checklistMediaRemoteBaseUrl}/${subFolder}/${encodePath(raw)}`;
+    }
+
+    return `${this.checklistMediaPublicOrigin}${normalizedPath}`;
   }
 
   private normalizeChecklistMediaUrl(
@@ -1218,8 +1573,11 @@ export class PhotoChecklistService {
     doc.addPage();
   }
 
-  private async fetchChecklistImageBuffer(rawUrl: string): Promise<Buffer | null> {
-    const candidates = this.buildChecklistImageUrlCandidates(rawUrl);
+  private async fetchChecklistImageBuffer(
+    rawUrl: string,
+    options?: { subFolder?: string },
+  ): Promise<Buffer | null> {
+    const candidates = this.buildChecklistImageUrlCandidates(rawUrl, options);
 
     for (const candidate of candidates) {
       try {
@@ -1247,13 +1605,21 @@ export class PhotoChecklistService {
     return null;
   }
 
-  private buildChecklistImageUrlCandidates(rawUrl: string): string[] {
+  private buildChecklistImageUrlCandidates(
+    rawUrl: string,
+    options?: { subFolder?: string },
+  ): string[] {
     const source = String(rawUrl || '').trim();
     if (!source) {
       return [];
     }
 
     const candidates: string[] = [];
+    const subFolder = options?.subFolder || 'inspectionCheckList';
+    const productionUrl = this.resolveProductionChecklistMediaUrl(source, subFolder);
+    if (productionUrl) {
+      candidates.push(productionUrl);
+    }
 
     if (/^https?:\/\//i.test(source)) {
       candidates.push(source);
