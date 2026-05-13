@@ -28,7 +28,7 @@ File: Custom Css File
 .modal-dialog-scrollable .modal-content {
   max-height: 100%;
   overflow: hidden;
-  border-radius: 25px !important;
+  border-radius: var(--app-border-radius, 10px) !important;
 }
 
 /* Bootstrap 5.3 text-light and text-dark utilities with theme adaptation */
@@ -476,7 +476,7 @@ body.swal2-shown:has(.show-blur)>[aria-hidden="true"] {
 
 .card {
   overflow: hidden;
-  border-radius: 25px;
+  border-radius: var(--app-border-radius, 10px);
 }
 
 .btn-gray {
@@ -863,6 +863,6 @@ body.modal-open > div.dropdown{
 }
 
 .modal {
-    --vz-modal-border-radius: 25px !important;
-    --vz-modal-inner-border-radius: 25px !important;
+  --vz-modal-border-radius: var(--app-border-radius, 10px) !important;
+  --vz-modal-inner-border-radius: var(--app-border-radius, 10px) !important;
 }

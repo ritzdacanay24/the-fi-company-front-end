@@ -31,7 +31,7 @@
 // App-wide SweetAlert2 look-and-feel.
 // Keep this centralized so all dialogs inherit the same visual language.
 .swal2-popup.swal2-modal {
-  border-radius: 14px;
+  border-radius: var(--app-border-radius, 10px);
 }
 
 .swal2-actions {

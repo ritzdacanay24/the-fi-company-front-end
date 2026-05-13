@@ -12,7 +12,7 @@
     position: fixed;
     opacity: 0;
     transition: all 0.4s cubic-bezier(0.215, 0.61, 0.355, 1);
-    border-radius: 2px;
+    border-radius: calc(var(--app-border-radius, 10px) - 8px);
     cursor: pointer;
     text-decoration: none;
     max-width: calc(50% - 20px);
@@ -56,14 +56,14 @@
 }
 
 .toastify-rounded {
-    border-radius: 25px;
+    border-radius: var(--app-border-radius, 10px);
 }
 
 .toastify-avatar {
     width: 1.5em;
     height: 1.5em;
     margin: -7px 5px;
-    border-radius: 2px;
+    border-radius: calc(var(--app-border-radius, 10px) - 8px);
 }
 
 .toastify-center {

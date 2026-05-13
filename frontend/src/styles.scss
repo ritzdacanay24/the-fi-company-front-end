@@ -40,6 +40,30 @@ app-root {
    keep a visible gap around Ngb/Bootstrap fullscreen modals instead of edge-to-edge. */
 :root {
   --modal-fullscreen-shell-gap: clamp(10px, 1.2vw, 20px);
+  --app-border-radius: 10px;
+
+  /* Bootstrap radius tokens unified to app-wide corner style */
+  --bs-border-radius: var(--app-border-radius);
+  --bs-border-radius-sm: 8px;
+  --bs-border-radius-lg: 12px;
+  --bs-border-radius-xl: 14px;
+  --bs-border-radius-xxl: 16px;
+}
+
+/* Common UI surfaces and controls share the same default corner radius. */
+.card,
+.modal-content,
+.dropdown-menu,
+.form-control,
+.form-select,
+.input-group-text,
+.btn,
+.list-group-item,
+.alert,
+.nav-tabs .nav-link,
+.accordion-item,
+.table-responsive {
+  border-radius: var(--app-border-radius);
 }
 
 .modal-dialog[class*="modal-fullscreen"] {

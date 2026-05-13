@@ -76,7 +76,7 @@
                 <div *ngIf="generatedSerialNumber || previewSerialNumber" class="serial-display">
                     <div class="position-relative mb-4">
                         <div class="badge bg-primary text-white p-4 shadow-lg"
-                            style="font-size: 2.5rem; font-family: 'Courier New', monospace; border-radius: 15px; letter-spacing: 2px;">
+                            style="font-size: 2.5rem; font-family: 'Courier New', monospace; border-radius: calc(var(--app-border-radius, 10px) + 5px); letter-spacing: 2px;">
                             {{ generatedSerialNumber || previewSerialNumber }}
                         </div>
                         <div class="position-absolute top-0 start-0 w-100 h-100 rounded-3"
@@ -108,7 +108,7 @@
             <div class="d-flex gap-4 justify-content-center flex-wrap mb-5">
                 <button type="button" class="btn btn-primary btn-lg px-5 py-3 shadow-lg"
                     (click)="generateSerialNumber()" [disabled]="isGenerating"
-                    style="font-size: 1.2rem; border-radius: 50px; min-width: 250px;">
+                    style="font-size: 1.2rem; border-radius: calc(var(--app-border-radius, 10px) * 5); min-width: 250px;">
                     <i class="mdi mdi-plus me-2" *ngIf="!isGenerating" style="font-size: 1.3rem;"></i>
                     <span class="spinner-border spinner-border-sm me-2" role="status" *ngIf="isGenerating"></span>
                     {{ isGenerating ? 'Generating...' : (generatedSerialNumber ? 'Generate New Serial Number' :
@@ -117,7 +117,7 @@
 
                 <button type="button" class="btn btn-outline-primary btn-lg px-4 py-3 shadow"
                     (click)="useCurrentSerialNumber()" [disabled]="!generatedSerialNumber && !previewSerialNumber"
-                    style="font-size: 1.1rem; border-radius: 50px; min-width: 200px; border-width: 2px;">
+                    style="font-size: 1.1rem; border-radius: calc(var(--app-border-radius, 10px) * 5); min-width: 200px; border-width: 2px;">
                     <i class="mdi mdi-content-save me-2" style="font-size: 1.2rem;"
                         *ngIf="saveToDatabase && !isSerialNumberSaved"></i>
                     <i class="mdi mdi-check me-2" style="font-size: 1.2rem;"
@@ -131,15 +131,15 @@
                 *ngIf="generatedSerialNumber || previewSerialNumber">
                 <button type="button" class="btn btn-outline-secondary btn-sm px-3 py-2 shadow-sm"
                     (click)="copyToClipboard(generatedSerialNumber || previewSerialNumber)"
-                    style="border-radius: 25px; font-weight: 500;">
+                    style="border-radius: calc(var(--app-border-radius, 10px) * 2.5); font-weight: 500;">
                     <i class="mdi mdi-content-copy me-1"></i>Copy to Clipboard
                 </button>
                 <button type="button" class="btn btn-outline-info btn-sm px-3 py-2 shadow-sm"
-                    (click)="toggleBarcodePreview()" style="border-radius: 25px; font-weight: 500;">
+                    (click)="toggleBarcodePreview()" style="border-radius: calc(var(--app-border-radius, 10px) * 2.5); font-weight: 500;">
                     <i class="mdi mdi-barcode me-1"></i>{{ showBarcode ? 'Hide' : 'Show' }} Barcode
                 </button>
                 <button type="button" class="btn btn-outline-success btn-sm px-3 py-2 shadow-sm"
-                    (click)="printZebraLabel()" style="border-radius: 25px; font-weight: 500;">
+                    (click)="printZebraLabel()" style="border-radius: calc(var(--app-border-radius, 10px) * 2.5); font-weight: 500;">
                     <i class="mdi mdi-printer me-1"></i>Print Zebra Label
                 </button>
             </div>
@@ -487,7 +487,7 @@
                     <div style="
                     background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
                     border: 2px dashed #adb5bd;
-                    border-radius: 8px;
+                    border-radius: var(--app-border-radius, 10px);
                     padding: 30px;
                     text-align: center;
                     position: relative;
@@ -536,7 +536,7 @@
                       color: #6c757d;
                       background: rgba(255,255,255,0.9);
                       padding: 4px 8px;
-                      border-radius: 12px;
+                                            border-radius: calc(var(--app-border-radius, 10px) + 2px);
                       border: 1px solid #dee2e6;
                     ">
                             <i class="mdi mdi-printer me-1"></i>Zebra Thermal Printer Simulation

@@ -47,7 +47,7 @@
 
 .meta-card {
   background: #fff;
-  border-radius: 10px;
+  border-radius: var(--app-border-radius);
   box-shadow: 0 2px 8px rgba(0,0,0,.08);
   padding: 1.25rem 1.5rem;
 
@@ -84,7 +84,7 @@
 
 .item-card {
   background: #fff;
-  border-radius: 10px;
+  border-radius: var(--app-border-radius);
   box-shadow: 0 2px 8px rgba(0,0,0,.06);
   overflow: hidden;
   transition: box-shadow 0.2s;
@@ -121,7 +121,7 @@
 .notes-box {
   background: #fffde7;
   border-left: 3px solid #ffc107;
-  border-radius: 0 6px 6px 0;
+  border-radius: 0 calc(var(--app-border-radius) - 4px) calc(var(--app-border-radius) - 4px) 0;
   padding: 0.6rem 0.9rem;
   font-size: 0.88rem;
   color: #555;
@@ -140,7 +140,7 @@
   .media-thumb {
     position: relative;
     aspect-ratio: 4/3;
-    border-radius: 8px;
+    border-radius: calc(var(--app-border-radius) - 2px);
     overflow: hidden;
     cursor: pointer;
     background: #f0f0f0;
@@ -229,7 +229,7 @@
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 10px;
+    border-radius: var(--app-border-radius);
     padding: 1.1rem 1rem;
     color: #fff;
     display: flex;
@@ -273,7 +273,7 @@
       font-size: 0.76rem;
       color: #ffc107;
       background: rgba(255,193,7,0.1);
-      border-radius: 6px;
+      border-radius: calc(var(--app-border-radius) - 4px);
       padding: 0.35rem 0.55rem;
     }
 
@@ -281,7 +281,7 @@
       font-size: 0.75rem;
       color: rgba(255,255,255,0.55);
       background: rgba(255,255,255,0.07);
-      border-radius: 6px;
+      border-radius: calc(var(--app-border-radius) - 4px);
       padding: 0.3rem 0.55rem;
       display: flex;
       align-items: center;
