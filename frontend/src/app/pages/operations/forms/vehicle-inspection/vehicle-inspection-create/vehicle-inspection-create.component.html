@@ -65,9 +65,9 @@
             <i class="mdi mdi-close me-1"></i>Cancel
           </button>
           <button type="submit" class="btn btn-primary ms-auto" 
-              [disabled]="isLoading || hasUnresolvedFailures" 
+              [disabled]="isLoading" 
                   (click)="onSubmit()"
-              [title]="hasUnresolvedFailures ? 'Cannot submit with unresolved failures' : 'Create Inspection'">
+              title="Create Inspection">
             @if (isLoading) {
               <span class="spinner-border spinner-border-sm me-2" role="status"></span>
               Creating...

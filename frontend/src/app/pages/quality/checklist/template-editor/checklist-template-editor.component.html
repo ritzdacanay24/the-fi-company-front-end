@@ -20,7 +20,7 @@
     </div>
 
     <!-- ===== MAIN LAYOUT ===== -->
-    <div class="chat-wrapper d-lg-flex gap-1 mx-n4 mt-n4 p-1 print-hide tce-wrapper">
+    <div class="chat-wrapper d-lg-flex gap-1 mx-n4 mt-n4 p-1 tce-wrapper">
 
       <!-- ===== LEFT SIDEBAR: Items list ===== -->
       <div class="chat-leftsidebar tce-sidebar">
@@ -64,7 +64,6 @@
                 <div ngbDropdownMenu class="dropdown-menu-end">
                   <button ngbDropdownItem type="button" (click)="openPreviewModal()" *ngIf="items.length > 0"><i class="mdi mdi-eye me-2"></i>Preview</button>
                   <button ngbDropdownItem type="button" (click)="downloadChecklistPdf()" *ngIf="items.length > 0"><i class="mdi mdi-file-pdf-box me-2"></i>Download PDF</button>
-                  <button ngbDropdownItem type="button" (click)="printChecklist()" *ngIf="items.length > 0"><i class="mdi mdi-printer me-2"></i>Print</button>
                   <div class="dropdown-divider" *ngIf="items.length > 0"></div>
                   <div class="px-3 py-2" *ngIf="items.length > 0" (click)="$event.stopPropagation()">
                     <div class="form-check form-switch mb-0">
@@ -795,43 +794,6 @@
     <!-- end chat-wrapper -->
 
 
-
-    <!-- ===== PRINT VIEW (hidden on screen) ===== -->
-    <div class="print-only">
-      <div class="print-header">
-        <div class="title">{{editingTemplate?.name || 'Checklist Template'}}</div>
-        <div class="print-meta d-flex gap-4 mt-1">
-          <span *ngIf="editingTemplate?.part_number"><strong>Part:</strong> {{editingTemplate?.part_number}}</span>
-          <span *ngIf="editingTemplate?.customer_name"><strong>Customer:</strong> {{editingTemplate?.customer_name}}</span>
-          <span><strong>Version:</strong> {{editingTemplate?.version || '1.0'}}</span>
-          <span><strong>Date:</strong> {{today | date:'mediumDate'}}</span>
-        </div>
-      </div>
-      <table class="print-table" [formGroup]="templateForm">
-        <thead>
-          <tr>
-            <th style="width:40px;">#</th>
-            <th>Inspection Item</th>
-            <th style="width:60px;">Req.</th>
-            <th style="width:120px;">Operator Sign-off</th>
-          </tr>
-        </thead>
-        <tbody formArrayName="items">
-          <tr *ngFor="let item of items.controls; let i = index; trackBy: trackByIndex" [formGroupName]="i">
-            <td>{{ getOutlineNumber(i) }}</td>
-            <td>
-              <div class="fw-bold">{{ item.get('title')?.value }}</div>
-              <div *ngIf="item.get('description')?.value" class="print-muted mt-1" [innerHTML]="item.get('description')?.value"></div>
-            </td>
-            <td>{{ item.get('is_required')?.value ? 'Yes' : 'No' }}</td>
-            <td>
-              <div class="print-field-line"></div>
-              <div class="print-field-line"></div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
 
     <!-- Import Modal -->
     <ng-template #importModal let-modal>

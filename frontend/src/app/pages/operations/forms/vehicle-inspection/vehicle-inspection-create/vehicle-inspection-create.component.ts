@@ -250,15 +250,6 @@ export class VehicleInspectionCreateComponent {
       return;
     }
 
-    // Prevent submission if there are unresolved failures
-    if (this.hasUnresolvedFailures) {
-      this.toastrService.error(
-        "Cannot submit inspection with unresolved failures. Please resolve all issues before submitting.",
-        "Unresolved Failures"
-      );
-      return;
-    }
-
     try {
       this.isLoading = true;
       let { insertId } = await this.api._create(this.form.value);

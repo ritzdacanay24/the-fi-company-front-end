@@ -104,7 +104,6 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   loading = false;
   uploadingImage = false;
   selectedQualityDocument: QualityDocumentSelection | null = null;
-  today = new Date();
 
   private static quillFileProtocolEnabled = false;
   private applyingAutoLinks = false;
@@ -295,10 +294,6 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       return '';
     }
     return this.stripVersionSuffixFromName(template.name);
-  }
-
-  printChecklist(): void {
-    window.print();
   }
 
   async downloadChecklistPdf(): Promise<void> {

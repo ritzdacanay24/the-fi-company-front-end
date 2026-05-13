@@ -36,6 +36,25 @@ app-root {
   width: 100%;
 }
 
+/* Global near-fullscreen modal treatment (Outlook-like):
+   keep a visible gap around Ngb/Bootstrap fullscreen modals instead of edge-to-edge. */
+:root {
+  --modal-fullscreen-shell-gap: clamp(10px, 1.2vw, 20px);
+}
+
+.modal-dialog[class*="modal-fullscreen"] {
+  width: calc(100vw - (var(--modal-fullscreen-shell-gap) * 2)) !important;
+  max-width: none !important;
+  height: calc(100vh - (var(--modal-fullscreen-shell-gap) * 2));
+  margin: var(--modal-fullscreen-shell-gap) auto !important;
+}
+
+.modal-dialog[class*="modal-fullscreen"] .modal-content {
+  height: 100%;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
 :root {
   --qad-validation-banner-height: 0px;
 }
