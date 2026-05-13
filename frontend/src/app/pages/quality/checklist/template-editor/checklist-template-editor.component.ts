@@ -301,6 +301,77 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     window.print();
   }
 
+  async downloadChecklistPdf(): Promise<void> {
+    if (!this.editingTemplate?.id) {
+      void Swal.fire({
+        icon: 'info',
+        title: 'Save template first',
+        text: 'Create or save this template before downloading PDF.',
+        timer: 2200,
+        showConfirmButton: false,
+      });
+      return;
+    }
+
+    if (!this.items?.length) {
+      void Swal.fire({
+        icon: 'info',
+        title: 'No items to export',
+        text: 'Add checklist items before downloading a PDF.',
+        timer: 2200,
+        showConfirmButton: false,
+      });
+      return;
+    }
+
+    void Swal.fire({
+      title: 'Generating PDF...',
+      text: 'Please wait while we prepare your checklist download.',
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      showConfirmButton: false,
+      didOpen: () => {
+        Swal.showLoading();
+      },
+    });
+
+    try {
+      const blob = await firstValueFrom(this.configService.downloadTemplatePdf(Number(this.editingTemplate.id)));
+      const objectUrl = URL.createObjectURL(blob);
+      const templateName = String(this.editingTemplate.name || 'checklist-template')
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-') || 'checklist-template';
+
+      const anchor = document.createElement('a');
+      anchor.href = objectUrl;
+      anchor.download = `${templateName}.pdf`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      URL.revokeObjectURL(objectUrl);
+
+      Swal.close();
+
+      void Swal.fire({
+        icon: 'success',
+        title: 'PDF export complete',
+        text: 'Checklist PDF downloaded.',
+        timer: 2200,
+        showConfirmButton: false,
+      });
+    } catch (error) {
+      console.error('Checklist PDF export failed:', error);
+      Swal.close();
+      void Swal.fire({
+        icon: 'error',
+        title: 'PDF export failed',
+        text: 'Backend PDF generation failed. Please try again.',
+      });
+    }
+  }
+
   async setTemplateActiveStatus(makeActive: boolean): Promise<void> {
     if (!this.editingTemplate || this.saving || this.loading) {
       return;

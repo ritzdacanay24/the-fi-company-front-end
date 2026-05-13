@@ -63,6 +63,7 @@
                 </button>
                 <div ngbDropdownMenu class="dropdown-menu-end">
                   <button ngbDropdownItem type="button" (click)="openPreviewModal()" *ngIf="items.length > 0"><i class="mdi mdi-eye me-2"></i>Preview</button>
+                  <button ngbDropdownItem type="button" (click)="downloadChecklistPdf()" *ngIf="items.length > 0"><i class="mdi mdi-file-pdf-box me-2"></i>Download PDF</button>
                   <button ngbDropdownItem type="button" (click)="printChecklist()" *ngIf="items.length > 0"><i class="mdi mdi-printer me-2"></i>Print</button>
                   <div class="dropdown-divider" *ngIf="items.length > 0"></div>
                   <div class="px-3 py-2" *ngIf="items.length > 0" (click)="$event.stopPropagation()">
@@ -1609,6 +1610,9 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" (click)="modal.dismiss()">
           <i class="mdi mdi-close me-1"></i>Close
+        </button>
+        <button type="button" class="btn btn-outline-danger" (click)="downloadChecklistPdf()">
+          <i class="mdi mdi-file-pdf-box me-1"></i>Download PDF
         </button>
         <button type="button" class="btn btn-primary" (click)="modal.dismiss(); saveTemplate()">
           <i class="mdi mdi-content-save me-1"></i>Save Template

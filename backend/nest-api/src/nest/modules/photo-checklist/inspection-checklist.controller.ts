@@ -1,5 +1,6 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Put, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Put, Query, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { Response } from 'express';
 import { CurrentUserId } from '@/nest/decorators/current-user-id.decorator';
 import { Permissions, RolePermissionGuard } from '../access-control';
 import { PhotoChecklistService } from './photo-checklist.service';
@@ -143,6 +144,14 @@ export class InspectionChecklistController {
       includeInactive: includeInactive === '1' || includeInactive === 'true',
       includeDeleted: includeDeleted === '1' || includeDeleted === 'true',
     });
+  }
+
+  @Get('templates/:id/export-pdf')
+  async exportTemplatePdf(@Param('id', ParseIntPipe) id: number, @Res() res: Response) {
+    const { fileName, buffer } = await this.service.exportTemplatePdf(id);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    return res.send(buffer);
   }
 
   @Get('instances')

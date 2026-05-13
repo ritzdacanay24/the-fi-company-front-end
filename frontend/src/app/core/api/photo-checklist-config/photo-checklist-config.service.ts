@@ -245,6 +245,12 @@ export class PhotoChecklistConfigService {
     return this.http.get<ChecklistTemplate>(`${this.nestPhotoChecklistBaseUrl}/templates/${id}?include_deleted=1`);
   }
 
+  downloadTemplatePdf(id: number): Observable<Blob> {
+    return this.http.get(`${this.nestPhotoChecklistBaseUrl}/templates/${id}/export-pdf`, {
+      responseType: 'blob',
+    });
+  }
+
   createTemplate(template: Partial<ChecklistTemplate>): Observable<{success: boolean, template_id: number, template?: ChecklistTemplate, debug?: any}> {
     return this.http.post<{success: boolean, template_id: number, template?: ChecklistTemplate, debug?: any}>(
       `${this.nestPhotoChecklistBaseUrl}/templates`,
