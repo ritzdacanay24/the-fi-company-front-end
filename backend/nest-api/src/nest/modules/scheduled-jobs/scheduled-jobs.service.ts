@@ -29,6 +29,7 @@ import {
   SerialStockAlertHandler,
   OverdueQirHandler,
   OverdueSafetyIncidentHandler,
+  InspectionChecklistReportGeneratorHandler,
 } from './handlers';
 
 export type ScheduledJobRunStatus = 'success' | 'failure';
@@ -49,6 +50,8 @@ export interface ScheduledJobDto {
   url: string;
   active: boolean;
   note?: string;
+  environmentBlocked?: boolean;
+  environmentBlockMessage?: string;
   lastRun?: ScheduledJobLastRun;
   command: string;
   source: 'nest-cron';
@@ -73,6 +76,7 @@ export class ScheduledJobsService {
   private readonly logger = new Logger(ScheduledJobsService.name);
   private readonly handlerMap: Map<string, ScheduledJobHandler>;
   private readonly isDevelopment: boolean;
+  private readonly inspectionChecklistReportGeneratorEnabledInDevelopment: boolean;
 
   constructor(
     private readonly mysqlService: MysqlService,
@@ -101,9 +105,12 @@ export class ScheduledJobsService {
     private readonly serialStockAlertHandler: SerialStockAlertHandler,
     private readonly overdueQirHandler: OverdueQirHandler,
     private readonly overdueSafetyIncidentHandler: OverdueSafetyIncidentHandler,
+    private readonly inspectionChecklistReportGeneratorHandler: InspectionChecklistReportGeneratorHandler,
   ) {
     this.handlerMap = new Map();
     this.isDevelopment = String(process.env.NODE_ENV ?? '').toLowerCase() === 'development';
+    this.inspectionChecklistReportGeneratorEnabledInDevelopment =
+      String(process.env.INSPECTION_CHECKLIST_REPORT_GENERATOR_ENABLED ?? 'false').toLowerCase().trim() === 'true';
     this.registerHandlers();
   }
 
@@ -130,6 +137,7 @@ export class ScheduledJobsService {
     this.handlerMap.set('serial-stock-alert', this.serialStockAlertHandler);
     this.handlerMap.set('overdue-qir', this.overdueQirHandler);
     this.handlerMap.set('overdue-safety-incident', this.overdueSafetyIncidentHandler);
+    this.handlerMap.set('inspection-checklist-report-generator', this.inspectionChecklistReportGeneratorHandler);
   }
 
   isRunnerEnabled(): boolean {
@@ -139,6 +147,10 @@ export class ScheduledJobsService {
 
   async runJobIfEnabled(id: string): Promise<void> {
     if (!this.isRunnerEnabled()) {
+      return;
+    }
+
+    if (!this.isJobEnabledForCurrentEnvironment(id)) {
       return;
     }
 
@@ -256,6 +268,19 @@ export class ScheduledJobsService {
         statusCode: 404,
         durationMs: 0,
         message: `Scheduled job not found: ${id}`,
+      };
+    }
+
+    if (!this.isJobEnabledForCurrentEnvironment(id)) {
+      return {
+        id: job.id,
+        name: job.name,
+        trigger,
+        ok: false,
+        statusCode: 403,
+        durationMs: 0,
+        message: this.getJobEnvironmentBlockMessage(id),
+        url: job.url,
       };
     }
 
@@ -416,8 +441,13 @@ export class ScheduledJobsService {
     runnerEnabled: boolean,
     lastRun?: ScheduledJobLastRun,
   ): ScheduledJobDto {
+    const environmentBlocked = !this.isJobEnabledForCurrentEnvironment(job.id);
+    const environmentBlockMessage = environmentBlocked ? this.getJobEnvironmentBlockMessage(job.id) : undefined;
+
     return {
       ...job,
+      environmentBlocked,
+      environmentBlockMessage,
       lastRun,
       command: 'NEST_HANDLER_DISPATCH scheduledJobsService.runJobById(jobId)',
       source: 'nest-cron' as const,
@@ -440,5 +470,30 @@ export class ScheduledJobsService {
     } catch {
       return null;
     }
+  }
+
+  private isJobEnabledForCurrentEnvironment(id: string): boolean {
+    if (id !== 'inspection-checklist-report-generator') {
+      return true;
+    }
+
+    if (!this.isDevelopment) {
+      return true;
+    }
+
+    if (this.inspectionChecklistReportGeneratorEnabledInDevelopment) {
+      return true;
+    }
+
+    this.logger.debug(this.getJobEnvironmentBlockMessage(id));
+    return false;
+  }
+
+  private getJobEnvironmentBlockMessage(id: string): string {
+    if (id === 'inspection-checklist-report-generator') {
+      return 'Inspection checklist report generation is blocked in development unless INSPECTION_CHECKLIST_REPORT_GENERATOR_ENABLED=true.';
+    }
+
+    return `Scheduled job ${id} is blocked in the current environment.`;
   }
 }

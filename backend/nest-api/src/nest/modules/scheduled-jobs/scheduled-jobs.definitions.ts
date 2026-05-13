@@ -186,4 +186,12 @@ export const SCHEDULED_JOB_DEFINITIONS: ScheduledJobDefinition[] = [
     active: false,
     note: 'Urgent action-needed report for open safety incidents older than 7 days.',
   },
+  {
+    id: 'inspection-checklist-report-generator',
+    name: 'Inspection Checklist Report Generator',
+    cron: '*/30 * * * * *',
+    url: 'nest://scheduled-jobs/inspection-checklist-report-generator',
+    active: true,
+    note: 'Processes queued final-submission PDF jobs for submitted inspection checklists every 30 seconds.',
+  },
 ];

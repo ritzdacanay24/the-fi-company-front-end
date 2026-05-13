@@ -4,11 +4,15 @@ import { Response } from 'express';
 import { CurrentUserId } from '@/nest/decorators/current-user-id.decorator';
 import { Permissions, RolePermissionGuard } from '../access-control';
 import { PhotoChecklistService } from './photo-checklist.service';
+import { ReportGeneratorService } from './report-generator.service';
 
 @Controller('inspection-checklist')
 @UseGuards(RolePermissionGuard)
 export class InspectionChecklistController {
-  constructor(private readonly service: PhotoChecklistService) {}
+  constructor(
+    private readonly service: PhotoChecklistService,
+    private readonly reportGeneratorService: ReportGeneratorService,
+  ) {}
 
   @Get('templates')
   async getTemplates(@Query('include_inactive') includeInactive?: string, @Query('include_deleted') includeDeleted?: string) {
@@ -240,7 +244,14 @@ export class InspectionChecklistController {
   @Put('instances/:id')
   @Permissions('write')
   async updateInstance(@Param('id', ParseIntPipe) id: number, @Body() payload: Record<string, unknown>) {
-    return this.service.updateInstance(id, payload);
+    const result = await this.service.updateInstance(id, payload);
+
+    const nextStatus = String(payload?.status || '').trim().toLowerCase();
+    if (nextStatus === 'submitted') {
+      await this.reportGeneratorService.createReportJob(id);
+    }
+
+    return result;
   }
 
   @Post('instances/:id/item-completion')
@@ -301,6 +312,41 @@ export class InspectionChecklistController {
   @Get('instances/:id/export')
   async exportInstance(@Param('id', ParseIntPipe) id: number) {
     return this.service.getInstanceById(id);
+  }
+
+  @Post('instances/:id/final-submission-pdf')
+  @Permissions('write')
+  async generateFinalSubmissionPdf(@Param('id', ParseIntPipe) id: number) {
+    return this.service.generateFinalSubmissionPdf(id);
+  }
+
+  @Get('instances/:id/final-submission-pdf')
+  async getFinalSubmissionPdfInfo(@Param('id', ParseIntPipe) id: number) {
+    const instance = await this.service.getInstanceById(id) as Record<string, unknown>;
+    const status = String(instance?.status || '').trim().toLowerCase();
+
+    if (status !== 'submitted') {
+      return {
+        success: false,
+        status: 'not_submitted',
+        message: 'Final submission PDF is only available for submitted inspections.',
+      };
+    }
+
+    const report = await this.reportGeneratorService.getReportDownloadInfo(id);
+    if (report.status === 'none') {
+      await this.reportGeneratorService.createReportJob(id);
+      return {
+        success: true,
+        status: 'queued',
+        message: 'Final submission PDF is being generated. Please refresh shortly.',
+      };
+    }
+
+    return {
+      success: true,
+      ...report,
+    };
   }
 
   @Delete('instances/:id')

@@ -14,6 +14,9 @@
         [value]="job?.name" 
         disabled>
       <small class="text-muted" *ngIf="job?.note">{{ job.note }}</small>
+      <div class="alert alert-warning mt-2 mb-0 small" role="alert" *ngIf="job?.environmentBlocked">
+        {{ job?.environmentBlockMessage }}
+      </div>
     </div>
 
     <div class="mb-3">

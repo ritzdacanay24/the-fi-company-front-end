@@ -40,8 +40,32 @@ export class ScheduledJobsListComponent implements OnInit {
     return this.jobs.filter((job) => job.active).length;
   }
 
+  get environmentBlockedCount(): number {
+    return this.jobs.filter((job) => job.environmentBlocked).length;
+  }
+
   isRunning(id: string): boolean {
     return this.runningJobIds.has(id);
+  }
+
+  canRunJob(job: ScheduledJobRow): boolean {
+    return !!job?.id && !job.environmentBlocked && !this.isRunning(job.id);
+  }
+
+  statusBadgeClass(job: ScheduledJobRow): string {
+    if (job.environmentBlocked) {
+      return 'bg-warning text-dark';
+    }
+
+    return job.active ? 'bg-success' : 'bg-secondary';
+  }
+
+  statusLabel(job: ScheduledJobRow): string {
+    if (job.environmentBlocked) {
+      return 'Dev Blocked';
+    }
+
+    return job.active ? 'Enabled' : 'Disabled';
   }
 
   isExternalUrl(url: string): boolean {
@@ -69,7 +93,7 @@ export class ScheduledJobsListComponent implements OnInit {
   }
 
   async runJob(job: ScheduledJobRow): Promise<void> {
-    if (!job?.id || this.isRunning(job.id)) {
+    if (!this.canRunJob(job)) {
       return;
     }
 
@@ -98,7 +122,7 @@ export class ScheduledJobsListComponent implements OnInit {
   }
 
   async testJob(job: ScheduledJobRow): Promise<void> {
-    if (!job?.id || this.isRunning(job.id)) {
+    if (!this.canRunJob(job)) {
       return;
     }
 

@@ -74,4 +74,9 @@ export class ScheduledJobsRunnerService {
   async runOverdueSafetyIncident(): Promise<void> {
     await this.scheduledJobsService.runJobIfEnabled('overdue-safety-incident');
   }
+
+  @Cron('*/30 * * * * *', { name: 'scheduled-jobs.inspection-checklist-report-generator', timeZone: SCHEDULED_JOBS_TIMEZONE })
+  async runInspectionChecklistReportGenerator(): Promise<void> {
+    await this.scheduledJobsService.runJobIfEnabled('inspection-checklist-report-generator');
+  }
 }

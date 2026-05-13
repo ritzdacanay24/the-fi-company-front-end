@@ -3,7 +3,10 @@
     <div class="card">
       <div class="card-header d-flex justify-content-between align-items-center">
         <h4 class="card-title mb-0 flex-grow-1 text-start">{{ title }}</h4>
-        <span class="badge bg-primary">{{ activeCount }} Active</span>
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge bg-primary">{{ activeCount }} Active</span>
+          <span class="badge bg-warning text-dark" *ngIf="environmentBlockedCount > 0">{{ environmentBlockedCount }} Dev Blocked</span>
+        </div>
       </div>
       <div class="card-body">
         <table class="table table-bordered table-sm align-middle">
@@ -20,8 +23,8 @@
           <tbody>
             <tr *ngFor="let row of jobs" class="align-middle">
               <td>
-                <span class="badge" [ngClass]="row.active ? 'bg-success' : 'bg-secondary'">
-                  {{ row.active ? 'Enabled' : 'Disabled' }}
+                <span class="badge" [ngClass]="statusBadgeClass(row)">
+                  {{ statusLabel(row) }}
                 </span>
               </td>
               <td>
@@ -31,6 +34,7 @@
               <td>
                 <div class="fw-semibold">{{ row.name }}</div>
                 <small class="text-muted" *ngIf="row.note">{{ row.note }}</small>
+                <small class="text-warning d-block" *ngIf="row.environmentBlocked">{{ row.environmentBlockMessage }}</small>
               </td>
               <td>
                 <ng-container *ngIf="row.lastRun; else neverRan">
@@ -60,10 +64,10 @@
                 <code *ngIf="!isExternalUrl(row.url)">{{ row.url }}</code>
               </td>
               <td style="white-space: nowrap;">
-                <button class="btn btn-sm btn-primary" (click)="runJob(row)" [disabled]="isRunning(row.id)">
+                <button class="btn btn-sm btn-primary" (click)="runJob(row)" [disabled]="!canRunJob(row)" [title]="row.environmentBlocked ? row.environmentBlockMessage : ''">
                   {{ isRunning(row.id) ? 'Running...' : 'Run Job' }}
                 </button>
-                <button class="btn btn-sm btn-warning ms-2" (click)="testJob(row)" [disabled]="isRunning(row.id)">
+                <button class="btn btn-sm btn-warning ms-2" (click)="testJob(row)" [disabled]="!canRunJob(row)" [title]="row.environmentBlocked ? row.environmentBlockMessage : ''">
                   {{ isRunning(row.id) ? 'Testing...' : 'Test' }}
                 </button>
                 <button class="btn btn-sm btn-outline-secondary ms-2" (click)="openEditModal(row)">

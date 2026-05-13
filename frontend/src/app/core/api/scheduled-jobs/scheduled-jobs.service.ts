@@ -20,6 +20,8 @@ export interface ScheduledJobRow {
   url: string;
   active: boolean;
   note?: string;
+  environmentBlocked?: boolean;
+  environmentBlockMessage?: string;
   lastRun?: ScheduledJobLastRun;
   command?: string;
   source?: 'cron-file' | 'nest-cron';

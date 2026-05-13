@@ -12,6 +12,7 @@ import { DOCUMENT } from '@angular/common';
 import { AgGridModule } from 'ag-grid-angular';
 import { ColDef, GridApi, GridReadyEvent, SelectionChangedEvent } from 'ag-grid-community';
 import { NgbModal, NgbNavModule } from '@ng-bootstrap/ng-bootstrap';
+import { FileViewerModalComponent } from '@app/shared/components/file-viewer-modal/file-viewer-modal.component';
 
 @Component({
   standalone:true, 
@@ -396,7 +397,7 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
       const target = event?.event?.target as HTMLElement;
       const btn = target?.closest('.actions-trigger') as HTMLElement;
       if (btn) {
-        this.showActionsMenu(btn, instanceId);
+        this.showActionsMenu(btn, event?.data as ChecklistInstance);
       }
     }
   }
@@ -551,12 +552,19 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
   private _actionsMenu: HTMLElement | null = null;
   private _actionsMenuRemoveClickListener: (() => void) | null = null;
 
-  private showActionsMenu(anchor: HTMLElement, instanceId: number): void {
+  private showActionsMenu(anchor: HTMLElement, instance: ChecklistInstance): void {
     this.closeActionsMenu();
+
+    const instanceId = Number(instance?.id || 0);
+    const status = this.normalizeChecklistStatus(instance?.status || '');
+    const canDownloadFinalPdf = status === 'submitted';
 
     const menu = this.document.createElement('div');
     menu.innerHTML = `
       <div style="position:fixed;z-index:9999;background:#fff;border:1px solid #dee2e6;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.15);min-width:160px;padding:4px 0;">
+        ${canDownloadFinalPdf ? `<a class="action-download-pdf" href="javascript:void(0)" style="display:flex;align-items:center;padding:8px 16px;color:#0d6efd;text-decoration:none;font-size:14px;white-space:nowrap;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
+          <i class="mdi mdi-file-pdf-box" style="margin-right:8px;"></i>View Final PDF
+        </a>` : ''}
         <a class="action-archive" href="javascript:void(0)" style="display:flex;align-items:center;padding:8px 16px;color:#f0ad4e;text-decoration:none;font-size:14px;white-space:nowrap;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
           <i class="mdi mdi-archive-outline" style="margin-right:8px;"></i>Archive
         </a>
@@ -584,6 +592,10 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
     inner.querySelector('.action-archive')?.addEventListener('click', () => {
       this.closeActionsMenu();
       this.onArchiveInstance(instanceId);
+    });
+    inner.querySelector('.action-download-pdf')?.addEventListener('click', () => {
+      this.closeActionsMenu();
+      this.onDownloadFinalSubmissionPdf(instanceId);
     });
     inner.querySelector('.action-transfer')?.addEventListener('click', () => {
       this.closeActionsMenu();
@@ -654,6 +666,78 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
         alert(msg);
       }
     });
+  }
+
+  onDownloadFinalSubmissionPdf(instanceId: number): void {
+    this.photoChecklistV2Service.getFinalSubmissionPdfInfo(instanceId).pipe(first()).subscribe({
+      next: (result) => {
+        const status = String(result?.status || '').toLowerCase();
+        if (status === 'ready' && result?.download_url) {
+          this.openFinalSubmissionPdfViewer(result.download_url, instanceId);
+          return;
+        }
+
+        if (status === 'queued' || status === 'processing') {
+          alert('Final submission PDF is being generated. Please try again in a few seconds.');
+          return;
+        }
+
+        if (status === 'failed') {
+          alert(result?.error_message || 'Failed to generate final submission PDF.');
+          return;
+        }
+
+        alert(result?.message || 'Final submission PDF is not available yet.');
+      },
+      error: (err) => {
+        const msg = err?.error?.message || 'Unable to get final submission PDF link.';
+        alert(msg);
+      }
+    });
+  }
+
+  private openFinalSubmissionPdfViewer(downloadUrl: string, instanceId: number): void {
+    const normalizedUrl = this.resolveViewerUrl(downloadUrl);
+    if (!normalizedUrl) {
+      alert('Final submission PDF link is invalid.');
+      return;
+    }
+
+    const modalRef = this.modalService.open(FileViewerModalComponent, {
+      size: 'xl',
+      centered: true,
+      backdrop: true,
+      keyboard: true,
+    });
+
+    const fileName = normalizedUrl.split('/').pop()?.split('?')[0] || `inspection-${instanceId}-final-submission.pdf`;
+    modalRef.componentInstance.items = [{
+      id: `instance-${instanceId}-final-pdf`,
+      url: normalizedUrl,
+      fileName,
+    }];
+    modalRef.componentInstance.initialIndex = 0;
+    modalRef.componentInstance.enableNavigation = false;
+    modalRef.componentInstance.url = normalizedUrl;
+    modalRef.componentInstance.fileName = fileName;
+  }
+
+  private resolveViewerUrl(rawUrl: string): string {
+    const raw = String(rawUrl || '').trim();
+    if (!raw) {
+      return '';
+    }
+
+    if (/^https?:\/\//i.test(raw) || raw.startsWith('data:') || raw.startsWith('blob:')) {
+      return raw;
+    }
+
+    const clean = raw.startsWith('/') ? raw : `/${raw}`;
+    if (clean.startsWith('/uploads/')) {
+      return `https://dashboard.eye-fi.com${clean}`;
+    }
+
+    return clean;
   }
 
   ngOnInit(): void {

@@ -13,6 +13,11 @@ export const envValidationSchema = Joi.object({
     .trim()
     .uri()
     .default('https://dashboard.eye-fi.com/attachments'),
+  INSPECTION_CHECKLIST_REPORT_GENERATOR_ENABLED: Joi.alternatives().conditional('NODE_ENV', {
+    is: 'development',
+    then: Joi.boolean().default(false),
+    otherwise: Joi.boolean().default(true),
+  }),
   QAD_DSN: Joi.string().optional(),
   QAD_USER: Joi.string().optional(),
   QAD_PASSWORD: Joi.string().optional(),

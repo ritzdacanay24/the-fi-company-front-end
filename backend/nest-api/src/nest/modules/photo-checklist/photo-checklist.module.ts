@@ -5,11 +5,12 @@ import { PhotoChecklistController } from './photo-checklist.controller';
 import { PhotoChecklistService } from './photo-checklist.service';
 import { PhotoChecklistRepository } from './photo-checklist.repository';
 import { FileStorageModule } from '../file-storage/file-storage.module';
+import { ReportGeneratorService } from './report-generator.service';
 
 @Module({
   imports: [AccessControlModule, FileStorageModule],
   controllers: [PhotoChecklistController, InspectionChecklistController],
-  providers: [PhotoChecklistService, PhotoChecklistRepository],
-  exports: [PhotoChecklistService],
+  providers: [PhotoChecklistService, PhotoChecklistRepository, ReportGeneratorService],
+  exports: [PhotoChecklistService, ReportGeneratorService],
 })
 export class PhotoChecklistModule {}

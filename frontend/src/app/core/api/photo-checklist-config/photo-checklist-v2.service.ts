@@ -62,6 +62,22 @@ export class PhotoChecklistV2Service {
     return this.http.patch<{ success: boolean; error?: string }>(`${this.baseUrl}/instances/${id}/archive`, {});
   }
 
+  getFinalSubmissionPdfInfo(id: number): Observable<{
+    success: boolean;
+    status: 'ready' | 'queued' | 'processing' | 'failed' | 'none' | 'not_submitted';
+    download_url?: string;
+    error_message?: string;
+    message?: string;
+  }> {
+    return this.http.get<{
+      success: boolean;
+      status: 'ready' | 'queued' | 'processing' | 'failed' | 'none' | 'not_submitted';
+      download_url?: string;
+      error_message?: string;
+      message?: string;
+    }>(`${this.baseUrl}/instances/${id}/final-submission-pdf`);
+  }
+
   transferInstanceAdmin(
     id: number,
     toUserId: number,

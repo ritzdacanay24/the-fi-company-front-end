@@ -23,3 +23,4 @@ export { FsJobNoticeHandler } from './fs-job-notice.handler';
 export { SerialStockAlertHandler } from './serial-stock-alert.handler';
 export { OverdueQirHandler } from './overdue-qir.handler';
 export { OverdueSafetyIncidentHandler } from './overdue-safety-incident.handler';
+export { InspectionChecklistReportGeneratorHandler } from './inspection-checklist-report-generator.handler';
