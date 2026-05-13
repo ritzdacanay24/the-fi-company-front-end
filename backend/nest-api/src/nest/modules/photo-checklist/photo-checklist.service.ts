@@ -1,6 +1,9 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { randomBytes } from 'crypto';
+import { readFileSync, existsSync } from 'fs';
+import { join } from 'path';
 import { RowDataPacket } from 'mysql2/promise';
+import PDFDocument from 'pdfkit';
 import { PhotoChecklistRepository } from './photo-checklist.repository';
 import { FileStorageService } from '../file-storage/file-storage.service';
 
@@ -47,6 +50,180 @@ export class PhotoChecklistService {
       ...template,
       items: this.buildNestedItems(items),
     };
+  }
+
+  async exportTemplatePdf(id: number): Promise<{ fileName: string; buffer: Buffer }> {
+    const template = await this.getTemplateById(id, { includeInactive: true });
+    const templateName = String((template as Record<string, unknown>)?.name || `checklist-template-${id}`).trim();
+    const fileName = `${this.toFileName(templateName)}.pdf`;
+    const logoBuffer = await this.fetchChecklistImageBuffer('https://dashboard.eye-fi.com/assets/images/the-fi-cropped.png');
+
+    const items = this.flattenTemplateItems(Array.isArray((template as Record<string, unknown>)?.items)
+      ? ((template as Record<string, unknown>).items as Array<Record<string, unknown>>)
+      : []);
+
+    const doc = new PDFDocument({ size: 'A4', margin: 36 });
+    const chunks: Buffer[] = [];
+
+    const pdfBufferPromise = new Promise<Buffer>((resolve, reject) => {
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+    });
+
+    // Professional branded header
+    const blueColor = '#1B3A70'; // Dark professional blue
+    const headerHeight = 85; // More compact header
+
+    // Blue background rectangle for header
+    doc.rect(0, 0, doc.page.width, headerHeight).fillAndStroke(blueColor, blueColor);
+
+    if (logoBuffer) {
+      const logoWidth = 108;
+      const logoHeight = 40;
+      const logoX = doc.page.width - doc.page.margins.right - logoWidth;
+      const logoY = 10;
+      doc.image(logoBuffer, logoX, logoY, { fit: [logoWidth, logoHeight] });
+    }
+
+    // White text on blue background - vertically centered
+    doc.fillColor('#FFFFFF');
+    doc.fontSize(16).font('Helvetica-Bold').text(templateName, 52, 30, { width: 430, align: 'left' });
+    doc.fontSize(10).font('Helvetica').text('INSPECTION CHECKLIST', 52, 52, { width: 430, align: 'left' });
+
+    // Reset position after header
+    doc.y = headerHeight;
+    doc.moveDown(0.4);
+
+    // Metadata line below header
+    const version = String((template as Record<string, unknown>)?.version || '1.0').trim();
+    const createdAt = (template as Record<string, unknown>)?.created_at
+      ? new Date(String((template as Record<string, unknown>)?.created_at)).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+        })
+      : 'Unknown';
+    const createdBy = String((template as Record<string, unknown>)?.created_by_name || 'System').trim();
+    const metadataText = `Version ${version} | Created ${createdAt} | By ${createdBy}`;
+
+    doc.fontSize(9).font('Helvetica').fillColor('#666666').text(
+      metadataText,
+      doc.page.margins.left,
+      doc.y,
+      {
+        width: doc.page.width - doc.page.margins.left - doc.page.margins.right,
+        align: 'right',
+      },
+    );
+
+    // Horizontal divider line
+    doc.moveDown(0.3);
+    doc.strokeColor('#CCCCCC').lineWidth(1).moveTo(doc.page.margins.left, doc.y).lineTo(doc.page.width - doc.page.margins.right, doc.y).stroke();
+    doc.moveDown(0.5);
+    doc.fillColor('#000000');
+
+    for (const item of items) {
+      const level = Number(item.level || 0);
+      const outline = String(item.outline || item.order_index || '').trim();
+      const title = String(item.title || 'Untitled').trim();
+      const submissionType = String(item.submission_type || 'none').trim();
+      const isRequired = !!item.is_required;
+      const detailsLine = `Submission: ${submissionType} | Required: ${isRequired ? 'Yes' : 'No'}`;
+      const itemIndent = Math.max(0, Math.min(level, 3)) * 14;
+      const textX = doc.page.margins.left + itemIndent;
+      const textWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right - itemIndent;
+      const description = this.stripHtmlText(item.description);
+
+      const sourceImages = Array.isArray(item.sample_images)
+        ? item.sample_images.filter((image) => !!String(image?.url || '').trim())
+        : [];
+
+      const renderableImages: Array<{ buffer: Buffer; label: string }> = [];
+      for (const image of sourceImages) {
+        const imageUrl = String(image.url || '').trim();
+        if (!imageUrl) {
+          continue;
+        }
+
+        const imageBuffer = await this.fetchChecklistImageBuffer(imageUrl);
+        if (!imageBuffer) {
+          continue;
+        }
+
+        renderableImages.push({
+          buffer: imageBuffer,
+          label: String(image.label || (image.is_primary ? 'Primary' : 'Reference')).trim() || 'Image',
+        });
+      }
+
+      const imageWidth = Math.min(220, Math.max(120, textWidth));
+      const imageHeight = 150;
+
+      doc.font('Helvetica-Bold').fontSize(11);
+      const titleHeight = doc.heightOfString(`${outline}. ${title}`, { width: textWidth });
+      doc.font('Helvetica').fontSize(9);
+      const detailsHeight = doc.heightOfString(detailsLine, { width: textWidth });
+      const descriptionHeight = description
+        ? doc.heightOfString(description, { width: textWidth }) + 4
+        : 0;
+      doc.font('Helvetica-Bold').fontSize(9);
+      const picturesHeaderHeight = renderableImages.length > 0
+        ? doc.heightOfString('Pictures', { width: textWidth }) + 6
+        : 0;
+
+      const nonImageHeight = titleHeight + detailsHeight + descriptionHeight + picturesHeaderHeight;
+      const estimatedItemHeight = nonImageHeight + (renderableImages.length * (imageHeight + 18)) + 18;
+      this.ensurePdfSpace(doc, estimatedItemHeight);
+
+      // Item title with outline numbering - more visual hierarchy
+      doc.font('Helvetica-Bold').fontSize(11).fillColor('#1a1a1a').text(`${outline}. ${title}`, textX, doc.y, { width: textWidth });
+      doc.moveDown(0.2);
+
+      // Details line in lighter color
+      doc.font('Helvetica').fontSize(9).fillColor('#666666').text(
+        detailsLine,
+        textX,
+        doc.y,
+        { width: textWidth },
+      );
+      doc.moveDown(0.15);
+
+      // Description text
+      if (description) {
+        doc.font('Helvetica').fontSize(9).fillColor('#333333').text(description, textX, doc.y, { width: textWidth });
+        doc.moveDown(0.15);
+      }
+
+      // Pictures section with better formatting
+      if (renderableImages.length > 0) {
+        doc.font('Helvetica-Bold').fontSize(9).fillColor('#1a1a1a').text('Pictures:', textX, doc.y, { width: textWidth });
+        doc.moveDown(0.2);
+
+        for (const image of renderableImages) {
+          const imageTop = doc.y;
+
+          try {
+            doc.image(image.buffer, textX, imageTop, { fit: [imageWidth, imageHeight], align: 'center', valign: 'center' });
+            doc.font('Helvetica').fontSize(8).fillColor('#666666').text(image.label, textX, imageTop + imageHeight + 4, { width: imageWidth });
+            doc.y = imageTop + imageHeight + 20;
+          } catch {
+            // Ignore unreadable image bytes and continue with remaining images.
+            continue;
+          }
+        }
+      }
+
+      doc.moveDown(0.3);
+      // Subtle divider line between items
+      doc.strokeColor('#DDDDDD').lineWidth(0.5).moveTo(doc.page.margins.left, doc.y).lineTo(doc.page.width - doc.page.margins.right, doc.y).stroke();
+      doc.moveDown(0.5);
+      doc.fillColor('#000000');
+    }
+
+    doc.end();
+    const buffer = await pdfBufferPromise;
+    return { fileName, buffer };
   }
 
   async getInstances(filters?: { status?: string; workOrder?: string }) {
@@ -984,6 +1161,113 @@ export class PhotoChecklistService {
     }
 
     return normalized;
+  }
+
+  private flattenTemplateItems(
+    items: Array<Record<string, unknown>>,
+    parentOutline = '',
+  ): Array<Record<string, unknown> & { outline: string }> {
+    const output: Array<Record<string, unknown> & { outline: string }> = [];
+
+    items.forEach((item, index) => {
+      const outline = parentOutline ? `${parentOutline}.${index + 1}` : `${index + 1}`;
+      output.push({ ...item, outline });
+
+      const children = Array.isArray(item.children) ? (item.children as Array<Record<string, unknown>>) : [];
+      if (children.length > 0) {
+        output.push(...this.flattenTemplateItems(children, outline));
+      }
+    });
+
+    return output;
+  }
+
+  private toFileName(value: string): string {
+    const normalized = String(value || 'checklist-template')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-');
+
+    return normalized || 'checklist-template';
+  }
+
+  private stripHtmlText(value: unknown): string {
+    const raw = String(value || '').trim();
+    if (!raw) {
+      return '';
+    }
+
+    return raw
+      .replace(/<\s*br\s*\/?>/gi, '\n')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/&amp;/gi, '&')
+      .replace(/&lt;/gi, '<')
+      .replace(/&gt;/gi, '>')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  private ensurePdfSpace(doc: PDFKit.PDFDocument, neededHeight: number): void {
+    if (doc.y + neededHeight <= doc.page.height - doc.page.margins.bottom) {
+      return;
+    }
+
+    doc.addPage();
+  }
+
+  private async fetchChecklistImageBuffer(rawUrl: string): Promise<Buffer | null> {
+    const candidates = this.buildChecklistImageUrlCandidates(rawUrl);
+
+    for (const candidate of candidates) {
+      try {
+        const response = await fetch(candidate, { method: 'GET' });
+        if (!response.ok) {
+          continue;
+        }
+
+        const contentType = String(response.headers.get('content-type') || '').toLowerCase();
+        if (!contentType.includes('image/')) {
+          continue;
+        }
+
+        const arrayBuffer = await response.arrayBuffer();
+        if (!arrayBuffer.byteLength) {
+          continue;
+        }
+
+        return Buffer.from(arrayBuffer);
+      } catch {
+        // Try next candidate URL.
+      }
+    }
+
+    return null;
+  }
+
+  private buildChecklistImageUrlCandidates(rawUrl: string): string[] {
+    const source = String(rawUrl || '').trim();
+    if (!source) {
+      return [];
+    }
+
+    const candidates: string[] = [];
+
+    if (/^https?:\/\//i.test(source)) {
+      candidates.push(source);
+    } else {
+      candidates.push(source.startsWith('/') ? source : `/${source}`);
+      candidates.push(this.normalizeChecklistMediaUrl(source, { subFolder: 'inspectionCheckList' }));
+    }
+
+    if (!/^https?:\/\//i.test(source) && this.checklistMediaPublicOrigin) {
+      const normalizedPath = source.startsWith('/') ? source : `/${source}`;
+      candidates.push(`${this.checklistMediaPublicOrigin}${normalizedPath}`);
+    }
+
+    return Array.from(new Set(candidates.filter((url) => !!String(url || '').trim())));
   }
 
   private extractStorageInfo(
