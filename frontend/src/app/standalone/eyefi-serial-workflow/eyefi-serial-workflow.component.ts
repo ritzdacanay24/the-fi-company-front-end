@@ -24,7 +24,6 @@ import { MismatchReportService } from './services/mismatch-report.service';
 import { SerialSequenceDebugModalComponent } from '../serial-sequence-debug-modal/serial-sequence-debug-modal.component';
 import { SerialAssignmentsService } from '@app/features/serial-assignments/services/serial-assignments.service';
 import { SerialReportPrintService } from '@app/shared/services/serial-report-print.service';
-import { ErrorReportDialogService } from '@app/core/services/error-report-dialog.service';
 import { interval, Subscription } from 'rxjs';
 
 interface WorkflowStep {
@@ -183,11 +182,112 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
   availableULs: any[] = [];
   isLoadingULs = false;
 
-  // Customer options - only the four core workflow types
+  // Customer options
   customerOptions: string[] = [
     'IGT',
     'Light and Wonder',
+    'Bally',
+    'Scientific Games',
     'AGS',
+    'AINGAM',
+    'AMEGAM',
+    'ATI',
+    'AVAGAM',
+    'BalGam',
+    'BALTEC',
+    'BETRIT',
+    'CHUGOL',
+    'EVIGAM',
+    'GAMART',
+    'IGT_EUR',
+    'INTGAM',
+    'JACENT',
+    'KONGAM',
+    'MCBHOL',
+    'MCBJOH',
+    'NORPRE',
+    'NOVAME',
+    'PECRES',
+    'SANMAN',
+    'SIGCON',
+    'SMSLLC',
+    'STYGAM',
+    'VegasSig',
+    'YELFIS',
+    'VGT',
+    'MIAVAL',
+    'ODACAS',
+    'ABPRE',
+    'CAEENT',
+    'USARMY',
+    'IGT_CAN',
+    'GAMCAP',
+    'VECGAM',
+    'ARUGAM',
+    'GTSOURCE',
+    'A&WENT',
+    'ADVGAM',
+    'AEROSPAC',
+    'MGM-BELL',
+    'BOYGAM',
+    'CENGAM-M',
+    'CHINATRA',
+    'COLEKEPR',
+    'DIAGAM',
+    'FLEXINT',
+    'GOLDROUT',
+    'GRANDVIS',
+    'INTUICOD',
+    'JPSLOT',
+    'NEXGAM',
+    'PARPRONV',
+    'PERGAM',
+    'SWSLOTCO',
+    'TOVISCO',
+    'VSRIND',
+    'WINMARK',
+    'WORLDWID',
+    'METAGAM',
+    'SANTFE',
+    'QUICHA',
+    'SYNBLUE',
+    'ELDOREST',
+    'CIRCCIRC',
+    'SILVLEGC',
+    'TURNSTON',
+    'MGMINTL',
+    'METSIG',
+    'RAINROCK',
+    'EPICTECH',
+    'PROTO-A',
+    'BVGA',
+    'WESTGATE',
+    'ELDORADO',
+    'ZITROUSA',
+    'BELLAGIO',
+    'TREASURE',
+    'BETRITE',
+    'HILAND',
+    'RAMPART',
+    'BLUBERI',
+    'AGLC',
+    'MICCO',
+    'MONROE',
+    'HAAS',
+    'OSPLLC',
+    'AVI',
+    'JRSHOS',
+    'INCRED',
+    'SONNY',
+    'KIRON',
+    'RHC',
+    'RTSINC',
+    'ECLIPSE',
+    'GALAXY',
+    'PLUSS',
+    'EXCEED',
+    'TIOLI',
+    'INTERB',
     'Other'
   ];
 
@@ -239,8 +339,7 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
     private authenticationService: AuthenticationService,
     private mismatchReportService: MismatchReportService,
     private serialAssignmentsService: SerialAssignmentsService,
-    private serialReportPrintService: SerialReportPrintService,
-    private errorReportDialogService: ErrorReportDialogService
+    private serialReportPrintService: SerialReportPrintService
   ) {}
 
   ngOnInit(): void {
@@ -321,6 +420,7 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
       }
     } catch (error) {
       console.error('Error loading UL numbers:', error);
+      this.toastrService.error('Failed to load UL numbers');
       this.availableULs = [];
     } finally {
       this.isLoadingULs = false;
@@ -395,40 +495,41 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
       console.log('pt_part:', workOrder.pt_part);
       console.log('cp_cust:', workOrder.cp_cust);
       
-      // Auto-select customer based on cp_cust, mapping to one of the four workflow types
+      // Auto-select customer based on cp_cust if it matches our customer list
       if (workOrder.cp_cust) {
         const cpCust = String(workOrder.cp_cust).trim();
-        const cpCustUpper = cpCust.toUpperCase();
 
-        // IGT and its subsidiaries
-        const igtAliases = ['IGT', 'INTGAM', 'IGT_EUR', 'IGT_CAN'];
-        // L&W and its subsidiaries/aliases
-        const lwAliases = ['LIGHT AND WONDER', 'BALLY', 'SCIENTIFIC GAMES', 'L&W', 'SG', 'BALTEC', 'BALGAM', 'VEGASSIG', 'VGT'];
-        // AGS and its subsidiaries
-        const agsAliases = ['AGS', 'AMEGAM'];
-
-        if (igtAliases.includes(cpCustUpper)) {
-          this.selectedCustomer = 'IGT';
-          console.log('✅ Auto-selected customer alias:', cpCust, '→ IGT');
-          this.toastrService.info('Customer auto-selected: IGT', 'Auto-Selection');
-        } else if (lwAliases.includes(cpCustUpper)) {
+        // Normalize L&W aliases so they always follow the SG/L&W workflow path.
+        if (['BALLY', 'SCIENTIFIC GAMES', 'L&W', 'SG'].includes(cpCust.toUpperCase())) {
           this.selectedCustomer = 'Light and Wonder';
           console.log('✅ Auto-selected customer alias:', cpCust, '→ Light and Wonder');
           this.toastrService.info('Customer auto-selected: Light and Wonder', 'Auto-Selection');
-        } else if (agsAliases.includes(cpCustUpper)) {
-          this.selectedCustomer = 'AGS';
-          console.log('✅ Auto-selected customer alias:', cpCust, '→ AGS');
-          this.toastrService.info('Customer auto-selected: AGS', 'Auto-Selection');
-        } else {
-          // All other customers go to "Other" with the original cp_cust as the name
-          this.selectedCustomer = 'Other';
-          this.customOtherCustomerName = cpCust;
-          console.log('✅ Auto-selected customer:', cpCust, '→ Other');
-          this.toastrService.info(`Customer set to "Other": ${cpCust}`, 'Auto-Selection');
+
+          if (this.currentStep === 2) {
+            this.scrollToSelectedCustomer();
+          }
+          return;
         }
 
-        if (this.currentStep === 2) {
-          this.scrollToSelectedCustomer();
+        const matchedCustomer = this.customerOptions.find(
+          customer => customer.toUpperCase() === cpCust.toUpperCase()
+        );
+        
+        if (matchedCustomer) {
+          this.selectedCustomer = matchedCustomer;
+          console.log('✅ Auto-selected customer:', matchedCustomer, 'from work order cp_cust:', workOrder.cp_cust);
+          this.toastrService.info(`Customer auto-selected: ${matchedCustomer}`, 'Auto-Selection');
+          
+          // Scroll to selected customer when user navigates to step 2
+          if (this.currentStep === 2) {
+            this.scrollToSelectedCustomer();
+          }
+        } else {
+          console.log('⚠️ Customer', workOrder.cp_cust, 'not found in customer options list. Will need manual selection.');
+          // Optionally set to "Other" and pre-fill the custom name
+          this.selectedCustomer = 'Other';
+          this.customOtherCustomerName = workOrder.cp_cust;
+          this.toastrService.info(`Customer set to "Other": ${workOrder.cp_cust}`, 'Auto-Selection');
         }
       } else {
         console.log('ℹ️ No cp_cust in work order. Customer selection required.');
@@ -669,6 +770,7 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
       await this.performAutoPopulation();
     } catch (error) {
       console.error('Error auto-populating serials:', error);
+      this.toastrService.error('Failed to auto-populate. Please select manually.');
       // Set to manual mode on error
       for (let i = 0; i < this.quantity; i++) {
         if (this.serialAssignments[i]) {
@@ -700,6 +802,7 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
       this.toastrService.success('Serial and UL assignments refreshed successfully!');
     } catch (error) {
       console.error('Error refreshing assignments:', error);
+      this.toastrService.error('Failed to refresh assignments. Please try again.');
     } finally {
       this.isLoading = false;
     }
@@ -1318,7 +1421,6 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
             eyefi_serial_id: typeof generated.serial === 'string' ? null : generated.serial.id,
             ulNumber: generated.ulNumber?.ul_number || '',
             ul_label_id: generated.ulNumber?.id || null,
-            ul_category: generated.ulNumber?.category || null,
             sgAssetNumber: generated.assetNumber?.trim() || '', // Use manually entered asset number for USED (trimmed)
             manualUpdate: '1', // Flag as manual entry so sequence logic ignores this row
             sgPartNumber: this.workOrderDetails?.cp_cust_part || '',
@@ -1343,7 +1445,6 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
             eyefi_serial_id: typeof assignment.serial === 'string' ? null : assignment.serial.id,
             ulNumber: assignment.ulNumber?.ul_number || '',
             ul_label_id: assignment.ulNumber?.id || null,
-            ul_category: assignment.ulNumber?.category || null,
             sgPartNumber: this.workOrderDetails?.cp_cust_part || '', //this is a customer field for sg
         poNumber: this.workOrderNumber,
         property_site: '', // Add if needed
@@ -1413,7 +1514,6 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
         eyefi_serial_id: typeof assignment.serial === 'string' ? null : assignment.serial.id,
         ulNumber: assignment.ulNumber?.ul_number || '',
         ul_label_id: assignment.ulNumber?.id || null,
-        ul_category: assignment.ulNumber?.category || null,
         sgPartNumber: this.workOrderDetails?.cp_cust_part || '',
         poNumber: this.workOrderNumber,
         property_site: '', // Add if needed
@@ -1482,7 +1582,6 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
         eyefi_serial_id: typeof generated.serial === 'string' ? null : generated.serial.id,
         ulNumber: generated.ulNumber?.ul_number || '',
         ul_label_id: generated.ulNumber?.id || null,
-        ul_category: generated.ulNumber?.category || null,
         partNumber: this.workOrderDetails?.wo_part || '',
         poNumber: this.workOrderNumber,
         active: 1,
@@ -1553,7 +1652,6 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
         eyefi_serial_id: typeof assignment.serial === 'string' ? null : assignment.serial.id,
         ulNumber: assignment.ulNumber?.ul_number || '',
         ul_label_id: assignment.ulNumber?.id || null,
-        ul_category: assignment.ulNumber?.category || null,
         partNumber: this.workOrderDetails?.wo_part || '',
         poNumber: this.workOrderNumber,
         customer_name: customerName, // Use determined customer name
@@ -1744,27 +1842,58 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
   getCustomerFormComponent(): string {
     switch (this.selectedCustomer) {
       case 'IGT':
+      case 'INTGAM':
+      case 'IGT_EUR':
+      case 'IGT_CAN':
         return 'igt';
       case 'Light and Wonder':
+      case 'Bally':
+      case 'Scientific Games':
+      case 'BALLY':
+      case 'SCIENTIFIC GAMES':
+      case 'L&W':
+      case 'SG':
+      case 'BALTEC':
+      case 'BalGam':
         return 'sg';
       case 'AGS':
+      case 'AMEGAM':
         return 'ags';
       case 'Other':
+        return 'other'; // Just assignment, no asset generation
       default:
-        return 'other'; // No asset generation — just assignment record
+        return 'other';
     }
   }
 
   /**
    * Get the display name for the customer type used in asset generation
+   * Maps subsidiary/alias customers to their parent company name
    */
   getCustomerDisplayName(): string {
     switch (this.selectedCustomer) {
-      case 'IGT': return 'IGT';
-      case 'Light and Wonder': return 'Light and Wonder';
-      case 'AGS': return 'AGS';
-      case 'Other': return this.customOtherCustomerName || 'Other';
-      default: return this.selectedCustomer || 'Other';
+      case 'IGT':
+      case 'INTGAM':
+      case 'IGT_EUR':
+      case 'IGT_CAN':
+        return 'IGT';
+      case 'Light and Wonder':
+      case 'Bally':
+      case 'Scientific Games':
+      case 'BALLY':
+      case 'SCIENTIFIC GAMES':
+      case 'L&W':
+      case 'SG':
+      case 'BALTEC':
+      case 'BalGam':
+        return 'Light and Wonder';
+      case 'AGS':
+      case 'AMEGAM':
+        return 'AGS';
+      case 'Other':
+        return 'Other';
+      default:
+        return this.selectedCustomer || 'Other';
     }
   }
 
@@ -2567,10 +2696,6 @@ H01FFE,gG01IFC,:gG01IF8,gG01IF,gG01FFE,gG01FFC,gG01FF8,gG01FE,gG01F8,gG01C,,::::
 
   goToMenu(): void {
     this.router.navigate(['/menu']);
-  }
-
-  openSupportTicketModal(): void {
-    void this.errorReportDialogService.open();
   }
 
   logout(): void {
