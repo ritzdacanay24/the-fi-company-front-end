@@ -48,9 +48,9 @@ export class PartsOrderCreateComponent implements OnInit {
         this.authenticationService.currentUserValue.id;
       let { insertId } = await this.partsOrderService.create(this.form.value);
 
-      if (this.myFiles) {
-        const formData = new FormData();
+      if (this.myFiles?.length) {
         for (var i = 0; i < this.myFiles.length; i++) {
+          const formData = new FormData();
           formData.append("file", this.myFiles[i]);
           formData.append("field", "FS Parts Order");
           formData.append("uniqueData", `${insertId}`);
@@ -82,7 +82,7 @@ export class PartsOrderCreateComponent implements OnInit {
 
   file: File = null;
 
-  myFiles: string[] = [];
+  myFiles: File[] = [];
 
   onFilechange(event: any) {
     this.myFiles = [];

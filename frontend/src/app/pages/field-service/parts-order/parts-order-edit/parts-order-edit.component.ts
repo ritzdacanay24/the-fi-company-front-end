@@ -317,7 +317,7 @@ export class PartsOrderEditComponent {
 
   file: File = null;
 
-  myFiles: string[] = [];
+  myFiles: File[] = [];
 
   onFilechange(event: any) {
     this.myFiles = [];
@@ -327,11 +327,11 @@ export class PartsOrderEditComponent {
   }
 
   async onUploadAttachments() {
-    if (this.myFiles) {
+    if (this.myFiles?.length) {
       let totalAttachments = 0;
       this.isLoading = true;
-      const formData = new FormData();
       for (var i = 0; i < this.myFiles.length; i++) {
+        const formData = new FormData();
         formData.append("file", this.myFiles[i]);
         formData.append("field", "FS Parts Order");
         formData.append("uniqueData", `${this.id}`);
