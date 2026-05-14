@@ -167,15 +167,31 @@ export class TripDetailRepository extends BaseRepository<RowDataPacket> {
 
   async getEmailRecipients(fsId: number): Promise<RowDataPacket | null> {
     const results = await this.mysqlService.query<RowDataPacket[]>(
-      `SELECT GROUP_CONCAT(DISTINCT b.email) AS emails,
-              GROUP_CONCAT(DISTINCT CONCAT(b.first, ' ', b.last)) AS names
+      `SELECT GROUP_CONCAT(DISTINCT resolved.email) AS emails,
+              GROUP_CONCAT(DISTINCT resolved.name) AS names
        FROM eyefidb.fs_team a
-       LEFT JOIN db.users b ON b.id = a.user_id
+       LEFT JOIN (
+         SELECT
+           t.id,
+           COALESCE(uById.email, uByName.email) AS email,
+           COALESCE(
+             NULLIF(TRIM(CONCAT(COALESCE(uById.first, ''), ' ', COALESCE(uById.last, ''))), ''),
+             NULLIF(TRIM(CONCAT(COALESCE(uByName.first, ''), ' ', COALESCE(uByName.last, ''))), ''),
+             NULLIF(TRIM(t.user), '')
+           ) AS name
+         FROM eyefidb.fs_team t
+         LEFT JOIN db.users uById ON uById.id = t.user_id
+         LEFT JOIN db.users uByName
+           ON t.user_id IS NULL
+          AND LOWER(TRIM(CONCAT(COALESCE(uByName.first, ''), ' ', COALESCE(uByName.last, '')))) = LOWER(TRIM(t.user))
+       ) resolved ON resolved.id = a.id
        WHERE a.fs_det_id IN (
          SELECT DISTINCT fsId
          FROM eyefidb.fs_travel_det
          WHERE fs_travel_header_id = ?
-       )`,
+       )
+         AND resolved.email IS NOT NULL
+         AND resolved.email <> ''`,
       [fsId],
     );
 
