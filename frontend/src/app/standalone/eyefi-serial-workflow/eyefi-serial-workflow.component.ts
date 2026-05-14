@@ -1423,6 +1423,7 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
             eyefi_serial_id: typeof generated.serial === 'string' ? null : generated.serial.id,
             ulNumber: generated.ulNumber?.ul_number || '',
             ul_label_id: generated.ulNumber?.id || null,
+            ul_category: this.getUlCategoryForPayload(generated.ulNumber),
             sgAssetNumber: generated.assetNumber?.trim() || '', // Use manually entered asset number for USED (trimmed)
             manualUpdate: '1', // Flag as manual entry so sequence logic ignores this row
             sgPartNumber: this.workOrderDetails?.cp_cust_part || '',
@@ -1447,6 +1448,7 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
             eyefi_serial_id: typeof assignment.serial === 'string' ? null : assignment.serial.id,
             ulNumber: assignment.ulNumber?.ul_number || '',
             ul_label_id: assignment.ulNumber?.id || null,
+          ul_category: this.getUlCategoryForPayload(assignment.ulNumber),
             sgPartNumber: this.workOrderDetails?.cp_cust_part || '', //this is a customer field for sg
         poNumber: this.workOrderNumber,
         property_site: '', // Add if needed
@@ -1516,6 +1518,7 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
         eyefi_serial_id: typeof assignment.serial === 'string' ? null : assignment.serial.id,
         ulNumber: assignment.ulNumber?.ul_number || '',
         ul_label_id: assignment.ulNumber?.id || null,
+        ul_category: this.getUlCategoryForPayload(assignment.ulNumber),
         sgPartNumber: this.workOrderDetails?.cp_cust_part || '',
         poNumber: this.workOrderNumber,
         property_site: '', // Add if needed
@@ -1584,6 +1587,7 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
         eyefi_serial_id: typeof generated.serial === 'string' ? null : generated.serial.id,
         ulNumber: generated.ulNumber?.ul_number || '',
         ul_label_id: generated.ulNumber?.id || null,
+        ul_category: this.getUlCategoryForPayload(generated.ulNumber),
         partNumber: this.workOrderDetails?.wo_part || '',
         poNumber: this.workOrderNumber,
         active: 1,
@@ -1654,6 +1658,7 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
         eyefi_serial_id: typeof assignment.serial === 'string' ? null : assignment.serial.id,
         ulNumber: assignment.ulNumber?.ul_number || '',
         ul_label_id: assignment.ulNumber?.id || null,
+        ul_category: this.getUlCategoryForPayload(assignment.ulNumber),
         partNumber: this.workOrderDetails?.wo_part || '',
         poNumber: this.workOrderNumber,
         customer_name: customerName, // Use determined customer name
@@ -1709,6 +1714,24 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
       console.error('💥 Error creating Other assignments:', error);
       throw error;
     }
+  }
+
+  private getUlCategoryForPayload(ul: any): string | null {
+    const fromSelection = String(ul?.category ?? ul?.ul_category ?? '').trim();
+    if (fromSelection) {
+      return fromSelection;
+    }
+
+    // Keep payload explicit even when the selected UL object is partial.
+    const normalizedBatchCategory = String(this.category || '').trim().toLowerCase();
+    if (normalizedBatchCategory === 'new') {
+      return 'New';
+    }
+    if (normalizedBatchCategory === 'used') {
+      return 'Used';
+    }
+
+    return null;
   }
 
   /**
