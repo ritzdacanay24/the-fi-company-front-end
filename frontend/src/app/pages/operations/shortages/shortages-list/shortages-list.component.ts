@@ -71,12 +71,19 @@ export class ShortagesListComponent implements OnInit {
 
   pageId = "/shortages/open-shortages";
 
+  private buildShortageSo(rowData: any): string {
+    const jobNumber = String(rowData?.jobNumber ?? '').trim();
+    const lineNumber = String(rowData?.lineNumber ?? '').trim();
+    return jobNumber && lineNumber ? `${jobNumber}-${lineNumber}` : '';
+  }
+
   openLateReasonCodeService(key, misc, uniqueId, rowData) {
     misc.userName = "Shortages";
+    const soLineNumber = this.buildShortageSo(rowData);
     const modalRef = this.lateReasonCodeModalService.open(
       key,
       misc,
-      uniqueId,
+      soLineNumber,
       "Shortages"
     );
     modalRef.result.then((result: any) => {

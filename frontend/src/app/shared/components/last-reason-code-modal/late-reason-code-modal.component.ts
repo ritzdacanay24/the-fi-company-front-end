@@ -158,7 +158,9 @@ export class LateReasonCodeModalComponent implements OnInit {
   save() {
     this.miscData[this.key] = this.lateReasonCode;
     this.miscData['lateReasonCodeComment'] = this.lateReasonCodeComment;
-    this.miscData.so = this.miscData.so ? this.miscData.so : this.soLineNumber;
+    const currentSo = String(this.miscData.so ?? '').trim();
+    const fallbackSo = String(this.soLineNumber ?? '').trim();
+    this.miscData.so = currentSo.includes('-') ? currentSo : fallbackSo;
     this.update();
   }
 

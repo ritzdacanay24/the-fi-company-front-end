@@ -382,19 +382,27 @@ export class SupportTicketsService {
         link,
       });
 
+      // Gather update recipients from metadata
+      let updateRecipients: string[] = [];
+      if (ticket.metadata && typeof ticket.metadata === 'object' && Array.isArray((ticket.metadata as any).update_recipients)) {
+        updateRecipients = ((ticket.metadata as any).update_recipients).filter((v: any) => typeof v === 'string' && v.includes('@'));
+      }
+
       if (commenterIsAdmin && ticket.user_email) {
-        // Admin replied — notify the requester
+        // Admin replied — notify the requester and update recipients
+        const to = [ticket.user_email, ...updateRecipients].filter((v, i, arr) => !!v && arr.indexOf(v) === i);
         await this.emailService.sendMail({
-          to: [ticket.user_email],
+          to,
           subject: `[Support Ticket] ${ticket.ticket_number} — New Reply`,
           html,
         });
       } else if (!commenterIsAdmin) {
-        // Requester replied — notify admin recipients
+        // Requester replied — notify admin recipients and update recipients
         const recipients = this.getAdminRecipients();
-        if (recipients.length > 0) {
+        const to = [...recipients, ...updateRecipients].filter((v, i, arr) => !!v && arr.indexOf(v) === i);
+        if (to.length > 0) {
           await this.emailService.sendMail({
-            to: recipients,
+            to,
             cc: commenter.email || undefined,
             subject: `[Support Ticket] ${ticket.ticket_number} — Requester Reply`,
             html,
