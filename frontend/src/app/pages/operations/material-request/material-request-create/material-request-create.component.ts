@@ -92,7 +92,30 @@ export class MaterialRequestCreateComponent {
       this.isLoading = false;
       this.toastrService.success('Successfully Created');
 
-      await this.router.navigate([NAVIGATION_ROUTE.CREATE]);
+      // Reset form and clear items for new submission
+      this.form.reset();
+      if (typeof this.resetTags === 'function') {
+        this.resetTags();
+      } else if (this.form.get('details')) {
+        let arr = this.form.get('details') as FormArray;
+        while (0 !== arr.length) {
+          arr.removeAt(0);
+        }
+      }
+
+      // Re-patch default values for a new request
+      this.form.patchValue({
+        main: {
+          dueDate: moment().format('YYYY-MM-DD'),
+          createdBy: this.authenticationService.currentUserValue.id,
+          requestor: this.authenticationService.currentUserValue.full_name,
+        }
+      }, { emitEvent: false });
+
+      this.addMoreItems();
+
+      // Optionally, navigate to the same route to refresh if needed
+      // await this.router.navigate([NAVIGATION_ROUTE.CREATE]);
       return;
 
     } catch (err) {

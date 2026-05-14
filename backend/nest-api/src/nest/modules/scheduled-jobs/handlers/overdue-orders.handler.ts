@@ -531,6 +531,7 @@ export class OverdueOrdersHandler implements ScheduledJobHandler {
       LEFT JOIN eyefidb.graphicsQueues q ON q.queueStatus = a.status AND q.active = 1
       WHERE a.active = 1
         AND a.qty - a.qtyShipped != 0
+        AND a.status <> 900
         AND LOWER(COALESCE(a.graphicsWorkOrder, '')) != 'stock'
         AND COALESCE(q.name, '') != 'Ship'
         AND DATE(a.dueDate) <= ?
