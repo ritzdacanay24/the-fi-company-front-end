@@ -84,11 +84,24 @@
   }
 
   .nav-tabs {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+
     .nav-link {
+      border-top-left-radius: 0;
+      border-top-right-radius: 0;
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
     }
 
     .nav-link.active,
     .nav-item.show .nav-link {
+      border-top-left-radius: 0;
+      border-top-right-radius: 0;
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
     }
   }
 

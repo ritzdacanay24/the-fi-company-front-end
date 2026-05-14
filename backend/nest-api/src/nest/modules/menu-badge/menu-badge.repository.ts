@@ -24,10 +24,12 @@ export interface SidebarMenuBadgeCounts {
   permitChecklistOpen: number;
   shippingRequestOpen: number;
   graphicsProductionOpen: number;
+  fieldServiceJobsOpen: number;
   fieldsServiceRequestsOpen: number;
   partsOrderOpen: number;
   trainingLiveSessionsOpen: number;
   inspectionChecklistExecutionInProgress: number;
+  inspectionChecklistTemplatesDraft: number;
   pmProjectsOpen: number;
   pmTasksOpen: number;
   supportTicketsOpen: number;
@@ -157,7 +159,7 @@ export class MenuBadgeRepository {
 
       SELECT 'permitChecklistOpen' AS menu_id, COUNT(*) AS count
       FROM quality_permit_checklist_tickets p
-      WHERE LOWER(COALESCE(p.status, 'open')) NOT IN ('closed', 'completed', 'cancelled')
+      WHERE LOWER(TRIM(COALESCE(p.status, 'draft'))) IN ('draft', 'saved', 'submitted')
 
       UNION ALL
 
@@ -171,7 +173,14 @@ export class MenuBadgeRepository {
       FROM eyefidb.graphicsSchedule gp
       WHERE gp.active = 1
         AND gp.qty - gp.qtyShipped <> 0
-        AND gp.dueDate <= CURDATE()
+        AND gp.status <> 900
+
+      UNION ALL
+
+      SELECT 'fieldServiceJobsOpen' AS menu_id, COUNT(*) AS count
+      FROM eyefidb.fs_scheduler fsj
+      WHERE fsj.active = 1
+        AND fsj.status IN ('Pending', 'Confirmed')
 
       UNION ALL
 
@@ -205,6 +214,13 @@ export class MenuBadgeRepository {
       SELECT 'inspectionChecklistExecutionInProgress' AS menu_id, COUNT(*) AS count
       FROM checklist_instances ci
       WHERE ci.status IN ('draft', 'in_progress', 'review')
+
+      UNION ALL
+
+      SELECT 'inspectionChecklistTemplatesDraft' AS menu_id, COUNT(*) AS count
+      FROM checklist_templates ct
+      WHERE ct.is_active = 1
+        AND ct.is_draft = 1
 
       UNION ALL
 
@@ -242,10 +258,12 @@ export class MenuBadgeRepository {
       permitChecklistOpen: 0,
       shippingRequestOpen: 0,
       graphicsProductionOpen: 0,
+      fieldServiceJobsOpen: 0,
       fieldsServiceRequestsOpen: 0,
       partsOrderOpen: 0,
       trainingLiveSessionsOpen: 0,
       inspectionChecklistExecutionInProgress: 0,
+      inspectionChecklistTemplatesDraft: 0,
       pmProjectsOpen: 0,
       pmTasksOpen: 0,
       supportTicketsOpen: 0,

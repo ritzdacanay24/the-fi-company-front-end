@@ -364,6 +364,18 @@ export class PermitChecklistsComponent implements OnInit {
 
   ticketColumnDefs: ColDef[] = [
     {
+      headerName: "Actions",
+      colId: "actions",
+      pinned: "left",
+      sortable: false,
+      filter: false,
+      resizable: false,
+      cellRenderer: "permitTicketActionsRenderer",
+      cellRendererParams: {
+        onOpen: (ticketId: string) => this.openTicket(ticketId),
+      },
+    },
+    {
       headerName: "Ticket ID",
       field: "ticketId",
       minWidth: 190,
@@ -2326,6 +2338,34 @@ export class PermitChecklistsComponent implements OnInit {
     this.viewMode = "form";
     this.syncUrlState();
     this.statusMessage = "Ticket opened.";
+  }
+
+  archiveTicket(ticketId: string): void {
+    const ticket = this.tickets.find((row) => row.ticketId === ticketId);
+    if (!ticket) {
+      return;
+    }
+
+    if (ticket.status === "archived") {
+      this.statusMessage = `Ticket ${ticket.ticketId} is already archived.`;
+      return;
+    }
+
+    const confirmed = window.confirm(`Archive checklist ${ticket.ticketId}? You can still open it in read-only mode.`);
+    if (!confirmed) {
+      return;
+    }
+
+    ticket.status = "archived";
+    ticket.updatedAt = new Date().toISOString();
+
+    this.appendTransaction(ticket.ticketId, "archive", {
+      source: "ticket",
+    });
+
+    this.refreshRecentTickets();
+    this.persistLocalData();
+    this.statusMessage = `Ticket ${ticket.ticketId} archived.`;
   }
 
   archiveCurrentTicket(): void {

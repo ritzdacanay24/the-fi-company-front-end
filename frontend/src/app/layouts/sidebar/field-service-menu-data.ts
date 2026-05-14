@@ -34,6 +34,7 @@ export const FIELD_SERVICE_MENU_DATA: MenuItem[] = [
     },
     {
         id: 6,
+        badgeId: "fieldServiceJobsOpen",
         label: "Service Jobs",
         icon: "las la-briefcase",
         link: "/field-service/jobs/list",

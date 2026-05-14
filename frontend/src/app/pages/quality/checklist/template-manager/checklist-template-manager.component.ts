@@ -2330,7 +2330,7 @@ export class ChecklistTemplateManagerComponent implements OnInit, OnDestroy {
         }
 
         const isDraft = Boolean(params.data.is_draft);
-        const primaryLabel = isDraft ? 'Edit' : 'View';
+        const primaryLabel = 'Select';
         const primaryAction = isDraft ? 'edit' : 'view';
         const majorItem = !isDraft
           ? '<button class="dropdown-item" type="button" data-action="new-major"><i class="mdi mdi-source-branch me-2"></i>New Major Version</button>'

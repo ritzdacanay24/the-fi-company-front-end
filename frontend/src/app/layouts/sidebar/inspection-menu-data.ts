@@ -50,6 +50,7 @@ export const INSPECTION_MENU: MenuItem[] = [
     },
     {
         id: 6,
+        badgeId: "inspectionChecklistTemplatesDraft",
         label: "Template Editor",
         link: "/inspection-checklist/template-editor",
         description: "Edit checklist templates",

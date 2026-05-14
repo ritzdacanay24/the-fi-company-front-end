@@ -22,10 +22,12 @@ export interface SidebarMenuBadgeCounts {
   permitChecklistOpen: number;
   shippingRequestOpen: number;
   graphicsProductionOpen: number;
+  fieldServiceJobsOpen: number;
   fieldsServiceRequestsOpen: number;
   partsOrderOpen: number;
   trainingLiveSessionsOpen: number;
   inspectionChecklistExecutionInProgress: number;
+  inspectionChecklistTemplatesDraft: number;
   pmProjectsOpen: number;
   pmTasksOpen: number;
   supportTicketsOpen: number;
@@ -66,10 +68,12 @@ const ZERO_COUNTS: SidebarMenuBadgeCounts = {
   permitChecklistOpen: 0,
   shippingRequestOpen: 0,
   graphicsProductionOpen: 0,
+  fieldServiceJobsOpen: 0,
   fieldsServiceRequestsOpen: 0,
   partsOrderOpen: 0,
   trainingLiveSessionsOpen: 0,
   inspectionChecklistExecutionInProgress: 0,
+  inspectionChecklistTemplatesDraft: 0,
   pmProjectsOpen: 0,
   pmTasksOpen: 0,
   supportTicketsOpen: 0,
@@ -212,10 +216,12 @@ export class MenuBadgeWebsocketService implements OnDestroy {
       permitChecklistOpen:                 toNum(pick('permitChecklistOpen'),                 current.permitChecklistOpen),
       shippingRequestOpen:                 toNum(pick('shippingRequestOpen'),                 current.shippingRequestOpen),
       graphicsProductionOpen:              toNum(pick('graphicsProductionOpen'),              current.graphicsProductionOpen),
+      fieldServiceJobsOpen:                toNum(pick('fieldServiceJobsOpen'),                current.fieldServiceJobsOpen),
       fieldsServiceRequestsOpen:           toNum(pick('fieldsServiceRequestsOpen'),           current.fieldsServiceRequestsOpen),
       partsOrderOpen:                      toNum(pick('partsOrderOpen'),                      current.partsOrderOpen),
       trainingLiveSessionsOpen:            toNum(pick('trainingLiveSessionsOpen'),            current.trainingLiveSessionsOpen),
       inspectionChecklistExecutionInProgress: toNum(pick('inspectionChecklistExecutionInProgress'), current.inspectionChecklistExecutionInProgress),
+      inspectionChecklistTemplatesDraft:  toNum(pick('inspectionChecklistTemplatesDraft'),  current.inspectionChecklistTemplatesDraft),
       pmProjectsOpen:                          toNum(pick('pmProjectsOpen'),                          current.pmProjectsOpen),
       pmTasksOpen:                             toNum(pick('pmTasksOpen'),                             current.pmTasksOpen),
       supportTicketsOpen:                      toNum(pick('supportTicketsOpen'),                      current.supportTicketsOpen),

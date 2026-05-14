@@ -24,6 +24,7 @@ import { MismatchReportService } from './services/mismatch-report.service';
 import { SerialSequenceDebugModalComponent } from '../serial-sequence-debug-modal/serial-sequence-debug-modal.component';
 import { SerialAssignmentsService } from '@app/features/serial-assignments/services/serial-assignments.service';
 import { SerialReportPrintService } from '@app/shared/services/serial-report-print.service';
+import { SupportEntryService } from '@app/core/services/support-entry.service';
 import { interval, Subscription } from 'rxjs';
 
 interface WorkflowStep {
@@ -339,7 +340,8 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
     private authenticationService: AuthenticationService,
     private mismatchReportService: MismatchReportService,
     private serialAssignmentsService: SerialAssignmentsService,
-    private serialReportPrintService: SerialReportPrintService
+    private serialReportPrintService: SerialReportPrintService,
+    private supportEntryService: SupportEntryService
   ) {}
 
   ngOnInit(): void {
@@ -2696,6 +2698,10 @@ H01FFE,gG01IFC,:gG01IF8,gG01IF,gG01FFE,gG01FFC,gG01FF8,gG01FE,gG01F8,gG01C,,::::
 
   goToMenu(): void {
     this.router.navigate(['/menu']);
+  }
+
+  openSupportTicketModal(): void {
+    void this.supportEntryService.openSupport({ source: 'eyefi-serial-workflow' });
   }
 
   logout(): void {

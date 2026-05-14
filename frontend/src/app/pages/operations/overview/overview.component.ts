@@ -70,8 +70,10 @@ export class OverviewComponent implements OnInit {
     { key: 'finalTestQcOpen',                     label: 'Final Test / QC Open',              group: 'Production',           icon: 'mdi mdi-clipboard-text-search',    route: '/operations/master-scheduling/qc-routing' },
     { key: 'shippingScheduleDueNow',              label: 'Overdue & Due Today',               group: 'Shipping',             icon: 'mdi mdi-calendar-clock',           route: '/operations/forms/shipping-schedule' },
     { key: 'graphicsProductionOpen',              label: 'Graphics Production Open',          group: 'Operations',           icon: 'mdi mdi-palette-outline',          route: '/operations/graphics/graphics-production' },
+    { key: 'fieldServiceJobsOpen',                label: 'Field Service Jobs Open',           group: 'Field Service',        icon: 'mdi mdi-briefcase-outline',        route: '/field-service/jobs/list' },
     { key: 'trainingLiveSessionsOpen',            label: 'Training Live Sessions',            group: 'Training',             icon: 'mdi mdi-school-outline',           route: '/training/live' },
     { key: 'inspectionChecklistExecutionInProgress', label: 'Inspections In Progress',        group: 'Quality',              icon: 'mdi mdi-clipboard-check',          route: '/inspection-checklist/execution' },
+    { key: 'inspectionChecklistTemplatesDraft',   label: 'Inspection Template Drafts',        group: 'Quality',              icon: 'mdi mdi-file-document-edit-outline', route: '/inspection-checklist/template-editor' },
   ];
 
   readonly defaultSelectedMetricKeys: Array<keyof SidebarMenuBadgeCounts> = [
@@ -106,10 +108,12 @@ export class OverviewComponent implements OnInit {
     permitChecklistOpen: 0,
     shippingRequestOpen: 0,
     graphicsProductionOpen: 0,
+    fieldServiceJobsOpen: 0,
     fieldsServiceRequestsOpen: 0,
     partsOrderOpen: 0,
     trainingLiveSessionsOpen: 0,
     inspectionChecklistExecutionInProgress: 0,
+    inspectionChecklistTemplatesDraft: 0,
     pmProjectsOpen: 0,
     pmTasksOpen: 0,
     supportTicketsOpen: 0,

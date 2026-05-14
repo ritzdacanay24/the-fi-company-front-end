@@ -21,14 +21,12 @@ export interface TemplateManagerActionsCellParams extends ICellRendererParams<Ch
       <!-- Latest version (or draft): full edit button -->
       <button
         *ngIf="params.isLatest"
-        class="btn btn-sm"
-        [class.btn-primary]="!params.lockedByOther"
-        [class.btn-outline-secondary]="params.lockedByOther"
+        class="btn btn-sm btn-outline-secondary"
         type="button"
         [title]="params.lockedByOther ? 'Open draft in review mode' : 'Open template editor'"
         (click)="onEdit()">
         <i class="mdi me-1" [class.mdi-pencil]="!params.lockedByOther" [class.mdi-eye]="params.lockedByOther"></i>
-        {{ params.lockedByOther ? 'Review' : 'Edit' }}
+        Select
       </button>
       <!-- Older version: view-only -->
       <button
@@ -38,7 +36,7 @@ export interface TemplateManagerActionsCellParams extends ICellRendererParams<Ch
         title="View this version (read-only)"
         (click)="onView()">
         <i class="mdi mdi-eye me-1"></i>
-        View
+        Select
       </button>
     </ng-container>
   `,
