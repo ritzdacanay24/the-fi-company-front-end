@@ -17,6 +17,7 @@ import { QuillModule } from 'ngx-quill';
 import { SupportTicketDraft, SupportTicketDraftService } from '@app/core/services/support-ticket-draft.service';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import { FileViewerModalComponent } from '@app/shared/components/file-viewer-modal/file-viewer-modal.component';
+import { InlineAttachmentDropzoneComponent } from '@app/shared/components/inline-attachment-dropzone/inline-attachment-dropzone.component';
 
 /**
  * Submit Ticket Dialog
@@ -33,7 +34,7 @@ import { FileViewerModalComponent } from '@app/shared/components/file-viewer-mod
 @Component({
   selector: 'app-error-report-dialog',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, QuillModule],
+  imports: [CommonModule, ReactiveFormsModule, QuillModule, InlineAttachmentDropzoneComponent],
   styles: [`
     .modal-header { display: flex; align-items: center; }
     .modal-title { margin-bottom: 0; }
@@ -58,7 +59,6 @@ import { FileViewerModalComponent } from '@app/shared/components/file-viewer-mod
       width: 32px; height: 32px; padding: 0;
       display: inline-flex; align-items: center; justify-content: center;
     }
-    .attachment-dropzone { border-style: dashed; cursor: pointer; user-select: none; }
     .attachment-thumb { width: 32px; height: 32px; object-fit: cover; }
   `],
   template: `
@@ -252,23 +252,18 @@ import { FileViewerModalComponent } from '@app/shared/components/file-viewer-mod
               Attachments (Optional)
             </label>
 
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              (change)="onFilesSelected($event)"
-              #fileInput
-              class="d-none">
-
-            <div
-              class="attachment-dropzone border rounded p-3 text-center"
-              (click)="fileInput.click()"
-              (dragover)="onDragOver($event)"
-              (drop)="onFilesDropped($event)">
-              <div class="fw-semibold">Drag & drop images here</div>
-              <div class="small text-muted">Click to browse files</div>
-              <div class="small text-muted">Or press Ctrl+V to paste a screenshot anywhere in this dialog</div>
-            </div>
+            <app-inline-attachment-dropzone
+              [accept]="'image/*'"
+              [multiple]="true"
+              [disabled]="isSubmitting()"
+              [allowPaste]="true"
+              [openPickerOnContainerClick]="false"
+              [chooseLabel]="'Choose image files'"
+              [dropLabel]="'or drag images here.'"
+              [pasteHint]="'Or press Ctrl+V to paste a screenshot anywhere in this dialog'"
+              [showPasteHint]="true"
+              (filesAdded)="onAttachmentFilesAdded($event)">
+            </app-inline-attachment-dropzone>
 
             @if (selectedFiles().length > 0) {
               <div class="mt-2">
@@ -459,19 +454,8 @@ export class ErrorReportDialogComponent implements OnDestroy {
     }
   }
 
-  onFilesSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    this.addFiles(Array.from(input.files || []));
-    input.value = '';
-  }
-
-  onDragOver(event: DragEvent): void {
-    event.preventDefault();
-  }
-
-  onFilesDropped(event: DragEvent): void {
-    event.preventDefault();
-    this.addFiles(Array.from(event.dataTransfer?.files || []));
+  onAttachmentFilesAdded(files: File[]): void {
+    this.addFiles(files);
   }
 
   private addFiles(files: File[]): void {

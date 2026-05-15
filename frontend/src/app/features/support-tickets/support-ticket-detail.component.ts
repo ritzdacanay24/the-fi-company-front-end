@@ -8,6 +8,7 @@ import { SupportTicketsService } from '@app/core/api/support-tickets/support-tic
 import { NotificationService } from '@app/core/services/notification.service';
 import { BreadcrumbComponent } from '@app/shared/components/breadcrumb/breadcrumb.component';
 import { FileViewerModalComponent } from '@app/shared/components/file-viewer-modal/file-viewer-modal.component';
+import { InlineAttachmentDropzoneComponent } from '@app/shared/components/inline-attachment-dropzone/inline-attachment-dropzone.component';
 import {
   SUPPORT_TICKET_PRIORITY_LABELS,
   SUPPORT_TICKET_STATUS_LABELS,
@@ -40,7 +41,7 @@ type TicketMediaItem = {
 @Component({
   selector: 'app-support-ticket-detail',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, BreadcrumbComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, BreadcrumbComponent, InlineAttachmentDropzoneComponent],
   templateUrl: './support-ticket-detail.component.html',
   styles: [
     `
@@ -470,10 +471,10 @@ export class SupportTicketDetailComponent implements OnInit {
       || normalized.includes('.webp');
   }
 
-  onMediaFilesSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const files = Array.from(input.files || []);
-    input.value = '';
+  onMediaFilesAdded(files: File[]): void {
+    if (this.isUploadingMedia() || this.isSaving()) {
+      return;
+    }
 
     if (!files.length) {
       return;

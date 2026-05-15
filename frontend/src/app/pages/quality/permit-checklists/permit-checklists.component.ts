@@ -426,7 +426,7 @@ export class PermitChecklistsComponent implements OnInit {
     {
       headerName: "Completion",
       field: "completionPercent",
-      minWidth: 240,
+      maxWidth: 110,
       valueGetter: (params) => this.getTicketCompletionMetrics(params.data).percent,
       cellRenderer: (params: any) => {
         const metrics = this.getTicketCompletionMetrics(params.data);

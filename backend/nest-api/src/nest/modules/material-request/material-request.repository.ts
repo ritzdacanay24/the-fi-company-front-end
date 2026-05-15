@@ -342,3 +342,80 @@ export class MaterialRequestRepository extends BaseRepository<RowDataPacket> {
     );
   }
 }
+
+
+
+/**
+ * 
+ * START TRANSACTION;
+
+-- 1) Preview how many rows will be inserted
+SELECT COUNT(*) AS rows_to_insert
+FROM mrf_det d
+INNER JOIN mrf m ON d.mrf_id = m.id
+LEFT JOIN shortageRequest sr ON sr.mrf_line = d.id
+WHERE d.active = 1
+  AND m.active = 1
+  AND d.qty > 0
+  AND COALESCE(d.qtyPicked, 0) < d.qty
+  AND sr.id IS NULL
+  AND m.pickedCompletedDate IS NOT NULL
+  AND DATE(d.createdDate) > '2026-04-30' AND d.createdBy != 3;
+
+-- 2) Insert backlog
+INSERT INTO shortageRequest (
+  jobNumber,
+  woNumber,
+  lineNumber,
+  dueDate,
+  reasonPartNeeded,
+  priority,
+  assemblyNumber,
+  mrfId,
+  createdBy,
+  partNumber,
+  qty,
+  comments,
+  partDesc,
+  graphicsShortage,
+  mrf_line
+)
+SELECT
+  CONCAT('MRS-BACKFILL-20260515-', d.id) AS jobNumber,
+  COALESCE(m.pickList, '') AS woNumber,
+  COALESCE(m.lineNumber, '') AS lineNumber,
+  m.dueDate,
+  'Material request shortages' AS reasonPartNeeded,
+  COALESCE(m.priority, '') AS priority,
+  COALESCE(m.assemblyNumber, '') AS assemblyNumber,
+  CAST(m.id AS CHAR) AS mrfId,
+  CAST(COALESCE(NULLIF(m.createdBy, ''), '0') AS UNSIGNED) AS createdBy,
+  COALESCE(d.partNumber, '') AS partNumber,
+  GREATEST(d.qty - COALESCE(d.qtyPicked, 0), 0) AS qty,
+  '' AS comments,
+  COALESCE(d.description, '') AS partDesc,
+  'false' AS graphicsShortage,
+  d.id AS mrf_line
+FROM mrf_det d
+INNER JOIN mrf m ON d.mrf_id = m.id
+LEFT JOIN shortageRequest sr ON sr.mrf_line = d.id
+WHERE d.active = 1
+  AND m.active = 1
+  AND d.qty > 0
+  AND COALESCE(d.qtyPicked, 0) < d.qty
+  AND sr.id IS NULL
+  AND m.pickedCompletedDate IS NOT NULL
+  AND DATE(d.createdDate) > '2026-04-30' 
+   AND d.createdBy != 3;
+
+SELECT ROW_COUNT() AS inserted_rows;
+
+-- 3) Verify what was added
+SELECT id, jobNumber, mrf_line, partNumber, qty, createdDate
+FROM shortageRequest
+WHERE jobNumber LIKE 'MRS-BACKFILL-20260515-%'
+ORDER BY id DESC;
+
+COMMIT; can we include this as a backup incase no shortages were recorded. 
+ * 
+ */

@@ -116,31 +116,27 @@
                 <h6 class="mb-0">Attachments & Screenshots ({{ mediaItems().length }})</h6>
               </div>
               <div class="card-body">
-                <div class="border rounded p-3 mb-3">
-                  <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-                    <button
-                      type="button"
-                      class="btn btn-sm btn-outline-primary"
-                      (click)="mediaPicker.click()"
-                      [disabled]="isUploadingMedia() || isSaving()">
-                      <i class="mdi mdi-upload me-1"></i>
-                      Add Attachments
-                    </button>
+                <div class="rounded p-3 mb-3">
+                  <app-inline-attachment-dropzone
+                    [disabled]="isUploadingMedia() || isSaving()"
+                    [accept]="'*/*'"
+                    [multiple]="true"
+                    [allowPaste]="true"
+                    [openPickerOnContainerClick]="false"
+                    [chooseLabel]="'Choose a file'"
+                    [dropLabel]="'or drag it here.'"
+                    [pasteHint]="'Copy and paste clipboard files here.'"
+                    [showPasteHint]="true"
+                    (filesAdded)="onMediaFilesAdded($event)">
+                  </app-inline-attachment-dropzone>
 
+                  <div class="d-flex flex-wrap align-items-center gap-2 mt-2">
                     @if (isUploadingMedia()) {
                       <span class="badge bg-info-subtle text-info-emphasis border">
                         <span class="spinner-border spinner-border-sm me-1"></span>
                         Uploading...
                       </span>
                     }
-
-                    <input
-                      #mediaPicker
-                      type="file"
-                      multiple
-                      accept="*/*"
-                      class="d-none"
-                      (change)="onMediaFilesSelected($event)">
                   </div>
 
                   @if (uploadError()) {
@@ -148,8 +144,6 @@
                       {{ uploadError() }}
                     </div>
                   }
-
-                  <small class="text-muted">Files upload as soon as you select them.</small>
                 </div>
 
                 @if (mediaItems().length === 0) {
