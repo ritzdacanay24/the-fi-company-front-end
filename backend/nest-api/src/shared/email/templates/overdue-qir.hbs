@@ -1,9 +1,9 @@
 <html>
   <body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f4f6f8; color: #1f2933;">
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 24px 12px;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 0;">
       <tr>
         <td align="center">
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 920px; background-color: #ffffff; border: 1px solid #dde3ea; border-radius: 10px; overflow: hidden;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 100%; background-color: #ffffff; border: 1px solid #dde3ea; border-radius: 10px; overflow: hidden;">
             {{> email-header}}
             <tr>
               <td style="padding: 20px 24px; background-color: #0b5cab; color: #ffffff;">
@@ -20,6 +20,14 @@
                 <p style="margin: 0 0 12px 0;">
                   Please update the status of resolved incidents to <strong>Closed</strong>.
                 </p>
+                <div style="margin: 0 0 16px 0; padding: 12px 14px; border: 1px solid #dbe7f7; border-radius: 8px; background: #f5f9ff;">
+                  <p style="margin: 0 0 8px 0; font-weight: 700; color: #0b5cab;">Action Items</p>
+                  <ul style="margin: 0; padding-left: 18px;">
+                    <li style="margin: 0 0 6px 0;">Review each open incident listed in the table below.</li>
+                    <li style="margin: 0 0 6px 0;">Update the incident status to <strong>Closed</strong> for completed items.</li>
+                    <li style="margin: 0;">Add or refresh notes for incidents that still require work.</li>
+                  </ul>
+                </div>
                 <p style="margin: 0 0 16px 0;">
                   <a href="{{reportLink}}" style="display: inline-block; padding: 10px 18px; border-radius: 6px; background-color: #0b5cab; color: #ffffff; text-decoration: none; font-weight: 600;">
                     View Open Quality Incident Report

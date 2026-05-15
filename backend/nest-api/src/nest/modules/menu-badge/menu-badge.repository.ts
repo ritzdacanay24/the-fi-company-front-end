@@ -137,7 +137,7 @@ export class MenuBadgeRepository {
       SELECT 'qualityIssuesOpen' AS menu_id, COUNT(*) AS count
       FROM qa_capaRequest q
       WHERE q.active = 1
-        AND q.status IN ('Open', 'In Process')
+        AND q.status IN ('Open', 'In Process', 'Awaiting Verification')
 
       UNION ALL
 

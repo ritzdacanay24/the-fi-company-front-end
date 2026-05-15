@@ -116,7 +116,7 @@ export class QirRepository extends BaseRepository<RowDataPacket> {
     }
 
     if (params.selectedViewType === 'Open') {
-      sql += ` AND a.active = 1 AND a.status IN ('Open', 'In Process')`;
+      sql += ` AND a.active = 1 AND a.status IN ('Open', 'In Process', 'Awaiting Verification')`;
     } else if (params.selectedViewType === 'Closed') {
       sql += ` AND a.active = 1 AND a.status IN ('Closed', 'Rejected')`;
     }

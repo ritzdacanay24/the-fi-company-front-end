@@ -1,0 +1,79 @@
+<html>
+  <body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f4f6f8; color: #1f2933;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 920px; background-color: #ffffff; border: 1px solid #dde3ea; border-radius: 10px; overflow: hidden;">
+            {{> email-header}}
+            <tr>
+              <td style="padding: 20px 24px; background-color: #0b5cab; color: #ffffff;">
+                <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Open Checklist Instances (Older Than 3 Days)</h2>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 24px; font-size: 14px; line-height: 1.6;">
+                <p style="margin: 0 0 12px 0;">Open checklist instances that are older than 3 days.</p>
+                <div style="margin: 0 0 16px 0; padding: 12px 14px; border: 1px solid #dbe7f7; border-radius: 8px; background: #f5f9ff;">
+                  <p style="margin: 0 0 8px 0; font-weight: 700; color: #0b5cab;">Action Items</p>
+                  <ul style="margin: 0; padding-left: 18px;">
+                    <li style="margin: 0 0 6px 0;">Review each open checklist instance listed below.</li>
+                    <li style="margin: 0 0 6px 0;">Prioritize instances with low completion percentage and assign owners.</li>
+                    <li style="margin: 0 0 6px 0;">Complete overdue inspections and move finished items to submitted status.</li>
+                    <li style="margin: 0;">If an inspection instance is no longer needed, delete the instance.</li>
+                  </ul>
+                </div>
+                <p style="margin: 0 0 16px 0;">
+                  <a href="{{reportLink}}" style="display: inline-block; padding: 10px 18px; border-radius: 6px; background-color: #0b5cab; color: #ffffff; text-decoration: none; font-weight: 600;">
+                    View Checklist Management
+                  </a>
+                </p>
+                <p style="margin: 0 0 14px 0;"><strong>Total Open Instances:</strong> {{totalOpenInstances}}</p>
+
+                {{#if hasRows}}
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse; margin-bottom: 18px;">
+                  <thead>
+                    <tr>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">ID</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Work Order</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Serial Number</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Status</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc; min-width: 180px;">Progress</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Owner/Operator</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Created Date</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Updated Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {{#each rows}}
+                    <tr>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{id}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{workOrderNumber}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{serialNumber}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{status}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                          <div style="flex: 1; height: 10px; background-color: #e9ecef; border-radius: 999px; overflow: hidden;">
+                            <div style="height: 100%; width: {{progressWidth}}; background-color: {{progressColor}};"></div>
+                          </div>
+                          <span style="min-width: 42px; text-align: right; font-weight: 600;">{{progressPercent}}%</span>
+                        </div>
+                      </td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{ownerOperator}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{createdAt}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{updatedAt}}</td>
+                    </tr>
+                    {{/each}}
+                  </tbody>
+                </table>
+                {{else}}
+                <p style="margin: 0 0 16px 0; color: #15803d; font-weight: 600;">No open checklist instances older than 3 days were found.</p>
+                {{/if}}
+              </td>
+            </tr>
+            {{> email-footer}}
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

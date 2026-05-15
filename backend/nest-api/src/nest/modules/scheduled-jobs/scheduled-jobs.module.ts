@@ -34,6 +34,7 @@ import {
   OverdueQirHandler,
   OverdueSafetyIncidentHandler,
   InspectionChecklistReportGeneratorHandler,
+  OpenChecklistInstancesLast3DaysHandler,
 } from './handlers';
 
 @Module({
@@ -74,6 +75,7 @@ import {
     OverdueQirHandler,
     OverdueSafetyIncidentHandler,
     InspectionChecklistReportGeneratorHandler,
+    OpenChecklistInstancesLast3DaysHandler,
   ],
 })
 export class ScheduledJobsModule {}

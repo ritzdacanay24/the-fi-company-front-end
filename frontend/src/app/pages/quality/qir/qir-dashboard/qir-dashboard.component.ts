@@ -802,7 +802,9 @@ export class QirDashboardComponent implements OnInit, OnDestroy {
   }
 
   public getOpenQirsCount(): number {
-    const openStatus = this.metrics.statusBreakdown.find(s => s.status === 'Open');
-    return openStatus ? openStatus.count : 0;
+    const openStatuses = new Set(['open', 'in process', 'awaiting verification']);
+    return this.metrics.statusBreakdown
+      .filter((s) => openStatuses.has(String(s.status || '').trim().toLowerCase()))
+      .reduce((sum, s) => sum + Number(s.count || 0), 0);
   }
 }

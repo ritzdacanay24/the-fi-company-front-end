@@ -194,4 +194,12 @@ export const SCHEDULED_JOB_DEFINITIONS: ScheduledJobDefinition[] = [
     active: true,
     note: 'Processes queued final-submission PDF jobs for submitted inspection checklists every 30 seconds.',
   },
+  {
+    id: 'open-checklist-instances-last-3-days',
+    name: 'Open Checklist Instances (Older Than 3 Days)',
+    cron: '0 0 8 * * *',
+    url: 'nest://scheduled-jobs/open-checklist-instances-last-3-days',
+    active: true,
+    note: 'Scans for open checklist instances older than 3 days and sends an email report.',
+  },
 ];

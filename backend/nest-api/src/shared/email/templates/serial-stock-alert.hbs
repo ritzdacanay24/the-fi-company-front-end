@@ -42,11 +42,13 @@
                       <td style="padding: 10px 12px; border-bottom: 1px solid #e9ecef; text-align: center; font-weight: 600;">{{availableFormatted}}</td>
                       <td style="padding: 10px 12px; border-bottom: 1px solid #e9ecef; text-align: center;">{{thresholdFormatted}}</td>
                       <td style="padding: 10px 12px; border-bottom: 1px solid #e9ecef; text-align: center; font-weight: {{shortfallFontWeight}}; color: {{shortfallColor}};">{{shortfallDisplay}}</td>
-                      <td style="padding: 10px 12px; border-bottom: 1px solid #e9ecef;">
-                        <div style="background: #e9ecef; border-radius: 4px; height: 8px; width: 100%; min-width: 80px;">
-                          <div style="background: {{barColor}}; height: 8px; border-radius: 4px; width: {{pct}}%;"></div>
+                      <td style="padding: 10px 12px; border-bottom: 1px solid #e9ecef; white-space: nowrap;">
+                        <div style="display: flex; align-items: center; gap: 8px; white-space: nowrap;">
+                          <div style="background: #e9ecef; border-radius: 4px; height: 8px; width: 100%; min-width: 80px;">
+                            <div style="background: {{barColor}}; height: 8px; border-radius: 4px; width: {{pct}}%;"></div>
+                          </div>
+                          <small style="color: #6c757d; flex: 0 0 auto;">{{pct}}%</small>
                         </div>
-                        <small style="color: #6c757d;">{{pct}}%</small>
                       </td>
                       <td style="padding: 10px 12px; border-bottom: 1px solid #e9ecef; text-align: center;">
                         <span style="background: {{statusColor}}; color: #fff; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 600;">{{statusLabel}}</span>

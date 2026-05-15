@@ -1,4 +1,8 @@
 .qir-list-card {
+	:host ::ng-deep .qir-status-awaiting {
+		color: #fff !important;
+	}
+
 	.qir-toolbar {
 		width: 100%;
 	}
@@ -30,6 +34,10 @@
 	.form-select {
 		min-height: 40px;
 	}
+}
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .qir-status-awaiting {
+	color: var(--bs-dark) !important;
 }
 
 @media (max-width: 991.98px) {

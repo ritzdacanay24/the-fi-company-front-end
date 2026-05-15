@@ -80,37 +80,48 @@ export class QirListComponent implements OnInit {
       },
     },
     // --- Identifiers ---
-    { field: "id",  headerName: "ID",    filter: "agMultiColumnFilter", hide: true },
-    { field: "qir", headerName: "QIR #", filter: "agTextColumnFilter",  maxWidth: 110 },
+    { field: "id", headerName: "ID", filter: "agMultiColumnFilter", hide: true },
+    { field: "qir", headerName: "QIR #", filter: "agTextColumnFilter", maxWidth: 110 },
     // --- Status & Priority ---
-    { field: "status",   headerName: "Status",   filter: "agMultiColumnFilter" },
+    {
+      field: "status",
+      minWidth: 150,
+      headerName: "Status",
+      filter: "agMultiColumnFilter",
+      cellRenderer: (params: { value?: string }) => {
+        const status = String(params?.value || '').trim();
+        const badgeClass = this.getStatusBadgeClass(status);
+        const label = this.escapeHtml(status || 'Unknown');
+        return `<span class="badge rounded-pill ${badgeClass}">${label}</span>`;
+      },
+    },
     { field: "priority", headerName: "Priority", filter: "agMultiColumnFilter" },
     // --- Dates ---
-    { field: "createdDate",           headerName: "Created Date",           filter: "agTextColumnFilter" },
-    { field: "customerReportedDate",  headerName: "Customer Reported Date", filter: "agTextColumnFilter" },
+    { field: "createdDate", headerName: "Created Date", filter: "agTextColumnFilter" },
+    { field: "customerReportedDate", headerName: "Customer Reported Date", filter: "agTextColumnFilter" },
     // --- Classification ---
-    { field: "type",          headerName: "Incident Type",     filter: "agMultiColumnFilter" },
-    { field: "type1",         headerName: "Incident Sub-Type", filter: "agMultiColumnFilter", hide: true },
-    { field: "failureType",   headerName: "Failure Type",      filter: "agMultiColumnFilter" },
-    { field: "componentType", headerName: "Component Type",    filter: "agMultiColumnFilter" },
-    { field: "platformType",  headerName: "Platform Type",     filter: "agMultiColumnFilter" },
+    { field: "type", headerName: "Incident Type", filter: "agMultiColumnFilter" },
+    { field: "type1", headerName: "Incident Sub-Type", filter: "agMultiColumnFilter", hide: true },
+    { field: "failureType", headerName: "Failure Type", filter: "agMultiColumnFilter" },
+    { field: "componentType", headerName: "Component Type", filter: "agMultiColumnFilter" },
+    { field: "platformType", headerName: "Platform Type", filter: "agMultiColumnFilter" },
     // --- Customer & Supplier ---
-    { field: "customerName",       headerName: "Customer Name",        filter: "agTextColumnFilter" },
-    { field: "supplierName",       headerName: "Supplier Name",        filter: "agTextColumnFilter" },
+    { field: "customerName", headerName: "Customer Name", filter: "agTextColumnFilter" },
+    { field: "supplierName", headerName: "Supplier Name", filter: "agTextColumnFilter" },
     { field: "CustomerPartNumber", headerName: "Customer Part Number", filter: "agTextColumnFilter" },
-    { field: "purchaseOrder",      headerName: "Purchase Order",       filter: "agTextColumnFilter" },
+    { field: "purchaseOrder", headerName: "Purchase Order", filter: "agTextColumnFilter" },
     // --- Product ---
-    { field: "eyefiPartNumber",   headerName: "EYE-Fi Part Number",   filter: "agTextColumnFilter" },
+    { field: "eyefiPartNumber", headerName: "EYE-Fi Part Number", filter: "agTextColumnFilter" },
     { field: "eyefiSerialNumber", headerName: "EYE-Fi Serial Number", filter: "agTextColumnFilter" },
     // --- Quantities ---
-    { field: "qtyAffected",  headerName: "Qty Affected",   filter: "agNumberColumnFilter" },
+    { field: "qtyAffected", headerName: "Qty Affected", filter: "agNumberColumnFilter" },
     { field: "qtyAffected1", headerName: "Qty Affected 2", filter: "agNumberColumnFilter", hide: true },
     // --- People ---
     { field: "stakeholder", headerName: "Stakeholder", filter: "agMultiColumnFilter" },
-    { field: "createdBy",   headerName: "Created By",  filter: "agTextColumnFilter", hide: true },
+    { field: "createdBy", headerName: "Created By", filter: "agTextColumnFilter", hide: true },
     // --- Response / Misc ---
     { field: "qir_response_id", headerName: "QIR Response Found", filter: "agMultiColumnFilter" },
-    { field: "active",          headerName: "Active",             filter: "agTextColumnFilter", hide: true },
+    { field: "active", headerName: "Active", filter: "agTextColumnFilter", hide: true },
   ];
 
   @Input() selectedViewType = "Open";
@@ -240,6 +251,41 @@ export class QirListComponent implements OnInit {
   clearQuickSearch(): void {
     this.quickSearchTerm = '';
     this.onQuickSearchChange();
+  }
+
+  private getStatusBadgeClass(status: string): string {
+    const normalizedStatus = String(status || '').trim().toLowerCase();
+
+    if (normalizedStatus === 'open') {
+      return 'bg-success';
+    }
+
+    if (normalizedStatus === 'in process') {
+      return 'bg-warning text-dark';
+    }
+
+    if (normalizedStatus === 'awaiting verification') {
+      return 'bg-info qir-status-awaiting';
+    }
+
+    if (normalizedStatus === 'closed') {
+      return 'bg-secondary';
+    }
+
+    if (normalizedStatus === 'rejected') {
+      return 'bg-danger';
+    }
+
+    return 'bg-light text-dark';
+  }
+
+  private escapeHtml(value: string): string {
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   private applyFilters(): void {

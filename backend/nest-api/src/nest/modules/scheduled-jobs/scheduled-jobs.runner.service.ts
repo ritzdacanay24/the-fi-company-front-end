@@ -79,4 +79,9 @@ export class ScheduledJobsRunnerService {
   async runInspectionChecklistReportGenerator(): Promise<void> {
     await this.scheduledJobsService.runJobIfEnabled('inspection-checklist-report-generator');
   }
+
+  @Cron('0 0 8 * * *', { name: 'scheduled-jobs.open-checklist-instances-last-3-days', timeZone: SCHEDULED_JOBS_TIMEZONE })
+  async runOpenChecklistInstancesLast3Days(): Promise<void> {
+    await this.scheduledJobsService.runJobIfEnabled('open-checklist-instances-last-3-days');
+  }
 }
