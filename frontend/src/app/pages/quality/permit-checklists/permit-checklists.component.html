@@ -586,6 +586,10 @@
                       (click)="openAttachmentPreview(attachment)">
                       {{ attachment.fileName }}
                     </button>
+                    <div class="small text-warning-emphasis" *ngIf="!hasAttachmentPreviewSource(attachment)">
+                      <i class="mdi mdi-alert-circle-outline me-1"></i>
+                      Missing file source. Reupload required for preview/download.
+                    </div>
                     <div class="attachment-uploader">
                       Uploaded by {{ attachment.uploadedBy || 'Unknown User' }}
                     </div>

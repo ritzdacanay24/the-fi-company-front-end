@@ -23,6 +23,14 @@ class NestStartupLogger extends ConsoleLogger {
     }
     super.log(message, context);
   }
+
+  override verbose(message: unknown, context?: string): void {
+    // Suppress verbose (routine GET 2xx) logs in production
+    if (process.env['NODE_ENV'] === 'production') {
+      return;
+    }
+    super.verbose(message, context);
+  }
 }
 
 async function bootstrap() {

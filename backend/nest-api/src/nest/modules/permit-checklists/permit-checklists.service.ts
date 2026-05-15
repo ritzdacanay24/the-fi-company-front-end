@@ -1,11 +1,61 @@
 import { Injectable } from '@nestjs/common';
+import { promises as fs } from 'fs';
+import { basename, extname, join } from 'path';
 import { PermitChecklistsRepository } from './permit-checklists.repository';
 
 type TicketStatus = 'draft' | 'saved' | 'submitted' | 'finalized' | 'archived';
 
+export interface PermitChecklistUploadFile {
+  buffer: Buffer;
+  size?: number;
+  mimetype?: string;
+  originalname?: string;
+}
+
 @Injectable()
 export class PermitChecklistsService {
+  private readonly uploadsRootDir = this.resolveAttachmentsRootDir();
+  private readonly uploadsDir = join(this.uploadsRootDir, 'permit-checklists');
+  private readonly uploadsPublicBase = this.resolveAttachmentsPublicBaseUrl();
+  private readonly uploadsUrlPrefix = `${this.uploadsPublicBase}/permit-checklists`;
+  private readonly uploadsPathPrefix = `${this.resolvePathPrefix(this.uploadsPublicBase)}/permit-checklists`;
+
   constructor(private readonly repository: PermitChecklistsRepository) {}
+
+  async uploadAttachment(ticketIdInput: string | undefined, file: PermitChecklistUploadFile, uploadedByInput?: string) {
+    const ticketId = String(ticketIdInput || '').trim();
+    if (!ticketId) {
+      return { success: false, error: 'ticketId is required' };
+    }
+
+    if (!file || !file.buffer) {
+      return { success: false, error: 'file is required' };
+    }
+
+    await fs.mkdir(this.uploadsDir, { recursive: true });
+
+    const originalName = String(file.originalname || 'attachment').trim() || 'attachment';
+    const extension = extname(originalName).toLowerCase();
+    const baseName = this.sanitizeFileBase(originalName.slice(0, originalName.length - extension.length));
+    const storedName = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${baseName}${extension}`;
+
+    await fs.writeFile(join(this.uploadsDir, storedName), file.buffer);
+
+    return {
+      success: true,
+      data: {
+        ticketId,
+        fileName: originalName,
+        fileSize: Number(file.size || 0),
+        mimeType: String(file.mimetype || 'application/octet-stream'),
+        uploadedAt: new Date().toISOString(),
+        uploadedBy: this.truncate(String(uploadedByInput || 'Unknown User'), 255),
+        fieldKey: 'general',
+        fieldLabel: 'General Attachment',
+        url: `${this.uploadsUrlPrefix}/${storedName}`,
+      },
+    };
+  }
 
   async bootstrap() {
     const [ticketRows, txRows, customerRows, architectRows, defaultRows] = await Promise.all([
@@ -131,6 +181,12 @@ export class PermitChecklistsService {
     }
 
     const filtered = attachments.filter((a) => String(a['id'] || '') !== attachmentId);
+    const removedAttachment = attachments.find((a) => String(a['id'] || '') === attachmentId);
+
+    if (removedAttachment) {
+      await this.deleteAttachmentFile(removedAttachment);
+    }
+
     const updatedAt = this.toDbDateTime(new Date().toISOString());
     await this.repository.setAttachmentsJson(ticketId, JSON.stringify(filtered), updatedAt);
     return { success: true, ticketId, attachmentId };
@@ -365,5 +421,96 @@ export class PermitChecklistsService {
     }
 
     return Number(n.toFixed(2));
+  }
+
+  private sanitizeFileBase(input: string): string {
+    const fallback = 'attachment';
+    const cleaned = String(input || '')
+      .replace(/[^a-zA-Z0-9._-]+/g, '_')
+      .replace(/^_+|_+$/g, '')
+      .slice(0, 80);
+
+    return cleaned || fallback;
+  }
+
+  private async deleteAttachmentFile(attachment: Record<string, unknown>): Promise<void> {
+    const rawUrl = String(attachment['url'] || attachment['link'] || attachment['path'] || '').trim();
+    if (!rawUrl) {
+      return;
+    }
+
+    const normalizedPath = this.resolveAttachmentPath(rawUrl);
+    if (!normalizedPath || !normalizedPath.startsWith(`${this.uploadsPathPrefix}/`)) {
+      return;
+    }
+
+    const storedName = basename(normalizedPath);
+    if (!storedName) {
+      return;
+    }
+
+    try {
+      await fs.unlink(join(this.uploadsDir, storedName));
+    } catch {
+      // Ignore missing files and continue JSON cleanup.
+    }
+  }
+
+  private resolveAttachmentsRootDir(): string {
+    const configuredRoots = String(process.env.ATTACHMENTS_UPLOAD_ROOT_DIRS || '')
+      .split(',')
+      .map((dir) => dir.trim())
+      .filter(Boolean);
+
+    if (configuredRoots.length > 0) {
+      return configuredRoots[0];
+    }
+
+    return join(process.cwd(), 'attachments');
+  }
+
+  private resolveAttachmentsPublicBaseUrl(): string {
+    const configured = String(process.env.ATTACHMENTS_PUBLIC_BASE_URL || '').trim();
+    if (!configured) {
+      return '/attachments';
+    }
+
+    return configured.replace(/\/+$/, '');
+  }
+
+  private resolvePathPrefix(baseUrl: string): string {
+    const raw = String(baseUrl || '').trim();
+    if (!raw) {
+      return '/attachments';
+    }
+
+    if (raw.startsWith('http://') || raw.startsWith('https://')) {
+      try {
+        const pathname = new URL(raw).pathname || '/';
+        return pathname.replace(/\/+$/, '') || '/';
+      } catch {
+        return '/attachments';
+      }
+    }
+
+    const normalized = raw.startsWith('/') ? raw : `/${raw}`;
+    return normalized.replace(/\/+$/, '') || '/';
+  }
+
+  private resolveAttachmentPath(rawUrl: string): string {
+    const value = String(rawUrl || '').trim();
+    if (!value) {
+      return '';
+    }
+
+    if (value.startsWith('http://') || value.startsWith('https://')) {
+      try {
+        return new URL(value).pathname || '';
+      } catch {
+        return '';
+      }
+    }
+
+    return value.startsWith('/') ? value : `/${value}`;
   }
 }

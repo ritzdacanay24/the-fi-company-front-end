@@ -4,6 +4,11 @@
     align-items: center;
   }
 
+  .ag-row.pc-row-return-highlight .ag-cell {
+    background: var(--pc-row-highlight-bg);
+    box-shadow: inset 3px 0 0 var(--pc-row-highlight-border);
+  }
+
   .ag-header-cell-label {
     align-items: center;
   }
@@ -60,6 +65,8 @@
   --pc-chip-text: #1e40af;
   --pc-chip-remove: #6b7280;
   --pc-chip-remove-hover: #dc2626;
+  --pc-row-highlight-bg: rgba(var(--bs-primary-rgb), 0.14);
+  --pc-row-highlight-border: rgba(var(--bs-primary-rgb), 0.55);
 
   .permit-page-header {
     .toolbar-actions {

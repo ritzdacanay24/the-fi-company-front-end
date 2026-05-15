@@ -1,31 +1,4 @@
-<div class="enterprise-dashboard">
-    <!-- Header Section -->
-    <div class="dashboard-header mb-4">
-        <div class="row align-items-center">
-            <div class="col-md-8">
-                <div class="page-title-section">
-                    <h1 class="page-title mb-2 text-body">
-                        <i class="mdi mdi-chart-line me-3 text-primary"></i>
-                        Open Revenue by Customer
-                    </h1>
-                    <p class="page-subtitle text-muted mb-0">
-                        Real-time revenue analysis and customer performance metrics
-                    </p>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="d-flex justify-content-end gap-3 align-items-center">
-                    <button class="btn btn-primary btn-lg enterprise-btn" (click)="getData()" [disabled]="isLoading">
-                        <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2"></span>
-                        <i *ngIf="!isLoading" class="mdi mdi-refresh me-2"></i>
-                        {{isLoading ? 'Refreshing...' : 'Refresh Data'}}
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-
+<div class="container-fluid py-2 revenue-page">
     <!-- Current Period Summary Card - simplified -->
     <div class="alert alert-primary d-flex align-items-center" *ngIf="d">
         <i class="mdi mdi-information me-2"></i>
@@ -33,9 +6,9 @@
     </div>
 
     <!-- Main Revenue Table -->
-    <div class="enterprise-card mb-4">
-        <div class="card border-0 shadow-lg rounded-3">
-            <div class="card-header bg-light py-4 border-0">
+    <div class="mb-4">
+        <div class="card">
+            <div class="card-header">
                 <div class="d-flex align-items-center justify-content-between">
                     <div class="d-flex align-items-center">
                         <div class="header-icon me-3">
@@ -43,9 +16,14 @@
                         </div>
                         <div>
                             <h4 class="mb-1 fw-bold">Revenue Summary Matrix</h4>
-                            <p class="mb-0 opacity-75">Customer revenue breakdown by time periods</p>
+                            <p class="mb-0 opacity-75 text-nowrap">Customer revenue breakdown by time periods</p>
                         </div>
                     </div>
+                    <button class="btn btn-primary" (click)="getData()" [disabled]="isLoading">
+                        <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2"></span>
+                        <i *ngIf="!isLoading" class="mdi mdi-refresh me-2"></i>
+                        {{isLoading ? 'Refreshing...' : 'Refresh Data'}}
+                    </button>
                 </div>
             </div>
 
@@ -63,11 +41,11 @@
             <!-- Data Table -->
             <div class="card-body p-0" *ngIf="data && !isLoading">
                 <div class="table-responsive">
-                    <table class="table enterprise-table mb-0">
+                    <table class="table table-bordered table-hover table-sm align-middle revenue-table mb-0">
                         <thead class="table-header">
                             <tr>
                                 <th *ngFor="let item of data[0] | keyvalue:originalOrder; let i = index"
-                                    class="enterprise-th"
+                                    class="rev-th"
                                     [ngClass]="{'text-end': i != 0, 'highlighted-column': item.key == d}">
                                     <div class="header-content">
                                         <span class="header-text">{{ convert(item.key) }}</span>
@@ -80,35 +58,53 @@
                             <tr *ngFor="let row of data; let rowIndex = index" class="data-row"
                                 [ngClass]="{'total-row': rowIndex === data.length - 1}">
                                 <td *ngFor="let column of row | keyvalue:originalOrder; let i = index"
-                                    class="enterprise-td" [ngClass]="{
-                      'text-end clickable-cell': ['Grand Total', 'Customer'].indexOf($any(column.key)) === -1, 
+                                    class="rev-td" [ngClass]="{
+                      'text-end': i != 0,
+                      'clickable-cell': canOpenAuditFromCell($any(column.key), row), 
                       'customer-cell': i == 0,
                       'highlighted-column': column.key == d,
                       'positive-value': $any(column.value) > 0 && i != 0,
                       'zero-value': $any(column.value) == 0 && i != 0
-                    }" (click)="['Grand Total', 'Customer'].indexOf($any(column.key)) === -1 && getData1(column.key)">
+                                        }" [attr.title]="getMatrixCellTitle($any(column.key), row)"
+                                        (click)="onMatrixCellClick($any(column.key), row, rowIndex)">
 
                                     <span *ngIf="i == 0" class="customer-name">
-                                        <i class="mdi mdi-domain me-2 text-muted"></i>
-                                        {{ column.value }}
-                                        <!-- Tariff Multiplier Indicator -->
-                                        <span *ngIf="isTariffMultiplierCustomer($any(column.value))"
-                                            class="badge bg-warning ms-2" [attr.data-bs-theme]="null"
-                                            title="This customer uses 9.0x tariff multiplier (AMEGAM, ZITRO, ECLIPSE)">
-                                            <i class="mdi mdi-calculator-variant me-1"></i>9.0x
+                                        <span class="customer-code-line">
+                                            <i class="mdi mdi-domain me-2 text-muted"></i>
+                                            {{ column.value }}
                                         </span>
-                                        <!-- Tariff Products Only Indicator -->
-                                        <span *ngIf="isTariffProductsOnlyCustomer($any(column.value))"
-                                            class="badge bg-info ms-2" [attr.data-bs-theme]="null"
-                                            title="This customer has tariff-specific products (INTGAM, BLUBERI, BALTEC)">
-                                            <i class="mdi mdi-tag-outline me-1"></i>TAR
+                                        <span class="customer-flags" *ngIf="isTariffMultiplierCustomer($any(column.value)) || isTariffProductsOnlyCustomer($any(column.value))">
+                                            <!-- Tariff Multiplier Indicator -->
+                                            <span *ngIf="isTariffMultiplierCustomer($any(column.value))"
+                                                class="badge bg-warning" [attr.data-bs-theme]="null"
+                                                title="This customer uses 9.0x tariff multiplier (AMEGAM, ZITRO, ECLIPSE)">
+                                                <i class="mdi mdi-calculator-variant me-1"></i>9.0x
+                                            </span>
+                                            <!-- Tariff Products Only Indicator -->
+                                            <span *ngIf="isTariffProductsOnlyCustomer($any(column.value))"
+                                                class="badge bg-info" [attr.data-bs-theme]="null"
+                                                title="This customer has tariff-specific products (INTGAM, BLUBERI, BALTEC)">
+                                                <i class="mdi mdi-tag-outline me-1"></i>TAR
+                                            </span>
                                         </span>
                                     </span>
 
                                     <span *ngIf="i != 0" class="revenue-value">
-                                        <span class="currency-amount">{{ $any(column.value) | currency }}</span>
-                                        <i *ngIf="['Grand Total', 'Customer'].indexOf($any(column.key)) === -1"
-                                            class="mdi mdi-chevron-right ms-2 expand-icon"></i>
+                                        <button
+                                            *ngIf="canOpenAuditFromCell($any(column.key), row)"
+                                            type="button"
+                                            class="btn btn-link p-0 cell-modal-action"
+                                            title="Open audit breakdown"
+                                            (click)="$event.stopPropagation(); triggerAuditFromCell($any(column.key), row, rowIndex)">
+                                            <i class="mdi mdi-open-in-new"></i>
+                                        </button>
+                                        <span class="amount-stack">
+                                            <span class="currency-amount compact-amount">{{ formatCompactCurrency($any(column.value)) }}</span>
+                                            <small class="full-amount text-muted">{{ formatFullCurrency($any(column.value)) }}</small>
+                                        </span>
+                                        <i *ngIf="isPeriodColumn($any(column.key))"
+                                            class="mdi mdi-chevron-right weekly-chevron"
+                                            title="Open weekly breakdown"></i>
                                     </span>
                                 </td>
                             </tr>
@@ -117,14 +113,29 @@
                         <tfoot class="table-footer">
                             <tr class="summary-row">
                                 <th *ngFor="let item of data[0] | keyvalue:originalOrder; let i = index"
-                                    class="enterprise-th"
-                                    [ngClass]="{'text-end': i != 0, 'highlighted-column': item.key == d}">
+                                    class="rev-th"
+                                    [ngClass]="{
+                                      'text-end': i != 0,
+                                      'highlighted-column': item.key == d,
+                                      'footer-clickable': i != 0 && isPeriodColumn($any(item.key))
+                                    }"
+                                    [attr.title]="i != 0 && isPeriodColumn($any(item.key)) ? 'Open audit breakdown' : null"
+                                                                        (click)="i != 0 && isPeriodColumn($any(item.key)) && openPeriodTotalAudit(item.key)">
                                     <div class="footer-content">
                                         <span *ngIf="i == 0" class="total-label">
                                             <i class="mdi mdi-sigma me-2"></i>Total Revenue
                                         </span>
                                         <span *ngIf="i != 0" class="total-amount">
-                                            {{ getTotal($any(item.key)) | currency}}
+                                            <button
+                                                *ngIf="isPeriodColumn($any(item.key))"
+                                                type="button"
+                                                class="btn btn-link p-0 footer-modal-action"
+                                                title="Open audit breakdown"
+                                                (click)="$event.stopPropagation(); openPeriodTotalAudit(item.key)">
+                                                <i class="mdi mdi-open-in-new"></i>
+                                            </button>
+                                            <span class="compact-amount">{{ formatCompactCurrency(getTotal($any(item.key))) }}</span>
+                                            <small class="full-amount text-light-emphasis">{{ formatFullCurrency(getTotal($any(item.key))) }}</small>
                                         </span>
                                     </div>
                                 </th>
@@ -139,8 +150,8 @@
 
     <!-- Detailed Analysis Section -->
     <div *ngIf="isLoadingSubData" class="loading-section">
-        <div class="enterprise-card">
-            <div class="card border-0 shadow-lg rounded-3">
+        <div>
+            <div class="card">
                 <div class="card-body text-center py-5">
                     <div class="loading-animation mb-4">
                         <div class="spinner-grow text-info" style="width: 3rem; height: 3rem;"></div>
@@ -156,11 +167,11 @@
     <div class="row" *ngIf="data1?.results && !isLoadingSubData">
         <!-- Customer Weekly Breakdown -->
         <div class="col-lg-6">
-            <div class="enterprise-card">
-                <div class="card border-0 shadow-lg rounded-3 h-100">
-                    <div class="card-header bg-gradient-info text-white py-4 border-0">
+            <div>
+                <div class="card h-100">
+                    <div class="card-header analysis-card-header">
                         <div class="d-flex align-items-center">
-                            <div class="header-icon me-3">
+                            <div class="header-icon me-3 analysis-header-icon">
                                 <i class="mdi mdi-calendar-week display-6"></i>
                             </div>
                             <div>
@@ -190,7 +201,7 @@
                                     </h6>
                                     
                                     <!-- Custom Logic Explanation -->
-                                    <div class="alert alert-light py-2 px-3 mt-2 border-0" style="background-color: rgba(var(--vz-info-rgb), 0.05);">
+                                    <div class="alert alert-light py-2 px-3 mt-2" style="background-color: rgba(var(--vz-info-rgb), 0.05);">
                                         <small class="text-muted">
                                             <i class="mdi mdi-information-outline me-1"></i>
                                             <strong>Calculation Logic:</strong>
@@ -208,7 +219,7 @@
                                 </div>
 
                                 <div class="table-responsive">
-                                    <table class="table table-sm enterprise-detail-table">
+                                    <table class="table table-sm align-middle revenue-detail-table">
                                         <thead>
                                             <tr class="detail-header">
                                                 <th>Week</th>
@@ -259,22 +270,22 @@
 
         <!-- Weekly Summary -->
         <div class="col-lg-6">
-            <div class="enterprise-card">
-                <div class="card border-0 shadow-lg rounded-3 h-100">
-                    <div class="card-header bg-gradient-success text-white py-4 border-0">
+            <div>
+                <div class="card h-100">
+                    <div class="card-header analysis-card-header">
                         <div class="d-flex align-items-center">
-                            <div class="header-icon me-3">
+                            <div class="header-icon me-3 analysis-header-icon">
                                 <i class="mdi mdi-chart-timeline-variant display-6"></i>
                             </div>
                             <div>
                                 <h5 class="mb-1 fw-bold">Weekly Revenue Summary</h5>
-                                <p class="mb-0 opacity-75 text-light">Period: {{d}}</p>
+                                <p class="mb-0 opacity-75 text-primary-emphasis">Period: {{d}}</p>
                             </div>
                         </div>
                     </div>
                     <div class="card-body p-4">
                         <div class="table-responsive">
-                            <table class="table enterprise-summary-table">
+                            <table class="table table-sm align-middle revenue-summary-table">
                                 <thead>
                                     <tr class="summary-header">
                                         <th>Week</th>
@@ -333,76 +344,70 @@
         </div>
     </div>
 
-    <!-- Full-width Audit Breakdown -->
-    <div class="row mt-3" *ngIf="data1?.results && !isLoadingSubData">
-        <div class="col-12">
-            <div class="enterprise-card">
-                <div class="card border-0 shadow-lg rounded-3">
-                    <div class="card-header bg-light py-4 border-0">
-                        <h5 class="mb-1 fw-bold">
-                            <i class="mdi mdi-clipboard-text-search-outline me-2 text-secondary"></i>
-                            Audit Breakdown (Shipping Source - Selected Range)
-                        </h5>
-                        <p class="mb-0 text-muted">
-                            Formula used per row: <strong>Open Balance Qty = Qty Ordered - Qty Shipped</strong>,
-                            <strong>Open Balance Amount = Unit Price × Open Balance Qty</strong>. Rows are grouped by
-                            <strong>Performance Date</strong> for the selected range.
-                        </p>
-                    </div>
-                    <div class="card-body p-4">
-                        <div class="table-responsive" *ngIf="auditRowsForRange.length > 0">
-                            <table class="table table-sm table-striped align-middle">
-                                <thead>
-                                    <tr>
-                                        <th>Performance Date</th>
-                                        <th>Customer</th>
-                                        <th>SO #</th>
-                                        <th>Line</th>
-                                        <th>Part</th>
-                                        <th>Prodline</th>
-                                        <th class="text-end">Qty Ordered</th>
-                                        <th class="text-end">Qty Shipped</th>
-                                        <th class="text-end">Open Balance Qty</th>
-                                        <th class="text-end">Unit Price</th>
-                                        <th class="text-end">Open Balance Amount</th>
-                                        <th class="text-end">Tariff Amount</th>
-                                        <th class="text-end">Net Revenue</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr *ngFor="let audit of auditRowsForRange">
-                                        <td>{{audit.performanceDate | date:'yyyy-MM-dd'}}</td>
-                                        <td>{{audit.customer}}</td>
-                                        <td>{{audit.salesOrder}}</td>
-                                        <td>{{audit.line}}</td>
-                                        <td>{{audit.part}}</td>
-                                        <td>{{audit.productLine}}</td>
-                                        <td class="text-end">{{audit.qtyOrdered}}</td>
-                                        <td class="text-end">{{audit.qtyShipped}}</td>
-                                        <td class="text-end">{{audit.openBalanceQty}}</td>
-                                        <td class="text-end">{{audit.unitPrice | currency}}</td>
-                                        <td class="text-end">{{audit.openBalanceAmount | currency}}</td>
-                                        <td class="text-end">-{{audit.tariffAmount | currency}}</td>
-                                        <td class="text-end">{{audit.netRevenue | currency}}</td>
-                                    </tr>
-                                </tbody>
-                                <tfoot>
-                                    <tr>
-                                        <th colspan="10" class="text-end">Audit Totals:</th>
-                                        <th class="text-end">{{sumAuditRows(auditRowsForRange, 'openBalanceAmount') | currency}}</th>
-                                        <th class="text-end">-{{sumAuditRows(auditRowsForRange, 'tariffAmount') | currency}}</th>
-                                        <th class="text-end">{{sumAuditRows(auditRowsForRange, 'netRevenue') | currency}}</th>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
+    <ng-template #auditBreakdownModal let-modal>
+        <div class="modal-header">
+            <h5 class="modal-title fw-bold">
+                <i class="mdi mdi-clipboard-text-search-outline me-2 text-primary"></i>
+                Audit Breakdown - {{selectedAuditScopeLabel}} ({{selectedAuditPeriodLabel}})
+            </h5>
+            <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
+        </div>
+        <div class="modal-body">
+            <p class="mb-3 text-muted small">
+                Formula: <strong>Open Balance Qty = Qty Ordered - Qty Shipped</strong>,
+                <strong>Open Balance Amount = Unit Price x Open Balance Qty</strong>.
+            </p>
 
-                        <div class="small text-muted" *ngIf="auditRowsForRange.length === 0">
-                            No shipping-source rows were returned for the selected period.
-                        </div>
-                    </div>
-                </div>
+            <div class="py-4 text-center" *ngIf="isAuditModalLoading">
+                <div class="spinner-border text-primary" role="status" aria-hidden="true"></div>
+                <div class="small text-muted mt-2">Loading audit details...</div>
+            </div>
+
+            <div class="alert alert-warning py-2" *ngIf="!isAuditModalLoading && auditModalLoadError">
+                {{auditModalLoadError}}
+            </div>
+
+            <div class="table-responsive audit-modal-table-wrap" *ngIf="!isAuditModalLoading && selectedAuditRows.length > 0">
+                <table class="table table-sm table-striped align-middle audit-modal-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Performance Date</th>
+                            <th>Customer</th>
+                            <th class="text-end">Open Balance Qty</th>
+                            <th class="text-end">Unit Price</th>
+                            <th class="text-end">Open Balance Amount</th>
+                            <th class="text-end">Tariff Amount</th>
+                            <th class="text-end">Net Revenue</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let audit of selectedAuditRows">
+                            <td>{{audit.performanceDate | date:'yyyy-MM-dd'}}</td>
+                            <td>{{audit.customer}}</td>
+                            <td class="text-end">{{audit.openBalanceQty}}</td>
+                            <td class="text-end">{{audit.unitPrice | currency}}</td>
+                            <td class="text-end">{{audit.openBalanceAmount | currency}}</td>
+                            <td class="text-end">-{{audit.tariffAmount | currency}}</td>
+                            <td class="text-end">{{audit.netRevenue | currency}}</td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <th colspan="4" class="text-end">Audit Totals:</th>
+                            <th class="text-end">{{sumAuditRows(selectedAuditRows, 'openBalanceAmount') | currency}}</th>
+                            <th class="text-end">-{{sumAuditRows(selectedAuditRows, 'tariffAmount') | currency}}</th>
+                            <th class="text-end">{{sumAuditRows(selectedAuditRows, 'netRevenue') | currency}}</th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div class="small text-muted" *ngIf="!isAuditModalLoading && !auditModalLoadError && selectedAuditRows.length === 0">
+                No shipping-source rows were returned for this selection.
             </div>
         </div>
-    </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" (click)="modal.close()">Close</button>
+        </div>
+    </ng-template>
 </div>

@@ -16,6 +16,8 @@ export class LoggingInterceptor implements NestInterceptor {
   private readonly MAX_ERROR_STACK_LENGTH = 2000;
   private readonly PHI_ROUTES = ['/apiV2/medical-records', '/apiV2/patient'];
 
+  private readonly isProd = process.env['NODE_ENV'] === 'production';
+
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const now = Date.now();
     const request = context.switchToHttp().getRequest<{
@@ -46,7 +48,6 @@ export class LoggingInterceptor implements NestInterceptor {
     const method = request.method;
     const url = request.originalUrl || request.url;
     const headers = request.headers || {};
-    const responseTime = Date.now() - now;
     const actionType = this.getActionType(method);
     const resourceType = this.getResourceType(url);
     const phiAccessed = this.isPHIRoute(url);
@@ -63,8 +64,8 @@ export class LoggingInterceptor implements NestInterceptor {
     return next.handle().pipe(
       tap({
         next: () => {
-          this.logger.log(this.toPrettyJson({
-            level: 'info',
+          const statusCode = response.statusCode ?? 200;
+          const payload = this.toJson({
             request_id: request.requestId || '-',
             method,
             url: safeUrl,
@@ -75,16 +76,28 @@ export class LoggingInterceptor implements NestInterceptor {
             user_role: userRole,
             ip_address: ipAddress,
             user_agent: safeUserAgent,
-            status_code: response.statusCode,
+            status_code: statusCode,
             response_time_ms: Date.now() - now,
             phi_accessed: phiAccessed,
             ...(clientId && { client_id: clientId }),
             timestamp: new Date().toISOString(),
-          }));
+          });
+
+          if (statusCode >= 500) {
+            this.logger.error({ ...JSON.parse(payload), level: 'error' });
+          } else if (statusCode >= 400) {
+            this.logger.warn({ ...JSON.parse(payload), level: 'warn' });
+          } else if (method === 'GET') {
+            // Routine reads: verbose — suppressed in production by default
+            this.logger.verbose({ ...JSON.parse(payload), level: 'verbose' });
+          } else {
+            // Mutations (POST/PUT/PATCH/DELETE) are significant — always log
+            this.logger.log({ ...JSON.parse(payload), level: 'info' });
+          }
         },
         error: (error: unknown) => {
           const message = error instanceof Error ? error.message : String(error);
-          this.logger.error(this.toPrettyJson({
+          this.logger.error(this.toJson({
             level: 'error',
             request_id: request.requestId || '-',
             method,
@@ -109,8 +122,11 @@ export class LoggingInterceptor implements NestInterceptor {
     );
   }
 
-  private toPrettyJson(payload: Record<string, unknown>): string {
-    return JSON.stringify(payload, null, 2);
+  /** Single-line JSON in production (log aggregator friendly); pretty in dev. */
+  private toJson(payload: Record<string, unknown>): string {
+    return this.isProd
+      ? JSON.stringify(payload)
+      : JSON.stringify(payload, null, 2);
   }
 
   private getActionType(method: string): string {

@@ -22,9 +22,11 @@ type WorkflowReportPayload = {
 @Injectable()
 export class EyeFiSerialService {
   constructor(
+    @Inject(EyeFiSerialRepository)
     private readonly eyeFiSerialRepository: EyeFiSerialRepository,
     @Inject(EmailService)
     private readonly emailService: EmailService,
+    @Inject(EmailTemplateService)
     private readonly emailTemplateService: EmailTemplateService,
   ) {}
 

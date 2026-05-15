@@ -13,6 +13,7 @@ import { THE_FI_COMPANY_CURRENT_USER } from "@app/core/guards/admin.guard";
 import { PermitChecklistsService } from "@app/core/api/quality/permit-checklists.service";
 import { NgbDropdownModule, NgbModal, NgbModalModule, NgbModalRef } from "@ng-bootstrap/ng-bootstrap";
 import { ToastrService } from "ngx-toastr";
+import { environment } from "src/environments/environment";
 import * as mammoth from "mammoth";
 import { TextFieldModule } from "@angular/cdk/text-field";
 
@@ -216,8 +217,16 @@ export class PermitChecklistsComponent implements OnInit {
   private dirtyTransactionTicketIds = new Set<string>();
   private isHydratingApi = false;
   private pendingRouteTicketId = "";
+  private pendingRouteReturnTicketId = "";
   private pendingRouteFormType = "";
   private pendingRouteView = "";
+  private ticketGridApi: any;
+  private pendingHomeScrollTicketId: string | null = null;
+  private pendingHomeScrollAttempts = 0;
+  private readonly maxHomeScrollAttempts = 16;
+  private homeScrollRetryTimer: ReturnType<typeof setTimeout> | null = null;
+  private homeHighlightedTicketId: string | null = null;
+  private lastOpenedTicketId: string | null = null;
 
   viewMode: "home" | "form" | "summary" = "home";
   homeTab: "tickets" | "audit" | "approved-report" = "tickets";
@@ -351,7 +360,6 @@ export class PermitChecklistsComponent implements OnInit {
   private customerBillingDefaultsByType: Record<PermitChecklistType, PermitChecklistFeeLine[]> =
     this.buildInitialCustomerBillingDefaults();
 
-  private readonly maxPersistedPreviewSizeBytes = 750 * 1024;
   private readonly objectUrlByAttachmentId = new Map<string, string>();
 
   statusMessage = "";
@@ -465,6 +473,10 @@ export class PermitChecklistsComponent implements OnInit {
     },
     animateRows: true,
     suppressMenuHide: true,
+    rowClassRules: {
+      "pc-row-return-highlight": (params: any) =>
+        String(params?.data?.ticketId || "") === String(this.homeHighlightedTicketId || ""),
+    },
     onCellClicked: (params: any) => {
       if (params?.colDef?.field !== "ticketId") {
         return;
@@ -477,7 +489,13 @@ export class PermitChecklistsComponent implements OnInit {
 
       this.openTicket(ticketId);
     },
-    onGridReady: (params: any) => this.restoreGridState(this.ticketGridStateKey, params.api),
+    onGridReady: (params: any) => {
+      this.ticketGridApi = params.api;
+      this.restoreGridState(this.ticketGridStateKey, params.api);
+      this.scrollHomeGridToPendingTicket();
+    },
+    onFirstDataRendered: () => this.scrollHomeGridToPendingTicket(),
+    onRowDataUpdated: () => this.scrollHomeGridToPendingTicket(),
     onColumnMoved: (params: any) => this.saveGridState(this.ticketGridStateKey, params.api),
     onColumnPinned: (params: any) => this.saveGridState(this.ticketGridStateKey, params.api),
     onColumnVisible: (params: any) => this.saveGridState(this.ticketGridStateKey, params.api),
@@ -625,6 +643,7 @@ export class PermitChecklistsComponent implements OnInit {
     this.loadSavedData();
     this.routeSub = this.route.queryParamMap.subscribe((params) => {
       this.pendingRouteTicketId = (params.get("ticketId") || "").trim();
+      this.pendingRouteReturnTicketId = (params.get("returnTicketId") || "").trim();
       this.pendingRouteFormType = (params.get("formType") || "").trim().toLowerCase();
       this.pendingRouteView = (params.get("view") || "").trim().toLowerCase();
       this.applyRouteQueryState();
@@ -633,6 +652,7 @@ export class PermitChecklistsComponent implements OnInit {
 
   private applyRouteQueryState(): void {
     const ticketId = this.pendingRouteTicketId;
+    const returnTicketId = this.pendingRouteReturnTicketId;
     const formType = this.pendingRouteFormType;
     const view = this.pendingRouteView;
 
@@ -662,6 +682,14 @@ export class PermitChecklistsComponent implements OnInit {
 
     this.activeTicketId = null;
     this.viewMode = "home";
+
+    if (returnTicketId) {
+      this.homeTab = "tickets";
+      this.pendingHomeScrollTicketId = returnTicketId;
+      this.pendingHomeScrollAttempts = 0;
+      this.lastOpenedTicketId = returnTicketId;
+      this.scheduleHomeGridRestore(0);
+    }
   }
 
   ngOnDestroy(): void {
@@ -669,6 +697,10 @@ export class PermitChecklistsComponent implements OnInit {
     if (this.ticketSyncTimer) {
       clearTimeout(this.ticketSyncTimer);
       this.ticketSyncTimer = null;
+    }
+    if (this.homeScrollRetryTimer) {
+      clearTimeout(this.homeScrollRetryTimer);
+      this.homeScrollRetryTimer = null;
     }
     this.customerDirectoryModalRef?.close();
     this.customerBillingDefaultsModalRef?.close();
@@ -2177,33 +2209,46 @@ export class PermitChecklistsComponent implements OnInit {
     }
 
     const newAttachments: PermitChecklistAttachment[] = [];
+    const failedUploads: string[] = [];
     for (const file of files) {
-      const attachmentId = this.generateAttachmentId();
-      const objectUrl = URL.createObjectURL(file);
-      this.objectUrlByAttachmentId.set(attachmentId, objectUrl);
+      try {
+        const response = await this.permitChecklistsService.uploadAttachmentFile(
+          ticket.ticketId,
+          file,
+          this.getCurrentUserDisplay(),
+        );
 
-      let dataUrl: string | undefined;
-      if (file.size <= this.maxPersistedPreviewSizeBytes) {
-        dataUrl = await this.readFileAsDataUrl(file);
+        const payload = response?.data || {};
+        newAttachments.push({
+          id: this.generateAttachmentId(),
+          fieldKey: String(payload.fieldKey || "general"),
+          fieldLabel: String(payload.fieldLabel || "General Attachment"),
+          uploadedBy: String(payload.uploadedBy || this.getCurrentUserDisplay()),
+          fileName: String(payload.fileName || file.name),
+          fileSize: Number(payload.fileSize || file.size || 0),
+          mimeType: String(payload.mimeType || file.type || "application/octet-stream"),
+          uploadedAt: String(payload.uploadedAt || new Date().toISOString()),
+          url: String(payload.url || ""),
+        });
+
+        this.appendTransaction(ticket.ticketId, "attachment_upload", {
+          fieldKey: "general",
+          newValue: file.name,
+          source: "attachment",
+        });
+      } catch {
+        failedUploads.push(file.name);
+        continue;
       }
+    }
 
-      newAttachments.push({
-        id: attachmentId,
-        fieldKey: "general",
-        fieldLabel: "General Attachment",
-        uploadedBy: this.getCurrentUserDisplay(),
-        fileName: file.name,
-        fileSize: file.size,
-        mimeType: file.type || "application/octet-stream",
-        uploadedAt: new Date().toISOString(),
-        dataUrl,
-      });
+    if (failedUploads.length > 0) {
+      this.toastr.error(`Failed to upload ${failedUploads.length} file(s). Please try again.`);
+    }
 
-      this.appendTransaction(ticket.ticketId, "attachment_upload", {
-        fieldKey: "general",
-        newValue: file.name,
-        source: "attachment",
-      });
+    if (!newAttachments.length) {
+      this.statusMessage = "No files were uploaded.";
+      return;
     }
 
     ticket.attachments = [...(ticket.attachments || []), ...newAttachments];
@@ -2335,6 +2380,9 @@ export class PermitChecklistsComponent implements OnInit {
 
   openTicket(ticketId: string): void {
     this.activeTicketId = ticketId;
+    this.lastOpenedTicketId = ticketId;
+    this.pendingHomeScrollTicketId = ticketId;
+    this.pendingHomeScrollAttempts = 0;
     this.viewMode = "form";
     this.syncUrlState();
     this.statusMessage = "Ticket opened.";
@@ -2509,10 +2557,18 @@ export class PermitChecklistsComponent implements OnInit {
   }
 
   goHome(): void {
+    if (this.activeTicketId) {
+      this.lastOpenedTicketId = this.activeTicketId;
+      this.pendingHomeScrollTicketId = this.activeTicketId;
+      this.pendingHomeScrollAttempts = 0;
+    }
+
+    this.homeTab = "tickets";
     this.viewMode = "home";
     this.activeTicketId = null;
     this.syncUrlState();
     this.statusMessage = "";
+    this.scheduleHomeGridRestore(0);
   }
 
   goToAuditLog(): void {
@@ -2848,8 +2904,10 @@ export class PermitChecklistsComponent implements OnInit {
 
   private syncUrlState(): void {
     const activeTicket = this.activeTicket;
+    const returnTicketId = activeTicket ? null : (this.lastOpenedTicketId || null);
     const queryParams = {
       ticketId: activeTicket?.ticketId ?? null,
+      returnTicketId,
       formType: activeTicket?.formType ?? this.draftFormType,
       view: activeTicket ? (this.viewMode === "summary" ? "summary" : "form") : null,
     };
@@ -3318,15 +3376,6 @@ export class PermitChecklistsComponent implements OnInit {
     return [];
   }
 
-  private async readFileAsDataUrl(file: File): Promise<string | undefined> {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : undefined);
-      reader.onerror = () => resolve(undefined);
-      reader.readAsDataURL(file);
-    });
-  }
-
   private resolveAttachmentUrl(attachment: PermitChecklistAttachment): string | undefined {
     if (attachment.dataUrl) {
       return attachment.dataUrl;
@@ -3338,6 +3387,10 @@ export class PermitChecklistsComponent implements OnInit {
     }
 
     return this.objectUrlByAttachmentId.get(attachment.id);
+  }
+
+  hasAttachmentPreviewSource(attachment: PermitChecklistAttachment): boolean {
+    return !!this.resolveAttachmentUrl(attachment);
   }
 
   private getAttachmentDownloadUrl(attachment: PermitChecklistAttachment | null): string | null {
@@ -3358,7 +3411,31 @@ export class PermitChecklistsComponent implements OnInit {
       return value;
     }
 
-    return value.startsWith("/") ? value : `/${value}`;
+    const normalizedPath = value.startsWith("/") ? value : `/${value}`;
+    const backendOrigin = this.resolveBackendOrigin();
+
+    // Uploaded files are served by Nest under /uploads; use backend origin for local preview links.
+    if (backendOrigin && normalizedPath.toLowerCase().startsWith("/uploads/")) {
+      return `${backendOrigin}${normalizedPath}`;
+    }
+
+    return normalizedPath;
+  }
+
+  private resolveBackendOrigin(): string {
+    const candidates = [environment.nestApiBaseUrl, environment.apiV2BaseUrl]
+      .map((item) => String(item || "").trim())
+      .filter((item) => item.startsWith("http://") || item.startsWith("https://"));
+
+    for (const candidate of candidates) {
+      try {
+        return new URL(candidate).origin;
+      } catch {
+        continue;
+      }
+    }
+
+    return "";
   }
 
   private isDocxAttachment(attachment: PermitChecklistAttachment): boolean {
@@ -3560,6 +3637,117 @@ export class PermitChecklistsComponent implements OnInit {
       }
     } catch {
       // Ignore malformed state and proceed with defaults.
+    }
+  }
+
+  private scrollHomeGridToPendingTicket(): void {
+    const targetTicketId = String(this.pendingHomeScrollTicketId || "").trim();
+    const gridApi = this.ticketGridApi;
+
+    if (!targetTicketId) {
+      return;
+    }
+
+    if (this.viewMode !== "home" || this.homeTab !== "tickets") {
+      this.scheduleHomeGridRestore(80);
+      return;
+    }
+
+    if (!gridApi) {
+      this.scheduleHomeGridRestore(80);
+      return;
+    }
+
+    if (gridApi.getDisplayedRowCount && Number(gridApi.getDisplayedRowCount() || 0) === 0) {
+      this.scheduleHomeGridRestore(80);
+      return;
+    }
+
+    let targetNode: any = null;
+
+    if (gridApi.forEachNodeAfterFilterAndSort) {
+      gridApi.forEachNodeAfterFilterAndSort((node: any) => {
+        if (targetNode) {
+          return;
+        }
+
+        if (String(node?.data?.ticketId || "") === targetTicketId) {
+          targetNode = node;
+        }
+      });
+    }
+
+    if (!targetNode && this.homeSearchQuery.trim()) {
+      this.homeSearchQuery = "";
+      this.scheduleHomeGridRestore(80);
+      return;
+    }
+
+    if (targetNode) {
+      this.setHomeHighlightedTicket(targetTicketId);
+
+      if (gridApi.ensureNodeVisible) {
+        gridApi.ensureNodeVisible(targetNode, "middle");
+      } else if (gridApi.ensureIndexVisible) {
+        const rowIndex = Number(targetNode?.rowIndex);
+        if (Number.isFinite(rowIndex)) {
+          gridApi.ensureIndexVisible(rowIndex, "middle");
+        }
+      }
+
+      if (gridApi.setFocusedCell) {
+        const rowIndex = Number(targetNode?.rowIndex);
+        if (Number.isFinite(rowIndex)) {
+          gridApi.setFocusedCell(rowIndex, "ticketId");
+        }
+      }
+
+      if (gridApi.flashCells) {
+        gridApi.flashCells({ rowNodes: [targetNode] });
+      }
+
+      this.pendingHomeScrollTicketId = null;
+      this.pendingHomeScrollAttempts = 0;
+      return;
+    }
+
+    if (this.pendingHomeScrollAttempts < this.maxHomeScrollAttempts) {
+      this.scheduleHomeGridRestore(80);
+      return;
+    }
+
+    this.statusMessage = `Ticket ${targetTicketId} could not be located in the current list.`;
+    this.pendingHomeScrollTicketId = null;
+    this.pendingHomeScrollAttempts = 0;
+  }
+
+  private scheduleHomeGridRestore(delayMs = 0): void {
+    if (!this.pendingHomeScrollTicketId) {
+      return;
+    }
+
+    if (this.pendingHomeScrollAttempts >= this.maxHomeScrollAttempts) {
+      return;
+    }
+
+    if (this.homeScrollRetryTimer) {
+      clearTimeout(this.homeScrollRetryTimer);
+      this.homeScrollRetryTimer = null;
+    }
+
+    this.pendingHomeScrollAttempts += 1;
+    this.homeScrollRetryTimer = setTimeout(() => {
+      this.homeScrollRetryTimer = null;
+      this.scrollHomeGridToPendingTicket();
+    }, delayMs);
+  }
+
+  private setHomeHighlightedTicket(ticketId: string): void {
+    const nextId = String(ticketId || "").trim();
+    this.homeHighlightedTicketId = nextId || null;
+
+    if (this.ticketGridApi?.redrawRows) {
+      this.ticketGridApi.redrawRows();
     }
   }
 

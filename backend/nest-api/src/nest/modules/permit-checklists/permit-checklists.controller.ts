@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Post, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { Permissions, RolePermissionGuard } from '../access-control';
-import { PermitChecklistsService } from './permit-checklists.service';
+import { PermitChecklistUploadFile, PermitChecklistsService } from './permit-checklists.service';
 
 @Controller('permit-checklists')
 @UseGuards(RolePermissionGuard)
@@ -23,6 +24,26 @@ export class PermitChecklistsController {
   @Permissions('delete')
   async removeAttachment(@Body() payload: { ticketId?: string; attachmentId?: string }) {
     return this.service.removeAttachment(payload?.ticketId, payload?.attachmentId);
+  }
+
+  @Post('upload-attachment')
+  @Permissions('write')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: {
+        fileSize: 16 * 1024 * 1024,
+      },
+    }),
+  )
+  async uploadAttachment(
+    @UploadedFile() file: PermitChecklistUploadFile,
+    @Body() payload: { ticketId?: string; uploadedBy?: string },
+  ) {
+    if (!file) {
+      throw new BadRequestException('file is required');
+    }
+
+    return this.service.uploadAttachment(payload?.ticketId, file, payload?.uploadedBy);
   }
 
   @Post('delete-ticket')

@@ -1,6 +1,7 @@
 import { KeyValue } from "@angular/common";
-import { Component, OnInit } from "@angular/core";
+import { Component, OnInit, TemplateRef, ViewChild } from "@angular/core";
 import { FormsModule } from "@angular/forms";
+import { NgbModal, NgbModalRef } from "@ng-bootstrap/ng-bootstrap";
 import { RevenueService } from "@app/core/api/operations/report/revenue.service";
 import { SharedModule } from "@app/shared/shared.module";
 import moment from "moment";
@@ -13,7 +14,28 @@ import moment from "moment";
   styleUrls: ['./revenue-by-customer.component.scss'],
 })
 export class RevenueByCustomerComponent implements OnInit {
-  constructor(private revenueService: RevenueService) { }
+  constructor(
+    private revenueService: RevenueService,
+    private modalService: NgbModal,
+  ) { }
+
+  @ViewChild('auditBreakdownModal', { static: true })
+  auditBreakdownModal?: TemplateRef<unknown>;
+
+  private readonly compactCurrencyFormatter = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    notation: 'compact',
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  });
+
+  private readonly fullCurrencyFormatter = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 
   ngOnInit() {
     this.getData();
@@ -59,6 +81,14 @@ export class RevenueByCustomerComponent implements OnInit {
   chart2: any;
   auditRowsByCustomer: Record<string, any[]> = {};
   auditRowsForRange: any[] = [];
+  periodAuditRowsCache: Record<string, any[]> = {};
+  selectedAuditRows: any[] = [];
+  selectedAuditCustomer: string | null = null;
+  selectedAuditPeriodLabel = '';
+  selectedAuditScopeLabel = '';
+  isAuditModalLoading = false;
+  auditModalLoadError = '';
+  private auditModalRef: NgbModalRef | null = null;
 
   data1: any;
   d: any;
@@ -86,6 +116,29 @@ export class RevenueByCustomerComponent implements OnInit {
     } else if (typeof score === 'string' && !isNaN(Number(score))) {
       this.total += Number(score);
     }
+  }
+
+  formatCompactCurrency(value: unknown): string {
+    const numericValue = this.toNumericValue(value);
+    return this.compactCurrencyFormatter.format(numericValue);
+  }
+
+  formatFullCurrency(value: unknown): string {
+    const numericValue = this.toNumericValue(value);
+    return this.fullCurrencyFormatter.format(numericValue);
+  }
+
+  private toNumericValue(value: unknown): number {
+    if (typeof value === 'number') {
+      return Number.isFinite(value) ? value : 0;
+    }
+
+    if (typeof value === 'string') {
+      const parsed = Number(value.replace(/[$,]/g, ''));
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+
+    return 0;
   }
 
   getWeekDates(year, month) {
@@ -167,19 +220,277 @@ export class RevenueByCustomerComponent implements OnInit {
   };
 
   private getPeriodSortValue(key: string): number | null {
-    const match = key.match(/^(\d{1,2})-(\d{4})$/);
-    if (!match) {
+    const period = this.parsePeriodKey(key);
+    if (!period) {
       return null;
     }
-
-    const month = Number(match[1]);
-    const year = Number(match[2]);
-
-    if (!Number.isInteger(month) || month < 1 || month > 12 || !Number.isInteger(year)) {
-      return null;
-    }
-
+    const { month, year } = period;
     return year * 100 + month;
+  }
+
+  isPeriodColumn(key: string): boolean {
+    return this.parsePeriodKey(String(key)) !== null;
+  }
+
+  private parsePeriodKey(key: string): { month: number; year: number } | null {
+    if (!key) {
+      return null;
+    }
+
+    const numericMatch = key.match(/^(\d{1,2})-(\d{4})$/);
+    if (numericMatch) {
+      const month = Number(numericMatch[1]);
+      const year = Number(numericMatch[2]);
+
+      if (Number.isInteger(month) && month >= 1 && month <= 12 && Number.isInteger(year)) {
+        return { month, year };
+      }
+    }
+
+    const namedMatch = key.match(/^([A-Za-z]{3})-(\d{4})$/);
+    if (namedMatch) {
+      const monthMoment = moment(namedMatch[1], 'MMM', true);
+      const year = Number(namedMatch[2]);
+
+      if (monthMoment.isValid() && Number.isInteger(year)) {
+        return { month: monthMoment.month() + 1, year };
+      }
+    }
+
+    return null;
+  }
+
+  canOpenAuditFromCell(columnKey: string, row: any): boolean {
+    const key = String(columnKey || '');
+
+    if (this.isPeriodColumn(key)) {
+      return true;
+    }
+
+    if (key === 'Customer') {
+      return false;
+    }
+
+    if (key === 'Grand Total') {
+      return !this.isTotalRevenueRow(row, -1);
+    }
+
+    return false;
+  }
+
+  getMatrixCellTitle(columnKey: string, row: any): string | null {
+    const key = String(columnKey || '');
+    if (this.isPeriodColumn(key)) {
+      return 'Open weekly breakdown';
+    }
+    if (this.canOpenAuditFromCell(key, row)) {
+      return 'Open audit breakdown';
+    }
+    return null;
+  }
+
+  async onMatrixCellClick(columnKey: string, row: any, rowIndex: number): Promise<void> {
+    const key = String(columnKey || '');
+
+    if (this.isPeriodColumn(key)) {
+      await this.getData1(key);
+      return;
+    }
+
+    if (!this.canOpenAuditFromCell(key, row)) {
+      return;
+    }
+
+    await this.triggerAuditFromCell(key, row, rowIndex);
+  }
+
+  async triggerAuditFromCell(columnKey: string, row: any, rowIndex: number): Promise<void> {
+    const key = String(columnKey || '');
+
+    if (key === 'Grand Total') {
+      await this.openCustomerGrandTotalAudit(row);
+      return;
+    }
+
+    if (!this.isPeriodColumn(key)) {
+      return;
+    }
+
+    await this.openAuditBreakdown(key, row, rowIndex);
+  }
+
+  private resolveAuditPeriodKey(): string | null {
+    if (this.d && this.isPeriodColumn(String(this.d))) {
+      return String(this.d);
+    }
+
+    if (!Array.isArray(this.data) || this.data.length === 0 || !this.data[0]) {
+      return null;
+    }
+
+    for (const key of Object.keys(this.data[0])) {
+      if (this.isPeriodColumn(key)) {
+        return key;
+      }
+    }
+
+    return null;
+  }
+
+  private isTotalRevenueRow(row: any, _rowIndex: number): boolean {
+    const customer = String(row?.Customer || '').toUpperCase();
+
+    return customer === 'TOTAL REVENUE' || customer === 'TOTAL';
+  }
+
+  private getAvailablePeriodKeys(): string[] {
+    if (!Array.isArray(this.data) || this.data.length === 0 || !this.data[0]) {
+      return [];
+    }
+
+    return Object.keys(this.data[0])
+      .filter((key) => this.isPeriodColumn(key))
+      .sort((a, b) => {
+        const left = this.getPeriodSortValue(a) ?? 0;
+        const right = this.getPeriodSortValue(b) ?? 0;
+        return left - right;
+      });
+  }
+
+  private buildPeriodBounds(periodKey: string): {
+    start: string;
+    end: string;
+    weekStart: string;
+    weekEnd: string;
+  } | null {
+    const period = this.parsePeriodKey(String(periodKey));
+    if (!period) {
+      return null;
+    }
+
+    const { start, end } = this.getWeekDates(period.year, period.month);
+    const startWeekNumber = moment(start).isoWeek();
+    const startYearNumber = moment(start).isoWeekYear();
+    const endWeekNumber = moment(end).isoWeek();
+    const endYearNumber = moment(end).isoWeekYear();
+
+    const weekStart = moment()
+      .isoWeekYear(startYearNumber)
+      .isoWeek(startWeekNumber)
+      .startOf('isoWeek')
+      .day(1)
+      .format('YYYY-MM-DD');
+
+    const weekEnd = moment()
+      .isoWeekYear(endYearNumber)
+      .isoWeek(endWeekNumber)
+      .startOf('isoWeek')
+      .day(7)
+      .format('YYYY-MM-DD');
+
+    return {
+      start,
+      end,
+      weekStart,
+      weekEnd,
+    };
+  }
+
+  private async loadAuditRowsForPeriod(periodKey: string): Promise<any[]> {
+    const cached = this.periodAuditRowsCache[periodKey];
+    if (cached) {
+      return cached;
+    }
+
+    const bounds = this.buildPeriodBounds(periodKey);
+    if (!bounds) {
+      return [];
+    }
+
+    const response = await this.revenueService.getFutureRevenueByCustomerByWeekly(
+      bounds.start,
+      bounds.end,
+      bounds.weekStart,
+      bounds.weekEnd,
+      this.excludeTariffFees,
+    );
+
+    const rows = this.buildAuditRowsForRange(response?.results || []);
+    this.periodAuditRowsCache[periodKey] = rows;
+    return rows;
+  }
+
+  private async openCustomerGrandTotalAudit(row: any): Promise<void> {
+    const customer = String(row?.Customer || '').toUpperCase();
+    if (!customer || customer === 'TOTAL REVENUE' || customer === 'TOTAL') {
+      return;
+    }
+
+    const periodKeys = this.getAvailablePeriodKeys();
+    if (periodKeys.length === 0 || !this.auditBreakdownModal) {
+      return;
+    }
+
+    this.selectedAuditCustomer = customer;
+    this.selectedAuditScopeLabel = customer;
+    this.selectedAuditPeriodLabel = 'All Periods';
+    this.selectedAuditRows = [];
+    this.auditModalLoadError = '';
+    this.isAuditModalLoading = true;
+    this.ensureAuditModalOpen();
+
+    const allRows: any[] = [];
+
+    try {
+      for (const periodKey of periodKeys) {
+        const periodRows = await this.loadAuditRowsForPeriod(periodKey);
+        for (const periodRow of periodRows) {
+          if (String(periodRow.customer || '').toUpperCase() === customer) {
+            allRows.push(periodRow);
+          }
+        }
+      }
+
+      allRows.sort((a, b) => {
+        const leftDate = moment(a.performanceDate).valueOf();
+        const rightDate = moment(b.performanceDate).valueOf();
+
+        if (leftDate !== rightDate) {
+          return leftDate - rightDate;
+        }
+
+        if (a.salesOrder !== b.salesOrder) {
+          return String(a.salesOrder).localeCompare(String(b.salesOrder));
+        }
+
+        return this.toNumber(a.line) - this.toNumber(b.line);
+      });
+
+      this.selectedAuditRows = allRows;
+    } catch (err) {
+      this.selectedAuditRows = [];
+      this.auditModalLoadError = 'Unable to load audit rows for this customer selection.';
+    } finally {
+      this.isAuditModalLoading = false;
+    }
+  }
+
+  private ensureAuditModalOpen(): void {
+    if (!this.auditBreakdownModal || this.auditModalRef) {
+      return;
+    }
+
+    this.auditModalRef = this.modalService.open(this.auditBreakdownModal, {
+      size: 'xl',
+      scrollable: true,
+      centered: true,
+    });
+
+    this.auditModalRef.result.finally(() => {
+      this.auditModalRef = null;
+      this.isAuditModalLoading = false;
+      this.auditModalLoadError = '';
+    });
   }
 
   // sumSub(value) {
@@ -253,10 +564,13 @@ export class RevenueByCustomerComponent implements OnInit {
   excludeTariffFees = false;
 
   async getData1(d) {
-    const explodedArray = d.split("-");
+    const period = this.parsePeriodKey(String(d));
+    if (!period) {
+      return;
+    }
 
-    let year = explodedArray[1];
-    let month = explodedArray[0];
+    const year = period.year;
+    const month = period.month;
 
     let { start, end } = this.getWeekDates(year, month);
 
@@ -390,6 +704,59 @@ export class RevenueByCustomerComponent implements OnInit {
     }
   }
 
+  async openAuditBreakdown(periodKey: string, row: any, rowIndex: number, forceAllRows = false): Promise<void> {
+    if (!periodKey || !this.auditBreakdownModal) {
+      return;
+    }
+
+    const normalizedPeriodKey = this.isPeriodColumn(periodKey)
+      ? String(periodKey)
+      : null;
+
+    if (!normalizedPeriodKey) {
+      return;
+    }
+
+    const customer = String(row?.Customer || '').toUpperCase();
+    const isTotalRevenueRow = this.isTotalRevenueRow(row, rowIndex);
+
+    this.selectedAuditPeriodLabel = this.convert(normalizedPeriodKey);
+    this.selectedAuditRows = [];
+    this.auditModalLoadError = '';
+    this.isAuditModalLoading = true;
+
+    if (isTotalRevenueRow || forceAllRows) {
+      this.selectedAuditCustomer = null;
+      this.selectedAuditScopeLabel = 'Total Revenue';
+    } else {
+      this.selectedAuditCustomer = customer;
+      this.selectedAuditScopeLabel = customer;
+    }
+
+    this.ensureAuditModalOpen();
+
+    try {
+      const periodRows = await this.loadAuditRowsForPeriod(normalizedPeriodKey);
+
+      if (isTotalRevenueRow || forceAllRows) {
+        this.selectedAuditRows = periodRows;
+      } else {
+        this.selectedAuditRows = periodRows.filter(
+          (auditRow) => String(auditRow.customer || '').toUpperCase() === customer,
+        );
+      }
+    } catch (err) {
+      this.selectedAuditRows = [];
+      this.auditModalLoadError = 'Unable to load audit rows for this period.';
+    } finally {
+      this.isAuditModalLoading = false;
+    }
+  }
+
+  async openPeriodTotalAudit(periodKey: string): Promise<void> {
+    await this.openAuditBreakdown(periodKey, { Customer: 'TOTAL REVENUE' }, -1, true);
+  }
+
   private toNumber(value: any): number {
     const normalized = Number(value);
     return Number.isFinite(normalized) ? normalized : 0;
@@ -423,6 +790,7 @@ export class RevenueByCustomerComponent implements OnInit {
       }
 
       grouped[customer].push({
+        customer,
         performanceDate: row.DATE1,
         salesOrder: row.SO_NBR,
         line: this.toNumber(row.SOD_LINE),

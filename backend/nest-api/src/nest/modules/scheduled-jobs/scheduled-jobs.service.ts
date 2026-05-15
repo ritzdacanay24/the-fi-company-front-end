@@ -485,7 +485,6 @@ export class ScheduledJobsService {
       return true;
     }
 
-    this.logger.debug(this.getJobEnvironmentBlockMessage(id));
     return false;
   }
 
@@ -496,4 +495,5 @@ export class ScheduledJobsService {
 
     return `Scheduled job ${id} is blocked in the current environment.`;
   }
+
 }
