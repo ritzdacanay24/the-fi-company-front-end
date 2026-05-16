@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { createHmac } from 'crypto';
 import nodemailer, { SendMailOptions, Transporter } from 'nodemailer';
+
+interface ScheduledJobMailOptions extends SendMailOptions {
+  scheduledJobId?: string;
+}
 
 @Injectable()
 export class EmailService {
@@ -9,6 +14,9 @@ export class EmailService {
   private readonly defaultFrom: string;
   private readonly devEmailRerouteTo: string;
   private readonly mailTransport: 'smtp' | 'sendmail';
+  private readonly dashboardWebBaseUrl: string;
+  private readonly unsubscribeTokenSecret: string;
+  private readonly unsubscribeTtlSeconds: number;
   private testModeRedirectTo?: string;
 
   constructor(private readonly configService: ConfigService) {
@@ -18,6 +26,14 @@ export class EmailService {
     this.defaultFrom = this.configService.getOrThrow<string>('MAIL_FROM');
     this.devEmailRerouteTo = this.configService.getOrThrow<string>('DEV_EMAIL_REROUTE_TO');
     this.mailTransport = this.configService.get<'smtp' | 'sendmail'>('MAIL_TRANSPORT') ?? 'smtp';
+    this.dashboardWebBaseUrl = String(this.configService.getOrThrow<string>('DASHBOARD_WEB_BASE_URL')).replace(/\/+$/, '');
+    this.unsubscribeTokenSecret =
+      this.configService.get<string>('APP_SECRET_KEY') ||
+      this.configService.get<string>('JWT_SECRET') ||
+      'scheduled-job-unsubscribe-secret';
+    this.unsubscribeTtlSeconds = Number(
+      this.configService.get<string>('SCHEDULED_JOB_UNSUBSCRIBE_TTL_SECONDS') || 60 * 60 * 24 * 30,
+    );
 
     if (this.mailTransport === 'sendmail') {
       const sendmailPath = this.configService.get<string>('SENDMAIL_PATH') ?? '/usr/sbin/sendmail';
@@ -57,8 +73,8 @@ export class EmailService {
     });
   }
 
-  async sendMail(options: SendMailOptions): Promise<void> {
-    const payload: SendMailOptions = {
+  async sendMail(options: ScheduledJobMailOptions): Promise<void> {
+    const payload: ScheduledJobMailOptions = {
       from: options.from || this.defaultFrom,
       bcc: 'ritz.dacanay@the-fi-company.com',
       ...options,
@@ -81,6 +97,24 @@ export class EmailService {
         },
       });
       return;
+    }
+
+    if (payload.scheduledJobId && payload.html) {
+      const recipients = this.normalizeRecipients(payload.to);
+      if (recipients.length > 0) {
+        for (const recipient of recipients) {
+          await this.transporter.sendMail({
+            ...payload,
+            to: recipient,
+            html: this.appendScheduledJobFooter(
+              String(payload.html),
+              payload.scheduledJobId,
+              recipient,
+            ),
+          });
+        }
+        return;
+      }
     }
 
     await this.transporter.sendMail(payload);
@@ -123,5 +157,67 @@ export class EmailService {
     }
 
     return value.address || value.name || '';
+  }
+
+  private normalizeRecipients(value: SendMailOptions['to']): string[] {
+    if (!value) {
+      return [];
+    }
+
+    if (typeof value === 'string') {
+      return [value.trim().toLowerCase()].filter(Boolean);
+    }
+
+    if (Array.isArray(value)) {
+      return value
+        .map((entry) => (typeof entry === 'string' ? entry : entry.address || ''))
+        .map((entry) => entry.trim().toLowerCase())
+        .filter(Boolean);
+    }
+
+    return [String(value.address || '').trim().toLowerCase()].filter(Boolean);
+  }
+
+  private appendScheduledJobFooter(html: string, jobId: string, recipientEmail: string): string {
+    const token = this.createUnsubscribeToken(jobId, recipientEmail);
+    const unsubscribeUrl = `${this.dashboardWebBaseUrl}/apiV2/scheduled-jobs/subscriptions/unsubscribe?token=${encodeURIComponent(token)}`;
+    const manageUrl = `${this.dashboardWebBaseUrl}/maintenance/scheduled-jobs/list`;
+
+    const footer = `
+      <hr style="margin-top:24px;border:none;border-top:1px solid #d0d7de;" />
+      <p style="font-size:12px;color:#6b7280;line-height:1.5;margin:8px 0 0;">
+        You are receiving this because you are subscribed to the <strong>${this.escapeHtml(jobId)}</strong> scheduled job.
+        <br />
+        <a href="${unsubscribeUrl}" target="_blank" rel="noopener noreferrer">Unsubscribe from this email</a>
+        &nbsp;|&nbsp;
+        <a href="${manageUrl}" target="_blank" rel="noopener noreferrer">Manage notification preferences</a>
+      </p>
+    `;
+
+    return `${html}${footer}`;
+  }
+
+  private createUnsubscribeToken(jobId: string, email: string): string {
+    const payload = {
+      jobId,
+      email: String(email || '').trim().toLowerCase(),
+      exp: Math.floor(Date.now() / 1000) + this.unsubscribeTtlSeconds,
+    };
+
+    const encoded = Buffer.from(JSON.stringify(payload), 'utf8').toString('base64url');
+    const signature = createHmac('sha256', this.unsubscribeTokenSecret)
+      .update(encoded)
+      .digest('base64url');
+
+    return `${encoded}.${signature}`;
+  }
+
+  private escapeHtml(value: string): string {
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 }

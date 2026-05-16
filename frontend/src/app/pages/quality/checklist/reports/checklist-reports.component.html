@@ -122,8 +122,169 @@
 </div>
 
 <div class="row g-3 mb-3">
-  <div class="col-lg-4">
+  <div class="col-xl-3 col-md-6">
+    <div class="card border-0 h-100 mb-0">
+      <div class="card-body py-3">
+        <div class="d-flex align-items-center">
+          <div class="flex-shrink-0">
+            <div class="bg-danger-subtle text-danger rounded-3 p-3">
+              <i class="las la-hourglass-half fs-3"></i>
+            </div>
+          </div>
+          <div class="flex-grow-1 ms-3">
+            <h3 class="fs-2 fw-bold mb-1 text-body-emphasis">{{ overdueActiveCount }}</h3>
+            <p class="mb-0 text-muted">Overdue Active (24h+)</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6">
+    <div class="card border-0 h-100 mb-0">
+      <div class="card-body py-3">
+        <div class="d-flex align-items-center">
+          <div class="flex-shrink-0">
+            <div class="bg-warning-subtle text-warning rounded-3 p-3">
+              <i class="las la-random fs-3"></i>
+            </div>
+          </div>
+          <div class="flex-grow-1 ms-3">
+            <h3 class="fs-2 fw-bold mb-1 text-body-emphasis">{{ reassignedLoadCount }}</h3>
+            <p class="mb-0 text-muted">Reassigned Load</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6">
+    <div class="card border-0 h-100 mb-0">
+      <div class="card-body py-3">
+        <div class="d-flex align-items-center">
+          <div class="flex-shrink-0">
+            <div class="bg-info-subtle text-info rounded-3 p-3">
+              <i class="las la-lock fs-3"></i>
+            </div>
+          </div>
+          <div class="flex-grow-1 ms-3">
+            <h3 class="fs-2 fw-bold mb-1 text-body-emphasis">{{ staleLockCount }}</h3>
+            <p class="mb-0 text-muted">Stale Locks</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6">
+    <div class="card border-0 h-100 mb-0">
+      <div class="card-body py-3">
+        <div class="d-flex align-items-center">
+          <div class="flex-shrink-0">
+            <div class="bg-secondary-subtle text-secondary rounded-3 p-3">
+              <i class="las la-exclamation-triangle fs-3"></i>
+            </div>
+          </div>
+          <div class="flex-grow-1 ms-3">
+            <h3 class="fs-2 fw-bold mb-1 text-body-emphasis">{{ bottleneckCount }}</h3>
+            <p class="mb-0 text-muted">Bottlenecks</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-xl-5">
     <div class="card border-0 shadow-sm h-100">
+      <div class="card-header">
+        <h4 class="h6 mb-0">Active Aging Buckets</h4>
+      </div>
+      <div class="card-body">
+        <div class="aging-buckets-grid">
+          @for (bucket of agingBuckets; track bucket.label) {
+            <div
+              class="aging-bucket-tile"
+              [ngClass]="{
+                'aging-bucket-tile--success': bucket.tone === 'success',
+                'aging-bucket-tile--warning': bucket.tone === 'warning',
+                'aging-bucket-tile--danger': bucket.tone === 'danger',
+                'aging-bucket-tile--secondary': bucket.tone === 'secondary'
+              }">
+              <div class="d-flex align-items-center justify-content-between gap-2">
+                <span class="aging-bucket-label">{{ bucket.label }}</span>
+                <span class="aging-bucket-share">
+                  {{ (activeInspections > 0 ? (bucket.count / activeInspections) * 100 : 0) | number: '1.0-0' }}%
+                </span>
+              </div>
+
+              <div class="aging-bucket-count">{{ bucket.count }}</div>
+              <div class="aging-bucket-caption">active inspections</div>
+
+              <div class="progress aging-bucket-progress" role="progressbar" aria-label="Aging bucket share">
+                <div
+                  class="progress-bar"
+                  [style.width.%]="activeInspections > 0 ? (bucket.count / activeInspections) * 100 : 0"></div>
+              </div>
+            </div>
+          }
+        </div>
+
+        <p class="text-muted small mb-0 mt-3">
+          Based on active statuses: Draft, In Progress, and Review.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-7">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <h4 class="h6 mb-0">Supervisor Productivity Ranking</h4>
+        <span class="text-muted small">Top 8 by throughput</span>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0 leaderboard-table">
+            <thead>
+              <tr>
+                <th>Inspector / Owner</th>
+                <th class="text-end">Assigned</th>
+                <th class="text-end">Completed</th>
+                <th class="text-end">Completion %</th>
+                <th class="text-end">Avg Cycle (h)</th>
+                <th class="text-end">Overdue Active</th>
+              </tr>
+            </thead>
+            <tbody>
+              @if (productivityLeaders.length === 0) {
+                <tr>
+                  <td colspan="6" class="text-center text-muted py-3">No productivity data in selected scope</td>
+                </tr>
+              } @else {
+                @for (row of productivityLeaders; track row.name) {
+                  <tr>
+                    <td class="fw-semibold">{{ row.name }}</td>
+                    <td class="text-end">{{ row.assigned }}</td>
+                    <td class="text-end">{{ row.completedOrSubmitted }}</td>
+                    <td class="text-end">{{ row.completionRate | number: '1.0-1' }}%</td>
+                    <td class="text-end">{{ row.avgCycleHours | number: '1.1-1' }}</td>
+                    <td class="text-end">{{ row.overdueActive }}</td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm h-100 status-distribution-card">
       <div class="card-header"><h4 class="h6 mb-0">Status Distribution</h4></div>
       <div class="card-body">
         @if (loading) {
@@ -251,7 +412,7 @@
   </div>
 </div>
 
-<div class="row g-3 mt-1">
+<div class="row g-3 mt-1 mb-4">
   <div class="col-xl-6">
     <div class="card border-0 shadow-sm h-100">
       <div class="card-header">

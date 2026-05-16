@@ -9,6 +9,16 @@ export const INSPECTION_MENU: MenuItem[] = [
     },
     {
         id: 2,
+        label: "Performance Dashboard",
+        link: "/inspection-checklist/dashboard",
+        description: "Manager and supervisor productivity insights",
+        icon: "las la-chart-pie",
+        hideCheckBox: true,
+        accessRequired: false,
+        activatedRoutes: "/inspection-checklist/dashboard*"
+    },
+    {
+        id: 3,
         label: "Start Inspection",
         link: "/inspection-checklist/management",
         description: "Start and manage inspection instances",
@@ -18,7 +28,7 @@ export const INSPECTION_MENU: MenuItem[] = [
         activatedRoutes: "/inspection-checklist/management*"
     },
     {
-        id: 3,
+        id: 4,
         badgeId: "inspectionChecklistExecutionInProgress",
         label: "Execution",
         link: "/inspection-checklist/execution",
@@ -29,7 +39,7 @@ export const INSPECTION_MENU: MenuItem[] = [
         activatedRoutes: "/inspection-checklist/execution*"
     },
     {
-        id: 4,
+        id: 5,
         label: "Reports",
         link: "/inspection-checklist/reports",
         description: "Inspection checklist reports and history",
@@ -39,7 +49,7 @@ export const INSPECTION_MENU: MenuItem[] = [
         activatedRoutes: "/inspection-checklist/reports*"
     },
     {
-        id: 5,
+        id: 6,
         label: "Template Manager",
         link: "/inspection-checklist/template-manager",
         description: "Manage checklist templates",
@@ -49,7 +59,7 @@ export const INSPECTION_MENU: MenuItem[] = [
         activatedRoutes: "/inspection-checklist/template-manager*"
     },
     {
-        id: 6,
+        id: 7,
         badgeId: "inspectionChecklistTemplatesDraft",
         label: "Template Editor",
         link: "/inspection-checklist/template-editor",
@@ -60,7 +70,7 @@ export const INSPECTION_MENU: MenuItem[] = [
         activatedRoutes: "/inspection-checklist/template-editor*"
     },
     {
-        id: 7,
+        id: 8,
         label: "Audit",
         link: "/inspection-checklist/audit",
         description: "Checklist audit and verification",

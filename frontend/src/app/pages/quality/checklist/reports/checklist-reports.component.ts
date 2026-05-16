@@ -89,7 +89,15 @@ export class ChecklistReportsComponent implements OnInit {
       toolbar: { show: false },
     },
     labels: [],
-    dataLabels: { enabled: true },
+    dataLabels: {
+      enabled: true,
+      formatter: (value: number) => `${value.toFixed(1)}%`,
+      style: {
+        fontSize: '12px',
+        fontWeight: '700',
+        colors: ['#1f2937'],
+      },
+    },
     tooltip: {
       y: {
         formatter: (value: number) => `${value} inspections`,
@@ -101,8 +109,12 @@ export class ChecklistReportsComponent implements OnInit {
     },
     plotOptions: {
       pie: {
+        dataLabels: {
+          offset: 20,
+          minAngleToShowLabel: 10,
+        },
         donut: {
-          size: '66%',
+          size: '60%',
         },
       },
     },
@@ -442,6 +454,131 @@ export class ChecklistReportsComponent implements OnInit {
     return (this.completedOrSubmitted / this.filteredInstances.length) * 100;
   }
 
+  get overdueActiveCount(): number {
+    return this.filteredInstances.filter((item) => this.isOverdueActive(item)).length;
+  }
+
+  get staleLockCount(): number {
+    const now = Date.now();
+    return this.filteredInstances.filter((item) => {
+      if (!this.isActiveStatus(item.status)) {
+        return false;
+      }
+
+      const lockExpiresAt = this.parseDate(item.lock_expires_at || undefined);
+      return !!lockExpiresAt && lockExpiresAt.getTime() < now;
+    }).length;
+  }
+
+  get reassignedLoadCount(): number {
+    return this.filteredInstances.filter((item) => this.isReassigned(item)).length;
+  }
+
+  get bottleneckCount(): number {
+    const now = Date.now();
+    return this.filteredInstances.filter((item) => {
+      if (!this.isActiveStatus(item.status)) {
+        return false;
+      }
+
+      const ageHours = this.getActiveAgeHours(item, now);
+      const staleLock = (() => {
+        const lockExpiresAt = this.parseDate(item.lock_expires_at || undefined);
+        return !!lockExpiresAt && lockExpiresAt.getTime() < now;
+      })();
+
+      const lowProgress = this.toNumber(item.progress_percentage) < 50;
+      return staleLock || (ageHours >= 48 && lowProgress);
+    }).length;
+  }
+
+  get agingBuckets(): Array<{ label: string; count: number; tone: 'success' | 'warning' | 'danger' | 'secondary' }> {
+    const now = Date.now();
+    const active = this.filteredInstances.filter((item) => this.isActiveStatus(item.status));
+
+    const buckets = [
+      { label: '< 24h', min: 0, max: 24, tone: 'success' as const },
+      { label: '24-48h', min: 24, max: 48, tone: 'warning' as const },
+      { label: '> 48h', min: 48, max: Number.POSITIVE_INFINITY, tone: 'danger' as const },
+    ];
+
+    return buckets.map((bucket) => ({
+      label: bucket.label,
+      tone: bucket.tone,
+      count: active.filter((item) => {
+        const ageHours = this.getActiveAgeHours(item, now);
+        return ageHours >= bucket.min && ageHours < bucket.max;
+      }).length,
+    }));
+  }
+
+  get productivityLeaders(): Array<{
+    name: string;
+    assigned: number;
+    completedOrSubmitted: number;
+    completionRate: number;
+    avgCycleHours: number;
+    overdueActive: number;
+  }> {
+    const grouped = new Map<
+      string,
+      { assigned: number; completedOrSubmitted: number; cycleHoursTotal: number; cycleCount: number; overdueActive: number }
+    >();
+
+    const now = Date.now();
+
+    this.filteredInstances.forEach((instance) => {
+      const ownerName = this.resolveOperatorLabel(instance);
+      const current = grouped.get(ownerName) || {
+        assigned: 0,
+        completedOrSubmitted: 0,
+        cycleHoursTotal: 0,
+        cycleCount: 0,
+        overdueActive: 0,
+      };
+
+      current.assigned += 1;
+
+      const status = String(instance.status || '').toLowerCase();
+      const finished = status === 'completed' || status === 'submitted';
+      if (finished) {
+        current.completedOrSubmitted += 1;
+      }
+
+      const cycleHours = this.getCycleHours(instance);
+      if (cycleHours !== null) {
+        current.cycleHoursTotal += cycleHours;
+        current.cycleCount += 1;
+      }
+
+      if (this.isActiveStatus(instance.status) && this.getActiveAgeHours(instance, now) >= 24) {
+        current.overdueActive += 1;
+      }
+
+      grouped.set(ownerName, current);
+    });
+
+    return Array.from(grouped.entries())
+      .map(([name, stats]) => ({
+        name,
+        assigned: stats.assigned,
+        completedOrSubmitted: stats.completedOrSubmitted,
+        completionRate: stats.assigned > 0 ? (stats.completedOrSubmitted / stats.assigned) * 100 : 0,
+        avgCycleHours: stats.cycleCount > 0 ? stats.cycleHoursTotal / stats.cycleCount : 0,
+        overdueActive: stats.overdueActive,
+      }))
+      .sort((a, b) => {
+        if (b.completedOrSubmitted !== a.completedOrSubmitted) {
+          return b.completedOrSubmitted - a.completedOrSubmitted;
+        }
+        if (b.completionRate !== a.completionRate) {
+          return b.completionRate - a.completionRate;
+        }
+        return a.avgCycleHours - b.avgCycleHours;
+      })
+      .slice(0, 8);
+  }
+
   getScopeCount(scope: ScopeFilter): number {
     if (scope === 'all') return (this.instances || []).length;
     if (scope === 'active') return (this.instances || []).filter((item) => this.isActiveStatus(item.status)).length;
@@ -490,8 +627,10 @@ export class ChecklistReportsComponent implements OnInit {
     const byTemplate = new Map<string, number>();
 
     this.filteredInstances.forEach((instance) => {
-      const name = (instance.template_name || 'Unknown Template').trim() || 'Unknown Template';
-      byTemplate.set(name, (byTemplate.get(name) || 0) + 1);
+      const baseName = (instance.template_name || 'Unknown Template').trim() || 'Unknown Template';
+      const version = String(instance.template_version || '').trim();
+      const label = version ? `${baseName} (v${version})` : baseName;
+      byTemplate.set(label, (byTemplate.get(label) || 0) + 1);
     });
 
     const topTemplates = Array.from(byTemplate.entries())
@@ -718,6 +857,61 @@ export class ChecklistReportsComponent implements OnInit {
 
   private isActiveStatus(status: unknown): boolean {
     return ['draft', 'in_progress', 'review'].includes(String(status || '').toLowerCase());
+  }
+
+  private isOverdueActive(instance: ChecklistInstance): boolean {
+    if (!this.isActiveStatus(instance.status)) {
+      return false;
+    }
+    return this.getActiveAgeHours(instance, Date.now()) >= 24;
+  }
+
+  private getActiveAgeHours(instance: ChecklistInstance, now: number): number {
+    const start = this.parseDate(instance.started_at || instance.created_at || undefined);
+    if (!start) {
+      return 0;
+    }
+    return Math.max(0, (now - start.getTime()) / (1000 * 60 * 60));
+  }
+
+  private getCycleHours(instance: ChecklistInstance): number | null {
+    const start = this.parseDate(instance.started_at || instance.created_at || undefined);
+    const end = this.parseDate(instance.submitted_at || instance.completed_at || undefined);
+    if (!start || !end || end < start) {
+      return null;
+    }
+    return (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+  }
+
+  private resolveOperatorLabel(instance: ChecklistInstance): string {
+    const owner = this.normalizeText(instance.owner_name || '');
+    if (owner) {
+      return (instance.owner_name || '').trim();
+    }
+
+    const operator = this.normalizeText(instance.operator_name || '');
+    if (operator) {
+      return (instance.operator_name || '').trim();
+    }
+
+    return 'Unassigned';
+  }
+
+  private isReassigned(instance: ChecklistInstance): boolean {
+    const ownerId = String(instance.owner_id ?? '').trim();
+    const operatorId = String(instance.operator_id ?? '').trim();
+
+    if (ownerId && operatorId && ownerId !== operatorId) {
+      return true;
+    }
+
+    const ownerName = this.normalizeText(instance.owner_name || '');
+    const operatorName = this.normalizeText(instance.operator_name || '');
+    if (ownerName && operatorName && ownerName !== operatorName) {
+      return true;
+    }
+
+    return false;
   }
 
   private toNumber(value: unknown): number {

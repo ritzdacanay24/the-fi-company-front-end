@@ -10,6 +10,137 @@
   font-weight: 600;
 }
 
+.leaderboard-table th {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #6c757d;
+  white-space: nowrap;
+}
+
+.leaderboard-table td {
+  white-space: nowrap;
+}
+
+.aging-buckets-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.aging-bucket-tile {
+  border-radius: 0.75rem;
+  border: 1px solid transparent;
+  background: #f8f9fa;
+  padding: 0.75rem;
+}
+
+.aging-bucket-label {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #6c757d;
+  font-weight: 700;
+}
+
+.aging-bucket-share {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #495057;
+}
+
+.aging-bucket-count {
+  margin-top: 0.35rem;
+  font-size: 1.7rem;
+  line-height: 1.15;
+  font-weight: 800;
+  color: #212529;
+}
+
+.aging-bucket-caption {
+  font-size: 0.75rem;
+  color: #6c757d;
+  margin-bottom: 0.45rem;
+}
+
+.aging-bucket-progress {
+  height: 0.4rem;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.aging-bucket-tile--success {
+  background: rgba(25, 135, 84, 0.08);
+  border-color: rgba(25, 135, 84, 0.22);
+}
+
+.aging-bucket-tile--success .progress-bar {
+  background-color: #198754;
+}
+
+.aging-bucket-tile--warning {
+  background: rgba(255, 193, 7, 0.12);
+  border-color: rgba(255, 193, 7, 0.3);
+}
+
+.aging-bucket-tile--warning .progress-bar {
+  background-color: #ffc107;
+}
+
+.aging-bucket-tile--danger {
+  background: rgba(220, 53, 69, 0.1);
+  border-color: rgba(220, 53, 69, 0.26);
+}
+
+.aging-bucket-tile--danger .progress-bar {
+  background-color: #dc3545;
+}
+
+.aging-bucket-tile--secondary {
+  background: rgba(108, 117, 125, 0.11);
+  border-color: rgba(108, 117, 125, 0.25);
+}
+
+.aging-bucket-tile--secondary .progress-bar {
+  background-color: #6c757d;
+}
+
+@media (max-width: 991.98px) {
+  .aging-buckets-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 575.98px) {
+  .aging-buckets-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+:host ::ng-deep .apexcharts-legend-text {
+  color: var(--bs-body-color) !important;
+  font-weight: 600 !important;
+}
+
+:host ::ng-deep .apexcharts-datalabel {
+  fill: #ffffff !important;
+  font-weight: 700 !important;
+}
+
+:host ::ng-deep .status-distribution-card .apexcharts-datalabel,
+:host ::ng-deep .status-distribution-card .apexcharts-datalabel-value,
+:host ::ng-deep .status-distribution-card .apexcharts-pie-label {
+  fill: #1f2937 !important;
+  font-weight: 800 !important;
+  stroke: rgba(255, 255, 255, 0.75);
+  stroke-width: 3px;
+  paint-order: stroke;
+}
+
+:host ::ng-deep .status-distribution-card .apexcharts-legend-text {
+  color: #1f2937 !important;
+  font-weight: 700 !important;
+}
+
 .chart-loading-skeleton {
   width: 100%;
   border-radius: 0.75rem;
