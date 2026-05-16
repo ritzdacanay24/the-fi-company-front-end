@@ -104,6 +104,43 @@
   background-color: #6c757d;
 }
 
+:host-context([data-bs-theme='dark']) .aging-bucket-tile,
+:host-context(.dark) .aging-bucket-tile,
+:host-context(body.dark-mode) .aging-bucket-tile {
+  background: #1f2733;
+  border-color: #334155;
+}
+
+:host-context([data-bs-theme='dark']) .aging-bucket-label,
+:host-context(.dark) .aging-bucket-label,
+:host-context(body.dark-mode) .aging-bucket-label {
+  color: #cbd5e1;
+}
+
+:host-context([data-bs-theme='dark']) .aging-bucket-share,
+:host-context(.dark) .aging-bucket-share,
+:host-context(body.dark-mode) .aging-bucket-share {
+  color: #f8fafc;
+}
+
+:host-context([data-bs-theme='dark']) .aging-bucket-count,
+:host-context(.dark) .aging-bucket-count,
+:host-context(body.dark-mode) .aging-bucket-count {
+  color: #f8fafc;
+}
+
+:host-context([data-bs-theme='dark']) .aging-bucket-caption,
+:host-context(.dark) .aging-bucket-caption,
+:host-context(body.dark-mode) .aging-bucket-caption {
+  color: #cbd5e1;
+}
+
+:host-context([data-bs-theme='dark']) .aging-bucket-progress,
+:host-context(.dark) .aging-bucket-progress,
+:host-context(body.dark-mode) .aging-bucket-progress {
+  background: rgba(148, 163, 184, 0.3);
+}
+
 @media (max-width: 991.98px) {
   .aging-buckets-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -139,6 +176,25 @@
 :host ::ng-deep .status-distribution-card .apexcharts-legend-text {
   color: #1f2937 !important;
   font-weight: 700 !important;
+}
+
+:host-context([data-bs-theme='dark']) ::ng-deep .status-distribution-card .apexcharts-legend-text,
+:host-context(.dark) ::ng-deep .status-distribution-card .apexcharts-legend-text,
+:host-context(body.dark-mode) ::ng-deep .status-distribution-card .apexcharts-legend-text {
+  color: #e2e8f0 !important;
+}
+
+:host-context([data-bs-theme='dark']) ::ng-deep .status-distribution-card .apexcharts-datalabel,
+:host-context([data-bs-theme='dark']) ::ng-deep .status-distribution-card .apexcharts-datalabel-value,
+:host-context([data-bs-theme='dark']) ::ng-deep .status-distribution-card .apexcharts-pie-label,
+:host-context(.dark) ::ng-deep .status-distribution-card .apexcharts-datalabel,
+:host-context(.dark) ::ng-deep .status-distribution-card .apexcharts-datalabel-value,
+:host-context(.dark) ::ng-deep .status-distribution-card .apexcharts-pie-label,
+:host-context(body.dark-mode) ::ng-deep .status-distribution-card .apexcharts-datalabel,
+:host-context(body.dark-mode) ::ng-deep .status-distribution-card .apexcharts-datalabel-value,
+:host-context(body.dark-mode) ::ng-deep .status-distribution-card .apexcharts-pie-label {
+  fill: #f8fafc !important;
+  stroke: rgba(15, 23, 42, 0.75);
 }
 
 .chart-loading-skeleton {
