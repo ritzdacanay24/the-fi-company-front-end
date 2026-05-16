@@ -1,61 +1,114 @@
-<!-- Loading -->
-@if (loading) {
-  <div class="d-flex flex-column align-items-center justify-content-center" style="min-height:100vh; background:#f5f6fa;">
-    <div class="spinner-border text-primary mb-3" style="width:2.5rem;height:2.5rem;"></div>
-    <p class="text-muted">Loading inspection report…</p>
-  </div>
-}
-
-<!-- Error -->
-@if (!loading && error) {
-  <div class="d-flex flex-column align-items-center justify-content-center" style="min-height:100vh; background:#f5f6fa;">
-    <div class="text-center p-4" style="max-width:500px;">
-      @if (isExpired) {
-        <i class="mdi mdi-clock-alert fs-1 text-warning mb-3 d-block"></i>
-        <h5 class="fw-bold text-warning mb-2">Share Link Expired</h5>
-      } @else {
-        <i class="mdi mdi-link-off fs-1 text-danger mb-3 d-block"></i>
-        <h5 class="fw-bold text-danger mb-2">Report Unavailable</h5>
-      }
-      <p class="text-muted mb-3">{{ error }}</p>
-      @if (isExpired) {
-        <div class="alert alert-info py-2 small">
-          <i class="mdi mdi-information-outline me-2"></i>
-          <strong>Next Steps:</strong> Contact the Inspector who shared this report and request a new share link with updated expiration.
-        </div>
-      }
+<div class="request-public-shell">
+  <div class="auth-one-bg-position auth-one-bg request-public-page" id="inspection-report-bg">
+    <div class="bg-overlay"></div>
+    <div class="shape">
+      <svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink"
+        viewBox="0 0 1440 120">
+        <path d="M 0,36 C 144,53.6 432,123.2 720,124 C 1008,124.8 1296,56.8 1440,40L1440 140L0 140z"></path>
+      </svg>
     </div>
   </div>
-}
+
+  <div class="request-public-content position-relative">
+    @if (loading || error) {
+      <div class="container py-5 position-relative">
+        <div class="row justify-content-center">
+          <div class="col-12 col-lg-12 col-xl-11 col-xxl-10">
+            <div class="row justify-content-center">
+              <div class="col-md-10 col-lg-8 col-xl-7">
+                <div class="text-center mb-4 p-4 rounded request-public-header">
+                  <a routerLink="/" class="d-inline-block auth-logo">
+                    <img src="assets/images/the-fi-cropped.png" alt="The Fi Company Logo" width="190" class="mb-3">
+                  </a>
+                  <h2 class="mb-2 fw-bold request-public-title">Inspection Report</h2>
+                  <p class="request-public-subtitle mb-0">Public share link for reviewing inspection results and evidence.</p>
+                </div>
+
+                <!-- Loading -->
+                @if (loading) {
+                  <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-body p-4 text-center">
+                      <div class="spinner-border text-primary mb-3" style="width:2.5rem;height:2.5rem;"></div>
+                      <p class="text-muted mb-0">Loading inspection report...</p>
+                    </div>
+                  </div>
+                }
+
+                <!-- Error -->
+                @if (!loading && error) {
+                  <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-body p-4 text-center">
+                      @if (isExpired) {
+                        <i class="mdi mdi-clock-alert fs-1 text-warning mb-3 d-block"></i>
+                        <h5 class="fw-bold text-warning mb-2">Share Link Expired</h5>
+                      } @else {
+                        <i class="mdi mdi-link-off fs-1 text-danger mb-3 d-block"></i>
+                        <h5 class="fw-bold text-danger mb-2">Report Unavailable</h5>
+                      }
+                      <p class="text-muted mb-3">{{ error }}</p>
+                      @if (isExpired) {
+                        <div class="alert alert-info py-2 small mb-0">
+                          <i class="mdi mdi-information-outline me-2"></i>
+                          <strong>Next Steps:</strong> Contact the Inspector who shared this report and request a new share link with updated expiration.
+                        </div>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
 
 <!-- Report -->
-@if (!loading && !error && report) {
-  <!-- Header -->
-  <div class="report-header">
-    <div class="container-fluid" style="max-width:900px;">
-      <div class="d-flex align-items-center justify-content-between mb-3">
-        <!-- EyeFi logo -->
-        <img src="assets/images/fi-color.png" alt="EyeFi" class="report-logo">
-        @if (label) {
-          <span class="badge bg-white bg-opacity-20 text-dark px-3 py-2 rounded-pill">{{ label }}</span>
-        }
+  @if (!loading && !error && report) {
+    <div class="container py-4 position-relative">
+      <div class="row justify-content-center">
+        <div class="col-12 col-lg-12 col-xl-11 col-xxl-10">
+          <div class="row justify-content-center">
+            <div class="col-md-10 col-lg-8 col-xl-7">
+                <div class="text-center mb-2 px-4 py-2 rounded request-public-header">
+                <a routerLink="/" class="d-inline-block auth-logo">
+                  <img src="assets/images/the-fi-cropped.png" alt="The Fi Company Logo" width="190" class="mb-3">
+                </a>
+                <h2 class="mb-0 fw-bold request-public-title">Inspection Report</h2>
+                <p class="request-public-subtitle mt-2 mb-0">Review checklist results, submitted media, and completion details for this inspection.</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="d-flex align-items-baseline gap-2 flex-wrap">
-        <h1 class="mb-0">{{ instance.template_name }}</h1>
-        @if (instance.template_version) {
-          <span class="template-version-badge">v{{ instance.template_version }}</span>
-        }
-      </div>
-      @if (instance.template_description) {
-        <p class="mb-0 mt-1 opacity-75 small" [innerHTML]="instance.template_description"></p>
-      }
     </div>
-  </div>
 
   <div class="container-fluid py-4" style="max-width:900px;">
 
     <!-- Meta info card -->
     <div class="meta-card mb-4">
+      <div class="mb-3 pb-3 border-bottom">
+        <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap">
+          <h3 class="mb-0">{{ instance.template_name || 'Inspection Checklist' }}</h3>
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            @if (instance.template_version) {
+              <span class="badge bg-primary-subtle text-primary-emphasis px-3 py-2 rounded-pill">v{{ instance.template_version }}</span>
+            }
+            @if (label) {
+              <span class="badge bg-light text-dark border px-3 py-2 rounded-pill">{{ label }}</span>
+            }
+          </div>
+        </div>
+        @if (instance.template_description) {
+          <p class="text-muted small mb-0 mt-2" [innerHTML]="instance.template_description"></p>
+        }
+        @if (expiresAt) {
+          <div class="small text-muted mt-2">
+            <i class="mdi mdi-clock-outline me-1 text-warning"></i>
+            Share link expires: <strong class="text-dark">{{ formatDate(expiresAt) }}</strong>
+          </div>
+        }
+      </div>
+
       <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
         <div class="meta-row flex-grow-1">
           <div class="meta-item">
@@ -76,10 +129,6 @@
               <div class="meta-value">{{ instance.customer_name }}</div>
             </div>
           }
-          <div class="meta-item">
-            <div class="meta-label">Inspector</div>
-            <div class="meta-value">{{ instance.operator_name || '—' }}</div>
-          </div>
           <div class="meta-item">
             <div class="meta-label">Date</div>
             <div class="meta-value">{{ formatDate(instance.submitted_at || instance.completed_at || instance.created_at) }}</div>
@@ -138,11 +187,10 @@
               </span>
             </div>
             <h3>{{ item.title }}</h3>
-            @if (item.completed && (item.completed_by || item.completed_at)) {
+            @if (item.completed && item.completed_at) {
               <div class="small text-muted mt-1 opacity-75">
-                <i class="mdi mdi-account-check-outline me-1"></i>
-                @if (item.completed_by) { {{ item.completed_by }} }
-                @if (item.completed_at) { &mdash; {{ formatDate(item.completed_at) }} }
+                <i class="mdi mdi-clock-outline me-1"></i>
+                {{ formatDate(item.completed_at) }}
               </div>
             }
           </div>
@@ -226,10 +274,10 @@
       <p class="mb-0">For questions, contact your quality control representative.</p>
     </div>
   </div>
-}
+  }
 
 <!-- Lightbox -->
-@if (lightboxUrl) {
+  @if (lightboxUrl) {
   <div class="lightbox-overlay" (click)="closeLightbox()" (keydown.escape)="closeLightbox()">
 
     <!-- Close -->
@@ -271,14 +319,9 @@
         }
 
         <!-- Completion info -->
-        @if (lightboxItem.completed_by || lightboxItem.completed_at) {
+        @if (lightboxItem.completed_at) {
           <div class="lightbox-completion-info">
-            @if (lightboxItem.completed_by) {
-              <div><i class="mdi mdi-account-check-outline me-1"></i>{{ lightboxItem.completed_by }}</div>
-            }
-            @if (lightboxItem.completed_at) {
-              <div><i class="mdi mdi-clock-outline me-1"></i>{{ formatDate(lightboxItem.completed_at) }}</div>
-            }
+            <div><i class="mdi mdi-clock-outline me-1"></i>{{ formatDate(lightboxItem.completed_at) }}</div>
           </div>
         }
 
@@ -311,4 +354,6 @@
       </button>
     }
   </div>
-}
+  }
+  </div>
+</div>

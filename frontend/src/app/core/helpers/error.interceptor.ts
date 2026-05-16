@@ -202,6 +202,11 @@ export class ErrorInterceptor implements HttpInterceptor {
     );
   }
 
+  private isPublicInspectionReportRequest(request: HttpRequest<any>): boolean {
+    const url = request.url || '';
+    return url.includes('/inspection-checklist/share-report/') || url.includes('/inspection/report/');
+  }
+
   intercept(
     request: HttpRequest<any>,
     next: HttpHandler
@@ -227,6 +232,11 @@ export class ErrorInterceptor implements HttpInterceptor {
         }
 
         if (error.status === 401 || error.status === 900) {
+          if (this.isPublicInspectionReportRequest(request)) {
+            // Public tokenized report endpoint should never force app login redirect.
+            return throwError(() => error);
+          }
+
           if (error.url?.includes("api.mindee.net")) {
             // Mindee API error - don't trigger app logout
             console.warn('Mindee API authentication error:', error.error);
@@ -263,12 +273,15 @@ export class ErrorInterceptor implements HttpInterceptor {
             ? error?.error?.message
             : error?.statusText;
 
+        const isPublicInspectionReport = this.isPublicInspectionReportRequest(request);
+
         // Check for suppress flags from our serial number component
         const suppressGlobalError =
           error?._suppressGlobalError
           || error?._handledLocally
           || isDeployInProgress
-          || isDeployDowntime;
+          || isDeployDowntime
+          || isPublicInspectionReport;
 
         // Only show toast if backend did not set showPopup === false AND we haven't suppressed it
         if (
