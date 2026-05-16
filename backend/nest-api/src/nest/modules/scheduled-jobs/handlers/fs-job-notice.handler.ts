@@ -4,6 +4,8 @@ import { MysqlService } from '@/shared/database/mysql.service';
 import { EmailService } from '@/shared/email/email.service';
 import { EmailTemplateService } from '@/shared/email/email-template.service';
 import { UrlBuilder } from '@/shared/url/url-builder';
+import { SCHEDULED_JOB_IDS } from '../scheduled-job-ids';
+import { ScheduledJobRecipientsService } from '../scheduled-job-recipients.service';
 import { ScheduledJobHandler, ScheduledJobRunResultDto } from './scheduled-job.handler';
 
 interface FieldServiceJob extends RowDataPacket {
@@ -26,6 +28,7 @@ export class FsJobNoticeHandler implements ScheduledJobHandler {
     private readonly mysqlService: MysqlService,
     private readonly emailService: EmailService,
     private readonly emailTemplateService: EmailTemplateService,
+    private readonly scheduledJobRecipientsService: ScheduledJobRecipientsService,
     private readonly urlBuilder: UrlBuilder,
   ) {}
 
@@ -139,6 +142,7 @@ export class FsJobNoticeHandler implements ScheduledJobHandler {
 
         await this.emailService.sendMail({
           to: email,
+          scheduledJobId: SCHEDULED_JOB_IDS.FS_JOB_NOTICE,
           subject: `Appointment Notice - Request ID ${requestId}`,
           html,
         });
@@ -164,12 +168,20 @@ export class FsJobNoticeHandler implements ScheduledJobHandler {
 
     if (noticeDetails.length > 0) {
       try {
+        const summaryRecipients = await this.resolveSummaryRecipients();
+        if (!summaryRecipients.length) {
+          this.logger.warn('No summary recipients configured for fs-job-notice');
+          return sentCount;
+        }
+
         const summaryHtml = this.emailTemplateService.render('fs-job-notice-summary', {
           details: noticeDetails,
           totalNotices: noticeDetails.length,
         });
+
         await this.emailService.sendMail({
-          to: 'schedulinglv@the-fi-company.com',
+          to: summaryRecipients,
+          scheduledJobId: SCHEDULED_JOB_IDS.FS_JOB_NOTICE,
           subject: 'Field Service Notice Email Summary',
           html: summaryHtml,
         });
@@ -179,5 +191,9 @@ export class FsJobNoticeHandler implements ScheduledJobHandler {
     }
 
     return sentCount;
+  }
+
+  private async resolveSummaryRecipients(): Promise<string[]> {
+    return this.scheduledJobRecipientsService.resolveSubscribedEmails(SCHEDULED_JOB_IDS.FS_JOB_NOTICE);
   }
 }

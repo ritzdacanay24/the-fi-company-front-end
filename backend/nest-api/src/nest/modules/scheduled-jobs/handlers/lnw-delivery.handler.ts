@@ -3,7 +3,8 @@ import { RowDataPacket } from 'mysql2/promise';
 import { QadOdbcService } from '@/shared/database/qad-odbc.service';
 import { EmailService } from '@/shared/email/email.service';
 import { EmailTemplateService } from '@/shared/email/email-template.service';
-import { EmailNotificationService } from '@/nest/modules/email-notification/email-notification.service';
+import { SCHEDULED_JOB_IDS } from '../scheduled-job-ids';
+import { ScheduledJobRecipientsService } from '../scheduled-job-recipients.service';
 import { ScheduledJobHandler, ScheduledJobRunResultDto } from './scheduled-job.handler';
 
 interface LnwRow extends RowDataPacket {
@@ -40,7 +41,7 @@ export class LnwDeliveryHandler implements ScheduledJobHandler {
     private readonly qadOdbcService: QadOdbcService,
     private readonly emailService: EmailService,
     private readonly emailTemplateService: EmailTemplateService,
-    private readonly emailNotificationService: EmailNotificationService,
+    private readonly scheduledJobRecipientsService: ScheduledJobRecipientsService,
   ) {}
 
   async handle(trigger: 'manual' | 'cron'): Promise<ScheduledJobRunResultDto> {
@@ -90,15 +91,7 @@ export class LnwDeliveryHandler implements ScheduledJobHandler {
       const total = grouped.reduce((sum, g) => sum + g.rows.length, 0);
 
       if (total > 0) {
-        const recipientRows = await this.emailNotificationService.find({ location: 'lnw_shipping_report_notification' });
-        const to = (recipientRows as Array<{ email?: string }>)
-          .map((r) => r.email)
-          .filter((e): e is string => typeof e === 'string' && e.trim().length > 0);
-
-        const ccRows = await this.emailNotificationService.find({ location: 'lnw_shipping_report_notification_cc' });
-        const cc = (ccRows as Array<{ email?: string }>)
-          .map((r) => r.email)
-          .filter((e): e is string => typeof e === 'string' && e.trim().length > 0);
+        const to = await this.scheduledJobRecipientsService.resolveSubscribedEmails(SCHEDULED_JOB_IDS.LNW_DELIVERY);
 
         if (to.length > 0) {
           const html = this.emailTemplateService.render('lnw-delivery', {
@@ -106,10 +99,12 @@ export class LnwDeliveryHandler implements ScheduledJobHandler {
           });
           await this.emailService.sendMail({
             to,
-            cc: cc.length > 0 ? cc : undefined,
+            scheduledJobId: SCHEDULED_JOB_IDS.LNW_DELIVERY,
             subject: `LNW DELIVERY ${next3Weekdays.join(', ')}`,
             html,
           });
+        } else {
+          this.logger.warn('No recipients configured for lnw-delivery');
         }
       }
 

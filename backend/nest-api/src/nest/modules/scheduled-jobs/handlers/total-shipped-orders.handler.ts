@@ -2,7 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { RowDataPacket } from 'mysql2/promise';
 import { QadOdbcService } from '@/shared/database/qad-odbc.service';
 import { EmailService } from '@/shared/email/email.service';
-import { EmailNotificationService } from '@/nest/modules/email-notification/email-notification.service';
+import { SCHEDULED_JOB_IDS } from '../scheduled-job-ids';
+import { ScheduledJobRecipientsService } from '../scheduled-job-recipients.service';
 import { ScheduledJobHandler, ScheduledJobRunResultDto } from './scheduled-job.handler';
 
 interface ShippedOrderDetail extends RowDataPacket {
@@ -19,7 +20,7 @@ export class TotalShippedOrdersHandler implements ScheduledJobHandler {
   constructor(
     private readonly qadOdbcService: QadOdbcService,
     private readonly emailService: EmailService,
-    private readonly emailNotificationService: EmailNotificationService,
+    private readonly scheduledJobRecipientsService: ScheduledJobRecipientsService,
   ) {}
 
   async handle(trigger: 'manual' | 'cron'): Promise<ScheduledJobRunResultDto> {
@@ -47,10 +48,7 @@ export class TotalShippedOrdersHandler implements ScheduledJobHandler {
       `, [today], { keyCase: 'lower' });
 
       if (shippedOrders.length > 0) {
-        const recipientRows = await this.emailNotificationService.find({ location: 'total_shipped_orders_report' });
-        const to = (recipientRows as Array<{ email?: string }>)
-          .map((r) => r.email)
-          .filter((e): e is string => typeof e === 'string' && e.trim().length > 0);
+        const to = await this.scheduledJobRecipientsService.resolveSubscribedEmails(SCHEDULED_JOB_IDS.TOTAL_SHIPPED_ORDERS);
 
         if (to.length > 0) {
           const totalQuantity = shippedOrders.reduce((acc, row) => acc + Number(row.total_quantity || 0), 0);
@@ -63,6 +61,7 @@ export class TotalShippedOrdersHandler implements ScheduledJobHandler {
 
           await this.emailService.sendMail({
             to,
+            scheduledJobId: SCHEDULED_JOB_IDS.TOTAL_SHIPPED_ORDERS,
             subject: `Daily Shipping Report - ${shippedOrders.length} orders`,
             html: `
               <h3>Total Shipped Orders (${today})</h3>
@@ -73,6 +72,8 @@ export class TotalShippedOrdersHandler implements ScheduledJobHandler {
               <p><strong>Total Quantity:</strong> ${totalQuantity}</p>
             `,
           });
+        } else {
+          this.logger.warn('No recipients configured for total-shipped-orders');
         }
       }
 

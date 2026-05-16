@@ -24,7 +24,6 @@ import {
   OpenShippingRequestsHandler,
   GraphicsDueTodayReportHandler,
   FsJobReportMorningHandler,
-  FsJobReportEveningHandler,
   FsJobNoticeHandler,
   SerialStockAlertHandler,
   OverdueQirHandler,
@@ -50,6 +49,7 @@ export interface ScheduledJobDto {
   cron: string;
   url: string;
   active: boolean;
+  supportsRecipients?: boolean;
   note?: string;
   environmentBlocked?: boolean;
   environmentBlockMessage?: string;
@@ -101,7 +101,6 @@ export class ScheduledJobsService {
     private readonly openShippingRequestsHandler: OpenShippingRequestsHandler,
     private readonly graphicsDueTodayReportHandler: GraphicsDueTodayReportHandler,
     private readonly fsJobReportMorningHandler: FsJobReportMorningHandler,
-    private readonly fsJobReportEveningHandler: FsJobReportEveningHandler,
     private readonly fsJobNoticeHandler: FsJobNoticeHandler,
     private readonly serialStockAlertHandler: SerialStockAlertHandler,
     private readonly overdueQirHandler: OverdueQirHandler,
@@ -133,8 +132,7 @@ export class ScheduledJobsService {
     this.handlerMap.set('daily-report-insert', this.dailyReportInsertHandler);
     this.handlerMap.set('open-shipping-requests', this.openShippingRequestsHandler);
     this.handlerMap.set('graphics-due-today-report', this.graphicsDueTodayReportHandler);
-    this.handlerMap.set('fs-job-report-morning', this.fsJobReportMorningHandler);
-    this.handlerMap.set('fs-job-report-evening', this.fsJobReportEveningHandler);
+    this.handlerMap.set('fs-job-report', this.fsJobReportMorningHandler);
     this.handlerMap.set('fs-job-notice', this.fsJobNoticeHandler);
     this.handlerMap.set('serial-stock-alert', this.serialStockAlertHandler);
     this.handlerMap.set('overdue-qir', this.overdueQirHandler);
@@ -219,7 +217,12 @@ export class ScheduledJobsService {
     return SCHEDULED_JOB_DEFINITIONS.map((job) => {
       const config = configMap.get(job.id);
       const mergedJob = config
-        ? { ...job, cron: config.cron, active: config.active, note: config.note }
+        ? {
+            ...job,
+            cron: config.cron,
+            active: config.active,
+            note: this.getEffectiveNote(config.note, job.note),
+          }
         : job;
       return this.toScheduledJobDto(mergedJob, runnerEnabled, lastRunByJobId.get(job.id));
     });
@@ -253,7 +256,7 @@ export class ScheduledJobsService {
       ...job,
       cron: config.cron,
       active: config.active,
-      note: config.note,
+      note: this.getEffectiveNote(config.note, job.note),
     };
 
     const runnerEnabled = this.isRunnerEnabled();
@@ -497,6 +500,20 @@ export class ScheduledJobsService {
     }
 
     return `Scheduled job ${id} is blocked in the current environment.`;
+  }
+
+  private getEffectiveNote(configNote: string | null | undefined, definitionNote: string | undefined): string | undefined {
+    const normalized = String(configNote ?? '').trim();
+    if (!normalized) {
+      return definitionNote;
+    }
+
+    const lower = normalized.toLowerCase();
+    if (lower === 'disabled' || lower === 'disabled - enable from ux') {
+      return definitionNote;
+    }
+
+    return normalized;
   }
 
 }

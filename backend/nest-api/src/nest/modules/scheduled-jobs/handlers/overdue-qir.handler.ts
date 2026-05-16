@@ -4,7 +4,8 @@ import { RowDataPacket } from 'mysql2/promise';
 import { MysqlService } from '@/shared/database/mysql.service';
 import { EmailService } from '@/shared/email/email.service';
 import { EmailTemplateService } from '@/shared/email/email-template.service';
-import { EmailNotificationService } from '@/nest/modules/email-notification/email-notification.service';
+import { SCHEDULED_JOB_IDS } from '../scheduled-job-ids';
+import { ScheduledJobRecipientsService } from '../scheduled-job-recipients.service';
 import { ScheduledJobHandler, ScheduledJobRunResultDto } from './scheduled-job.handler';
 
 interface OverdueQirRow extends RowDataPacket {
@@ -26,7 +27,7 @@ export class OverdueQirHandler implements ScheduledJobHandler {
     private readonly mysqlService: MysqlService,
     private readonly emailService: EmailService,
     private readonly emailTemplateService: EmailTemplateService,
-    private readonly emailNotificationService: EmailNotificationService,
+    private readonly scheduledJobRecipientsService: ScheduledJobRecipientsService,
     private readonly configService: ConfigService,
   ) {}
 
@@ -55,12 +56,7 @@ export class OverdueQirHandler implements ScheduledJobHandler {
 
       const shouldSendReport = rows.length > 0 || trigger === 'manual';
       if (shouldSendReport) {
-        const recipientRows = await this.emailNotificationService.find({ location: 'overdue_qir' });
-        const to = (recipientRows as Array<{ email?: string }>)
-          .map((r) => r.email)
-          .filter((e): e is string => typeof e === 'string' && e.trim().length > 0);
-
-        const toFinal = to.length > 0 ? to : ['ritz.dacanay@the-fi-company.com'];
+        const toFinal = await this.scheduledJobRecipientsService.resolveSubscribedEmails(SCHEDULED_JOB_IDS.OVERDUE_QIR);
         const baseUrl = String(this.configService.getOrThrow<string>('DASHBOARD_WEB_BASE_URL')).replace(/\/+$/, '');
         const reportLink = `${baseUrl}/quality/qir/list?selectedViewType=Open&isAll=true`;
 
@@ -83,11 +79,16 @@ export class OverdueQirHandler implements ScheduledJobHandler {
           rows: templateRows,
         });
 
-        await this.emailService.sendMail({
-          to: toFinal,
-          subject: 'Action Required: Review of Open Quality Incidents',
-          html,
-        });
+        if (toFinal.length > 0) {
+          await this.emailService.sendMail({
+            to: toFinal,
+            scheduledJobId: SCHEDULED_JOB_IDS.OVERDUE_QIR,
+            subject: 'Action Required: Review of Open Quality Incidents',
+            html,
+          });
+        } else {
+          this.logger.warn('No recipients configured for overdue-qir');
+        }
       }
 
       const durationMs = Date.now() - startedAtMs;

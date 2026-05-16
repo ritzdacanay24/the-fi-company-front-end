@@ -3,7 +3,8 @@ import { RowDataPacket } from 'mysql2/promise';
 import { MysqlService } from '@/shared/database/mysql.service';
 import { EmailService } from '@/shared/email/email.service';
 import { EmailTemplateService } from '@/shared/email/email-template.service';
-import { EmailNotificationService } from '@/nest/modules/email-notification/email-notification.service';
+import { ScheduledJobRecipientsService } from '../scheduled-job-recipients.service';
+import { SCHEDULED_JOB_IDS } from '../scheduled-job-ids';
 import { ScheduledJobHandler, ScheduledJobRunResultDto } from './scheduled-job.handler';
 
 interface OldWorkOrderRow extends RowDataPacket {
@@ -29,7 +30,7 @@ export class FieldServiceOldWorkOrdersHandler implements ScheduledJobHandler {
   constructor(
     private readonly mysqlService: MysqlService,
     private readonly emailService: EmailService,
-    private readonly emailNotificationService: EmailNotificationService,
+    private readonly scheduledJobRecipientsService: ScheduledJobRecipientsService,
     private readonly emailTemplateService: EmailTemplateService,
   ) {}
 
@@ -67,12 +68,13 @@ export class FieldServiceOldWorkOrdersHandler implements ScheduledJobHandler {
 
       const shouldSendReport = rows.length > 0 || trigger === 'manual';
       if (shouldSendReport) {
-        const recipientRows = await this.emailNotificationService.find({ location: 'overdue_field_service_workorder' });
-        const to = (recipientRows as Array<{ email?: string }>)
-          .map((r) => r.email)
-          .filter((e): e is string => typeof e === 'string' && e.trim().length > 0);
+        const toFinal = await this.scheduledJobRecipientsService.resolveSubscribedEmails(
+          SCHEDULED_JOB_IDS.FIELD_SERVICE_OLD_WORKORDERS,
+        );
 
-        const toFinal = to.length > 0 ? to : ['ritz.dacanay@the-fi-company.com'];
+        if (toFinal.length === 0) {
+          this.logger.warn('No recipients configured for field-service-old-workorders');
+        }
 
         const templateRows = rows.map((row) => ({
           fsSchedulerId: row.fs_scheduler_id,
@@ -93,11 +95,14 @@ export class FieldServiceOldWorkOrdersHandler implements ScheduledJobHandler {
           rows: templateRows,
         });
 
-        await this.emailService.sendMail({
-          to: toFinal,
-          subject: 'Action Needed on Field Service Open Work Orders',
-          html,
-        });
+        if (toFinal.length > 0) {
+          await this.emailService.sendMail({
+            to: toFinal,
+            scheduledJobId: SCHEDULED_JOB_IDS.FIELD_SERVICE_OLD_WORKORDERS,
+            subject: 'Action Needed on Field Service Open Work Orders',
+            html,
+          });
+        }
       }
 
       const durationMs = Date.now() - startedAtMs;

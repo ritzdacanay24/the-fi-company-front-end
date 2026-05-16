@@ -18,7 +18,6 @@ export { DailyReportInsertHandler } from './daily-report-insert.handler';
 export { OpenShippingRequestsHandler } from './open-shipping-requests.handler';
 export { GraphicsDueTodayReportHandler } from './graphics-due-today-report.handler';
 export { FsJobReportMorningHandler } from './fs-job-report-morning.handler';
-export { FsJobReportEveningHandler } from './fs-job-report-evening.handler';
 export { FsJobNoticeHandler } from './fs-job-notice.handler';
 export { SerialStockAlertHandler } from './serial-stock-alert.handler';
 export { OverdueQirHandler } from './overdue-qir.handler';

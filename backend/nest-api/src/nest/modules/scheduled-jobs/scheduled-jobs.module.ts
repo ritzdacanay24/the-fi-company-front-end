@@ -7,6 +7,8 @@ import { PhotoChecklistModule } from '../photo-checklist/photo-checklist.module'
 import { ReportsModule } from '../reports/reports.module';
 import { SerialAvailabilityModule } from '../serial-availability/serial-availability.module';
 import { ScheduledJobsController } from './scheduled-jobs.controller';
+import { ScheduledJobRecipientsRepository } from './scheduled-job-recipients.repository';
+import { ScheduledJobRecipientsService } from './scheduled-job-recipients.service';
 import { ScheduledJobsRunnerService } from './scheduled-jobs.runner.service';
 import { ScheduledJobsService } from './scheduled-jobs.service';
 import { ScheduledJobsConfigRepository } from './scheduled-jobs-config.repository';
@@ -28,7 +30,6 @@ import {
   OpenShippingRequestsHandler,
   GraphicsDueTodayReportHandler,
   FsJobReportMorningHandler,
-  FsJobReportEveningHandler,
   FsJobNoticeHandler,
   SerialStockAlertHandler,
   OverdueQirHandler,
@@ -52,6 +53,8 @@ import {
     ScheduledJobsService,
     ScheduledJobsRunnerService,
     ScheduledJobsConfigRepository,
+    ScheduledJobRecipientsRepository,
+    ScheduledJobRecipientsService,
     CleanUsersHandler,
     FieldServiceOldWorkOrdersHandler,
     PastDueFieldServiceRequestsHandler,
@@ -69,7 +72,6 @@ import {
     OpenShippingRequestsHandler,
     GraphicsDueTodayReportHandler,
     FsJobReportMorningHandler,
-    FsJobReportEveningHandler,
     FsJobNoticeHandler,
     SerialStockAlertHandler,
     OverdueQirHandler,

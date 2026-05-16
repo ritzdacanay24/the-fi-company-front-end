@@ -20,6 +20,21 @@
     </div>
 
     <div class="mb-3">
+      <label for="presetSchedule" class="form-label">Quick Schedule Presets</label>
+      <select
+        id="presetSchedule"
+        class="form-select"
+        [value]="selectedPreset"
+        (change)="onPresetChange($any($event.target).value)">
+        <option value="__custom__">Custom (manual cron)</option>
+        <option *ngFor="let preset of cronPresets" [value]="preset.value">{{ preset.label }}</option>
+      </select>
+      <div class="form-text">
+        Select a common schedule or keep <strong>Custom</strong> and type your cron manually.
+      </div>
+    </div>
+
+    <div class="mb-3">
       <label for="cron" class="form-label">
         Cron Expression
         <span class="badge bg-info ms-2" data-bs-toggle="tooltip" title="Click for cron help">?</span>
@@ -32,7 +47,7 @@
         placeholder="0 9 * * 1-5"
         [class.is-invalid]="isCronInvalid">
       <div class="form-text" *ngIf="!isCronInvalid">
-        Format: <code>minute hour day month weekday</code>
+        Format: <code>second minute hour day month weekday</code> or <code>minute hour day month weekday</code>
       </div>
       <div class="invalid-feedback d-block" *ngIf="isCronInvalid">
         {{ cronErrorMessage }}

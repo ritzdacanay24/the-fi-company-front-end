@@ -4,8 +4,9 @@ import { QadOdbcService } from '@/shared/database/qad-odbc.service';
 import { MysqlService } from '@/shared/database/mysql.service';
 import { EmailService } from '@/shared/email/email.service';
 import { EmailTemplateService } from '@/shared/email/email-template.service';
-import { EmailNotificationService } from '@/nest/modules/email-notification/email-notification.service';
 import { UrlBuilder } from '@/shared/url/url-builder';
+import { SCHEDULED_JOB_IDS } from '../scheduled-job-ids';
+import { ScheduledJobRecipientsService } from '../scheduled-job-recipients.service';
 import { ScheduledJobHandler, ScheduledJobRunResultDto } from './scheduled-job.handler';
 
 interface RoutingOverdueRow extends RowDataPacket {
@@ -64,7 +65,7 @@ export class OverdueOrdersHandler implements ScheduledJobHandler {
     private readonly mysqlService: MysqlService,
     private readonly emailService: EmailService,
     private readonly emailTemplateService: EmailTemplateService,
-    private readonly emailNotificationService: EmailNotificationService,
+    private readonly scheduledJobRecipientsService: ScheduledJobRecipientsService,
     private readonly urlBuilder: UrlBuilder,
   ) {}
 
@@ -118,10 +119,7 @@ export class OverdueOrdersHandler implements ScheduledJobHandler {
       ]);
 
       if (totalOverdue > 0) {
-        const recipientRows = await this.emailNotificationService.find({ location: 'overdue_orders' });
-        const to = (recipientRows as Array<{ email?: string }>)
-          .map((r) => r.email)
-          .filter((e): e is string => typeof e === 'string' && e.trim().length > 0);
+        const to = await this.scheduledJobRecipientsService.resolveSubscribedEmails(SCHEDULED_JOB_IDS.OVERDUE_ORDERS);
 
         if (to.length > 0) {
           const html = this.buildEmailBody({
@@ -139,9 +137,12 @@ export class OverdueOrdersHandler implements ScheduledJobHandler {
 
           await this.emailService.sendMail({
             to,
+            scheduledJobId: SCHEDULED_JOB_IDS.OVERDUE_ORDERS,
             subject: 'Overdue orders',
             html,
           });
+        } else {
+          this.logger.warn('No recipients configured for overdue-orders');
         }
       }
 

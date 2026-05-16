@@ -2,8 +2,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import { RowDataPacket } from 'mysql2/promise';
 import { EmailService } from '@/shared/email/email.service';
 import { EmailTemplateService } from '@/shared/email/email-template.service';
-import { EmailNotificationService } from '@/nest/modules/email-notification/email-notification.service';
 import { SerialAvailabilityRepository } from '@/nest/modules/serial-availability/serial-availability.repository';
+import { SCHEDULED_JOB_IDS } from '../scheduled-job-ids';
+import { ScheduledJobRecipientsService } from '../scheduled-job-recipients.service';
 import { ScheduledJobHandler, ScheduledJobRunResultDto } from './scheduled-job.handler';
 
 interface StockPool {
@@ -28,7 +29,7 @@ export class SerialStockAlertHandler implements ScheduledJobHandler {
     private readonly serialAvailabilityRepository: SerialAvailabilityRepository,
     private readonly emailService: EmailService,
     private readonly emailTemplateService: EmailTemplateService,
-    private readonly emailNotificationService: EmailNotificationService,
+    private readonly scheduledJobRecipientsService: ScheduledJobRecipientsService,
   ) {}
 
   async handle(trigger: 'manual' | 'cron'): Promise<ScheduledJobRunResultDto> {
@@ -64,18 +65,15 @@ export class SerialStockAlertHandler implements ScheduledJobHandler {
         };
       }
 
-      const recipientRows = await this.emailNotificationService.find({ location: 'serial_stock_alert' });
-      const to = (recipientRows as Array<{ email?: string }>)
-        .map((r) => r.email)
-        .filter((e): e is string => typeof e === 'string' && e.trim().length > 0);
+      const to = await this.scheduledJobRecipientsService.resolveSubscribedEmails(SCHEDULED_JOB_IDS.SERIAL_STOCK_ALERT);
 
       if (to.length === 0) {
-        this.logger.warn('serial-stock-alert: no recipients configured at location=serial_stock_alert — skipping email');
+        this.logger.warn('serial-stock-alert: no recipients configured for job serial-stock-alert — skipping email');
         return {
           ok: true,
           statusCode: 200,
           durationMs: Date.now() - startedAtMs,
-          message: `${atRisk.length} pools at risk but no recipients configured (location=serial_stock_alert).`,
+          message: `${atRisk.length} pools at risk but no recipients configured for serial-stock-alert.`,
           id: 'serial-stock-alert',
           name: 'Serial Stock Alert',
           trigger,
@@ -89,7 +87,12 @@ export class SerialStockAlertHandler implements ScheduledJobHandler {
 
       const html = this.emailTemplateService.render('serial-stock-alert', this.buildTemplateContext(pools, critical, low));
 
-      await this.emailService.sendMail({ to, subject, html });
+      await this.emailService.sendMail({
+        to,
+        scheduledJobId: SCHEDULED_JOB_IDS.SERIAL_STOCK_ALERT,
+        subject,
+        html,
+      });
 
       this.logger.log(`serial-stock-alert: email sent to ${to.join(', ')}`);
 

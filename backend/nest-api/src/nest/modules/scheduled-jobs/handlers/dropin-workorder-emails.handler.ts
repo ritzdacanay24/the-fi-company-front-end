@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { RowDataPacket } from 'mysql2/promise';
 import { QadOdbcService } from '@/shared/database/qad-odbc.service';
 import { EmailService } from '@/shared/email/email.service';
+import { SCHEDULED_JOB_IDS } from '../scheduled-job-ids';
 import { ScheduledJobHandler, ScheduledJobRunResultDto } from './scheduled-job.handler';
 
 interface DropInWorkOrder extends RowDataPacket {
@@ -81,6 +82,7 @@ export class DropInWorkOrderEmailsHandler implements ScheduledJobHandler {
 
         await this.emailService.sendMail({
           to: ['hotdrops@eye-fi.com'],
+          scheduledJobId: SCHEDULED_JOB_IDS.DROPIN_WORKORDER_EMAILS,
           subject: `Hot Drop In - Work Order (${workOrders.length})`,
           html,
         });

@@ -1,0 +1,27 @@
+export const SCHEDULED_JOB_IDS = {
+  MENU_BADGE_CACHE_REFRESH: 'menu-badge-cache-refresh',
+  GRAPHICS_DUE_TODAY_REPORT: 'graphics-due-today-report',
+  DASHBOARD_PERFORMANCE: 'dashboard-performance',
+  DROPIN_WORKORDER_EMAILS: 'dropin-workorder-emails',
+  CLEAN_USERS: 'clean-users',
+  TOTAL_SHIPPED_ORDERS: 'total-shipped-orders',
+  OVERDUE_ORDERS: 'overdue-orders',
+  FIELD_SERVICE_OLD_WORKORDERS: 'field-service-old-workorders',
+  OPEN_SHIPPING_REQUESTS: 'open-shipping-requests',
+  GRAPHICS_WORK_ORDER: 'graphics-work-order',
+  VEHICLE_EXPIRATION_EMAIL: 'vehicle-expiration-email',
+  DAILY_REPORT_INSERT: 'daily-report-insert',
+  COMPLETED_PRODUCTION_ORDERS: 'completed-production-orders',
+  INSPECTION_EMAIL: 'inspection-email',
+  FS_JOB_REPORT: 'fs-job-report',
+  PAST_DUE_FIELD_SERVICE_REQUESTS: 'past-due-field-service-requests',
+  LNW_DELIVERY: 'lnw-delivery',
+  FS_JOB_NOTICE: 'fs-job-notice',
+  SERIAL_STOCK_ALERT: 'serial-stock-alert',
+  OVERDUE_QIR: 'overdue-qir',
+  OVERDUE_SAFETY_INCIDENT: 'overdue-safety-incident',
+  INSPECTION_CHECKLIST_REPORT_GENERATOR: 'inspection-checklist-report-generator',
+  OPEN_CHECKLIST_INSTANCES_LAST_3_DAYS: 'open-checklist-instances-last-3-days',
+} as const;
+
+export type ScheduledJobId = (typeof SCHEDULED_JOB_IDS)[keyof typeof SCHEDULED_JOB_IDS];

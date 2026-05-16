@@ -4,7 +4,8 @@ import { RowDataPacket } from 'mysql2/promise';
 import { MysqlService } from '@/shared/database/mysql.service';
 import { EmailService } from '@/shared/email/email.service';
 import { EmailTemplateService } from '@/shared/email/email-template.service';
-import { EmailNotificationService } from '@/nest/modules/email-notification/email-notification.service';
+import { SCHEDULED_JOB_IDS } from '../scheduled-job-ids';
+import { ScheduledJobRecipientsService } from '../scheduled-job-recipients.service';
 import { ScheduledJobHandler, ScheduledJobRunResultDto } from './scheduled-job.handler';
 
 interface OpenChecklistInstanceRow extends RowDataPacket {
@@ -27,7 +28,7 @@ export class OpenChecklistInstancesLast3DaysHandler implements ScheduledJobHandl
     private readonly mysqlService: MysqlService,
     private readonly emailService: EmailService,
     private readonly emailTemplateService: EmailTemplateService,
-    private readonly emailNotificationService: EmailNotificationService,
+    private readonly scheduledJobRecipientsService: ScheduledJobRecipientsService,
     private readonly configService: ConfigService,
   ) {}
 
@@ -59,14 +60,28 @@ export class OpenChecklistInstancesLast3DaysHandler implements ScheduledJobHandl
 
       const shouldSendReport = rows.length > 0 || trigger === 'manual';
       if (shouldSendReport) {
-        const recipientRows = await this.emailNotificationService.find({
-          location: 'open_checklist_instances_last_3_days',
-        });
-        const to = (recipientRows as Array<{ email?: string }>)
-          .map((r) => r.email)
-          .filter((e): e is string => typeof e === 'string' && e.trim().length > 0);
+        const toFinal = await this.resolveRecipients();
+        if (toFinal.length === 0) {
+          this.logger.warn('No recipients configured for open-checklist-instances-last-3-days');
+          return {
+            id: 'open-checklist-instances-last-3-days',
+            name: 'Open Checklist Instances (Older Than 3 Days)',
+            trigger,
+            ok: true,
+            statusCode: 200,
+            durationMs,
+            message: `${rows.length} open checklist instance(s) found but no recipients configured.`,
+            lastRun: {
+              startedAt: new Date(startedAtMs).toISOString(),
+              finishedAt: new Date().toISOString(),
+              durationMs,
+              status: 'success',
+              triggerType: trigger,
+              errorMessage: null,
+            },
+          };
+        }
 
-        const toFinal = to.length > 0 ? to : ['ritz.dacanay@the-fi-company.com'];
         const baseUrl = String(this.configService.getOrThrow<string>('DASHBOARD_WEB_BASE_URL')).replace(/\/+$/, '');
         const reportLink = `${baseUrl}/inspection-checklist/management`;
         const templateRows = rows.map((row) => ({
@@ -91,6 +106,7 @@ export class OpenChecklistInstancesLast3DaysHandler implements ScheduledJobHandl
 
         await this.emailService.sendMail({
           to: toFinal,
+          scheduledJobId: SCHEDULED_JOB_IDS.OPEN_CHECKLIST_INSTANCES_LAST_3_DAYS,
           subject: `Open Checklist Instances (Older Than 3 Days) - ${rows.length} found`,
           html,
         });
@@ -136,6 +152,12 @@ export class OpenChecklistInstancesLast3DaysHandler implements ScheduledJobHandl
         },
       };
     }
+  }
+
+  private async resolveRecipients(): Promise<string[]> {
+    return this.scheduledJobRecipientsService.resolveSubscribedEmails(
+      SCHEDULED_JOB_IDS.OPEN_CHECKLIST_INSTANCES_LAST_3_DAYS,
+    );
   }
 
   private normalizeProgress(value: number | string | null): number {

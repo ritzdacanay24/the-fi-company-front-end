@@ -31,7 +31,6 @@ export class ScheduledJobsRunnerService {
   async runEarlyMorningGroup(): Promise<void> {
     await this.scheduledJobsService.runJobIfEnabled('overdue-orders');
     await this.scheduledJobsService.runJobIfEnabled('completed-production-orders');
-    await this.scheduledJobsService.runJobIfEnabled('fs-job-report-morning');
     await this.scheduledJobsService.runJobIfEnabled('fs-job-notice');
   }
 
@@ -45,9 +44,9 @@ export class ScheduledJobsRunnerService {
     await this.scheduledJobsService.runJobIfEnabled('inspection-email');
   }
 
-  @Cron('0 0 17 * * 1-5', { name: 'scheduled-jobs.fs-job-report-evening', timeZone: SCHEDULED_JOBS_TIMEZONE })
-  async runFsJobReportEvening(): Promise<void> {
-    await this.scheduledJobsService.runJobIfEnabled('fs-job-report-evening');
+  @Cron('0 0 4,17 * * 1-5', { name: 'scheduled-jobs.fs-job-report', timeZone: SCHEDULED_JOBS_TIMEZONE })
+  async runFsJobReport(): Promise<void> {
+    await this.scheduledJobsService.runJobIfEnabled('fs-job-report');
   }
 
   @Cron('0 0 6 * * 1-5', { name: 'scheduled-jobs.past-due-field-service-requests', timeZone: SCHEDULED_JOBS_TIMEZONE })

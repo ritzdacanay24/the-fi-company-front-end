@@ -3,6 +3,12 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { ScheduledJobRow } from '@app/core/api/scheduled-jobs/scheduled-jobs.service';
+import { Subscription } from 'rxjs';
+
+interface CronPreset {
+  value: string;
+  label: string;
+}
 
 @Component({
   selector: 'app-edit-cron-job-modal',
@@ -15,6 +21,28 @@ export class EditCronJobModalComponent implements OnInit {
   form!: FormGroup;
   job?: ScheduledJobRow;
   isSubmitting = false;
+  selectedPreset = '__custom__';
+
+  readonly cronPresets: CronPreset[] = [
+    { value: '0 */15 * * * *', label: 'Every 15 minutes' },
+    { value: '0 */30 * * * *', label: 'Every 30 minutes' },
+    { value: '0 0 * * * *', label: 'Every hour' },
+    { value: '0 0 */2 * * *', label: 'Every 2 hours' },
+    { value: '0 0 0 * * *', label: 'Daily at 12:00 AM' },
+    { value: '0 0 6 * * *', label: 'Daily at 6:00 AM' },
+    { value: '0 0 8 * * *', label: 'Daily at 8:00 AM' },
+    { value: '0 0 6 * * 1-5', label: 'Weekdays at 6:00 AM' },
+    { value: '0 0 8 * * 1-5', label: 'Weekdays at 8:00 AM' },
+    { value: '0 0 4 * * 1-5', label: 'Weekdays at 4:00 AM' },
+    { value: '0 0 17 * * 1-5', label: 'Weekdays at 5:00 PM' },
+    { value: '0 0 4,17 * * 1-5', label: 'Weekdays at 4:00 AM and 5:00 PM' },
+    { value: '0 0 9 * * 1-5', label: 'Weekdays at 9:00 AM' },
+    { value: '0 0 6 * * 1', label: 'Mondays at 6:00 AM' },
+    { value: '0 0 2 1 * *', label: 'First day of month at 2:00 AM' },
+    { value: '0 0 0 * * 0', label: 'Sundays at 12:00 AM' },
+  ];
+
+  private cronValueSub?: Subscription;
 
   readonly cronHelpText = `Cron format: minute hour day month weekday
     Examples:
@@ -30,6 +58,10 @@ export class EditCronJobModalComponent implements OnInit {
 
   ngOnInit(): void {
     this.initializeForm();
+
+    this.cronValueSub = this.cronControl?.valueChanges.subscribe((value: string) => {
+      this.selectedPreset = this.findPresetForCron(value) ?? '__custom__';
+    });
   }
 
   private initializeForm(): void {
@@ -45,7 +77,19 @@ export class EditCronJobModalComponent implements OnInit {
         active: this.job.active,
         note: this.job.note || ''
       });
+      this.selectedPreset = this.findPresetForCron(this.job.cron) ?? '__custom__';
     }
+  }
+
+  onPresetChange(value: string): void {
+    this.selectedPreset = value;
+    if (value === '__custom__') {
+      return;
+    }
+
+    this.cronControl?.setValue(value);
+    this.cronControl?.markAsDirty();
+    this.cronControl?.markAsTouched();
   }
 
   private cronValidator() {
@@ -117,9 +161,23 @@ export class EditCronJobModalComponent implements OnInit {
     this.activeModal.dismiss();
   }
 
+  ngOnDestroy(): void {
+    this.cronValueSub?.unsubscribe();
+  }
+
   private markAllFieldsTouched(): void {
     Object.keys(this.form.controls).forEach(key => {
       this.form.get(key)?.markAsTouched();
     });
+  }
+
+  private findPresetForCron(value: string | null | undefined): string | null {
+    const normalized = String(value || '').trim();
+    if (!normalized) {
+      return null;
+    }
+
+    const match = this.cronPresets.find((preset) => preset.value === normalized);
+    return match?.value ?? null;
   }
 }

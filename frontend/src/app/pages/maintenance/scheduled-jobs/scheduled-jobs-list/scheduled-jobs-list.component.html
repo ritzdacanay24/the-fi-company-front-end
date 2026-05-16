@@ -9,12 +9,13 @@
         </div>
       </div>
       <div class="card-body">
-        <table class="table table-bordered table-sm align-middle">
+        <table class="table table-sm align-middle">
           <thead>
             <tr>
               <th style="width: 120px;">Status</th>
               <th style="width: 140px;">Cron</th>
               <th>Job</th>
+              <th style="width: 220px;">Subscribers</th>
               <th style="width: 220px;">Last Ran</th>
               <th>Endpoint</th>
               <th style="width: 120px;">Action</th>
@@ -35,6 +36,18 @@
                 <div class="fw-semibold">{{ row.name }}</div>
                 <small class="text-muted" *ngIf="row.note">{{ row.note }}</small>
                 <small class="text-warning d-block" *ngIf="row.environmentBlocked">{{ row.environmentBlockMessage }}</small>
+              </td>
+              <td>
+                <small
+                  class="text-muted"
+                  [ngbPopover]="getRecipientSummaryPreview(row) || null"
+                  popoverTitle="Subscriber Preview"
+                  popoverClass="subscriber-preview-popover"
+                  triggers="hover focus"
+                  placement="auto"
+                  container="body">
+                  {{ getRecipientSummaryText(row) }}
+                </small>
               </td>
               <td>
                 <ng-container *ngIf="row.lastRun; else neverRan">
@@ -72,6 +85,13 @@
                 </button>
                 <button class="btn btn-sm btn-outline-secondary ms-2" (click)="openEditModal(row)">
                   Edit
+                </button>
+                <button
+                  class="btn btn-sm btn-outline-dark ms-2"
+                  (click)="openRecipientsModal(row)"
+                  [disabled]="!canManageRecipients(row)"
+                  [title]="canManageRecipients(row) ? 'Manage subscribers and assignees' : 'System job: no email subscription for recipients'">
+                  {{ canManageRecipients(row) ? 'Recipients' : 'System Job' }}
                 </button>
               </td>
             </tr>

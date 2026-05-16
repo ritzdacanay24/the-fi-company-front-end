@@ -3,7 +3,8 @@ import { RowDataPacket } from 'mysql2/promise';
 import { MysqlService } from '@/shared/database/mysql.service';
 import { EmailService } from '@/shared/email/email.service';
 import { EmailTemplateService } from '@/shared/email/email-template.service';
-import { EmailNotificationService } from '@/nest/modules/email-notification/email-notification.service';
+import { SCHEDULED_JOB_IDS } from '../scheduled-job-ids';
+import { ScheduledJobRecipientsService } from '../scheduled-job-recipients.service';
 import { ScheduledJobHandler, ScheduledJobRunResultDto } from './scheduled-job.handler';
 
 interface InspectionRecord extends RowDataPacket {
@@ -23,7 +24,7 @@ export class InspectionEmailHandler implements ScheduledJobHandler {
   constructor(
     private readonly mysqlService: MysqlService,
     private readonly emailService: EmailService,
-    private readonly emailNotificationService: EmailNotificationService,
+    private readonly scheduledJobRecipientsService: ScheduledJobRecipientsService,
     private readonly emailTemplateService: EmailTemplateService,
   ) {}
 
@@ -126,10 +127,7 @@ export class InspectionEmailHandler implements ScheduledJobHandler {
       const totalTrackedAssets = vehicleInspections.length + forkLiftInspections.length;
 
       if (totalTrackedAssets > 0) {
-        const recipientRows = await this.emailNotificationService.find({ location: 'forklift_and_vehicle_inspection_report' });
-        const to = (recipientRows as Array<{ email?: string }>)
-          .map((r) => r.email)
-          .filter((e): e is string => typeof e === 'string' && e.trim().length > 0);
+        const to = await this.scheduledJobRecipientsService.resolveSubscribedEmails(SCHEDULED_JOB_IDS.INSPECTION_EMAIL);
 
         if (!to.length) {
           this.logger.warn('No recipients configured for forklift_and_vehicle_inspection_report');
@@ -167,6 +165,7 @@ export class InspectionEmailHandler implements ScheduledJobHandler {
 
         await this.emailService.sendMail({
           to,
+          scheduledJobId: SCHEDULED_JOB_IDS.INSPECTION_EMAIL,
           subject: `Daily Forklift and Vehicle Summary Report - ${totalInspections} inspections`,
           html,
         });

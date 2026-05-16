@@ -2,8 +2,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import { RowDataPacket } from 'mysql2/promise';
 import { MysqlService } from '@/shared/database/mysql.service';
 import { EmailService } from '@/shared/email/email.service';
-import { EmailNotificationService } from '@/nest/modules/email-notification/email-notification.service';
 import { EmailTemplateService } from '@/shared/email/email-template.service';
+import { ScheduledJobRecipientsService } from '../scheduled-job-recipients.service';
+import { SCHEDULED_JOB_IDS } from '../scheduled-job-ids';
 import { ScheduledJobHandler, ScheduledJobRunResultDto } from './scheduled-job.handler';
 
 @Injectable()
@@ -13,7 +14,7 @@ export class FsJobReportMorningHandler implements ScheduledJobHandler {
   constructor(
     private readonly mysqlService: MysqlService,
     private readonly emailService: EmailService,
-    private readonly emailNotificationService: EmailNotificationService,
+    private readonly scheduledJobRecipientsService: ScheduledJobRecipientsService,
     private readonly emailTemplateService: EmailTemplateService,
   ) {}
 
@@ -24,11 +25,11 @@ export class FsJobReportMorningHandler implements ScheduledJobHandler {
       const sentTo = await this.sendFieldServiceJobReportEmail();
 
       const durationMs = Date.now() - startedAtMs;
-      this.logger.log(`[${trigger}] fs-job-report-morning -> sent to ${sentTo.length} recipients in ${durationMs}ms`);
+      this.logger.log(`[${trigger}] fs-job-report -> sent to ${sentTo.length} recipients in ${durationMs}ms`);
 
       return {
-        id: 'fs-job-report-morning',
-        name: 'Field Service Job Report (Morning)',
+        id: SCHEDULED_JOB_IDS.FS_JOB_REPORT,
+        name: 'Field Service Job Report',
         trigger,
         ok: true,
         statusCode: 200,
@@ -47,14 +48,14 @@ export class FsJobReportMorningHandler implements ScheduledJobHandler {
       const durationMs = Date.now() - startedAtMs;
       const message = error instanceof Error ? error.message : String(error);
       const odbcErrors = (error as Record<string, unknown>)?.odbcErrors;
-      this.logger.error(`[${trigger}] fs-job-report-morning failed in ${durationMs}ms: ${message}`);
+      this.logger.error(`[${trigger}] fs-job-report failed in ${durationMs}ms: ${message}`);
       if (odbcErrors) {
-        this.logger.error(`[${trigger}] fs-job-report-morning ODBC errors: ${JSON.stringify(odbcErrors, null, 2)}`);
+        this.logger.error(`[${trigger}] fs-job-report ODBC errors: ${JSON.stringify(odbcErrors, null, 2)}`);
       }
 
       return {
-        id: 'fs-job-report-morning',
-        name: 'Field Service Job Report (Morning)',
+        id: SCHEDULED_JOB_IDS.FS_JOB_REPORT,
+        name: 'Field Service Job Report',
         trigger,
         ok: false,
         statusCode: 500,
@@ -81,9 +82,11 @@ export class FsJobReportMorningHandler implements ScheduledJobHandler {
       ORDER BY request_date ASC
     `);
 
-    const recipients = await this.resolveNotificationEmails('field_serivce_copy_of_report');
+    const recipients = await this.scheduledJobRecipientsService.resolveSubscribedEmails(
+      SCHEDULED_JOB_IDS.FS_JOB_REPORT,
+    );
     if (!recipients.length) {
-      this.logger.warn('No recipients configured for field_serivce_copy_of_report');
+      this.logger.warn('No recipients configured for fs-job-report');
       return [];
     }
 
@@ -100,6 +103,7 @@ export class FsJobReportMorningHandler implements ScheduledJobHandler {
 
     await this.emailService.sendMail({
       to: recipients,
+      scheduledJobId: SCHEDULED_JOB_IDS.FS_JOB_REPORT,
       subject: 'Field Service Job Report',
       text: `Field Service Job Report - ${monthStart} to ${monthEnd}`,
       html,
@@ -113,13 +117,6 @@ export class FsJobReportMorningHandler implements ScheduledJobHandler {
     });
 
     return recipients;
-  }
-
-  private async resolveNotificationEmails(location: string): Promise<string[]> {
-    const rows = await this.emailNotificationService.find({ location });
-    return (rows as Array<{ email?: string }>)
-      .map((r) => r.email)
-      .filter((e): e is string => typeof e === 'string' && e.trim().length > 0);
   }
 
   private toCsv(rows: RowDataPacket[]): string {

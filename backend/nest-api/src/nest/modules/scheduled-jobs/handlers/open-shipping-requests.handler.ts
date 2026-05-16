@@ -2,7 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { RowDataPacket } from 'mysql2/promise';
 import { MysqlService } from '@/shared/database/mysql.service';
 import { EmailService } from '@/shared/email/email.service';
-import { EmailNotificationService } from '@/nest/modules/email-notification/email-notification.service';
+import { SCHEDULED_JOB_IDS } from '../scheduled-job-ids';
+import { ScheduledJobRecipientsService } from '../scheduled-job-recipients.service';
 import { ScheduledJobHandler, ScheduledJobRunResultDto } from './scheduled-job.handler';
 
 interface OpenShippingRequest extends RowDataPacket {
@@ -21,7 +22,7 @@ export class OpenShippingRequestsHandler implements ScheduledJobHandler {
   constructor(
     private readonly mysqlService: MysqlService,
     private readonly emailService: EmailService,
-    private readonly emailNotificationService: EmailNotificationService,
+    private readonly scheduledJobRecipientsService: ScheduledJobRecipientsService,
   ) {}
 
   async handle(trigger: 'manual' | 'cron'): Promise<ScheduledJobRunResultDto> {
@@ -44,10 +45,7 @@ export class OpenShippingRequestsHandler implements ScheduledJobHandler {
       `);
 
       if (openRequests.length > 0) {
-        const recipientRows = await this.emailNotificationService.find({ location: 'overdue_shipping_request_email' });
-        const to = (recipientRows as Array<{ email?: string }>)
-          .map((r) => r.email)
-          .filter((e): e is string => typeof e === 'string' && e.trim().length > 0);
+        const to = await this.scheduledJobRecipientsService.resolveSubscribedEmails(SCHEDULED_JOB_IDS.OPEN_SHIPPING_REQUESTS);
 
         if (to.length > 0) {
           let tableRows = '';
@@ -77,9 +75,12 @@ export class OpenShippingRequestsHandler implements ScheduledJobHandler {
 
           await this.emailService.sendMail({
             to,
+            scheduledJobId: SCHEDULED_JOB_IDS.OPEN_SHIPPING_REQUESTS,
             subject: `Open Shipping Requests - ${openRequests.length} overdue`,
             html,
           });
+        } else {
+          this.logger.warn('No recipients configured for open-shipping-requests');
         }
       }
 

@@ -1,0 +1,33 @@
+:host {
+  --recipient-row-bg: #f8f9fa;
+  --recipient-row-border: #dee2e6;
+  --recipient-row-text: inherit;
+  --recipient-warning: #b26a00;
+}
+
+:host-context([data-bs-theme='dark']) {
+  --recipient-row-bg: #1f2632;
+  --recipient-row-border: #3a4456;
+  --recipient-row-text: #e5e7eb;
+  --recipient-warning: #f6c453;
+}
+
+.recipient-row {
+  background: var(--recipient-row-bg);
+  border-color: var(--recipient-row-border) !important;
+  color: var(--recipient-row-text);
+}
+
+.form-label {
+  margin-bottom: 0.35rem;
+  font-size: 0.85rem;
+}
+
+.text-warning {
+  color: var(--recipient-warning) !important;
+}
+
+.modal-body {
+  max-height: 70vh;
+  overflow-y: auto;
+}

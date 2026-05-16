@@ -3,8 +3,9 @@ import { RowDataPacket } from 'mysql2/promise';
 import { QadOdbcService } from '@/shared/database/qad-odbc.service';
 import { EmailService } from '@/shared/email/email.service';
 import { EmailTemplateService } from '@/shared/email/email-template.service';
-import { EmailNotificationService } from '@/nest/modules/email-notification/email-notification.service';
 import { UrlBuilder } from '@/shared/url/url-builder';
+import { ScheduledJobRecipientsService } from '../scheduled-job-recipients.service';
+import { SCHEDULED_JOB_IDS } from '../scheduled-job-ids';
 import { ScheduledJobHandler, ScheduledJobRunResultDto } from './scheduled-job.handler';
 
 interface CompletedOrder extends RowDataPacket {
@@ -29,6 +30,8 @@ interface OverCompletedRoute extends RowDataPacket {
   wr_status: string;
 }
 
+const JOB_ID = SCHEDULED_JOB_IDS.COMPLETED_PRODUCTION_ORDERS;
+
 @Injectable()
 export class CompletedProductionOrdersHandler implements ScheduledJobHandler {
   private readonly logger = new Logger(CompletedProductionOrdersHandler.name);
@@ -37,7 +40,7 @@ export class CompletedProductionOrdersHandler implements ScheduledJobHandler {
     private readonly qadOdbcService: QadOdbcService,
     private readonly emailService: EmailService,
     private readonly emailTemplateService: EmailTemplateService,
-    private readonly emailNotificationService: EmailNotificationService,
+    private readonly scheduledJobRecipientsService: ScheduledJobRecipientsService,
     private readonly urlBuilder: UrlBuilder,
   ) {}
 
@@ -91,18 +94,18 @@ export class CompletedProductionOrdersHandler implements ScheduledJobHandler {
 
       const hasReportRows = data.length > 0 || overCompleted.length > 0;
       if (hasReportRows) {
-        const recipientRows = await this.emailNotificationService.find({ location: 'production_orders' });
-        const to = (recipientRows as Array<{ email?: string }>)
-          .map((r) => r.email)
-          .filter((e): e is string => typeof e === 'string' && e.trim().length > 0);
+        const to = await this.scheduledJobRecipientsService.resolveSubscribedEmails(JOB_ID);
 
         if (to.length > 0) {
           const html = this.buildEmailBody(readyToClose, withPickingIssues, overCompleted);
           await this.emailService.sendMail({
             to,
+            scheduledJobId: JOB_ID,
             subject: 'Work Order Status Report',
             html,
           });
+        } else {
+          this.logger.warn(`No recipients configured for ${JOB_ID}`);
         }
       }
 
@@ -110,7 +113,7 @@ export class CompletedProductionOrdersHandler implements ScheduledJobHandler {
       this.logger.log(`[${trigger}] completed-production-orders -> ${data.length} records in ${durationMs}ms`);
 
       return {
-        id: 'completed-production-orders',
+        id: JOB_ID,
         name: 'Completed Production Orders',
         trigger,
         ok: true,
@@ -136,7 +139,7 @@ export class CompletedProductionOrdersHandler implements ScheduledJobHandler {
       }
 
       return {
-        id: 'completed-production-orders',
+        id: JOB_ID,
         name: 'Completed Production Orders',
         trigger,
         ok: false,

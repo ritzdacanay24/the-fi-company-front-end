@@ -1,10 +1,13 @@
+import { ScheduledJobId } from './scheduled-job-ids';
+
 export interface ScheduledJobDefinition {
-  id: string;
+  id: ScheduledJobId;
   name: string;
   cron: string;
   url: string;
   active: boolean;
   note?: string;
+  supportsRecipients?: boolean;
 }
 
 export const SCHEDULED_JOBS_TIMEZONE = 'America/Los_Angeles';
@@ -16,15 +19,16 @@ export const SCHEDULED_JOB_DEFINITIONS: ScheduledJobDefinition[] = [
     cron: '0 0 * * * *',
     url: 'nest://menu-badge/refresh',
     active: true,
-    note: 'Refreshes live badge counts from QAD ODB. Disable only if QAD ODB is causing issues.',
+    note: 'System job. Refreshes live menu badge counts from QAD ODB. No email subscription is used for this job.',
+    supportsRecipients: false,
   },
   {
     id: 'graphics-due-today-report',
-    name: 'Graphics Due Today Report',
+    name: 'Graphics Due Today Email Report',
     cron: '30 22 * * *',
     url: 'nest://graphics-production/getDueTodayReport',
     active: false,
-    note: 'Disabled',
+    note: 'Sends a daily report for graphics work orders due today. Subscribers receive the email report.',
   },
   {
     id: 'dashboard-performance',
@@ -32,15 +36,16 @@ export const SCHEDULED_JOB_DEFINITIONS: ScheduledJobDefinition[] = [
     cron: '*/30 * * * *',
     url: 'nest://scheduled-jobs/dashboard-performance',
     active: false,
-    note: 'Disabled',
+    note: 'System job. Caches dashboard performance metrics. No email subscription is used for this job.',
+    supportsRecipients: false,
   },
   {
     id: 'dropin-workorder-emails',
-    name: 'Drop-in Work Order Emails',
+    name: 'Drop-in Work Order Notifications',
     cron: '*/30 * * * 1-5',
     url: 'nest://scheduled-jobs/dropin-workorder-emails',
     active: false,
-    note: 'Disabled - enable from UX',
+    note: 'Sends notifications for drop-in work orders. Subscribers receive the email notifications.',
   },
   {
     id: 'clean-users',
@@ -48,23 +53,24 @@ export const SCHEDULED_JOB_DEFINITIONS: ScheduledJobDefinition[] = [
     cron: '*/6 * * * *',
     url: 'nest://scheduled-jobs/clean-users',
     active: false,
-    note: 'Disabled - enable from UX',
+    note: 'System maintenance job that normalizes user data. No email subscription is used for this job.',
+    supportsRecipients: false,
   },
   {
     id: 'total-shipped-orders',
-    name: 'Total Shipped Orders',
+    name: 'Daily Shipping Summary',
     cron: '0 16 * * 1-5',
     url: 'nest://scheduled-jobs/total-shipped-orders',
     active: false,
-    note: 'Disabled',
+    note: 'Sends a daily shipping summary. Subscribers receive the shipping report email.',
   },
   {
     id: 'overdue-orders',
-    name: 'Overdue Orders',
+    name: 'Overdue Operations Orders',
     cron: '0 4 * * 1-5',
     url: 'nest://scheduled-jobs/overdue-orders',
     active: false,
-    note: 'Disabled - enable from UX',
+    note: 'Sends a report for overdue routing, shipping, and graphics orders. Subscribers receive the email report.',
   },
   {
     id: 'field-service-old-workorders',
@@ -72,15 +78,15 @@ export const SCHEDULED_JOB_DEFINITIONS: ScheduledJobDefinition[] = [
     cron: '0 9 * * * 1-5',
     url: 'nest://scheduled-jobs/field-service-old-workorders',
     active: false,
-    note: 'Disabled',
+    note: 'Sends a report of open field service work orders older than threshold. Subscribers receive the email report.',
   },
   {
     id: 'open-shipping-requests',
-    name: 'Open Shipping Requests',
+    name: 'Overdue Shipping Requests',
     cron: '* * * * *',
     url: 'nest://scheduled-jobs/open-shipping-requests',
     active: false,
-    note: 'Disabled',
+    note: 'Sends alerts for open shipping requests older than 7 days. Subscribers receive the email alert.',
   },
   {
     id: 'graphics-work-order',
@@ -88,7 +94,7 @@ export const SCHEDULED_JOB_DEFINITIONS: ScheduledJobDefinition[] = [
     cron: '*/20 * * * *',
     url: 'nest://scheduled-jobs/graphics-work-order',
     active: false,
-    note: 'Disabled - enable from UX',
+    note: 'Processes graphics work order automation. No email subscription is used for this job.',
   },
   {
     id: 'vehicle-expiration-email',
@@ -96,7 +102,7 @@ export const SCHEDULED_JOB_DEFINITIONS: ScheduledJobDefinition[] = [
     cron: '0 7 * * *',
     url: 'nest://scheduled-jobs/vehicle-expiration-email',
     active: false,
-    note: 'Disabled - enable from UX',
+    note: 'Sends registration expiration reminders for active vehicles. Subscribers receive the reminder emails.',
   },
   {
     id: 'daily-report-insert',
@@ -104,39 +110,32 @@ export const SCHEDULED_JOB_DEFINITIONS: ScheduledJobDefinition[] = [
     cron: '0 16 * * 1-5',
     url: 'nest://scheduled-jobs/daily-report-insert',
     active: false,
-    note: 'Disabled - enable from UX',
+    note: 'System job that prepares daily reporting data. No email subscription is used for this job.',
+    supportsRecipients: false,
   },
   {
     id: 'completed-production-orders',
-    name: 'Completed Production Orders',
+    name: 'Production Work Order Status Report',
     cron: '0 4 * * 1-5',
     url: 'nest://scheduled-jobs/completed-production-orders',
     active: false,
-    note: 'Disabled - enable from UX',
+    note: 'Sends a work-order status report for completed and over-completed production orders. Subscribers receive the email report.',
   },
   {
     id: 'inspection-email',
-    name: 'Inspection Email',
+    name: 'Daily Inspection Summary',
     cron: '0 14 * * 1-5',
     url: 'nest://scheduled-jobs/inspection-email',
     active: false,
-    note: 'Disabled - enable from UX',
+    note: 'Sends daily forklift and vehicle inspection summary results. Subscribers receive the summary email.',
   },
   {
-    id: 'fs-job-report-morning',
-    name: 'FS Job Report (Morning)',
-    cron: '0 4 * * 1-5',
-    url: 'nest://scheduled-jobs/fs-job-report-morning',
+    id: 'fs-job-report',
+    name: 'Field Service Job Report',
+    cron: '0 4,17 * * 1-5',
+    url: 'nest://scheduled-jobs/fs-job-report',
     active: false,
-    note: 'Disabled - enable from UX',
-  },
-  {
-    id: 'fs-job-report-evening',
-    name: 'FS Job Report (Evening)',
-    cron: '0 17 * * 1-5',
-    url: 'nest://scheduled-jobs/fs-job-report-evening',
-    active: false,
-    note: 'Disabled - enable from UX',
+    note: 'Sends Field Service scheduling reports at 4:00 AM and 5:00 PM (Mon-Fri) with CSV attachment. Subscribers receive the report email.',
   },
   {
     id: 'past-due-field-service-requests',
@@ -144,31 +143,31 @@ export const SCHEDULED_JOB_DEFINITIONS: ScheduledJobDefinition[] = [
     cron: '0 6 * * 1-5',
     url: 'nest://scheduled-jobs/past-due-field-service-requests',
     active: false,
-    note: 'Disabled - enable from UX',
+    note: 'Sends alerts for unscheduled Field Service requests older than 3 days. Subscribers receive the alert email.',
   },
   {
     id: 'lnw-delivery',
-    name: 'LNW Delivery',
+    name: 'LNW Delivery Schedule Report',
     cron: '0 7 * * 1-5',
     url: 'nest://scheduled-jobs/lnw-delivery',
     active: false,
-    note: 'Disabled - enable from UX',
+    note: 'Sends upcoming LNW delivery schedule reports. Subscribers receive the delivery email report.',
   },
   {
     id: 'fs-job-notice',
-    name: 'FS Job Notice',
+    name: 'Field Service Appointment Notices',
     cron: '0 4 * * 1-5',
     url: 'nest://scheduled-jobs/fs-job-notice',
     active: false,
-    note: 'Disabled - enable from UX',
+    note: 'Sends appointment notices to requestors and sends a daily summary to subscribers.',
   },
   {
     id: 'serial-stock-alert',
-    name: 'Serial Stock Alert',
+    name: 'Serial Inventory Threshold Alert',
     cron: '0 7 * * *',
     url: 'nest://scheduled-jobs/serial-stock-alert',
     active: true,
-    note: 'Daily 7 AM PT — emails serial_stock_alert recipients when any pool is at or below threshold.',
+    note: 'Daily 7 AM PT alert when any serial pool is at or below threshold. Subscribers receive the alert email.',
   },
   {
     id: 'overdue-qir',
@@ -176,7 +175,7 @@ export const SCHEDULED_JOB_DEFINITIONS: ScheduledJobDefinition[] = [
     cron: '0 9 * * 1-5',
     url: 'nest://scheduled-jobs/overdue-qir',
     active: false,
-    note: 'Action Required report for open quality incidents older than 7 days.',
+    note: 'Sends an action-required report for open quality incidents older than 7 days. Subscribers receive the report email.',
   },
   {
     id: 'overdue-safety-incident',
@@ -184,7 +183,7 @@ export const SCHEDULED_JOB_DEFINITIONS: ScheduledJobDefinition[] = [
     cron: '0 9 * * 1-5',
     url: 'nest://scheduled-jobs/overdue-safety-incident',
     active: false,
-    note: 'Urgent action-needed report for open safety incidents older than 7 days.',
+    note: 'Sends an urgent action-needed report for open safety incidents older than 7 days. Subscribers receive the report email.',
   },
   {
     id: 'inspection-checklist-report-generator',
@@ -192,7 +191,7 @@ export const SCHEDULED_JOB_DEFINITIONS: ScheduledJobDefinition[] = [
     cron: '*/30 * * * * *',
     url: 'nest://scheduled-jobs/inspection-checklist-report-generator',
     active: true,
-    note: 'Processes queued final-submission PDF jobs for submitted inspection checklists every 30 seconds.',
+    note: 'System job that generates queued final-submission PDFs every 30 seconds. No email subscription is used for this job.',
   },
   {
     id: 'open-checklist-instances-last-3-days',
@@ -200,6 +199,6 @@ export const SCHEDULED_JOB_DEFINITIONS: ScheduledJobDefinition[] = [
     cron: '0 0 8 * * *',
     url: 'nest://scheduled-jobs/open-checklist-instances-last-3-days',
     active: true,
-    note: 'Scans for open checklist instances older than 3 days and sends an email report.',
+    note: 'Sends a daily report of open checklist instances older than 3 days. Subscribers receive the report email.',
   },
 ];

@@ -2,8 +2,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import { RowDataPacket } from 'mysql2/promise';
 import { MysqlService } from '@/shared/database/mysql.service';
 import { EmailService } from '@/shared/email/email.service';
-import { EmailNotificationService } from '@/nest/modules/email-notification/email-notification.service';
 import { UrlBuilder } from '@/shared/url/url-builder';
+import { SCHEDULED_JOB_IDS } from '../scheduled-job-ids';
+import { ScheduledJobRecipientsService } from '../scheduled-job-recipients.service';
 import { ScheduledJobHandler, ScheduledJobRunResultDto } from './scheduled-job.handler';
 
 interface PastDueRequest extends RowDataPacket {
@@ -21,7 +22,7 @@ export class PastDueFieldServiceRequestsHandler implements ScheduledJobHandler {
   constructor(
     private readonly mysqlService: MysqlService,
     private readonly emailService: EmailService,
-    private readonly emailNotificationService: EmailNotificationService,
+    private readonly scheduledJobRecipientsService: ScheduledJobRecipientsService,
     private readonly urlBuilder: UrlBuilder,
   ) {}
 
@@ -65,17 +66,16 @@ export class PastDueFieldServiceRequestsHandler implements ScheduledJobHandler {
         };
       }
 
-      const recipients = await this.emailNotificationService.find({ location: 'field_service_overdue_requests' });
-      const to = (recipients as Array<{ email?: string }>)
-        .map((r) => r.email)
-        .filter((e): e is string => typeof e === 'string' && e.trim().length > 0);
+      const to = await this.scheduledJobRecipientsService.resolveSubscribedEmails(
+        SCHEDULED_JOB_IDS.PAST_DUE_FIELD_SERVICE_REQUESTS,
+      );
 
       this.logger.log(`[${trigger}] past-due-field-service-requests -> ${to.length} recipients: ${to.join(', ')}`);
 
       if (to.length === 0) {
         const durationMs = Date.now() - startedAtMs;
         this.logger.warn(
-          `[${trigger}] past-due-field-service-requests -> no recipients configured for 'field_service_overdue_requests'`,
+          `[${trigger}] past-due-field-service-requests -> no recipients configured for job past-due-field-service-requests`,
         );
         return {
           id: 'past-due-field-service-requests',
@@ -122,6 +122,7 @@ export class PastDueFieldServiceRequestsHandler implements ScheduledJobHandler {
 
       await this.emailService.sendMail({
         to,
+        scheduledJobId: SCHEDULED_JOB_IDS.PAST_DUE_FIELD_SERVICE_REQUESTS,
         subject: 'Field Service Overdue Requests',
         html,
       });

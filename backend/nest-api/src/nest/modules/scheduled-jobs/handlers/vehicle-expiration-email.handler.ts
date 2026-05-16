@@ -2,8 +2,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import { RowDataPacket } from 'mysql2/promise';
 import { MysqlService } from '@/shared/database/mysql.service';
 import { EmailService } from '@/shared/email/email.service';
-import { EmailNotificationService } from '@/nest/modules/email-notification/email-notification.service';
 import { UrlBuilder } from '@/shared/url/url-builder';
+import { SCHEDULED_JOB_IDS } from '../scheduled-job-ids';
+import { ScheduledJobRecipientsService } from '../scheduled-job-recipients.service';
 import { ScheduledJobHandler, ScheduledJobRunResultDto } from './scheduled-job.handler';
 
 interface VehicleRow extends RowDataPacket {
@@ -28,7 +29,7 @@ export class VehicleExpirationEmailHandler implements ScheduledJobHandler {
   constructor(
     private readonly mysqlService: MysqlService,
     private readonly emailService: EmailService,
-    private readonly emailNotificationService: EmailNotificationService,
+    private readonly scheduledJobRecipientsService: ScheduledJobRecipientsService,
     private readonly urlBuilder: UrlBuilder,
   ) {}
 
@@ -67,10 +68,9 @@ export class VehicleExpirationEmailHandler implements ScheduledJobHandler {
       );
 
       if (totalToEmail > 0) {
-        const recipientRows = await this.emailNotificationService.find({ location: 'vehicle_registration_email' });
-        const to = (recipientRows as Array<{ email?: string }>)
-          .map((r) => r.email)
-          .filter((e): e is string => typeof e === 'string' && e.trim().length > 0);
+        const to = await this.scheduledJobRecipientsService.resolveSubscribedEmails(
+          SCHEDULED_JOB_IDS.VEHICLE_EXPIRATION_EMAIL,
+        );
 
         if (to.length > 0) {
           const isHot = sendEmailHot.length > 0;
@@ -91,7 +91,14 @@ export class VehicleExpirationEmailHandler implements ScheduledJobHandler {
 
           body += `</table><br><hr>This is an automated email. Please do not respond.<br>Thank you.`;
 
-          await this.emailService.sendMail({ to, subject, html: body });
+          await this.emailService.sendMail({
+            to,
+            scheduledJobId: SCHEDULED_JOB_IDS.VEHICLE_EXPIRATION_EMAIL,
+            subject,
+            html: body,
+          });
+        } else {
+          this.logger.warn('No recipients configured for vehicle-expiration-email');
         }
       }
 
