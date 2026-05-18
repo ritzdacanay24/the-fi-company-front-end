@@ -71,6 +71,7 @@ export class SidebarComponent implements OnInit {
     'supportMyTicketsOpen',
     'inspectionChecklistTemplatesDraft',
     'scheduledJobsFailed',
+    'serialManagementLowStock',
   ]);
 
   private readonly badgeVariantByKey: Record<keyof SidebarMenuBadgeCounts, string> = {
@@ -101,6 +102,8 @@ export class SidebarComponent implements OnInit {
     supportTicketsOpen: 'sidebar-count-badge--attention',
     supportMyTicketsOpen: 'sidebar-count-badge--attention',
     scheduledJobsFailed: 'sidebar-count-badge--critical',
+    serialManagementLowStock: 'sidebar-count-badge--warning',
+    serialManagementCriticalStock: 'sidebar-count-badge--critical',
   };
 
   menu: any;
@@ -169,6 +172,8 @@ export class SidebarComponent implements OnInit {
     supportTicketsOpen: 0,
     supportMyTicketsOpen: 0,
     scheduledJobsFailed: 0,
+    serialManagementLowStock: 0,
+    serialManagementCriticalStock: 0,
   };
 
   get appRailItems() {
@@ -501,7 +506,17 @@ export class SidebarComponent implements OnInit {
 
   private resolveLeafBadgeVariant(menu: MenuItem): string | null {
     const key = this.resolveLeafBadgeKey(menu);
-    return key ? this.badgeVariantByKey[key] : null;
+    if (!key) {
+      return null;
+    }
+
+    if (key === 'serialManagementLowStock') {
+      return this.menuBadgeCounts.serialManagementCriticalStock > 0
+        ? 'sidebar-count-badge--critical'
+        : 'sidebar-count-badge--warning';
+    }
+
+    return this.badgeVariantByKey[key];
   }
 
   private formatBadgeCount(count: number): string {

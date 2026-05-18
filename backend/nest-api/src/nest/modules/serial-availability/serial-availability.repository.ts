@@ -3,6 +3,19 @@ import { RowDataPacket } from 'mysql2/promise';
 import { MysqlService } from '@/shared/database/mysql.service';
 import { BaseRepository } from '@/shared/repositories/base.repository';
 
+export type SerialStockThresholdKey = 'eyefi' | 'ul_new' | 'ul_used' | 'igt';
+
+export type SerialStockThresholds = Record<SerialStockThresholdKey, number>;
+
+export const DEFAULT_SERIAL_STOCK_THRESHOLDS: SerialStockThresholds = {
+  eyefi: 300,
+  ul_new: 150,
+  ul_used: 100,
+  igt: 200,
+};
+
+const SERIAL_STOCK_THRESHOLDS_SETTING_KEY = 'serial_stock_thresholds';
+
 @Injectable()
 export class SerialAvailabilityRepository extends BaseRepository<RowDataPacket> {
   constructor(@Inject(MysqlService) mysqlService: MysqlService) {
@@ -270,5 +283,61 @@ export class SerialAvailabilityRepository extends BaseRepository<RowDataPacket> 
       ul_used_used_last_7_days: 0,
       igt_used_last_7_days: 0,
     };
+  }
+
+  async getSerialStockThresholds(): Promise<SerialStockThresholds> {
+    const sql = `
+      SELECT setting_value
+      FROM eyefidb.system_settings
+      WHERE setting_key = ?
+      LIMIT 1
+    `;
+
+    const rows = await this.mysqlService.query<RowDataPacket[]>(sql, [SERIAL_STOCK_THRESHOLDS_SETTING_KEY]);
+    if (!rows.length || !rows[0].setting_value) {
+      return { ...DEFAULT_SERIAL_STOCK_THRESHOLDS };
+    }
+
+    try {
+      const parsed = JSON.parse(String(rows[0].setting_value)) as Partial<SerialStockThresholds>;
+      return {
+        eyefi: this.sanitizeThreshold(parsed.eyefi, DEFAULT_SERIAL_STOCK_THRESHOLDS.eyefi),
+        ul_new: this.sanitizeThreshold(parsed.ul_new, DEFAULT_SERIAL_STOCK_THRESHOLDS.ul_new),
+        ul_used: this.sanitizeThreshold(parsed.ul_used, DEFAULT_SERIAL_STOCK_THRESHOLDS.ul_used),
+        igt: this.sanitizeThreshold(parsed.igt, DEFAULT_SERIAL_STOCK_THRESHOLDS.igt),
+      };
+    } catch {
+      return { ...DEFAULT_SERIAL_STOCK_THRESHOLDS };
+    }
+  }
+
+  async saveSerialStockThresholds(thresholds: SerialStockThresholds, updatedBy = 'system'): Promise<void> {
+    const value = JSON.stringify({
+      eyefi: this.sanitizeThreshold(thresholds.eyefi, DEFAULT_SERIAL_STOCK_THRESHOLDS.eyefi),
+      ul_new: this.sanitizeThreshold(thresholds.ul_new, DEFAULT_SERIAL_STOCK_THRESHOLDS.ul_new),
+      ul_used: this.sanitizeThreshold(thresholds.ul_used, DEFAULT_SERIAL_STOCK_THRESHOLDS.ul_used),
+      igt: this.sanitizeThreshold(thresholds.igt, DEFAULT_SERIAL_STOCK_THRESHOLDS.igt),
+    });
+
+    const sql = `
+      INSERT INTO eyefidb.system_settings (setting_key, setting_value, description, updated_by, updated_at)
+      VALUES (?, ?, 'Serial stock alert thresholds', ?, NOW())
+      ON DUPLICATE KEY UPDATE
+        setting_value = VALUES(setting_value),
+        description = VALUES(description),
+        updated_by = VALUES(updated_by),
+        updated_at = NOW()
+    `;
+
+    await this.mysqlService.query<RowDataPacket[]>(sql, [SERIAL_STOCK_THRESHOLDS_SETTING_KEY, value, updatedBy]);
+  }
+
+  private sanitizeThreshold(value: unknown, fallback: number): number {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric) || numeric <= 0) {
+      return fallback;
+    }
+
+    return Math.max(1, Math.round(numeric));
   }
 }

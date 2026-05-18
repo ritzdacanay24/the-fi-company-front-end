@@ -13,6 +13,7 @@ export const SERIAL_MANAGEMENT_MENU: MenuItem[] = [
         label: "Dashboard",
         link: "/serial-management/dashboard",
         icon: "mdi mdi-view-dashboard-outline",
+        badgeId: "serialManagementLowStock",
         hideCheckBox: true,
         activatedRoutes: "/serial-management/dashboard"
     },

@@ -7,6 +7,8 @@ interface ScheduledJobMailOptions extends SendMailOptions {
   scheduledJobId?: string;
 }
 
+type ScheduledJobEmailRecipientMode = 'grouped' | 'grouped_bcc' | 'individual';
+
 @Injectable()
 export class EmailService {
   private readonly transporter: Transporter;
@@ -17,6 +19,7 @@ export class EmailService {
   private readonly dashboardWebBaseUrl: string;
   private readonly unsubscribeTokenSecret: string;
   private readonly unsubscribeTtlSeconds: number;
+  private readonly scheduledJobEmailRecipientMode: ScheduledJobEmailRecipientMode;
   private testModeRedirectTo?: string;
 
   constructor(private readonly configService: ConfigService) {
@@ -34,6 +37,15 @@ export class EmailService {
     this.unsubscribeTtlSeconds = Number(
       this.configService.get<string>('SCHEDULED_JOB_UNSUBSCRIBE_TTL_SECONDS') || 60 * 60 * 24 * 30,
     );
+    const configuredRecipientMode = String(
+      this.configService.get<string>('SCHEDULED_JOB_EMAIL_RECIPIENT_MODE') || 'grouped',
+    ).toLowerCase();
+    this.scheduledJobEmailRecipientMode =
+      configuredRecipientMode === 'individual'
+        ? 'individual'
+        : configuredRecipientMode === 'grouped_bcc' || configuredRecipientMode === 'grouped-bcc'
+          ? 'grouped_bcc'
+          : 'grouped';
 
     if (this.mailTransport === 'sendmail') {
       const sendmailPath = this.configService.get<string>('SENDMAIL_PATH') ?? '/usr/sbin/sendmail';
@@ -102,17 +114,59 @@ export class EmailService {
     if (payload.scheduledJobId && payload.html) {
       const recipients = this.normalizeRecipients(payload.to);
       if (recipients.length > 0) {
-        for (const recipient of recipients) {
+        if (this.scheduledJobEmailRecipientMode === 'individual') {
+          for (const recipient of recipients) {
+            await this.transporter.sendMail({
+              ...payload,
+              to: recipient,
+              html: this.appendScheduledJobFooter(
+                String(payload.html),
+                payload.scheduledJobId,
+                recipient,
+              ),
+            });
+          }
+          return;
+        }
+
+        if (recipients.length === 1) {
           await this.transporter.sendMail({
             ...payload,
-            to: recipient,
+            to: recipients[0],
             html: this.appendScheduledJobFooter(
               String(payload.html),
               payload.scheduledJobId,
-              recipient,
+              recipients[0],
             ),
           });
+          return;
         }
+
+        if (this.scheduledJobEmailRecipientMode === 'grouped_bcc') {
+          const existingBcc = this.normalizeRecipients(payload.bcc as SendMailOptions['to']);
+          const bccRecipients = [...new Set([...existingBcc, ...recipients])];
+
+          await this.transporter.sendMail({
+            ...payload,
+            to: payload.from || this.defaultFrom,
+            bcc: bccRecipients,
+            html: this.appendScheduledJobBulkFooter(
+              String(payload.html),
+              payload.scheduledJobId,
+            ),
+          });
+          return;
+        }
+
+        // Send a single message to all subscribed recipients for the scheduled job.
+        await this.transporter.sendMail({
+          ...payload,
+          to: recipients,
+          html: this.appendScheduledJobBulkFooter(
+            String(payload.html),
+            payload.scheduledJobId,
+          ),
+        });
         return;
       }
     }
@@ -190,6 +244,21 @@ export class EmailService {
         <br />
         <a href="${unsubscribeUrl}" target="_blank" rel="noopener noreferrer">Unsubscribe from this email</a>
         &nbsp;|&nbsp;
+        <a href="${manageUrl}" target="_blank" rel="noopener noreferrer">Manage notification preferences</a>
+      </p>
+    `;
+
+    return `${html}${footer}`;
+  }
+
+  private appendScheduledJobBulkFooter(html: string, jobId: string): string {
+    const manageUrl = `${this.dashboardWebBaseUrl}/maintenance/scheduled-jobs/list`;
+
+    const footer = `
+      <hr style="margin-top:24px;border:none;border-top:1px solid #d0d7de;" />
+      <p style="font-size:12px;color:#6b7280;line-height:1.5;margin:8px 0 0;">
+        You are receiving this because you are subscribed to the <strong>${this.escapeHtml(jobId)}</strong> scheduled job.
+        <br />
         <a href="${manageUrl}" target="_blank" rel="noopener noreferrer">Manage notification preferences</a>
       </p>
     `;

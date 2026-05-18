@@ -1,4 +1,5 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Put, Query, UseGuards } from '@nestjs/common';
+import { CurrentUserId } from '@/nest/decorators/current-user-id.decorator';
 import { RolePermissionGuard } from '../access-control';
 import { SerialAvailabilityService } from './serial-availability.service';
 
@@ -6,6 +7,20 @@ import { SerialAvailabilityService } from './serial-availability.service';
 @UseGuards(RolePermissionGuard)
 export class SerialAvailabilityController {
   constructor(private readonly serialAvailabilityService: SerialAvailabilityService) {}
+
+  @Get('thresholds')
+  async thresholds() {
+    return this.serialAvailabilityService.getSerialStockThresholds();
+  }
+
+  @Put('thresholds')
+  async updateThresholds(
+    @Body() payload: Partial<Record<'eyefi' | 'ul_new' | 'ul_used' | 'igt', number>>,
+    @CurrentUserId() userId: number,
+  ) {
+    const actor = String(userId);
+    return this.serialAvailabilityService.updateSerialStockThresholds(payload, actor);
+  }
 
   @Get('summary')
   async summary() {

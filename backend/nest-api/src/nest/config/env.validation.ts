@@ -47,6 +47,10 @@ export const envValidationSchema = Joi.object({
   SENDMAIL_NEWLINE: Joi.string().valid('unix', 'windows').default('unix'),
   DEV_EMAIL_REROUTE_TO: Joi.string().trim().email().default('ritz.dacanay@the-fi-company.com'),
   MAIL_FROM: Joi.string().trim().default('noreply@the-fi-company.com'),
+  SCHEDULED_JOB_EMAIL_RECIPIENT_MODE: Joi.string()
+    .trim()
+    .valid('grouped', 'grouped_bcc', 'grouped-bcc', 'individual')
+    .default('grouped'),
   MAIL_LOGO_URL: Joi.string()
     .trim()
     .uri()

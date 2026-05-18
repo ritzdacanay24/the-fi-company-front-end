@@ -29,6 +29,8 @@ const DEFAULT_COUNTS: SidebarMenuBadgeCounts = {
   supportTicketsOpen: 0,
   supportMyTicketsOpen: 0,
   scheduledJobsFailed: 0,
+  serialManagementLowStock: 0,
+  serialManagementCriticalStock: 0,
 };
 
 @Injectable()

@@ -35,7 +35,23 @@ export interface SidebarMenuBadgeCounts {
   supportTicketsOpen: number;
   supportMyTicketsOpen: number;
   scheduledJobsFailed: number;
+  serialManagementLowStock: number;
+  serialManagementCriticalStock: number;
 }
+
+interface SerialThresholds {
+  eyefi: number;
+  ul_new: number;
+  ul_used: number;
+  igt: number;
+}
+
+const DEFAULT_SERIAL_THRESHOLDS: SerialThresholds = {
+  eyefi: 300,
+  ul_new: 150,
+  ul_used: 100,
+  igt: 200,
+};
 
 @Injectable()
 export class MenuBadgeRepository {
@@ -281,6 +297,8 @@ export class MenuBadgeRepository {
       supportTicketsOpen: 0,
       supportMyTicketsOpen: 0,
       scheduledJobsFailed: 0,
+      serialManagementLowStock: 0,
+      serialManagementCriticalStock: 0,
     };
 
     for (const row of rows) {
@@ -293,6 +311,9 @@ export class MenuBadgeRepository {
 
     // Per-user pm tasks open count (requires separate query after we know user name)
     defaults.pmTasksOpen = await this.getPmTasksOpenCount(userId);
+    const serialStockBadgeCounts = await this.getSerialManagementStockBadgeCounts();
+    defaults.serialManagementLowStock = serialStockBadgeCounts.lowStock;
+    defaults.serialManagementCriticalStock = serialStockBadgeCounts.criticalStock;
 
     return defaults;
   }
@@ -321,5 +342,120 @@ export class MenuBadgeRepository {
       [JSON.stringify(fullName)],
     );
     return Number((rows[0] as any)?.cnt || 0);
+  }
+
+  private async getSerialManagementStockBadgeCounts(): Promise<{ lowStock: number; criticalStock: number }> {
+    try {
+      const [thresholds, summary] = await Promise.all([
+        this.getSerialStockThresholds(),
+        this.getSerialAvailabilitySummaryForBadge(),
+      ]);
+
+      const pools = [
+        { available: summary.eyefi_available, threshold: thresholds.eyefi },
+        { available: summary.ul_new_available, threshold: thresholds.ul_new },
+        { available: summary.ul_used_available, threshold: thresholds.ul_used },
+        { available: summary.igt_available, threshold: thresholds.igt },
+      ];
+
+      return {
+        lowStock: pools.filter((pool) => pool.available <= pool.threshold).length,
+        criticalStock: pools.filter((pool) => pool.available <= Math.floor(pool.threshold * 0.3)).length,
+      };
+    } catch {
+      return { lowStock: 0, criticalStock: 0 };
+    }
+  }
+
+  private async getSerialStockThresholds(): Promise<SerialThresholds> {
+    const rows = await this.mysqlService.query<RowDataPacket[]>(
+      `SELECT setting_value FROM eyefidb.system_settings WHERE setting_key = 'serial_stock_thresholds' LIMIT 1`,
+    );
+
+    if (!rows.length || !rows[0].setting_value) {
+      return { ...DEFAULT_SERIAL_THRESHOLDS };
+    }
+
+    try {
+      const parsed = JSON.parse(String(rows[0].setting_value)) as Partial<SerialThresholds>;
+      return {
+        eyefi: this.sanitizeThreshold(parsed.eyefi, DEFAULT_SERIAL_THRESHOLDS.eyefi),
+        ul_new: this.sanitizeThreshold(parsed.ul_new, DEFAULT_SERIAL_THRESHOLDS.ul_new),
+        ul_used: this.sanitizeThreshold(parsed.ul_used, DEFAULT_SERIAL_THRESHOLDS.ul_used),
+        igt: this.sanitizeThreshold(parsed.igt, DEFAULT_SERIAL_THRESHOLDS.igt),
+      };
+    } catch {
+      return { ...DEFAULT_SERIAL_THRESHOLDS };
+    }
+  }
+
+  private async getSerialAvailabilitySummaryForBadge(): Promise<Record<'eyefi_available' | 'ul_new_available' | 'ul_used_available' | 'igt_available', number>> {
+    const rows = await this.mysqlService.query<RowDataPacket[]>(`
+      SELECT
+        (
+          SELECT COUNT(*)
+          FROM eyefi_serial_numbers esn
+          WHERE esn.is_active = 1
+            AND esn.status = 'available'
+            AND NOT EXISTS (
+              SELECT 1
+              FROM serial_assignments sa
+              WHERE sa.eyefi_serial_id = esn.id
+                AND COALESCE(sa.is_voided, 0) = 0
+                AND COALESCE(sa.status, '') <> 'voided'
+            )
+            AND NOT EXISTS (
+              SELECT 1
+              FROM ul_label_usages ulu
+              WHERE BINARY ulu.eyefi_serial_number = BINARY esn.serial_number
+                AND COALESCE(ulu.is_voided, 0) = 0
+            )
+            AND NOT EXISTS (
+              SELECT 1
+              FROM agsSerialGenerator ags
+              WHERE BINARY ags.serialNumber = BINARY esn.serial_number
+                AND COALESCE(ags.active, 1) = 1
+            )
+            AND NOT EXISTS (
+              SELECT 1
+              FROM sgAssetGenerator sg
+              WHERE BINARY sg.serialNumber = BINARY esn.serial_number
+                AND COALESCE(sg.active, 1) = 1
+            )
+        ) AS eyefi_available,
+        (
+          SELECT COUNT(*)
+          FROM ul_labels ul
+          WHERE LOWER(COALESCE(ul.category, '')) = 'new'
+            AND COALESCE(ul.is_consumed, 0) = 0
+        ) AS ul_new_available,
+        (
+          SELECT COUNT(*)
+          FROM ul_labels ul
+          WHERE LOWER(COALESCE(ul.category, '')) = 'used'
+            AND COALESCE(ul.is_consumed, 0) = 0
+        ) AS ul_used_available,
+        (
+          SELECT COUNT(*)
+          FROM igt_serial_numbers igt
+          WHERE igt.is_active = 1
+            AND igt.status = 'available'
+        ) AS igt_available
+    `);
+
+    return {
+      eyefi_available: Number(rows[0]?.eyefi_available || 0),
+      ul_new_available: Number(rows[0]?.ul_new_available || 0),
+      ul_used_available: Number(rows[0]?.ul_used_available || 0),
+      igt_available: Number(rows[0]?.igt_available || 0),
+    };
+  }
+
+  private sanitizeThreshold(value: unknown, fallback: number): number {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric) || numeric <= 0) {
+      return fallback;
+    }
+    return Math.max(1, Math.round(numeric));
   }
 }

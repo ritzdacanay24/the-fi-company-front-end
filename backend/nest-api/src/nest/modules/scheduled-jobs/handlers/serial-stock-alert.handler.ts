@@ -3,6 +3,7 @@ import { RowDataPacket } from 'mysql2/promise';
 import { EmailService } from '@/shared/email/email.service';
 import { EmailTemplateService } from '@/shared/email/email-template.service';
 import { SerialAvailabilityRepository } from '@/nest/modules/serial-availability/serial-availability.repository';
+import { SerialAvailabilityService } from '@/nest/modules/serial-availability/serial-availability.service';
 import { SCHEDULED_JOB_IDS } from '../scheduled-job-ids';
 import { ScheduledJobRecipientsService } from '../scheduled-job-recipients.service';
 import { ScheduledJobHandler, ScheduledJobRunResultDto } from './scheduled-job.handler';
@@ -14,11 +15,11 @@ interface StockPool {
   available: number;
 }
 
-const THRESHOLDS: Record<string, { label: string; threshold: number }> = {
-  eyefi_available: { label: 'EyeFi Serials', threshold: 300 },
-  ul_new_available: { label: 'UL Labels (New)', threshold: 150 },
-  ul_used_available: { label: 'UL Labels (Used)', threshold: 100 },
-  igt_available: { label: 'IGT Serials', threshold: 200 },
+const POOL_LABELS: Record<string, string> = {
+  eyefi_available: 'EyeFi Serials',
+  ul_new_available: 'UL Labels (New)',
+  ul_used_available: 'UL Labels (Used)',
+  igt_available: 'IGT Serials',
 };
 
 @Injectable()
@@ -27,6 +28,7 @@ export class SerialStockAlertHandler implements ScheduledJobHandler {
 
   constructor(
     private readonly serialAvailabilityRepository: SerialAvailabilityRepository,
+    private readonly serialAvailabilityService: SerialAvailabilityService,
     private readonly emailService: EmailService,
     private readonly emailTemplateService: EmailTemplateService,
     private readonly scheduledJobRecipientsService: ScheduledJobRecipientsService,
@@ -37,11 +39,20 @@ export class SerialStockAlertHandler implements ScheduledJobHandler {
 
     try {
       const summary = await this.serialAvailabilityRepository.getAvailabilitySummary();
+      const thresholdResponse = await this.serialAvailabilityService.getSerialStockThresholds();
+      const thresholds = thresholdResponse.data;
 
-      const pools: StockPool[] = Object.entries(THRESHOLDS).map(([key, meta]) => ({
+      const thresholdBySummaryKey: Record<string, number> = {
+        eyefi_available: thresholds.eyefi,
+        ul_new_available: thresholds.ul_new,
+        ul_used_available: thresholds.ul_used,
+        igt_available: thresholds.igt,
+      };
+
+      const pools: StockPool[] = Object.entries(thresholdBySummaryKey).map(([key, threshold]) => ({
         key,
-        label: meta.label,
-        threshold: meta.threshold,
+        label: POOL_LABELS[key] || key,
+        threshold,
         available: Number((summary as RowDataPacket)[key] ?? 0),
       }));
 

@@ -6,6 +6,6 @@ import { SerialAvailabilityService } from './serial-availability.service';
 @Module({
   controllers: [SerialAvailabilityController],
   providers: [SerialAvailabilityService, SerialAvailabilityRepository],
-  exports: [SerialAvailabilityRepository],
+  exports: [SerialAvailabilityRepository, SerialAvailabilityService],
 })
 export class SerialAvailabilityModule {}

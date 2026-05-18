@@ -1,14 +1,19 @@
 <div class="container-fluid">
   <div class="row justify-content-center">
     <div class="col-12 serial-dashboard">
-      <div class="dashboard-header mb-4 d-flex align-items-center justify-content-between">
+      <div class="dashboard-header mb-3 d-flex align-items-center justify-content-between">
         <div>
-          <h2 class="mb-1 text-primary">Serial Management Dashboard</h2>
-          <p class="text-muted mb-0">Stock intelligence for UL, IGT, and EyeFi serial pools</p>
+          <h2 class="mb-1 text-primary">Serial Stock Report</h2>
+          <p class="text-muted mb-0">Live serial pool thresholds for UL, IGT, and EyeFi inventory</p>
         </div>
-        <button class="btn btn-outline-secondary" (click)="refresh()" [disabled]="loading">
-          <i class="mdi mdi-refresh me-1"></i>Refresh
-        </button>
+        <div class="d-flex align-items-center gap-2">
+          <button class="btn btn-outline-primary" type="button" (click)="openThresholdModal(thresholdConfigModal)">
+            <i class="mdi mdi-tune-variant me-1"></i>Configure Thresholds
+          </button>
+          <button class="btn btn-outline-secondary" (click)="refresh()" [disabled]="loading">
+            <i class="mdi mdi-refresh me-1"></i>Refresh
+          </button>
+        </div>
       </div>
 
       <div class="card shadow-sm border mb-3" *ngIf="!loading">
@@ -35,80 +40,123 @@
         </div>
       </div>
 
-      <div class="alert alert-light border mb-3" *ngIf="lastUpdated">
-        <strong>Last Updated:</strong> {{ lastUpdated }}
-      </div>
-
       <div class="alert alert-danger border mb-3" *ngIf="loadError">
         {{ loadError }}
       </div>
 
-      <div class="row g-3" *ngIf="!loading; else loadingState">
-        <div class="col-12 col-lg-4" *ngFor="let card of cards">
-          <div class="card border h-100 dashboard-card" [ngClass]="'status-' + stockStatus(card)">
-            <div class="card-body">
-              <div class="d-flex justify-content-between align-items-start mb-2">
-                <h5 class="mb-0 fw-semibold">{{ card.title }}</h5>
-                <span class="badge" [ngClass]="{
-                  'bg-danger-subtle text-danger border border-danger-subtle': stockStatus(card) === 'critical',
-                  'bg-warning-subtle text-warning border border-warning-subtle': stockStatus(card) === 'low',
-                  'bg-success-subtle text-success border border-success-subtle': stockStatus(card) === 'healthy'
-                }">{{ statusLabel(card) }}</span>
-              </div>
+      <div *ngIf="!loading; else loadingState">
+        <div class="alert-banner mb-3" [ngClass]="{ 'critical': hasCriticalRisk(), 'low': !hasCriticalRisk() && hasAnyRisk(), 'healthy': !hasAnyRisk() }">
+          <strong>{{ alertTitle() }}:</strong> {{ alertMessage() }}
+        </div>
 
-              <div class="text-muted small mb-3">Threshold target: {{ card.threshold | number }}</div>
-
-              <div class="d-flex align-items-end gap-3 mb-3">
-                <div>
-                  <small class="text-muted d-block">Available</small>
-                  <h2 class="mb-0">{{ card.available | number }}</h2>
+        <div class="row g-3 mb-3">
+          <div class="col-12 col-md-6 col-xl-3" *ngFor="let card of cards">
+            <div class="card h-100 shadow-sm border pool-card" [ngClass]="'status-' + stockStatus(card)">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <h6 class="mb-0 fw-semibold">{{ card.title }}</h6>
+                  <span class="status-pill" [ngClass]="{
+                    'critical': stockStatus(card) === 'critical',
+                    'low': stockStatus(card) === 'low',
+                    'healthy': stockStatus(card) === 'healthy'
+                  }">{{ statusLabel(card) }}</span>
                 </div>
-                <div>
-                  <small class="text-muted d-block">Needed to Target</small>
-                  <div class="fw-semibold" [class.text-danger]="shortfallFor(card) > 0">{{ shortfallFor(card) | number }}</div>
-                </div>
-              </div>
 
-              <div class="stock-pie-wrap mb-3">
-                <apx-chart
-                  [series]="card.pieSeries"
-                  [chart]="stockPieChartOptions.chart"
-                  [labels]="stockPieChartOptions.labels"
-                  [colors]="card.pieColors"
-                  [plotOptions]="stockPieChartOptions.plotOptions"
-                  [dataLabels]="stockPieChartOptions.dataLabels"
-                  [legend]="stockPieChartOptions.legend"
-                  [stroke]="stockPieChartOptions.stroke"
-                  [tooltip]="stockPieChartOptions.tooltip"
-                ></apx-chart>
-              </div>
-
-              <div class="mb-3">
-                <div class="d-flex justify-content-between small text-muted mb-1">
-                  <span>Threshold Coverage</span>
-                  <span>{{ stockProgressFor(card) }}%</span>
+                <div class="pool-metric mb-2">
+                  <span class="label">Available</span>
+                  <span class="value">{{ card.available | number }}</span>
                 </div>
-                <div class="progress" role="progressbar" [attr.aria-valuenow]="stockProgressFor(card)" aria-valuemin="0" aria-valuemax="100">
-                  <div
-                    class="progress-bar"
-                    [ngClass]="{
-                      'bg-danger': stockStatus(card) === 'critical',
-                      'bg-warning': stockStatus(card) === 'low',
-                      'bg-success': stockStatus(card) === 'healthy'
-                    }"
-                    [style.width.%]="stockProgressFor(card)">
+                <div class="pool-metric mb-2">
+                  <span class="label">Threshold</span>
+                  <span class="value">{{ card.threshold | number }}</span>
+                </div>
+                <div class="pool-metric mb-2">
+                  <span class="label">Shortfall / Buffer</span>
+                  <span class="value" [ngClass]="{ 'text-danger': shortfallFor(card) > 0, 'text-success': shortfallFor(card) === 0 }">
+                    {{ shortfallDisplay(card) }}
+                  </span>
+                </div>
+
+                <div class="coverage-cell mt-2 mb-3">
+                  <div class="coverage-track" role="progressbar" [attr.aria-valuenow]="stockProgressFor(card)" aria-valuemin="0" aria-valuemax="100">
+                    <div
+                      class="coverage-fill"
+                      [ngClass]="{
+                        'critical': stockStatus(card) === 'critical',
+                        'low': stockStatus(card) === 'low',
+                        'healthy': stockStatus(card) === 'healthy'
+                      }"
+                      [style.width.%]="stockProgressFor(card)">
+                    </div>
                   </div>
+                  <small>{{ stockProgressFor(card) }}%</small>
                 </div>
-              </div>
 
-              <div class="small text-muted mb-3">
-                Used (last 7 days): <strong>{{ card.recentlyUsed | number }}</strong>
+                <a class="btn btn-sm btn-outline-primary" [routerLink]="card.route">Open pool</a>
               </div>
-
-              <a class="btn btn-sm btn-primary" [routerLink]="card.route">
-                Open {{ card.title }}
-              </a>
             </div>
+          </div>
+        </div>
+
+        <div class="card shadow-sm border details-card">
+          <div class="card-header border-bottom-0 py-3">
+            <strong>Serial Pool Details</strong>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table report-table align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Pool</th>
+                    <th class="text-center">Available</th>
+                    <th class="text-center">Threshold</th>
+                    <th class="text-center">Shortfall / Buffer</th>
+                    <th class="text-center">Coverage</th>
+                    <th class="text-center">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let card of cards">
+                    <td>
+                      <a class="pool-link" [routerLink]="card.route">{{ card.title }}</a>
+                    </td>
+                    <td class="text-center fw-semibold">{{ card.available | number }}</td>
+                    <td class="text-center">{{ card.threshold | number }}</td>
+                    <td class="text-center fw-semibold" [ngClass]="{ 'text-danger': shortfallFor(card) > 0, 'text-success': shortfallFor(card) === 0 }">
+                      {{ shortfallDisplay(card) }}
+                    </td>
+                    <td>
+                      <div class="coverage-cell">
+                        <div class="coverage-track" role="progressbar" [attr.aria-valuenow]="stockProgressFor(card)" aria-valuemin="0" aria-valuemax="100">
+                          <div
+                            class="coverage-fill"
+                            [ngClass]="{
+                              'critical': stockStatus(card) === 'critical',
+                              'low': stockStatus(card) === 'low',
+                              'healthy': stockStatus(card) === 'healthy'
+                            }"
+                            [style.width.%]="stockProgressFor(card)">
+                          </div>
+                        </div>
+                        <small>{{ stockProgressFor(card) }}%</small>
+                      </div>
+                    </td>
+                    <td class="text-center">
+                      <span class="status-pill" [ngClass]="{
+                        'critical': stockStatus(card) === 'critical',
+                        'low': stockStatus(card) === 'low',
+                        'healthy': stockStatus(card) === 'healthy'
+                      }">
+                        {{ statusLabel(card) }}
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="card-footer report-note">
+            This dashboard mirrors the serial stock alert report structure and updates in real time.
           </div>
         </div>
       </div>
@@ -118,6 +166,43 @@
           <div class="card-body text-center py-5">
             <div class="spinner-border text-primary mb-2"></div>
             <div class="text-muted">Loading dashboard metrics...</div>
+          </div>
+        </div>
+      </ng-template>
+
+      <ng-template #thresholdConfigModal let-modal>
+        <div class="modal-header">
+          <h5 class="modal-title">Configure Serial Thresholds</h5>
+          <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted small mb-3">
+            Update minimum thresholds used for stock risk calculations.
+          </p>
+
+          <div class="alert alert-danger py-2" *ngIf="thresholdSaveError">
+            {{ thresholdSaveError }}
+          </div>
+
+          <div class="row g-3 threshold-form">
+            <div class="col-12 col-md-6" *ngFor="let card of cards">
+              <label class="form-label fw-semibold" [for]="'threshold-' + card.key">{{ card.title }}</label>
+              <input
+                [id]="'threshold-' + card.key"
+                class="form-control"
+                type="number"
+                min="1"
+                step="1"
+                [(ngModel)]="thresholdDraft[card.key]"
+              />
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer d-flex justify-content-between">
+          <button type="button" class="btn btn-outline-secondary" (click)="resetThresholds()">Reset to Defaults</button>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-light" (click)="modal.dismiss()">Cancel</button>
+            <button type="button" class="btn btn-primary" (click)="saveThresholdsAndClose(modal)">Save Thresholds</button>
           </div>
         </div>
       </ng-template>

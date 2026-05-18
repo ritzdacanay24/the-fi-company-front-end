@@ -175,6 +175,19 @@ export class SerialNumberService {
     return await firstValueFrom(this.http.get(`${this.AVAILABILITY_URL}/summary`));
   }
 
+  async getSerialStockThresholdsFromAPI(): Promise<any> {
+    return await firstValueFrom(this.http.get(`${this.AVAILABILITY_URL}/thresholds`));
+  }
+
+  async updateSerialStockThresholdsFromAPI(payload: {
+    eyefi: number;
+    ul_new: number;
+    ul_used: number;
+    igt: number;
+  }): Promise<any> {
+    return await firstValueFrom(this.http.put(`${this.AVAILABILITY_URL}/thresholds`, payload));
+  }
+
   async getAvailableUlLabelsFromAPI(limit?: number): Promise<any> {
     let params = new HttpParams();
     if (limit) params = params.set('limit', limit.toString());

@@ -119,6 +119,8 @@ export class OverviewComponent implements OnInit {
     supportTicketsOpen: 0,
     supportMyTicketsOpen: 0,
     scheduledJobsFailed: 0,
+    serialManagementLowStock: 0,
+    serialManagementCriticalStock: 0,
   };
 
   constructor(

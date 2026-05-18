@@ -33,6 +33,8 @@ export interface SidebarMenuBadgeCounts {
   supportTicketsOpen: number;
   supportMyTicketsOpen: number;
   scheduledJobsFailed: number;
+  serialManagementLowStock: number;
+  serialManagementCriticalStock: number;
 }
 
 // ─── Websocket message types (mirrors backend event names) ───────────────────
@@ -80,6 +82,8 @@ const ZERO_COUNTS: SidebarMenuBadgeCounts = {
   supportTicketsOpen: 0,
   supportMyTicketsOpen: 0,
   scheduledJobsFailed: 0,
+  serialManagementLowStock: 0,
+  serialManagementCriticalStock: 0,
 };
 
 /**
@@ -229,6 +233,8 @@ export class MenuBadgeWebsocketService implements OnDestroy {
       supportTicketsOpen:                      toNum(pick('supportTicketsOpen'),                      current.supportTicketsOpen),
       supportMyTicketsOpen:                    toNum(pick('supportMyTicketsOpen'),                    current.supportMyTicketsOpen),
       scheduledJobsFailed:                     toNum(pick('scheduledJobsFailed'),                     current.scheduledJobsFailed),
+      serialManagementLowStock:                toNum(pick('serialManagementLowStock'),                current.serialManagementLowStock),
+      serialManagementCriticalStock:           toNum(pick('serialManagementCriticalStock'),           current.serialManagementCriticalStock),
     });
     
     // Emit timestamp whenever counts are updated
