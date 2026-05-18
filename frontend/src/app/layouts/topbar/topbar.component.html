@@ -484,15 +484,18 @@
                                 class="align-middle">Profile</span></a>
                         <a class="dropdown-item" routerLink="/pages/faqs"><i
                                 class="mdi mdi-lifebuoy text-muted fs-16 align-middle me-1"></i> <span
-                                class="align-middle">Help</span></a>
+                                class="align-middle">Resources</span></a>
                         <a class="dropdown-item pointer" href="javascript: void(0);" (click)="openSupportTicketModal()"><i
                             class="mdi mdi-ticket-outline text-muted fs-16 align-middle me-1"></i> <span
                             class="align-middle">Create Support Ticket</span></a>
+                        <a class="dropdown-item pointer" href="javascript: void(0);" (click)="openAboutDashboard()"><i
+                                class="mdi mdi-information-outline text-muted fs-16 align-middle me-1"></i> <span
+                                class="align-middle">About Dashboard</span></a>
                         <div class="dropdown-divider"></div>
-                        <a class="dropdown-item" routerLink="/pages/profile"><span
+                        <!-- <a class="dropdown-item" routerLink="/pages/profile"><span
                                 class="badge bg-success-subtle text-success mt-1 float-end">New</span><i
                                 class="mdi mdi-cog-outline text-muted fs-16 align-middle me-1"></i> <span
-                                class="align-middle">Settings</span></a>
+                                class="align-middle">Settings</span></a> -->
                         <a class="dropdown-item pointer"  href="javascript: void(0);" (click)="refresh()">
                             <i class="mdi mdi-refresh text-muted fs-16 align-middle me-1"></i>
                             <span class="align-middle">Refresh</span></a>
@@ -505,6 +508,65 @@
         </div>
     </div>
 </header>
+
+<ng-template #aboutDashboardModal let-modal>
+    <div class="modal-header">
+        <h5 class="modal-title">About Dashboard</h5>
+        <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
+    </div>
+    <div class="modal-body">
+        <div class="mb-3">
+            <div class="fw-semibold">Dashboard Version</div>
+            <div class="text-muted">v{{ version }}</div>
+            <small class="text-muted d-block">Environment: {{ appEnvironmentLabel }}</small>
+            <small class="text-muted d-block mt-1">{{ appUpdateSummary }}</small>
+        </div>
+
+        <div class="mb-3">
+            <div class="fw-semibold">Session</div>
+            <div class="text-muted">{{ userDisplayName }} ({{ userRoleLabel }})</div>
+            <small class="text-muted d-block">Route: {{ currentRouteLabel }}</small>
+            <small class="text-muted d-block">Network: {{ onlineStatusLabel }}</small>
+            <small class="text-muted d-block">Timezone: {{ timezoneLabel }}</small>
+        </div>
+
+        <div class="mb-3">
+            <div class="fw-semibold">API</div>
+            <small class="text-muted d-block">Base URL: {{ apiBaseUrlLabel }}</small>
+            <small class="text-muted d-block">Last checked: {{ lastCheckedLabel }}</small>
+        </div>
+
+        <div class="mb-3">
+            <div class="fw-semibold">Browser</div>
+            <div class="text-muted">{{ browserName }} {{ browserVersionLabel }}</div>
+        </div>
+
+        <div class="mb-1">
+            <div class="d-flex align-items-center justify-content-between gap-2">
+                <div class="fw-semibold">Google Chrome Status</div>
+                <button type="button" class="btn btn-sm btn-outline-secondary" (click)="refreshVersionChecks()">Check Again</button>
+            </div>
+            <small class="text-muted d-block">Detected major: {{ chromeMajorVersion ?? 'N/A' }}</small>
+            <small class="text-muted d-block">Latest stable: {{ latestChromeVersionLabel }}</small>
+            <small class="d-block mt-1"
+                [class.text-success]="isChromeUpToDate === true"
+                [class.text-warning]="isChromeUpToDate === false"
+                [class.text-muted]="isChromeUpToDate === null">
+                {{ chromeUpdateSummary }}
+            </small>
+            <small *ngIf="diagnosticsCopyMessage" class="d-block mt-2 text-success">{{ diagnosticsCopyMessage }}</small>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <div class="me-auto small text-muted">
+            <div>The FI Company Dashboard</div>
+            <div>Copyright 2026 The FI Company. All rights reserved.</div>
+        </div>
+        <button type="button" class="btn btn-outline-dark" (click)="copyAboutDiagnostics()">Copy Diagnostics</button>
+        <button type="button" class="btn btn-outline-primary" (click)="refresh()">Reload Dashboard</button>
+        <button type="button" class="btn btn-primary" (click)="modal.close()">Close</button>
+    </div>
+</ng-template>
 
 <!-- removeNotificationModal -->
 <ng-template #removenotification let-modal>

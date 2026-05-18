@@ -17,6 +17,21 @@ export class AppUpdateService implements OnDestroy {
   private periodicCheckIntervalId: ReturnType<typeof setInterval> | null = null;
   private versionUpdatesSubscription: Subscription | null = null;
 
+  public get isUpdateSystemEnabled(): boolean {
+    return this.swUpdate.isEnabled;
+  }
+
+  public get updateAvailable(): boolean {
+    return this.updateAvailableSubject.value;
+  }
+
+  public triggerUpdateCheck(): void {
+    if (!this.swUpdate.isEnabled) {
+      return;
+    }
+    this.checkForUpdates();
+  }
+
   public initializeUpdateChecking(): void {
     if (!this.swUpdate.isEnabled) {
       console.warn('⚠️ Service Worker is NOT enabled. PWA updates will not work.');

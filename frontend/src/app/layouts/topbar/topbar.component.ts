@@ -37,6 +37,7 @@ import { environment } from "@environments/environment";
 import { MrAlertTopbarFacadeService } from "@app/core/services/mr-alert-topbar.facade.service";
 import { MrPushNotificationService } from "@app/core/services/mr-push-notification.service";
 import { SupportEntryService } from "@app/core/services/support-entry.service";
+import { AppUpdateService } from "@app/core/services/app-update.service";
 
 export const THE_FI_COMPANY_LAYOUT = "THE_FI_COMPANY_LAYOUT";
 
@@ -87,6 +88,7 @@ export class TopbarComponent implements OnInit, OnDestroy {
   isDropdownOpen = false;
   @ViewChild("removenotification") removenotification!: TemplateRef<any>;
   @ViewChild("mrAlertsOffcanvas") mrAlertsOffcanvas!: TemplateRef<any>;
+  @ViewChild("aboutDashboardModal") aboutDashboardModal!: TemplateRef<any>;
   notifyId: any;
   menuItems;
   menuSearchQuery = "";
@@ -132,6 +134,15 @@ export class TopbarComponent implements OnInit, OnDestroy {
   }
 
   version = environment.VERSION;
+  readonly minimumRecommendedChromeMajor = 122;
+  browserName = "Unknown";
+  browserVersionLabel = "Unknown";
+  chromeMajorVersion: number | null = null;
+  latestChromeVersionLabel = "Checking...";
+  latestChromeMajorVersion: number | null = null;
+  latestChromeCheckError = false;
+  aboutLastCheckedAt: Date | null = null;
+  diagnosticsCopyMessage = "";
 
   get showTopbarAppSwitcher(): boolean {
     const sidebarSize = document.documentElement.getAttribute("data-sidebar-size");
@@ -142,6 +153,230 @@ export class TopbarComponent implements OnInit, OnDestroy {
 
   refresh() {
     window.location.reload();
+  }
+
+  openAboutDashboard(): void {
+    this.modalService.open(this.aboutDashboardModal, { centered: true, size: "lg" });
+  }
+
+  get isChromeBrowser(): boolean {
+    return this.browserName === "Google Chrome";
+  }
+
+  get isChromeUpToDate(): boolean | null {
+    if (!this.isChromeBrowser || this.chromeMajorVersion === null || this.latestChromeMajorVersion === null) {
+      return null;
+    }
+    return this.chromeMajorVersion >= this.latestChromeMajorVersion;
+  }
+
+  get chromeUpdateSummary(): string {
+    if (!this.isChromeBrowser) {
+      return "Chrome version check applies only when using Google Chrome.";
+    }
+
+    if (this.latestChromeCheckError) {
+      if (this.chromeMajorVersion === null) {
+        return "Could not detect your Chrome version.";
+      }
+      return this.chromeMajorVersion >= this.minimumRecommendedChromeMajor
+        ? "Your Chrome version is in the recommended range."
+        : `Your Chrome major version (${this.chromeMajorVersion}) is below recommended (${this.minimumRecommendedChromeMajor}+).`;
+    }
+
+    if (this.chromeMajorVersion === null || this.latestChromeMajorVersion === null) {
+      return "Checking Chrome version status...";
+    }
+
+    return this.chromeMajorVersion >= this.latestChromeMajorVersion
+      ? "You are using the latest stable Chrome major version."
+      : `Update recommended: latest stable major is ${this.latestChromeMajorVersion}.`;
+  }
+
+  get appUpdateSummary(): string {
+    if (!this.appUpdateService.isUpdateSystemEnabled) {
+      return "App update checks are unavailable (service worker disabled in this environment).";
+    }
+
+    return this.appUpdateService.updateAvailable
+      ? "A newer Dashboard version is available. Refresh to update."
+      : "You are on the latest Dashboard version.";
+  }
+
+  get appEnvironmentLabel(): string {
+    return environment.production ? "Production" : "Development";
+  }
+
+  get apiBaseUrlLabel(): string {
+    return environment.apiV2BaseUrl || environment.nestApiBaseUrl || environment.legacyApiBaseUrl || "N/A";
+  }
+
+  get onlineStatusLabel(): string {
+    return navigator.onLine ? "Online" : "Offline";
+  }
+
+  get timezoneLabel(): string {
+    try {
+      return Intl.DateTimeFormat().resolvedOptions().timeZone || "Unknown";
+    } catch {
+      return "Unknown";
+    }
+  }
+
+  get currentRouteLabel(): string {
+    return this.router.url || "/";
+  }
+
+  get userDisplayName(): string {
+    const first = this.userData?.first_name || "";
+    const last = this.userData?.last_name || "";
+    const full = `${first} ${last}`.trim();
+    return full || this.userData?.username || this.userData?.email || "Unknown";
+  }
+
+  get userRoleLabel(): string {
+    return this.userData?.role == 0 ? "Admin" : "User";
+  }
+
+  get lastCheckedLabel(): string {
+    return this.aboutLastCheckedAt ? this.aboutLastCheckedAt.toLocaleString() : "Not checked yet";
+  }
+
+  refreshVersionChecks(): void {
+    this.appUpdateService.triggerUpdateCheck();
+    this.detectBrowserInfo();
+    void this.fetchLatestChromeVersion();
+    this.aboutLastCheckedAt = new Date();
+  }
+
+  async copyAboutDiagnostics(): Promise<void> {
+    const diagnostics = {
+      dashboardVersion: this.version,
+      environment: this.appEnvironmentLabel,
+      appUpdateSummary: this.appUpdateSummary,
+      browser: {
+        name: this.browserName,
+        version: this.browserVersionLabel,
+        detectedChromeMajor: this.chromeMajorVersion,
+        latestChrome: this.latestChromeVersionLabel,
+        chromeSummary: this.chromeUpdateSummary,
+      },
+      user: {
+        displayName: this.userDisplayName,
+        role: this.userRoleLabel,
+        email: this.userData?.email || null,
+      },
+      runtime: {
+        route: this.currentRouteLabel,
+        online: this.onlineStatusLabel,
+        timezone: this.timezoneLabel,
+        apiBaseUrl: this.apiBaseUrlLabel,
+        checkedAt: this.aboutLastCheckedAt ? this.aboutLastCheckedAt.toISOString() : null,
+      },
+    };
+
+    const payload = JSON.stringify(diagnostics, null, 2);
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(payload);
+      } else {
+        const textArea = document.createElement("textarea");
+        textArea.value = payload;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+      }
+      this.diagnosticsCopyMessage = "Diagnostics copied.";
+    } catch {
+      this.diagnosticsCopyMessage = "Copy failed. Please copy details manually.";
+    }
+
+    setTimeout(() => {
+      this.diagnosticsCopyMessage = "";
+    }, 2500);
+  }
+
+  private detectBrowserInfo(): void {
+    const ua = navigator.userAgent || "";
+
+    const chromeMatch = ua.match(/Chrome\/([\d.]+)/i);
+    const edgeMatch = ua.match(/Edg\/([\d.]+)/i);
+    const operaMatch = ua.match(/OPR\/([\d.]+)/i);
+    const firefoxMatch = ua.match(/Firefox\/([\d.]+)/i);
+    const safariMatch = ua.match(/Version\/([\d.]+).*Safari/i);
+
+    if (edgeMatch) {
+      this.browserName = "Microsoft Edge";
+      this.browserVersionLabel = edgeMatch[1];
+      this.chromeMajorVersion = null;
+      return;
+    }
+
+    if (operaMatch) {
+      this.browserName = "Opera";
+      this.browserVersionLabel = operaMatch[1];
+      this.chromeMajorVersion = null;
+      return;
+    }
+
+    if (chromeMatch) {
+      this.browserName = "Google Chrome";
+      this.browserVersionLabel = chromeMatch[1];
+      this.chromeMajorVersion = Number.parseInt(chromeMatch[1].split(".")[0], 10);
+      return;
+    }
+
+    if (firefoxMatch) {
+      this.browserName = "Mozilla Firefox";
+      this.browserVersionLabel = firefoxMatch[1];
+      this.chromeMajorVersion = null;
+      return;
+    }
+
+    if (safariMatch) {
+      this.browserName = "Safari";
+      this.browserVersionLabel = safariMatch[1];
+      this.chromeMajorVersion = null;
+      return;
+    }
+
+    this.browserName = "Unknown";
+    this.browserVersionLabel = "Unknown";
+    this.chromeMajorVersion = null;
+  }
+
+  private async fetchLatestChromeVersion(): Promise<void> {
+    this.latestChromeCheckError = false;
+    this.latestChromeVersionLabel = "Checking...";
+    this.latestChromeMajorVersion = null;
+
+    try {
+      const response = await fetch(
+        "https://versionhistory.googleapis.com/v1/chrome/platforms/win/channels/stable/versions?pageSize=1",
+        { cache: "no-store" }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Chrome version lookup failed: ${response.status}`);
+      }
+
+      const payload = await response.json();
+      const latestVersion = payload?.versions?.[0]?.version;
+      if (!latestVersion || typeof latestVersion !== "string") {
+        throw new Error("Chrome version lookup returned empty payload.");
+      }
+
+      this.latestChromeVersionLabel = latestVersion;
+      this.latestChromeMajorVersion = Number.parseInt(latestVersion.split(".")[0], 10);
+    } catch (error) {
+      console.warn("Chrome version lookup failed, using fallback recommendation.", error);
+      this.latestChromeCheckError = true;
+      this.latestChromeVersionLabel = `Unavailable (recommended: ${this.minimumRecommendedChromeMajor}+)`;
+      this.latestChromeMajorVersion = this.minimumRecommendedChromeMajor;
+    } finally {
+      this.aboutLastCheckedAt = new Date();
+    }
   }
 
   constructor(
@@ -160,6 +395,7 @@ export class TopbarComponent implements OnInit, OnDestroy {
     private mrAlertFacade: MrAlertTopbarFacadeService,
     private mrPushNotificationService: MrPushNotificationService,
     private supportEntryService: SupportEntryService,
+    private appUpdateService: AppUpdateService,
   ) {}
 
   ngOnInit(): void {
@@ -205,6 +441,8 @@ export class TopbarComponent implements OnInit, OnDestroy {
 
     this.mrAlertFacade.init();
     this.mrPushNotificationService.init();
+    this.detectBrowserInfo();
+    void this.fetchLatestChromeVersion();
   }
 
   ngOnDestroy(): void {
