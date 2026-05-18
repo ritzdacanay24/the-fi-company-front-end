@@ -118,6 +118,7 @@ export class OverviewComponent implements OnInit {
     pmTasksOpen: 0,
     supportTicketsOpen: 0,
     supportMyTicketsOpen: 0,
+    scheduledJobsFailed: 0,
   };
 
   constructor(

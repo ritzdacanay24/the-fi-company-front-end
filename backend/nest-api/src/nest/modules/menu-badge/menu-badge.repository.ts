@@ -34,6 +34,7 @@ export interface SidebarMenuBadgeCounts {
   pmTasksOpen: number;
   supportTicketsOpen: number;
   supportMyTicketsOpen: number;
+  scheduledJobsFailed: number;
 }
 
 @Injectable()
@@ -239,6 +240,17 @@ export class MenuBadgeRepository {
       FROM eyefidb.support_tickets st
       WHERE LOWER(COALESCE(st.status, 'open')) IN ('open', 'in_progress')
         AND (? IS NOT NULL AND st.user_id = ?)
+
+      UNION ALL
+
+      SELECT 'scheduledJobsFailed' AS menu_id, COUNT(*) AS count
+      FROM scheduled_job_run r
+      INNER JOIN (
+        SELECT job_name, MAX(id) AS max_id
+        FROM scheduled_job_run
+        GROUP BY job_name
+      ) latest ON latest.job_name = r.job_name AND latest.max_id = r.id
+      WHERE r.status = 'failure'
     `, [userId ?? null, userId ?? null]);
 
     const defaults: SidebarMenuBadgeCounts = {
@@ -268,6 +280,7 @@ export class MenuBadgeRepository {
       pmTasksOpen: 0,
       supportTicketsOpen: 0,
       supportMyTicketsOpen: 0,
+      scheduledJobsFailed: 0,
     };
 
     for (const row of rows) {

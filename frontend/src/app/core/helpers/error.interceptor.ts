@@ -73,7 +73,7 @@ export class ErrorInterceptor implements HttpInterceptor {
   private isLikelyDeployDowntimeError(error: HttpErrorResponse): boolean {
     const status = Number(error?.status || 0);
     const deploying = this.deployStatusService.snapshot.deploying === true;
-    return deploying && (status === 0 || status === 502 || status === 503 || status === 504);
+    return deploying && (status === 0 || status === 500 || status === 502 || status === 503 || status === 504);
   }
 
   private async showPermissionRequiredModal(details: any, canRequest: boolean): Promise<void> {

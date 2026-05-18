@@ -30,6 +30,7 @@ export const ADMIN_MENU: MenuItem[] = [
     {
         id: 4,
         label: "Scheduled Jobs",
+        badgeId: "scheduledJobsFailed",
         link: "/maintenance/scheduled-jobs",
         description: "System Background Tasks",
         icon: "las la-clock",

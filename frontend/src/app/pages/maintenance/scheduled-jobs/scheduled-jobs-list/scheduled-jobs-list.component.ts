@@ -55,6 +55,10 @@ export class ScheduledJobsListComponent implements OnInit {
     return this.jobs.filter((job) => job.environmentBlocked).length;
   }
 
+  get failedCount(): number {
+    return this.jobs.filter((job) => job.lastRun?.status === 'failure').length;
+  }
+
   isRunning(id: string): boolean {
     return this.runningJobIds.has(id);
   }

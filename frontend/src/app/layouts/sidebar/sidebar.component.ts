@@ -70,6 +70,7 @@ export class SidebarComponent implements OnInit {
     'supportTicketsOpen',
     'supportMyTicketsOpen',
     'inspectionChecklistTemplatesDraft',
+    'scheduledJobsFailed',
   ]);
 
   private readonly badgeVariantByKey: Record<keyof SidebarMenuBadgeCounts, string> = {
@@ -99,6 +100,7 @@ export class SidebarComponent implements OnInit {
     pmTasksOpen: 'sidebar-count-badge--attention',
     supportTicketsOpen: 'sidebar-count-badge--attention',
     supportMyTicketsOpen: 'sidebar-count-badge--attention',
+    scheduledJobsFailed: 'sidebar-count-badge--critical',
   };
 
   menu: any;
@@ -166,6 +168,7 @@ export class SidebarComponent implements OnInit {
     pmTasksOpen: 0,
     supportTicketsOpen: 0,
     supportMyTicketsOpen: 0,
+    scheduledJobsFailed: 0,
   };
 
   get appRailItems() {

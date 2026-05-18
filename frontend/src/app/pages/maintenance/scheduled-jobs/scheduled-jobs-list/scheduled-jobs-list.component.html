@@ -5,6 +5,7 @@
         <h4 class="card-title mb-0 flex-grow-1 text-start">{{ title }}</h4>
         <div class="d-flex align-items-center gap-2">
           <span class="badge bg-primary">{{ activeCount }} Active</span>
+          <span class="badge bg-danger" *ngIf="failedCount > 0">{{ failedCount }} Failed</span>
           <span class="badge bg-warning text-dark" *ngIf="environmentBlockedCount > 0">{{ environmentBlockedCount }} Dev Blocked</span>
         </div>
       </div>

@@ -9,6 +9,17 @@ export function getErrorMessage(error: unknown): string {
   }
 
   if (error instanceof HttpErrorResponse) {
+    const message = String(error.error?.message || error.message || '').toLowerCase();
+    const isDeployRelated =
+      error.error?.deployInProgress === true
+      || message.includes('deploy')
+      || message.includes('maintenance')
+      || message.includes('restart');
+
+    if (isDeployRelated) {
+      return 'A new version is being deployed. Please retry in a moment.';
+    }
+
     // RFC 7807 / Problem Details
     if (error.error?.detail) {
       return error.error.detail;
@@ -28,7 +39,7 @@ export function getErrorMessage(error: unknown): string {
     if (error.status === 404) return 'Resource not found.';
     if (error.status === 409) return 'Conflict. The resource already exists.';
     if (error.status === 422) return 'Validation error. Please check your input.';
-    if (error.status >= 500) return 'Server error. Please try again later.';
+    if (error.status >= 500) return 'Server is temporarily unavailable. Please retry shortly.';
     return error.message || 'An unexpected error occurred.';
   }
 
