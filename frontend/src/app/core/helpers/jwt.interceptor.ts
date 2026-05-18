@@ -14,12 +14,22 @@ import { THE_FI_COMPANY_TWOSTEP_TOKEN } from "../guards/admin.guard";
 export class JwtInterceptor implements HttpInterceptor {
   constructor(private authenticationService: AuthenticationService) {}
 
+  private isPublicTokenizedRequest(request: HttpRequest<any>): boolean {
+    const url = request.url || '';
+    return url.includes('/apiV2/public/field-service/') || url.includes('/public/field-service/');
+  }
+
   intercept(
     request: HttpRequest<any>,
     next: HttpHandler
   ): Observable<HttpEvent<any>> {
     // Skip JWT authentication for Mindee API calls
     if (request.url.includes('api.mindee.net') || request.url.includes('api-v2.mindee.net') || request.url.includes('api.mindee.com')) {
+      return next.handle(request);
+    }
+
+    // Public tokenized field-service endpoints must not carry app auth headers.
+    if (this.isPublicTokenizedRequest(request)) {
       return next.handle(request);
     }
 

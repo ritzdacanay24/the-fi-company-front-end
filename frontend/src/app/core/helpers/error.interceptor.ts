@@ -207,6 +207,11 @@ export class ErrorInterceptor implements HttpInterceptor {
     return url.includes('/inspection-checklist/share-report/') || url.includes('/inspection/report/');
   }
 
+  private isPublicFieldServiceTokenRequest(request: HttpRequest<any>): boolean {
+    const url = request.url || '';
+    return url.includes('/apiV2/public/field-service/') || url.includes('/public/field-service/');
+  }
+
   intercept(
     request: HttpRequest<any>,
     next: HttpHandler
@@ -234,6 +239,11 @@ export class ErrorInterceptor implements HttpInterceptor {
         if (error.status === 401 || error.status === 900) {
           if (this.isPublicInspectionReportRequest(request)) {
             // Public tokenized report endpoint should never force app login redirect.
+            return throwError(() => error);
+          }
+
+          if (this.isPublicFieldServiceTokenRequest(request)) {
+            // Public tokenized field-service endpoints should not trigger auth refresh/logout flow.
             return throwError(() => error);
           }
 
