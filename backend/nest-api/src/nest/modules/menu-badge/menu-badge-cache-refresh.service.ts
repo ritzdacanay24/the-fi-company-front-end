@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
+import { RowDataPacket } from 'mysql2/promise';
 import { MysqlService } from '@/shared/database/mysql.service';
 import { QadOdbcService } from '@/shared/database/qad-odbc.service';
 import { SCHEDULED_JOB_DEFINITIONS } from '../scheduled-jobs/scheduled-jobs.definitions';
@@ -10,6 +11,31 @@ type CountRow = {
   final_test_qc_open: number | string;
   shipping_schedule_due_now: number | string;
 };
+
+type SerialThresholds = {
+  eyefi: number;
+  ul_new: number;
+  ul_used: number;
+  igt: number;
+};
+
+const DEFAULT_SERIAL_THRESHOLDS: SerialThresholds = {
+  eyefi: 300,
+  ul_new: 150,
+  ul_used: 100,
+  igt: 200,
+};
+
+interface SerialThresholdRow extends RowDataPacket {
+  setting_value?: string;
+}
+
+interface SerialAvailabilitySummaryRow extends RowDataPacket {
+  eyefi_available: number | string;
+  ul_new_available: number | string;
+  ul_used_available: number | string;
+  igt_available: number | string;
+}
 
 @Injectable()
 export class MenuBadgeCacheRefreshService implements OnModuleInit {
@@ -41,6 +67,7 @@ export class MenuBadgeCacheRefreshService implements OnModuleInit {
     try {
       const { pickAndStageOpen, productionRoutingOpen, finalTestQcOpen } = await this.getRoutingOpenCounts();
       const shippingScheduleDueNow = await this.getShippingScheduleDueNowCount();
+      const { lowStock, criticalStock } = await this.getSerialManagementStockBadgeCounts();
 
       await this.mysqlService.execute(
         `
@@ -49,16 +76,136 @@ export class MenuBadgeCacheRefreshService implements OnModuleInit {
             ('pick-and-stage-open', ?),
             ('production-routing-open', ?),
             ('final-test-qc-open', ?),
-            ('shipping-schedule-due-now', ?)
+            ('shipping-schedule-due-now', ?),
+            ('serial-management-low-stock', ?),
+            ('serial-management-critical-stock', ?)
           ON DUPLICATE KEY UPDATE
             count = VALUES(count),
             updated_at = CURRENT_TIMESTAMP
         `,
-        [pickAndStageOpen, productionRoutingOpen, finalTestQcOpen, shippingScheduleDueNow],
+        [
+          pickAndStageOpen,
+          productionRoutingOpen,
+          finalTestQcOpen,
+          shippingScheduleDueNow,
+          lowStock,
+          criticalStock,
+        ],
       );
     } catch (error) {
       this.logger.error('Failed to refresh cached menu badge counts', error as Error);
     }
+  }
+
+  private async getSerialManagementStockBadgeCounts(): Promise<{ lowStock: number; criticalStock: number }> {
+    const [thresholds, summary] = await Promise.all([
+      this.getSerialStockThresholds(),
+      this.getSerialAvailabilitySummaryForBadge(),
+    ]);
+
+    const pools = [
+      { available: summary.eyefi_available, threshold: thresholds.eyefi },
+      { available: summary.ul_new_available, threshold: thresholds.ul_new },
+      { available: summary.ul_used_available, threshold: thresholds.ul_used },
+      { available: summary.igt_available, threshold: thresholds.igt },
+    ];
+
+    return {
+      lowStock: pools.filter((pool) => pool.available <= pool.threshold).length,
+      criticalStock: pools.filter((pool) => pool.available <= Math.floor(pool.threshold * 0.3)).length,
+    };
+  }
+
+  private async getSerialStockThresholds(): Promise<SerialThresholds> {
+    const rows = await this.mysqlService.query<SerialThresholdRow[]>(
+      `SELECT setting_value FROM eyefidb.system_settings WHERE setting_key = 'serial_stock_thresholds' LIMIT 1`,
+    );
+
+    if (!rows.length || !rows[0].setting_value) {
+      return { ...DEFAULT_SERIAL_THRESHOLDS };
+    }
+
+    try {
+      const parsed = JSON.parse(String(rows[0].setting_value)) as Partial<SerialThresholds>;
+      return {
+        eyefi: this.sanitizeThreshold(parsed.eyefi, DEFAULT_SERIAL_THRESHOLDS.eyefi),
+        ul_new: this.sanitizeThreshold(parsed.ul_new, DEFAULT_SERIAL_THRESHOLDS.ul_new),
+        ul_used: this.sanitizeThreshold(parsed.ul_used, DEFAULT_SERIAL_THRESHOLDS.ul_used),
+        igt: this.sanitizeThreshold(parsed.igt, DEFAULT_SERIAL_THRESHOLDS.igt),
+      };
+    } catch {
+      return { ...DEFAULT_SERIAL_THRESHOLDS };
+    }
+  }
+
+  private async getSerialAvailabilitySummaryForBadge(): Promise<Record<'eyefi_available' | 'ul_new_available' | 'ul_used_available' | 'igt_available', number>> {
+    const rows = await this.mysqlService.query<SerialAvailabilitySummaryRow[]>(`
+      SELECT
+        (
+          SELECT COUNT(*)
+          FROM eyefi_serial_numbers esn
+          WHERE esn.is_active = 1
+            AND esn.status = 'available'
+            AND NOT EXISTS (
+              SELECT 1
+              FROM serial_assignments sa
+              WHERE sa.eyefi_serial_id = esn.id
+                AND COALESCE(sa.is_voided, 0) = 0
+                AND COALESCE(sa.status, '') <> 'voided'
+            )
+            AND NOT EXISTS (
+              SELECT 1
+              FROM ul_label_usages ulu
+              WHERE BINARY ulu.eyefi_serial_number = BINARY esn.serial_number
+                AND COALESCE(ulu.is_voided, 0) = 0
+            )
+            AND NOT EXISTS (
+              SELECT 1
+              FROM agsSerialGenerator ags
+              WHERE BINARY ags.serialNumber = BINARY esn.serial_number
+                AND COALESCE(ags.active, 1) = 1
+            )
+            AND NOT EXISTS (
+              SELECT 1
+              FROM sgAssetGenerator sg
+              WHERE BINARY sg.serialNumber = BINARY esn.serial_number
+                AND COALESCE(sg.active, 1) = 1
+            )
+        ) AS eyefi_available,
+        (
+          SELECT COUNT(*)
+          FROM ul_labels ul
+          WHERE LOWER(COALESCE(ul.category, '')) = 'new'
+            AND COALESCE(ul.is_consumed, 0) = 0
+        ) AS ul_new_available,
+        (
+          SELECT COUNT(*)
+          FROM ul_labels ul
+          WHERE LOWER(COALESCE(ul.category, '')) = 'used'
+            AND COALESCE(ul.is_consumed, 0) = 0
+        ) AS ul_used_available,
+        (
+          SELECT COUNT(*)
+          FROM igt_serial_numbers igt
+          WHERE igt.is_active = 1
+            AND igt.status = 'available'
+        ) AS igt_available
+    `);
+
+    return {
+      eyefi_available: Number(rows[0]?.eyefi_available || 0),
+      ul_new_available: Number(rows[0]?.ul_new_available || 0),
+      ul_used_available: Number(rows[0]?.ul_used_available || 0),
+      igt_available: Number(rows[0]?.igt_available || 0),
+    };
+  }
+
+  private sanitizeThreshold(value: unknown, fallback: number): number {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric) || numeric <= 0) {
+      return fallback;
+    }
+    return Math.max(1, Math.round(numeric));
   }
 
   private async getRoutingOpenCounts(): Promise<{

@@ -10,6 +10,8 @@ VALUES
   ('pick-and-stage-open', 0),
   ('production-routing-open', 0),
   ('final-test-qc-open', 0),
-  ('shipping-schedule-due-now', 0)
+  ('shipping-schedule-due-now', 0),
+  ('serial-management-low-stock', 0),
+  ('serial-management-critical-stock', 0)
 ON DUPLICATE KEY UPDATE
   count = count;
