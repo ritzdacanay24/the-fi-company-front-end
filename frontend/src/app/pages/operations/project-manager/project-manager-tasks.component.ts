@@ -78,7 +78,9 @@ export class ProjectManagerTasksComponent implements OnInit {
   hideDone = false;
   filterPerson = '';
   filterStatus = '';
+  quickFilterText = '';
   allProjects: ProjectDashboardItem[] = [];
+  private suppressFilterParamSync = false;
   private groupColorMap = new Map<string, string>();
   private groupColorIndex = 0;
   private subgroupCatalog: Record<string, Set<string>> = {};
@@ -398,6 +400,7 @@ export class ProjectManagerTasksComponent implements OnInit {
     onRowDragEnd: (event: RowDragEndEvent<PmTreeRow>) => this.handleRowDragEnd(event),
     onGridReady: (event: GridReadyEvent<PmTreeRow>) => {
       this.gridApi = event.api;
+      this.gridApi.setGridOption('quickFilterText', this.quickFilterText);
       this.rebuildTreeRows();
     }
   };
@@ -414,16 +417,37 @@ export class ProjectManagerTasksComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.allProjects = this.projectsService.getProjects();
+    this.applyProjectContext((this.route.snapshot.queryParamMap.get('projectId') || '').trim());
+
     this.projectsService.getProjects$().subscribe(projects => {
       this.allProjects = projects;
+      const projectIdFromQuery = (this.route.snapshot.queryParamMap.get('projectId') || '').trim();
+      this.applyProjectContext(projectIdFromQuery);
     });
 
     this.route.queryParamMap.subscribe(params => {
       const gateContext = (params.get('gateContext') || '').trim();
       const gate = Number(params.get('gate') || 0);
       const projectId = (params.get('projectId') || '').trim();
+
       this.applyGateContext(gateContext, gate);
       this.applyProjectContext(projectId);
+
+      this.suppressFilterParamSync = true;
+      this.filterPerson = (params.get('person') || '').trim();
+      this.filterStatus = (params.get('status') || '').trim();
+      this.hideDone = this.parseBooleanParam(params.get('hideDone'));
+      this.quickFilterText = (params.get('q') || '').trim();
+
+      const gateFilterParam = (params.get('gateFilter') || '').trim();
+      if (gateFilterParam === 'All' || this.gateOptions.includes(gateFilterParam as TaskGate)) {
+        this.setGateFilter(gateFilterParam as TaskGateFilter, false);
+      }
+      this.suppressFilterParamSync = false;
+
+      this.rebuildTreeRows();
+      this.gridApi?.setGridOption('quickFilterText', this.quickFilterText);
     });
   }
 
@@ -432,13 +456,14 @@ export class ProjectManagerTasksComponent implements OnInit {
   }
 
   get selectedProjectId(): string {
-    return this.activeProjectId;
+    return this.activeProjectId || this.currentProjectSummary?.id || '';
   }
 
   onProjectSelect(id: string): void {
-    if (!id) return;
+    const normalizedId = String(id || '').trim();
+    if (!normalizedId || normalizedId === this.selectedProjectId) return;
     const url = this.router.url.split('?')[0];
-    this.router.navigate([url], { queryParams: { projectId: id }, queryParamsHandling: 'merge' });
+    this.router.navigate([url], { queryParams: { projectId: normalizedId }, queryParamsHandling: 'merge' });
   }
 
   get executionChecklistQueryParams(): { projectId: string; view: 'checklist' } {
@@ -480,21 +505,24 @@ export class ProjectManagerTasksComponent implements OnInit {
 
   onQuickFilter(event: Event): void {
     const value = (event.target as HTMLInputElement).value;
-    this.gridApi?.setGridOption('quickFilterText', value);
+    this.setQuickFilter(value);
   }
 
   toggleHideDone(): void {
     this.hideDone = !this.hideDone;
+    this.syncFilterQueryParams();
     this.rebuildTreeRows();
   }
 
   setPersonFilter(person: string): void {
-    this.filterPerson = this.filterPerson === person ? '' : person;
+    this.filterPerson = String(person || '').trim();
+    this.syncFilterQueryParams();
     this.rebuildTreeRows();
   }
 
   setStatusFilter(status: string): void {
     this.filterStatus = this.filterStatus === status ? '' : status;
+    this.syncFilterQueryParams();
     this.rebuildTreeRows();
   }
 
@@ -502,6 +530,10 @@ export class ProjectManagerTasksComponent implements OnInit {
     this.filterPerson = '';
     this.filterStatus = '';
     this.hideDone = false;
+    this.quickFilterText = '';
+    this.setGateFilter('All', false);
+    this.syncFilterQueryParams();
+    this.gridApi?.setGridOption('quickFilterText', '');
     this.rebuildTreeRows();
   }
 
@@ -643,7 +675,7 @@ export class ProjectManagerTasksComponent implements OnInit {
         bucket: 'Overall',
         dependsOn: selectedGate
       });
-      this.setGateFilter(selectedGate);
+      this.setGateFilter(selectedGate, false);
       return;
     }
 
@@ -657,7 +689,7 @@ export class ProjectManagerTasksComponent implements OnInit {
       });
       this.moveTargetGroup = 'Engineering';
       this.moveTargetSubGroup = 'Backlog';
-      this.setGateFilter(selectedGate);
+      this.setGateFilter(selectedGate, false);
       return;
     }
 
@@ -671,22 +703,31 @@ export class ProjectManagerTasksComponent implements OnInit {
       });
       this.moveTargetGroup = 'Quality';
       this.moveTargetSubGroup = 'QA';
-      this.setGateFilter(selectedGate);
+      this.setGateFilter(selectedGate, false);
       return;
     }
 
-    this.setGateFilter(hasExplicitGateSelection ? selectedGate : 'All');
+    this.setGateFilter(hasExplicitGateSelection ? selectedGate : 'All', false);
   }
 
-  setGateFilter(gate: TaskGateFilter): void {
+  setGateFilter(gate: TaskGateFilter, syncParams = true): void {
     this.activeGateFilter = gate;
     this.gateContextLabel = gate === 'All' ? 'All Gates' : `Gate ${gate.replace('G', '')}`;
+    if (syncParams) {
+      this.syncFilterQueryParams();
+    }
     this.rebuildTreeRows();
   }
 
   onGateFilterChange(value: string): void {
     const normalized = value === 'All' ? 'All' : (value as TaskGate);
     this.setGateFilter(normalized);
+  }
+
+  setQuickFilter(value: string): void {
+    this.quickFilterText = String(value || '');
+    this.gridApi?.setGridOption('quickFilterText', this.quickFilterText);
+    this.syncFilterQueryParams();
   }
 
   private resolveGateByContext(gateContext: string, gate: number): TaskGate {
@@ -705,6 +746,29 @@ export class ProjectManagerTasksComponent implements OnInit {
     }
 
     return 'G4';
+  }
+
+  private parseBooleanParam(value: string | null): boolean {
+    return value === '1' || String(value || '').toLowerCase() === 'true';
+  }
+
+  private syncFilterQueryParams(): void {
+    if (this.suppressFilterParamSync) {
+      return;
+    }
+
+    const url = this.router.url.split('?')[0];
+    this.router.navigate([url], {
+      queryParams: {
+        person: this.filterPerson || null,
+        status: this.filterStatus || null,
+        hideDone: this.hideDone ? '1' : null,
+        gateFilter: this.activeGateFilter !== 'All' ? this.activeGateFilter : null,
+        q: this.quickFilterText.trim() || null
+      },
+      queryParamsHandling: 'merge',
+      replaceUrl: true
+    });
   }
 
   createEngineeringTasksForPeople(): void {
@@ -996,16 +1060,32 @@ export class ProjectManagerTasksComponent implements OnInit {
   }
 
   private initializeTaskState(projectId: string): void {
-    const state = this.tasksDataService.loadState(projectId);
-    this.nextId = state.nextId;
-    this.taskRecords = state.taskRecords;
+    const normalizedProjectId = String(projectId || '').trim();
 
-    const catalog: Record<string, Set<string>> = {};
-    Object.keys(state.subgroupCatalog).forEach(group => {
-      catalog[group] = new Set(state.subgroupCatalog[group]);
+    if (!normalizedProjectId) {
+      this.nextId = 1;
+      this.taskRecords = [];
+      this.subgroupCatalog = {};
+      this.seedSubgroupCatalog();
+      return;
+    }
+
+    this.tasksDataService.loadState$(normalizedProjectId).subscribe(state => {
+      if (this.activeProjectId !== normalizedProjectId) {
+        return;
+      }
+
+      this.nextId = state.nextId;
+      this.taskRecords = state.taskRecords;
+
+      const catalog: Record<string, Set<string>> = {};
+      Object.keys(state.subgroupCatalog).forEach(group => {
+        catalog[group] = new Set(state.subgroupCatalog[group]);
+      });
+      this.subgroupCatalog = catalog;
+      this.seedSubgroupCatalog();
+      this.rebuildTreeRows();
     });
-    this.subgroupCatalog = catalog;
-    this.seedSubgroupCatalog();
   }
 
   private persistTaskState(): void {
@@ -1046,11 +1126,16 @@ export class ProjectManagerTasksComponent implements OnInit {
       ? requestedProjectId
       : this.projectsService.getSelectedProjectId(projects);
 
-    if (!resolvedProjectId && requestedProjectId) {
-      resolvedProjectId = requestedProjectId;
+    const hasResolved = !!resolvedProjectId && projects.some(project => project.id === resolvedProjectId);
+    if (!hasResolved) {
+      resolvedProjectId = '';
     }
 
     this.currentProjectSummary = projects.find(project => project.id === resolvedProjectId) || null;
+
+    if (resolvedProjectId) {
+      this.projectsService.setSelectedProjectId(resolvedProjectId);
+    }
 
     if (resolvedProjectId === this.activeProjectId) {
       return;

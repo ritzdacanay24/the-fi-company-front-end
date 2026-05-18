@@ -36,8 +36,9 @@
             style="font-size:0.7rem;letter-spacing:0.04em;color:var(--vz-secondary-color)"
             for="pm-project-select">Project</label>
           <select id="pm-project-select" class="form-select form-select-sm" style="min-width:200px"
-            [value]="selectedProjectId"
-            (change)="onProjectSelect($any($event.target).value)">
+            [ngModel]="selectedProjectId"
+            [ngModelOptions]="{ standalone: true }"
+            (ngModelChange)="onProjectSelect($event)">
             <option value="">— Select a project —</option>
             <option *ngFor="let p of allProjects" [value]="p.id">{{ p.id }} – {{ p.name }}</option>
           </select>
@@ -86,8 +87,8 @@
     <!-- Person filter dropdown -->
     <select class="form-select form-select-sm" style="width:140px" [(ngModel)]="filterPerson"
       [ngModelOptions]="{ standalone: true }" (ngModelChange)="setPersonFilter(filterPerson)">
-      <option [ngValue]="null">All People</option>
-      <option *ngFor="let person of engineeringPeople" [ngValue]="person">{{ person }}</option>
+      <option value="">All People</option>
+      <option *ngFor="let person of engineeringPeople" [value]="person">{{ person }}</option>
     </select>
 
     <div class="vr"></div>
@@ -101,7 +102,8 @@
       (click)="clearFilters()">✕ Clear</button>
 
     <input type="text" class="form-control form-control-sm ms-auto" style="width:200px" placeholder="🔍  Search..."
-      (input)="onQuickFilter($event)" />
+      [(ngModel)]="quickFilterText" [ngModelOptions]="{ standalone: true }"
+      (ngModelChange)="setQuickFilter($event)" />
   </div>
 
   <div *ngIf="actionMessage" class="alert py-2 px-3 mb-0 rounded-0"
