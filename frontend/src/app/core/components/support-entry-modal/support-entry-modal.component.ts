@@ -27,11 +27,6 @@ export type SupportEntrySelection = 'dashboard' | 'it';
 
       <div class="decision-grid mb-3">
         <button type="button" class="decision-card decision-card--avvero" (click)="select('it')">
-          <img
-            class="decision-card__logo"
-            src="https://d3qscgr6xsioh.cloudfront.net/52KbhFOcTBabSmWYrPUs_transformed.png?format=webp"
-            alt="Avvero"
-            loading="lazy" />
           <div class="decision-card__title">IT / Access (Avvero)</div>
           <div class="decision-card__desc">Account lockouts, QAD access/issues, Citrix/VPN issues, internet, Outlook, hardware, printers, and device setup.</div>
         </button>
@@ -87,6 +82,10 @@ export type SupportEntrySelection = 'dashboard' | 'it';
       }
 
       .decision-card {
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: flex-start;
         text-align: left;
         border-radius: 0.75rem;
         border: 1px solid var(--sem-card-border);
@@ -104,13 +103,6 @@ export type SupportEntrySelection = 'dashboard' | 'it';
       .decision-card__title {
         font-weight: 700;
         margin-bottom: 0.35rem;
-      }
-
-      .decision-card__logo {
-        display: block;
-        width: auto;
-        height: 18px;
-        margin-bottom: 0.5rem;
       }
 
       .decision-card__desc {

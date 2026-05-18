@@ -24,3 +24,24 @@
 .support-request-subtitle {
   color: #dbe8fb;
 }
+
+.support-category-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+
+.support-category-content {
+  width: 100%;
+  margin-top: 0;
+}
+
+.support-category-title {
+  line-height: 1.25;
+}
+
+.support-category-description {
+  line-height: 1.4;
+}
+

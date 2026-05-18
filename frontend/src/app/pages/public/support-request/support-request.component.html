@@ -22,7 +22,7 @@
         </div>
 
         <div class="card border-0 shadow-sm">
-          <div class="card-body p-4 p-lg-5">
+          <div class="card-body p-4 p-lg-4">
             <div *ngIf="successTicketNumber" class="alert alert-success mb-4">
               <div class="fw-semibold mb-1">Ticket submitted successfully</div>
               <div class="small">
@@ -50,13 +50,24 @@
                 <div class="col-12 col-md-6" *ngFor="let item of supportCategories">
                   <button
                     type="button"
-                    class="btn w-100 text-start border rounded p-3 h-100"
+                    class="btn w-100 text-start border rounded p-3 h-100 support-category-card"
                     (click)="selectSupportCategory(item.value)">
-                    <div class="fw-semibold mb-1">{{ item.label }}</div>
-                    <div class="small text-muted mb-0">{{ item.description }}</div>
-                    <div class="small text-muted mt-2" *ngIf="item.value === 'it_access'">Opens ServiceNow in a new tab.</div>
+                    <div class="support-category-content">
+                      <div class="fw-semibold mb-1 support-category-title">{{ item.label }}</div>
+                      <div class="small text-muted mb-0 support-category-description">{{ item.description }}</div>
+                      <div class="small text-muted mt-2" *ngIf="item.value === 'it_access'">Opens ServiceNow in a new tab.</div>
+                    </div>
                   </button>
                 </div>
+              </div>
+
+              <div class="border rounded p-3 mt-3 bg-light">
+                <div class="fw-semibold mb-2">Best decision to choose:</div>
+                <ul class="mb-0 ps-3 small">
+                  <li><strong>Choose IT / Access (Avvero)</strong> for account lockouts, password resets, MFA, QAD access, Citrix/VPN, email, network, hardware, and printer issues.</li>
+                  <li><strong>Choose DB Issue / App</strong> for dashboard/app workflow bugs, incorrect values, missing actions, or data mismatches.</li>
+                  <li><strong>Unsure?</strong> Start with IT / Access if you cannot sign in or connect; otherwise choose DB Issue / App.</li>
+                </ul>
               </div>
 
               <div class="d-flex justify-content-start mt-4">
@@ -73,7 +84,7 @@
               </div>
 
               <div class="d-flex justify-content-between align-items-center mb-3">
-                <div class="small text-muted">Category: Dashboard / App Issue</div>
+                <div class="small text-muted">Category: DB Issue / App</div>
                 <button type="button" class="btn btn-sm btn-outline-secondary" (click)="backToCategorySelection()">
                   Back to Category Selection
                 </button>

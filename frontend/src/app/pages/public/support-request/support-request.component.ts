@@ -28,8 +28,8 @@ export class SupportRequestComponent {
   private readonly itSupportUrl = 'https://averro.service-now.com/';
 
   readonly supportCategories: Array<{ value: SupportCategory; label: string; description: string }> = [
-    { value: 'dashboard_app', label: 'Dashboard / App Issue', description: 'Problems with dashboard pages, workflows, data, or app behavior.' },
-    { value: 'it_access', label: 'IT / Access Issue', description: 'Account access, permissions, device, network, or environment issues.' },
+    { value: 'it_access', label: 'IT / Access (Avvero)', description: 'Account lockouts, QAD access/issues, Citrix/VPN issues, internet, Outlook, hardware, printers, and device setup.' },
+    { value: 'dashboard_app', label: 'DB Issue / App', description: 'Data mismatches, workflow bugs, page errors, or missing app actions.' },
   ];
 
   readonly ticketTypes: Array<{ value: TicketType; label: string; description: string }> = [
