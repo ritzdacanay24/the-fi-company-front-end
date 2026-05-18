@@ -7,6 +7,8 @@ CREATE TABLE IF NOT EXISTS menu_badge_cache (
 
 INSERT INTO menu_badge_cache (menu_id, count)
 VALUES
+  ('validation-queue', 0),
+  ('picking-queue', 0),
   ('pick-and-stage-open', 0),
   ('production-routing-open', 0),
   ('final-test-qc-open', 0),

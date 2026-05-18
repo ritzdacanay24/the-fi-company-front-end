@@ -10,44 +10,85 @@
     <div class="row justify-content-center">
       <div class="col-12 col-xl-10 col-xxl-9">
         <div class="text-center mb-4 p-4 rounded support-request-header">
-          <a routerLink="/auth/login" class="d-inline-block auth-logo">
+          <a [routerLink]="isAuthenticated ? '/menu' : '/auth/login'" class="d-inline-block auth-logo">
             <img src="assets/images/the-fi-cropped.png" alt="The Fi Company Logo" width="190" class="mb-3">
           </a>
           <h2 class="mb-2 fw-bold support-request-title">Create Support Ticket</h2>
-          <p class="mb-0 support-request-subtitle">Use this form if you are not signed in and need help with the dashboard or related systems.</p>
+          <p class="mb-0 support-request-subtitle">
+            {{ isAuthenticated
+              ? 'Use this form to open a support ticket with your signed-in account.'
+              : 'Use this form if you are not signed in and need help with the dashboard or related systems.' }}
+          </p>
         </div>
 
         <div class="card border-0 shadow-sm">
           <div class="card-body p-4 p-lg-5">
             <div *ngIf="successTicketNumber" class="alert alert-success mb-4">
               <div class="fw-semibold mb-1">Ticket submitted successfully</div>
-              <div class="small">Your ticket number is <strong>#{{ successTicketNumber }}</strong>. We’ll review it and follow up using the email you provided.</div>
+              <div class="small">
+                Your ticket number is <strong>#{{ successTicketNumber }}</strong>.
+                {{ isAuthenticated
+                  ? 'We will follow up through your account and support channels.'
+                  : 'We’ll review it and follow up using the email you provided.' }}
+              </div>
             </div>
 
             <div *ngIf="successTicketNumber" class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
-              <button type="button" class="btn btn-outline-secondary" (click)="goToLogin()">Back to Login</button>
+              <button type="button" class="btn btn-outline-secondary" (click)="goToLogin()">
+                {{ isAuthenticated ? 'Back to Menu' : 'Back to Login' }}
+              </button>
               <button type="button" class="btn btn-primary" (click)="createAnotherTicket()">Create Another Ticket</button>
             </div>
 
-            <form [formGroup]="form" (ngSubmit)="submit()" *ngIf="!successTicketNumber">
+            <div *ngIf="!successTicketNumber && !selectedSupportCategory">
+              <div class="mb-3">
+                <h5 class="mb-1">Select Support Category</h5>
+                <p class="text-muted mb-0">Choose one option to continue.</p>
+              </div>
+
               <div class="row g-3">
-                <div class="col-12 col-md-6">
+                <div class="col-12 col-md-6" *ngFor="let item of supportCategories">
+                  <button
+                    type="button"
+                    class="btn w-100 text-start border rounded p-3 h-100"
+                    (click)="selectSupportCategory(item.value)">
+                    <div class="fw-semibold mb-1">{{ item.label }}</div>
+                    <div class="small text-muted mb-0">{{ item.description }}</div>
+                    <div class="small text-muted mt-2" *ngIf="item.value === 'it_access'">Opens ServiceNow in a new tab.</div>
+                  </button>
+                </div>
+              </div>
+
+              <div class="d-flex justify-content-start mt-4">
+                <button type="button" class="btn btn-outline-secondary" (click)="goToLogin()">
+                  {{ isAuthenticated ? 'Back to Menu' : 'Back to Login' }}
+                </button>
+              </div>
+            </div>
+
+            <form [formGroup]="form" (ngSubmit)="submit()" *ngIf="!successTicketNumber && selectedSupportCategory === 'dashboard_app'">
+              <div *ngIf="isAuthenticated" class="alert alert-light border mb-3">
+                <div class="fw-semibold">Submitting as {{ authenticatedDisplayName || 'Signed-in User' }}</div>
+                <div class="small text-muted" *ngIf="authenticatedEmail">{{ authenticatedEmail }}</div>
+              </div>
+
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="small text-muted">Category: Dashboard / App Issue</div>
+                <button type="button" class="btn btn-sm btn-outline-secondary" (click)="backToCategorySelection()">
+                  Back to Category Selection
+                </button>
+              </div>
+
+              <div class="row g-3">
+                <div class="col-12 col-md-6" *ngIf="!isAuthenticated">
                   <label class="form-label">Your Name</label>
                   <input type="text" class="form-control" formControlName="submitter_name" placeholder="Enter your name">
                   <div class="invalid-feedback d-block" *ngIf="submitted && controls.submitter_name.invalid">Name is required.</div>
                 </div>
-                <div class="col-12 col-md-6">
+                <div class="col-12 col-md-6" *ngIf="!isAuthenticated">
                   <label class="form-label">Your Email</label>
                   <input type="email" class="form-control" formControlName="submitter_email" placeholder="Enter your email">
                   <div class="invalid-feedback d-block" *ngIf="submitted && controls.submitter_email.invalid">Enter a valid email.</div>
-                </div>
-                <div class="col-12">
-                  <label class="form-label">Support Category</label>
-                  <select class="form-select" formControlName="support_category">
-                    <option value="" disabled>Select category</option>
-                    <option *ngFor="let item of supportCategories" [value]="item.value">{{ item.label }}</option>
-                  </select>
-                  <div class="invalid-feedback d-block" *ngIf="submitted && controls.support_category.invalid">Select whether this is Dashboard/App or IT/Access related.</div>
                 </div>
                 <div class="col-12 col-md-6">
                   <label class="form-label">Issue Type</label>
@@ -55,10 +96,27 @@
                     <option *ngFor="let item of ticketTypes" [value]="item.value">{{ item.label }}</option>
                   </select>
                 </div>
+                <div class="col-12">
+                  <div class="form-check">
+                    <input id="onBehalfOfSomeoneElse" type="checkbox" class="form-check-input" formControlName="onBehalfOfSomeoneElse">
+                    <label class="form-check-label" for="onBehalfOfSomeoneElse">I'm creating this on behalf of someone else.</label>
+                  </div>
+                </div>
+                <div class="col-12">
+                  <label class="form-label">Who Is This Request For?</label>
+                  <input type="text" class="form-control" formControlName="requestFor" placeholder="Name or email of the affected person">
+                  <div class="invalid-feedback d-block" *ngIf="submitted && controls.requestFor.invalid">Request for is required.</div>
+                </div>
                 <div class="col-12 col-md-6">
-                  <label class="form-label">Priority</label>
-                  <select class="form-select" formControlName="priority">
-                    <option *ngFor="let item of priorityOptions" [value]="item.value">{{ item.label }}</option>
+                  <label class="form-label">Impact</label>
+                  <select class="form-select" formControlName="impactLevel">
+                    <option *ngFor="let item of impactOptions" [value]="item.value">{{ item.label }}</option>
+                  </select>
+                </div>
+                <div class="col-12 col-md-6">
+                  <label class="form-label">Urgency</label>
+                  <select class="form-select" formControlName="urgencyLevel">
+                    <option *ngFor="let item of urgencyOptions" [value]="item.value">{{ item.label }}</option>
                   </select>
                 </div>
                 <div class="col-12">
@@ -71,10 +129,20 @@
                   <textarea class="form-control" rows="6" formControlName="description" placeholder="Describe what happened, what you expected, and what you need help with."></textarea>
                   <div class="invalid-feedback d-block" *ngIf="submitted && controls.description.invalid">Please provide at least a short description.</div>
                 </div>
+                <div class="col-12">
+                  <label class="form-label">Who Should Get Updates?</label>
+                  <input type="text" class="form-control" formControlName="updateRecipients" placeholder="Additional email recipients, comma-separated">
+                </div>
+                <div class="col-12">
+                  <label class="form-label">Steps to Reproduce (Optional)</label>
+                  <textarea class="form-control" rows="4" formControlName="steps" placeholder="1. Go to...&#10;2. Click on...&#10;3. See error"></textarea>
+                </div>
               </div>
 
               <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4">
-                <button type="button" class="btn btn-outline-secondary" (click)="goToLogin()">Back to Login</button>
+                <button type="button" class="btn btn-outline-secondary" (click)="goToLogin()">
+                  {{ isAuthenticated ? 'Back to Menu' : 'Back to Login' }}
+                </button>
                 <button type="submit" class="btn btn-primary" [disabled]="isSubmitting">
                   <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2"></span>
                   Submit Ticket

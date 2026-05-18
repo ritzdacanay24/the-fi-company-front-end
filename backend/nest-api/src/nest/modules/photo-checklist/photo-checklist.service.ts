@@ -4,6 +4,7 @@ import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { RowDataPacket } from 'mysql2/promise';
 import PDFDocument from 'pdfkit';
+import { AccessControlService } from '../access-control/access-control.service';
 import { PhotoChecklistRepository } from './photo-checklist.repository';
 import { FileStorageService } from '../file-storage/file-storage.service';
 
@@ -31,6 +32,7 @@ export class PhotoChecklistService {
   constructor(
     private readonly repository: PhotoChecklistRepository,
     private readonly fileStorageService: FileStorageService,
+    private readonly accessControlService: AccessControlService,
   ) {}
 
   async getTemplates(options?: { includeInactive?: boolean; includeDeleted?: boolean }) {
@@ -739,7 +741,8 @@ export class PhotoChecklistService {
   async transferInstance(instanceId: number, callerId: number, toUserId: number, toUserName: string): Promise<{ success: boolean; message?: string }> {
     const lock = await this.repository.getInstanceLock(instanceId);
     const callerIsOwner = lock.owner_id === callerId;
-    if (!callerIsOwner && lock.owner_id != null) {
+    const callerHasManagePermission = await this.hasManagePermission(callerId);
+    if (!callerIsOwner && !callerHasManagePermission && lock.owner_id != null) {
       throw new ForbiddenException(`Only the current owner (${lock.owner_name ?? 'unknown'}) can transfer this lock.`);
     }
     await this.repository.transferInstanceAssignment(instanceId, toUserId, toUserName);
@@ -823,12 +826,22 @@ export class PhotoChecklistService {
   async transferTemplateDraft(templateId: number, callerId: number, toUserId: number, toUserName: string): Promise<{ success: boolean; message?: string }> {
     const lock = await this.repository.getTemplateLock(templateId);
     const callerIsOwner = lock.draft_owner_id === callerId;
+    const callerHasManagePermission = await this.hasManagePermission(callerId);
     const lockIsActive = lock.draft_owner_id != null;
-    if (!callerIsOwner && lockIsActive) {
+    if (!callerIsOwner && !callerHasManagePermission && lockIsActive) {
       throw new ForbiddenException(`Only the current draft owner (${lock.draft_owner_name ?? 'unknown'}) can transfer this draft.`);
     }
     await this.repository.transferTemplateDraftOwner(templateId, toUserId, toUserName);
     return { success: true };
+  }
+
+  private async hasManagePermission(userId: number | null | undefined): Promise<boolean> {
+    const normalizedUserId = Number(userId || 0);
+    if (normalizedUserId <= 0) {
+      return false;
+    }
+
+    return this.accessControlService.userHasPermissions(normalizedUserId, ['manage']);
   }
 
   async transferTemplateDraftAdmin(templateId: number, toUserId: number, toUserName: string): Promise<{ success: boolean }> {

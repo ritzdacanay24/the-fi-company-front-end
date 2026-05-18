@@ -45,20 +45,23 @@ export class MenuBadgeRepository {
 
   async getSidebarBadgeCounts(userId?: number): Promise<SidebarMenuBadgeCounts> {
     const rows = await this.mysqlService.query<MenuBadgeCountRow[]>(`
-      SELECT 'validationQueue' AS menu_id, COUNT(DISTINCT m.id) AS count
-      FROM mrf m
-      INNER JOIN mrf_det d ON d.mrf_id = m.id
-      WHERE m.active = 1
-        AND m.queue_status NOT IN ('complete', 'cancelled')
-        AND d.validationStatus = 'pending'
+      SELECT 'validationQueue' AS menu_id,
+             COALESCE((
+               SELECT mbc.count
+               FROM menu_badge_cache mbc
+               WHERE mbc.menu_id = 'validation-queue'
+               LIMIT 1
+             ), 0) AS count
 
       UNION ALL
 
-      SELECT 'pickingQueue' AS menu_id, COUNT(*) AS count
-      FROM mrf m
-      WHERE m.active = 1
-        AND m.validated IS NOT NULL
-        AND m.pickedCompletedDate IS NULL
+      SELECT 'pickingQueue' AS menu_id,
+             COALESCE((
+               SELECT mbc.count
+               FROM menu_badge_cache mbc
+               WHERE mbc.menu_id = 'picking-queue'
+               LIMIT 1
+             ), 0) AS count
 
       UNION ALL
 

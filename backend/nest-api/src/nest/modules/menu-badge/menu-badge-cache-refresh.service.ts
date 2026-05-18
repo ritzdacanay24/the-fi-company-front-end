@@ -37,6 +37,11 @@ interface SerialAvailabilitySummaryRow extends RowDataPacket {
   igt_available: number | string;
 }
 
+interface ValidationPickingCountsRow extends RowDataPacket {
+  validation_queue: number | string;
+  picking_queue: number | string;
+}
+
 @Injectable()
 export class MenuBadgeCacheRefreshService implements OnModuleInit {
   private readonly logger = new Logger(MenuBadgeCacheRefreshService.name);
@@ -65,6 +70,7 @@ export class MenuBadgeCacheRefreshService implements OnModuleInit {
 
   async refreshCachedBadgeCounts(): Promise<void> {
     try {
+      const { validationQueue, pickingQueue } = await this.getValidationAndPickingQueueCounts();
       const { pickAndStageOpen, productionRoutingOpen, finalTestQcOpen } = await this.getRoutingOpenCounts();
       const shippingScheduleDueNow = await this.getShippingScheduleDueNowCount();
       const { lowStock, criticalStock } = await this.getSerialManagementStockBadgeCounts();
@@ -73,6 +79,8 @@ export class MenuBadgeCacheRefreshService implements OnModuleInit {
         `
           INSERT INTO menu_badge_cache (menu_id, count)
           VALUES
+            ('validation-queue', ?),
+            ('picking-queue', ?),
             ('pick-and-stage-open', ?),
             ('production-routing-open', ?),
             ('final-test-qc-open', ?),
@@ -84,6 +92,8 @@ export class MenuBadgeCacheRefreshService implements OnModuleInit {
             updated_at = CURRENT_TIMESTAMP
         `,
         [
+          validationQueue,
+          pickingQueue,
           pickAndStageOpen,
           productionRoutingOpen,
           finalTestQcOpen,
@@ -95,6 +105,32 @@ export class MenuBadgeCacheRefreshService implements OnModuleInit {
     } catch (error) {
       this.logger.error('Failed to refresh cached menu badge counts', error as Error);
     }
+  }
+
+  private async getValidationAndPickingQueueCounts(): Promise<{ validationQueue: number; pickingQueue: number }> {
+    const rows = await this.mysqlService.query<ValidationPickingCountsRow[]>(`
+      SELECT
+        (
+          SELECT COUNT(DISTINCT m.id)
+          FROM mrf m
+          INNER JOIN mrf_det d ON d.mrf_id = m.id
+          WHERE m.active = 1
+            AND m.queue_status NOT IN ('complete', 'cancelled')
+            AND d.validationStatus = 'pending'
+        ) AS validation_queue,
+        (
+          SELECT COUNT(*)
+          FROM mrf m
+          WHERE m.active = 1
+            AND m.validated IS NOT NULL
+            AND m.pickedCompletedDate IS NULL
+        ) AS picking_queue
+    `);
+
+    return {
+      validationQueue: Number(rows[0]?.validation_queue || 0),
+      pickingQueue: Number(rows[0]?.picking_queue || 0),
+    };
   }
 
   private async getSerialManagementStockBadgeCounts(): Promise<{ lowStock: number; criticalStock: number }> {
