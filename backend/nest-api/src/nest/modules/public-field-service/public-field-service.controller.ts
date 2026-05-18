@@ -10,6 +10,28 @@ import { PublicRequestTokenGuard } from './public-request-token.guard';
 export class PublicFieldServiceController {
   constructor(private readonly service: PublicFieldServiceService) {}
 
+  private resolveToken(authorization?: string, queryToken?: string): string {
+    const normalize = (raw: unknown): string => {
+      const token = String(raw || '').trim();
+      if (!token) {
+        return '';
+      }
+
+      const lowered = token.toLowerCase();
+      if (lowered === 'null' || lowered === 'undefined' || lowered === 'nan') {
+        return '';
+      }
+
+      return token;
+    };
+
+    const bearer = normalize(
+      authorization?.startsWith('Bearer ') ? authorization.slice(7) : undefined,
+    );
+    const query = normalize(queryToken);
+    return bearer || query;
+  }
+
   @Get('requests/by-token')
   async getRequestByToken(@Query('token') token?: string) {
     return this.service.getRequestByToken(token);
@@ -27,7 +49,7 @@ export class PublicFieldServiceController {
     @Headers('authorization') authorization?: string,
     @Query('token') queryToken?: string,
   ) {
-    const token = authorization?.startsWith('Bearer ') ? authorization.slice(7).trim() : queryToken;
+    const token = this.resolveToken(authorization, queryToken);
     return this.service.getRequestStatus(requestId, token);
   }
 
@@ -38,7 +60,7 @@ export class PublicFieldServiceController {
     @Headers('authorization') authorization?: string,
     @Query('token') queryToken?: string,
   ) {
-    const token = authorization?.startsWith('Bearer ') ? authorization.slice(7).trim() : queryToken;
+    const token = this.resolveToken(authorization, queryToken);
     return this.service.listComments(requestId, token);
   }
 
@@ -50,7 +72,7 @@ export class PublicFieldServiceController {
     @Headers('authorization') authorization?: string,
     @Query('token') queryToken?: string,
   ) {
-    const token = authorization?.startsWith('Bearer ') ? authorization.slice(7).trim() : queryToken;
+    const token = this.resolveToken(authorization, queryToken);
     return this.service.createComment(requestId, token, payload);
   }
 
@@ -63,7 +85,7 @@ export class PublicFieldServiceController {
     @Headers('authorization') authorization?: string,
     @Query('token') queryToken?: string,
   ) {
-    const token = authorization?.startsWith('Bearer ') ? authorization.slice(7).trim() : queryToken;
+    const token = this.resolveToken(authorization, queryToken);
     return this.service.uploadAttachment(requestId, token, file);
   }
 
@@ -83,7 +105,7 @@ export class PublicFieldServiceController {
     @Headers('authorization') authorization?: string,
     @Query('token') queryToken?: string,
   ) {
-    const token = authorization?.startsWith('Bearer ') ? authorization.slice(7).trim() : queryToken;
+    const token = this.resolveToken(authorization, queryToken);
     return this.service.listAttachments(requestId, token);
   }
 }

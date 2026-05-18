@@ -36,4 +36,13 @@ export const SUPPORT_MENU: MenuItem[] = [
     hideCheckBox: true,
     accessRequired: false,
   },
+  {
+    id: 5,
+    label: "Analytics",
+    link: "/support-tickets/analytics",
+    description: "View support error analytics",
+    icon: "las la-chart-bar",
+    hideCheckBox: true,
+    accessRequired: false,
+  },
 ];

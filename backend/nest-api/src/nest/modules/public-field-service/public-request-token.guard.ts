@@ -10,6 +10,20 @@ interface PublicRequestTokenRow extends RowDataPacket {
 export class PublicRequestTokenGuard implements CanActivate {
   constructor(private readonly mysqlService: MysqlService) {}
 
+  private normalizeToken(raw: unknown): string {
+    const token = String(raw || '').trim();
+    if (!token) {
+      return '';
+    }
+
+    const lowered = token.toLowerCase();
+    if (lowered === 'null' || lowered === 'undefined' || lowered === 'nan') {
+      return '';
+    }
+
+    return token;
+  }
+
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<{
       params?: Record<string, string>;
@@ -26,9 +40,10 @@ export class PublicRequestTokenGuard implements CanActivate {
 
     const headerValue = request?.headers?.authorization;
     const authHeader = Array.isArray(headerValue) ? headerValue[0] : headerValue;
-    const bearerToken =
-      authHeader && authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : undefined;
-    const queryToken = String(request?.query?.token || '').trim();
+    const bearerToken = this.normalizeToken(
+      authHeader && authHeader.startsWith('Bearer ') ? authHeader.slice(7) : undefined,
+    );
+    const queryToken = this.normalizeToken(request?.query?.token);
     const token = bearerToken || queryToken;
 
     if (!token) {

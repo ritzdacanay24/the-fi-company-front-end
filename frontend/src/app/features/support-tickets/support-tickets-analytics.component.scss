@@ -1,0 +1,23 @@
+.analytics-icon {
+  width: 60px;
+  height: 60px;
+}
+
+.analytics-search {
+  width: 280px;
+}
+
+.analytics-select {
+  width: 220px;
+}
+
+.filter-card {
+  border-style: dashed;
+}
+
+@media (max-width: 767.98px) {
+  .analytics-search,
+  .analytics-select {
+    width: 100%;
+  }
+}

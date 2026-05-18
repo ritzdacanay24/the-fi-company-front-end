@@ -1,0 +1,96 @@
+<div class="card mb-4 incident-chart-card">
+  <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <div>
+      <h5 class="mb-1">Error Insights</h5>
+      <p class="text-muted mb-0">Who owns the errors and when they are happening.</p>
+    </div>
+    <div class="incident-metrics text-end">
+      <div class="metric-pill bg-primary-subtle text-primary-emphasis">Total: {{ errorTotal() }}</div>
+      <div class="metric-pill bg-warning-subtle text-warning-emphasis">Open: {{ errorOpenCount() }}</div>
+    </div>
+  </div>
+  <div class="card-body">
+    @if (errorTotal() > 0) {
+      <div class="row g-3">
+        <div class="col-12 col-xl-6">
+          <div class="insight-block">
+            <h6 class="insight-title">Total Errors by Owner</h6>
+            <apx-chart
+              [series]="errorByOwnerChartOptions().series"
+              [chart]="errorByOwnerChartOptions().chart"
+              [plotOptions]="errorByOwnerChartOptions().plotOptions"
+              [xaxis]="errorByOwnerChartOptions().xaxis"
+              [yaxis]="errorByOwnerChartOptions().yaxis"
+              [grid]="errorByOwnerChartOptions().grid"
+              [colors]="errorByOwnerChartOptions().colors"
+              [dataLabels]="errorByOwnerChartOptions().dataLabels"
+              [legend]="errorByOwnerChartOptions().legend"
+              [stroke]="errorByOwnerChartOptions().stroke"
+              [tooltip]="errorByOwnerChartOptions().tooltip"
+            ></apx-chart>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-6 col-xl-3">
+          <div class="insight-block">
+            <div class="d-flex align-items-center justify-content-between gap-2 mb-2 flex-wrap">
+              <h6 class="insight-title mb-0">Time Of Day Occurrence</h6>
+              <div class="d-flex align-items-center gap-2">
+                <label class="form-label mb-0 time-bucket-label">Bucket</label>
+                <select
+                  class="form-select form-select-sm time-bucket-select"
+                  [ngModel]="timeBucketHours()"
+                  (ngModelChange)="onTimeBucketChange($event)">
+                  @for (hours of timeBucketOptions; track hours) {
+                    <option [ngValue]="hours">{{ hours }} hour</option>
+                  }
+                </select>
+              </div>
+            </div>
+            <apx-chart
+              [series]="errorByTimeChartOptions().series"
+              [chart]="errorByTimeChartOptions().chart"
+              [plotOptions]="errorByTimeChartOptions().plotOptions"
+              [xaxis]="errorByTimeChartOptions().xaxis"
+              [grid]="errorByTimeChartOptions().grid"
+              [dataLabels]="errorByTimeChartOptions().dataLabels"
+              [legend]="errorByTimeChartOptions().legend"
+              [tooltip]="errorByTimeChartOptions().tooltip"
+            ></apx-chart>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-6 col-xl-3">
+          <div class="insight-block">
+            <h6 class="insight-title">Error Types</h6>
+            <apx-chart
+              [series]="errorByTypeChartOptions().series"
+              [chart]="errorByTypeChartOptions().chart"
+              [labels]="errorByTypeChartOptions().labels"
+              [colors]="errorByTypeChartOptions().colors"
+              [dataLabels]="errorByTypeChartOptions().dataLabels"
+              [legend]="errorByTypeChartOptions().legend"
+              [plotOptions]="errorByTypeChartOptions().plotOptions"
+              [stroke]="errorByTypeChartOptions().stroke"
+              [tooltip]="errorByTypeChartOptions().tooltip"
+            ></apx-chart>
+
+            <div class="error-type-list mt-2">
+              @for (row of errorTypeRows(); track row.key) {
+                <div class="d-flex align-items-center justify-content-between py-1">
+                  <span>{{ row.label }}</span>
+                  <strong>{{ row.count }}</strong>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    } @else {
+      <div class="empty-chart-state">
+        <i class="mdi mdi-chart-line me-1"></i>
+        No error tickets found for the selected filters.
+      </div>
+    }
+  </div>
+</div>

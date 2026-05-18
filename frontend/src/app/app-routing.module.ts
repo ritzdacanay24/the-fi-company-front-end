@@ -269,6 +269,14 @@ const routes: Routes = [
         data: { allTickets: { autoOpenNew: true } },
       },
       {
+        path: "analytics",
+        loadComponent: () =>
+          import("./features/support-tickets/support-tickets-analytics.component").then(
+            (m) => m.SupportTicketsAnalyticsComponent,
+          ),
+        title: "Support Analytics",
+      },
+      {
         path: ":id",
         loadComponent: () =>
           import("./features/support-tickets/support-ticket-detail.component").then(
