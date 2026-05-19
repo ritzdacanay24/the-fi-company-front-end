@@ -65,6 +65,26 @@ export class ShippedOrdersReportV1Component implements OnInit {
 
   comment;
 
+  private getFieldValue(row: any, ...keys: string[]): any {
+    if (!row) return null;
+
+    for (const key of keys) {
+      if (row[key] !== undefined && row[key] !== null) {
+        return row[key];
+      }
+    }
+
+    return null;
+  }
+
+  private normalizeQadComment(row: any): string {
+    const raw = this.getFieldValue(row, "cmt_cmmt", "CMT_CMMT");
+    return String(raw || "")
+      .replace(/;/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
   pageId = "/pulse/shipped-orders";
 
   searchName = "";
@@ -213,9 +233,21 @@ export class ShippedOrdersReportV1Component implements OnInit {
       maxWidth: 300,
     },
     {
-      field: "CMT_CMMT",
+      colId: "qad_comments",
       headerName: "QAD Comments",
       filter: "agMultiColumnFilter",
+      minWidth: 280,
+      maxWidth: 420,
+      valueGetter: (params) => this.normalizeQadComment(params.data),
+      tooltipValueGetter: (params) => this.normalizeQadComment(params.data),
+      cellRenderer: (params: any) => {
+        const comment = this.normalizeQadComment(params.data);
+        if (!comment) {
+          return `<span class="qad-comment-empty">No comment</span>`;
+        }
+
+        return `<span class="qad-comment-text" title="${comment.replace(/"/g, "&quot;")}">${comment}</span>`;
+      },
     },
     { field: "OWNER", headerName: "Owner", filter: "agSetColumnFilter" },
     {

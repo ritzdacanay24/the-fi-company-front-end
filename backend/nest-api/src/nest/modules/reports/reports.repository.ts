@@ -915,6 +915,7 @@ export class ReportsRepository extends BaseRepository<RowDataPacket> {
              f.abs_order,
              a.sod_list_pr,
              IFNULL(f.abs_ship_qty * a.sod_list_pr, 0) AS ext,
+             REPLACE(COALESCE(g.cmt_cmmt, ''), ';', ' ') AS cmt_cmmt,
              a.sod_acct,
              a.sod_type,
              c.so_rmks
@@ -941,6 +942,11 @@ export class ReportsRepository extends BaseRepository<RowDataPacket> {
         GROUP BY a.abs_shipto, a.abs_shp_date, a.abs_item, a.abs_line,
                  a.abs_inv_nbr, SUBSTRING(abs_par_id, 2, LENGTH(abs_par_id)), a.abs_order
       ) f ON f.abs_order = a.sod_nbr AND f.abs_line = a.sod_line
+      LEFT JOIN (
+        SELECT cmt_cmmt, cmt_indx
+        FROM cmt_det
+        WHERE cmt_domain = 'EYE'
+      ) g ON g.cmt_indx = a.sod_cmtindx
       WHERE sod_domain = 'EYE'
         AND f.abs_shp_date BETWEEN '${dateFrom}' AND '${dateTo}'
         AND f.abs_ship_qty > 0

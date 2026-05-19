@@ -82,6 +82,12 @@ export class ShippedOrdersReportComponent implements OnInit {
 
   data: any[];
 
+  private normalizeQadComment(row: any): string {
+    return String(row?.cmt_cmmt || row?.CMT_CMMT || '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
   columnDefs: ColDef[] = [
     { field: "status", headerName: "Status" },
     {
@@ -117,6 +123,15 @@ export class ShippedOrdersReportComponent implements OnInit {
       headerName: "PO #",
       filter: "agMultiColumnFilter",
       cellDataType: "text",
+    },
+    {
+      colId: "qad_comments",
+      headerName: "QAD Comments",
+      filter: "agMultiColumnFilter",
+      minWidth: 280,
+      maxWidth: 420,
+      valueGetter: (params) => this.normalizeQadComment(params.data),
+      tooltipValueGetter: (params) => this.normalizeQadComment(params.data),
     },
     { field: "so_cust", headerName: "Cust", filter: "agMultiColumnFilter" },
     { field: "so_ship", headerName: "Ship To", filter: "agMultiColumnFilter" },
@@ -256,7 +271,7 @@ export class ShippedOrdersReportComponent implements OnInit {
         this.dateFrom,
         this.dateTo
       );
-      const rows = data ? data : [];
+      const rows = Array.isArray(data) ? data : (data?.orderInfo || []);
       this.data = this.normalizeGridRows(rows);
       this.router.navigate(["."], {
         queryParams: {
@@ -327,7 +342,10 @@ export class ShippedOrdersReportComponent implements OnInit {
   }
 
   private normalizeGridRows(rows: any[]): any[] {
-    return rows || [];
+    return (rows || []).map((row) => ({
+      ...row,
+      cmt_cmmt: this.normalizeQadComment(row),
+    }));
   }
 
   private normalizeChartPayload(payload: any): any {

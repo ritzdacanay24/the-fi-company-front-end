@@ -767,11 +767,64 @@ export class ReportsService {
     return this.repository.getLasVegasRawMaterial();
   }
 
-  async getShippedOrdersGrouped(dateFrom?: string, dateTo?: string): Promise<Record<string, unknown>[]> {
+  async getShippedOrdersGrouped(dateFrom?: string, dateTo?: string): Promise<Record<string, unknown>> {
     const from = (dateFrom || '').trim();
     const to = (dateTo || '').trim();
     if (!from || !to) throw new BadRequestException('dateFrom and dateTo are required');
-    return this.repository.getShippedOrdersGrouped(from, to);
+
+    const rows = await this.repository.getShippedOrdersGrouped(from, to);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const orderInfo: Record<string, unknown>[] = rows.map((row): Record<string, unknown> => {
+      const sodNbr = String(row['sod_nbr'] ?? '');
+      const sodLine = String(row['sod_line'] ?? '');
+      const absParId = String(row['abs_par_id'] ?? '');
+
+      const sodContrId = String(row['sod_contr_id'] ?? '').replace(/[^a-zA-Z0-9_-]/g, '');
+      const qadComment = String(row['cmt_cmmt'] ?? '').replace(/[^a-zA-Z0-9_-]/g, ' ');
+
+      return {
+        ...row,
+        sod_contr_id: sodContrId,
+        cmt_cmmt: qadComment,
+        id: `${sodNbr}-${sodLine}-${absParId}`,
+        ida: `${sodNbr}-${sodLine}`,
+        recent_comments: row['recent_comments'] ?? {},
+      };
+    });
+
+    let totalOrderCount = 0;
+    let shippedBefore = 0;
+    let shippedOn = 0;
+    let shippedAfter = 0;
+    let totalAmount = 0;
+
+    for (const row of orderInfo) {
+      const status = String(row['status'] ?? '').trim();
+      if (status === 'Shipped before due date') shippedBefore += 1;
+      else if (status === 'Shipped on due date') shippedOn += 1;
+      else if (status === 'Shipped after due date') shippedAfter += 1;
+
+      totalAmount += Number(row['ext'] ?? 0);
+
+      const dueDate = parseDateInput(String(row['sod_due_date'] ?? ''));
+      if (dueDate) {
+        dueDate.setHours(0, 0, 0, 0);
+        if (dueDate <= today) {
+          totalOrderCount += 1;
+        }
+      }
+    }
+
+    return {
+      totalOrderCount,
+      shippedBefore,
+      shippedOn,
+      shippedAfter,
+      totalAmount,
+      orderInfo,
+    };
   }
 
   async getShippedOrdersChart(dateFrom?: string, dateTo?: string, typeOfView?: string): Promise<unknown> {

@@ -17,6 +17,34 @@ import { EmailNotificationsService } from '../email-notifications';
 export class SafetyIncidentService {
   private readonly logger = new Logger(SafetyIncidentService.name);
 
+  private readonly publicIncidentTypeById: Record<string, string> = {
+    '1': 'Serious Personnel Injury (Paramedics called)',
+    '2': 'Personal Injury requiring 3rd party medical support (e.g. ER or Doctor visit)',
+    '3': 'First Aid Incident',
+    '4': 'Buildings or Product Damage',
+    '5': 'Near miss (personnel or buildings)',
+    '6': 'Safety Procedure non-conformance',
+    '7': 'Vehicle Incident / Road Traffic Incident',
+    '8': 'Other',
+  };
+
+  private readonly publicIncidentLocationById: Record<string, string> = {
+    '1': 'Las Vegas Facility',
+    '2': 'Customer Job Site',
+    '3': 'Road Vehicle Incident',
+    '4': 'Other',
+  };
+
+  private readonly publicLasVegasAreaById: Record<string, string> = {
+    '1': 'Production',
+    '2': 'Warehouse',
+    '3': 'Proto',
+    '4': 'Graphics',
+    '5': 'Yard',
+    '6': 'Office',
+    '7': 'Other',
+  };
+
   constructor(
     private readonly safetyIncidentRepository: SafetyIncidentRepository,
     private readonly accessControlService: AccessControlService,
@@ -70,8 +98,10 @@ export class SafetyIncidentService {
   }
 
   async create(dto: CreateSafetyIncidentDto, userId?: number): Promise<SafetyIncidentRecord> {
+    const normalizedDto = this.normalizeCreateDto(dto);
+
     const payload: Record<string, unknown> = {
-      ...(dto as Record<string, unknown>),
+      ...(normalizedDto as Record<string, unknown>),
       status: dto.status ?? 'Open',
     };
 
@@ -95,6 +125,42 @@ export class SafetyIncidentService {
     }
 
     return created;
+  }
+
+  private normalizeCreateDto(dto: CreateSafetyIncidentDto): CreateSafetyIncidentDto {
+    const normalized: CreateSafetyIncidentDto = { ...dto };
+
+    const incidentType = String(normalized.type_of_incident ?? '').trim();
+    if (incidentType && this.publicIncidentTypeById[incidentType]) {
+      normalized.type_of_incident = this.publicIncidentTypeById[incidentType];
+    }
+
+    const incidentLocation = String(normalized.location_of_incident ?? '').trim();
+    if (incidentLocation && this.publicIncidentLocationById[incidentLocation]) {
+      normalized.location_of_incident = this.publicIncidentLocationById[incidentLocation];
+    }
+
+    const lasVegasArea = String(normalized.location_of_incident_las_vegas_facility ?? '').trim();
+    if (lasVegasArea && this.publicLasVegasAreaById[lasVegasArea]) {
+      normalized.location_of_incident_las_vegas_facility = this.publicLasVegasAreaById[lasVegasArea];
+    }
+
+    if (
+      normalized.location_of_incident === 'Las Vegas Facility' &&
+      (!normalized.location_of_incident_other || String(normalized.location_of_incident_other).trim() === '') &&
+      normalized.location_of_incident_las_vegas_facility
+    ) {
+      normalized.location_of_incident_other = normalized.location_of_incident_las_vegas_facility;
+    }
+
+    if (normalized.anonymous) {
+      normalized.first_name = '';
+      normalized.last_name = '';
+      normalized.email = '';
+      normalized.phone = '';
+    }
+
+    return normalized;
   }
 
   private async sendCreateNotification(insertId: number): Promise<void> {
