@@ -915,7 +915,7 @@ export class ReportsRepository extends BaseRepository<RowDataPacket> {
              f.abs_order,
              a.sod_list_pr,
              IFNULL(f.abs_ship_qty * a.sod_list_pr, 0) AS ext,
-             REPLACE(COALESCE(g.cmt_cmmt, ''), ';', ' ') AS cmt_cmmt,
+             g.cmt_cmmt,
              a.sod_acct,
              a.sod_type,
              c.so_rmks
@@ -927,7 +927,7 @@ export class ReportsRepository extends BaseRepository<RowDataPacket> {
         GROUP BY pt_part
       ) b ON b.pt_part = a.sod_part
       LEFT JOIN (
-        SELECT so_nbr, so_cust, so_ord_date, so_ship, so_bol, so_cmtindx, so_rmks
+        SELECT so_nbr, so_cust, so_ord_date, so_ship, so_bol, so_rmks
         FROM so_mstr
         WHERE so_domain = 'EYE'
       ) c ON c.so_nbr = a.sod_nbr
@@ -947,13 +947,13 @@ export class ReportsRepository extends BaseRepository<RowDataPacket> {
         FROM cmt_det
         WHERE cmt_domain = 'EYE'
       ) g ON g.cmt_indx = a.sod_cmtindx
-      WHERE sod_domain = 'EYE'
-        AND f.abs_shp_date BETWEEN '${dateFrom}' AND '${dateTo}'
+      WHERE a.sod_domain = 'EYE'
+        AND f.abs_shp_date BETWEEN ? AND ?
         AND f.abs_ship_qty > 0
       ORDER BY a.sod_due_date ASC
     `;
 
-    return this.qad.query<Record<string, unknown>[]>(sql, { keyCase: 'lower' });
+    return this.qad.queryWithParams<Record<string, unknown>[]>(sql, [dateFrom, dateTo], { keyCase: 'lower' });
   }
 
   async getShippedOrdersChartData(dateFrom: string, dateTo: string): Promise<Record<string, unknown>[]> {
