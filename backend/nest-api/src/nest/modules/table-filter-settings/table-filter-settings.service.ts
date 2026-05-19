@@ -23,11 +23,32 @@ export class TableFilterSettingsService {
   constructor(private readonly repo: TableFilterSettingsRepository) {}
 
   private sanitizeWritablePayload(data: Record<string, any>): Record<string, any> {
-    return Object.fromEntries(
+    const normalized = Object.fromEntries(
       Object.entries(data)
         .map(([key, value]) => [this.writableKeyAliases[key] ?? key, value] as const)
         .filter(([key]) => this.writableColumns.has(key)),
     );
+
+    // Validate and normalize the 'data' field to ensure valid JSON
+    if ('data' in normalized) {
+      const dataValue = normalized.data;
+      if (dataValue === null || dataValue === undefined || dataValue === '') {
+        normalized.data = '{}'; // Default to empty filter object
+      } else if (typeof dataValue === 'string') {
+        // Validate it's parseable JSON
+        try {
+          JSON.parse(dataValue);
+          // Keep the string as-is if valid
+        } catch {
+          normalized.data = '{}'; // Default to empty if invalid
+        }
+      } else if (typeof dataValue === 'object') {
+        // Convert object to JSON string
+        normalized.data = JSON.stringify(dataValue);
+      }
+    }
+
+    return normalized;
   }
 
   find(filters: Record<string, any>) {
