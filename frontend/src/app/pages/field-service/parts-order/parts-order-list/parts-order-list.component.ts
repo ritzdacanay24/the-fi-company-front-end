@@ -1,4 +1,5 @@
-import { Component, OnInit } from "@angular/core";
+import { Component, DestroyRef, OnInit, inject } from "@angular/core";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { SharedModule } from "@app/shared/shared.module";
 import { AgGridModule } from "ag-grid-angular";
 import { ActivatedRoute, Router } from "@angular/router";
@@ -17,6 +18,8 @@ import { GridSettingsComponent } from "@app/shared/grid-settings/grid-settings.c
 import { SalesOrderInfoModalService } from "@app/shared/components/sales-order-info-modal/sales-order-info-modal.component";
 import { ColDef, GridApi, GridOptions } from "ag-grid-community";
 import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
+import { from, of } from "rxjs";
+import { catchError, switchMap, tap } from "rxjs/operators";
 
 @Component({
   standalone: true,
@@ -30,6 +33,8 @@ import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link
   templateUrl: `./parts-order-list.component.html`,
 })
 export class PartsOrderListComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
+
   constructor(
     private api: WorkOrderService,
     public router: Router,
@@ -74,19 +79,33 @@ export class PartsOrderListComponent implements OnInit {
   };
 
   ngOnInit(): void {
-    this.activatedRoute.queryParams.subscribe((params) => {
-      this.dateFrom = params["dateFrom"] || this.dateFrom;
-      this.dateTo = params["dateTo"] || this.dateTo;
-      this.dateRange = [this.dateFrom, this.dateTo];
+    this.activatedRoute.queryParams
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        tap((params) => {
+          this.dateFrom = params["dateFrom"] || this.dateFrom;
+          this.dateTo = params["dateTo"] || this.dateTo;
+          this.dateRange = [this.dateFrom, this.dateTo];
 
-      this.id = params["id"];
-      this.isAll = params["isAll"]
-        ? params["isAll"].toLocaleLowerCase() === "true"
-        : false;
-      const selectedViewTypeParam = params["selectedViewType"] || this.selectedViewType;
-      this.selectedViewType = selectedViewTypeParam === "All" ? "All" : "Open";
-      this.getData();
-    });
+          this.id = params["id"];
+          this.isAll = params["isAll"]
+            ? params["isAll"].toLocaleLowerCase() === "true"
+            : false;
+          const selectedViewTypeParam = params["selectedViewType"] || this.selectedViewType;
+          this.selectedViewType = selectedViewTypeParam === "All" ? "All" : "Open";
+          this.gridApi?.showLoadingOverlay();
+        }),
+        switchMap(() => {
+          const view = this.selectedViewType === "All" ? "all" : "open";
+          return from(this.partsOrderService.getAll({ view })).pipe(
+            catchError(() => of([])),
+          );
+        }),
+      )
+      .subscribe((rows) => {
+        this.data = Array.isArray(rows) ? rows : [];
+        this.gridApi?.hideOverlay();
+      });
   }
 
   columnDefs: ColDef[] = [
@@ -318,7 +337,14 @@ export class PartsOrderListComponent implements OnInit {
   onChangeDate($event) {
     this.dateFrom = $event["dateFrom"];
     this.dateTo = $event["dateTo"];
-    this.getData();
+    this.router.navigate(["."], {
+      relativeTo: this.activatedRoute,
+      queryParams: {
+        dateFrom: this.dateFrom,
+        dateTo: this.dateTo,
+      },
+      queryParamsHandling: "merge",
+    });
   }
 
   changeIsAll() {
@@ -329,7 +355,6 @@ export class PartsOrderListComponent implements OnInit {
       },
       queryParamsHandling: "merge",
     });
-    this.getData();
   }
 
   changeSelectedViewType() {
@@ -342,32 +367,6 @@ export class PartsOrderListComponent implements OnInit {
       },
       queryParamsHandling: "merge",
     });
-
-    this.getData();
-  }
-
-  async getData() {
-    try {
-      this.gridApi?.showLoadingOverlay();
-
-      const view = this.selectedViewType === "All" ? "all" : "open";
-      const rows = await this.partsOrderService.getAll({ view });
-      this.data = Array.isArray(rows) ? rows : [];
-
-      this.router.navigate(["."], {
-        queryParams: {
-          dateFrom: this.dateFrom,
-          dateTo: this.dateTo,
-          selectedViewType: this.selectedViewType,
-        },
-        relativeTo: this.activatedRoute,
-        queryParamsHandling: "merge",
-      });
-
-      this.gridApi?.hideOverlay();
-    } catch (err) {
-      this.gridApi?.hideOverlay();
-    }
   }
 
   openWorkOrder(id) {
