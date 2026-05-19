@@ -96,8 +96,7 @@ export class SerialManagementDashboardComponent implements OnInit {
   ];
 
   async ngOnInit(): Promise<void> {
-    await this.loadThresholdsFromAPI();
-    await this.loadDashboard();
+    await Promise.all([this.loadThresholdsFromAPI(), this.loadDashboard()]);
   }
 
   openThresholdModal(content: TemplateRef<unknown>): void {
@@ -158,10 +157,10 @@ export class SerialManagementDashboardComponent implements OnInit {
       const summary = await this.serialNumberService.getAvailabilitySummaryFromAPI();
       const parsedSummary = this.extractSummary(summary);
 
-      this.updateCard('ul_new', parsedSummary.ul_new_available, parsedSummary.ul_new_used_last_7_days);
-      this.updateCard('ul_used', parsedSummary.ul_used_available, parsedSummary.ul_used_used_last_7_days);
-      this.updateCard('igt', parsedSummary.igt_available, parsedSummary.igt_used_last_7_days);
-      this.updateCard('eyefi', parsedSummary.eyefi_available, parsedSummary.eyefi_used_last_7_days);
+      this.updateCard('ul_new', parsedSummary.ul_new_available, parsedSummary.ul_new_recently_used);
+      this.updateCard('ul_used', parsedSummary.ul_used_available, parsedSummary.ul_used_recently_used);
+      this.updateCard('igt', parsedSummary.igt_available, parsedSummary.igt_recently_used);
+      this.updateCard('eyefi', parsedSummary.eyefi_available, parsedSummary.eyefi_recently_used);
       this.lastUpdated = new Date().toLocaleString();
     } catch {
       this.cards = this.cards.map((c) => ({ ...c, available: 0, recentlyUsed: 0 }));
