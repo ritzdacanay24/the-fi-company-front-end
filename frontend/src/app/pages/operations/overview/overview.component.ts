@@ -100,6 +100,7 @@ export class OverviewComponent implements OnInit {
     shippingScheduleDueNow: 0,
     vehicleExpiringSoon: 0,
     vehicleInspectionPendingResolutions: 0,
+    forkliftInspectionPendingResolutions: 0,
     shortagesOpen: 0,
     safetyIncidentOpen: 0,
     qualityIssuesOpen: 0,

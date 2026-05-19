@@ -79,6 +79,11 @@ export class ForkliftInspectionListComponent implements OnInit {
       filter: "agMultiColumnFilter",
     },
     {
+      field: "resolved_date",
+      headerName: "Resolved Date",
+      filter: "agMultiColumnFilter",
+    },
+    {
       field: "model_number",
       headerName: "Model number",
       filter: "agMultiColumnFilter",
@@ -146,6 +151,7 @@ export class ForkliftInspectionListComponent implements OnInit {
   gridApi: GridApi;
 
   data: any[];
+  showFailedOnly = false;
 
   id = null;
 
@@ -203,6 +209,19 @@ export class ForkliftInspectionListComponent implements OnInit {
         gridParams,
       },
     });
+  }
+
+  get filteredData(): any[] {
+    const rows = this.data || [];
+    if (!this.showFailedOnly) {
+      return rows;
+    }
+
+    return rows.filter((row: any) => Number(row?.failed_count ?? 0) > 0);
+  }
+
+  toggleFailedOnly(): void {
+    this.showFailedOnly = !this.showFailedOnly;
   }
 
   async getData() {

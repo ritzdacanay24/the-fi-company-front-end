@@ -394,6 +394,7 @@ export const MENU_DATA: MenuItem[] = [
                 activatedRoutes: "/operations/forms/vehicle-inspection/*"
             },
             {
+                badgeId: "forkliftInspectionPendingResolutions",
                 label: "Forklift Inspections",
                 link: "/operations/forms/forklift-inspection",
                 description: "Forklift Safety Inspections",

@@ -12,6 +12,20 @@ export interface ForkliftChecklistRow extends RowDataPacket {
   comments: string;
 }
 
+export interface ForkliftChecklistDetailRow extends RowDataPacket {
+  id: number;
+  forklift_checklist_id: number;
+  group_name: string;
+  checklist_name: string;
+  status: string;
+  resolved_message: string | null;
+  resolved_date: string | null;
+  resolved_by: number | null;
+  resolved_confirmed_date: string | null;
+  resolved_confirmed_by: number | null;
+  resolved_confirmed_message: string | null;
+}
+
 @Injectable()
 export class ForkliftInspectionRepository {
   constructor(@Inject(MysqlService) private readonly mysqlService: MysqlService) {}
@@ -23,12 +37,20 @@ export class ForkliftInspectionRepository {
            , failed_count
            , TRUNCATE(passed_count / total_count * 100, 2) percent
            , passed_count
+           , resolved_date
       FROM forms.forklift_checklist a
       LEFT JOIN (
         SELECT forklift_checklist_id
              , COUNT(id) total_count
              , SUM(CASE WHEN status = 0 THEN 1 ELSE 0 END) failed_count
              , SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) passed_count
+             , MAX(
+                 CASE
+                   WHEN resolved_date IS NULL THEN NULL
+                   WHEN CAST(resolved_date AS CHAR(19)) = '0000-00-00 00:00:00' THEN NULL
+                   ELSE resolved_date
+                 END
+               ) resolved_date
         FROM forms.forklift_checklist_details
         GROUP BY forklift_checklist_id
       ) b ON b.forklift_checklist_id = a.id
@@ -47,6 +69,12 @@ export class ForkliftInspectionRepository {
   async getDetailsByChecklistId(id: number): Promise<RowDataPacket[]> {
     const sql = `SELECT * FROM forms.forklift_checklist_details WHERE forklift_checklist_id = ?`;
     return this.mysqlService.query<RowDataPacket[]>(sql, [id]);
+  }
+
+  async getDetailById(id: number): Promise<ForkliftChecklistDetailRow | null> {
+    const sql = `SELECT * FROM forms.forklift_checklist_details WHERE id = ? LIMIT 1`;
+    const rows = await this.mysqlService.query<ForkliftChecklistDetailRow[]>(sql, [id]);
+    return rows[0] || null;
   }
 
   async getAttachmentsByChecklistId(id: number): Promise<RowDataPacket[]> {
@@ -146,6 +174,50 @@ export class ForkliftInspectionRepository {
   async deleteHeaderById(id: number): Promise<number> {
     const sql = `DELETE FROM forms.forklift_checklist WHERE id = ?`;
     const result = await this.mysqlService.execute<ResultSetHeader>(sql, [id]);
+    return result.affectedRows;
+  }
+
+  async resolveDetailById(
+    id: number,
+    payload: { resolvedBy: number | null; resolvedMessage: string | null; resolvedDate: string | null },
+  ): Promise<number> {
+    const sql = `
+      UPDATE forms.forklift_checklist_details
+      SET resolved_by = ?
+        , resolved_message = ?
+        , resolved_date = COALESCE(NULLIF(NULLIF(?, ''), '0000-00-00 00:00:00'), NOW())
+      WHERE id = ?
+    `;
+
+    const result = await this.mysqlService.execute<ResultSetHeader>(sql, [
+      payload.resolvedBy,
+      payload.resolvedMessage,
+      payload.resolvedDate,
+      id,
+    ]);
+
+    return result.affectedRows;
+  }
+
+  async confirmResolvedDetailById(
+    id: number,
+    payload: { confirmedBy: number | null; confirmationMessage: string | null; confirmedDate: string | null },
+  ): Promise<number> {
+    const sql = `
+      UPDATE forms.forklift_checklist_details
+      SET resolved_confirmed_by = ?
+        , resolved_confirmed_message = ?
+        , resolved_confirmed_date = COALESCE(NULLIF(NULLIF(?, ''), '0000-00-00 00:00:00'), NOW())
+      WHERE id = ?
+    `;
+
+    const result = await this.mysqlService.execute<ResultSetHeader>(sql, [
+      payload.confirmedBy,
+      payload.confirmationMessage,
+      payload.confirmedDate,
+      id,
+    ]);
+
     return result.affectedRows;
   }
 }

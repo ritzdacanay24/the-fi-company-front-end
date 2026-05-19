@@ -16,6 +16,7 @@ export interface SidebarMenuBadgeCounts {
   shippingScheduleDueNow: number;
   vehicleExpiringSoon: number;
   vehicleInspectionPendingResolutions: number;
+  forkliftInspectionPendingResolutions: number;
   shortagesOpen: number;
   safetyIncidentOpen: number;
   qualityIssuesOpen: number;
@@ -138,6 +139,14 @@ export class MenuBadgeRepository {
       FROM forms.vehicle_inspection_details d
       WHERE d.status = 0
         AND d.resolved_confirmed_date IS NULL
+
+            UNION ALL
+
+            SELECT 'forkliftInspectionPendingResolutions' AS menu_id,
+              COUNT(DISTINCT d.forklift_checklist_id) AS count
+            FROM forms.forklift_checklist_details d
+            WHERE d.status = '0'
+              AND d.resolved_date IS NULL
 
       UNION ALL
 
@@ -287,6 +296,7 @@ export class MenuBadgeRepository {
       shippingScheduleDueNow: 0,
       vehicleExpiringSoon: 0,
       vehicleInspectionPendingResolutions: 0,
+      forkliftInspectionPendingResolutions: 0,
       shortagesOpen: 0,
       safetyIncidentOpen: 0,
       qualityIssuesOpen: 0,

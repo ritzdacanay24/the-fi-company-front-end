@@ -17,16 +17,16 @@ export const ADMIN_MENU: MenuItem[] = [
         accessRequired: true,
         activatedRoutes: "/maintenance/user/*"
     },
-    {
-        id: 3,
-        label: "Email Notifications",
-        link: "/maintenance/email-notification/list",
-        description: "Configure Email Alerts",
-        icon: "las la-envelope",
-        hideCheckBox: true,
-        accessRequired: true,
-        activatedRoutes: "/maintenance/email-notification/*"
-    },
+    // {
+    //     id: 3,
+    //     label: "Email Notifications",
+    //     link: "/maintenance/email-notification/list",
+    //     description: "Configure Email Alerts",
+    //     icon: "las la-envelope",
+    //     hideCheckBox: true,
+    //     accessRequired: true,
+    //     activatedRoutes: "/maintenance/email-notification/*"
+    // },
     {
         id: 4,
         label: "Scheduled Jobs",
@@ -73,14 +73,14 @@ export const ADMIN_MENU: MenuItem[] = [
         accessRequired: true,
         activatedRoutes: "/maintenance/user/*"
     },
-    {
-        id: 8,
-        label: "Create Email Alert",
-        link: "/maintenance/email-notification/create",
-        description: "Setup New Email Notification",
-        icon: "las la-envelope-open-text",
-        hideCheckBox: true,
-        accessRequired: true,
-        activatedRoutes: "/maintenance/email-notification/*"
-    },
+    // {
+    //     id: 8,
+    //     label: "Create Email Alert",
+    //     link: "/maintenance/email-notification/create",
+    //     description: "Setup New Email Notification",
+    //     icon: "las la-envelope-open-text",
+    //     hideCheckBox: true,
+    //     accessRequired: true,
+    //     activatedRoutes: "/maintenance/email-notification/*"
+    // },
 ];

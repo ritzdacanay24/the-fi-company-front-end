@@ -23,6 +23,11 @@
                         </div>
                     </div>
                     <div class="d-flex gap-2">
+                        <button type="button" class="btn"
+                            [ngClass]="showFailedOnly ? 'btn-danger' : 'btn-outline-danger'"
+                            (click)="toggleFailedOnly()">
+                            <i class="las la-exclamation-triangle me-2"></i>{{ showFailedOnly ? 'Showing Failed Only' : 'Show Failed Issues Only' }}
+                        </button>
                         <button type="button" class="btn btn-info" [routerLink]="['/operations/forms/forklift-inspection/create']">
                             <i class="las la-plus me-2"></i>Create Inspection
                         </button>
@@ -41,7 +46,7 @@
                 </div>
                 <div class="card-body p-0">
                     <ng-container *ngIf="data?.length; else noRecords">
-                        <ag-grid-angular class="ag-theme-quartz no-border" [rowData]="data" [columnDefs]="columnDefs"
+                        <ag-grid-angular class="ag-theme-quartz no-border" [rowData]="filteredData" [columnDefs]="columnDefs"
                             [gridOptions]="gridOptions" style="width: 100%;height: calc(100vh - 300px);">
                         </ag-grid-angular>
                     </ng-container>

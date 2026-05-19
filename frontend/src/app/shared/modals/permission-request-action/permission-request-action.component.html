@@ -14,7 +14,7 @@
 
   <div class="mb-3" *ngIf="data.allowedActions.length > 1">
     <label class="form-label small fw-semibold">Action</label>
-    <select class="form-select form-select-sm" [(ngModel)]="selectedAction">
+    <select class="form-select " [(ngModel)]="selectedAction">
       <option *ngFor="let action of data.allowedActions" [ngValue]="action">
         {{ action | titlecase }}
       </option>
@@ -24,7 +24,7 @@
   <div *ngIf="selectedAction === 'edit'" class="d-flex flex-column gap-2">
     <div>
       <label class="form-label small fw-semibold">Permission</label>
-      <select class="form-select form-select-sm" [(ngModel)]="editPermissionId">
+      <select class="form-select " [(ngModel)]="editPermissionId">
         <option *ngFor="let permission of data.permissions" [ngValue]="permission.id">
           {{ permission.name }}
         </option>
@@ -32,7 +32,7 @@
     </div>
     <div>
       <label class="form-label small fw-semibold">Domain</label>
-      <select class="form-select form-select-sm" [(ngModel)]="editDomain">
+      <select class="form-select " [(ngModel)]="editDomain">
         <option *ngFor="let domain of data.domains" [ngValue]="domain">
           {{ domain }}
         </option>

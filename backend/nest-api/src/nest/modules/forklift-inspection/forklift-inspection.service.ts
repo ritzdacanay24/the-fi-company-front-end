@@ -8,7 +8,17 @@ import { EmailNotificationsService } from '../email-notifications';
 
 interface ForkliftChecklistDetailGroup {
   name: string;
-  details: Array<{ name: string; status: number | string }>;
+  details: Array<{
+    id: number;
+    name: string;
+    status: number | string;
+    resolved_by: number | null;
+    resolved_date: string | null;
+    resolved_message: string | null;
+    resolved_confirmed_by: number | null;
+    resolved_confirmed_date: string | null;
+    resolved_confirmed_message: string | null;
+  }>;
 }
 
 interface FailedForkliftChecklistItem {
@@ -19,6 +29,7 @@ interface FailedForkliftChecklistItem {
 @Injectable()
 export class ForkliftInspectionService {
   private readonly logger = new Logger(ForkliftInspectionService.name);
+  private readonly systemUserId = 0;
   private readonly legacySubmitUrl: string;
 
   constructor(
@@ -213,6 +224,79 @@ export class ForkliftInspectionService {
     return { rowCount: 1 };
   }
 
+  async resolveIssueByDetailId(detailId: number, payload: Record<string, any>) {
+    const detail = await this.repository.getDetailById(detailId);
+    if (!detail) {
+      throw new NotFoundException({
+        code: 'RC_FORKLIFT_INSPECTION_DETAIL_NOT_FOUND',
+        message: `Forklift inspection detail with id ${detailId} not found`,
+      });
+    }
+
+    const resolvedBy = Number(payload?.resolved_by);
+    const resolvedMessage = String(payload?.resolved_message || '').trim();
+    const resolvedDate = this.normalizeDateTimeInput(payload?.resolved_date);
+    const resolvedById = Number.isFinite(resolvedBy) ? resolvedBy : this.systemUserId;
+
+    const rowCount = await this.repository.resolveDetailById(detailId, {
+      resolvedBy: resolvedById,
+      resolvedMessage: resolvedMessage || 'Marked resolved by system.',
+      resolvedDate,
+    });
+
+    if (rowCount < 1) {
+      throw new NotFoundException({
+        code: 'RC_FORKLIFT_INSPECTION_DETAIL_NOT_FOUND',
+        message: `Forklift inspection detail with id ${detailId} not found`,
+      });
+    }
+
+    return {
+      rowCount: 1,
+      message: 'Issue marked as resolved.',
+    };
+  }
+
+  async confirmIssueByDetailId(detailId: number, payload: Record<string, any>) {
+    const detail = await this.repository.getDetailById(detailId);
+    if (!detail) {
+      throw new NotFoundException({
+        code: 'RC_FORKLIFT_INSPECTION_DETAIL_NOT_FOUND',
+        message: `Forklift inspection detail with id ${detailId} not found`,
+      });
+    }
+
+    if (!this.hasValidDateTimeValue(detail.resolved_date)) {
+      throw new NotFoundException({
+        code: 'RC_FORKLIFT_INSPECTION_DETAIL_NOT_RESOLVED',
+        message: `Forklift inspection detail with id ${detailId} is not resolved yet`,
+      });
+    }
+
+    const confirmedBy = Number(payload?.resolved_confirmed_by);
+    const confirmationMessage = String(payload?.resolved_confirmed_message || '').trim();
+    const confirmedDate = this.normalizeDateTimeInput(payload?.resolved_confirmed_date);
+    const confirmedById = Number.isFinite(confirmedBy) ? confirmedBy : this.systemUserId;
+
+    const rowCount = await this.repository.confirmResolvedDetailById(detailId, {
+      confirmedBy: confirmedById,
+      confirmationMessage: confirmationMessage || 'Resolution confirmed by system.',
+      confirmedDate,
+    });
+
+    if (rowCount < 1) {
+      throw new NotFoundException({
+        code: 'RC_FORKLIFT_INSPECTION_DETAIL_NOT_FOUND',
+        message: `Forklift inspection detail with id ${detailId} not found`,
+      });
+    }
+
+    return {
+      rowCount: 1,
+      message: 'Resolved issue confirmed.',
+    };
+  }
+
   private groupDetails(rows: Array<Record<string, any>>): ForkliftChecklistDetailGroup[] {
     const map = new Map<string, ForkliftChecklistDetailGroup>();
 
@@ -223,8 +307,15 @@ export class ForkliftInspectionService {
       }
 
       map.get(groupName)?.details.push({
+        id: Number(row.id),
         name: row.checklist_name,
         status: row.status,
+        resolved_by: row.resolved_by ?? null,
+        resolved_date: row.resolved_date ?? null,
+        resolved_message: row.resolved_message ?? null,
+        resolved_confirmed_by: row.resolved_confirmed_by ?? null,
+        resolved_confirmed_date: row.resolved_confirmed_date ?? null,
+        resolved_confirmed_message: row.resolved_confirmed_message ?? null,
       });
     }
 
@@ -241,6 +332,30 @@ export class ForkliftInspectionService {
     } catch {
       return { raw: value };
     }
+  }
+
+  private normalizeDateTimeInput(value: unknown): string | null {
+    const raw = String(value ?? '').trim();
+    if (!raw || raw.startsWith('0000-00-00')) {
+      return null;
+    }
+
+    // Accept HTML datetime-local format (YYYY-MM-DDTHH:mm) and normalize for MySQL DATETIME.
+    const normalized = raw.replace('T', ' ');
+    return normalized.length === 16 ? `${normalized}:00` : normalized;
+  }
+
+  private hasValidDateTimeValue(value: unknown): boolean {
+    const raw = String(value ?? '').trim();
+    if (!raw) {
+      return false;
+    }
+
+    if (raw.startsWith('0000-00-00')) {
+      return false;
+    }
+
+    return !Number.isNaN(Date.parse(raw));
   }
 
   private async sendIssueNotification(

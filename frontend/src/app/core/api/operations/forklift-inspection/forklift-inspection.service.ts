@@ -66,5 +66,17 @@ export class ForkliftInspectionService extends DataService<any> {
     return await this.getById(id);
   }
 
+  async resolveDetail(detailId: number, payload: { resolved_by?: number; resolved_message?: string; resolved_date?: string }) {
+    return await firstValueFrom(
+      this.http.put<any>(`${url}/resolveDetail/${detailId}`, payload)
+    );
+  }
+
+  async confirmDetail(detailId: number, payload: { resolved_confirmed_by?: number; resolved_confirmed_message?: string; resolved_confirmed_date?: string }) {
+    return await firstValueFrom(
+      this.http.put<any>(`${url}/confirmDetail/${detailId}`, payload)
+    );
+  }
+
 
 }

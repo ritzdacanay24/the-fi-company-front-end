@@ -83,4 +83,22 @@ export class ForkliftInspectionController {
   async deleteByIdPath(@Param('id', ParseIntPipe) id: number) {
     return this.service.deleteById(id);
   }
+
+  @Put('resolveDetail/:detailId')
+  @Permissions('write')
+  async resolveDetail(
+    @Param('detailId', ParseIntPipe) detailId: number,
+    @Body() payload: Record<string, any>,
+  ) {
+    return this.service.resolveIssueByDetailId(detailId, payload);
+  }
+
+  @Put('confirmDetail/:detailId')
+  @Permissions('write')
+  async confirmDetail(
+    @Param('detailId', ParseIntPipe) detailId: number,
+    @Body() payload: Record<string, any>,
+  ) {
+    return this.service.confirmIssueByDetailId(detailId, payload);
+  }
 }

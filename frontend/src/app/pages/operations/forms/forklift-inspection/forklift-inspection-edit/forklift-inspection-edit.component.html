@@ -62,6 +62,85 @@
             </div>
           </div>
         </div>
+
+        <div class="card border-danger border-opacity-25 shadow-sm" *ngIf="data && id"
+          style="position: relative; z-index: 1000; pointer-events: auto;">
+          <div class="card-header bg-danger bg-opacity-10 border-bottom border-danger border-opacity-25">
+            <div class="d-flex align-items-center justify-content-between">
+              <h6 class="mb-0 text-danger">
+                <i class="mdi mdi-alert-octagon-outline me-2"></i>Issue Resolution Tracker
+              </h6>
+              <span class="badge" [ngClass]="failedIssueItems.length > 0 ? 'bg-danger' : 'bg-secondary'">
+                {{ failedIssueItems.length }} open issue(s)
+              </span>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="row g-2 mb-3" *ngIf="failedIssueItems.length > 0">
+              <div class="col-md-6">
+                <input type="text" class="form-control" [(ngModel)]="issueNote" [ngModelOptions]="{ standalone: true }"
+                  placeholder="Optional resolve note (maintenance action)" />
+              </div>
+              <div class="col-md-6">
+                <input type="datetime-local" class="form-control" [(ngModel)]="resolveDateInput" [ngModelOptions]="{ standalone: true }" />
+              </div>
+            </div>
+
+            <div class="table-responsive" *ngIf="failedIssueItems.length > 0; else noFailedIssueState"
+              style="position: relative; z-index: 1001; pointer-events: auto; overflow: visible;">
+              <table class="table table-sm align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Group</th>
+                    <th>Checklist Item</th>
+                    <th>Status</th>
+                    <th class="text-end">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let issue of failedIssueItems">
+                    <td>{{ issue.groupName }}</td>
+                    <td>{{ issue.checklistName }}</td>
+                    <td>
+                      <span class="badge bg-danger me-1">Failed</span>
+                      <span *ngIf="isIssueResolved(issue)" class="badge bg-warning text-dark me-1">Resolved</span>
+                      <span *ngIf="isIssueConfirmed(issue)" class="badge bg-success">Confirmed</span>
+                      <div *ngIf="issue.resolvedDate" class="small text-muted mt-1">
+                        Resolved At: {{ issue.resolvedDate | date:'medium' }}
+                      </div>
+                      <div *ngIf="issue.resolvedMessage" class="small text-muted">
+                        Resolve Note: {{ issue.resolvedMessage }}
+                      </div>
+                      <div *ngIf="issue.resolvedConfirmedDate" class="small text-muted">
+                        Confirmed At: {{ issue.resolvedConfirmedDate | date:'medium' }}
+                      </div>
+                      <div *ngIf="issue.resolvedConfirmedMessage" class="small text-muted">
+                        Confirm Note: {{ issue.resolvedConfirmedMessage }}
+                      </div>
+                    </td>
+                    <td class="text-end" style="pointer-events: auto; position: relative; z-index: 2147483000;">
+                      <button type="button" class="btn btn-sm btn-outline-warning me-2"
+                        style="pointer-events: auto; position: relative; z-index: 2147483001;"
+                        (pointerdown)="onResolveIssueClick(issue, $event)"
+                        (click)="onResolveIssueClick(issue, $event)">
+                        Resolve
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <ng-template #noFailedIssueState>
+              <div class="alert alert-secondary mb-0">
+                <div class="fw-semibold mb-1">No failed checklist items are available for resolution on this record.</div>
+                <div class="small text-muted">
+                  Resolution actions appear here only when checklist detail rows exist and have Fail status (status = 0).
+                </div>
+              </div>
+            </ng-template>
+          </div>
+        </div>
       </div>
 
       <div class="card shadow-sm border-0">
