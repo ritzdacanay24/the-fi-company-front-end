@@ -34,26 +34,9 @@ export class SerialAvailabilityRepository extends BaseRepository<RowDataPacket> 
               esn.is_consumed,
               esn.created_at
        FROM eyefi_serial_numbers esn
-       LEFT JOIN serial_assignments sa
-         ON sa.eyefi_serial_id = esn.id
-        AND COALESCE(sa.is_voided, 0) = 0
-        AND COALESCE(sa.status, '') <> 'voided'
-       LEFT JOIN ul_label_usages ulu
-         ON BINARY ulu.eyefi_serial_number = BINARY esn.serial_number
-        AND COALESCE(ulu.is_voided, 0) = 0
-       LEFT JOIN agsSerialGenerator ags
-         ON BINARY ags.serialNumber = BINARY esn.serial_number
-        AND COALESCE(ags.active, 1) = 1
-       LEFT JOIN sgAssetGenerator sg
-         ON BINARY sg.serialNumber = BINARY esn.serial_number
-        AND COALESCE(sg.active, 1) = 1
        WHERE esn.status = 'available'
          AND esn.is_active = 1
          AND COALESCE(esn.is_consumed, 0) = 0
-         AND sa.id IS NULL
-         AND ulu.id IS NULL
-         AND ags.id IS NULL
-         AND sg.id IS NULL
        ORDER BY esn.id ASC
        LIMIT ${Math.max(1, Math.floor(limit))}`,
     );
@@ -63,17 +46,8 @@ export class SerialAvailabilityRepository extends BaseRepository<RowDataPacket> 
     return this.rawQuery<RowDataPacket>(
       `SELECT ul.id, ul.ul_number, ul.description, ul.category, ul.manufacturer, ul.part_number, ul.status, ul.is_consumed, ul.created_at
        FROM ul_labels ul
-       LEFT JOIN ul_label_usages ulu
-         ON ul.id = ulu.ul_label_id
-        AND COALESCE(ulu.is_voided, 0) = 0
-       LEFT JOIN serial_assignments sa
-         ON ul.id = sa.ul_label_id
-        AND COALESCE(sa.is_voided, 0) = 0
-        AND COALESCE(sa.status, '') <> 'voided'
        WHERE ul.status = 'active'
          AND COALESCE(ul.is_consumed, 0) = 0
-         AND ulu.id IS NULL
-         AND sa.id IS NULL
        ORDER BY ul.ul_number ASC
        LIMIT ${Math.max(1, Math.floor(limit))}`,
     );
@@ -117,43 +91,19 @@ export class SerialAvailabilityRepository extends BaseRepository<RowDataPacket> 
           FROM eyefi_serial_numbers esn
           WHERE esn.is_active = 1
             AND esn.status = 'available'
-            AND NOT EXISTS (
-              SELECT 1
-              FROM serial_assignments sa
-              WHERE sa.eyefi_serial_id = esn.id
-                AND COALESCE(sa.is_voided, 0) = 0
-                AND COALESCE(sa.status, '') <> 'voided'
-            )
-            AND NOT EXISTS (
-              SELECT 1
-              FROM ul_label_usages ulu
-              WHERE BINARY ulu.eyefi_serial_number = BINARY esn.serial_number
-                AND COALESCE(ulu.is_voided, 0) = 0
-            )
-            AND NOT EXISTS (
-              SELECT 1
-              FROM agsSerialGenerator ags
-              WHERE BINARY ags.serialNumber = BINARY esn.serial_number
-                AND COALESCE(ags.active, 1) = 1
-            )
-            AND NOT EXISTS (
-              SELECT 1
-              FROM sgAssetGenerator sg
-              WHERE BINARY sg.serialNumber = BINARY esn.serial_number
-                AND COALESCE(sg.active, 1) = 1
-            )
+            AND COALESCE(esn.is_consumed, 0) = 0
         ) AS eyefi_available,
         (
           SELECT COUNT(*)
           FROM ul_labels ul
-          WHERE LOWER(COALESCE(ul.category, '')) = 'new'
-            AND COALESCE(ul.is_consumed, 0) = 0
+            WHERE ul.category = 'new'
+              AND ul.is_consumed = 0
         ) AS ul_new_available,
         (
           SELECT COUNT(*)
           FROM ul_labels ul
-          WHERE LOWER(COALESCE(ul.category, '')) = 'used'
-            AND COALESCE(ul.is_consumed, 0) = 0
+            WHERE ul.category = 'used'
+              AND ul.is_consumed = 0
         ) AS ul_used_available,
         (
           SELECT COUNT(*)
@@ -162,48 +112,26 @@ export class SerialAvailabilityRepository extends BaseRepository<RowDataPacket> 
             AND igt.status = 'available'
         ) AS igt_available,
         (
-          SELECT COUNT(DISTINCT esn.id)
+          SELECT COUNT(*)
           FROM eyefi_serial_numbers esn
           WHERE esn.is_active = 1
             AND (
-              EXISTS (
-                SELECT 1
-                FROM serial_assignments sa
-                WHERE sa.eyefi_serial_id = esn.id
-                  AND COALESCE(sa.is_voided, 0) = 0
-                  AND COALESCE(sa.status, '') <> 'voided'
-              )
-              OR EXISTS (
-                SELECT 1
-                FROM ul_label_usages ulu
-                WHERE BINARY ulu.eyefi_serial_number = BINARY esn.serial_number
-                  AND COALESCE(ulu.is_voided, 0) = 0
-              )
-              OR EXISTS (
-                SELECT 1
-                FROM agsSerialGenerator ags
-                WHERE BINARY ags.serialNumber = BINARY esn.serial_number
-                  AND COALESCE(ags.active, 1) = 1
-              )
-              OR EXISTS (
-                SELECT 1
-                FROM sgAssetGenerator sg
-                WHERE BINARY sg.serialNumber = BINARY esn.serial_number
-                  AND COALESCE(sg.active, 1) = 1
-              )
+              COALESCE(esn.is_consumed, 0) = 1
+              OR esn.status = 'used'
+              OR esn.consumed_at IS NOT NULL
             )
         ) AS eyefi_recently_used,
         (
           SELECT COUNT(*)
           FROM ul_labels ul
-          WHERE LOWER(COALESCE(ul.category, '')) = 'new'
-            AND COALESCE(ul.is_consumed, 0) = 1
+          WHERE ul.category = 'new'
+            AND ul.is_consumed = 1
         ) AS ul_new_recently_used,
         (
           SELECT COUNT(*)
           FROM ul_labels ul
-          WHERE LOWER(COALESCE(ul.category, '')) = 'used'
-            AND COALESCE(ul.is_consumed, 0) = 1
+          WHERE ul.category = 'used'
+            AND ul.is_consumed = 1
         ) AS ul_used_recently_used,
         (
           SELECT COUNT(*)
@@ -212,53 +140,23 @@ export class SerialAvailabilityRepository extends BaseRepository<RowDataPacket> 
             AND (igt.used_at IS NOT NULL OR igt.status = 'used')
         ) AS igt_recently_used,
         (
-          SELECT COUNT(DISTINCT esn.id)
+          SELECT COUNT(*)
           FROM eyefi_serial_numbers esn
           WHERE esn.is_active = 1
-            AND (
-              EXISTS (
-                SELECT 1
-                FROM serial_assignments sa
-                WHERE sa.eyefi_serial_id = esn.id
-                  AND COALESCE(sa.is_voided, 0) = 0
-                  AND COALESCE(sa.status, '') <> 'voided'
-                  AND sa.consumed_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-              )
-              OR EXISTS (
-                SELECT 1
-                FROM ul_label_usages ulu
-                WHERE BINARY ulu.eyefi_serial_number = BINARY esn.serial_number
-                  AND COALESCE(ulu.is_voided, 0) = 0
-                  AND COALESCE(ulu.date_used, DATE(ulu.created_at)) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
-              )
-              OR EXISTS (
-                SELECT 1
-                FROM agsSerialGenerator ags
-                WHERE BINARY ags.serialNumber = BINARY esn.serial_number
-                  AND COALESCE(ags.active, 1) = 1
-                  AND ags.timeStamp >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-              )
-              OR EXISTS (
-                SELECT 1
-                FROM sgAssetGenerator sg
-                WHERE BINARY sg.serialNumber = BINARY esn.serial_number
-                  AND COALESCE(sg.active, 1) = 1
-                  AND sg.timeStamp >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-              )
-            )
+            AND esn.consumed_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
         ) AS eyefi_used_last_7_days,
         (
           SELECT COUNT(*)
           FROM ul_labels ul
-          WHERE LOWER(COALESCE(ul.category, '')) = 'new'
-            AND COALESCE(ul.is_consumed, 0) = 1
+          WHERE ul.category = 'new'
+            AND ul.is_consumed = 1
             AND ul.updated_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
         ) AS ul_new_used_last_7_days,
         (
           SELECT COUNT(*)
           FROM ul_labels ul
-          WHERE LOWER(COALESCE(ul.category, '')) = 'used'
-            AND COALESCE(ul.is_consumed, 0) = 1
+          WHERE ul.category = 'used'
+            AND ul.is_consumed = 1
             AND ul.updated_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
         ) AS ul_used_used_last_7_days,
         (

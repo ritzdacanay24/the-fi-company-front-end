@@ -5,6 +5,7 @@ import { TableFilterSettingsRepository } from './table-filter-settings.repositor
 export class TableFilterSettingsService {
   private readonly writableColumns = new Set<string>([
     'pageId',
+    'data',
     'tableNumber',
     'table_name',
     'table_description',
