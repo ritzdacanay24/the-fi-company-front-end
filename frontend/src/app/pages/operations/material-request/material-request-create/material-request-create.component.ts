@@ -106,6 +106,7 @@ export class MaterialRequestCreateComponent {
       // Re-patch default values for a new request
       this.form.patchValue({
         main: {
+          active: 1,
           dueDate: moment().format('YYYY-MM-DD'),
           createdBy: this.authenticationService.currentUserValue.id,
           requestor: this.authenticationService.currentUserValue.full_name,
