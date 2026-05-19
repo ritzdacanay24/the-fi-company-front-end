@@ -317,16 +317,21 @@ export class SerialAssignmentsRepository extends BaseRepository<RowDataPacket> {
         }
 
         const igtAsset = igtRows[0];
-        if (!igtAsset) {
+        // If ul_category is 'used', allow missing IGT asset (skip error)
+        // Use the variable only once in this scope
+        const requestedUlCategoryRaw = String(rawAssignment.ul_category ?? '').trim();
+        const requestedUlCategory = requestedUlCategoryRaw ? requestedUlCategoryRaw.toLowerCase() : null;
+        if (!igtAsset && requestedUlCategory !== 'used') {
           missingIgt.push(requestedIgtSerial || `igt_asset_id:${String(requestedIgtIdRaw ?? '')}`);
           throw new Error('IGT serial not found for assignment');
         }
+        const resolvedIgtAssetId = igtAsset ? Number(igtAsset['id']) : null;
+        const resolvedIgtSerialNumber = igtAsset ? String(igtAsset['serial_number']) : (requestedIgtSerial || null);
 
         const ulLabelIdRaw = rawAssignment.ul_label_id;
         const ulLabelId = ulLabelIdRaw == null || ulLabelIdRaw === '' ? null : Number(ulLabelIdRaw);
         const requestedUlNumber = String(rawAssignment.ulNumber ?? '').trim() || null;
-        const requestedUlCategoryRaw = String(rawAssignment.ul_category ?? '').trim();
-        const requestedUlCategory = requestedUlCategoryRaw ? requestedUlCategoryRaw.toLowerCase() : null;
+        // requestedUlCategoryRaw/requestedUlCategory already declared above
 
         if (ulLabelId != null || requestedUlNumber) {
           if (!requestedUlCategory) {
@@ -422,8 +427,8 @@ export class SerialAssignmentsRepository extends BaseRepository<RowDataPacket> {
             ulLabel ? Number(ulLabel['id']) : null,
             ulLabel ? String(ulLabel['ul_number']) : null,
             IGT_CUSTOMER_TYPE_ID,
-            Number(igtAsset['id']),
-            String(igtAsset['serial_number']),
+            resolvedIgtAssetId,
+            resolvedIgtSerialNumber,
             poNumber,
             propertySite,
             partNumber,
@@ -464,23 +469,25 @@ export class SerialAssignmentsRepository extends BaseRepository<RowDataPacket> {
           );
         }
 
-        await conn.execute(
-          `UPDATE igt_serial_numbers
-           SET status = 'used',
-               used_at = NOW(),
-               used_by = ?,
-               updated_by = ?,
-               used_in_asset_id = ?,
-               used_in_asset_number = ?
-           WHERE id = ?`,
-          [
-            consumedBy,
-            consumedBy,
-            insertResult.insertId,
-            String(igtAsset['serial_number']),
-            Number(igtAsset['id']),
-          ],
-        );
+        if (igtAsset) {
+          await conn.execute(
+            `UPDATE igt_serial_numbers
+             SET status = 'used',
+                 used_at = NOW(),
+                 used_by = ?,
+                 updated_by = ?,
+                 used_in_asset_id = ?,
+                 used_in_asset_number = ?
+             WHERE id = ?`,
+            [
+              consumedBy,
+              consumedBy,
+              insertResult.insertId,
+              String(igtAsset['serial_number']),
+              Number(igtAsset['id']),
+            ],
+          );
+        }
 
         await conn.execute(
           `INSERT INTO \`${AUDIT_TABLE}\` (assignment_id, action, serial_type, serial_id, serial_number, reason, performed_by, performed_at)
@@ -494,8 +501,8 @@ export class SerialAssignmentsRepository extends BaseRepository<RowDataPacket> {
           ul_label_id: ulLabel ? Number(ulLabel['id']) : null,
           ul_number: ulLabel ? String(ulLabel['ul_number']) : null,
           customer_type_id: IGT_CUSTOMER_TYPE_ID,
-          customer_asset_id: Number(igtAsset['id']),
-          generated_asset_number: String(igtAsset['serial_number']),
+          customer_asset_id: resolvedIgtAssetId,
+          generated_asset_number: resolvedIgtSerialNumber,
           po_number: poNumber,
           part_number: partNumber,
           inspector_name: inspectorName,
