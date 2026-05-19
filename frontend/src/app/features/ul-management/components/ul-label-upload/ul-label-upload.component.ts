@@ -299,7 +299,7 @@ export class ULLabelUploadComponent implements OnInit {
   }
 
   private getCategoryPrefix(category: unknown): 'Q' | 'T' {
-    return String(category || '').trim().toLowerCase() === 'used' ? 'T' : 'Q';
+    return String(category || '').trim().toLowerCase() === 'used' ? 'Q' : 'T';
   }
 
   private async validateRangePreview(): Promise<void> {

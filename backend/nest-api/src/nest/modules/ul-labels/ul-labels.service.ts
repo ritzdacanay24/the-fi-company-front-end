@@ -1344,7 +1344,7 @@ export class UlLabelsService {
 
     const category = String(rangeData.category || 'New').trim();
     const normalizedCategory = category.toLowerCase();
-    const categoryPrefix = normalizedCategory === 'used' ? 'T' : 'Q';
+    const categoryPrefix = normalizedCategory === 'used' ? 'Q' : 'T';
 
     const labels: Record<string, unknown>[] = [];
     for (let i = start; i <= end; i += 1) {
