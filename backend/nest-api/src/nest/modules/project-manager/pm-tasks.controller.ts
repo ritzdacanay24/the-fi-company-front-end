@@ -6,7 +6,6 @@ import { PmTasksService, TaskStateDto, AddCommentDto, AddAttachmentDto } from '.
 @UseGuards(RolePermissionGuard)
 export class PmTasksController {
   constructor(private readonly pmTasksService: PmTasksService) {}
-
   /** GET /operations/project-manager/:projectId/tasks */
   @Get(':projectId/tasks')
   async getState(@Param('projectId') projectId: string) {

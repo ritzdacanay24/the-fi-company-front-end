@@ -1,0 +1,20 @@
+[Unit]
+Description=EyeFi Nest API
+After=network.target
+
+[Service]
+Type=simple
+User=rda
+WorkingDirectory=/var/www/html/backend/nest-api
+EnvironmentFile=/var/www/html/backend/.env.production
+Environment=PORT=3002
+Environment=NODE_ENV=production
+Environment=ODBCINI=/var/www/html/backend/qad-driver/odbc.ini
+Environment=ODBCINST=/var/www/html/backend/qad-driver/odbcinst.ini
+Environment=LD_LIBRARY_PATH=/var/www/html/backend/qad-driver/lib
+ExecStart=/home/rda/.nvm/versions/node/v20.20.2/bin/node dist/index.js
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

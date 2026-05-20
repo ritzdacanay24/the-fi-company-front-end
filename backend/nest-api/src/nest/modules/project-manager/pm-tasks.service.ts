@@ -79,6 +79,7 @@ export class PmTasksService {
       nextId: maxId + 1,
       taskRecords,
       subgroupCatalog: this.buildSubgroupCatalog(tasks),
+      test:1
     };
   }
 
