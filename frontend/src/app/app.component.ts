@@ -14,6 +14,7 @@ import { QadHealthStatusService } from "./core/services/qad-health-status.servic
 import { AppUpdateService } from "./core/services/app-update.service";
 import { SupportTicketMinimizedTabComponent } from "./core/components/support-ticket-minimized-tab/support-ticket-minimized-tab.component";
 import { DeployStatusService } from "./core/services/deploy-status.service";
+import { BrowserHealthService } from "./core/services/browser-health.service";
 
 export function setThemeColor(data) {
   setTimeout(function () {
@@ -49,6 +50,7 @@ export class AppComponent implements OnInit, OnDestroy {
     private qadHealthStatusService: QadHealthStatusService,
     private appUpdateService: AppUpdateService,
     private deployStatusService: DeployStatusService,
+    private browserHealthService: BrowserHealthService,
   ) {
     ngbModalConfig.backdrop = "static";
     ngbModalConfig.keyboard = false;
@@ -79,6 +81,7 @@ export class AppComponent implements OnInit, OnDestroy {
     }
     this.syncAuthAndHealthTracking();
     this.appUpdateService.initializeUpdateChecking();
+    this.browserHealthService.initialize();
 
     this.routerEventsSubscription = this.router.events
       .pipe(filter((event) => event instanceof NavigationEnd))

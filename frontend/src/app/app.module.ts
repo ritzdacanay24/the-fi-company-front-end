@@ -34,6 +34,7 @@ import { EffectsModule } from "@ngrx/effects";
 import { AuthenticationEffects } from "./store/Authentication/authentication.effects";
 import { ApiPrefixInterceptor } from "./core/helpers/api-prefix-interceptor";
 import { CancelDuplicateRequestsInterceptor } from "./core/helpers/cancel-duplicate-requests.interceptor";
+import { BrowserHealthInterceptor } from "./core/helpers/browser-health.interceptor";
 
 import { provideEnvironmentNgxMask } from "ngx-mask";
 import { ToastrModule } from "ngx-toastr";
@@ -116,6 +117,7 @@ export function createTranslateLoader(http: HttpClient): any {
   providers: [
     { provide: HTTP_INTERCEPTORS, useClass: CancelDuplicateRequestsInterceptor, multi: true },
     { provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true },
+    { provide: HTTP_INTERCEPTORS, useClass: BrowserHealthInterceptor, multi: true },
     { provide: HTTP_INTERCEPTORS, useClass: ErrorInterceptor, multi: true },
     { provide: HTTP_INTERCEPTORS, useClass: ApiPrefixInterceptor, multi: true },
     { 
