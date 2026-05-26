@@ -32,3 +32,9 @@ This directory groups all backend runtimes and backend infrastructure.
 - Keep `php/` as legacy runtime path while features are migrated.
 - Add all new backend features to `backend/nest-api/src/nest/modules/`.
 - Current Nest migration scope includes WIP and vehicle modules.
+
+
+## run on server when uploading new version
+sudo systemctl restart eyefi-nest-api
+sudo systemctl status eyefi-nest-api
+scripts/deploy/set-deploy-mode.sh on
