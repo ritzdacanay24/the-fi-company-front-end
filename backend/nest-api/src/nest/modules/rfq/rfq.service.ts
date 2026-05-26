@@ -105,10 +105,20 @@ export class RfqService {
     } as Record<string, unknown>;
 
     const otherLines = rows.map((row) => {
-      const qtyOpen = Number(row.qty_open || 0);
-      const sodListPrice = Number(row.sod_list_pr || 0);
+      const qtyOpen = this.toNumber(this.getRowValue(row, ['qty_open', 'QTY_OPEN']));
+      const sodListPrice = this.toNumber(this.getRowValue(row, ['sod_list_pr', 'SOD_LIST_PR', 'sod_price', 'SOD_PRICE']));
       return {
         ...row,
+        sod_nbr: this.getRowValue(row, ['sod_nbr', 'SOD_NBR']),
+        sod_due_date: this.getRowValue(row, ['sod_due_date', 'SOD_DUE_DATE']),
+        sod_part: this.getRowValue(row, ['sod_part', 'SOD_PART']),
+        sod_qty_ord: this.toNumber(this.getRowValue(row, ['sod_qty_ord', 'SOD_QTY_ORD'])),
+        sod_qty_ship: this.toNumber(this.getRowValue(row, ['sod_qty_ship', 'SOD_QTY_SHIP'])),
+        sod_price: this.toNumber(this.getRowValue(row, ['sod_price', 'SOD_PRICE', 'sod_list_pr', 'SOD_LIST_PR'])),
+        sod_list_pr: sodListPrice,
+        sod_contr_id: this.getRowValue(row, ['sod_contr_id', 'SOD_CONTR_ID']),
+        sod_line: this.getRowValue(row, ['sod_line', 'SOD_LINE']),
+        qty_open: qtyOpen,
         addItemsList: qtyOpen > 0,
         value: 0,
         piecesQty: 0,
@@ -116,17 +126,19 @@ export class RfqService {
       };
     });
 
-    const selectedLine = rows.find((row) => String(row.sod_line) === String(line));
+    const selectedLine = rows.find(
+      (row) => String(this.getRowValue(row, ['sod_line', 'SOD_LINE']) ?? '') === String(line),
+    );
     if (selectedLine) {
-      mainInfo.dest_address = (selectedLine.ad_line1 as string) || 'N/A';
-      mainInfo.dest_address2 = (selectedLine.ad_line2 as string) || '';
-      mainInfo.dest_country = (selectedLine.ad_country as string) || 'N/A';
-      mainInfo.dest_city = (selectedLine.ad_city as string) || 'N/A';
-      mainInfo.dest_state = (selectedLine.ad_state as string) || 'N/A';
-      mainInfo.dest_zip = (selectedLine.ad_zip as string) || 'N/A';
-      mainInfo.dest_companyName = (selectedLine.ad_name as string) || 'N/A';
-      mainInfo.itemNumber = (selectedLine.sod_part as string) || '';
-      mainInfo.poNumber = (selectedLine.sod_contr_id as string) || '';
+      mainInfo.dest_address = (this.getRowValue(selectedLine, ['ad_line1', 'AD_LINE1']) as string) || 'N/A';
+      mainInfo.dest_address2 = (this.getRowValue(selectedLine, ['ad_line2', 'AD_LINE2']) as string) || '';
+      mainInfo.dest_country = (this.getRowValue(selectedLine, ['ad_country', 'AD_COUNTRY']) as string) || 'N/A';
+      mainInfo.dest_city = (this.getRowValue(selectedLine, ['ad_city', 'AD_CITY']) as string) || 'N/A';
+      mainInfo.dest_state = (this.getRowValue(selectedLine, ['ad_state', 'AD_STATE']) as string) || 'N/A';
+      mainInfo.dest_zip = (this.getRowValue(selectedLine, ['ad_zip', 'AD_ZIP']) as string) || 'N/A';
+      mainInfo.dest_companyName = (this.getRowValue(selectedLine, ['ad_name', 'AD_NAME']) as string) || 'N/A';
+      mainInfo.itemNumber = (this.getRowValue(selectedLine, ['sod_part', 'SOD_PART']) as string) || '';
+      mainInfo.poNumber = (this.getRowValue(selectedLine, ['sod_contr_id', 'SOD_CONTR_ID']) as string) || '';
     }
 
     return {
@@ -261,6 +273,21 @@ export class RfqService {
       );
       return { message: 'Access denied' };
     }
+  }
+
+  private getRowValue(row: Record<string, unknown>, keys: string[]): unknown {
+    const record = row;
+    for (const key of keys) {
+      if (record[key] !== undefined && record[key] !== null) {
+        return record[key];
+      }
+    }
+    return undefined;
+  }
+
+  private toNumber(value: unknown): number {
+    const numeric = Number(value ?? 0);
+    return Number.isFinite(numeric) ? numeric : 0;
   }
 
   private parseEmails(value: unknown): string[] {
