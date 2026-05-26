@@ -473,7 +473,15 @@ export class ScheduledJobsService {
       return value.toISOString();
     }
 
-    const text = String(value);
+    const text = String(value).trim();
+
+    // MySQL DATETIME values are commonly returned without timezone info.
+    // Preserve wall-clock time by returning an ISO-like local timestamp
+    // instead of converting through UTC.
+    if (/^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}(\.\d+)?$/.test(text)) {
+      return text.replace(' ', 'T');
+    }
+
     try {
       return new Date(text).toISOString();
     } catch {
