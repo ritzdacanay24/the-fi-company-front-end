@@ -83,4 +83,9 @@ export class ScheduledJobsRunnerService {
   async runOpenChecklistInstancesLast3Days(): Promise<void> {
     await this.scheduledJobsService.runJobIfEnabled('open-checklist-instances-last-3-days');
   }
+
+  @Cron('0 0 * * * *', { name: 'scheduled-jobs.material-request-shortage-backfill', timeZone: SCHEDULED_JOBS_TIMEZONE })
+  async runMaterialRequestShortageBackfill(): Promise<void> {
+    await this.scheduledJobsService.runJobIfEnabled('material-request-shortage-backfill');
+  }
 }

@@ -36,6 +36,7 @@ import {
   OverdueSafetyIncidentHandler,
   InspectionChecklistReportGeneratorHandler,
   OpenChecklistInstancesLast3DaysHandler,
+  MaterialRequestShortageBackfillHandler,
 } from './handlers';
 
 @Module({
@@ -78,6 +79,7 @@ import {
     OverdueSafetyIncidentHandler,
     InspectionChecklistReportGeneratorHandler,
     OpenChecklistInstancesLast3DaysHandler,
+    MaterialRequestShortageBackfillHandler,
   ],
 })
 export class ScheduledJobsModule {}

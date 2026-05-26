@@ -1,0 +1,53 @@
+<html>
+  <body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f4f6f8; color: #1f2933;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 920px; background-color: #ffffff; border: 1px solid #dde3ea; border-radius: 10px; overflow: hidden;">
+            {{> email-header}}
+            <tr>
+              <td style="padding: 20px 24px; background-color: #0b5cab; color: #ffffff;">
+                <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Material Request Shortage Backfill</h2>
+                <p style="margin: 4px 0 0; font-size: 13px; opacity: 0.9;">Batch: {{batchPrefix}} | Trigger: {{trigger}}</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 24px; font-size: 14px; line-height: 1.6;">
+                <p style="margin: 0 0 12px 0;"><strong>Preview count:</strong> {{previewCount}}</p>
+                <p style="margin: 0 0 20px 0;"><strong>Inserted count:</strong> {{insertedCount}}</p>
+
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse; font-size: 13px;">
+                  <thead>
+                    <tr style="background-color: #f8f9fa;">
+                      <th style="padding: 8px; border: 1px solid #dde3ea; text-align: left;">ID</th>
+                      <th style="padding: 8px; border: 1px solid #dde3ea; text-align: left;">Job Number</th>
+                      <th style="padding: 8px; border: 1px solid #dde3ea; text-align: left;">MRF Line</th>
+                      <th style="padding: 8px; border: 1px solid #dde3ea; text-align: left;">Part Number</th>
+                      <th style="padding: 8px; border: 1px solid #dde3ea; text-align: left;">Qty</th>
+                      <th style="padding: 8px; border: 1px solid #dde3ea; text-align: left;">Created</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {{#each insertedRows}}
+                    <tr>
+                      <td style="padding: 8px; border: 1px solid #dde3ea;">{{id}}</td>
+                      <td style="padding: 8px; border: 1px solid #dde3ea;">{{jobNumber}}</td>
+                      <td style="padding: 8px; border: 1px solid #dde3ea;">{{mrf_line}}</td>
+                      <td style="padding: 8px; border: 1px solid #dde3ea;">{{partNumber}}</td>
+                      <td style="padding: 8px; border: 1px solid #dde3ea;">{{qty}}</td>
+                      <td style="padding: 8px; border: 1px solid #dde3ea;">{{createdDate}}</td>
+                    </tr>
+                    {{/each}}
+                  </tbody>
+                </table>
+
+                <p style="margin: 16px 0 0 0; color: #5a6b7b; font-size: 12px;">This message is sent only when one or more shortage rows are inserted by the hourly backfill job.</p>
+              </td>
+            </tr>
+            {{> email-footer}}
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

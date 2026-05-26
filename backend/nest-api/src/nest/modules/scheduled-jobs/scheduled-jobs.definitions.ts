@@ -89,6 +89,15 @@ export const SCHEDULED_JOB_DEFINITIONS: ScheduledJobDefinition[] = [
     note: 'Sends alerts for open shipping requests older than 7 days. Subscribers receive the email alert.',
   },
   {
+    id: 'material-request-shortage-backfill',
+    name: 'Material Request Shortage Backfill',
+    cron: '0 * * * *',
+    url: 'nest://scheduled-jobs/material-request-shortage-backfill',
+    active: true,
+    note: 'System job. Backfills missing shortageRequest rows from partially picked material requests every hour and can email a summary when rows are inserted.',
+    supportsRecipients: true,
+  },
+  {
     id: 'graphics-work-order',
     name: 'Graphics Work Order',
     cron: '*/20 * * * *',
