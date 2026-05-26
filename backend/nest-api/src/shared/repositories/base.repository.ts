@@ -10,21 +10,28 @@ export abstract class BaseRepository<T extends RowDataPacket = RowDataPacket> {
     protected readonly primaryKey = 'id',
   ) {}
 
+  protected quoteIdentifier(identifier: string): string {
+    return `\`${identifier.replace(/`/g, '``')}\``;
+  }
+
   async find(where: Record<string, unknown> = {}): Promise<T[]> {
     const keys = Object.keys(where);
 
-    let sql = `SELECT * FROM ${this.tableName}`;
+    const tableName = this.quoteIdentifier(this.tableName);
+    const primaryKey = this.quoteIdentifier(this.primaryKey);
+
+    let sql = `SELECT * FROM ${tableName}`;
     const params: unknown[] = [];
 
     if (keys.length > 0) {
       const clauses = keys.map((key) => {
         params.push(where[key]);
-        return `${key} = ?`;
+        return `${this.quoteIdentifier(key)} = ?`;
       });
       sql += ` WHERE ${clauses.join(' AND ')}`;
     }
 
-    sql += ` ORDER BY ${this.primaryKey} DESC`;
+    sql += ` ORDER BY ${primaryKey} DESC`;
 
     return await this.mysqlService.query<T[]>(sql, params);
   }
@@ -35,13 +42,16 @@ export abstract class BaseRepository<T extends RowDataPacket = RowDataPacket> {
       return null;
     }
 
+    const tableName = this.quoteIdentifier(this.tableName);
+    const primaryKey = this.quoteIdentifier(this.primaryKey);
+
     const params: unknown[] = [];
     const clauses = keys.map((key) => {
       params.push(where[key]);
-      return `${key} = ?`;
+      return `${this.quoteIdentifier(key)} = ?`;
     });
 
-    const sql = `SELECT * FROM ${this.tableName} WHERE ${clauses.join(' AND ')} ORDER BY ${this.primaryKey} DESC LIMIT 1`;
+    const sql = `SELECT * FROM ${tableName} WHERE ${clauses.join(' AND ')} ORDER BY ${primaryKey} DESC LIMIT 1`;
     const rows = await this.mysqlService.query<T[]>(sql, params);
     return rows[0] || null;
   }
@@ -51,9 +61,10 @@ export abstract class BaseRepository<T extends RowDataPacket = RowDataPacket> {
     const values = Object.values(payload);
 
     const placeholders = keys.map(() => '?').join(', ');
-    const columns = keys.join(', ');
+    const columns = keys.map((key) => this.quoteIdentifier(key)).join(', ');
+    const tableName = this.quoteIdentifier(this.tableName);
 
-    const sql = `INSERT INTO ${this.tableName} (${columns}) VALUES (${placeholders})`;
+    const sql = `INSERT INTO ${tableName} (${columns}) VALUES (${placeholders})`;
     const result = await this.mysqlService.execute<ResultSetHeader>(sql, values);
     return result.insertId;
   }
@@ -62,15 +73,19 @@ export abstract class BaseRepository<T extends RowDataPacket = RowDataPacket> {
     const keys = Object.keys(payload);
     const values = Object.values(payload);
 
-    const setClause = keys.map((key) => `${key} = ?`).join(', ');
-    const sql = `UPDATE ${this.tableName} SET ${setClause} WHERE ${this.primaryKey} = ?`;
+    const setClause = keys.map((key) => `${this.quoteIdentifier(key)} = ?`).join(', ');
+    const tableName = this.quoteIdentifier(this.tableName);
+    const primaryKey = this.quoteIdentifier(this.primaryKey);
+    const sql = `UPDATE ${tableName} SET ${setClause} WHERE ${primaryKey} = ?`;
 
     const result = await this.mysqlService.execute<ResultSetHeader>(sql, [...values, id]);
     return result.affectedRows;
   }
 
   async deleteById(id: number | string): Promise<number> {
-    const sql = `DELETE FROM ${this.tableName} WHERE ${this.primaryKey} = ?`;
+    const tableName = this.quoteIdentifier(this.tableName);
+    const primaryKey = this.quoteIdentifier(this.primaryKey);
+    const sql = `DELETE FROM ${tableName} WHERE ${primaryKey} = ?`;
     const result = await this.mysqlService.execute<ResultSetHeader>(sql, [id]);
     return result.affectedRows;
   }
