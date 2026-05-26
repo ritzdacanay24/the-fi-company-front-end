@@ -3,7 +3,7 @@
 set -euo pipefail
 
 # Emergency rollback helper:
-# Restores ApiV2 routing from balancer mode back to single instance (3002)
+# Restores ApiV2 routing to the single live backend instance (3002)
 # using the preserved pre-balancer backups, then validates/reloads Apache.
 
 ROOT_DIR="${ROOT_DIR:-/var/www/html}"
@@ -41,4 +41,4 @@ sudo apachectl -t
 log "Reloading Apache"
 sudo systemctl reload apache2
 
-log "Rollback completed. ApiV2 routes now target single instance (3002)."
+log "Rollback completed. ApiV2 routes now target the single live instance (3002)."

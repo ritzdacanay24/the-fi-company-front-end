@@ -1,9 +1,8 @@
 # Backend Deploy Runbook (Production Host)
 
-This runbook is for the production server where Nest runs as two systemd services behind Apache balancer.
+This runbook is for the production server where Nest runs as a single systemd service on port 3002.
 
-- Service 1: `eyefi-nest-api` (port 3002)
-- Service 2: `eyefi-nest-api-2` (port 3003)
+- Service: `eyefi-nest-api` (port 3002)
 
 ## Normal Release Workflow
 
@@ -16,8 +15,7 @@ cd /var/www/html
 
 What this does:
 1. Builds/publishes Nest (`publish-nest-zero-downtime.sh`)
-2. Rolling restart one instance at a time (`rolling-deploy.sh`)
-3. Prints post-publish status (`publish-status.sh`)
+2. Prints post-publish status (`publish-status.sh`)
 
 ## Verify After Deploy
 
@@ -28,7 +26,7 @@ cd /var/www/html
 
 ## Emergency Rollback (Routing)
 
-If you need to revert ApiV2 routing from balancer to single instance backup:
+If you need to refresh the ApiV2 single-instance routing:
 
 ```bash
 cd /var/www/html
@@ -53,12 +51,11 @@ Health endpoints:
 
 ```bash
 curl -fsS http://127.0.0.1:3002/health
-curl -fsS http://127.0.0.1:3003/health
 ```
 
 ## One-Time Setup Notes
 
-- Apache ApiV2 rewrite targets should use `balancer://eyefi_nest_api`.
+- Apache ApiV2 rewrite targets should use `balancer://eyefi_nest_api` only when a balancer is intentionally configured.
 - Apache balancer definition is in:
   - `backend/scripts/deploy/templates/apache/eyefi-nest-api-balancer.conf`
 - systemd templates are in:

@@ -7,8 +7,35 @@ import { firstValueFrom } from 'rxjs';
 })
 export class SerialAssignmentsService {
   private readonly API_URL = 'apiV2/serial-assignments';
+  private consumedSerialsCache?: {
+    cacheKey: string;
+    expiresAt: number;
+    response: any;
+  };
 
   constructor(private http: HttpClient) {}
+
+  private buildCacheKey(filters?: any): string {
+    if (!filters) {
+      return '{}';
+    }
+
+    const normalized = Object.keys(filters)
+      .sort()
+      .reduce((acc: Record<string, unknown>, key) => {
+        const value = filters[key];
+        if (value !== null && value !== undefined && value !== '') {
+          acc[key] = value;
+        }
+        return acc;
+      }, {});
+
+    return JSON.stringify(normalized);
+  }
+
+  clearConsumedSerialsCache(): void {
+    this.consumedSerialsCache = undefined;
+  }
 
   async getAssignments(filters?: any): Promise<any> {
     let params = new HttpParams();
@@ -75,21 +102,27 @@ export class SerialAssignmentsService {
   }
 
   async voidAssignment(id: number, reason: string, performedBy: string): Promise<any> {
-    return firstValueFrom(
+    const result = await firstValueFrom(
       this.http.post(`${this.API_URL}/${id}/void`, { reason, performed_by: performedBy })
     );
+    this.clearConsumedSerialsCache();
+    return result;
   }
 
   async deleteAssignment(id: number, reason: string, performedBy: string): Promise<any> {
-    return firstValueFrom(
+    const result = await firstValueFrom(
       this.http.delete(`${this.API_URL}/${id}`, { body: { reason, performed_by: performedBy } } as any)
     );
+    this.clearConsumedSerialsCache();
+    return result;
   }
 
   async restoreAssignment(id: number, performedBy: string): Promise<any> {
-    return firstValueFrom(
+    const result = await firstValueFrom(
       this.http.post(`${this.API_URL}/${id}/restore`, { performed_by: performedBy })
     );
+    this.clearConsumedSerialsCache();
+    return result;
   }
 
   async reassignAssignment(
@@ -108,7 +141,7 @@ export class SerialAssignmentsService {
       cp_cust?: string;
     }
   ): Promise<any> {
-    return firstValueFrom(
+    const result = await firstValueFrom(
       this.http.post(`${this.API_URL}/${id}/reassign`, {
         new_wo_number: newWoNumber,
         reason,
@@ -116,29 +149,37 @@ export class SerialAssignmentsService {
         ...woDetails,
       })
     );
+    this.clearConsumedSerialsCache();
+    return result;
   }
 
   async bulkVoidAssignments(ids: number[], reason: string, performedBy: string): Promise<any> {
-    return firstValueFrom(
+    const result = await firstValueFrom(
       this.http.post(`${this.API_URL}/bulk-void`, { ids, reason, performed_by: performedBy })
     );
+    this.clearConsumedSerialsCache();
+    return result;
   }
 
   async bulkCreateOther(assignments: any[], performedBy: string): Promise<any> {
     // Not yet migrated â€” kept for backward compatibility
-    return firstValueFrom(
+    const result = await firstValueFrom(
       this.http.post(`${this.API_URL}/bulk-create-other`, { assignments, performed_by: performedBy })
     );
+    this.clearConsumedSerialsCache();
+    return result;
   }
 
   async bulkCreateWorkflow(customerType: 'sg' | 'ags' | 'igt' | 'other', assignments: any[], performedBy: string): Promise<any> {
-    return firstValueFrom(
+    const result = await firstValueFrom(
       this.http.post(`${this.API_URL}/bulk-create-workflow`, {
         customer_type: customerType,
         assignments,
         performed_by: performedBy,
       })
     );
+    this.clearConsumedSerialsCache();
+    return result;
   }
 
   async getAuditTrail(assignmentId?: number, limit: number = 100): Promise<any> {
@@ -150,7 +191,24 @@ export class SerialAssignmentsService {
     return firstValueFrom(this.http.get(`${this.API_URL}/audit-trail`, { params }));
   }
 
-  async getAllConsumedSerials(filters?: any): Promise<any> {
+  async getAllConsumedSerials(
+    filters?: any,
+    options?: { forceRefresh?: boolean; cacheTtlMs?: number },
+  ): Promise<any> {
+    const forceRefresh = options?.forceRefresh === true;
+    const cacheTtlMs = options?.cacheTtlMs ?? 30000;
+    const cacheKey = this.buildCacheKey(filters);
+
+    if (!forceRefresh && this.consumedSerialsCache) {
+      const isValid =
+        this.consumedSerialsCache.cacheKey === cacheKey &&
+        this.consumedSerialsCache.expiresAt > Date.now();
+
+      if (isValid) {
+        return this.consumedSerialsCache.response;
+      }
+    }
+
     let params = new HttpParams();
     if (filters) {
       Object.keys(filters).forEach(key => {
@@ -159,7 +217,14 @@ export class SerialAssignmentsService {
         }
       });
     }
-    return firstValueFrom(this.http.get(this.API_URL, { params }));
+    const response = await firstValueFrom(this.http.get(this.API_URL, { params }));
+    this.consumedSerialsCache = {
+      cacheKey,
+      expiresAt: Date.now() + cacheTtlMs,
+      response,
+    };
+
+    return response;
   }
 
   async getDailyConsumptionTrend(): Promise<any> {
