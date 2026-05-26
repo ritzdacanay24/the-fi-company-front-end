@@ -1,0 +1,132 @@
+<html>
+  <body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f4f6f8; color: #1f2933;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 1040px; background-color: #ffffff; border: 1px solid #dde3ea; border-radius: 10px; overflow: hidden;">
+            {{> email-header}}
+            <tr>
+              <td style="padding: 20px 24px; background-color: #0b5cab; color: #ffffff;">
+                <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Daily Report - {{reportModeLabel}} as of {{reportAsOf}}</h2>
+                <p style="margin: 6px 0 0 0; font-size: 14px; opacity: 0.92;">{{modeMessage}}</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 24px; font-size: 14px; line-height: 1.6;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse; margin-bottom: 16px;">
+                  <tbody>
+                    {{#each summaryRows}}
+                    <tr>
+                      <th align="left" width="52%" style="border-bottom: 1px solid #dde3ea; padding: 10px 8px 10px 0; vertical-align: middle;">
+                        <div style="font-weight: 700; color: #111827;">{{title}}</div>
+                        {{#if subtitle}}
+                        <div style="margin-top: 2px; font-size: 12px; color: #6b7280;">{{subtitle}}</div>
+                        {{/if}}
+                      </th>
+                      <td align="left" style="border-bottom: 1px solid #dde3ea; padding: 10px 0 10px 8px; vertical-align: middle;">
+                        <div style="font-weight: 600; color: #111827;">{{value}}</div>
+                        {{#if valueSubtitle}}
+                        <div style="margin-top: 2px; font-size: 12px; color: #6b7280;">{{valueSubtitle}}</div>
+                        {{/if}}
+                      </td>
+                    </tr>
+                    {{/each}}
+                  </tbody>
+                </table>
+
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse; margin-bottom: 16px;">
+                  <tr style="background: #f3f4f6;">
+                    <th colspan="4" align="left" style="padding: 10px 8px; border: 1px solid #dde3ea; font-weight: 700;">{{shippingDetailsTitle}}</th>
+                  </tr>
+                  <tr style="background: #f8fafc;">
+                    <th align="left" style="padding: 8px; border: 1px solid #dde3ea; font-weight: 700;">Cust Name</th>
+                    <th align="left" style="padding: 8px; border: 1px solid #dde3ea; font-weight: 700;">Lines Shipped Before or On Performance Date</th>
+                    <th align="left" style="padding: 8px; border: 1px solid #dde3ea; font-weight: 700;">Total Number of Lines Shipped Today</th>
+                    <th align="right" style="padding: 8px; border: 1px solid #dde3ea; font-weight: 700;">OTD %</th>
+                  </tr>
+                  {{#each shippingDetailsRows}}
+                  <tr>
+                    <td style="padding: 8px; border: 1px solid #dde3ea;">{{customerName}}</td>
+                    <td style="padding: 8px; border: 1px solid #dde3ea;">{{shippedBeforeOrOnPerformanceDate}}</td>
+                    <td style="padding: 8px; border: 1px solid #dde3ea;">{{totalNumberOfLinesShippedToday}}</td>
+                    <td align="right" style="padding: 8px; border: 1px solid #dde3ea; white-space: nowrap;">{{otdPercent}}</td>
+                  </tr>
+                  {{/each}}
+                  {{#unless shippingDetailsRows.length}}
+                  <tr>
+                    <td colspan="4" style="padding: 8px; border: 1px solid #dde3ea;">No details found.</td>
+                  </tr>
+                  {{/unless}}
+                </table>
+
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse; margin-bottom: 16px;">
+                  <tr style="background: #f3f4f6;">
+                    <th colspan="3" align="left" style="padding: 10px 8px; border: 1px solid #dde3ea; font-weight: 700;">Inventory</th>
+                  </tr>
+                  {{#each inventoryRows}}
+                  <tr>
+                    <th align="left" style="padding: 8px; border: 1px solid #dde3ea; width: 52%;">
+                      <div style="font-weight: 700; color: #111827;">{{title}}</div>
+                      {{#if subtitle}}
+                      <div style="margin-top: 2px; font-size: 12px; color: #6b7280;">{{subtitle}}</div>
+                      {{/if}}
+                    </th>
+                    <td align="left" colspan="2" style="padding: 8px; border: 1px solid #dde3ea;">
+                      <div style="font-weight: 600; color: #111827;">{{value}}</div>
+                      {{#if valueSubtitle}}
+                      <div style="margin-top: 2px; font-size: 12px; color: #6b7280;">{{valueSubtitle}}</div>
+                      {{/if}}
+                    </td>
+                  </tr>
+                  {{/each}}
+                </table>
+
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse; margin-bottom: 16px;">
+                  <tr style="background: #f3f4f6;">
+                    <th colspan="3" align="left" style="padding: 10px 8px; border: 1px solid #dde3ea; font-weight: 700;">Inventory Turns</th>
+                  </tr>
+                  <tr style="background: #f8fafc;">
+                    <th align="left" style="padding: 8px; border: 1px solid #dde3ea; font-weight: 700;">Name</th>
+                    <th align="left" style="padding: 8px; border: 1px solid #dde3ea; font-weight: 700;">Less than 1</th>
+                    <th align="left" style="padding: 8px; border: 1px solid #dde3ea; font-weight: 700;">Greater than or equal to 1</th>
+                  </tr>
+                  {{#each inventoryTurnsRows}}
+                  <tr>
+                    <td style="padding: 8px; border: 1px solid #dde3ea; font-weight: 700;"> - {{label}}</td>
+                    <td style="padding: 8px; border: 1px solid #dde3ea;">{{lessThanOne}}</td>
+                    <td style="padding: 8px; border: 1px solid #dde3ea;">{{greaterThanOrEqualToOne}}</td>
+                  </tr>
+                  {{/each}}
+                </table>
+
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse; margin-bottom: 16px;">
+                  <tr style="background: #f3f4f6;">
+                    <th colspan="2" align="left" style="padding: 10px 8px; border: 1px solid #dde3ea; font-weight: 700;">Late Reason Codes (Today)</th>
+                  </tr>
+                  <tr style="background: #f8fafc;">
+                    <th align="left" style="padding: 8px; border: 1px solid #dde3ea; font-weight: 700;">Name</th>
+                    <th align="left" style="padding: 8px; border: 1px solid #dde3ea; font-weight: 700;">Total</th>
+                  </tr>
+                  {{#each lateReasonCodeRows}}
+                  <tr>
+                    <td style="padding: 8px; border: 1px solid #dde3ea; font-weight: 700;">{{lateReasonCode}}</td>
+                    <td style="padding: 8px; border: 1px solid #dde3ea;">{{value}}</td>
+                  </tr>
+                  {{/each}}
+                  {{#unless lateReasonCodeRows.length}}
+                  <tr>
+                    <td colspan="2" style="padding: 8px; border: 1px solid #dde3ea;">No reason codes found.</td>
+                  </tr>
+                  {{/unless}}
+                </table>
+
+                <p style="margin: 0; color: #5a6b7b; font-size: 12px;">This is an automated daily report email from The Fi Company Dashboard.</p>
+              </td>
+            </tr>
+            {{> email-footer}}
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

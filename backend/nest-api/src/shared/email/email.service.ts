@@ -92,6 +92,23 @@ export class EmailService {
       ...options,
     };
 
+    if (this.testModeRedirectTo) {
+      await this.transporter.sendMail({
+        ...payload,
+        to: this.testModeRedirectTo,
+        cc: undefined,
+        bcc: undefined,
+        headers: {
+          ...(typeof payload.headers === 'object' && payload.headers ? payload.headers : {}),
+          'X-Original-To': this.recipientsToText(options.to),
+          'X-Original-Cc': this.recipientsToText(options.cc),
+          'X-Original-Bcc': this.recipientsToText(options.bcc),
+          'X-Test-Mode': `true (redirected to: ${this.testModeRedirectTo})`,
+        },
+      });
+      return;
+    }
+
 
     if (this.isDevelopment) {
       // In dev: redirect ALL emails to DEV_EMAIL_REROUTE_TO only — never send to real recipients

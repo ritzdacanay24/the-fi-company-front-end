@@ -106,12 +106,12 @@ export const SCHEDULED_JOB_DEFINITIONS: ScheduledJobDefinition[] = [
   },
   {
     id: 'daily-report-insert',
-    name: 'Daily Report Insert',
+    name: 'Daily Report Email',
     cron: '0 16 * * 1-5',
     url: 'nest://scheduled-jobs/daily-report-insert',
     active: false,
-    note: 'System job that prepares daily reporting data. No email subscription is used for this job.',
-    supportsRecipients: false,
+    note: 'Sends the live daily report email to subscribed recipients after refreshing the snapshot.',
+    supportsRecipients: true,
   },
   {
     id: 'completed-production-orders',
