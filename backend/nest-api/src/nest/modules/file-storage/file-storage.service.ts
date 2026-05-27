@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 import { mkdir, stat, unlink, writeFile } from 'node:fs/promises';
 import { basename, dirname, join } from 'node:path';
 
@@ -122,7 +123,7 @@ export class FileStorageService {
     if (!fileExistsLocally) {
       return {
         ...row,
-        link: `${this.remoteBaseUrl}/${subFolder}/${encodeURIComponent(fileName)}`,
+        link: this.buildRemoteFileUrl(subFolder, fileName),
         storage_source: storageSource ?? 'legacy',
       };
     }
@@ -182,8 +183,20 @@ export class FileStorageService {
   }
 
   private buildStoredFileName(originalName: string): string {
-    const safeOriginalName = basename(originalName);
-    return `${Date.now()}_${safeOriginalName}`;
+    const safeOriginalName = this.sanitizeOriginalFileName(basename(originalName));
+    const timestamp = Date.now();
+    const uniqueSuffix = randomUUID().replace(/-/g, '');
+    return `${timestamp}_${uniqueSuffix}_${safeOriginalName}`;
+  }
+
+  private sanitizeOriginalFileName(originalName: string): string {
+    const trimmed = String(originalName || '').trim();
+    if (!trimmed) {
+      return 'upload.bin';
+    }
+
+    const sanitized = trimmed.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/_+/g, '_');
+    return sanitized || 'upload.bin';
   }
 
   private resolveBucketRootDir(): string {
@@ -369,7 +382,7 @@ export class FileStorageService {
 
   private normalizeExistingLink(existingLink: string, fileName: string, subFolder: string): string {
     if (!existingLink) {
-      return `${this.remoteBaseUrl}/${subFolder}/${encodeURIComponent(fileName)}`;
+      return this.buildRemoteFileUrl(subFolder, fileName);
     }
 
     if (/^https?:\/\//i.test(existingLink)) {
@@ -378,7 +391,23 @@ export class FileStorageService {
 
     // For any non-absolute URL, force dashboard URL resolution
     // This ensures legacy/non-local sources always resolve properly
-    return `${this.remoteBaseUrl}/${subFolder}/${encodeURIComponent(fileName)}`;
+    return this.buildRemoteFileUrl(subFolder, fileName);
+  }
+
+  private buildRemoteFileUrl(subFolder: string, fileName: string): string {
+    const normalizedSubFolder = String(subFolder || '')
+      .trim()
+      .replace(/\\/g, '/')
+      .replace(/^\/+/, '')
+      .replace(/\/+$/, '');
+
+    const safeSegments = normalizedSubFolder
+      .split('/')
+      .filter((segment) => segment && segment !== '.' && segment !== '..')
+      .map((segment) => encodeURIComponent(segment));
+
+    const encodedSubFolder = safeSegments.length > 0 ? safeSegments.join('/') : 'fieldService';
+    return `${this.remoteBaseUrl}/${encodedSubFolder}/${encodeURIComponent(fileName)}`;
   }
 
   private resolveStorageSource(
