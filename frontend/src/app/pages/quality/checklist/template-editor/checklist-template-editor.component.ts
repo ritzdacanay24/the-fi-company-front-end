@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, AfterViewInit, ViewChild, ViewChildren, TemplateRef, ChangeDetectorRef, ElementRef, QueryList, HostListener, NgZone } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, ViewChild, ViewChildren, TemplateRef, ChangeDetectorRef, ElementRef, QueryList, HostListener, NgZone, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators, AbstractControl } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -18,6 +18,7 @@ import { AttachmentsService } from '@app/core/api/attachments/attachments.servic
 import { UploadService } from '@app/core/api/upload/upload.service';
 import { PhotoChecklistUploadService } from '@app/core/api/photo-checklist/photo-checklist-upload.service';
 import { AuthenticationService } from '@app/core/services/auth.service';
+import { NotificationService } from '@app/core/services/notification.service';
 import { QualityDocumentSelectorComponent, QualityDocumentSelection } from '@app/shared/components/quality-document-selector/quality-document-selector.component';
 import { ChecklistNavigationComponent } from '@app/shared/components/checklist-navigation/checklist-navigation.component';
 import { ChecklistNavItem } from '@app/shared/models/checklist-navigation.model';
@@ -79,6 +80,11 @@ interface ItemEditSnapshot {
   sampleVideos: SampleVideo | SampleVideo[] | null;
 }
 
+interface DraftSaveOptions {
+  preserveCurrentFormState?: boolean;
+  deferStabilityBaseline?: boolean;
+}
+
 @Component({
   selector: 'app-checklist-template-editor',
   standalone: true,
@@ -87,6 +93,8 @@ interface ItemEditSnapshot {
   styleUrls: ['./checklist-template-editor.component.scss']
 })
 export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, OnDestroy {
+  private readonly notification = inject(NotificationService);
+
   @ViewChild('importModal') importModalRef!: TemplateRef<any>;
   @ViewChild('copyAsParentModal') copyAsParentModalRef!: TemplateRef<any>;
   @ViewChild('imagePreviewModal') imagePreviewModalRef!: TemplateRef<any>;
@@ -120,7 +128,6 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   sampleVideos: { [itemIndex: number]: SampleVideo | SampleVideo[] | null } = {};
   carouselActiveSlideByItem: { [itemIndex: number]: string } = {};
   currentModalItemIndex: number = -1;
-  currentModalSubmissionType: 'photo' | 'video' | 'audio' | 'either' | 'none' = 'photo';
   currentLinksItemIndex: number = -1;
 
   // Navigation tree expansion state
@@ -214,6 +221,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   private changeTrackingReady = false;
   private itemBaselineSignatures = new WeakMap<FormGroup, string>();
   private itemBaselineSnapshots = new WeakMap<FormGroup, ItemEditSnapshot>();
+  private pendingMarkSavedOnStableSub: Subscription | null = null;
 
   private routeParamSub?: Subscription;
   private routeQueryParamSub?: Subscription;
@@ -923,7 +931,10 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     this.openCopyAsNewParentModal();
   }
 
-  private markSaved(startedSeq?: number): void {
+  private markSaved(startedSeq?: number, options?: DraftSaveOptions): void {
+    this.pendingMarkSavedOnStableSub?.unsubscribe();
+    this.pendingMarkSavedOnStableSub = null;
+
     // Treat all changes up to this point as saved.
     const savedAtSeq = Math.max(this.changeSeq, startedSeq ?? 0);
     this.savedSeq = Math.max(this.savedSeq, savedAtSeq);
@@ -937,11 +948,22 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     this.suppressChangeTracking = false;
     this.refreshAllItemBaselines();
 
-    // Some controls (notably rich text editors) can emit delayed value updates.
-    // Re-baseline once on next tick only if no new edits happened after save;
-    // otherwise we would incorrectly clear real unsaved changes.
-    setTimeout(() => {
+    if (options?.deferStabilityBaseline === false) {
+      return;
+    }
+
+    // Some controls can emit after Angular finishes the current render/update cycle.
+    // Re-baseline once when the zone becomes stable, but only if nothing newer changed.
+    const savedSignature = this.savedFormSignature;
+    this.pendingMarkSavedOnStableSub = this.ngZone.onStable.subscribe(() => {
+      this.pendingMarkSavedOnStableSub?.unsubscribe();
+      this.pendingMarkSavedOnStableSub = null;
+
       if (this.changeSeq > savedAtSeq) {
+        return;
+      }
+
+      if (this.templateForm.dirty || this.getCurrentFormSignature() !== savedSignature) {
         return;
       }
 
@@ -952,7 +974,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       this.templateForm.markAsPristine();
       this.suppressChangeTracking = false;
       this.refreshAllItemBaselines();
-    }, 0);
+    });
   }
 
   private clonePlainData<T>(value: T): T {
@@ -1082,7 +1104,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   }
 
   async saveCurrentItem(): Promise<boolean> {
-    return this.saveDraft();
+    return this.saveDraft({ preserveCurrentFormState: true, deferStabilityBaseline: false });
   }
 
   private async resolveCurrentItemUnsavedChanges(promptTitle: string, promptText: string): Promise<boolean> {
@@ -1822,32 +1844,32 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     const parentOutlineNumber = this.getOutlineNumber(parentIndex);
     const newOutlineNumber = `${parentOutlineNumber}.${childCount + 1}`;
 
-    // Create new sub-item with proper form group structure
-    const subItem = this.fb.group({
-      id: [null], // New item has no ID yet
-      title: ['', Validators.required],
-      description: [''],
-      order_index: [newOrderIndex],
-      is_required: [true],
-      submission_type: ['photo'],
-      links: this.fb.array([]),
-      sample_image_url: [null],
-      sample_images: [null],
-      level: [childLevel],
-      parent_id: [parentDbId], // Store database ID, not order_index
-      photo_requirements: this.fb.group({
-        angle: [''],
-        distance: [''],
-        lighting: [''],
-        focus: [''],
-        min_photos: [1],
-        max_photos: [5],
-        picture_required: [true],
-        max_video_duration_seconds: [30]
-      }),
-      submission_time_seconds: [null],
-      sample_videos: []
-    });
+    const subItem = this.createItemFormGroup({
+      id: null,
+      title: '',
+      description: '',
+      order_index: newOrderIndex,
+      is_required: true,
+      needs_media_upload: false,
+      submission_type: 'photo',
+      sample_image_url: null,
+      sample_images: null,
+      sample_videos: [],
+      level: childLevel,
+      parent_id: parentDbId,
+      photo_requirements: {
+        angle: '',
+        distance: '',
+        lighting: '',
+        focus: '',
+        min_photos: 1,
+        max_photos: 5,
+        picture_required: true,
+        max_video_duration_seconds: 30
+      },
+      submission_time_seconds: null,
+      links: []
+    } as any);
 
     // Insert right after the last descendant of this parent (or after parent if no children)
     let insertIndex = parentIndex + 1;
@@ -2952,10 +2974,12 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
    * Formats the order_index as proper outline numbering
    */
   getOutlineNumber(itemIndex: number): string {
-    const item = this.items.at(itemIndex);
+    const item = this.items.at(itemIndex) as FormGroup | undefined;
+    if (!item) {
+      return String(itemIndex + 1);
+    }
+
     const orderIndex = item.get('order_index')?.value;
-    const level = item.get('level')?.value ?? 0;
-    const title = item.get('title')?.value;
 
     if (!orderIndex) return '1';
 
@@ -5139,9 +5163,8 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   openSampleImagesModal(itemIndex: number): void {
     // Store the current item index for the modal
     this.currentModalItemIndex = itemIndex;
-    this.currentModalSubmissionType = (this.items.at(itemIndex)?.get('submission_type')?.value || 'photo') as 'photo' | 'video' | 'audio' | 'either' | 'none';
 
-    if (this.currentModalSubmissionType === 'none') {
+    if (this.getCurrentModalSubmissionType() === 'none') {
       this.items.at(itemIndex)?.get('photo_requirements.picture_required')?.setValue(false);
     }
 
@@ -5150,7 +5173,25 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   }
 
   isCurrentModalNoMedia(): boolean {
-    return this.currentModalSubmissionType === 'none';
+    return this.getCurrentModalSubmissionType() === 'none';
+  }
+
+  getCurrentModalSubmissionType(): 'photo' | 'video' | 'audio' | 'either' | 'none' {
+    if (this.currentModalItemIndex < 0) {
+      return 'photo';
+    }
+
+    const submissionType = this.items.at(this.currentModalItemIndex)?.get('submission_type')?.value;
+    switch (submissionType) {
+      case 'video':
+      case 'audio':
+      case 'either':
+      case 'none':
+        return submissionType;
+      case 'photo':
+      default:
+        return 'photo';
+    }
   }
 
   openSampleVideoModal(itemIndex: number): void {
@@ -5679,7 +5720,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     });
   }
 
-  async saveDraft(): Promise<boolean> {
+  async saveDraft(options?: DraftSaveOptions): Promise<boolean> {
     if (this.saving) {
       return false;
     }
@@ -5713,7 +5754,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
       // CREATE a new draft row — never mutate the published template.
       const saveRequest = this.configService.createTemplate(templateData);
-      return this.subscribeToDraftSave(saveRequest, startedSeq, templateData);
+      return this.subscribeToDraftSave(saveRequest, startedSeq, templateData, options);
     }
 
     // Preserve the version already assigned to this draft (e.g. 2.0 for a major version draft).
@@ -5725,10 +5766,10 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       ? this.configService.updateTemplate(this.editingTemplate.id, templateData)
       : this.configService.createTemplate(templateData);
 
-    return this.subscribeToDraftSave(saveRequest, startedSeq, templateData);
+    return this.subscribeToDraftSave(saveRequest, startedSeq, templateData, options);
   }
 
-  private async subscribeToDraftSave(saveRequest: any, startedSeq: number, templateData?: any): Promise<boolean> {
+  private async subscribeToDraftSave(saveRequest: any, startedSeq: number, templateData?: any, options?: DraftSaveOptions): Promise<boolean> {
     try {
       const response: any = await firstValueFrom(saveRequest);
 
@@ -5738,7 +5779,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
         if (response?.code === 'DRAFT_ALREADY_EXISTS' && existingDraftId > 0 && templateData) {
           const retryPayload = { ...templateData, is_draft: 1 };
           const retryRequest = this.configService.updateTemplate(existingDraftId, retryPayload);
-          return this.subscribeToDraftSave(retryRequest, startedSeq, retryPayload);
+          return this.subscribeToDraftSave(retryRequest, startedSeq, retryPayload, options);
         }
 
         this.saving = false;
@@ -5749,14 +5790,11 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       this.saving = false;
       this.lastSavedAt = new Date();
 
-      // Clear unsaved-change prompts after a confirmed successful save.
-      // Note: this treats any edits made during the request as “saved” from the UX perspective.
-      this.markSaved(startedSeq);
-
       // Backend may create/switch to a draft template. Apply returned template data first
       // and align URL to the returned template_id so refresh loads the same saved draft.
       const responseTemplateId = Number(response?.template_id || 0);
       const currentTemplateId = Number(this.editingTemplate?.id || 0);
+      const isSameTemplateSave = responseTemplateId > 0 && responseTemplateId === currentTemplateId;
 
       if (response?.template) {
         const rawTemplate: any = { ...response.template };
@@ -5767,8 +5805,10 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
         const normalizedTemplate: any = this.normalizeTemplateFlags(rawTemplate);
 
         this.editingTemplate = normalizedTemplate as ChecklistTemplate;
-        this.populateForm(this.editingTemplate);
         this.updateComponentWithSavedTemplate(normalizedTemplate);
+        if (!isSameTemplateSave) {
+          this.populateForm(this.editingTemplate);
+        }
       } else if (responseTemplateId > 0) {
         // Fallback when backend does not include template payload.
         this.loadTemplate(responseTemplateId);
@@ -5778,8 +5818,8 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
         this.router.navigate(['/quality/checklist/template-editor', responseTemplateId], { replaceUrl: true });
       }
 
-      // updateComponentWithSavedTemplate may patch values; re-baseline again.
-      this.markSaved(startedSeq);
+      this.markSaved(startedSeq, options);
+      this.notification.success(options?.preserveCurrentFormState ? 'Item changes saved.' : 'Draft saved.');
       return true;
     } catch (error: any) {
       console.error('Error saving draft:', error);
