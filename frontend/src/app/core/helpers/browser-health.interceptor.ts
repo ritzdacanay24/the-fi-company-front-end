@@ -6,7 +6,7 @@ import {
   HttpInterceptor,
   HttpErrorResponse,
 } from "@angular/common/http";
-import { Observable, throwError, timer } from "rxjs";
+import { Observable, throwError } from "rxjs";
 import { catchError, retry, tap } from "rxjs/operators";
 import { BrowserHealthService } from "../services/browser-health.service";
 
@@ -22,16 +22,9 @@ export class BrowserHealthInterceptor implements HttpInterceptor {
       // Report success for browser health monitoring
       tap(() => this.browserHealthService.reportSuccess()),
 
-      // Retry network errors (status 0) up to 2 times with exponential backoff
+      // Retries disabled: fail fast on first error.
       retry({
-        count: 2,
-        delay: (error, retryCount) => {
-          if (error instanceof HttpErrorResponse && error.status === 0) {
-            const delayMs = Math.min(1000 * Math.pow(2, retryCount), 5000);
-            return timer(delayMs);
-          }
-          throw error;
-        },
+        count: 0,
       }),
 
       catchError((error: HttpErrorResponse) => {

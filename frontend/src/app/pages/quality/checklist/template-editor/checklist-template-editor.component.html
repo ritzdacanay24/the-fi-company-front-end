@@ -334,9 +334,17 @@
 
                   <!-- Save / Publish / Draft actions -->
                   <ng-container *ngIf="!isViewOnly">
-                  <div ngbDropdown class="d-inline-block" container="body" placement="bottom-end">
-                    <button type="button" class="btn btn-sm btn-outline-primary" ngbDropdownToggle [disabled]="saving">
-                      <i class="mdi mdi-content-save-edit-outline me-1"></i>Draft Actions
+                  <div ngbDropdown class="btn-group" container="body" placement="bottom-end">
+                    <button type="button" class="btn btn-sm btn-outline-primary" [disabled]="saving" (click)="saveDraft()">
+                      <i class="mdi mdi-content-save-edit-outline me-1"></i>
+                      {{ (!editingTemplate || editingTemplate.is_draft) ? 'Save Draft' : 'Start Sub-Version Draft' }}
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline-primary dropdown-toggle dropdown-toggle-split"
+                      ngbDropdownToggle
+                      [disabled]="saving"
+                      aria-label="Open draft actions menu">
                     </button>
                     <div ngbDropdownMenu class="dropdown-menu-end">
                       <button ngbDropdownItem type="button" (click)="saveDraft()" *ngIf="!editingTemplate || editingTemplate.is_draft">
@@ -1014,13 +1022,25 @@
               <label class="form-label mb-0 fw-bold">Primary Sample Image</label>
               <small class="d-block text-muted">The main image users should replicate when taking photos</small>
             </div>
-            <button type="button" class="btn btn-outline-primary btn-sm" 
-                    (click)="openPrimarySampleImageUpload(currentModalItemIndex)"
-                    [disabled]="uploadingImage">
-              <span *ngIf="uploadingImage" class="spinner-border spinner-border-sm me-1" role="status"></span>
-              <i *ngIf="!uploadingImage" class="mdi" [class.mdi-plus]="!hasPrimarySampleImage(currentModalItemIndex)" [class.mdi-image-edit]="hasPrimarySampleImage(currentModalItemIndex)"></i>
-              {{uploadingImage ? 'Uploading...' : (hasPrimarySampleImage(currentModalItemIndex) ? 'Replace' : 'Add Sample')}}
-            </button>
+            <span *ngIf="uploadingImage" class="badge bg-info-subtle text-info-emphasis border">
+              <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+              Uploading...
+            </span>
+          </div>
+
+          <div class="mb-3">
+            <app-inline-attachment-dropzone
+              [disabled]="uploadingImage"
+              [accept]="'image/*'"
+              [multiple]="false"
+              [allowPaste]="true"
+              [openPickerOnContainerClick]="false"
+              [chooseLabel]="hasPrimarySampleImage(currentModalItemIndex) ? 'Choose replacement image' : 'Choose primary sample image'"
+              [dropLabel]="'or drag it here.'"
+              [pasteHint]="'Copy and paste an image into this area.'"
+              [showPasteHint]="true"
+              (filesAdded)="onPrimarySampleImageFilesAdded(currentModalItemIndex, $event)">
+            </app-inline-attachment-dropzone>
           </div>
           
           <div *ngIf="hasPrimarySampleImage(currentModalItemIndex)" class="d-flex align-items-center border rounded p-3 bg-body-tertiary">
@@ -1053,7 +1073,7 @@
             </div>
           </div>
           
-          <div *ngIf="!hasPrimarySampleImage(currentModalItemIndex)" class="text-muted text-center py-4 border-2 border-dashed rounded bg-body" style="border: 2px dashed var(--bs-border-color);">
+          <div *ngIf="!hasPrimarySampleImage(currentModalItemIndex)" class="text-muted text-center py-2">
             <i class="mdi mdi-camera-outline text-primary mb-2" style="font-size: 2.5rem;"></i>
             <p class="mb-0"><strong>No primary sample image</strong></p>
             <p class="mb-0 small text-muted">Add the main reference photo users should replicate</p>
@@ -1069,14 +1089,32 @@
               <label class="form-label mb-0 fw-bold">Reference Images</label>
               <small class="d-block text-muted">Additional context images (max 5) - different angles, examples, diagrams</small>
             </div>
-            <button type="button" class="btn btn-outline-secondary btn-sm" 
-                    (click)="openReferenceImageUpload(currentModalItemIndex)"
-                    [disabled]="uploadingImage || getReferenceImageCount(currentModalItemIndex) >= 5">
-              <span *ngIf="uploadingImage" class="spinner-border spinner-border-sm me-1" role="status"></span>
-              <i *ngIf="!uploadingImage" class="mdi mdi-plus"></i>
-              {{uploadingImage ? 'Uploading...' : 'Add Reference'}}
-              <span class="badge bg-secondary ms-1">{{getReferenceImageCount(currentModalItemIndex)}}/5</span>
-            </button>
+            <div class="d-flex align-items-center gap-2">
+              <span class="badge bg-secondary">{{getReferenceImageCount(currentModalItemIndex)}}/5</span>
+              <span *ngIf="uploadingImage" class="badge bg-info-subtle text-info-emphasis border">
+                <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                Uploading...
+              </span>
+            </div>
+          </div>
+
+          <div class="mb-3" *ngIf="getReferenceImageCount(currentModalItemIndex) < 5">
+            <app-inline-attachment-dropzone
+              [disabled]="uploadingImage"
+              [accept]="'image/*'"
+              [multiple]="true"
+              [allowPaste]="true"
+              [openPickerOnContainerClick]="false"
+              [chooseLabel]="'Choose reference images'"
+              [dropLabel]="'or drag them here.'"
+              [pasteHint]="'Copy and paste one or more images into this area.'"
+              [showPasteHint]="true"
+              (filesAdded)="onReferenceImageFilesAdded(currentModalItemIndex, $event)">
+            </app-inline-attachment-dropzone>
+          </div>
+
+          <div class="small text-muted mb-2" *ngIf="getReferenceImageCount(currentModalItemIndex) >= 5">
+            Reference image limit reached. Remove one to add another.
           </div>
           
           <!-- Reference Images Grid -->

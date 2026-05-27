@@ -1,9 +1,8 @@
 import { BadRequestException, ForbiddenException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { randomBytes } from 'crypto';
-import { readFileSync, existsSync } from 'fs';
-import { join } from 'path';
 import { RowDataPacket } from 'mysql2/promise';
 import PDFDocument from 'pdfkit';
+import sharp from 'sharp';
 import { AccessControlService } from '../access-control/access-control.service';
 import { PhotoChecklistRepository } from './photo-checklist.repository';
 import { FileStorageService } from '../file-storage/file-storage.service';
@@ -155,7 +154,7 @@ export class PhotoChecklistService {
         }
 
         renderableImages.push({
-          buffer: imageBuffer,
+          buffer: await this.compressImageForPdf(imageBuffer),
           label: String(image.label || (image.is_primary ? 'Primary' : 'Reference')).trim() || 'Image',
         });
       }
@@ -339,7 +338,7 @@ export class PhotoChecklistService {
           subFolder: 'inspectionCheckList',
         });
         if (imageBuffer) {
-          renderableImages.push(imageBuffer);
+          renderableImages.push(await this.compressImageForPdf(imageBuffer));
         }
       }
 
@@ -1616,6 +1615,29 @@ export class PhotoChecklistService {
     }
 
     return null;
+  }
+
+  private async compressImageForPdf(input: Buffer): Promise<Buffer> {
+    try {
+      return await sharp(input)
+        .rotate()
+        .resize({
+          width: 1024,
+          fit: 'inside',
+          withoutEnlargement: true,
+        })
+        .flatten({ background: '#ffffff' })
+        .jpeg({
+          quality: 58,
+          progressive: true,
+          chromaSubsampling: '4:2:0',
+          mozjpeg: true,
+        })
+        .toBuffer();
+    } catch {
+      // Fall back to the original image if compression fails.
+      return input;
+    }
   }
 
   private buildChecklistImageUrlCandidates(

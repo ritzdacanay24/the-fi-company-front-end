@@ -26,6 +26,7 @@ import { WordParserService } from './services/word-parser.service';
 import { RevisionDescriptionDialogComponent } from './components/revision-description-dialog.component';
 import { FileViewerModalComponent } from '@app/shared/components/file-viewer-modal/file-viewer-modal.component';
 import { TransferOwnershipModalComponent } from '@app/shared/components/transfer-ownership-modal/transfer-ownership-modal.component';
+import { InlineAttachmentDropzoneComponent } from '@app/shared/components/inline-attachment-dropzone/inline-attachment-dropzone.component';
 
 interface SampleImage {
   id?: string;
@@ -81,7 +82,7 @@ interface ItemEditSnapshot {
 @Component({
   selector: 'app-checklist-template-editor',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, NgbModule, QualityDocumentSelectorComponent, RouterModule, QuillModule, ChecklistNavigationComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, NgbModule, QualityDocumentSelectorComponent, RouterModule, QuillModule, ChecklistNavigationComponent, InlineAttachmentDropzoneComponent],
   templateUrl: './checklist-template-editor.component.html',
   styleUrls: ['./checklist-template-editor.component.scss']
 })
@@ -319,18 +320,18 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       return;
     }
 
-    void Swal.fire({
-      title: 'Generating PDF...',
-      text: 'Please wait while we prepare your checklist download.',
-      allowOutsideClick: false,
-      allowEscapeKey: false,
-      showConfirmButton: false,
-      didOpen: () => {
-        Swal.showLoading();
-      },
-    });
-
     try {
+      void Swal.fire({
+        title: 'Generating PDF...',
+        text: 'Please wait while we prepare your checklist download.',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showConfirmButton: false,
+        didOpen: () => {
+          Swal.showLoading();
+        },
+      });
+
       const blob = await firstValueFrom(this.configService.downloadTemplatePdf(Number(this.editingTemplate.id)));
       const objectUrl = URL.createObjectURL(blob);
       const templateName = String(this.editingTemplate.name || 'checklist-template')
@@ -3246,6 +3247,28 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     document.body.removeChild(fileInput);
   }
 
+  async onPrimarySampleImageFilesAdded(itemIndex: number, files: File[]): Promise<void> {
+    if (!files?.length) {
+      return;
+    }
+
+    const firstImage = files.find((file) => file.type?.startsWith('image/'));
+    if (!firstImage) {
+      this.showWarningDialog('Please drop or paste an image file (JPG, PNG, GIF, WebP).', 'Invalid file');
+      return;
+    }
+
+    if (files.length > 1) {
+      this.showInfoDialog('Only the first image was used for the primary sample.');
+    }
+
+    try {
+      await this.uploadPrimarySampleImage(itemIndex, firstImage);
+    } catch (error) {
+      console.error('Primary sample image upload failed:', error);
+    }
+  }
+
   async uploadPrimarySampleImage(itemIndex: number, file: File): Promise<void> {
     this.uploadingImage = true;
 
@@ -5165,6 +5188,37 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     document.body.appendChild(fileInput);
     fileInput.click();
     document.body.removeChild(fileInput);
+  }
+
+  async onReferenceImageFilesAdded(itemIndex: number, files: File[]): Promise<void> {
+    if (!files?.length) {
+      return;
+    }
+
+    const imageFiles = files.filter((file) => file.type?.startsWith('image/'));
+    if (imageFiles.length === 0) {
+      this.showWarningDialog('Please drop or paste image files only.', 'Invalid file');
+      return;
+    }
+
+    const remainingSlots = Math.max(0, 5 - this.getReferenceImageCount(itemIndex));
+    if (remainingSlots <= 0) {
+      this.showWarningDialog('Maximum of 5 reference images allowed.', 'Limit reached');
+      return;
+    }
+
+    const filesToUpload = imageFiles.slice(0, remainingSlots);
+    if (imageFiles.length > remainingSlots) {
+      this.showInfoDialog(`Only ${remainingSlots} reference image${remainingSlots === 1 ? '' : 's'} uploaded (max 5 total).`);
+    }
+
+    for (const file of filesToUpload) {
+      try {
+        await this.uploadReferenceImage(itemIndex, file);
+      } catch (error) {
+        console.error('Reference image upload failed:', error);
+      }
+    }
   }
 
   async uploadReferenceImage(itemIndex: number, file: File): Promise<void> {
