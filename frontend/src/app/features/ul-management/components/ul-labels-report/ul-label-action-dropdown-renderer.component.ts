@@ -5,7 +5,6 @@ import { ICellRendererAngularComp } from 'ag-grid-angular';
 import { ICellRendererParams } from 'ag-grid-community';
 
 export interface ULLabelActionCellParams extends ICellRendererParams {
-  canEdit?: boolean;
   onEdit: (id: number) => void;
   onToggle: (id: number, status: string) => void;
   onVoid: (id: number) => void;
@@ -35,10 +34,6 @@ export class ULLabelActionDropdownRendererComponent implements ICellRendererAngu
   get isUsed(): boolean {
     const raw = this.params?.data?.is_consumed;
     return raw === true || raw === 1 || raw === '1';
-  }
-
-  get canEditAction(): boolean {
-    return !!(this.params as any)?.canEdit;
   }
 
   get hasUlNumber(): boolean {

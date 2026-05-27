@@ -217,7 +217,6 @@ export class ULLabelsReportComponent implements OnInit {
       filter: false,
       cellRenderer: ULLabelActionDropdownRendererComponent,
       cellRendererParams: {
-        canEdit: this.canEditLabels(),
         onEdit: (id: number) => this.editULLabel(id),
         onToggle: (id: number, status: string) => this.toggleULLabel(String(id), status),
         onVoid: (id: number) => this.openMarkAsUsedModal(id),
@@ -530,11 +529,6 @@ export class ULLabelsReportComponent implements OnInit {
   }
 
   editULLabel(id: number): void {
-    if (!this.canEditLabels()) {
-      this.toastr.warning('Only admins can edit UL labels.');
-      return;
-    }
-
     const ulLabel = this.ulLabels.find(label => label.id === id);
     if (ulLabel) {
       // Check if UL label has been used
@@ -546,11 +540,6 @@ export class ULLabelsReportComponent implements OnInit {
       // Open modal for editing
       this.openEditModal(ulLabel);
     }
-  }
-
-  private canEditLabels(): boolean {
-    const currentUser = this.authenticationService.currentUserValue;
-    return currentUser?.isAdmin == 1;
   }
 
   exportData(): void {
