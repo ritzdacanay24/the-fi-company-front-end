@@ -63,7 +63,6 @@ const ALLOWED_COLUMNS = new Set([
 @Injectable()
 export class UsersRepository extends BaseRepository<UserRecord> {
   constructor(@Inject(MysqlService) mysqlService: MysqlService) {
-    // users table lives in the `db` database, not `eyefidb`
     super('db.users', mysqlService);
   }
 

@@ -151,7 +151,7 @@ export class MaterialRequestDetailRepository extends BaseRepository<RowDataPacke
           END) AS highest_priority
         FROM mrf_det_reviews r
         INNER JOIN mrf_det md ON md.id = r.mrf_det_id
-        LEFT JOIN users u ON u.id = r.reviewerId
+        LEFT JOIN db.users u ON u.id = r.reviewerId
         WHERE md.mrf_id = ? AND r.active = 1
         GROUP BY r.reviewerId, reviewerName, r.department
         ORDER BY pending_items DESC, highest_priority DESC, reviewerName ASC
@@ -231,7 +231,7 @@ export class MaterialRequestDetailRepository extends BaseRepository<RowDataPacke
         FROM mrf_det_reviews r
         INNER JOIN mrf_det md ON md.id = r.mrf_det_id
         INNER JOIN mrf mr ON mr.id = md.mrf_id
-        LEFT JOIN users u_req ON u_req.id = mr.createdBy
+        LEFT JOIN db.users u_req ON u_req.id = mr.createdBy
         WHERE r.reviewerId = ?
           AND r.reviewStatus = 'pending_review'
           AND r.active = 1
@@ -302,8 +302,8 @@ export class MaterialRequestDetailRepository extends BaseRepository<RowDataPacke
           FROM mrf_det_reviews r
           INNER JOIN mrf_det md ON md.id = r.mrf_det_id
           INNER JOIN mrf mr ON mr.id = md.mrf_id
-          LEFT JOIN users u1 ON u1.id = r.reviewerId
-          LEFT JOIN users u2 ON u2.id = r.sentForReviewBy
+          LEFT JOIN db.users u1 ON u1.id = r.reviewerId
+          LEFT JOIN db.users u2 ON u2.id = r.sentForReviewBy
           WHERE r.id = ? AND r.active = 1
           LIMIT 1
         `,
@@ -346,7 +346,7 @@ export class MaterialRequestDetailRepository extends BaseRepository<RowDataPacke
           FROM mrf_det_reviews r
           INNER JOIN mrf_det md ON md.id = r.mrf_det_id
           INNER JOIN mrf mr ON mr.id = md.mrf_id
-          LEFT JOIN users u1 ON u1.id = mr.createdBy
+          LEFT JOIN db.users u1 ON u1.id = mr.createdBy
           WHERE ${conditions.join(' AND ')}
           ORDER BY ${this.priorityOrderSql('r.reviewPriority')}, r.sentForReviewAt ASC
         `,
@@ -411,8 +411,8 @@ export class MaterialRequestDetailRepository extends BaseRepository<RowDataPacke
         FROM mrf_det_reviews r
         INNER JOIN mrf_det md ON md.id = r.mrf_det_id
         INNER JOIN mrf mr ON mr.id = md.mrf_id
-        LEFT JOIN users u1 ON u1.id = r.reviewerId
-        LEFT JOIN users u2 ON u2.id = r.sentForReviewBy
+        LEFT JOIN db.users u1 ON u1.id = r.reviewerId
+        LEFT JOIN db.users u2 ON u2.id = r.sentForReviewBy
         WHERE ${conditions.join(' AND ')}
         ORDER BY r.sentForReviewAt DESC
         LIMIT ? OFFSET ?
@@ -541,8 +541,8 @@ export class MaterialRequestDetailRepository extends BaseRepository<RowDataPacke
           u1.department AS reviewerDepartment,
           TRIM(CONCAT(COALESCE(u2.first, ''), ' ', COALESCE(u2.last, ''))) AS sentByName
         FROM mrf_det_reviews r
-        LEFT JOIN users u1 ON u1.id = r.reviewerId
-        LEFT JOIN users u2 ON u2.id = r.sentForReviewBy
+        LEFT JOIN db.users u1 ON u1.id = r.reviewerId
+        LEFT JOIN db.users u2 ON u2.id = r.sentForReviewBy
         WHERE r.mrf_det_id = ? AND r.active = 1
         ORDER BY ${this.priorityOrderSql('r.reviewPriority')}, r.sentForReviewAt ASC
       `,
@@ -564,8 +564,8 @@ export class MaterialRequestDetailRepository extends BaseRepository<RowDataPacke
           u1.department AS reviewerDepartment,
           TRIM(CONCAT(COALESCE(u2.first, ''), ' ', COALESCE(u2.last, ''))) AS sentByName
         FROM mrf_det_reviews r
-        LEFT JOIN users u1 ON u1.id = r.reviewerId
-        LEFT JOIN users u2 ON u2.id = r.sentForReviewBy
+        LEFT JOIN db.users u1 ON u1.id = r.reviewerId
+        LEFT JOIN db.users u2 ON u2.id = r.sentForReviewBy
         WHERE r.mrf_det_id IN (${itemIds.map(() => '?').join(', ')}) AND r.active = 1
         ORDER BY r.mrf_det_id ASC, ${this.priorityOrderSql('r.reviewPriority')}, r.sentForReviewAt ASC
       `,
@@ -643,7 +643,7 @@ export class MaterialRequestDetailRepository extends BaseRepository<RowDataPacke
           TRIM(CONCAT(COALESCE(u.first, ''), ' ', COALESCE(u.last, ''))) AS performedByName
         FROM mrf_review_audit_log log
         INNER JOIN mrf_det_reviews r ON r.id = log.review_id
-        LEFT JOIN users u ON u.id = log.performed_by
+        LEFT JOIN db.users u ON u.id = log.performed_by
         WHERE r.mrf_det_id = ?
         ORDER BY log.created_at DESC, log.id DESC
       `,
@@ -698,7 +698,7 @@ export class MaterialRequestDetailRepository extends BaseRepository<RowDataPacke
         FROM mrf_det_reviews r
         INNER JOIN mrf_det md ON md.id = r.mrf_det_id
         INNER JOIN mrf m ON m.id = md.mrf_id
-        LEFT JOIN users u ON u.id = r.reviewerId
+        LEFT JOIN db.users u ON u.id = r.reviewerId
         WHERE r.active = 1
         ORDER BY ${this.priorityOrderSql('r.reviewPriority')}, r.sentForReviewAt DESC
       `,
@@ -726,7 +726,7 @@ export class MaterialRequestDetailRepository extends BaseRepository<RowDataPacke
     const departments = await this.mysqlService.query<RowDataPacket[]>(
       `
         SELECT DISTINCT department
-        FROM users
+        FROM db.users
         WHERE active = 1 AND department IS NOT NULL AND department <> ''
         ORDER BY department ASC
       `,
@@ -739,7 +739,7 @@ export class MaterialRequestDetailRepository extends BaseRepository<RowDataPacke
           id,
           TRIM(CONCAT(COALESCE(first, ''), ' ', COALESCE(last, ''))) AS name,
           department
-        FROM users
+        FROM db.users
         WHERE active = 1
         ORDER BY department ASC, first ASC, last ASC
       `,
@@ -943,7 +943,7 @@ export class MaterialRequestDetailRepository extends BaseRepository<RowDataPacke
           END) AS avg_priority
         FROM mrf_det_reviews r
         INNER JOIN mrf_det md ON md.id = r.mrf_det_id
-        LEFT JOIN users u ON u.id = r.reviewerId
+        LEFT JOIN db.users u ON u.id = r.reviewerId
         WHERE md.mrf_id = ? AND r.active = 1
         GROUP BY r.department
         ORDER BY r.department ASC
@@ -1105,7 +1105,7 @@ export class MaterialRequestDetailRepository extends BaseRepository<RowDataPacke
           u.email AS reviewer_email,
           md.partNumber
         FROM mrf_det_reviews r
-        LEFT JOIN users u ON u.id = r.reviewerId
+        LEFT JOIN db.users u ON u.id = r.reviewerId
         INNER JOIN mrf_det md ON md.id = r.mrf_det_id
         WHERE r.id = ?
         LIMIT 1

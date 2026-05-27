@@ -14,10 +14,17 @@ export abstract class BaseRepository<T extends RowDataPacket = RowDataPacket> {
     return `\`${identifier.replace(/`/g, '``')}\``;
   }
 
+  protected quoteTableName(tableName: string): string {
+    return tableName
+      .split('.')
+      .map((segment) => this.quoteIdentifier(segment))
+      .join('.');
+  }
+
   async find(where: Record<string, unknown> = {}): Promise<T[]> {
     const keys = Object.keys(where);
 
-    const tableName = this.quoteIdentifier(this.tableName);
+    const tableName = this.quoteTableName(this.tableName);
     const primaryKey = this.quoteIdentifier(this.primaryKey);
 
     let sql = `SELECT * FROM ${tableName}`;
@@ -42,7 +49,7 @@ export abstract class BaseRepository<T extends RowDataPacket = RowDataPacket> {
       return null;
     }
 
-    const tableName = this.quoteIdentifier(this.tableName);
+    const tableName = this.quoteTableName(this.tableName);
     const primaryKey = this.quoteIdentifier(this.primaryKey);
 
     const params: unknown[] = [];
@@ -62,7 +69,7 @@ export abstract class BaseRepository<T extends RowDataPacket = RowDataPacket> {
 
     const placeholders = keys.map(() => '?').join(', ');
     const columns = keys.map((key) => this.quoteIdentifier(key)).join(', ');
-    const tableName = this.quoteIdentifier(this.tableName);
+    const tableName = this.quoteTableName(this.tableName);
 
     const sql = `INSERT INTO ${tableName} (${columns}) VALUES (${placeholders})`;
     const result = await this.mysqlService.execute<ResultSetHeader>(sql, values);
@@ -74,7 +81,7 @@ export abstract class BaseRepository<T extends RowDataPacket = RowDataPacket> {
     const values = Object.values(payload);
 
     const setClause = keys.map((key) => `${this.quoteIdentifier(key)} = ?`).join(', ');
-    const tableName = this.quoteIdentifier(this.tableName);
+    const tableName = this.quoteTableName(this.tableName);
     const primaryKey = this.quoteIdentifier(this.primaryKey);
     const sql = `UPDATE ${tableName} SET ${setClause} WHERE ${primaryKey} = ?`;
 
@@ -83,7 +90,7 @@ export abstract class BaseRepository<T extends RowDataPacket = RowDataPacket> {
   }
 
   async deleteById(id: number | string): Promise<number> {
-    const tableName = this.quoteIdentifier(this.tableName);
+    const tableName = this.quoteTableName(this.tableName);
     const primaryKey = this.quoteIdentifier(this.primaryKey);
     const sql = `DELETE FROM ${tableName} WHERE ${primaryKey} = ?`;
     const result = await this.mysqlService.execute<ResultSetHeader>(sql, [id]);
