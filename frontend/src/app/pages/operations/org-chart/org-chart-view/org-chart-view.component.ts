@@ -1,8 +1,9 @@
 import { ActivatedRoute, Router } from "@angular/router";
 import { SharedModule } from "@app/shared/shared.module";
 import { OrgChartModule } from "../org-chart.module";
+import { AgGridModule } from 'ag-grid-angular';
 
-import { Component, OnInit, AfterViewInit, OnDestroy, Input, ViewChild, ElementRef } from "@angular/core";
+import { Component, OnInit, AfterViewInit, OnDestroy, Input, ViewChild, ElementRef, Inject } from "@angular/core";
 import { OrgChart } from "d3-org-chart";
 import { UserService } from "@app/core/api/field-service/user.service";
 import { UserModalService } from "@app/pages/maintenance/user/user-modal/user-modal.component";
@@ -11,14 +12,16 @@ import { accessRight } from "@app/pages/maintenance/user/user-constant";
 import { UserSearchV1Component } from "@app/shared/components/user-search-v1/user-search-v1.component";
 import { DepartmentModalComponent } from "../department-modal/department-modal.component";
 import { DepartmentService, Department } from "../services/department.service";
+import { OrgChartUserModalService, OrgChartUserModalMode } from "../org-chart-user-modal/org-chart-user-modal.service";
 import { NgbDropdownModule } from "@ng-bootstrap/ng-bootstrap";
 import { FormsModule } from "@angular/forms";
 import moment from "moment";
 import * as d3 from "d3";
+import { ColDef, RowDragEndEvent } from 'ag-grid-community';
 
 @Component({
   standalone: true,
-  imports: [SharedModule, OrgChartModule, UserSearchV1Component, DepartmentModalComponent, NgbDropdownModule, FormsModule],
+  imports: [SharedModule, OrgChartModule, UserSearchV1Component, DepartmentModalComponent, NgbDropdownModule, FormsModule, AgGridModule],
   selector: "app-org-chart-view",
   templateUrl: "./org-chart-view.component.html",
   styleUrls: [],
@@ -78,18 +81,53 @@ import * as d3 from "d3";
   `]
 })
 export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
+  readonly statusFilterOptions = [
+    { value: 'active', label: 'Active' },
+    { value: 'inactive', label: 'Inactive' },
+    { value: 'all', label: 'All' },
+  ] as const;
+
   constructor(
     public activatedRoute: ActivatedRoute,
     public router: Router,
     private userService: UserService,
     private userModalService: UserModalService,
-    private departmentService: DepartmentService
+    private departmentService: DepartmentService,
+    @Inject(OrgChartUserModalService) private orgChartUserModalService: OrgChartUserModalService,
   ) {
     this.activatedRoute.queryParams.subscribe((params) => {
       this.query = params["username"];
       this.userId = params["userId"];
       this.user_edit = params["user_edit"];
     });
+  }
+
+  openUserProfileModal(id: number, mode: OrgChartUserModalMode = 'view'): void {
+    if (!id || id < 0) {
+      return;
+    }
+
+    const modalRef: any = this.orgChartUserModalService.open({
+      id,
+      mode,
+      title: mode === 'edit' ? 'Edit User' : 'User Profile',
+    });
+
+    modalRef.componentInstance.imageUpdated.subscribe((event: { userId: string; imageUrl: string }) => {
+      this.handleImageUpdate(event.userId, event.imageUrl);
+    });
+
+    modalRef.result.then(
+      (data: any) => {
+        if (!data) {
+          return;
+        }
+
+        this.originalData = this.originalData?.map((entry) => entry.id === id ? { ...entry, ...data } : entry);
+        void this.getDataWithStatePreservation();
+      },
+      () => {}
+    );
   }
 
   userId;
@@ -111,6 +149,176 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
   private _isHorizontalLayout = false;
   
   chart: any; // Add proper typing for the chart
+  viewMode: 'table' | 'chart' = 'table';
+  statusFilter: 'active' | 'inactive' | 'all' = 'active';
+  readonly quickEditEmploymentTypeOptions = ['FT', 'PT', 'CT'];
+  readonly quickEditActiveStatusOptions = [1, 0];
+  readonly quickEditActiveStatusLabels: Record<number, string> = {
+    1: 'Active',
+    0: 'Inactive',
+  };
+  readonly quickEditLocationOptions = ['Las Vegas, NV', 'Seattle, WA', 'Tijuana, Mexico'];
+  tableRowData: any[] = [];
+  readonly tableRowHeight = 45;
+  readonly tableDefaultColDef: ColDef = {
+    sortable: true,
+    filter: true,
+    floatingFilter: true,
+    resizable: true,
+    flex: 1,
+    minWidth: 140,
+  };
+  readonly tableAutoGroupColumnDef: ColDef = {
+    headerName: 'Employee Hierarchy',
+    minWidth: 320,
+    pinned: 'left',
+    rowDrag: (params: any) => !!params.data && !this.readOnly,
+    cellRendererParams: {
+      suppressCount: true,
+      innerRenderer: (params: any) => {
+        const imageUrl = String(params.data?.imageUrl || 'assets/images/default-user.png');
+        const title = params.data?.title ? `<div class="text-muted small">${params.data.title}</div>` : '';
+        const name = params.data?.employee_name || this.getHierarchyDisplayName(params.value);
+        const openAction = params.data?.is_placeholder
+          ? name
+          : `<button type="button" data-user-open="${params.data?.id}" style="appearance:none;background:none;border:0;padding:0;margin:0;color:#0d6efd;font-weight:600;text-decoration:underline;line-height:1.2;display:block;text-align:left;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;width:100%;">${name}</button>`;
+        const avatarMarkup = params.data?.is_placeholder
+          ? `<div style="width:32px;height:32px;min-width:32px;display:flex;align-items:center;justify-content:center;border-radius:50%;border:1px solid #bfdbfe;background:#eff6ff;color:#1d4ed8;"><i class="mdi mdi-domain"></i></div>`
+          : `<img src="${imageUrl}" alt="${name}" style="width:32px;height:32px;min-width:32px;display:block;border-radius:50%;object-fit:cover;border:1px solid #e5e7eb;background:#fff;" onerror="this.src='assets/images/default-user.png'" />`;
+        return `
+          <div class="d-flex align-items-center gap-2" style="min-height:40px;overflow:hidden;min-width:0;">
+            ${avatarMarkup}
+            <div style="line-height:1.2;overflow:hidden;display:flex;flex-direction:column;justify-content:center;min-width:0;flex:1;">
+              <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${openAction}</div>
+              ${title ? `<div class="text-muted small" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${params.data.title}</div>` : ''}
+            </div>
+          </div>
+        `;
+      }
+    },
+    onCellClicked: (params: any) => {
+      const target = params.event?.target as HTMLElement | null;
+      const button = target?.closest('[data-user-open]') as HTMLElement | null;
+      if (!button) {
+        return;
+      }
+
+      const userId = Number(button.getAttribute('data-user-open'));
+      if (!userId) {
+        return;
+      }
+
+      this.openUserProfileModal(userId, this.readOnly ? 'view' : 'edit');
+    }
+  };
+  readonly tableColumnDefs: ColDef[] = [
+    { field: 'id', headerName: 'User ID', minWidth: 110, maxWidth: 130 },
+    {
+      field: 'title',
+      headerName: 'Title',
+      minWidth: 220,
+      hide: true,
+      editable: (params: any) => this.isQuickEditableRow(params),
+      cellEditor: 'agTextCellEditor',
+    },
+    {
+      field: 'active',
+      headerName: 'Active Status',
+      minWidth: 150,
+      editable: (params: any) => this.isQuickEditableRow(params),
+      cellEditor: 'agRichSelectCellEditor',
+      cellEditorParams: {
+        values: this.quickEditActiveStatusOptions,
+        formatValue: (value: number) => this.quickEditActiveStatusLabels[Number(value)] || 'Inactive',
+      },
+      cellRenderer: (params: any) => {
+        const isActive = Number(params.value ?? params.data?.active ?? 0) === 1;
+        const color = isActive ? '#198754' : '#dc3545';
+        const background = isActive ? 'rgba(25, 135, 84, 0.12)' : 'rgba(220, 53, 69, 0.12)';
+        const label = isActive ? 'Active' : 'Inactive';
+
+        return `
+          <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:${background};color:${color};font-weight:600;line-height:1;">
+            <span style="width:8px;height:8px;border-radius:999px;background:${color};display:inline-block;"></span>
+            ${label}
+          </span>
+        `;
+      }
+    },
+    {
+      field: 'employeeType1',
+      headerName: 'Employment Type',
+      minWidth: 170,
+      editable: (params: any) => this.isQuickEditableRow(params),
+      cellEditor: 'agRichSelectCellEditor',
+      cellEditorParams: {
+        values: this.quickEditEmploymentTypeOptions,
+      },
+      valueFormatter: (params: any) => this.getEmploymentTypeLabel(params.value),
+    },
+    {
+      field: 'location',
+      headerName: 'Location',
+      minWidth: 180,
+      editable: (params: any) => this.isQuickEditableRow(params),
+      cellEditor: 'agRichSelectCellEditor',
+      cellEditorParams: {
+        values: this.quickEditLocationOptions,
+      },
+    },
+    { field: 'department', headerName: 'Department', minWidth: 180 },
+    { field: 'manager_name', headerName: 'Manager', minWidth: 200 },
+    {
+      field: 'hire_date',
+      headerName: 'Hire Date',
+      minWidth: 150,
+      editable: (params: any) => this.isQuickEditableRow(params),
+      cellEditor: 'agDateStringCellEditor',
+      valueFormatter: (params: any) => params.value ? moment(params.value).format('MM/DD/YYYY') : 'Not Set'
+    },
+    {
+      field: 'hire_status',
+      headerName: 'Status',
+      minWidth: 170,
+      cellRenderer: (params: any) => {
+        const color = params.data?.hire_date_color || 'gray';
+        return `
+          <div class="d-inline-flex align-items-center gap-2">
+            <span style="width:10px;height:10px;border-radius:999px;background:${color};display:inline-block;"></span>
+            <span>${params.value || 'Unknown'}</span>
+          </div>
+        `;
+      }
+    }
+  ];
+  readonly tableTreeData = true;
+  readonly tableGroupDefaultExpanded = -1;
+  readonly tableGroupDisplayType = 'singleColumn';
+
+  private isQuickEditableRow(params: any): boolean {
+    return !this.readOnly && !!params?.data && !params.data?.is_placeholder;
+  }
+
+  setStatusFilter(filter: 'active' | 'inactive' | 'all'): void {
+    if (this.statusFilter === filter) {
+      return;
+    }
+
+    this.statusFilter = filter;
+    void this.getDataWithStatePreservation();
+  }
+
+  private buildOrgChartFilters(): { isEmployee: number; active?: number } {
+    const filters: { isEmployee: number; active?: number } = {
+      isEmployee: 1,
+    };
+
+    if (this.statusFilter !== 'all') {
+      filters.active = this.statusFilter === 'active' ? 1 : 0;
+    }
+
+    return filters;
+  }
   
   // Layout toggle properties
   layoutIcon = 'mdi-view-sequential'; // Default icon for vertical layout
@@ -175,6 +383,20 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
         user_edit: null,
       },
     });
+  }
+
+  setViewMode(mode: 'table' | 'chart'): void {
+    this.viewMode = mode;
+
+    if (mode === 'chart' && this.chart) {
+      setTimeout(() => {
+        try {
+          this.chart.render().fit();
+        } catch (error) {
+          console.error('Error fitting org chart after toggling chart view:', error);
+        }
+      }, 0);
+    }
   }
 
   toggleLayout() {
@@ -514,7 +736,12 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     }
 
-    const modalRef: any = this.userModalService.open(d.data.id);
+    if (d.data.orgChartPlaceHolder) {
+      return;
+    }
+
+    const modalMode: OrgChartUserModalMode = this.readOnly ? 'view' : 'edit';
+    const modalRef: any = this.orgChartUserModalService.open({ id: d.data.id, mode: modalMode, title: modalMode === 'edit' ? 'Edit User' : 'User Profile' });
     
     // Listen for image upload success events
     modalRef.componentInstance.imageUpdated.subscribe((event: {userId: string, imageUrl: string}) => {
@@ -854,6 +1081,453 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   originalData;
+
+  private readonly hierarchyPathSeparator = '::';
+
+  private createHierarchySegment(node: any): string {
+    const employeeName = `${node?.first || ''} ${node?.last || ''}`.trim() || `Employee ${node?.id}`;
+    return `${this.formatOrgChartOrder(node?.org_chart_order)}${this.hierarchyPathSeparator}${employeeName}${this.hierarchyPathSeparator}${node?.id}`;
+  }
+
+  private getHierarchyDisplayName(segment?: string): string {
+    if (!segment) {
+      return '';
+    }
+
+    const parts = String(segment).split(this.hierarchyPathSeparator);
+    if (parts.length >= 3) {
+      return parts[1] || String(segment);
+    }
+
+    return parts[0] || String(segment);
+  }
+
+  private formatOrgChartOrder(value: unknown): string {
+    const numericValue = Number(value);
+    const safeValue = Number.isFinite(numericValue) ? numericValue : 0;
+    return String(Math.max(0, safeValue)).padStart(6, '0');
+  }
+
+  private normalizeOrgChartData(data: any[]): any[] {
+    return (data || []).map((node) => {
+      const normalizedId = node?.id === null || node?.id === undefined || node?.id === '' ? node?.id : Number(node.id);
+      const rawParentId = node?.parentId;
+      const normalizedParentId = rawParentId === null || rawParentId === undefined || rawParentId === ''
+        ? null
+        : Number(rawParentId);
+      const rawOrder = node?.org_chart_order;
+      const normalizedOrder = rawOrder === null || rawOrder === undefined || rawOrder === ''
+        ? 0
+        : Number(rawOrder);
+
+      return {
+        ...node,
+        id: normalizedId,
+        parentId: Number.isNaN(normalizedParentId) ? null : normalizedParentId,
+        org_chart_order: Number.isNaN(normalizedOrder) ? 0 : normalizedOrder,
+      };
+    });
+  }
+
+  private getHireStatusLabel(hireDate?: string | null, openPosition?: boolean): string {
+    if (openPosition) {
+      return 'Open Position';
+    }
+
+    if (!hireDate) {
+      return 'Hire date not set';
+    }
+
+    const color = this.checkHireColor(hireDate);
+    if (color === 'orange') return 'New Position';
+    if (color === 'rgb(0, 195, 255)') return 'Less than 6 months';
+    if (color === '#4B0082') return 'Less than 12 months';
+    if (color === '#002D62') return '12+ months';
+    return 'Hire date not set';
+  }
+
+  private getLocationLabel(node: any): string {
+    if (node?.orgChartPlaceHolder) {
+      return '—';
+    }
+
+    const city = String(node?.city || '').trim();
+    const state = String(node?.state || '').trim();
+    const area = String(node?.area || '').trim();
+    const department = String(node?.org_chart_department || node?.department || '').trim();
+    const combined = `${city} ${state} ${area} ${department}`.toLowerCase();
+
+    if (combined.includes('seattle')) {
+      return 'Seattle';
+    }
+
+    if (combined.includes('tijuana') || combined.includes(' tj') || combined.startsWith('tj ') || combined.includes('mexico')) {
+      return 'Tijuana, Mexico';
+    }
+
+    if (combined.includes('las vegas') || state.toLowerCase() === 'nv') {
+      return 'Las Vegas';
+    }
+
+    const cityState = [city, state].filter(Boolean).join(', ');
+    if (cityState) {
+      return cityState;
+    }
+
+    return 'Unassigned';
+  }
+
+  private getEmploymentTypeLabel(value: unknown): string {
+    const employeeType = String(value || '').trim().toUpperCase();
+
+    switch (employeeType) {
+      case 'FT':
+        return 'Permanent';
+      case 'PT':
+        return 'Part Time';
+      case 'CT':
+        return 'Contract';
+      default:
+        return 'Unspecified';
+    }
+  }
+
+  private getLocationParts(locationLabel?: string | null): { city: string; state: string } {
+    switch (String(locationLabel || '').trim()) {
+      case 'Las Vegas, NV':
+        return { city: 'Las Vegas', state: 'NV' };
+      case 'Seattle, WA':
+        return { city: 'Seattle', state: 'WA' };
+      case 'Tijuana, Mexico':
+        return { city: 'Tijuana', state: 'Mexico' };
+      default:
+        return { city: '', state: '' };
+    }
+  }
+
+  private normalizeHireDateValue(value: unknown): string | null {
+    const normalized = String(value ?? '').trim();
+    if (!normalized) {
+      return null;
+    }
+
+    const parsed = moment(normalized, moment.ISO_8601, true);
+    return parsed.isValid() ? parsed.format('YYYY-MM-DD') : null;
+  }
+
+  private buildTableRows(data: any[]): void {
+    const allNodes = (data || []).filter((node) => node?.id !== null && node?.id !== undefined);
+    const users = allNodes.filter((node) => !node?.orgChartPlaceHolder);
+    const allNodesById = new Map<number, any>(allNodes.map((node) => [Number(node.id), node]));
+    const usersById = new Map<number, any>(users.map((node) => [Number(node.id), node]));
+    const hasExplicitZeroUser = allNodesById.has(0);
+    const getEmployeeName = (node: any) => `${node.first || ''} ${node.last || ''}`.trim() || `Employee ${node.id}`;
+    const getNodeLabel = (node: any): string => {
+      if (node?.orgChartPlaceHolder) {
+        return String(node?.org_chart_department || node?.department || node?.first || node?.title || `Department ${node?.id}`).trim();
+      }
+
+      return getEmployeeName(node);
+    };
+    const isCeoNode = (node: any): boolean => {
+      const fullName = getEmployeeName(node).toLowerCase();
+      const title = String(node?.title || '').toLowerCase();
+      return fullName === 'joe bianchi' || fullName === 'joe banachi' || title === 'ceo' || title.includes('chief executive officer');
+    };
+    const resolveManager = (node: any): any => {
+      const visited = new Set<number>();
+      let currentParentId = node?.parentId;
+
+      while (currentParentId !== null && currentParentId !== undefined && currentParentId !== '') {
+        const numericParentId = Number(currentParentId);
+        if (visited.has(numericParentId)) {
+          break;
+        }
+
+        visited.add(numericParentId);
+
+        if (numericParentId === 0 && !hasExplicitZeroUser) {
+          return null;
+        }
+
+        const parentNode = allNodesById.get(numericParentId);
+        if (!parentNode) {
+          return null;
+        }
+
+        if (!parentNode.orgChartPlaceHolder) {
+          return parentNode;
+        }
+
+        currentParentId = parentNode.parentId;
+      }
+
+      return null;
+    };
+    const buildHierarchyPath = (node: any): string[] => {
+      const path: string[] = [];
+      const visited = new Set<number>();
+      let current = node;
+
+      while (current && !visited.has(Number(current.id))) {
+        visited.add(Number(current.id));
+        path.unshift(this.createHierarchySegment({ ...current, first: getNodeLabel(current), last: '' }));
+
+        if (current.parentId === null || current.parentId === undefined || current.parentId === '') {
+          break;
+        }
+
+        const parentId = Number(current.parentId);
+        if (parentId === 0 && (!hasExplicitZeroUser || isCeoNode(current))) {
+          break;
+        }
+
+        current = allNodesById.get(parentId);
+
+        if (!current) {
+          break;
+        }
+      }
+
+      return path;
+    };
+
+    this.tableRowData = allNodes.map((node) => {
+      const manager = resolveManager(node);
+      const isPlaceholder = !!node.orgChartPlaceHolder;
+      const nodeLabel = getNodeLabel(node);
+      return {
+        id: node.id,
+        employee_name: nodeLabel,
+        title: node.title || (isPlaceholder ? 'Department' : 'Employee'),
+        active: Number(node.active ?? 0) === 1 ? 1 : 0,
+        employeeType1: node.employeeType1 || '',
+        location: this.getLocationLabel(node),
+        department: node.org_chart_department || node.department || (isPlaceholder ? nodeLabel : 'Unassigned'),
+        manager_name: manager ? `${manager.first || ''} ${manager.last || ''}`.trim() : '—',
+        hire_date: node.hire_date || null,
+        hire_date_color: isPlaceholder ? '#1d4ed8' : (node.openPosition ? 'red' : this.checkHireColor(node.hire_date)),
+        hire_status: isPlaceholder ? 'Department Node' : this.getHireStatusLabel(node.hire_date, !!node.openPosition),
+        openPosition: !!node.openPosition,
+        imageUrl: isPlaceholder ? 'assets/images/default-user.png' : (node.image || 'assets/images/default-user.png'),
+        orgHierarchy: buildHierarchyPath(node),
+        org_chart_order: Number(node.org_chart_order ?? 0) || 0,
+        parentId: node.parentId ?? null,
+        is_ceo: isCeoNode(node),
+        is_placeholder: isPlaceholder,
+      };
+    }).sort((left, right) => {
+      const leftPath = left.orgHierarchy || [];
+      const rightPath = right.orgHierarchy || [];
+
+      if (left.is_ceo && !right.is_ceo) return -1;
+      if (!left.is_ceo && right.is_ceo) return 1;
+
+      const leftKey = leftPath.join('/');
+      const rightKey = rightPath.join('/');
+      return leftKey.localeCompare(rightKey);
+    });
+  }
+
+  readonly getTableDataPath = (data: any): string[] => data.orgHierarchy || [data.employee_name || 'Employee'];
+
+  readonly getTableRowId = (params: any): string => String(params.data?.id ?? '');
+
+  async onTableCellValueChanged(event: any): Promise<void> {
+    const rowData = event?.data;
+    const userId = Number(rowData?.id);
+    const field = String(event?.colDef?.field || '');
+
+    if (!userId || !field || event?.newValue === event?.oldValue) {
+      return;
+    }
+
+    const supportedFields = new Set(['title', 'employeeType1', 'active', 'location', 'hire_date']);
+    if (!supportedFields.has(field)) {
+      return;
+    }
+
+    const normalizedValue = field === 'active'
+      ? Number(event.newValue) === 1 ? 1 : 0
+      : field === 'hire_date'
+        ? this.normalizeHireDateValue(event.newValue)
+      : event.newValue;
+
+    try {
+      const payload = field === 'location'
+        ? this.getLocationParts(String(normalizedValue || ''))
+        : { [field]: normalizedValue };
+
+      await this.userService.update(userId, payload);
+
+      this.originalData = this.originalData.map((entry) =>
+        Number(entry.id) === userId
+          ? {
+              ...entry,
+              ...(field === 'location'
+                ? {
+                    city: payload.city,
+                    state: payload.state,
+                  }
+                : {
+                    [field]: normalizedValue,
+                    ...(field === 'hire_date'
+                      ? {
+                          hire_status: this.getHireStatusLabel(normalizedValue, !!entry.openPosition),
+                          hire_date_color: entry.openPosition ? 'red' : this.checkHireColor(normalizedValue),
+                        }
+                      : {}),
+                  }),
+            }
+          : entry,
+      );
+
+      const updatedEntry = this.originalData.find((entry) => Number(entry.id) === userId);
+      if (updatedEntry) {
+        event.node?.setData({
+          ...event.data,
+          title: updatedEntry.title || event.data?.title,
+          active: Number(updatedEntry.active ?? 0) === 1 ? 1 : 0,
+          employeeType1: updatedEntry.employeeType1 || '',
+          location: this.getLocationLabel(updatedEntry),
+          hire_date: updatedEntry.hire_date || null,
+          hire_status: updatedEntry.hire_status || this.getHireStatusLabel(updatedEntry.hire_date, !!updatedEntry.openPosition),
+          hire_date_color: updatedEntry.hire_date_color || (updatedEntry.openPosition ? 'red' : this.checkHireColor(updatedEntry.hire_date)),
+        });
+      }
+    } catch (error) {
+      event.node?.setDataValue(field, event.oldValue);
+    }
+  }
+
+  onTableRowDragEnd(event: RowDragEndEvent<any>): void {
+    const draggedNodeId = Number(event.node?.data?.id);
+    const targetNode = this.resolveTableDropTarget(event.overNode as any);
+
+    if (!draggedNodeId || !targetNode?.id || draggedNodeId === targetNode.id) {
+      return;
+    }
+
+    void this.handleTableRowMove(event, targetNode);
+  }
+
+  private resolveTableDropTarget(overNode: any): { id: number; data: any; rowTop: number; rowHeight: number } | null {
+    if (!overNode) {
+      return null;
+    }
+
+    if (overNode.data?.id !== null && overNode.data?.id !== undefined) {
+      return {
+        id: Number(overNode.data.id),
+        data: overNode.data,
+        rowTop: Number(overNode.rowTop ?? 0),
+        rowHeight: Number(overNode.rowHeight ?? this.tableRowHeight),
+      };
+    }
+
+    const key = typeof overNode.key === 'string' ? overNode.key : '';
+    if (!key.includes(this.hierarchyPathSeparator)) {
+      return null;
+    }
+
+    const rawId = key.split(this.hierarchyPathSeparator).pop();
+    const parsedId = Number(rawId);
+    if (Number.isNaN(parsedId)) {
+      return null;
+    }
+
+    const data = this.tableRowData?.find((row) => Number(row.id) === parsedId);
+    if (!data) {
+      return null;
+    }
+
+    return {
+      id: parsedId,
+      data,
+      rowTop: Number(overNode.rowTop ?? 0),
+      rowHeight: Number(overNode.rowHeight ?? this.tableRowHeight),
+    };
+  }
+
+  private async handleTableRowMove(
+    event: RowDragEndEvent<any>,
+    targetNode: { id: number; data: any; rowTop: number; rowHeight: number },
+  ): Promise<void> {
+    const draggedData = event.node?.data;
+    if (!draggedData) {
+      return;
+    }
+
+    const dropPosition = this.getTableDropPosition(event, targetNode);
+    const targetParentId = this.normalizeTableParentId(targetNode.data?.parentId);
+    const targetId = Number(targetNode.id);
+    const draggedId = Number(draggedData.id);
+
+    if (dropPosition === 'inside') {
+      await this.moveOrgChartNode(draggedId, {
+        parentId: targetId,
+      });
+      return;
+    }
+
+    const parentId = targetParentId;
+    await this.moveOrgChartNode(draggedId, dropPosition === 'before'
+      ? { parentId, beforeId: targetId }
+      : { parentId, afterId: targetId });
+  }
+
+  private getTableDropPosition(
+    event: RowDragEndEvent<any>,
+    targetNode: { rowTop: number; rowHeight: number },
+  ): 'before' | 'after' | 'inside' {
+    const mouseEvent = event.event as MouseEvent | undefined;
+    const pointerY = typeof mouseEvent?.clientY === 'number' ? mouseEvent.clientY : null;
+    if (pointerY === null) {
+      return 'inside';
+    }
+
+    const rowTop = Number(targetNode.rowTop ?? 0);
+    const rowHeight = Math.max(Number(targetNode.rowHeight ?? this.tableRowHeight), 1);
+    const offset = pointerY - rowTop;
+
+    if (offset <= rowHeight * 0.25) {
+      return 'before';
+    }
+
+    if (offset >= rowHeight * 0.75) {
+      return 'after';
+    }
+
+    return 'inside';
+  }
+
+  private normalizeTableParentId(value: unknown): number | null {
+    if (value === null || value === undefined || value === '') {
+      return null;
+    }
+
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  private async moveOrgChartNode(
+    nodeId: number,
+    payload: { parentId?: number | null; beforeId?: number | null; afterId?: number | null },
+  ): Promise<void> {
+    const result = await this.userService.updateOrgChartPosition(nodeId, payload);
+
+    if (result) {
+      const nodeIndex = this.originalData.findIndex((node) => Number(node.id) === nodeId);
+      if (nodeIndex !== -1) {
+        this.originalData[nodeIndex] = {
+          ...this.originalData[nodeIndex],
+          parentId: payload.parentId ?? this.originalData[nodeIndex].parentId,
+        };
+      }
+
+      await this.getDataWithStatePreservation();
+    }
+  }
   
   // Simplified state management - just track basic state
   private currentZoom = 1;
@@ -892,12 +1566,11 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
   async getData(id?) {
     try {
       // Use original user-based org chart (simple and working)
-      let data: any = await this.userService.getOrgchart({
-        active: 1,
-        isEmployee: 1,
-      });
+      let data: any = await this.userService.getOrgchart(this.buildOrgChartFilters());
 
+      data = this.normalizeOrgChartData(data);
       data = this.fixDataStructure(data);
+      this.buildTableRows(data);
 
       data.sort((a, b) => {
         let username = (a.first || "") + " " + (a.last || "");
@@ -922,9 +1595,18 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
           name: (data[i].first || "") + " " + (data[i].last || ""),
           first: data[i].first || "",
           last: data[i].last || "",
+          active: data[i].active,
           access: data[i].access,
           parentId: data[i].parentId,
           title: data[i].title || "",
+          employeeType1: data[i].employeeType1 || "",
+          city: data[i].city || "",
+          state: data[i].state || "",
+          area: data[i].area || "",
+          department: data[i].department || "",
+          org_chart_department: data[i].org_chart_department || "",
+          hire_date: data[i].hire_date || null,
+          image: data[i].image || "assets/images/default-user.png",
           imageUrl: imageUrl,
           orgChartPlaceHolder: data[i].orgChartPlaceHolder,
           showImage: data[i].showImage,
@@ -1489,10 +2171,7 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
     try {
       console.log('Loading original user-based org chart...');
       
-      let data: any = await this.userService.getOrgchart({
-        active: 1,
-        isEmployee: 1,
-      });
+      let data: any = await this.userService.getOrgchart(this.buildOrgChartFilters());
 
       data = this.fixDataStructure(data);
 
@@ -1513,9 +2192,18 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
           name: (data[i].first || "") + " " + (data[i].last || ""),
           first: data[i].first || "",
           last: data[i].last || "",
+          active: data[i].active,
           access: data[i].access,
           parentId: data[i].parentId,
           title: data[i].title || "",
+          employeeType1: data[i].employeeType1 || "",
+          city: data[i].city || "",
+          state: data[i].state || "",
+          area: data[i].area || "",
+          department: data[i].department || "",
+          org_chart_department: data[i].org_chart_department || "",
+          hire_date: data[i].hire_date || null,
+          image: data[i].image || "assets/images/default-user.png",
           imageUrl: data[i].image || "assets/images/default-user.png",
           orgChartPlaceHolder: data[i].orgChartPlaceHolder,
           showImage: data[i].showImage,
@@ -1705,7 +2393,7 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
     
     // Update the local data with the new image URL
     const userIdNum = parseInt(userId);
-    const userNode = this.originalData.find(user => user.id === userIdNum);
+    const userNode = this.originalData.find(user => Number(user.id) === userIdNum);
     
     console.log('Found user node:', userNode);
     
@@ -1715,8 +2403,14 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
       
       console.log('Cache bust URL:', cacheBustUrl);
       
-      // Update the user's image in the local data
-      userNode.imageUrl = cacheBustUrl;
+      // Update the user's image in the local data used by both chart and table views
+      this.originalData = this.originalData.map((user) =>
+        Number(user.id) === userIdNum
+          ? { ...user, image: cacheBustUrl, imageUrl: cacheBustUrl }
+          : user,
+      );
+
+      this.buildTableRows(this.originalData);
       
       // Try to update the image directly in the DOM without full re-render
       if (this.chart) {
@@ -1727,6 +2421,7 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
         if (currentData && Array.isArray(currentData)) {
           const chartNode = currentData.find((node: any) => node.id === userIdNum);
           if (chartNode) {
+            chartNode.image = cacheBustUrl;
             chartNode.imageUrl = cacheBustUrl;
           }
         }
@@ -1862,8 +2557,8 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
 
     try {
       // Update the parent relationship in the backend
-      const result = await this.userService.update(nodeId, {
-        parentId: newParentId
+      const result = await this.userService.updateOrgChartPosition(nodeId, {
+        parentId: newParentId,
       });
 
       if (result) {

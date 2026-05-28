@@ -397,6 +397,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `hire_date` mediumtext,
   `org_chart_department` text,
   `org_chart_expand` int(11) DEFAULT '0',
+  `org_chart_order` int(11) NOT NULL DEFAULT '0',
   `color` text,
   `geo_location_consent` datetime DEFAULT NULL,
   `card_number` int(11) DEFAULT NULL,

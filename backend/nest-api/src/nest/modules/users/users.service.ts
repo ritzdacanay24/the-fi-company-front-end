@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { UserRecord, UsersRepository } from './users.repository';
 import { RowDataPacket } from 'mysql2/promise';
 import { FileStorageService } from '@/nest/modules/file-storage/file-storage.service';
@@ -60,6 +60,29 @@ export class UsersService {
     await this.getById(id); // throws if not found
     const safe = this.usersRepository.sanitizePayload(payload);
     await this.usersRepository.updateById(id, safe);
+    return this.getById(id);
+  }
+
+  async updateOrgChartPosition(
+    id: number,
+    payload: { parentId?: number | null; beforeId?: number | null; afterId?: number | null },
+  ): Promise<UserRecord> {
+    await this.getById(id);
+
+    const beforeId = payload.beforeId == null ? null : Number(payload.beforeId);
+    const afterId = payload.afterId == null ? null : Number(payload.afterId);
+    const parentId = payload.parentId == null ? null : Number(payload.parentId);
+
+    if (beforeId != null && afterId != null && beforeId === afterId) {
+      throw new BadRequestException('beforeId and afterId cannot reference the same sibling');
+    }
+
+    await this.usersRepository.updateOrgChartPosition(id, {
+      parentId,
+      beforeId,
+      afterId,
+    });
+
     return this.getById(id);
   }
 

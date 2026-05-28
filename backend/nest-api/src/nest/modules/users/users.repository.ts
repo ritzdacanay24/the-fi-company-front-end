@@ -1,6 +1,6 @@
 import { createHash } from 'crypto';
 import { Inject, Injectable } from '@nestjs/common';
-import { RowDataPacket } from 'mysql2/promise';
+import { PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { MysqlService } from '@/shared/database/mysql.service';
 import { BaseRepository } from '@/shared/repositories/base.repository';
 
@@ -44,6 +44,7 @@ export interface UserRecord extends RowDataPacket {
   hire_date: string | null;
   org_chart_department: string | null;
   org_chart_expand: number;
+  org_chart_order: number;
   color: string | null;
   geo_location_consent: string | null;
   card_number: number | null;
@@ -57,6 +58,7 @@ const ALLOWED_COLUMNS = new Set([
   'zipCode', 'settings', 'leadInstaller', 'orgChartPlaceHolder', 'company_id',
   'created_by', 'isEmployee', 'enableTwostep', 'showImage', 'openPosition',
   'hire_date', 'org_chart_department', 'org_chart_expand', 'color',
+  'org_chart_order',
   'geo_location_consent', 'card_number',
 ]);
 
@@ -83,13 +85,48 @@ export class UsersRepository extends BaseRepository<UserRecord> {
       params.push(active);
     }
 
-    sql += ' ORDER BY first ASC';
+    sql += ' ORDER BY org_chart_order ASC, first ASC';
 
     return this.rawQuery<UserRecord>(sql, params);
   }
 
   async getById(id: number): Promise<UserRecord | null> {
     return this.findOne({ id });
+  }
+
+  async updateOrgChartPosition(
+    id: number,
+    payload: { parentId: number | null; beforeId: number | null; afterId: number | null },
+  ): Promise<void> {
+    await this.mysqlService.withTransaction(async (connection) => {
+      const currentUser = await this.findUserPositionInTransaction(connection, id);
+      if (!currentUser) {
+        return;
+      }
+
+      const parentId = payload.parentId;
+      const siblings = await this.getSiblingRowsInTransaction(connection, parentId, id);
+      const siblingIds = siblings.map((row) => row.id);
+      const insertIndex = this.resolveSiblingInsertIndex(siblingIds, payload.beforeId, payload.afterId);
+
+      siblingIds.splice(insertIndex, 0, id);
+
+      await connection.execute<ResultSetHeader>(
+        'UPDATE db.users SET parentId = ? WHERE id = ?',
+        [parentId, id],
+      );
+
+      for (let index = 0; index < siblingIds.length; index += 1) {
+        await connection.execute<ResultSetHeader>(
+          'UPDATE db.users SET org_chart_order = ? WHERE id = ?',
+          [(index + 1) * 100, siblingIds[index]],
+        );
+      }
+
+      if (currentUser.parentId !== parentId) {
+        await this.resequenceSiblingsInTransaction(connection, currentUser.parentId, id);
+      }
+    });
   }
 
   async getUserWithTechRate(): Promise<RowDataPacket[]> {
@@ -149,7 +186,7 @@ export class UsersRepository extends BaseRepository<UserRecord> {
            OR CONCAT(first, ' ', last) LIKE ?
            OR email LIKE ?
          )
-       ORDER BY first ASC
+      ORDER BY org_chart_order ASC, first ASC
        LIMIT 100`,
       [like, like, like, like],
     );
@@ -162,5 +199,74 @@ export class UsersRepository extends BaseRepository<UserRecord> {
       [hashed, email],
     );
     return (result as unknown as { affectedRows: number }).affectedRows > 0;
+  }
+
+  private async findUserPositionInTransaction(connection: PoolConnection, id: number): Promise<{ id: number; parentId: number | null } | null> {
+    const [rows] = await connection.query<RowDataPacket[]>(
+      `SELECT
+         id,
+         CAST(COALESCE(NULLIF(parentId, ''), '0') AS SIGNED) AS parentId
+       FROM db.users
+       WHERE id = ?
+       LIMIT 1`,
+      [id],
+    );
+
+    const row = rows[0];
+    if (!row) {
+      return null;
+    }
+
+    return {
+      id: Number(row.id),
+      parentId: row.parentId === null ? null : Number(row.parentId),
+    };
+  }
+
+  private async getSiblingRowsInTransaction(connection: PoolConnection, parentId: number | null, excludeId: number): Promise<Array<{ id: number }>> {
+    const parentClause = parentId === null
+      ? `(parentId IS NULL OR parentId = '')`
+      : `CAST(COALESCE(NULLIF(parentId, ''), '0') AS SIGNED) = ?`;
+    const params: unknown[] = parentId === null ? [excludeId] : [parentId, excludeId];
+
+    const [rows] = await connection.query<RowDataPacket[]>(
+      `SELECT id
+       FROM db.users
+       WHERE ${parentClause}
+         AND id != ?
+       ORDER BY org_chart_order ASC, first ASC, last ASC, id ASC`,
+      params,
+    );
+
+    return rows.map((row) => ({ id: Number(row.id) }));
+  }
+
+  private async resequenceSiblingsInTransaction(connection: PoolConnection, parentId: number | null, excludeId: number): Promise<void> {
+    const siblings = await this.getSiblingRowsInTransaction(connection, parentId, excludeId);
+
+    for (let index = 0; index < siblings.length; index += 1) {
+      await connection.execute<ResultSetHeader>(
+        'UPDATE db.users SET org_chart_order = ? WHERE id = ?',
+        [(index + 1) * 100, siblings[index].id],
+      );
+    }
+  }
+
+  private resolveSiblingInsertIndex(siblingIds: number[], beforeId: number | null, afterId: number | null): number {
+    if (beforeId != null) {
+      const beforeIndex = siblingIds.indexOf(beforeId);
+      if (beforeIndex >= 0) {
+        return beforeIndex;
+      }
+    }
+
+    if (afterId != null) {
+      const afterIndex = siblingIds.indexOf(afterId);
+      if (afterIndex >= 0) {
+        return afterIndex + 1;
+      }
+    }
+
+    return siblingIds.length;
   }
 }

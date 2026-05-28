@@ -24,6 +24,9 @@ export class UserService extends DataService<any> {
   override getById = async (id: number) =>
     firstValueFrom(this.http.get<any>(`${usersV2Url}/${id}`));
 
+  override update = async (id: string | number, params: any) =>
+    firstValueFrom(this.http.patch<any>(`${usersV2Url}/${id}`, params));
+
   override find = async (params: Partial<any>): Promise<any[]> => {
     const result = queryString(params);
     return firstValueFrom(this.http.get<any[]>(`${usersV2Url}/find${result}`));
@@ -71,6 +74,13 @@ export class UserService extends DataService<any> {
     const rows = await firstValueFrom(this.http.get<any[]>(`${orgChartUrl}/orgchart${result}`));
     return normalizeOrgChartRows(rows);
   }
+
+  public async updateOrgChartPosition(
+    id: number,
+    payload: { parentId?: number | null; beforeId?: number | null; afterId?: number | null },
+  ) {
+    return firstValueFrom(this.http.patch<any>(`${usersV2Url}/${id}/org-chart-position`, payload));
+  }
   public async hasSubordinates(id) {
     return await firstValueFrom(this.http.get(`${orgChartUrl}/hasSubordinates?id=${id}`));
   }
@@ -113,6 +123,7 @@ function normalizeOrgChartRows(rows: any[]): any[] {
       ...row,
       id,
       parentId,
+      org_chart_order: toNullableNumber(row?.org_chart_order) ?? 0,
     };
   });
 }

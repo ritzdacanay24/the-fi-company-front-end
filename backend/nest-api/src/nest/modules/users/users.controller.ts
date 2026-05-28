@@ -71,6 +71,15 @@ export class UsersController {
     return this.usersService.update(id, body);
   }
 
+  @Patch(':id/org-chart-position')
+  @Permissions('manage')
+  async updateOrgChartPosition(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { parentId?: number | null; beforeId?: number | null; afterId?: number | null },
+  ) {
+    return this.usersService.updateOrgChartPosition(id, body);
+  }
+
   @Post('reset-password')
   @Permissions('manage')
   async resetPassword(@Body() body: { email?: string; newPassword?: string }) {

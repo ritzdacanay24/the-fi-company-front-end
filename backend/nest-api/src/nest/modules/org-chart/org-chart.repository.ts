@@ -23,6 +23,14 @@ export class OrgChartRepository {
       sql += ` WHERE ${clauses.join(' AND ')}`;
     }
 
+    sql += ` ORDER BY
+      CASE WHEN parentId IS NULL OR parentId = '' THEN 0 ELSE 1 END,
+      CAST(COALESCE(NULLIF(parentId, ''), '0') AS UNSIGNED),
+      org_chart_order ASC,
+      first ASC,
+      last ASC,
+      id ASC`;
+
     return this.mysqlService.query<RowDataPacket[]>(sql, params);
   }
 
