@@ -1,12 +1,15 @@
 .password-section {
-  background: #f8f9fa;
-  border-left: 3px solid #ffc107;
-  padding: 15px;
-  border-radius: 4px;
+  background: rgba(255, 193, 7, 0.08);
+  border: 1px solid rgba(255, 193, 7, 0.24);
+  padding: 1rem;
+  border-radius: 0.75rem;
 }
 
 .list-group-item {
   transition: background-color 0.2s;
+  border-radius: 0.75rem;
+  border: 1px solid var(--vz-border-color, #dee2e6);
+  margin-bottom: 0.5rem;
 }
 
 .list-group-item:hover {
@@ -17,5 +20,5 @@ code {
   font-size: 0.85rem;
   background-color: #e9ecef;
   padding: 2px 6px;
-  border-radius: 3px;
+  border-radius: 0.375rem;
 }

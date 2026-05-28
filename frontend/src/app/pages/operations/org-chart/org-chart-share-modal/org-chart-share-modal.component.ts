@@ -60,6 +60,10 @@ export class OrgChartShareModalComponent implements OnInit {
     });
   }
 
+  dismiss(): void {
+    this.activeModal.dismiss('dismiss');
+  }
+
   get passwordsMatch(): boolean {
     const password = this.shareForm.get('password')?.value;
     const confirmPassword = this.shareForm.get('confirmPassword')?.value;

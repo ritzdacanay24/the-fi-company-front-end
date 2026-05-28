@@ -10,7 +10,7 @@ import { UserModalService } from "@app/pages/maintenance/user/user-modal/user-mo
 import { accessRight } from "@app/pages/maintenance/user/user-constant";
 
 import { UserSearchV1Component } from "@app/shared/components/user-search-v1/user-search-v1.component";
-import { DepartmentModalComponent } from "../department-modal/department-modal.component";
+import { DepartmentModalService } from "../department-modal/department-modal.service";
 import { DepartmentService, Department } from "../services/department.service";
 import { OrgChartUserModalService, OrgChartUserModalMode } from "../org-chart-user-modal/org-chart-user-modal.service";
 import { NgbDropdownModule } from "@ng-bootstrap/ng-bootstrap";
@@ -18,10 +18,11 @@ import { FormsModule } from "@angular/forms";
 import moment from "moment";
 import * as d3 from "d3";
 import { ColDef, RowDragEndEvent } from 'ag-grid-community';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   standalone: true,
-  imports: [SharedModule, OrgChartModule, UserSearchV1Component, DepartmentModalComponent, NgbDropdownModule, FormsModule, AgGridModule],
+  imports: [SharedModule, OrgChartModule, UserSearchV1Component, NgbDropdownModule, FormsModule, AgGridModule],
   selector: "app-org-chart-view",
   templateUrl: "./org-chart-view.component.html",
   styleUrls: [],
@@ -93,6 +94,7 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
     private userService: UserService,
     private userModalService: UserModalService,
     private departmentService: DepartmentService,
+    private departmentModalService: DepartmentModalService,
     @Inject(OrgChartUserModalService) private orgChartUserModalService: OrgChartUserModalService,
   ) {
     this.activatedRoute.queryParams.subscribe((params) => {
@@ -267,7 +269,22 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
         values: this.quickEditLocationOptions,
       },
     },
-    { field: 'department', headerName: 'Department', minWidth: 180 },
+    {
+      field: 'department_id',
+      headerName: 'Department',
+      minWidth: 200,
+      editable: (params: any) => this.isQuickEditableRow(params),
+      cellEditor: 'agRichSelectCellEditor',
+      cellEditorParams: {
+        values: () => this.getDepartmentSelectOptions(),
+        allowTyping: true,
+        filterList: true,
+        highlightMatch: true,
+        searchType: 'matchAny',
+        formatValue: (value: string | number | null) => this.getDepartmentOptionLabel(value),
+      },
+      valueFormatter: (params: any) => this.getDepartmentOptionLabel(params.value ?? params.data?.department_id ?? null),
+    },
     {
       field: 'manager_id',
       headerName: 'Manager',
@@ -353,7 +370,6 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // Department management properties
   departments: Department[] = [];
-  showDepartmentModal = false;
   currentDepartment: Department | null = null;
 
   /**
@@ -1251,6 +1267,22 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
     return `${manager.first || ''} ${manager.last || ''}`.trim() || `Employee ${managerId}`;
   }
 
+  private getDepartmentSelectOptions(): number[] {
+    return (this.departments || [])
+      .map((department) => Number(department.id))
+      .filter((id) => Number.isFinite(id));
+  }
+
+  private getDepartmentOptionLabel(value: string | number | null | undefined): string {
+    const departmentId = Number(value);
+    if (!Number.isFinite(departmentId)) {
+      return 'Unassigned';
+    }
+
+    const department = this.departments.find((entry) => Number(entry.id) === departmentId);
+    return department?.department_name || 'Unassigned';
+  }
+
   private getManagerSelectOptions(rowData: any): Array<number | string> {
     const rowId = Number(rowData?.id);
     const invalidIds = new Set<number>([rowId, ...this.getDescendantIds(rowId)]);
@@ -1409,6 +1441,7 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
         employeeType1: node.employeeType1 || '',
         direct_report_count: isPlaceholder ? 0 : (directReportsByManagerId.get(Number(node.id)) || 0),
         location: this.getLocationLabel(node),
+        department_id: this.departments.find((department) => department.department_name === (node.org_chart_department || node.department))?.id ?? null,
         department: node.org_chart_department || node.department || (isPlaceholder ? nodeLabel : 'Unassigned'),
         manager_id: manager?.id ?? this.rootManagerOptionValue,
         manager_name: manager ? `${manager.first || ''} ${manager.last || ''}`.trim() : '—',
@@ -1449,8 +1482,34 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    const supportedFields = new Set(['title', 'employeeType1', 'active', 'location', 'hire_date', 'manager_id']);
+    const supportedFields = new Set(['title', 'employeeType1', 'active', 'location', 'hire_date', 'manager_id', 'department_id']);
     if (!supportedFields.has(field)) {
+      return;
+    }
+
+    if (field === 'department_id') {
+      const nextDepartmentId = Number(event.newValue);
+      const previousDepartmentId = Number(event.oldValue);
+
+      if (!Number.isFinite(nextDepartmentId) || nextDepartmentId === previousDepartmentId) {
+        return;
+      }
+
+      try {
+        const response = await firstValueFrom(this.departmentService.assignUser({
+          user_id: userId,
+          department_id: nextDepartmentId,
+        }));
+
+        if (!response?.success) {
+          throw new Error(response?.message || 'Failed to assign user to department');
+        }
+
+        await this.getDataWithStatePreservation();
+      } catch (error) {
+        event.node?.setDataValue(field, event.oldValue);
+      }
+
       return;
     }
 
@@ -2130,8 +2189,19 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   openDepartmentModal(department: Department | null = null) {
-    this.currentDepartment = department;
-    this.showDepartmentModal = true;
+    const modalRef: any = this.departmentModalService.open({ department });
+    modalRef.result.then(
+      (result: { saved?: boolean; deleted?: boolean } | undefined) => {
+        if (result?.saved) {
+          this.onDepartmentSaved();
+        }
+
+        if (result?.deleted) {
+          this.onDepartmentDeleted();
+        }
+      },
+      () => {},
+    );
   }
 
   openShareModal() {
@@ -2144,7 +2214,6 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   closeDepartmentModal() {
-    this.showDepartmentModal = false;
     this.currentDepartment = null;
   }
 
