@@ -37,6 +37,7 @@ export class DeployMaintenanceInterceptor implements NestInterceptor {
     response?.setHeader?.('Retry-After', String(deployStatus.retryAfterSeconds));
 
     throw new ServiceUnavailableException({
+      code: 'RC_DEPLOY_IN_PROGRESS',
       message: deployStatus.message,
       deployInProgress: true,
       retryAfterSeconds: deployStatus.retryAfterSeconds,

@@ -56,9 +56,9 @@ export class ErrorInterceptor implements HttpInterceptor {
 
   private isDeployInProgressError(error: HttpErrorResponse): boolean {
     return error.status === 503 && (
-      error?.error?.deployInProgress === true
+      error?.error?.code === 'RC_DEPLOY_IN_PROGRESS'
+      || error?.error?.deployInProgress === true
       || typeof error?.error?.retryAfterSeconds !== 'undefined'
-      || String(error?.error?.message || '').toLowerCase().includes('deploy')
     );
   }
 

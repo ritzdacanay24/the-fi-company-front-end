@@ -9,12 +9,10 @@ export function getErrorMessage(error: unknown): string {
   }
 
   if (error instanceof HttpErrorResponse) {
-    const message = String(error.error?.message || error.message || '').toLowerCase();
     const isDeployRelated =
-      error.error?.deployInProgress === true
-      || message.includes('deploy')
-      || message.includes('maintenance')
-      || message.includes('restart');
+      error.error?.code === 'RC_DEPLOY_IN_PROGRESS'
+      || error.error?.deployInProgress === true
+      || typeof error.error?.retryAfterSeconds !== 'undefined';
 
     if (isDeployRelated) {
       return 'A new version is being deployed. Please retry in a moment.';

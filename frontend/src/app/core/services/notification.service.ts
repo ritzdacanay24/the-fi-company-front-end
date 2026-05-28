@@ -6,6 +6,7 @@ import { getErrorMessage } from '@app/shared/utils/error-handling.util';
 import { ErrorReportDialogService } from './error-report-dialog.service';
 import { ErrorSnackbarComponent } from '@app/core/components/error-snackbar/error-snackbar.component';
 import { TicketType } from '@app/shared/interfaces/ticket.interface';
+import { DeployStatusService } from './deploy-status.service';
 
 /**
  * Centralized notification service using Material Snackbar.
@@ -17,6 +18,7 @@ import { TicketType } from '@app/shared/interfaces/ticket.interface';
 export class NotificationService {
   private readonly snackBar = inject(MatSnackBar);
   private readonly router = inject(Router);
+  private readonly deployStatus = inject(DeployStatusService);
 
   constructor(@Inject(Injector) private readonly injector: Injector) {}
 
@@ -34,6 +36,10 @@ export class NotificationService {
    * Clicking "Report Issue" pre-fills and opens the ticket submit dialog.
    */
   error(error: unknown, showReportIssue: boolean = true): void {
+    if (this.shouldSuppressDeploySnackbar(error)) {
+      return;
+    }
+
     const message = getErrorMessage(error);
     this.snackBar.dismiss();
 
@@ -70,6 +76,20 @@ export class NotificationService {
         });
       });
     }
+  }
+
+  private shouldSuppressDeploySnackbar(error: unknown): boolean {
+    if (!(error instanceof HttpErrorResponse)) {
+      return false;
+    }
+
+    const isDeployRelated =
+      error.error?.code === 'RC_DEPLOY_IN_PROGRESS'
+      || error.error?.deployInProgress === true
+      || typeof error.error?.retryAfterSeconds !== 'undefined'
+      || error.status === 503 && this.deployStatus.snapshot.deploying === true;
+
+    return isDeployRelated || this.deployStatus.snapshot.deploying === true;
   }
 
   /** Show success snackbar (auto-dismisses after 5s) */
