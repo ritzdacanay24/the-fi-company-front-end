@@ -9,11 +9,32 @@
 <div class="modal-body">
   <app-loading [isLoading]="isLoading" [showBorder]="false"></app-loading>
 
+  <div *ngIf="data && isEditMode" class="mb-4">
+    <div class="nav nav-pills gap-2">
+      <button
+        type="button"
+        class="btn"
+        [class.btn-primary]="activeTab === 'details'"
+        [class.btn-light]="activeTab !== 'details'"
+        (click)="setActiveTab('details')">
+        Details
+      </button>
+      <button
+        type="button"
+        class="btn"
+        [class.btn-primary]="activeTab === 'rbac'"
+        [class.btn-light]="activeTab !== 'rbac'"
+        (click)="setActiveTab('rbac')">
+        RBAC
+      </button>
+    </div>
+  </div>
+
   <div *ngIf="!isLoading && !data" class="alert alert-warning mb-0">
     No user information found.
   </div>
 
-  <form *ngIf="data" [formGroup]="form" class="row g-4">
+  <form *ngIf="data && activeTab === 'details'" [formGroup]="form" class="row g-4">
     <div class="col-12 text-center mb-1">
       <div class="mb-2 d-inline-flex flex-column align-items-center gap-2">
         <div class="position-relative">
@@ -169,6 +190,101 @@
       </div>
     </div>
   </form>
+
+  <div *ngIf="data && isEditMode && activeTab === 'rbac'" class="row g-4">
+    <div class="col-12">
+      <div class="border rounded-3 p-3 p-md-4 bg-light-subtle">
+        <div class="mb-3">
+          <h6 class="mb-1 fw-semibold">Roles</h6>
+          <div class="small text-muted">Assign the primary RBAC roles for this user.</div>
+        </div>
+
+        <div *ngIf="isRbacLoading" class="small text-muted">Loading RBAC data...</div>
+
+        <div *ngIf="!isRbacLoading && availableRoles.length === 0" class="alert alert-warning mb-0">
+          No roles are configured in the access-control system.
+        </div>
+
+        <div *ngIf="!isRbacLoading && availableRoles.length > 0" class="row g-2">
+          <div class="col-md-6" *ngFor="let role of availableRoles">
+            <label class="border rounded-3 p-3 d-flex align-items-start gap-3 w-100 bg-white" style="cursor:pointer;">
+              <input
+                class="form-check-input mt-1"
+                type="checkbox"
+                [checked]="isRoleSelected(role.id)"
+                (change)="toggleRole(role.id, $any($event.target).checked)">
+              <span>
+                <span class="fw-semibold d-block">{{ role.name }}</span>
+                <span class="small text-muted">{{ role.description || 'No description provided.' }}</span>
+              </span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12">
+      <div class="border rounded-3 p-3 p-md-4">
+        <div class="mb-3">
+          <h6 class="mb-1 fw-semibold">Domain Scopes</h6>
+          <div class="small text-muted">Limit role access to the domains this user should manage.</div>
+        </div>
+
+        <div *ngIf="isRbacLoading" class="small text-muted">Loading scopes...</div>
+
+        <div *ngIf="!isRbacLoading && availableDomains.length === 0" class="alert alert-warning mb-0">
+          No RBAC domains are configured.
+        </div>
+
+        <div *ngIf="!isRbacLoading && availableDomains.length > 0" class="row g-2">
+          <div class="col-md-4" *ngFor="let domain of availableDomains">
+            <label class="border rounded-3 p-3 d-flex align-items-center gap-3 w-100" style="cursor:pointer;">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                [checked]="isScopeSelected(domain)"
+                (change)="toggleScope(domain, $any($event.target).checked)">
+              <span class="fw-medium">{{ domain }}</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12">
+      <div class="border rounded-3 p-3 p-md-4">
+        <div class="mb-3">
+          <h6 class="mb-1 fw-semibold">Direct Permission Grants</h6>
+          <div class="small text-muted">Read-only summary of user-specific permission grants outside role assignment.</div>
+        </div>
+
+        <div *ngIf="isRbacLoading" class="small text-muted">Loading direct grants...</div>
+
+        <div *ngIf="!isRbacLoading && userGrants.length === 0" class="alert alert-secondary mb-0">
+          This user has no direct permission grants. Current access comes from roles and scopes.
+        </div>
+
+        <div *ngIf="!isRbacLoading && userGrants.length > 0" class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Permission</th>
+                <th>Domain</th>
+                <th>Expires</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let grant of userGrants">
+                <td>{{ grant.permission_name }}</td>
+                <td>{{ grant.domain || 'Global' }}</td>
+                <td>{{ grant.expires_at ? (grant.expires_at | date:'short') : 'No expiry' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="modal-footer">

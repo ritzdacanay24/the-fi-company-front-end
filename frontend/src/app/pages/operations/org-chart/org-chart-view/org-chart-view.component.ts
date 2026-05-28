@@ -158,6 +158,7 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
     0: 'Inactive',
   };
   readonly quickEditLocationOptions = ['Las Vegas, NV', 'Seattle, WA', 'Tijuana, Mexico'];
+  readonly rootManagerOptionValue = '__no_manager__';
   tableRowData: any[] = [];
   readonly tableRowHeight = 45;
   readonly tableDefaultColDef: ColDef = {
@@ -195,7 +196,7 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
           </div>
         `;
       }
-    },
+      },
     onCellClicked: (params: any) => {
       const target = params.event?.target as HTMLElement | null;
       const button = target?.closest('[data-user-open]') as HTMLElement | null;
@@ -267,7 +268,34 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
       },
     },
     { field: 'department', headerName: 'Department', minWidth: 180 },
-    { field: 'manager_name', headerName: 'Manager', minWidth: 200 },
+    {
+      field: 'manager_id',
+      headerName: 'Manager',
+      minWidth: 220,
+      editable: (params: any) => this.isQuickEditableRow(params),
+      cellEditor: 'agRichSelectCellEditor',
+      cellEditorParams: (params: any) => ({
+        values: this.getManagerSelectOptions(params?.data),
+        allowTyping: true,
+        filterList: true,
+        highlightMatch: true,
+        searchType: 'matchAny',
+        formatValue: (value: string | number | null) => this.getManagerOptionLabel(value),
+      }),
+      valueFormatter: (params: any) => this.getManagerOptionLabel(params.value ?? params.data?.manager_id ?? null),
+    },
+    {
+      field: 'direct_report_count',
+      headerName: 'Direct Reports',
+      minWidth: 140,
+      maxWidth: 170,
+      type: 'numericColumn',
+      cellStyle: {
+        justifyContent: 'flex-end',
+        textAlign: 'right',
+      },
+      valueFormatter: (params: any) => String(Number(params.value ?? 0)),
+    },
     {
       field: 'hire_date',
       headerName: 'Hire Date',
@@ -1205,6 +1233,73 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  private getManagerOptionLabel(value: string | number | null | undefined): string {
+    if (value === this.rootManagerOptionValue || value === null || value === undefined || value === '') {
+      return 'No Manager';
+    }
+
+    const managerId = Number(value);
+    if (!Number.isFinite(managerId)) {
+      return 'No Manager';
+    }
+
+    const manager = (this.originalData || []).find((entry) => Number(entry.id) === managerId);
+    if (!manager) {
+      return 'No Manager';
+    }
+
+    return `${manager.first || ''} ${manager.last || ''}`.trim() || `Employee ${managerId}`;
+  }
+
+  private getManagerSelectOptions(rowData: any): Array<number | string> {
+    const rowId = Number(rowData?.id);
+    const invalidIds = new Set<number>([rowId, ...this.getDescendantIds(rowId)]);
+    const options: Array<number | string> = [this.rootManagerOptionValue];
+
+    for (const entry of this.originalData || []) {
+      const candidateId = Number(entry?.id);
+      if (!Number.isFinite(candidateId) || invalidIds.has(candidateId) || entry?.orgChartPlaceHolder) {
+        continue;
+      }
+
+      options.push(candidateId);
+    }
+
+    return options;
+  }
+
+  private getDescendantIds(parentId: number): number[] {
+    if (!Number.isFinite(parentId)) {
+      return [];
+    }
+
+    const descendants: number[] = [];
+    const queue = [parentId];
+
+    while (queue.length > 0) {
+      const currentId = queue.shift();
+      if (!Number.isFinite(currentId)) {
+        continue;
+      }
+
+      for (const entry of this.originalData || []) {
+        if (Number(entry?.parentId) !== currentId) {
+          continue;
+        }
+
+        const childId = Number(entry?.id);
+        if (!Number.isFinite(childId) || descendants.includes(childId)) {
+          continue;
+        }
+
+        descendants.push(childId);
+        queue.push(childId);
+      }
+    }
+
+    return descendants;
+  }
+
   private normalizeHireDateValue(value: unknown): string | null {
     const normalized = String(value ?? '').trim();
     if (!normalized) {
@@ -1264,6 +1359,16 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
 
       return null;
     };
+    const directReportsByManagerId = new Map<number, number>();
+    for (const user of users) {
+      const manager = resolveManager(user);
+      const managerId = Number(manager?.id);
+      if (!Number.isFinite(managerId)) {
+        continue;
+      }
+
+      directReportsByManagerId.set(managerId, (directReportsByManagerId.get(managerId) || 0) + 1);
+    }
     const buildHierarchyPath = (node: any): string[] => {
       const path: string[] = [];
       const visited = new Set<number>();
@@ -1302,8 +1407,10 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
         title: node.title || (isPlaceholder ? 'Department' : 'Employee'),
         active: Number(node.active ?? 0) === 1 ? 1 : 0,
         employeeType1: node.employeeType1 || '',
+        direct_report_count: isPlaceholder ? 0 : (directReportsByManagerId.get(Number(node.id)) || 0),
         location: this.getLocationLabel(node),
         department: node.org_chart_department || node.department || (isPlaceholder ? nodeLabel : 'Unassigned'),
+        manager_id: manager?.id ?? this.rootManagerOptionValue,
         manager_name: manager ? `${manager.first || ''} ${manager.last || ''}`.trim() : '—',
         hire_date: node.hire_date || null,
         hire_date_color: isPlaceholder ? '#1d4ed8' : (node.openPosition ? 'red' : this.checkHireColor(node.hire_date)),
@@ -1342,8 +1449,25 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    const supportedFields = new Set(['title', 'employeeType1', 'active', 'location', 'hire_date']);
+    const supportedFields = new Set(['title', 'employeeType1', 'active', 'location', 'hire_date', 'manager_id']);
     if (!supportedFields.has(field)) {
+      return;
+    }
+
+    if (field === 'manager_id') {
+      const nextManagerId = event.newValue === this.rootManagerOptionValue ? null : Number(event.newValue);
+      const previousManagerId = event.oldValue === this.rootManagerOptionValue ? null : Number(event.oldValue);
+
+      if (nextManagerId === previousManagerId) {
+        return;
+      }
+
+      try {
+        await this.moveOrgChartNode(userId, { parentId: nextManagerId });
+      } catch (error) {
+        event.node?.setDataValue(field, event.oldValue);
+      }
+
       return;
     }
 

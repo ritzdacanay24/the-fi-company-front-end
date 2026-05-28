@@ -4,6 +4,11 @@ import { NgbActiveModal } from "@ng-bootstrap/ng-bootstrap";
 import { SharedModule } from "@app/shared/shared.module";
 import { NewUserService } from "@app/core/api/users/users.service";
 import { OrgChartUserModalMode } from "./org-chart-user-modal.service";
+import {
+  AccessControlApiService,
+  AccessControlRole,
+  AccessControlUserGrant,
+} from "@app/core/api/access-control/access-control.service";
 
 @Component({
   standalone: true,
@@ -12,6 +17,7 @@ import { OrgChartUserModalMode } from "./org-chart-user-modal.service";
   templateUrl: "./org-chart-user-modal.component.html",
 })
 export class OrgChartUserModalComponent {
+  activeTab: 'details' | 'rbac' = 'details';
   readonly employmentTypeOptions = [
     { value: 'FT', label: 'Permanent' },
     { value: 'PT', label: 'Part Time' },
@@ -30,18 +36,36 @@ export class OrgChartUserModalComponent {
   @Output() imageUpdated = new EventEmitter<{ userId: string; imageUrl: string }>();
 
   isLoading = false;
+  isRbacLoading = false;
   submitted = false;
   data: any;
   form: FormGroup;
   myFiles: FileList | null = null;
   imagePreview: string | null = null;
+  availableRoles: AccessControlRole[] = [];
+  availableDomains: string[] = [];
+  userGrants: AccessControlUserGrant[] = [];
+  selectedRoleIds: number[] = [];
+  selectedScopes: string[] = [];
 
   get displayImage(): string | null {
     return this.imagePreview || this.form.value.image || null;
   }
 
+  get selectedRoleLabels(): string {
+    if (this.selectedRoleIds.length === 0) {
+      return 'No roles assigned';
+    }
+
+    return this.availableRoles
+      .filter((role) => this.selectedRoleIds.includes(role.id))
+      .map((role) => role.name)
+      .join(', ');
+  }
+
   constructor(
     private readonly api: NewUserService,
+    private readonly accessControlApi: AccessControlApiService,
     private readonly activeModal: NgbActiveModal,
     private readonly fb: FormBuilder,
     private readonly cdRef: ChangeDetectorRef,
@@ -72,6 +96,9 @@ export class OrgChartUserModalComponent {
   ngOnInit(): void {
     if (this.id !== null && this.id !== undefined) {
       void this.loadData();
+      if (this.isEditMode) {
+        void this.loadRbacData();
+      }
     }
   }
 
@@ -81,6 +108,30 @@ export class OrgChartUserModalComponent {
 
   dismiss(): void {
     this.activeModal.dismiss("dismiss");
+  }
+
+  setActiveTab(tab: 'details' | 'rbac'): void {
+    this.activeTab = tab;
+  }
+
+  isRoleSelected(roleId: number): boolean {
+    return this.selectedRoleIds.includes(roleId);
+  }
+
+  toggleRole(roleId: number, checked: boolean): void {
+    this.selectedRoleIds = checked
+      ? Array.from(new Set([...this.selectedRoleIds, roleId]))
+      : this.selectedRoleIds.filter((id) => id !== roleId);
+  }
+
+  isScopeSelected(domain: string): boolean {
+    return this.selectedScopes.includes(domain);
+  }
+
+  toggleScope(domain: string, checked: boolean): void {
+    this.selectedScopes = checked
+      ? Array.from(new Set([...this.selectedScopes, domain]))
+      : this.selectedScopes.filter((value) => value !== domain);
   }
 
   async loadData(): Promise<void> {
@@ -118,6 +169,32 @@ export class OrgChartUserModalComponent {
       }
     } finally {
       this.isLoading = false;
+    }
+  }
+
+  async loadRbacData(): Promise<void> {
+    if (this.id === null || this.id === undefined) {
+      return;
+    }
+
+    try {
+      this.isRbacLoading = true;
+      const userId = Number(this.id);
+      const [roles, domains, userRoles, userScopes, userGrants] = await Promise.all([
+        this.accessControlApi.getRoles(),
+        this.accessControlApi.getDomains(),
+        this.accessControlApi.getUserRoles(userId),
+        this.accessControlApi.getUserScopes(userId),
+        this.accessControlApi.getUserGrants(userId),
+      ]);
+
+      this.availableRoles = roles;
+      this.availableDomains = domains;
+      this.userGrants = userGrants;
+      this.selectedRoleIds = userRoles.map((role) => role.id);
+      this.selectedScopes = userScopes;
+    } finally {
+      this.isRbacLoading = false;
     }
   }
 
@@ -182,6 +259,11 @@ export class OrgChartUserModalComponent {
       delete payload.locationKey;
 
       await this.api.update(this.id, payload);
+
+      if (this.isEditMode) {
+        await this.accessControlApi.replaceUserRoles(Number(this.id), this.selectedRoleIds);
+        await this.accessControlApi.replaceUserScopes(Number(this.id), this.selectedScopes);
+      }
 
       const uploadedImageUrl = await this.uploadSelectedImage();
       if (uploadedImageUrl) {
