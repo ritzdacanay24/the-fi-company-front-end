@@ -673,7 +673,7 @@ export class PhotoChecklistService {
     const photoRows = await this.repository.getPhotoSubmissionsByInstanceId(id);
 
     // Group by item_id and build per-item photo arrays
-    const photosByItemId = new Map<number, { file_url: string; file_type: string; capture_source: string | null; created_at: string | null }[]>();
+    const photosByItemId = new Map<number, { file_url: string; file_type: string; capture_source: string | null; created_at: string | null; uploader_user_id: number | null }[]>();
     for (const row of photoRows) {
       const itemId = Number(row.item_id);
       if (!photosByItemId.has(itemId)) photosByItemId.set(itemId, []);
@@ -683,11 +683,12 @@ export class PhotoChecklistService {
         file_type: String(row.file_type || 'image'),
         capture_source: (meta?.capture_source as string | null) ?? null,
         created_at: row.created_at ? String(row.created_at) : null,
+        uploader_user_id: Number(meta?.uploader_user_id || 0) || null,
       });
     }
 
     // Convert map to items array for frontend consumption
-    type InstanceMediaItem = { file_url: string; file_type: string; capture_source: string | null; created_at: string | null };
+    type InstanceMediaItem = { file_url: string; file_type: string; capture_source: string | null; created_at: string | null; uploader_user_id: number | null };
     type InstanceItem = { item_id: number; photos: InstanceMediaItem[]; videos: InstanceMediaItem[] };
     const items: InstanceItem[] = [];
     for (const [itemId, media] of photosByItemId.entries()) {
@@ -707,6 +708,81 @@ export class PhotoChecklistService {
 
   async updateInstance(id: number, payload: Record<string, unknown>) {
     await this.repository.updateInstance(id, payload);
+    return { success: true };
+  }
+
+  async updateInstanceDetails(
+    id: number,
+    payload: { work_order_number?: string; part_number?: string; serial_number?: string },
+    callerId?: number,
+  ) {
+    const instance = await this.repository.getInstanceStatusTimestamps(id);
+    if (!instance) {
+      throw new NotFoundException({
+        code: 'RC_CHECKLIST_INSTANCE_NOT_FOUND',
+        message: `Checklist instance with id ${id} not found`,
+      });
+    }
+
+    const status = String(instance.status || '').trim().toLowerCase();
+    if (status === 'submitted' || status === 'archived') {
+      throw new BadRequestException({
+        code: 'RC_CHECKLIST_EDIT_DETAILS_INVALID_STATUS',
+        message: 'Checklist details can only be edited before submission.',
+      });
+    }
+
+    const normalizedCallerId = Number(callerId || 0);
+    const creatorId = Number(instance.operator_id || 0);
+    const callerHasManagePermission = await this.hasManagePermission(normalizedCallerId);
+    const callerIsCreator = normalizedCallerId > 0 && creatorId > 0 && normalizedCallerId === creatorId;
+    if (!callerHasManagePermission && !callerIsCreator) {
+      throw new ForbiddenException({
+        code: 'RC_CHECKLIST_EDIT_DETAILS_FORBIDDEN',
+        message: 'Only checklist creators or users with manage permission can edit checklist details.',
+      });
+    }
+
+    await this.repository.updateInstanceDetails(id, payload);
+    return { success: true };
+  }
+
+  async undoSubmittedInstance(id: number) {
+    const instance = await this.repository.getInstanceStatusTimestamps(id);
+    if (!instance) {
+      throw new NotFoundException({
+        code: 'RC_CHECKLIST_INSTANCE_NOT_FOUND',
+        message: `Checklist instance with id ${id} not found`,
+      });
+    }
+
+    const status = String(instance.status || '').trim().toLowerCase();
+    if (status !== 'submitted') {
+      throw new BadRequestException({
+        code: 'RC_CHECKLIST_UNDO_SUBMIT_INVALID_STATUS',
+        message: 'Only submitted checklist instances can be undone.',
+      });
+    }
+
+    const submittedAtRaw = instance.submitted_at || instance.completed_at || instance.updated_at;
+    const submittedAt = submittedAtRaw ? new Date(String(submittedAtRaw)) : null;
+    const submittedAtMs = submittedAt?.getTime() ?? Number.NaN;
+    if (!Number.isFinite(submittedAtMs)) {
+      throw new BadRequestException({
+        code: 'RC_CHECKLIST_UNDO_SUBMIT_MISSING_TIMESTAMP',
+        message: 'Submitted checklist is missing a valid submission timestamp.',
+      });
+    }
+
+    const maxUndoAgeMs = 48 * 60 * 60 * 1000;
+    if ((Date.now() - submittedAtMs) > maxUndoAgeMs) {
+      throw new ForbiddenException({
+        code: 'RC_CHECKLIST_UNDO_SUBMIT_WINDOW_EXPIRED',
+        message: 'Submitted checklists can only be undone within 48 hours of submission.',
+      });
+    }
+
+    await this.repository.undoSubmittedInstance(id);
     return { success: true };
   }
 
@@ -891,7 +967,10 @@ export class PhotoChecklistService {
       file_type: fileType,
       file_size: Number(file?.size || 0),
       mime_type: file?.mimetype || '',
-      photo_metadata: JSON.stringify({ capture_source: captureSource }),
+      photo_metadata: JSON.stringify({
+        capture_source: captureSource,
+        uploader_user_id: Number(options?.userId || 0) || null,
+      }),
     };
 
     const insertId = await this.repository.createPhotoSubmission(uploadPayload);
@@ -974,23 +1053,49 @@ export class PhotoChecklistService {
   }
 
   async deleteOwnMedia(instanceId: number, itemId: number, fileUrl: string, requestingUserId: number) {
-    const instance = await this.repository.getInstanceById(instanceId);
-    if (!instance) {
+    const normalizedInstanceId = Number(instanceId || 0);
+    const normalizedItemId = Number(itemId || 0);
+    const candidates = this.normalizeMediaLocatorCandidates(fileUrl);
+
+    if (normalizedInstanceId <= 0 || normalizedItemId <= 0 || candidates.length === 0) {
       throw new NotFoundException({
-        code: 'RC_CHECKLIST_INSTANCE_NOT_FOUND',
-        message: 'Checklist instance not found',
+        code: 'RC_CHECKLIST_MEDIA_LOCATOR_INVALID',
+        message: 'Missing required locator fields',
       });
     }
 
-    const operatorId = Number(instance.operator_id || 0);
-    if (operatorId !== requestingUserId) {
+    const mediaId = await this.repository.findPhotoSubmissionIdByLocator(
+      normalizedInstanceId,
+      normalizedItemId,
+      candidates,
+    );
+
+    if (!mediaId) {
+      throw new NotFoundException({
+        code: 'RC_CHECKLIST_MEDIA_NOT_FOUND',
+        message: 'Media not found for provided locator',
+      });
+    }
+
+    const media = await this.repository.getPhotoSubmissionById(mediaId);
+    if (!media) {
+      throw new NotFoundException({
+        code: 'RC_CHECKLIST_MEDIA_NOT_FOUND',
+        message: 'Media not found',
+      });
+    }
+
+    const metadata = this.safeParseJson<Record<string, unknown>>(media.photo_metadata, {});
+    const uploaderUserId = Number(metadata?.uploader_user_id || 0);
+    const callerHasManagePermission = await this.hasManagePermission(requestingUserId);
+    if (uploaderUserId !== requestingUserId && !callerHasManagePermission) {
       throw new ForbiddenException({
-        code: 'RC_CHECKLIST_MEDIA_NOT_OWNER',
-        message: 'You can only delete media from your own checklist instance',
+        code: 'RC_CHECKLIST_MEDIA_NOT_UPLOADER',
+        message: 'You can only delete media that you uploaded unless you have manage permission',
       });
     }
 
-    return this.deleteMediaByLocator(instanceId, itemId, fileUrl);
+    return this.deleteMediaById(mediaId);
   }
 
   async archiveInstance(id: number) {

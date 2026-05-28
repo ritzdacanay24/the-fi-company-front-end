@@ -52,19 +52,17 @@
             <button class="btn btn-outline-secondary" (click)="loadOpenChecklists()" title="Refresh">
               <i class="mdi mdi-refresh"></i>
             </button>
-            @if (canManageTransfers) {
-              <div class="ms-auto">
-                <button class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1"
-                        type="button"
-                        [disabled]="!canOpenTransferPanel"
-                        (click)="openReassignModal()"
-                        title="Select checklist rows first, then reassign">
-                  <i class="mdi mdi-account-switch"></i>
-                  Reassign Selected
-                  <span class="badge bg-primary-subtle text-primary">{{selectedTransferCount}}</span>
-                </button>
-              </div>
-            }
+            <div class="ms-auto">
+              <button class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1"
+                      type="button"
+                      [disabled]="!canOpenTransferPanel"
+                      (click)="openReassignModal()"
+                      title="Select checklist rows first, then reassign">
+                <i class="mdi mdi-account-switch"></i>
+                Reassign Selected
+                <span class="badge bg-primary-subtle text-primary">{{selectedTransferCount}}</span>
+              </button>
+            </div>
           </div>
 
 
@@ -136,6 +134,40 @@
         <span class="spinner-border spinner-border-sm me-1"></span>
       }
       Reassign ({{selectedTransferCount}})
+    </button>
+  </div>
+</ng-template>
+
+<ng-template #editChecklistModal let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title">Edit Checklist Details</h5>
+    <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss('cancel')"></button>
+  </div>
+
+  <div class="modal-body">
+    <div class="mb-3">
+      <label class="form-label fw-semibold">Work Order Number</label>
+      <input type="text" class="form-control" [(ngModel)]="editWorkOrderNumber" />
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold">Part Number</label>
+      <input type="text" class="form-control" [(ngModel)]="editPartNumber" />
+    </div>
+
+    <div class="mb-0">
+      <label class="form-label fw-semibold">Serial Number</label>
+      <input type="text" class="form-control" [(ngModel)]="editSerialNumber" />
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn btn-light" [disabled]="editSaving" (click)="modal.dismiss('cancel')">Cancel</button>
+    <button type="button" class="btn btn-primary" [disabled]="editSaving" (click)="saveEditedChecklist(modal)">
+      @if (editSaving) {
+        <span class="spinner-border spinner-border-sm me-1"></span>
+      }
+      Save Changes
     </button>
   </div>
 </ng-template>

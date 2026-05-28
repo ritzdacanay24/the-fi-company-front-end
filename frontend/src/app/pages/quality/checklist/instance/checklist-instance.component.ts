@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { DOCUMENT } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
 import { NgbDropdownModule, NgbModal, NgbModalModule, NgbModalRef, NgbOffcanvas } from '@ng-bootstrap/ng-bootstrap';
 import { PhotoChecklistConfigService, ChecklistInstance, ChecklistTemplate, ChecklistItem } from '@app/core/api/photo-checklist-config/photo-checklist-config.service';
 import { GlobalComponent } from '@app/global-component';
@@ -12,6 +13,7 @@ import { ChecklistNavigationComponent } from '@app/shared/components/checklist-n
 import { ChecklistNavItem } from '@app/shared/models/checklist-navigation.model';
 import { filter, Subscription } from 'rxjs';
 import Swal from 'sweetalert2';
+import { SweetAlert as AppSweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
 import { ShareReportModalComponent } from './components/share-report/share-report-modal.component';
 
 // Import services
@@ -112,6 +114,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   private instructionsScrollChangesSub?: Subscription;
   private routeQueryParamsSub?: Subscription;
   private carouselListenerCleanupFns: Array<() => void> = [];
+  private loadInstanceRetryTimeout: ReturnType<typeof setTimeout> | null = null;
 
   showOptionalPhotoFor(itemId: number): void {
     this.showOptionalPhotoCapture[itemId] = true;
@@ -250,6 +253,87 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     if (changed) {
       this.cdr.detectChanges();
     }
+  }
+
+  private showErrorAlert(text: string, title?: string): void {
+    void AppSweetAlert.fire({
+      icon: 'error',
+      title: title || 'Error',
+      text,
+      confirmButtonText: 'OK',
+      showCancelButton: false,
+    });
+  }
+
+  private showWarningAlert(text: string, title?: string): void {
+    void AppSweetAlert.fire({
+      icon: 'warning',
+      title: title || 'Warning',
+      text,
+      confirmButtonText: 'OK',
+      showCancelButton: false,
+    });
+  }
+
+  private showInfoAlert(text: string, title?: string): void {
+    void AppSweetAlert.fire({
+      icon: 'info',
+      title: title || 'Notice',
+      text,
+      confirmButtonText: 'OK',
+      showCancelButton: false,
+    });
+  }
+
+  private showSuccessAlert(text: string, title?: string): void {
+    void AppSweetAlert.fire({
+      icon: 'success',
+      title: title || 'Success',
+      text,
+      confirmButtonText: 'OK',
+      showCancelButton: false,
+    });
+  }
+
+  private showLoadingAlert(title: string, text?: string): void {
+    void AppSweetAlert.fire({
+      title,
+      text,
+      allowOutsideClick: false,
+      showConfirmButton: false,
+      showCancelButton: false,
+      didOpen: () => Swal.showLoading(),
+    });
+  }
+
+  private closeAlert(delay = 0): void {
+    if (delay > 0) {
+      void AppSweetAlert.close(delay);
+      return;
+    }
+    Swal.close();
+  }
+
+  private confirmAction(options: {
+    title: string;
+    text?: string;
+    html?: string;
+    confirmButtonText: string;
+    cancelButtonText?: string;
+    icon?: 'warning' | 'info' | 'question' | 'success' | 'error';
+    confirmButtonColor?: string;
+  }): Promise<boolean> {
+    return AppSweetAlert.fire({
+      icon: options.icon || 'warning',
+      title: options.title,
+      text: options.text,
+      html: options.html,
+      showCancelButton: true,
+      confirmButtonText: options.confirmButtonText,
+      cancelButtonText: options.cancelButtonText || 'Cancel',
+      confirmButtonColor: options.confirmButtonColor,
+      reverseButtons: true,
+    }).then((result: any) => !!result?.isConfirmed);
   }
 
   // Photo validation errors
@@ -640,7 +724,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       next: (instance) => {
         if (!instance) {
           this.refreshingInstance = false;
-          alert(`Checklist instance #${this.instanceId} was not found.`);
+          this.showErrorAlert(`Checklist instance #${this.instanceId} was not found.`);
           return;
         }
 
@@ -648,7 +732,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
 
         if (!instance.template_id) {
           this.refreshingInstance = false;
-          alert('Checklist template reference is missing for this instance.');
+          this.showErrorAlert('Checklist template reference is missing for this instance.');
           return;
         }
 
@@ -656,7 +740,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
           next: (template) => {
             this.refreshingInstance = false;
             if (!template) {
-              alert('Unable to refresh checklist template.');
+              this.showErrorAlert('Unable to refresh checklist template.');
               return;
             }
 
@@ -667,14 +751,14 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
           error: (error) => {
             console.error('Error refreshing checklist template:', error);
             this.refreshingInstance = false;
-            alert('Error refreshing checklist template. Please try again.');
+            this.showErrorAlert('Error refreshing checklist template. Please try again.');
           }
         });
       },
       error: (error) => {
         console.error('Error refreshing checklist instance:', error);
         this.refreshingInstance = false;
-        alert('Error refreshing checklist data. Please try again.');
+        this.showErrorAlert('Error refreshing checklist data. Please try again.');
       }
     });
   }
@@ -740,13 +824,13 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
 
       // iOS Safari (and most browsers) require a secure context (HTTPS) for getUserMedia
       if (!window.isSecureContext) {
-        alert('In-app camera capture requires HTTPS (secure context). Use the upload/capture button instead, or open this site over https.');
+        this.showWarningAlert('In-app camera capture requires HTTPS (secure context). Use the upload/capture button instead, or open this site over https.');
         this.closeCameraCapture();
         return;
       }
 
       if (!navigator.mediaDevices?.getUserMedia) {
-        alert('Camera is not supported on this device/browser (getUserMedia unavailable).');
+        this.showWarningAlert('Camera is not supported on this device/browser (getUserMedia unavailable).');
         this.closeCameraCapture();
         return;
       }
@@ -783,7 +867,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       }, 0);
     } catch (error) {
       console.error('Error starting camera:', error);
-      alert('Unable to access the camera. Please check permissions and try again.');
+      this.showErrorAlert('Unable to access the camera. Please check permissions and try again.');
       this.closeCameraCapture();
     } finally {
       this.cameraStarting = false;
@@ -806,20 +890,20 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       return;
     }
 
-    alert('Unable to open camera capture. Use “Add Photo” to select a file, or enable the in-app camera in Settings (requires HTTPS + camera support).');
+    this.showWarningAlert('Unable to open camera capture. Use “Add Photo” to select a file, or enable the in-app camera in Settings (requires HTTPS + camera support).');
   }
 
   onEnableInAppPhotoCaptureChange(enabled: boolean): void {
     if (!enabled) return;
 
     if (!window.isSecureContext) {
-      alert('In-app photo capture requires HTTPS (secure context).');
+      this.showWarningAlert('In-app photo capture requires HTTPS (secure context).');
       this.enableInAppPhotoCapture = false;
       return;
     }
 
     if (!navigator.mediaDevices?.getUserMedia) {
-      alert('In-app photo capture is not supported in this browser/device.');
+      this.showWarningAlert('In-app photo capture is not supported in this browser/device.');
       this.enableInAppPhotoCapture = false;
     }
   }
@@ -978,13 +1062,13 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       this.videoCaptureItemId = itemId;
 
       if (!window.isSecureContext) {
-        alert('In-app video capture requires HTTPS (secure context).');
+        this.showWarningAlert('In-app video capture requires HTTPS (secure context).');
         this.closeVideoCapture();
         return;
       }
 
       if (!navigator.mediaDevices?.getUserMedia) {
-        alert('Video capture is not supported on this device/browser.');
+        this.showWarningAlert('Video capture is not supported on this device/browser.');
         this.closeVideoCapture();
         return;
       }
@@ -1014,7 +1098,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       await this.startVideoPreviewWithCurrentAudioSetting();
     } catch (error) {
       console.error('Error starting in-app video capture:', error);
-      alert('Unable to start in-app video capture. Please check camera permissions and try again.');
+      this.showErrorAlert('Unable to start in-app video capture. Please check camera permissions and try again.');
       this.videoCaptureStatus = 'idle';
       this.forceCloseVideoCapture();
     }
@@ -1088,7 +1172,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     } catch (error) {
       console.error('Error toggling video audio mode:', error);
       this.videoCaptureAudioEnabled = previous;
-      alert('Unable to switch audio mode right now.');
+      this.showErrorAlert('Unable to switch audio mode right now.');
       try {
         this.stopCameraStream();
         await this.startVideoPreviewWithCurrentAudioSetting();
@@ -1108,7 +1192,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     if (!this.cameraStream || this.isVideoRecording || !this.videoCaptureItemId) return;
 
     if (this.videoCaptureAudioEnabled && (this.cameraStream.getAudioTracks?.() || []).length === 0) {
-      alert('Microphone not available for recording. Please allow microphone access and try again.');
+      this.showWarningAlert('Microphone not available for recording. Please allow microphone access and try again.');
       return;
     }
 
@@ -1141,7 +1225,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       // Handle MediaRecorder errors
       this.videoRecorder.onerror = (event: any) => {
         console.error('MediaRecorder error:', event.error);
-        alert('Recording error: ' + event.error);
+        this.showErrorAlert('Recording error: ' + event.error);
         this.stopVideoRecording();
       };
 
@@ -1175,7 +1259,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       this.cdr.detectChanges();
     } catch (error) {
       console.error('Unable to start video recording:', error);
-      alert('Unable to start recording. Try again or use Add from Library.');
+      this.showErrorAlert('Unable to start recording. Try again or use Add from Library.');
     }
   }
 
@@ -1248,7 +1332,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         this.isVideoRecording = false;
         this.videoCaptureStatus = 'preview';
         if (itemId) {
-          alert('Recording ended but no video data was captured. Please try again.');
+          this.showErrorAlert('Recording ended but no video data was captured. Please try again.');
         }
         return;
       }
@@ -1265,16 +1349,10 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         replaceVideoUrls: [...(currentProgress?.videos || [])]
       });
       this.videoCaptureStatus = 'uploading';
-      Swal.fire({
-        title: 'Saving video...',
-        text: 'Please wait while your video is uploaded.',
-        allowOutsideClick: false,
-        showConfirmButton: false,
-        didOpen: () => Swal.showLoading()
-      });
+      this.showLoadingAlert('Saving video...', 'Please wait while your video is uploaded.');
     } catch (error) {
       console.error('Error finalizing video recording:', error);
-      alert('Failed to save recorded video. Please try again.');
+      this.showErrorAlert('Failed to save recorded video. Please try again.');
     } finally {
       this.clearVideoRecordingTimer();
       this.clearVideoStopFallbackTimer();
@@ -1363,7 +1441,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     this.videoCaptureStatus = 'idle';
 
     this.stopCameraStream();
-    Swal.close();
+    this.closeAlert();
 
     try {
       modalRef?.dismiss?.('force-close');
@@ -1468,7 +1546,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     }
 
     if (!blob) {
-      alert('Failed to capture photo. Please try again.');
+      this.showErrorAlert('Failed to capture photo. Please try again.');
       return;
     }
 
@@ -1541,7 +1619,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     return this.toSourceLabel(source);
   }
 
-  getPhotoMeta(progress: ChecklistItemProgress, photoUrl: string): { uploadedBy?: string; uploadedAt?: string } {
+  getPhotoMeta(progress: ChecklistItemProgress, photoUrl: string): { uploadedBy?: string; uploadedAt?: string; uploadedByUserId?: number } {
     return progress?.photoMeta?.[photoUrl] || {};
   }
 
@@ -1551,8 +1629,15 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     return this.toSourceLabel(source);
   }
 
-  getVideoMeta(progress: ChecklistItemProgress, videoUrl: string): { uploadedBy?: string; uploadedAt?: string } {
+  getVideoMeta(progress: ChecklistItemProgress, videoUrl: string): { uploadedBy?: string; uploadedAt?: string; uploadedByUserId?: number } {
     return progress?.videoMeta?.[videoUrl] || {};
+  }
+
+  canDeleteMedia(progress: ChecklistItemProgress, mediaUrl: string, mediaType: 'photo' | 'video' = 'photo'): boolean {
+    void progress;
+    void mediaUrl;
+    void mediaType;
+    return this.instance?.status !== 'submitted';
   }
 
   getAudioSourceLabel(progress: ChecklistItemProgress, audioUrl: string): string | null {
@@ -1695,11 +1780,11 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
           }
         } else {
           this.loading = false;
-          alert('Invalid checklist instance ID. Please check the URL.');
+          this.showErrorAlert('Invalid checklist instance ID. Please check the URL.');
         }
       } else {
         this.loading = false;
-        alert('No checklist instance ID provided. Please check the URL.');
+        this.showErrorAlert('No checklist instance ID provided. Please check the URL.');
       }
     });
   }
@@ -1784,6 +1869,8 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       clearTimeout(this.navTransitionTimeout);
       this.navTransitionTimeout = null;
     }
+
+    this.clearLoadInstanceRetry();
 
     this.destroyOrientationGuard();
 
@@ -2114,12 +2201,13 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     if (this.isLoadingInstance) return;
     this.isLoadingInstance = true;
     this.loading = true;
+    this.clearLoadInstanceRetry();
     this.photoChecklistService.getInstance(this.instanceId).subscribe({
       next: (instance) => {
         if (!instance) {
           this.loading = false;
           this.isLoadingInstance = false;
-          alert(`Error: Checklist instance #${this.instanceId} not found. It may have been deleted.`);
+          this.showErrorAlert(`Checklist instance #${this.instanceId} not found. It may have been deleted.`);
           this.router.navigate(['/quality/checklist/list']);
           return;
         }
@@ -2129,7 +2217,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         if (!canViewChecklist) {
           this.loading = false;
           this.isLoadingInstance = false;
-          alert(`Access Denied: This checklist belongs to ${instance.operator_name}. You can only modify your own checklists.`);
+          this.showWarningAlert(`Access Denied: This checklist belongs to ${instance.operator_name}. You can only modify your own checklists.`);
           this.router.navigate([this.getExecutionRoute()]);
           return;
         }
@@ -2166,7 +2254,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         if (!instance.template_id) {
           this.loading = false;
           this.isLoadingInstance = false;
-          alert('Error: Checklist instance has no associated template.');
+          this.showErrorAlert('Checklist instance has no associated template.');
           return;
         }
         
@@ -2175,12 +2263,75 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       },
       error: (error) => {
         console.error('Error loading instance:', error);
-        this.loading = false;
         this.isLoadingInstance = false;
-        alert(`Error loading checklist instance #${this.instanceId}. It may have been deleted or you don't have permission to access it.`);
+
+        if (this.isTransientInstanceLoadError(error)) {
+          const retryDelayMs = this.getInstanceLoadRetryDelayMs(error);
+
+          if (this.instance) {
+            this.loading = false;
+          }
+
+          this.scheduleLoadInstanceRetry(retryDelayMs);
+          return;
+        }
+
+        this.loading = false;
+        this.showErrorAlert(`Error loading checklist instance #${this.instanceId}. It may have been deleted or you don't have permission to access it.`);
         this.router.navigate(['/inspection-checklist/execution']);
       }
     });
+  }
+
+  private isTransientInstanceLoadError(error: unknown): boolean {
+    if (!(error instanceof HttpErrorResponse)) {
+      return false;
+    }
+
+    const status = Number(error.status || 0);
+    const code = String(error.error?.code || '').trim();
+
+    return code === 'RC_DEPLOY_IN_PROGRESS'
+      || error.error?.deployInProgress === true
+      || typeof error.error?.retryAfterSeconds !== 'undefined'
+      || status === 0
+      || status === 500
+      || status === 502
+      || status === 503
+      || status === 504;
+  }
+
+  private getInstanceLoadRetryDelayMs(error: unknown): number {
+    if (!(error instanceof HttpErrorResponse)) {
+      return 3000;
+    }
+
+    const retryAfterSeconds = Number(error.headers?.get('Retry-After') || error.error?.retryAfterSeconds || 0);
+    if (Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0) {
+      return Math.min(Math.round(retryAfterSeconds), 30) * 1000;
+    }
+
+    return 3000;
+  }
+
+  private scheduleLoadInstanceRetry(delayMs: number): void {
+    if (this.loadInstanceRetryTimeout) {
+      return;
+    }
+
+    this.loadInstanceRetryTimeout = setTimeout(() => {
+      this.loadInstanceRetryTimeout = null;
+      this.loadInstance();
+    }, Math.max(1000, delayMs));
+  }
+
+  private clearLoadInstanceRetry(): void {
+    if (!this.loadInstanceRetryTimeout) {
+      return;
+    }
+
+    clearTimeout(this.loadInstanceRetryTimeout);
+    this.loadInstanceRetryTimeout = null;
   }
 
   openTransferOwnerModal(): void {
@@ -2216,22 +2367,25 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   transferOwnershipToMe(): void {
     if (!this.currentUserId || !this.currentUserName || !this.instanceId) return;
     const lockedBy = this.lockOwnerName ?? 'another user';
-    const confirmed = confirm(
-      `This checklist is currently locked by "${lockedBy}".\n\nTransfer ownership to yourself so you can make edits?`
-    );
-    if (!confirmed) return;
+    this.confirmAction({
+      title: 'Transfer ownership?',
+      text: `This checklist is currently locked by "${lockedBy}". Transfer ownership to yourself so you can make edits?`,
+      confirmButtonText: 'Yes, transfer it',
+    }).then((isConfirmed) => {
+      if (!isConfirmed) return;
 
-    this.photoChecklistService.transferInstance(this.instanceId, this.currentUserId, this.currentUserName).subscribe({
-      next: () => {
-        this.isOwner = true;
-        this.canModifyChecklist = true;
-        this.lockOwnerName = null;
-        this.startHeartbeat();
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        alert(`Could not transfer ownership: ${err?.error?.message ?? err?.message ?? 'Unknown error'}`);
-      },
+      this.photoChecklistService.transferInstance(this.instanceId, this.currentUserId, this.currentUserName).subscribe({
+        next: () => {
+          this.isOwner = true;
+          this.canModifyChecklist = true;
+          this.lockOwnerName = null;
+          this.startHeartbeat();
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          this.showErrorAlert(`Could not transfer ownership: ${err?.error?.message ?? err?.message ?? 'Unknown error'}`);
+        },
+      });
     });
   }
 
@@ -2250,14 +2404,14 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   private ensureCanModify(interactive = true): boolean {
     if (this.instance?.status === 'submitted') {
       if (interactive) {
-        alert('This checklist is submitted and read-only. No changes can be made.');
+        this.showInfoAlert('This checklist is submitted and read-only. No changes can be made.');
       }
       return false;
     }
     if (!this.canModifyChecklist) {
       if (interactive) {
         const lockedBy = this.lockOwnerName ? ` It is currently locked by ${this.lockOwnerName}.` : '';
-        alert(`This checklist is read-only.${lockedBy}`);
+        this.showInfoAlert(`This checklist is read-only.${lockedBy}`);
       }
       return false;
     }
@@ -2275,7 +2429,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         if (!template) {
           this.loading = false;
           this.isLoadingInstance = false;
-          alert('Error: Template not found. Please try again.');
+          this.showErrorAlert('Error: Template not found. Please try again.');
           return;
         }
         
@@ -2288,7 +2442,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         console.error('Error loading template:', error);
         this.loading = false;
         this.isLoadingInstance = false;
-        alert('Error loading template. Please try again.');
+        this.showErrorAlert('Error loading template. Please try again.');
       }
     });
   }
@@ -2662,23 +2816,27 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   private extractMediaSourceMeta(
     urls: string[],
     serverMediaRows: any[]
-  ): Record<string, { source?: 'in-app' | 'system' | 'library' }> {
-    const metaByUrl: Record<string, { source?: 'in-app' | 'system' | 'library' }> = {};
-    const byNormalizedUrl = new Map<string, 'in-app' | 'system' | 'library'>();
+  ): Record<string, { source?: 'in-app' | 'system' | 'library'; uploadedByUserId?: number }> {
+    const metaByUrl: Record<string, { source?: 'in-app' | 'system' | 'library'; uploadedByUserId?: number }> = {};
+    const byNormalizedUrl = new Map<string, { source?: 'in-app' | 'system' | 'library'; uploadedByUserId?: number }>();
 
     for (const row of (serverMediaRows || [])) {
       const url = String(row?.file_url || row?.url || '').trim();
       if (!url) continue;
       const source = this.normalizeSourceValue(row?.capture_source);
-      if (!source) continue;
-      byNormalizedUrl.set(this.normalizeMediaPathForMerge(url), source);
+      const uploadedByUserId = Number(row?.uploader_user_id || 0) || undefined;
+      if (!source && !uploadedByUserId) continue;
+      byNormalizedUrl.set(this.normalizeMediaPathForMerge(url), {
+        ...(source ? { source } : {}),
+        ...(uploadedByUserId ? { uploadedByUserId } : {}),
+      });
     }
 
     for (const url of (urls || [])) {
       const key = this.normalizeMediaPathForMerge(url);
-      const source = byNormalizedUrl.get(key);
-      if (source) {
-        metaByUrl[url] = { source };
+      const meta = byNormalizedUrl.get(key);
+      if (meta) {
+        metaByUrl[url] = meta;
       }
     }
 
@@ -2687,28 +2845,39 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
 
   private mergeMediaSourceMeta(
     urls: string[],
-    existingMeta?: Record<string, { source?: 'in-app' | 'system' | 'library' }>,
-    fallbackMeta?: Record<string, { source?: 'in-app' | 'system' | 'library' }>
-  ): Record<string, { source?: 'in-app' | 'system' | 'library' }> | undefined {
-    const merged: Record<string, { source?: 'in-app' | 'system' | 'library' }> = {};
-    const fallbackByNormalized = new Map<string, { source?: 'in-app' | 'system' | 'library' }>();
+    existingMeta?: Record<string, { source?: 'in-app' | 'system' | 'library'; uploadedByUserId?: number }>,
+    fallbackMeta?: Record<string, { source?: 'in-app' | 'system' | 'library'; uploadedByUserId?: number }>
+  ): Record<string, { source?: 'in-app' | 'system' | 'library'; uploadedByUserId?: number }> | undefined {
+    const merged: Record<string, { source?: 'in-app' | 'system' | 'library'; uploadedByUserId?: number }> = {};
+    const fallbackByNormalized = new Map<string, { source?: 'in-app' | 'system' | 'library'; uploadedByUserId?: number }>();
 
     for (const [url, meta] of Object.entries(fallbackMeta || {})) {
       const source = this.normalizeSourceValue(meta?.source);
-      if (!source) continue;
-      fallbackByNormalized.set(this.normalizeMediaPathForMerge(url), { source });
+      const uploadedByUserId = Number(meta?.uploadedByUserId || 0) || undefined;
+      if (!source && !uploadedByUserId) continue;
+      fallbackByNormalized.set(this.normalizeMediaPathForMerge(url), {
+        ...(source ? { source } : {}),
+        ...(uploadedByUserId ? { uploadedByUserId } : {}),
+      });
     }
 
     for (const url of (urls || [])) {
       const explicit = this.normalizeSourceValue(existingMeta?.[url]?.source);
-      if (explicit) {
-        merged[url] = { source: explicit };
+      const explicitUploadedByUserId = Number(existingMeta?.[url]?.uploadedByUserId || 0) || undefined;
+      if (explicit || explicitUploadedByUserId) {
+        merged[url] = {
+          ...(explicit ? { source: explicit } : {}),
+          ...(explicitUploadedByUserId ? { uploadedByUserId: explicitUploadedByUserId } : {}),
+        };
         continue;
       }
 
       const fallback = fallbackByNormalized.get(this.normalizeMediaPathForMerge(url));
-      if (fallback?.source) {
-        merged[url] = { source: fallback.source };
+      if (fallback?.source || fallback?.uploadedByUserId) {
+        merged[url] = {
+          ...(fallback.source ? { source: fallback.source } : {}),
+          ...(fallback.uploadedByUserId ? { uploadedByUserId: fallback.uploadedByUserId } : {}),
+        };
       }
     }
 
@@ -2812,7 +2981,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     // Validate itemId
     if (!this.idExtractor.isValidItemId(itemId)) {
       console.error('Invalid itemId:', itemId);
-      alert('Error: Invalid item ID. Please reload the page.');
+      this.showErrorAlert('Error: Invalid item ID. Please reload the page.');
       return;
     }
     
@@ -2828,7 +2997,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     // Validate instance ID
     if (!this.idExtractor.isValidInstanceId(this.instanceId)) {
       console.error('Invalid instance ID:', this.instanceId);
-      alert('Error: Instance ID is not available. Please reload the page.');
+      this.showErrorAlert('Error: Instance ID is not available. Please reload the page.');
       return;
     }
 
@@ -2845,7 +3014,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
           );
 
           if (!validation.valid) {
-            alert(validation.error);
+            this.showWarningAlert(validation.error, 'Validation');
             event.target.value = '';
             return;
           }
@@ -2853,7 +3022,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       } else {
         // Video/audio are tracked separately from photos; do not apply photo count limits.
         if (files.length > 1) {
-          alert('Please select a single media file.');
+          this.showWarningAlert('Please select a single media file.', 'Validation');
           event.target.value = '';
           return;
         }
@@ -2884,13 +3053,13 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
 
     // Validate instance and item IDs
     if (!this.idExtractor.isValidInstanceId(this.instanceId)) {
-      alert('Error: Invalid instance ID. Please reload the page.');
+      this.showErrorAlert('Error: Invalid instance ID. Please reload the page.');
       return;
     }
 
     const progressItem = this.stateService.findItemProgress(itemId);
     if (!progressItem) {
-      alert('Error: Item not found. Please reload the page.');
+      this.showErrorAlert('Error: Item not found. Please reload the page.');
       return;
     }
 
@@ -2905,7 +3074,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     const isAudioSelection = !!firstFile && typeof firstFile.type === 'string' && firstFile.type.toLowerCase().startsWith('audio/');
     if (isMediaSelection) {
       if (files.length > 1) {
-        alert('Please select a single media file.');
+        this.showWarningAlert('Please select a single media file.', 'Validation');
       }
 
       this.uploadProgress[itemIdKey] = 0;
@@ -2919,7 +3088,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
           if (!uploadedUrl) {
             const mediaLabel = isAudioSelection ? 'audio' : 'video';
             delete this.uploadProgress[itemIdKey];
-            alert(`Error uploading ${mediaLabel}: upload completed but no persisted file URL was returned.`);
+            this.showErrorAlert(`Error uploading ${mediaLabel}: upload completed but no persisted file URL was returned.`);
             return;
           }
 
@@ -2937,7 +3106,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
                   },
                   error: (deleteError) => {
                     console.error('Failed to delete previous media during replace:', deleteError);
-                    alert('New media uploaded, but an older media file could not be removed. Please delete it manually.');
+                    this.showWarningAlert('New media uploaded, but an older media file could not be removed. Please delete it manually.');
                   }
                 });
               }
@@ -2969,7 +3138,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
           console.error(`Error uploading ${mediaLabel}:`, error);
           delete this.uploadProgress[itemIdKey];
           const errorMessage = error.error?.error || error.message || 'Upload failed';
-          alert(`Error uploading ${mediaLabel}: ${errorMessage}`);
+          this.showErrorAlert(`Error uploading ${mediaLabel}: ${errorMessage}`);
           this.inFlightMediaUploads = Math.max(0, this.inFlightMediaUploads - 1);
         }
       });
@@ -2988,7 +3157,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         );
 
         if (!validation.valid) {
-          alert(validation.error);
+          this.showWarningAlert(validation.error, 'Validation');
           delete this.selectedFiles[itemIdKey];
           return;
         }
@@ -2996,13 +3165,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     }
 
     // Show saving alert for photos
-    Swal.fire({
-      title: 'Saving photo...',
-      text: 'Please wait while your photo is uploaded.',
-      allowOutsideClick: false,
-      showConfirmButton: false,
-      didOpen: () => Swal.showLoading()
-    });
+    this.showLoadingAlert('Saving photo...', 'Please wait while your photo is uploaded.');
 
     this.uploadProgress[itemIdKey] = 0;
     const totalFiles = files.length;
@@ -3013,7 +3176,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         delete this.uploadProgress[itemIdKey];
         delete this.selectedFiles[itemIdKey];
         // Delay closing the alert to ensure it's visible
-        setTimeout(() => Swal.close(), 800);
+        this.closeAlert(300);
         this.saveProgressForItem(itemId);
         return;
       }
@@ -3023,8 +3186,8 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       if (currentItem && !this.photoValidation.canAddMorePhotos(currentItem.photos.length, currentItem.item)) {
         delete this.uploadProgress[itemIdKey];
         delete this.selectedFiles[itemIdKey];
-        setTimeout(() => Swal.close(), 800);
-        alert('Maximum photos reached. Some files were not uploaded.');
+        this.closeAlert(300);
+        this.showWarningAlert('Maximum photos reached. Some files were not uploaded.');
         return;
       }
 
@@ -3039,8 +3202,8 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
           const uploadedUrl = String(response?.file_url || '').trim();
           if (!uploadedUrl) {
             delete this.uploadProgress[itemIdKey];
-            setTimeout(() => Swal.close(), 800);
-            alert('Error uploading photos: upload completed but no persisted file URL was returned.');
+            this.closeAlert(300);
+            this.showErrorAlert('Error uploading photos: upload completed but no persisted file URL was returned.');
             return;
           }
 
@@ -3058,7 +3221,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
                   },
                   error: (deleteError) => {
                     console.error('Failed to delete previous photo during replace:', deleteError);
-                    alert('New photo uploaded, but an older photo could not be removed. Please delete it manually.');
+                    this.showWarningAlert('New photo uploaded, but an older photo could not be removed. Please delete it manually.');
                   }
                 });
               }
@@ -3084,10 +3247,10 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         error: (error) => {
           console.error(`Error uploading photo ${index + 1}:`, error);
           delete this.uploadProgress[itemIdKey];
-          setTimeout(() => Swal.close(), 800);
+          this.closeAlert(300);
           
           const errorMessage = error.error?.error || error.message || 'Upload failed';
-          alert(`Error uploading photos: ${errorMessage}`);
+          this.showErrorAlert(`Error uploading photos: ${errorMessage}`);
           this.inFlightMediaUploads = Math.max(0, this.inFlightMediaUploads - 1);
         }
       });
@@ -3188,7 +3351,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       error: (error) => {
         console.error('Error saving progress:', error);
         this.saving = false;
-        alert('Error saving progress. Please try again.');
+        this.showErrorAlert('Error saving progress. Please try again.');
         onComplete?.();
       }
     });
@@ -3253,27 +3416,36 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   submitChecklist(): void {
     if (!this.stateService.areAllRequiredItemsCompleted()) {
       const status = this.stateService.getRequiredCompletionStatus();
-      alert(`Please complete all required items. ${status.completed}/${status.total} required items completed.`);
+      this.showWarningAlert(`Please complete all required items. ${status.completed}/${status.total} required items completed.`);
       return;
     }
 
-    if (confirm('Are you sure you want to submit this checklist? This action cannot be undone.')) {
+    this.confirmAction({
+      title: 'Submit checklist?',
+      text: 'This action cannot be undone.',
+      confirmButtonText: 'Yes, submit it',
+      confirmButtonColor: '#d33',
+    }).then((isConfirmed) => {
+      if (!isConfirmed) {
+        return;
+      }
+
       this.saving = true;
       this.saveProgress();
       
       this.photoChecklistService.updateInstanceStatus(this.instanceId, 'submitted').subscribe({
         next: (response) => {
           this.saving = false;
-          alert('Checklist submitted successfully!');
-          this.router.navigate(['/quality/checklist']);
+          this.showSuccessAlert('Checklist submitted successfully!');
+          this.router.navigate([this.getExecutionRoute()]);
         },
         error: (error) => {
           this.saving = false;
           console.error('Error submitting checklist:', error);
-          alert('Error submitting checklist. Please try again.');
+          this.showErrorAlert('Error submitting checklist. Please try again.');
         }
       });
-    }
+    });
   }
 
   /**
@@ -3281,7 +3453,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
    */
   downloadAsPDF(): void {
     if (!this.instanceId) {
-      alert('No checklist instance to download.');
+      this.showInfoAlert('No checklist instance to download.');
       return;
     }
 
@@ -3302,13 +3474,13 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         } catch (error) {
           console.error('Error generating PDF:', error);
           this.saving = false;
-          alert('Error generating PDF. Please try again.');
+          this.showErrorAlert('Error generating PDF. Please try again.');
         }
       },
       error: (error) => {
         console.error('Error downloading PDF data:', error);
         this.saving = false;
-        alert('Error downloading checklist. Please try again.');
+        this.showErrorAlert('Error downloading checklist. Please try again.');
       }
     });
   }
@@ -3426,38 +3598,44 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     }
 
     if (this.instance.status === 'completed' || this.instance.status === 'submitted') {
-      alert('This inspection cannot be deleted because it is already completed/submitted.');
+      this.showInfoAlert('This inspection cannot be deleted because it is already completed/submitted.');
       return;
     }
 
-    const ok = confirm('Delete this inspection? This will remove uploaded media and cannot be undone.');
-    if (!ok) {
-      return;
-    }
-
-    try {
-      offcanvas?.dismiss?.();
-    } catch {
-      // ignore
-    }
-
-    this.saving = true;
-    this.photoChecklistService.deleteInstance(this.instanceId).subscribe({
-      next: (res) => {
-        this.saving = false;
-        if (res?.success) {
-          this.goBack();
-        } else {
-          alert(res?.error || 'Failed to delete inspection.');
-        }
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        console.error('Delete inspection error:', err);
-        this.saving = false;
-        alert('Failed to delete inspection.');
-        this.cdr.detectChanges();
+    this.confirmAction({
+      title: 'Delete inspection?',
+      text: 'This will remove uploaded media and cannot be undone.',
+      confirmButtonText: 'Yes, delete it',
+      confirmButtonColor: '#d33',
+    }).then((isConfirmed) => {
+      if (!isConfirmed) {
+        return;
       }
+
+      try {
+        offcanvas?.dismiss?.();
+      } catch {
+        // ignore
+      }
+
+      this.saving = true;
+      this.photoChecklistService.deleteInstance(this.instanceId).subscribe({
+        next: (res) => {
+          this.saving = false;
+          if (res?.success) {
+            this.goBack();
+          } else {
+            this.showErrorAlert(res?.error || 'Failed to delete inspection.');
+          }
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          console.error('Delete inspection error:', err);
+          this.saving = false;
+          this.showErrorAlert('Failed to delete inspection.');
+          this.cdr.detectChanges();
+        }
+      });
     });
   }
 
@@ -3475,7 +3653,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         );
         
         if (!validation.valid) {
-          alert(validation.error);
+          this.showWarningAlert(validation.error, 'Validation');
           return;
         }
       }
@@ -3545,19 +3723,13 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     const loadingStartedAt = Date.now();
     const minimumLoadingMs = 700;
 
-    Swal.fire({
-      title: 'Saving completion...',
-      text: 'Please wait while we save your update.',
-      allowOutsideClick: false,
-      showConfirmButton: false,
-      didOpen: () => Swal.showLoading()
-    });
+    this.showLoadingAlert('Saving completion...', 'Please wait while we save your update.');
 
     this.saveProgressForItem(target.item.id, () => {
       const elapsedMs = Date.now() - loadingStartedAt;
       const remainingMs = Math.max(0, minimumLoadingMs - elapsedMs);
       setTimeout(() => {
-        Swal.close();
+        this.closeAlert();
         this.verificationSavingItemId = null;
       }, remainingMs);
     });
@@ -3573,113 +3745,149 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
 
   removePhoto(itemId: number | string, photoIndex: number): void {
     if (!this.ensureCanModify(true)) return;
-    if (!confirm('Are you sure you want to remove this photo?')) return;
+    this.confirmAction({
+      title: 'Remove photo?',
+      text: 'Are you sure you want to remove this photo?',
+      confirmButtonText: 'Yes, remove it',
+      confirmButtonColor: '#d33',
+    }).then((isConfirmed) => {
+      if (!isConfirmed) return;
 
-    Swal.fire({
-      title: 'Deleting photo...',
-      text: 'Please wait while we remove your photo.',
-      allowOutsideClick: false,
-      showConfirmButton: false,
-      didOpen: () => Swal.showLoading()
+      this.showLoadingAlert('Deleting photo...', 'Please wait while we remove your photo.');
+
+      const result = this.photoOps.deletePhotoByIndex(
+        itemId, 
+        photoIndex, 
+        this.instanceId
+      );
+
+      if (result) {
+        result.subscribe({
+          next: () => {
+            this.stampLastModified(itemId, 'media');
+            // Recalculate progress after photo deletion
+            this.saveProgress();
+            this.broadcastChecklistUpdate('photo_deleted', { itemId });
+            this.cdr.detectChanges();
+            setTimeout(() => this.initializeCarousels(), 100);
+            this.closeAlert(300);
+          },
+          error: (error) => {
+            console.error('Error deleting photo:', error);
+            this.closeAlert(300);
+            if (!this.isPermissionDeniedDeleteError(error)) {
+              this.showErrorAlert('Error deleting photo. Please try again.');
+            }
+          }
+        });
+      } else {
+        // UI-only removal (no backend ID found) - still recalculate progress
+        this.stampLastModified(itemId, 'media');
+        this.saveProgress();
+        this.cdr.detectChanges();
+        this.closeAlert(300);
+      }
     });
-
-    const result = this.photoOps.deletePhotoByIndex(
-      itemId, 
-      photoIndex, 
-      this.instanceId
-    );
-
-    if (result) {
-      result.subscribe({
-        next: () => {
-          this.stampLastModified(itemId, 'media');
-          // Recalculate progress after photo deletion
-          this.saveProgress();
-          this.broadcastChecklistUpdate('photo_deleted', { itemId });
-          this.cdr.detectChanges();
-          setTimeout(() => this.initializeCarousels(), 100);
-          setTimeout(() => Swal.close(), 800);
-        },
-        error: (error) => {
-          console.error('Error deleting photo:', error);
-          setTimeout(() => Swal.close(), 800);
-          alert('Error deleting photo. Please try again.');
-        }
-      });
-    } else {
-      // UI-only removal (no backend ID found) - still recalculate progress
-      this.stampLastModified(itemId, 'media');
-      this.saveProgress();
-      this.cdr.detectChanges();
-      setTimeout(() => Swal.close(), 800);
-    }
   }
 
   removeAllPhotos(itemId: number | string): void {
     if (!this.ensureCanModify(true)) return;
-    if (!confirm('Are you sure you want to remove all photos for this item?')) return;
+    this.confirmAction({
+      title: 'Remove all photos?',
+      text: 'Are you sure you want to remove all photos for this item?',
+      confirmButtonText: 'Yes, remove them',
+      confirmButtonColor: '#d33',
+    }).then((isConfirmed) => {
+      if (!isConfirmed) return;
 
-    const result = this.photoOps.deleteAllPhotos(
-      itemId,
-      this.instanceId
-    );
+      const result = this.photoOps.deleteAllPhotos(
+        itemId,
+        this.instanceId
+      );
 
-    if (result) {
-      result.subscribe({
-        next: () => {
-          this.stampLastModified(itemId, 'media');
-          // Recalculate progress after removing all photos
-          this.saveProgress();
-          this.broadcastChecklistUpdate('photos_cleared', { itemId });
-          this.cdr.detectChanges();
-          this.loadInstance();
-        },
-        error: (error) => {
-          console.error('Error deleting photos:', error);
-          alert('Error deleting photos. Please try again.');
-        }
-      });
-    } else {
-      // UI-only removal - still recalculate progress
-      this.stampLastModified(itemId, 'media');
-      this.saveProgress();
-      this.cdr.detectChanges();
-    }
+      if (result) {
+        result.subscribe({
+          next: () => {
+            this.stampLastModified(itemId, 'media');
+            // Recalculate progress after removing all photos
+            this.saveProgress();
+            this.broadcastChecklistUpdate('photos_cleared', { itemId });
+            this.cdr.detectChanges();
+            this.loadInstance();
+          },
+          error: (error) => {
+            console.error('Error deleting photos:', error);
+            this.showErrorAlert('Error deleting photos. Please try again.');
+          }
+        });
+      } else {
+        // UI-only removal - still recalculate progress
+        this.stampLastModified(itemId, 'media');
+        this.saveProgress();
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   deletePhoto(photoUrl: string, itemId: number | string): void {
-    if (!this.ensureCanModify(true)) return;
-    if (!confirm('Are you sure you want to remove this media?')) return;
-
-    Swal.fire({
-      title: 'Deleting media...',
-      text: 'Please wait while we remove your media.',
-      allowOutsideClick: false,
-      showConfirmButton: false,
-      didOpen: () => Swal.showLoading()
-    });
-
-    const result = this.photoOps.deletePhotoByUrl(photoUrl, itemId, this.instanceId, this.currentUserId);
-    if (!result) {
-      setTimeout(() => Swal.close(), 800);
-      alert('Error deleting media. Missing required delete context.');
+    const progress = this.stateService.findItemProgress(itemId);
+    if (!progress) {
+      this.showErrorAlert('Error deleting media. Item not found.');
       return;
     }
 
-    result.subscribe({
-      next: () => {
-        this.stampLastModified(itemId, 'media');
-        this.saveProgress();
-        this.broadcastChecklistUpdate('media_deleted', { itemId });
-        this.cdr.detectChanges();
-        setTimeout(() => this.initializeCarousels(), 100);
-        setTimeout(() => Swal.close(), 800);
-      },
-      error: () => {
-        setTimeout(() => Swal.close(), 800);
-        alert('Error deleting media. Please try again.');
+    if (this.instance?.status === 'submitted') {
+      this.showInfoAlert('This checklist is submitted and read-only. No media can be deleted.');
+      return;
+    }
+
+    this.confirmAction({
+      title: 'Remove media?',
+      text: 'Are you sure you want to remove this media?',
+      confirmButtonText: 'Yes, remove it',
+      confirmButtonColor: '#d33',
+    }).then((isConfirmed) => {
+      if (!isConfirmed) {
+        return;
       }
+
+      this.showLoadingAlert('Deleting media...', 'Please wait while we remove your media.');
+
+      const result = this.photoOps.deletePhotoByUrl(photoUrl, itemId, this.instanceId, this.currentUserId);
+      if (!result) {
+        this.closeAlert(300);
+        this.showErrorAlert('Error deleting media. Missing required delete context.');
+        return;
+      }
+
+      result.subscribe({
+        next: () => {
+          this.stampLastModified(itemId, 'media');
+          this.saveProgress();
+          this.broadcastChecklistUpdate('media_deleted', { itemId });
+          this.cdr.detectChanges();
+          setTimeout(() => this.initializeCarousels(), 100);
+          this.closeAlert(300);
+        },
+        error: (error) => {
+          console.error('Error deleting media:', error);
+          this.closeAlert(300);
+          if (!this.isPermissionDeniedDeleteError(error)) {
+            this.showErrorAlert('Error deleting media. Please try again.');
+          }
+        }
+      });
     });
+  }
+
+  private isPermissionDeniedDeleteError(error: any): boolean {
+    const status = Number(error?.status || 0);
+    return status === 401
+      || status === 403
+      || error?.error?.code === 'RC_CHECKLIST_MEDIA_NOT_UPLOADER'
+      || error?.error?.details?.requiredPermissions?.length > 0
+      || error?.error?.details?.failedCheck === 'permission'
+      || error?.error?.details?.failedCheck === 'role';
   }
 
   previewImage(imageUrl: string): void {
@@ -4447,13 +4655,13 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     if (!this.ensureCanModify(true)) return;
     // Validate instance ID
     if (!this.idExtractor.isValidInstanceId(this.instanceId)) {
-      alert('Error: Instance ID is not available. Please reload the page.');
+      this.showErrorAlert('Error: Instance ID is not available. Please reload the page.');
       return;
     }
 
     const progress = this.stateService.findItemProgress(itemId);
     if (!progress) {
-      alert('Error: Item not found. Please reload the page.');
+      this.showErrorAlert('Error: Item not found. Please reload the page.');
       return;
     }
 
@@ -4461,20 +4669,14 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     const isAudio = !!file && typeof file.type === 'string' && file.type.toLowerCase().startsWith('audio/');
 
     if (!isMedia) {
-      Swal.fire({
-        title: 'Saving photo...',
-        text: 'Please wait while your photo is uploaded.',
-        allowOutsideClick: false,
-        showConfirmButton: false,
-        didOpen: () => Swal.showLoading()
-      });
+      this.showLoadingAlert('Saving photo...', 'Please wait while your photo is uploaded.');
     }
 
     // Validate photo count limits (for photo submissions)
     if (!isMedia) {
       if (!this.photoValidation.canAddMorePhotos(progress.photos.length, progress.item)) {
-        Swal.close();
-        alert('Maximum photos reached.');
+        this.closeAlert();
+        this.showWarningAlert('Maximum photos reached.');
         return;
       }
     }
@@ -4496,12 +4698,12 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         const uploadedUrl = String(response?.file_url || '').trim();
         if (!uploadedUrl) {
           const mediaLabel = isMedia ? (isAudio ? 'audio' : 'video') : 'photo';
-          Swal.close();
+          this.closeAlert();
           delete this.uploadProgress[itemIdKey];
           if (options?.closeVideoModalOnSuccess) {
             this.videoCaptureStatus = 'preview';
           }
-          alert(`Error uploading ${mediaLabel}: server did not return a saved file URL.`);
+          this.showErrorAlert(`Error uploading ${mediaLabel}: server did not return a saved file URL.`);
           return;
         }
 
@@ -4520,7 +4722,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
                   },
                   error: (deleteError) => {
                     console.error('Failed to delete previous media during re-record:', deleteError);
-                    alert('New media uploaded, but an older media file could not be removed. Please delete it manually.');
+                    this.showWarningAlert('New media uploaded, but an older media file could not be removed. Please delete it manually.');
                   }
                 });
               }
@@ -4547,7 +4749,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
             this.cdr.detectChanges();
           }, 3000);
         }
-        Swal.close();
+        this.closeAlert();
         this.cdr.detectChanges();
         setTimeout(() => this.initializeCarousels(), 100);
         if (!isMedia) {
@@ -4570,14 +4772,14 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       error: (error) => {
         const mediaLabel = isMedia ? (isAudio ? 'audio' : 'video') : 'photo';
         console.error(`Error uploading ${mediaLabel}:`, error);
-        Swal.close();
+        this.closeAlert();
         delete this.uploadProgress[itemIdKey];
         if (options?.closeVideoModalOnSuccess) {
           // Keep modal open so operator can retry immediately.
           this.videoCaptureStatus = 'preview';
         }
         const errorMessage = error.error?.error || error.message || 'Upload failed';
-        alert(`Error uploading ${mediaLabel}: ${errorMessage}`);
+        this.showErrorAlert(`Error uploading ${mediaLabel}: ${errorMessage}`);
         this.inFlightMediaUploads = Math.max(0, this.inFlightMediaUploads - 1);
       }
     });
@@ -5026,7 +5228,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
 
   openStartChecklistModal(): void {
     if (!this.selectedTemplateId) {
-      alert('Select a template first.');
+      this.showWarningAlert('Select a template first.', 'Validation');
       return;
     }
 
@@ -5091,7 +5293,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   startSelectedTemplateInstancesBatch(): void {
     const templateId = this.selectedTemplateId;
     if (!templateId) {
-      alert('Select a template first.');
+      this.showWarningAlert('Select a template first.', 'Validation');
       return;
     }
 
@@ -5103,12 +5305,12 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       .map(s => String(s || '').trim());
 
     if (!workOrder) {
-      alert('Work Order Number is required.');
+      this.showWarningAlert('Work Order Number is required.', 'Validation');
       return;
     }
 
     if (serials.length !== count || serials.some(s => !s)) {
-      alert('Please complete all serial numbers before starting.');
+      this.showWarningAlert('Please complete all serial numbers before starting.', 'Validation');
       return;
     }
 
@@ -5118,17 +5320,13 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
 
     if (isOlderVersion) {
       const tpl = this.selectedTemplatePreview;
-      Swal.fire({
-        icon: 'warning',
+      this.confirmAction({
         title: 'Older Version Selected',
         html: `You are about to start <strong>${count}</strong> checklist(s) using <strong>v${tpl?.version}</strong> of <strong>${tpl?.name}</strong>, which is not the latest version.<br><br>Are you sure you want to continue?`,
-        showCancelButton: true,
         confirmButtonText: 'Yes, continue',
-        cancelButtonText: 'Cancel',
         confirmButtonColor: '#f7b731',
-        reverseButtons: true,
-      }).then(result => {
-        if (result.isConfirmed) {
+      }).then((isConfirmed) => {
+        if (isConfirmed) {
           this.doStartTemplateInstancesBatch(templateId, workOrder, partNumber, serials);
         }
       });
@@ -5152,7 +5350,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         this.cdr.detectChanges();
 
         if (createdInstanceIds.length === 0) {
-          alert('Failed to start checklist(s) from template.');
+          this.showErrorAlert('Failed to start checklist(s) from template.');
           return;
         }
 
@@ -5164,11 +5362,12 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
           return;
         }
 
-        Swal.fire({
+        void AppSweetAlert.fire({
           icon: failedSerials.length > 0 ? 'warning' : 'success',
           title: failedSerials.length > 0 ? 'Completed With Some Failures' : 'Checklists Created',
           html: `Created <strong>${createdInstanceIds.length}</strong> checklist(s).${failedSerials.length > 0 ? `<br><br>Failed serial(s): <strong>${failedSerials.join(', ')}</strong>` : ''}`,
-          confirmButtonText: 'OK'
+          confirmButtonText: 'OK',
+          showCancelButton: false,
         });
         return;
       }
@@ -5229,7 +5428,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   startSelectedTemplateInstance(): void {
     const templateId = this.selectedTemplateId;
     if (!templateId) {
-      alert('Select a template first.');
+      this.showWarningAlert('Select a template first.', 'Validation');
       return;
     }
 
@@ -5238,7 +5437,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     const partNumber = (this.startFromTemplatePartNumber || '').trim();
 
     if (!workOrder || !serialNumber) {
-      alert('Work Order Number and Serial Number are required.');
+      this.showWarningAlert('Work Order Number and Serial Number are required.', 'Validation');
       return;
     }
 
@@ -5249,17 +5448,13 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
 
     if (isOlderVersion) {
       const tpl = this.selectedTemplatePreview;
-      Swal.fire({
-        icon: 'warning',
+      this.confirmAction({
         title: 'Older Version Selected',
         html: `You are about to start a checklist using <strong>v${tpl?.version}</strong> of <strong>${tpl?.name}</strong>, which is not the latest version.<br><br>Are you sure you want to continue?`,
-        showCancelButton: true,
         confirmButtonText: 'Yes, continue',
-        cancelButtonText: 'Cancel',
         confirmButtonColor: '#f7b731',
-        reverseButtons: true,
-      }).then(result => {
-        if (result.isConfirmed) {
+      }).then((isConfirmed) => {
+        if (isConfirmed) {
           this.doStartTemplateInstance(templateId, workOrder, serialNumber, partNumber);
         }
       });
@@ -5288,13 +5483,13 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
           this.closeTemplatePickerModal();
           this.switchToChecklist(result.instance_id);
         } else {
-          alert('Failed to start checklist from template.');
+          this.showErrorAlert('Failed to start checklist from template.');
         }
       },
       error: (error) => {
         console.error('Error starting checklist from template:', error);
         this.startingTemplateId = null;
-        alert('Failed to start checklist from template.');
+        this.showErrorAlert('Failed to start checklist from template.');
         this.cdr.detectChanges();
       }
     });

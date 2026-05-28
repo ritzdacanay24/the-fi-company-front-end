@@ -16,7 +16,7 @@ const swalWithBootstrapButtons = Swal.mixin({
 })
 export class SweetAlert {
   static imageInfo: SweetAlertOptions = {
-    imageUrl: "assets/images/fi-color.png",
+    imageUrl: "",
     imageWidth: 160,
     imageAlt: "Fi Image",
     reverseButtons: true,

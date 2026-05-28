@@ -17,14 +17,16 @@ export interface ErrorSnackbarData {
   imports: [CommonModule, NgbTooltip],
   template: `
     <div class="error-snackbar-container">
-      <span
-        class="message"
-        [ngbTooltip]="data.message"
-        placement="top"
-        container="body"
-        triggers="hover">
-        {{ data.message }}
-      </span>
+      <div class="message-row">
+        <span
+          class="message"
+          [ngbTooltip]="data.message"
+          placement="top"
+          container="body"
+          triggers="hover">
+          {{ data.message }}
+        </span>
+      </div>
       <div class="actions">
         <button
           *ngIf="data.showReportIssue"
@@ -45,26 +47,40 @@ export interface ErrorSnackbarData {
   styles: [`
     .error-snackbar-container {
       display: flex;
-      align-items: center;
-      gap: 16px;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+      min-width: 320px;
+      max-width: 560px;
+      width: 100%;
+    }
+
+    .message-row {
+      width: 100%;
     }
 
     .message {
-      flex: 1;
+      display: block;
       color: white;
       font-size: 14px;
       line-height: 20px;
+      max-height: 80px;
       overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      max-width: 300px;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      max-width: none;
       cursor: help;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 4;
     }
 
     .actions {
       display: flex;
       gap: 8px;
-      margin-left: auto;
+      justify-content: flex-end;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.18);
     }
 
     .mat-button {
@@ -102,18 +118,14 @@ export interface ErrorSnackbarData {
 
     @media (max-width: 767.98px) {
       .error-snackbar-container {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
         width: 100%;
+        min-width: 0;
       }
 
       .message {
-        max-width: none;
         width: 100%;
-        white-space: normal;
-        overflow: visible;
-        text-overflow: clip;
+        max-height: 96px;
+        -webkit-line-clamp: 4;
       }
 
       .actions {

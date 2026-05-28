@@ -1056,9 +1056,6 @@ export class PhotoChecklistRepository {
     const allowedFields = [
       'status',
       'progress_percentage',
-      'part_number',
-      'serial_number',
-      'work_order_number',
       'completed_at',
       'submitted_at',
       'item_completion',
@@ -1086,6 +1083,51 @@ export class PhotoChecklistRepository {
 
     params.push(id);
     await this.mysqlService.execute(`UPDATE checklist_instances SET ${updates.join(', ')} WHERE id = ?`, params);
+  }
+
+  async updateInstanceDetails(
+    id: number,
+    payload: { work_order_number?: string; part_number?: string; serial_number?: string },
+  ): Promise<void> {
+    const updates: string[] = [];
+    const params: unknown[] = [];
+
+    const fieldOrder: Array<keyof typeof payload> = ['work_order_number', 'part_number', 'serial_number'];
+    for (const key of fieldOrder) {
+      if (Object.prototype.hasOwnProperty.call(payload, key)) {
+        updates.push(`${key} = ?`);
+        params.push(payload[key] ?? null);
+      }
+    }
+
+    if (!updates.length) {
+      return;
+    }
+
+    params.push(id);
+    await this.mysqlService.execute(`UPDATE checklist_instances SET ${updates.join(', ')} WHERE id = ?`, params);
+  }
+
+  async getInstanceStatusTimestamps(id: number): Promise<RowDataPacket | null> {
+    const rows = await this.mysqlService.query<RowDataPacket[]>(
+      `SELECT id, status, operator_id, submitted_at, completed_at, updated_at
+         FROM checklist_instances
+        WHERE id = ?
+        LIMIT 1`,
+      [id],
+    );
+
+    return rows[0] || null;
+  }
+
+  async undoSubmittedInstance(id: number): Promise<void> {
+    await this.mysqlService.execute(
+      `UPDATE checklist_instances
+          SET status = 'in_progress',
+              submitted_at = NULL
+        WHERE id = ?`,
+      [id],
+    );
   }
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -1213,9 +1255,9 @@ export class PhotoChecklistRepository {
     const instance = rows[0];
     if (!instance) return { success: false, error: 'Instance not found' };
 
-    const status = String(instance.status || '');
-    if (status === 'completed' || status === 'submitted') {
-      return { success: false, error: 'Cannot delete a completed/submitted inspection' };
+    const status = String(instance.status || '').trim().toLowerCase();
+    if (status !== 'draft') {
+      return { success: false, error: 'Only draft inspections can be deleted' };
     }
 
     await this.mysqlService.withTransaction<void>(async (connection) => {

@@ -10,9 +10,9 @@ export interface ChecklistItemProgress {
   };
   completed: boolean;
   photos: string[];
-  photoMeta?: Record<string, { source?: 'in-app' | 'system' | 'library'; uploadedAt?: string; uploadedBy?: string }>; // per-photo metadata by URL
+  photoMeta?: Record<string, { source?: 'in-app' | 'system' | 'library'; uploadedAt?: string; uploadedBy?: string; uploadedByUserId?: number }>; // per-photo metadata by URL
   videos?: string[]; // NEW: Array of uploaded video URLs
-  videoMeta?: Record<string, { source?: 'in-app' | 'system' | 'library'; uploadedAt?: string; uploadedBy?: string }>; // per-video metadata by URL
+  videoMeta?: Record<string, { source?: 'in-app' | 'system' | 'library'; uploadedAt?: string; uploadedBy?: string; uploadedByUserId?: number }>; // per-video metadata by URL
   notes: string;
   completedAt?: Date;
   completedByUserId?: number; // Track who completed this item
@@ -30,8 +30,8 @@ interface CompletionData {
   notes?: string;
   completedByUserId?: number;
   completedByName?: string;
-  photoMeta?: Record<string, { source?: 'in-app' | 'system' | 'library'; uploadedAt?: string; uploadedBy?: string }>;
-  videoMeta?: Record<string, { source?: 'in-app' | 'system' | 'library'; uploadedAt?: string; uploadedBy?: string }>;
+  photoMeta?: Record<string, { source?: 'in-app' | 'system' | 'library'; uploadedAt?: string; uploadedBy?: string; uploadedByUserId?: number }>;
+  videoMeta?: Record<string, { source?: 'in-app' | 'system' | 'library'; uploadedAt?: string; uploadedBy?: string; uploadedByUserId?: number }>;
   lastModifiedAt?: string;
   lastModifiedByUserId?: number;
   lastModifiedByName?: string;
@@ -126,11 +126,12 @@ export class ChecklistStateService {
     const minPhotos = item.item.photo_requirements?.min_photos || 1;
     const shouldComplete = newPhotos.length >= minPhotos;
 
-    const photoMeta: Record<string, { source?: 'in-app' | 'system' | 'library'; uploadedAt?: string; uploadedBy?: string }> = { ...(item.photoMeta || {}) };
+    const photoMeta: Record<string, { source?: 'in-app' | 'system' | 'library'; uploadedAt?: string; uploadedBy?: string; uploadedByUserId?: number }> = { ...(item.photoMeta || {}) };
     photoMeta[photoUrl] = {
       ...(photoMeta[photoUrl] || {}),
       uploadedAt: new Date().toISOString(),
       uploadedBy: userName,
+      uploadedByUserId: userId,
       ...(captureSource ? { source: captureSource } : {}),
     };
 
@@ -163,10 +164,11 @@ export class ChecklistStateService {
 
     const submissionType = (item.item.submission_type || 'photo') as any;
     const nextVideos = [videoUrl];
-    const videoMeta: Record<string, { source?: 'in-app' | 'system' | 'library'; uploadedAt?: string; uploadedBy?: string }> = {};
+    const videoMeta: Record<string, { source?: 'in-app' | 'system' | 'library'; uploadedAt?: string; uploadedBy?: string; uploadedByUserId?: number }> = {};
     videoMeta[videoUrl] = {
       uploadedAt: new Date().toISOString(),
       uploadedBy: userName,
+      uploadedByUserId: userId,
       ...(captureSource ? { source: captureSource } : {}),
     };
 

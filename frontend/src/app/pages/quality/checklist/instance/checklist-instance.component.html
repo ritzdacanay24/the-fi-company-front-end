@@ -817,10 +817,10 @@
                           <i class="mdi mdi-folder-image me-1" *ngIf="src === 'Library'"></i>
                           {{src}}
                         </span>
-                        <button *ngIf="canModifyChecklist"
+                        <button
                           class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2" 
                                 (click)="deletePhoto(progress.photos[0], progress.item.id)"
-                                [disabled]="!canModifyChecklist"
+                          [disabled]="!canDeleteMedia(progress, progress.photos[0], 'photo')"
                                 title="Delete Photo">
                           <i class="mdi mdi-close"></i>
                         </button>
@@ -997,10 +997,10 @@
                           <i class="mdi mdi-folder-video me-1" *ngIf="vSrc === 'Library'"></i>
                           {{vSrc}}
                         </span>
-                        <button *ngIf="canModifyChecklist"
+                        <button
                           class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2" 
                                 (click)="deletePhoto(progress.videos[0], progress.item.id)"
-                                [disabled]="!canModifyChecklist"
+                          [disabled]="!canDeleteMedia(progress, progress.videos[0], 'video')"
                                 title="Delete Video">
                           <i class="mdi mdi-close"></i>
                         </button>
@@ -1120,10 +1120,10 @@
                           <i class="mdi mdi-microphone me-1"></i>
                           {{aSrc}}
                         </span>
-                        <button *ngIf="canModifyChecklist"
+                        <button
                           class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2"
                                 (click)="deletePhoto(progress.videos[0], progress.item.id)"
-                                [disabled]="!canModifyChecklist"
+                          [disabled]="!canDeleteMedia(progress, progress.videos[0], 'video')"
                                 title="Delete Audio">
                           <i class="mdi mdi-close"></i>
                         </button>
@@ -1234,10 +1234,10 @@
                           style="font-size: 0.65rem;">
                       {{src}}
                     </span>
-                        <button *ngIf="canModifyChecklist"
+                        <button
                           class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1" 
                             (click)="deletePhoto(progress.photos[0], progress.item.id)"
-                            [disabled]="!canModifyChecklist"
+                          [disabled]="!canDeleteMedia(progress, progress.photos[0], 'photo')"
                             title="Delete Photo"
                             style="--bs-btn-padding-y: 0.1rem; --bs-btn-padding-x: 0.3rem;">
                       <i class="mdi mdi-close" style="font-size: 0.75rem;"></i>
@@ -2136,7 +2136,7 @@
 
 <!-- Work Order Information Offcanvas -->
 <ng-template #workOrderContent let-offcanvas>
-  <div class="offcanvas-header bg-primary text-white">
+  <div class="offcanvas-header">
     <h5 class="offcanvas-title">
       <i class="mdi mdi-information-outline me-2"></i>
       Work Order Information

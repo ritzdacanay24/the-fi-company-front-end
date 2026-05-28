@@ -76,6 +76,26 @@ export class ErrorInterceptor implements HttpInterceptor {
     return deploying && (status === 0 || status === 500 || status === 502 || status === 503 || status === 504);
   }
 
+  private isPermissionContractError(details: any): boolean {
+    if (!details || typeof details !== 'object') {
+      return false;
+    }
+
+    if (details.permissionRequired === true) {
+      return true;
+    }
+
+    if (details.failedCheck === 'permission' || details.failedCheck === 'role') {
+      return true;
+    }
+
+    const hasPermissionArrays = Array.isArray(details.requiredPermissions) || Array.isArray(details.currentPermissions);
+    const hasRoleArrays = Array.isArray(details.requiredRoles) || Array.isArray(details.currentRoles);
+    const hasDomainContext = !!details.requiredDomain || !!details.configuredModuleDomain || !!details.moduleKey;
+
+    return hasPermissionArrays || hasRoleArrays || hasDomainContext;
+  }
+
   private async showPermissionRequiredModal(details: any, canRequest: boolean): Promise<void> {
     if (this.isPermissionModalOpen) {
       return;
@@ -264,18 +284,22 @@ export class ErrorInterceptor implements HttpInterceptor {
         if (error.status === 403) {
           console.log('🚫 403 Forbidden error caught:', error);
           const details = typeof error?.error === 'object' && error?.error !== null ? error.error : {};
-          const canRequest = Array.isArray(details?.requiredPermissions) &&
-            details.requiredPermissions.length > 0 &&
-            !!details?.requiredDomain;
+          const isPermissionContract = this.isPermissionContractError(details);
 
-          console.log('🚫 Permission details:', { details, canRequest });
+          if (isPermissionContract) {
+            const canRequest = Array.isArray(details?.requiredPermissions) &&
+              details.requiredPermissions.length > 0 &&
+              !!details?.requiredDomain;
 
-          // Fire modal without blocking
-          this.showPermissionRequiredModal(details, canRequest).catch(err => {
-            console.error('❌ Error showing permission modal:', err);
-          });
+            console.log('🚫 Permission details:', { details, canRequest });
 
-          return throwError(error);
+            // Fire modal without blocking
+            this.showPermissionRequiredModal(details, canRequest).catch(err => {
+              console.error('❌ Error showing permission modal:', err);
+            });
+
+            return throwError(error);
+          }
         }
 
         let errorMessage =

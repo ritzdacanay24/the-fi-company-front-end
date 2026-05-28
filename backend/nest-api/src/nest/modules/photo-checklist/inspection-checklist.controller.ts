@@ -244,14 +244,35 @@ export class InspectionChecklistController {
   @Put('instances/:id')
   @Permissions('write')
   async updateInstance(@Param('id', ParseIntPipe) id: number, @Body() payload: Record<string, unknown>) {
-    const result = await this.service.updateInstance(id, payload);
-
     const nextStatus = String(payload?.status || '').trim().toLowerCase();
+    const updates = { ...payload };
+    if (nextStatus === 'submitted' && !updates.submitted_at) {
+      updates.submitted_at = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    }
+
+    const result = await this.service.updateInstance(id, updates);
+
     if (nextStatus === 'submitted') {
       await this.reportGeneratorService.createReportJob(id);
     }
 
     return result;
+  }
+
+  @Patch('instances/:id/undo-submit')
+  @Permissions('manage')
+  async undoSubmittedInstance(@Param('id', ParseIntPipe) id: number) {
+    return this.service.undoSubmittedInstance(id);
+  }
+
+  @Patch('instances/:id/details')
+  @Permissions('write')
+  async updateInstanceDetails(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() payload: { work_order_number?: string; part_number?: string; serial_number?: string },
+    @CurrentUserId() currentUserId: number,
+  ) {
+    return this.service.updateInstanceDetails(id, payload, currentUserId);
   }
 
   @Post('instances/:id/item-completion')

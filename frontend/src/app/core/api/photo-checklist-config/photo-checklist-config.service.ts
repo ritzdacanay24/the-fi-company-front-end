@@ -539,6 +539,25 @@ export class PhotoChecklistConfigService {
     return this.updateInstance(id, { status });
   }
 
+  updateInstanceDetails(
+    id: number,
+    updates: Pick<ChecklistInstance, 'work_order_number' | 'part_number' | 'serial_number'>,
+  ): Observable<{success: boolean}> {
+    return this.http.patch<{success: boolean}>(
+      `${this.nestPhotoChecklistBaseUrl}/instances/${id}/details`,
+      updates,
+    ).pipe(
+      tap(() => this.getInstances().subscribe())
+    );
+  }
+
+  undoSubmittedInstance(id: number): Observable<{success: boolean}> {
+    return this.http.patch<{success: boolean}>(
+      `${this.nestPhotoChecklistBaseUrl}/instances/${id}/undo-submit`,
+      {},
+    );
+  }
+
   deleteInstance(id: number): Observable<{success: boolean; message?: string; error?: string}> {
     return this.http.delete<{success: boolean; message?: string; error?: string}>(
       `${this.nestPhotoChecklistBaseUrl}/instances/${id}`
