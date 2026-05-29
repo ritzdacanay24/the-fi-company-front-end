@@ -99,7 +99,6 @@ export class UserEditFormComponent {
     showImage: [1],
     openPosition: 0,
     hire_date: null,
-    org_chart_department: "",
     org_chart_expand: 0,
     card_number: [null],
   });

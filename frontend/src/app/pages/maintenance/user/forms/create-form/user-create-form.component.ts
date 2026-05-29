@@ -136,7 +136,6 @@ export class UserCreateFormComponent {
     showImage: [1],
     openPosition: 0,
     hire_date: null,
-    org_chart_department: "",
     card_number: [null],
   });
 }

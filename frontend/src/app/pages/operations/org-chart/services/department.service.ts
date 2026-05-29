@@ -8,12 +8,16 @@ export interface Department {
   user_count?: number;
   display_order?: number;
   is_active?: boolean;
+  department_head_user_id?: number | null;
+  department_head_name?: string | null;
 }
 
 export interface User {
   id: number;
   name: string;
   email: string;
+  department?: string | null;
+  title?: string | null;
 }
 
 export interface UserAssignment {
@@ -73,6 +77,14 @@ export class DepartmentService {
   assignUser(assignment: UserAssignment): Observable<{ success: boolean; message: string }> {
     const data = { ...assignment, action: 'assign' };
     return this.http.post<{ success: boolean; message: string }>(`${this.apiUrl}/`, data);
+  }
+
+  setDepartmentActive(departmentId: number, isActive: boolean): Observable<{ success: boolean; message: string }> {
+    return this.http.post<{ success: boolean; message: string }>(`${this.apiUrl}/`, {
+      action: 'set-active',
+      department_id: departmentId,
+      is_active: isActive ? 1 : 0,
+    });
   }
 
   /**

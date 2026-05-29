@@ -13,11 +13,13 @@ import { UserSearchV1Component } from "@app/shared/components/user-search-v1/use
 import { DepartmentModalService } from "../department-modal/department-modal.service";
 import { DepartmentService, Department } from "../services/department.service";
 import { OrgChartUserModalService, OrgChartUserModalMode } from "../org-chart-user-modal/org-chart-user-modal.service";
+import { NotificationService } from "@app/core/services/notification.service";
+import { SweetAlert } from "@app/shared/sweet-alert/sweet-alert.service";
 import { NgbDropdownModule } from "@ng-bootstrap/ng-bootstrap";
 import { FormsModule } from "@angular/forms";
 import moment from "moment";
 import * as d3 from "d3";
-import { ColDef, RowDragEndEvent } from 'ag-grid-community';
+import { ColDef, GridApi, GridReadyEvent, RowDragEndEvent } from 'ag-grid-community';
 import { firstValueFrom } from 'rxjs';
 
 @Component({
@@ -27,6 +29,12 @@ import { firstValueFrom } from 'rxjs';
   templateUrl: "./org-chart-view.component.html",
   styleUrls: [],
   styles: [`
+    :host {
+      --org-metric-pill-bg: rgba(255, 255, 255, 0.08);
+      --org-metric-pill-border: rgba(255, 255, 255, 0.12);
+      --org-metric-pill-text: var(--vz-body-color, #212529);
+    }
+
     .dropdown-menu {
       min-width: 300px;
       max-height: 400px;
@@ -58,6 +66,55 @@ import { firstValueFrom } from 'rxjs';
       font-weight: 600;
     }
 
+    .org-metric-pill {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 0.5rem 0.9rem;
+      border: 1px solid var(--org-metric-pill-border);
+      background: var(--org-metric-pill-bg);
+      color: var(--org-metric-pill-text);
+      font-weight: 500;
+      line-height: 1;
+      backdrop-filter: blur(8px);
+    }
+
+    .org-metric-pill i {
+      opacity: 0.95;
+    }
+
+    .org-page-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+
+    .org-metric-strip {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-left: auto;
+    }
+
+    [data-bs-theme='light'] :host,
+    :host-context([data-bs-theme='light']) {
+      --org-metric-pill-bg: #f8fafc;
+      --org-metric-pill-border: #dbe3ee;
+      --org-metric-pill-text: #1f2937;
+    }
+
+    [data-bs-theme='dark'] :host,
+    :host-context([data-bs-theme='dark']) {
+      --org-metric-pill-bg: rgba(255, 255, 255, 0.08);
+      --org-metric-pill-border: rgba(255, 255, 255, 0.14);
+      --org-metric-pill-text: #e5edf7;
+    }
+
     /* Drag and Drop Styles */
     :host ::ng-deep .node.drop-target .node-rect {
       stroke: #4CAF50 !important;
@@ -82,10 +139,21 @@ import { firstValueFrom } from 'rxjs';
   `]
 })
 export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
+  readonly orgMetrics = {
+    totalEmployees: 0,
+    activeEmployees: 0,
+    departmentCount: 0,
+    openPositions: 0,
+    averageSpanOfControl: 0,
+  };
   readonly statusFilterOptions = [
     { value: 'active', label: 'Active' },
     { value: 'inactive', label: 'Inactive' },
     { value: 'all', label: 'All' },
+  ] as const;
+  readonly tableHierarchyOptions = [
+    { value: 'reporting', label: 'Reports To' },
+    { value: 'department', label: 'Department Group' },
   ] as const;
 
   constructor(
@@ -95,6 +163,7 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
     private userModalService: UserModalService,
     private departmentService: DepartmentService,
     private departmentModalService: DepartmentModalService,
+    private notificationService: NotificationService,
     @Inject(OrgChartUserModalService) private orgChartUserModalService: OrgChartUserModalService,
   ) {
     this.activatedRoute.queryParams.subscribe((params) => {
@@ -153,6 +222,7 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
   chart: any; // Add proper typing for the chart
   viewMode: 'table' | 'chart' = 'table';
   statusFilter: 'active' | 'inactive' | 'all' = 'active';
+  tableHierarchyMode: 'reporting' | 'department' = 'reporting';
   readonly quickEditEmploymentTypeOptions = ['FT', 'PT', 'CT'];
   readonly quickEditActiveStatusOptions = [1, 0];
   readonly quickEditActiveStatusLabels: Record<number, string> = {
@@ -161,7 +231,12 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
   };
   readonly quickEditLocationOptions = ['Las Vegas, NV', 'Seattle, WA', 'Tijuana, Mexico'];
   readonly rootManagerOptionValue = '__no_manager__';
+  readonly unassignedDepartmentOptionValue = '__unassigned_department__';
   tableRowData: any[] = [];
+  private tableGridApi: GridApi | null = null;
+  private suppressTableCellValueChanged = false;
+  private readonly pendingDepartmentAssignments = new Set<string>();
+  private readonly recentDepartmentAssignments = new Map<string, number>();
   readonly tableRowHeight = 45;
   readonly tableDefaultColDef: ColDef = {
     sortable: true,
@@ -172,7 +247,7 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
     minWidth: 140,
   };
   readonly tableAutoGroupColumnDef: ColDef = {
-    headerName: 'Employee Hierarchy',
+    headerName: 'Reports To Hierarchy',
     minWidth: 320,
     pinned: 'left',
     rowDrag: (params: any) => !!params.data && !this.readOnly,
@@ -228,7 +303,7 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
       field: 'active',
       headerName: 'Active Status',
       minWidth: 150,
-      editable: (params: any) => this.isQuickEditableRow(params),
+      editable: (params: any) => !this.readOnly && !!params?.data,
       cellEditor: 'agRichSelectCellEditor',
       cellEditorParams: {
         values: this.quickEditActiveStatusOptions,
@@ -270,24 +345,24 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
       },
     },
     {
-      field: 'department_id',
-      headerName: 'Department',
+      field: 'department',
+      headerName: 'Department Group',
       minWidth: 200,
       editable: (params: any) => this.isQuickEditableRow(params),
       cellEditor: 'agRichSelectCellEditor',
       cellEditorParams: {
-        values: () => this.getDepartmentSelectOptions(),
+        values: () => this.getDepartmentNameEditorOptions(),
         allowTyping: true,
         filterList: true,
         highlightMatch: true,
         searchType: 'matchAny',
         formatValue: (value: string | number | null) => this.getDepartmentOptionLabel(value),
       },
-      valueFormatter: (params: any) => this.getDepartmentOptionLabel(params.value ?? params.data?.department_id ?? null),
+      valueFormatter: (params: any) => this.getDepartmentOptionLabel(params.value ?? params.data?.department ?? null),
     },
     {
       field: 'manager_id',
-      headerName: 'Manager',
+      headerName: 'Reports To',
       minWidth: 220,
       editable: (params: any) => this.isQuickEditableRow(params),
       cellEditor: 'agRichSelectCellEditor',
@@ -299,13 +374,25 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
         searchType: 'matchAny',
         formatValue: (value: string | number | null) => this.getManagerOptionLabel(value),
       }),
-      valueFormatter: (params: any) => this.getManagerOptionLabel(params.value ?? params.data?.manager_id ?? null),
+      valueFormatter: (params: any) => params.data?.manager_name || this.getManagerOptionLabel(params.value ?? params.data?.manager_id ?? null),
     },
     {
       field: 'direct_report_count',
       headerName: 'Direct Reports',
       minWidth: 140,
       maxWidth: 170,
+      type: 'numericColumn',
+      cellStyle: {
+        justifyContent: 'flex-end',
+        textAlign: 'right',
+      },
+      valueFormatter: (params: any) => String(Number(params.value ?? 0)),
+    },
+    {
+      field: 'total_team_size',
+      headerName: 'Total Team Size',
+      minWidth: 150,
+      maxWidth: 180,
       type: 'numericColumn',
       cellStyle: {
         justifyContent: 'flex-end',
@@ -351,6 +438,16 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.statusFilter = filter;
     void this.getDataWithStatePreservation();
+  }
+
+  setTableHierarchyMode(mode: 'reporting' | 'department'): void {
+    if (this.tableHierarchyMode === mode) {
+      return;
+    }
+
+    this.tableHierarchyMode = mode;
+    this.tableAutoGroupColumnDef.headerName = mode === 'department' ? 'Department Hierarchy' : 'Reports To Hierarchy';
+    this.buildTableRows(this.originalData || []);
   }
 
   private buildOrgChartFilters(): { isEmployee: number; active?: number } {
@@ -410,11 +507,6 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  // User assignment properties
-  selectedUser: any = null;
-  selectedUserId: any = null;
-  selectedDepartmentId: any = null;
-
   clearMark() {
     if (this.chart && this.chart.clearHighlighting) {
       this.chart.clearHighlighting();
@@ -471,6 +563,21 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
   getNodeContent(d, i, arr, state) {
     const color = '#FFFFFF';
     const imageDiffVert = 25 + 2;
+    const directReports = Number(d.data.direct_report_count ?? 0);
+    const totalTeamSize = Number(d.data.total_team_size ?? 0);
+    const departmentLabel = d.data.department || 'Unassigned';
+    const employeeMetricsMarkup = !d.data.orgChartPlaceHolder && d.data.openPosition !== 1
+      ? `
+          <div style="margin-top:6px;display:flex;justify-content:center;gap:6px;flex-wrap:wrap;">
+            <span style="display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;background:#eef2ff;color:#4338ca;font-size:8px;font-weight:700;letter-spacing:0.2px;">
+              ${directReports} direct
+            </span>
+            <span style="display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;background:#ecfeff;color:#0f766e;font-size:8px;font-weight:700;letter-spacing:0.2px;">
+              ${totalTeamSize} total
+            </span>
+          </div>
+        `
+      : '';
     
     // Handle virtual root node
     if (d.data.id === -1) {
@@ -516,10 +623,15 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
         <div style="width:${d.width}px;height:${d.height}px;background:linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);border:none;border-radius:12px;position:relative;text-align:center;padding:20px 10px 30px 10px;box-shadow:0 4px 12px rgba(33, 150, 243, 0.2);transition:all 0.3s ease;display:flex;flex-direction:column;justify-content:center;">
           <div style="position:absolute;top:5px;right:8px;font-size:8px;color:rgba(33,150,243,0.6);background:rgba(255,255,255,0.8);padding:2px 6px;border-radius:10px;font-weight:600;">#${d.data.id}</div>
           <div style="font-size:13px;font-weight:700;color:#1565C0;line-height:1.3;padding:0 6px;letter-spacing:0.4px;text-align:center;">
-            ${d.data.org_chart_department || d.data.department || d.data.first}
+            ${d.data.department || d.data.first}
           </div>
           <div style="font-size:10px;color:#1976D2;margin-top:6px;line-height:1.1;padding:0 6px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">
             Department
+          </div>
+          <div style="margin-top:8px;display:flex;justify-content:center;gap:6px;flex-wrap:wrap;">
+            <span style="display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;background:rgba(255,255,255,0.85);color:#1565C0;font-size:8px;font-weight:700;letter-spacing:0.2px;">
+              ${totalTeamSize} total
+            </span>
           </div>
         </div>
       `;
@@ -562,6 +674,12 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
         <div style="font-size:9px;color:#7f8c8d;margin-top:3px;line-height:1.1;padding:0 4px;font-weight:500;">
           ${d.data.title || "Employee"}
         </div>
+        <div style="margin-top:5px;display:flex;justify-content:center;gap:4px;flex-wrap:wrap;">
+          <span style="display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;background:#f1f5f9;color:#334155;font-size:8px;font-weight:700;letter-spacing:0.2px;max-width:100%;">
+            Dept: ${departmentLabel}
+          </span>
+        </div>
+        ${employeeMetricsMarkup}
       </div>
     `;
   }
@@ -774,9 +892,9 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
       if (error.message && error.message.includes('missing:')) {
         const missingId = error.message.split('missing:')[1].trim();
         console.error(`Missing node ID: ${missingId}. This usually means a user references a parent that doesn't exist in the dataset.`);
-        alert(`Chart data integrity issue: Missing user ID ${missingId}. Please contact support.`);
+        this.notificationService.error(`Chart data integrity issue: Missing user ID ${missingId}. Please contact support.`, false);
       } else {
-        alert('Chart rendering error. Please refresh the page.');
+        this.notificationService.error('Chart rendering error. Please refresh the page.', false);
       }
     }
 
@@ -881,15 +999,15 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
 
     if (isDepartmentTarget) {
       // Target is a department placeholder
-      departmentName = targetNode.data.org_chart_department || targetNode.data.department || targetNode.data.first;
+      departmentName = targetNode.data.department || targetNode.data.first;
       departmentId = targetNode.data.id;
     } else if (isUserTarget) {
       // Target is a user - assign to their department
-      departmentName = targetNode.data.org_chart_department || targetNode.data.department;
+      departmentName = targetNode.data.department;
       // Find the department placeholder for this department
       const deptPlaceholder = this.originalData.find(d => 
         d.type === 3 && d.orgChartPlaceHolder === 1 && 
-        (d.org_chart_department === departmentName || d.department === departmentName)
+        d.department === departmentName
       );
       departmentId = deptPlaceholder?.id;
     }
@@ -899,51 +1017,43 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
       return false;
     }
 
-    // Show confirmation dialog
-    const confirmation = confirm(`Assign ${draggedNode.data.first} ${draggedNode.data.last} to department "${departmentName}"?`);
-    if (!confirmation) {
-      return false;
-    }
-
-    // Call the assignment API
-    this.departmentService.assignUser({
-      user_id: draggedNode.data.id,
-      department_id: departmentId
-    }).subscribe({
-      next: (response) => {
-        if (response.success) {
-          // Update the dragged node's department in originalData
-          const nodeIndex = this.originalData.findIndex(d => d.id === draggedNode.data.id);
-          if (nodeIndex !== -1) {
-            this.originalData[nodeIndex] = {
-              ...this.originalData[nodeIndex],
-              department: departmentName,
-              org_chart_department: departmentName
-            };
-          }
-
-          // Update the chart node
-          draggedNode.data.department = departmentName;
-          draggedNode.data.org_chart_department = departmentName;
-
-          // Refresh the chart to show updated department assignment
-          this.chart.render();
-
-          console.log(`Successfully assigned ${draggedNode.data.first} ${draggedNode.data.last} to ${departmentName}`);
-          
-          // Show success message
-          alert(`✓ ${draggedNode.data.first} ${draggedNode.data.last} has been assigned to ${departmentName}`);
-        } else {
-          alert(`Error: ${(response as any).error || 'Assignment failed'}`);
-        }
-      },
-      error: (error) => {
-        console.error('Error assigning user to department:', error);
-        alert('Error assigning user to department');
+    void this.confirmAction(
+      `Assign ${draggedNode.data.first} ${draggedNode.data.last} to department "${departmentName}"?`,
+      'Assign Department',
+    ).then((confirmed) => {
+      if (!confirmed) {
+        return;
       }
+
+      this.departmentService.assignUser({
+        user_id: draggedNode.data.id,
+        department_id: departmentId
+      }).subscribe({
+        next: (response) => {
+          if (response.success) {
+            const nodeIndex = this.originalData.findIndex(d => d.id === draggedNode.data.id);
+            if (nodeIndex !== -1) {
+              this.originalData[nodeIndex] = {
+                ...this.originalData[nodeIndex],
+                department: departmentName
+              };
+            }
+
+            draggedNode.data.department = departmentName;
+            this.chart.render();
+            this.notificationService.success(`${draggedNode.data.first} ${draggedNode.data.last} assigned to ${departmentName}.`);
+          } else {
+            this.notificationService.error((response as any).error || 'Assignment failed', false);
+          }
+        },
+        error: (error) => {
+          console.error('Error assigning user to department:', error);
+          this.notificationService.error(error, false);
+        }
+      });
     });
 
-    return true; // Allow the drop
+    return false;
   };
 
   bgColor(data) {
@@ -1153,7 +1263,7 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private normalizeOrgChartData(data: any[]): any[] {
-    return (data || []).map((node) => {
+    const normalizedNodes = (data || []).map((node) => {
       const normalizedId = node?.id === null || node?.id === undefined || node?.id === '' ? node?.id : Number(node.id);
       const rawParentId = node?.parentId;
       const normalizedParentId = rawParentId === null || rawParentId === undefined || rawParentId === ''
@@ -1169,6 +1279,44 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
         id: normalizedId,
         parentId: Number.isNaN(normalizedParentId) ? null : normalizedParentId,
         org_chart_order: Number.isNaN(normalizedOrder) ? 0 : normalizedOrder,
+      };
+    });
+
+    const nodesById = new Map<number, any>(normalizedNodes.map((node) => [Number(node.id), node]));
+
+    return normalizedNodes.map((node) => {
+      if (node?.orgChartPlaceHolder) {
+        return node;
+      }
+
+      const visited = new Set<number>();
+      let resolvedParentId = node.parentId;
+
+      while (resolvedParentId !== null && resolvedParentId !== undefined && resolvedParentId !== '') {
+        const numericParentId = Number(resolvedParentId);
+        if (!Number.isFinite(numericParentId) || visited.has(numericParentId)) {
+          resolvedParentId = null;
+          break;
+        }
+
+        visited.add(numericParentId);
+
+        const parentNode = nodesById.get(numericParentId);
+        if (!parentNode) {
+          resolvedParentId = null;
+          break;
+        }
+
+        if (!parentNode.orgChartPlaceHolder) {
+          break;
+        }
+
+        resolvedParentId = parentNode.parentId;
+      }
+
+      return {
+        ...node,
+        parentId: resolvedParentId,
       };
     });
   }
@@ -1198,7 +1346,7 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
     const city = String(node?.city || '').trim();
     const state = String(node?.state || '').trim();
     const area = String(node?.area || '').trim();
-    const department = String(node?.org_chart_department || node?.department || '').trim();
+    const department = String(node?.department || '').trim();
     const combined = `${city} ${state} ${area} ${department}`.toLowerCase();
 
     if (combined.includes('seattle')) {
@@ -1267,13 +1415,63 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
     return `${manager.first || ''} ${manager.last || ''}`.trim() || `Employee ${managerId}`;
   }
 
+  private normalizeDepartmentName(value: unknown): string {
+    return String(value ?? '').trim().toLocaleLowerCase();
+  }
+
+  private findDepartmentByName(name: unknown): Department | undefined {
+    const normalizedName = this.normalizeDepartmentName(name);
+    if (!normalizedName) {
+      return undefined;
+    }
+
+    return (this.departments || []).find(
+      (department) => this.normalizeDepartmentName(department.department_name) === normalizedName,
+    );
+  }
+
+  private findDepartmentById(id: unknown): Department | undefined {
+    const departmentId = Number(id);
+    if (!Number.isFinite(departmentId)) {
+      return undefined;
+    }
+
+    return (this.departments || []).find((department) => Number(department.id) === departmentId);
+  }
+
+  private resolveDepartmentSelection(value: unknown): Department | undefined {
+    return this.findDepartmentById(value) || this.findDepartmentByName(value);
+  }
+
   private getDepartmentSelectOptions(): number[] {
-    return (this.departments || [])
-      .map((department) => Number(department.id))
-      .filter((id) => Number.isFinite(id));
+    return Array.from(new Set(
+      (this.departments || [])
+        .map((department) => Number(department.id))
+        .filter((id) => Number.isFinite(id))
+    ));
+  }
+
+  private getDepartmentEditorOptions(): Array<number | string> {
+    return [this.unassignedDepartmentOptionValue, ...this.getDepartmentSelectOptions()];
+  }
+
+  private getDepartmentNameEditorOptions(): string[] {
+    return [
+      this.unassignedDepartmentOptionValue,
+      ...(this.departments || []).map((department) => String(department.department_name || '').trim()).filter((name) => !!name),
+    ];
   }
 
   private getDepartmentOptionLabel(value: string | number | null | undefined): string {
+    if (value === this.unassignedDepartmentOptionValue || value === null || value === undefined || value === '') {
+      return 'Unassigned';
+    }
+
+    const departmentByName = this.findDepartmentByName(value);
+    if (departmentByName) {
+      return departmentByName.department_name;
+    }
+
     const departmentId = Number(value);
     if (!Number.isFinite(departmentId)) {
       return 'Unassigned';
@@ -1281,6 +1479,57 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const department = this.departments.find((entry) => Number(entry.id) === departmentId);
     return department?.department_name || 'Unassigned';
+  }
+
+  isDepartmentActive(department: Department | null | undefined): boolean {
+    return Number(department?.is_active ?? 0) === 1;
+  }
+
+  onTableGridReady(event: GridReadyEvent): void {
+    this.tableGridApi = event.api;
+  }
+
+  private refreshDepartmentGridState(): void {
+    if (!this.tableGridApi) {
+      return;
+    }
+
+    this.tableGridApi.refreshCells({ columns: ['department'], force: true });
+  }
+
+  private async confirmAction(text: string, confirmButtonText = 'Continue'): Promise<boolean> {
+    const result = await SweetAlert.confirmV1({
+      title: 'Are you sure?',
+      text,
+      confirmButtonText,
+      cancelButtonText: 'Cancel',
+      reverseButtons: true,
+    });
+
+    return !!result.isConfirmed;
+  }
+
+  private async maybeMoveUserToDepartmentLead(userId: number, departmentId: number, currentManagerId: unknown): Promise<boolean> {
+    const department = this.departments.find((entry) => Number(entry.id) === departmentId);
+    const leadUserId = Number(department?.department_head_user_id);
+    const existingManagerId = currentManagerId === this.rootManagerOptionValue ? null : Number(currentManagerId);
+
+    if (!department || !Number.isFinite(leadUserId) || leadUserId <= 0 || leadUserId === userId || leadUserId === existingManagerId) {
+      return false;
+    }
+
+    const leadName = department.department_head_name || this.getManagerOptionLabel(leadUserId);
+    const shouldMove = await this.confirmAction(
+      `Assigned this person to ${department.department_name}. Also move Reports To under ${leadName}?`,
+      'Move Reports To',
+    );
+
+    if (!shouldMove) {
+      return false;
+    }
+
+    await this.moveOrgChartNode(userId, { parentId: leadUserId });
+    return true;
   }
 
   private getManagerSelectOptions(rowData: any): Array<number | string> {
@@ -1332,6 +1581,120 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
     return descendants;
   }
 
+  private getDirectReportEntries(managerId: number): any[] {
+    if (!Number.isFinite(managerId)) {
+      return [];
+    }
+
+    return (this.originalData || []).filter((entry) =>
+      !entry?.orgChartPlaceHolder && Number(entry?.parentId) === managerId,
+    );
+  }
+
+  private getEmployeeDisplayName(entry: any): string {
+    const fullName = `${entry?.first || ''} ${entry?.last || ''}`.trim();
+    if (fullName) {
+      return fullName;
+    }
+
+    return String(entry?.employee_name || '').trim() || `Employee ${entry?.id}`;
+  }
+
+  private async promptDirectReportReassignment(rowData: any, directReports: any[]): Promise<number | null | undefined> {
+    const managerOptions = this.getManagerSelectOptions(rowData);
+    const inputOptions = Object.fromEntries(
+      managerOptions.map((option) => [String(option), this.getManagerOptionLabel(option)]),
+    );
+    const reportCount = directReports.length;
+    const employeeName = this.getEmployeeDisplayName(rowData);
+    const defaultManagerValue = rowData?.manager_id ?? this.rootManagerOptionValue;
+    const directReportItems = directReports
+      .slice(0, 8)
+      .map((entry) => `<li>${this.getEmployeeDisplayName(entry)}</li>`)
+      .join('');
+    const remainingCount = Math.max(directReports.length - 8, 0);
+    const summaryHtml = [
+      `<p class="mb-2 text-start">${employeeName} has <strong>${reportCount}</strong> direct report${reportCount === 1 ? '' : 's'}.</p>`,
+      '<p class="mb-2 text-start">Select who should inherit these reports before this person is marked inactive.</p>',
+      directReportItems ? `<ul class="text-start mb-2 ps-3">${directReportItems}</ul>` : '',
+      remainingCount > 0 ? `<p class="mb-0 text-start text-muted">And ${remainingCount} more.</p>` : '',
+    ].join('');
+
+    const result = await SweetAlert.fire({
+      title: 'Reassign Direct Reports',
+      icon: 'warning',
+      html: summaryHtml,
+      input: 'select',
+      inputOptions,
+      inputValue: String(defaultManagerValue),
+      inputPlaceholder: 'Select replacement manager',
+      showCancelButton: true,
+      confirmButtonText: 'Reassign and Inactivate',
+      cancelButtonText: 'Cancel',
+      reverseButtons: true,
+      inputValidator: (value) => {
+        if (!Object.prototype.hasOwnProperty.call(inputOptions, String(value))) {
+          return 'Select where the direct reports should move before continuing.';
+        }
+
+        return null;
+      },
+      preConfirm: (value) => {
+        if (!Object.prototype.hasOwnProperty.call(inputOptions, String(value))) {
+          return false;
+        }
+
+        return value;
+      },
+    });
+
+    if (!result.isConfirmed) {
+      return undefined;
+    }
+
+    return result.value === this.rootManagerOptionValue ? null : Number(result.value);
+  }
+
+  private async confirmInactivationWorkflow(
+    rowData: any,
+    directReports: any[],
+    nextManagerId: number | null,
+  ): Promise<boolean> {
+    const employeeName = this.getEmployeeDisplayName(rowData);
+    const replacementManagerLabel = this.getManagerOptionLabel(nextManagerId ?? this.rootManagerOptionValue);
+    const directReportItems = directReports
+      .slice(0, 8)
+      .map((entry) => `<li>${this.getEmployeeDisplayName(entry)}</li>`)
+      .join('');
+    const remainingCount = Math.max(directReports.length - 8, 0);
+
+    const result = await SweetAlert.confirmV1({
+      title: 'Confirm Inactivation',
+      icon: 'warning',
+      html: [
+        `<p class="mb-2 text-start"><strong>${employeeName}</strong> will be marked inactive.</p>`,
+        directReports.length > 0
+          ? `<p class="mb-2 text-start"><strong>${directReports.length}</strong> direct report${directReports.length === 1 ? '' : 's'} will move to <strong>${replacementManagerLabel}</strong>.</p>`
+          : '<p class="mb-2 text-start">This person has no direct reports.</p>',
+        directReportItems ? `<ul class="text-start mb-2 ps-3">${directReportItems}</ul>` : '',
+        remainingCount > 0 ? `<p class="mb-0 text-start text-muted">And ${remainingCount} more.</p>` : '',
+      ].join(''),
+      confirmButtonText: 'Confirm Inactivation',
+      cancelButtonText: 'Review Again',
+      reverseButtons: true,
+    });
+
+    return !!result.isConfirmed;
+  }
+
+  private async reassignDirectReports(managerId: number, nextManagerId: number | null): Promise<void> {
+    const directReports = this.getDirectReportEntries(managerId);
+
+    for (const directReport of directReports) {
+      await this.userService.updateOrgChartPosition(Number(directReport.id), { parentId: nextManagerId });
+    }
+  }
+
   private normalizeHireDateValue(value: unknown): string | null {
     const normalized = String(value ?? '').trim();
     if (!normalized) {
@@ -1351,7 +1714,7 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
     const getEmployeeName = (node: any) => `${node.first || ''} ${node.last || ''}`.trim() || `Employee ${node.id}`;
     const getNodeLabel = (node: any): string => {
       if (node?.orgChartPlaceHolder) {
-        return String(node?.org_chart_department || node?.department || node?.first || node?.title || `Department ${node?.id}`).trim();
+        return String(node?.department || node?.first || node?.title || `Department ${node?.id}`).trim();
       }
 
       return getEmployeeName(node);
@@ -1401,6 +1764,44 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
 
       directReportsByManagerId.set(managerId, (directReportsByManagerId.get(managerId) || 0) + 1);
     }
+    const childrenByParentId = new Map<number, number[]>();
+    for (const node of allNodes) {
+      const parentId = Number(node?.parentId);
+      if (!Number.isFinite(parentId)) {
+        continue;
+      }
+
+      if (!childrenByParentId.has(parentId)) {
+        childrenByParentId.set(parentId, []);
+      }
+
+      childrenByParentId.get(parentId)?.push(Number(node.id));
+    }
+    const totalTeamSizeById = new Map<number, number>();
+    const getTotalTeamSize = (nodeId: number): number => {
+      if (totalTeamSizeById.has(nodeId)) {
+        return totalTeamSizeById.get(nodeId) || 0;
+      }
+
+      const childIds = childrenByParentId.get(nodeId) || [];
+      let total = 0;
+
+      for (const childId of childIds) {
+        const childNode = allNodesById.get(childId);
+        if (!childNode) {
+          continue;
+        }
+
+        if (!childNode.orgChartPlaceHolder) {
+          total += 1;
+        }
+
+        total += getTotalTeamSize(childId);
+      }
+
+      totalTeamSizeById.set(nodeId, total);
+      return total;
+    };
     const buildHierarchyPath = (node: any): string[] => {
       const path: string[] = [];
       const visited = new Set<number>();
@@ -1429,10 +1830,27 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
       return path;
     };
 
-    this.tableRowData = allNodes.map((node) => {
+    const buildDepartmentHierarchyPath = (node: any): string[] => {
+      const departmentLabel = String(
+        node?.department || (node?.orgChartPlaceHolder ? getNodeLabel(node) : 'Unassigned')
+      ).trim() || 'Unassigned';
+
+      if (node?.orgChartPlaceHolder) {
+        return ['Departments', departmentLabel, 'Department Node'];
+      }
+
+      return ['Departments', departmentLabel, getNodeLabel(node)];
+    };
+
+    const sourceNodes = this.tableHierarchyMode === 'department'
+      ? allNodes.filter((node) => !node?.orgChartPlaceHolder)
+      : allNodes;
+
+    const tableRows = sourceNodes.map((node) => {
       const manager = resolveManager(node);
       const isPlaceholder = !!node.orgChartPlaceHolder;
       const nodeLabel = getNodeLabel(node);
+      const department = this.findDepartmentById(node.department_id) || this.findDepartmentByName(node.department);
       return {
         id: node.id,
         employee_name: nodeLabel,
@@ -1440,9 +1858,12 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
         active: Number(node.active ?? 0) === 1 ? 1 : 0,
         employeeType1: node.employeeType1 || '',
         direct_report_count: isPlaceholder ? 0 : (directReportsByManagerId.get(Number(node.id)) || 0),
+        total_team_size: getTotalTeamSize(Number(node.id)),
         location: this.getLocationLabel(node),
-        department_id: this.departments.find((department) => department.department_name === (node.org_chart_department || node.department))?.id ?? null,
-        department: node.org_chart_department || node.department || (isPlaceholder ? nodeLabel : 'Unassigned'),
+        department_id: department?.id ?? (Number.isFinite(Number(node.department_id)) ? Number(node.department_id) : null),
+        department: department?.department_name
+          || node.department
+          || (isPlaceholder ? nodeLabel : 'Unassigned'),
         manager_id: manager?.id ?? this.rootManagerOptionValue,
         manager_name: manager ? `${manager.first || ''} ${manager.last || ''}`.trim() : '—',
         hire_date: node.hire_date || null,
@@ -1451,14 +1872,19 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
         openPosition: !!node.openPosition,
         imageUrl: isPlaceholder ? 'assets/images/default-user.png' : (node.image || 'assets/images/default-user.png'),
         orgHierarchy: buildHierarchyPath(node),
+        departmentHierarchy: buildDepartmentHierarchyPath(node),
         org_chart_order: Number(node.org_chart_order ?? 0) || 0,
         parentId: node.parentId ?? null,
         is_ceo: isCeoNode(node),
         is_placeholder: isPlaceholder,
       };
     }).sort((left, right) => {
-      const leftPath = left.orgHierarchy || [];
-      const rightPath = right.orgHierarchy || [];
+      const leftPath = this.tableHierarchyMode === 'department'
+        ? (left.departmentHierarchy || [])
+        : (left.orgHierarchy || []);
+      const rightPath = this.tableHierarchyMode === 'department'
+        ? (right.departmentHierarchy || [])
+        : (right.orgHierarchy || []);
 
       if (left.is_ceo && !right.is_ceo) return -1;
       if (!left.is_ceo && right.is_ceo) return 1;
@@ -1467,13 +1893,31 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
       const rightKey = rightPath.join('/');
       return leftKey.localeCompare(rightKey);
     });
+
+    this.suppressTableCellValueChanged = true;
+    this.tableRowData = tableRows;
+    this.updateOrgMetrics(tableRows);
+
+    queueMicrotask(() => {
+      this.suppressTableCellValueChanged = false;
+    });
   }
 
-  readonly getTableDataPath = (data: any): string[] => data.orgHierarchy || [data.employee_name || 'Employee'];
+  readonly getTableDataPath = (data: any): string[] => {
+    if (this.tableHierarchyMode === 'department') {
+      return data.departmentHierarchy || ['Departments', data.department || 'Unassigned', data.employee_name || 'Employee'];
+    }
+
+    return data.orgHierarchy || [data.employee_name || 'Employee'];
+  };
 
   readonly getTableRowId = (params: any): string => String(params.data?.id ?? '');
 
   async onTableCellValueChanged(event: any): Promise<void> {
+    if (this.suppressTableCellValueChanged) {
+      return;
+    }
+
     const rowData = event?.data;
     const userId = Number(rowData?.id);
     const field = String(event?.colDef?.field || '');
@@ -1482,32 +1926,82 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    const supportedFields = new Set(['title', 'employeeType1', 'active', 'location', 'hire_date', 'manager_id', 'department_id']);
+    const supportedFields = new Set(['title', 'employeeType1', 'active', 'location', 'hire_date', 'manager_id', 'department']);
     if (!supportedFields.has(field)) {
       return;
     }
 
-    if (field === 'department_id') {
-      const nextDepartmentId = Number(event.newValue);
-      const previousDepartmentId = Number(event.oldValue);
+    if (field === 'department') {
+      const nextDepartment = this.resolveDepartmentSelection(event.newValue);
+      const previousDepartment = this.resolveDepartmentSelection(event.oldValue);
+      const isClearingDepartment = event.newValue === this.unassignedDepartmentOptionValue || event.newValue === null || event.newValue === '';
+      const nextDepartmentId = Number(nextDepartment?.id);
+      const previousDepartmentName = previousDepartment
+        ? String(previousDepartment.department_name || '').trim()
+        : (event.oldValue === this.unassignedDepartmentOptionValue || event.oldValue === null || event.oldValue === ''
+            ? ''
+            : String(event.oldValue || '').trim());
+      const nextDepartmentName = isClearingDepartment ? '' : String(nextDepartment?.department_name || '').trim();
+      const assignmentKey = `${userId}:${nextDepartmentName}`;
+      const now = Date.now();
+      const lastAttemptAt = this.recentDepartmentAssignments.get(assignmentKey) || 0;
 
-      if (!Number.isFinite(nextDepartmentId) || nextDepartmentId === previousDepartmentId) {
+      if (!isClearingDepartment && (!nextDepartment || !Number.isFinite(nextDepartmentId))) {
+        event.node?.setDataValue(field, event.oldValue);
+        return;
+      }
+
+      if ((isClearingDepartment && !previousDepartmentName) || (!isClearingDepartment && nextDepartmentName === previousDepartmentName)) {
+        return;
+      }
+
+      if (this.pendingDepartmentAssignments.has(assignmentKey) || now - lastAttemptAt < 2000) {
         return;
       }
 
       try {
-        const response = await firstValueFrom(this.departmentService.assignUser({
-          user_id: userId,
-          department_id: nextDepartmentId,
-        }));
+        this.pendingDepartmentAssignments.add(assignmentKey);
+        this.recentDepartmentAssignments.set(assignmentKey, now);
 
-        if (!response?.success) {
-          throw new Error(response?.message || 'Failed to assign user to department');
+        await this.userService.update(userId, {
+          department: isClearingDepartment ? null : String(nextDepartment?.department_name || '').trim(),
+        });
+
+        this.originalData = this.originalData.map((entry) =>
+          Number(entry.id) === userId
+            ? {
+                ...entry,
+                department: isClearingDepartment ? null : nextDepartment?.department_name || null,
+              }
+            : entry,
+        );
+
+        const movedToLead = !isClearingDepartment && nextDepartment
+          ? await this.maybeMoveUserToDepartmentLead(userId, nextDepartmentId, rowData?.manager_id)
+          : false;
+
+        if (!movedToLead) {
+          this.suppressTableCellValueChanged = true;
+          try {
+            this.buildTableRows(this.originalData);
+            const updatedEntry = this.originalData.find((entry) => Number(entry.id) === userId);
+            if (updatedEntry) {
+              const updatedDepartment = isClearingDepartment ? null : nextDepartment;
+              event.node?.setData({
+                ...event.data,
+                department: updatedDepartment?.department_name || 'Unassigned',
+              });
+            }
+          } finally {
+            queueMicrotask(() => {
+              this.suppressTableCellValueChanged = false;
+            });
+          }
         }
-
-        await this.getDataWithStatePreservation();
       } catch (error) {
         event.node?.setDataValue(field, event.oldValue);
+      } finally {
+        this.pendingDepartmentAssignments.delete(assignmentKey);
       }
 
       return;
@@ -1536,12 +2030,84 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
         ? this.normalizeHireDateValue(event.newValue)
       : event.newValue;
 
+    if (field === 'active' && rowData?.is_placeholder) {
+      const department = this.findDepartmentByName(rowData?.department);
+      if (!department?.id) {
+        event.node?.setDataValue(field, event.oldValue);
+        return;
+      }
+
+      try {
+        const response = await firstValueFrom(this.departmentService.setDepartmentActive(Number(department.id), normalizedValue === 1));
+
+        if (!response?.success) {
+          throw new Error(response?.message || 'Failed to update department status');
+        }
+
+        this.originalData = this.originalData.map((entry) =>
+          Number(entry.id) === userId
+            ? {
+                ...entry,
+                active: normalizedValue,
+              }
+            : entry,
+        );
+
+        await this.getDataWithStatePreservation();
+      } catch (error) {
+        event.node?.setDataValue(field, event.oldValue);
+      }
+
+      return;
+    }
+
+    if (field === 'active' && normalizedValue === 0) {
+      const directReports = this.getDirectReportEntries(userId);
+      let nextManagerId: number | null = null;
+
+      if (directReports.length > 0) {
+        nextManagerId = await this.promptDirectReportReassignment(rowData, directReports);
+
+        if (nextManagerId === undefined) {
+          event.node?.setDataValue(field, event.oldValue);
+          return;
+        }
+
+        const confirmed = await this.confirmInactivationWorkflow(rowData, directReports, nextManagerId);
+        if (!confirmed) {
+          event.node?.setDataValue(field, event.oldValue);
+          return;
+        }
+
+        try {
+          await this.reassignDirectReports(userId, nextManagerId);
+          this.notificationService.success(
+            `${directReports.length} direct report${directReports.length === 1 ? '' : 's'} reassigned to ${this.getManagerOptionLabel(nextManagerId ?? this.rootManagerOptionValue)}.`,
+          );
+        } catch (error) {
+          event.node?.setDataValue(field, event.oldValue);
+          return;
+        }
+      } else {
+        const confirmed = await this.confirmInactivationWorkflow(rowData, [], nextManagerId);
+        if (!confirmed) {
+          event.node?.setDataValue(field, event.oldValue);
+          return;
+        }
+      }
+    }
+
     try {
       const payload = field === 'location'
         ? this.getLocationParts(String(normalizedValue || ''))
         : { [field]: normalizedValue };
 
       await this.userService.update(userId, payload);
+
+      if (field === 'active') {
+        await this.getDataWithStatePreservation();
+        return;
+      }
 
       this.originalData = this.originalData.map((entry) =>
         Number(entry.id) === userId
@@ -1732,6 +2298,19 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
     return this.originalData.filter(emp => emp.openPosition).length;
   }
 
+  private updateOrgMetrics(rows: any[]): void {
+    const employeeRows = rows.filter((row) => !row.is_placeholder);
+    const managerRows = employeeRows.filter((row) => Number(row.direct_report_count ?? 0) > 0);
+
+    this.orgMetrics.totalEmployees = employeeRows.length;
+    this.orgMetrics.activeEmployees = employeeRows.filter((row) => Number(row.active ?? 0) === 1).length;
+    this.orgMetrics.departmentCount = rows.filter((row) => row.is_placeholder).length;
+    this.orgMetrics.openPositions = employeeRows.filter((row) => !!row.openPosition).length;
+    this.orgMetrics.averageSpanOfControl = managerRows.length
+      ? Math.round((managerRows.reduce((sum, row) => sum + Number(row.direct_report_count ?? 0), 0) / managerRows.length) * 10) / 10
+      : 0;
+  }
+
   getEstablishedEmployees(): number {
     if (!this.originalData) return 0;
     return this.originalData.filter(emp => {
@@ -1753,6 +2332,7 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
 
       data = this.normalizeOrgChartData(data);
       data = this.fixDataStructure(data);
+      this.originalData = this.deepCloneData(data);
       this.buildTableRows(data);
 
       data.sort((a, b) => {
@@ -1764,6 +2344,10 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
       let e = [];
       
       for (let i = 0; i < data.length; i++) {
+        if (data[i].orgChartPlaceHolder) {
+          continue;
+        }
+
         data[i].bgColor = this.bgColor(data[i]);
 
         // Add cache-busting to image URLs to prevent browser caching issues
@@ -1787,7 +2371,6 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
           state: data[i].state || "",
           area: data[i].area || "",
           department: data[i].department || "",
-          org_chart_department: data[i].org_chart_department || "",
           hire_date: data[i].hire_date || null,
           image: data[i].image || "assets/images/default-user.png",
           imageUrl: imageUrl,
@@ -2172,12 +2755,28 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
   // Department Management Methods
   loadDepartments() {
     console.log('Loading departments...');
-    this.departmentService.getDepartments().subscribe({
+    this.departmentService.getDepartments(true).subscribe({
       next: (response) => {
         console.log('Departments response:', response);
         if (response.success) {
-          this.departments = response.data;
+          this.departments = [...(response.data || [])].sort((left, right) => {
+            const leftOrder = Number(left?.display_order);
+            const rightOrder = Number(right?.display_order);
+            const normalizedLeftOrder = Number.isFinite(leftOrder) ? leftOrder : 9999;
+            const normalizedRightOrder = Number.isFinite(rightOrder) ? rightOrder : 9999;
+            if (normalizedLeftOrder !== normalizedRightOrder) {
+              return normalizedLeftOrder - normalizedRightOrder;
+            }
+
+            return String(left?.department_name || '').localeCompare(String(right?.department_name || ''));
+          });
           console.log('Loaded departments:', this.departments);
+
+          if (this.originalData?.length) {
+            this.buildTableRows(this.originalData);
+          }
+
+          this.refreshDepartmentGridState();
         } else {
           console.error('Failed to load departments:', response);
         }
@@ -2227,61 +2826,6 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
     this.loadDepartments();
     // Refresh the org chart data while preserving expansion state
     this.getDataWithStatePreservation();
-  }
-
-  // User assignment methods
-  onUserSelected(user: any) {
-    console.log('User selected:', user);
-    this.selectedUser = user;
-    this.selectedUserId = user ? user.id : null;
-  }
-
-  assignUserToDepartment() {
-    try {
-      console.log('assignUserToDepartment called');
-      console.log('selectedUser:', this.selectedUser);
-      console.log('selectedDepartmentId:', this.selectedDepartmentId);
-      
-      if (!this.selectedUser || !this.selectedDepartmentId) {
-        alert('Please select both a user and a department');
-        return;
-      }
-
-      const assignment = {
-        user_id: this.selectedUser.id,
-        department_id: this.selectedDepartmentId,
-        action: 'assign'
-      };
-
-      console.log('Making assignment request:', assignment);
-
-      this.departmentService.assignUser(assignment).subscribe({
-        next: (response) => {
-          console.log('Assignment response:', response);
-          if (response && response.success) {
-            alert('User assigned to department successfully!');
-            // Reset selections
-            this.selectedUser = null;
-            this.selectedUserId = null;
-            this.selectedDepartmentId = null;
-            // Refresh data while preserving expansion state
-            this.getDataWithStatePreservation();
-            this.loadDepartments();
-          } else {
-            const errorMessage = response?.message || 'Unknown error occurred';
-            console.error('Assignment failed:', errorMessage);
-            alert('Error: ' + errorMessage);
-          }
-        },
-        error: (error) => {
-          console.error('Error assigning user:', error);
-          alert('Error assigning user to department: ' + (error?.message || error || 'Unknown error'));
-        }
-      });
-    } catch (error) {
-      console.error('Exception in assignUserToDepartment:', error);
-      alert('An unexpected error occurred: ' + (error?.message || error || 'Unknown error'));
-    }
   }
 
   /**
@@ -2394,7 +2938,6 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
           state: data[i].state || "",
           area: data[i].area || "",
           department: data[i].department || "",
-          org_chart_department: data[i].org_chart_department || "",
           hire_date: data[i].hire_date || null,
           image: data[i].image || "assets/images/default-user.png",
           imageUrl: data[i].image || "assets/images/default-user.png",
@@ -2576,7 +3119,7 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
         await this.getData();
       } catch (fallbackError) {
         console.error('Error in fallback getData:', fallbackError);
-        alert('Error refreshing chart data. Please try refreshing the page.');
+        this.notificationService.error('Error refreshing chart data. Please try refreshing the page.', false);
       }
     }
   }
@@ -2712,14 +3255,14 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
 
     // Prevent circular references
     if (nodeId === newParentId) {
-      alert('Cannot assign a node as its own parent');
+      this.notificationService.warning('Cannot assign a node as its own parent.');
       return;
     }
 
     // Check if the new parent is a descendant of the node being moved
     const isDescendant = this.isNodeDescendant(nodeId, newParentId);
     if (isDescendant) {
-      alert('Cannot move a node under one of its descendants. This would create a circular reference.');
+      this.notificationService.warning('Cannot move a node under one of its descendants. This would create a circular reference.');
       return;
     }
 
@@ -2739,10 +3282,11 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
 
     // Confirm the action
     const draggedName = draggedUser.name || `${draggedUser.first} ${draggedUser.last}`;
-    const targetName = targetNode.name || targetNode.org_chart_department || `${targetNode.first} ${targetNode.last}`;
+    const targetName = targetNode.name || targetNode.department || `${targetNode.first} ${targetNode.last}`;
     const confirmMsg = `Move "${draggedName}" under "${targetName}"?`;
     
-    if (!confirm(confirmMsg)) {
+    const confirmed = await this.confirmAction(confirmMsg, 'Move Person');
+    if (!confirmed) {
       // Refresh chart to reset visual state
       this.chart.render();
       return;
@@ -2766,12 +3310,12 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
         
         // alert('Org chart updated successfully');
       } else {
-        alert('Failed to update org chart');
+        this.notificationService.error('Failed to update org chart', false);
         this.chart.render(); // Reset visual state
       }
     } catch (error) {
       console.error('Error updating org chart:', error);
-      alert('Error updating org chart: ' + error.message);
+      this.notificationService.error(error, false);
       this.chart.render(); // Reset visual state
     }
   }

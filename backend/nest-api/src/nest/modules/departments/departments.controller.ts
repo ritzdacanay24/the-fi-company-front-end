@@ -21,16 +21,31 @@ export class DepartmentsController {
   }
 
   @Post()
-  async post(@Body() payload: { action?: string; user_id?: number; department_id?: number; department_name?: string }) {
+  async post(
+    @Body()
+    payload: {
+      action?: string;
+      user_id?: number;
+      department_id?: number;
+      is_active?: number | boolean;
+      department_name?: string;
+      department_head_user_id?: number | null;
+      display_order?: number | null;
+    },
+  ) {
     if (payload?.action === 'assign') {
       return this.service.assignUser(payload);
+    }
+
+    if (payload?.action === 'set-active') {
+      return this.service.setDepartmentActive(payload);
     }
 
     return this.service.createDepartment(payload);
   }
 
   @Put()
-  async put(@Body() payload: { id?: number; department_name?: string }) {
+  async put(@Body() payload: { id?: number; department_name?: string; department_head_user_id?: number | null; display_order?: number | null }) {
     return this.service.updateDepartment(payload);
   }
 

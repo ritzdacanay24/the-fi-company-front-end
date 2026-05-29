@@ -5,6 +5,7 @@ import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { UserService } from '@app/core/api/field-service/user.service';
 import { ToastrService } from 'ngx-toastr';
 import { AuthenticationService } from '@app/core/services/auth.service';
+import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
 
 @Component({
   standalone: true,
@@ -145,7 +146,15 @@ export class OrgChartShareModalComponent implements OnInit {
   }
 
   async revokeToken(tokenId: number) {
-    if (!confirm('Are you sure you want to revoke this share link? It will no longer be accessible.')) {
+    const result = await SweetAlert.confirmV1({
+      title: 'Revoke Share Link?',
+      text: 'Are you sure you want to revoke this share link? It will no longer be accessible.',
+      confirmButtonText: 'Revoke Link',
+      cancelButtonText: 'Cancel',
+      reverseButtons: true,
+    });
+
+    if (!result.isConfirmed) {
       return;
     }
 

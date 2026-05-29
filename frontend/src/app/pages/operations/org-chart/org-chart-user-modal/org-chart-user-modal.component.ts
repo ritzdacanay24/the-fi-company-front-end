@@ -83,7 +83,6 @@ export class OrgChartUserModalComponent {
       city: ["", [Validators.maxLength(100)]],
       state: ["", [Validators.maxLength(50)]],
       department: ["", [Validators.maxLength(150)]],
-      org_chart_department: ["", [Validators.maxLength(150)]],
       hire_date: [""],
       image: [""],
     });
@@ -157,7 +156,6 @@ export class OrgChartUserModalComponent {
         city: this.data.city || "",
         state: this.data.state || "",
         department: this.data.department || "",
-        org_chart_department: this.data.org_chart_department || "",
         hire_date: this.data.hire_date || "",
         image: this.data.image || "",
       });

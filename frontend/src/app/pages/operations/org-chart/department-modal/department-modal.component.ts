@@ -2,7 +2,9 @@ import { Component, Input, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
-import { DepartmentService, Department } from '../services/department.service';
+import { NotificationService } from '@app/core/services/notification.service';
+import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
+import { DepartmentService, Department, User } from '../services/department.service';
 
 @Component({
   selector: 'app-department-modal',
@@ -12,7 +14,7 @@ import { DepartmentService, Department } from '../services/department.service';
     <div class="modal-header">
       <div>
         <h4 class="modal-title mb-0">{{ isEditMode ? 'Edit Department' : 'Add Department' }}</h4>
-        <small class="text-muted">Manage department placeholder groupings for the org chart.</small>
+        <small class="text-muted">Use departments to group people in the org chart.</small>
       </div>
       <button type="button" class="btn-close" (click)="close()" aria-label="Close"></button>
     </div>
@@ -23,7 +25,13 @@ import { DepartmentService, Department } from '../services/department.service';
           <div class="border rounded-3 p-3 p-md-4 bg-light-subtle">
             <div class="mb-3">
               <h6 class="mb-1 fw-semibold">Department Details</h6>
-              <div class="small text-muted">This name is used for the department placeholder and assignment list.</div>
+              <div class="small text-muted">This controls the department name shown in the chart and department list.</div>
+            </div>
+
+            <div class="alert alert-light border mb-3" role="note">
+              <div class="small text-muted mb-0">
+                Departments group people together. Reporting lines still come from each person's manager.
+              </div>
             </div>
 
             <div>
@@ -39,6 +47,22 @@ import { DepartmentService, Department } from '../services/department.service';
               <div class="invalid-feedback" *ngIf="departmentForm.get('department_name')?.invalid && departmentForm.get('department_name')?.touched">
                 Department name is required.
               </div>
+            </div>
+
+            <div class="mt-3">
+              <label for="department_head_user_id" class="form-label">Department Lead</label>
+              <select id="department_head_user_id" class="form-select" formControlName="department_head_user_id">
+                <option [ngValue]="null">No department lead</option>
+                <option *ngFor="let user of availableUsers" [ngValue]="user.id">
+                  {{ user.name }}<span *ngIf="user.title"> · {{ user.title }}</span>
+                </option>
+              </select>
+              <div class="form-text">Use this for the functional owner of the department. Reporting lines still come from each person's manager.</div>
+            </div>
+
+            <div class="mt-3">
+              <label for="display_order" class="form-label">Display Order</label>
+              <input id="display_order" type="number" min="0" class="form-control" formControlName="display_order" />
             </div>
           </div>
         </div>
@@ -95,6 +119,7 @@ export class DepartmentModalComponent implements OnInit {
   @Input() currentDepartment: Department | null = null;
 
   departmentForm: FormGroup;
+  availableUsers: User[] = [];
   isLoading = false;
   isEditMode = false;
   canDelete = false;
@@ -102,6 +127,7 @@ export class DepartmentModalComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private departmentService: DepartmentService,
+    private notificationService: NotificationService,
     private activeModal: NgbActiveModal,
   ) {
     this.initializeForm();
@@ -111,11 +137,13 @@ export class DepartmentModalComponent implements OnInit {
     this.isEditMode = !!this.currentDepartment;
     this.canDelete = this.isEditMode && (!this.currentDepartment?.user_count || this.currentDepartment.user_count === 0);
     this.populateForm();
+    this.loadAvailableUsers();
   }
 
   initializeForm() {
     this.departmentForm = this.fb.group({
       department_name: ['', [Validators.required, Validators.minLength(2)]],
+      department_head_user_id: [null],
       display_order: [0, [Validators.min(0)]]
     });
   }
@@ -124,27 +152,33 @@ export class DepartmentModalComponent implements OnInit {
     if (this.currentDepartment) {
       this.departmentForm.patchValue({
         department_name: this.currentDepartment.department_name,
+        department_head_user_id: this.currentDepartment.department_head_user_id ?? null,
         display_order: this.currentDepartment.display_order || 0
       });
     } else {
       this.departmentForm.reset();
       this.departmentForm.patchValue({
+        department_head_user_id: null,
         display_order: 0
       });
     }
   }
 
-  // Removed loadAvailableUsers - not needed for simplified department creation
+  loadAvailableUsers() {
+    this.departmentService.getAvailableUsers().subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.availableUsers = response.data;
+        }
+      },
+      error: () => {
+        this.availableUsers = [];
+      }
+    });
+  }
 
   onSubmit() {
-    console.log('onSubmit called');
-    console.log('Form valid:', this.departmentForm.valid);
-    console.log('Form value:', this.departmentForm.value);
-    console.log('Form errors:', this.departmentForm.errors);
-    console.log('Is loading:', this.isLoading);
-    
     if (this.departmentForm.valid && !this.isLoading) {
-      console.log('Starting API call...');
       this.isLoading = true;
       const formData = { ...this.departmentForm.value };
       
@@ -155,63 +189,63 @@ export class DepartmentModalComponent implements OnInit {
         }
       });
 
-      console.log('Processed form data:', formData);
-      console.log('Is edit mode:', this.isEditMode);
-
       const operation = this.isEditMode 
         ? this.departmentService.updateDepartment({ ...this.currentDepartment, ...formData })
         : this.departmentService.createDepartment(formData);
 
-      console.log('Making API call...');
       operation.subscribe({
         next: (response) => {
-          console.log('API Response:', response);
           this.isLoading = false;
           if (response.success) {
+            this.notificationService.success(this.isEditMode ? 'Department updated successfully.' : 'Department created successfully.');
             this.activeModal.close({ saved: true, deleted: false });
           } else {
-            alert('Error: ' + (response as any).error);
+            this.notificationService.error((response as any).error || 'Failed to save department.', false);
           }
         },
         error: (error) => {
           console.error('API Error:', error);
           this.isLoading = false;
-          alert('Error saving department: ' + error.message);
+          this.notificationService.error(error, false);
         }
       });
-    } else {
-      console.log('Form validation failed or already loading');
-      if (!this.departmentForm.valid) {
-        console.log('Form validation errors:');
-        Object.keys(this.departmentForm.controls).forEach(key => {
-          const control = this.departmentForm.get(key);
-          if (control?.invalid) {
-            console.log(`${key}:`, control.errors);
-          }
-        });
-      }
     }
   }
 
-  deleteDepartment() {
-    if (this.currentDepartment && confirm('Are you sure you want to delete this department? This action cannot be undone.')) {
-      this.isLoading = true;
-      
-      this.departmentService.deleteDepartment(this.currentDepartment.id).subscribe({
-        next: (response) => {
-          this.isLoading = false;
-          if (response.success) {
-            this.activeModal.close({ saved: false, deleted: true });
-          } else {
-            alert('Error: ' + (response as any).error);
-          }
-        },
-        error: (error) => {
-          this.isLoading = false;
-          alert('Error deleting department: ' + error.message);
-        }
-      });
+  async deleteDepartment() {
+    if (!this.currentDepartment) {
+      return;
     }
+
+    const result = await SweetAlert.confirmV1({
+      title: 'Delete Department?',
+      text: 'Are you sure you want to delete this department? This action cannot be undone.',
+      confirmButtonText: 'Delete Department',
+      cancelButtonText: 'Cancel',
+      reverseButtons: true,
+    });
+
+    if (!result.isConfirmed) {
+      return;
+    }
+
+    this.isLoading = true;
+    
+    this.departmentService.deleteDepartment(this.currentDepartment.id).subscribe({
+      next: (response) => {
+        this.isLoading = false;
+        if (response.success) {
+          this.notificationService.success('Department deleted successfully.');
+          this.activeModal.close({ saved: false, deleted: true });
+        } else {
+          this.notificationService.error((response as any).error || 'Failed to delete department.', false);
+        }
+      },
+      error: (error) => {
+        this.isLoading = false;
+        this.notificationService.error(error, false);
+      }
+    });
   }
 
   close() {

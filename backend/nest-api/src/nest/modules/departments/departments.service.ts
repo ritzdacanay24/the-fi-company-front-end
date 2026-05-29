@@ -22,13 +22,21 @@ export class DepartmentsService {
     };
   }
 
-  async createDepartment(payload: { department_name?: string }) {
+  async createDepartment(payload: { department_name?: string; department_head_user_id?: number | null; display_order?: number | null }) {
     const departmentName = String(payload?.department_name || '').trim();
+    const departmentHeadUserId = Number(payload?.department_head_user_id);
+    const displayOrder = Number(payload?.display_order);
+
     if (!departmentName) {
       return { success: false, error: 'department_name is required' };
     }
 
-    const departmentId = await this.repository.createDepartment(departmentName);
+    const departmentId = await this.repository.createDepartmentPlaceholder(departmentName);
+    await this.repository.upsertDepartmentRecord(departmentName, {
+      departmentHeadUserId: Number.isFinite(departmentHeadUserId) && departmentHeadUserId > 0 ? departmentHeadUserId : null,
+      displayOrder: Number.isFinite(displayOrder) ? displayOrder : 0,
+    });
+
     return {
       success: true,
       message: 'Department created successfully',
@@ -36,9 +44,11 @@ export class DepartmentsService {
     };
   }
 
-  async updateDepartment(payload: { id?: number; department_name?: string }) {
+  async updateDepartment(payload: { id?: number; department_name?: string; department_head_user_id?: number | null; display_order?: number | null }) {
     const id = Number(payload?.id);
     const departmentName = String(payload?.department_name || '').trim();
+    const departmentHeadUserId = Number(payload?.department_head_user_id);
+    const displayOrder = Number(payload?.display_order);
 
     if (!Number.isFinite(id) || id <= 0) {
       return { success: false, error: 'Department ID required' };
@@ -48,10 +58,25 @@ export class DepartmentsService {
       return { success: false, error: 'department_name is required' };
     }
 
-    const affectedRows = await this.repository.updateDepartmentPlaceholder(id, departmentName);
-    if (affectedRows === 0) {
+    const existingDepartment = await this.repository.resolveDepartmentReference(id);
+    if (!existingDepartment) {
       return { success: false, error: 'Department not found' };
     }
+
+    const previousDepartmentName = String(existingDepartment.department_name || '').trim();
+
+    if (existingDepartment.placeholder_id) {
+      const affectedRows = await this.repository.updateDepartmentPlaceholder(existingDepartment.placeholder_id, departmentName);
+      if (affectedRows === 0) {
+        return { success: false, error: 'Department not found' };
+      }
+    }
+
+    await this.repository.upsertDepartmentRecord(departmentName, {
+      previousDepartmentName,
+      departmentHeadUserId: Number.isFinite(departmentHeadUserId) && departmentHeadUserId > 0 ? departmentHeadUserId : null,
+      displayOrder: Number.isFinite(displayOrder) ? displayOrder : 0,
+    });
 
     return {
       success: true,
@@ -60,12 +85,12 @@ export class DepartmentsService {
   }
 
   async deleteDepartment(departmentId: number) {
-    const dept = await this.repository.findDepartmentPlaceholderById(departmentId);
+    const dept = await this.repository.resolveDepartmentReference(departmentId);
     if (!dept) {
       return { success: false, error: 'Department not found' };
     }
 
-    const departmentName = String(dept.org_chart_department || dept.department || '').trim();
+    const departmentName = String(dept.department_name || '').trim();
     if (!departmentName) {
       throw new NotFoundException('Department name could not be determined');
     }
@@ -78,10 +103,14 @@ export class DepartmentsService {
       };
     }
 
-    const affectedRows = await this.repository.deleteDepartmentPlaceholder(departmentId);
-    if (affectedRows === 0) {
-      return { success: false, error: 'Department not found' };
+    if (dept.placeholder_id) {
+      const affectedRows = await this.repository.deleteDepartmentPlaceholder(dept.placeholder_id);
+      if (affectedRows === 0) {
+        return { success: false, error: 'Department not found' };
+      }
     }
+
+    await this.repository.deactivateDepartmentRecord(departmentName);
 
     return {
       success: true,
@@ -97,12 +126,15 @@ export class DepartmentsService {
       return { success: false, error: 'user_id and department_id are required' };
     }
 
-    const dept = await this.repository.findDepartmentPlaceholderById(departmentId);
+    const dept = await this.repository.resolveDepartmentReference(departmentId);
     if (!dept) {
       return { success: false, error: 'Department not found' };
     }
 
-    const departmentName = String(dept.org_chart_department || dept.department || '').trim();
+    const departmentName = String(dept.department_name || '').trim();
+    if (!departmentName) {
+      return { success: false, error: 'Department name could not be determined' };
+    }
     const userExists = await this.repository.findActiveUserById(userId);
 
     if (!userExists) {
@@ -114,6 +146,36 @@ export class DepartmentsService {
     return {
       success: true,
       message: 'User assigned to department successfully',
+    };
+  }
+
+  async setDepartmentActive(payload: { department_id?: number; is_active?: number | boolean }) {
+    const departmentId = Number(payload?.department_id);
+    const isActive = Number(payload?.is_active) === 1 || payload?.is_active === true;
+
+    if (!Number.isFinite(departmentId) || departmentId <= 0) {
+      return { success: false, error: 'department_id is required' };
+    }
+
+    const dept = await this.repository.resolveDepartmentReference(departmentId);
+    if (!dept) {
+      return { success: false, error: 'Department not found' };
+    }
+
+    const recordId = Number(dept.department_record_id || 0);
+    if (!recordId) {
+      return { success: false, error: 'Department record not found' };
+    }
+
+    await this.repository.setDepartmentRecordActiveById(recordId, isActive);
+
+    if (dept.placeholder_id) {
+      await this.repository.setDepartmentPlaceholderActiveById(Number(dept.placeholder_id), isActive);
+    }
+
+    return {
+      success: true,
+      message: `Department marked as ${isActive ? 'active' : 'inactive'} successfully`,
     };
   }
 

@@ -2,19 +2,48 @@
   <div class="row justify-content-center">
     <div class="col-12">
       
-      <!-- Breadcrumb -->
-      <nav aria-label="breadcrumb" class="mb-3" *ngIf="!readOnly">
-        <ol class="breadcrumb mb-0">
-          <li class="breadcrumb-item">
-            <a href="#" class="text-decoration-none" (click)="$event.preventDefault()">
-              <i class="mdi mdi-home-outline me-1"></i>Operations
-            </a>
-          </li>
-          <li class="breadcrumb-item active" aria-current="page">
-            Organization Chart
-          </li>
-        </ol>
-      </nav>
+      <!-- Breadcrumb / Metrics -->
+      <div class="org-page-topbar" *ngIf="!readOnly">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item">
+              <a href="#" class="text-decoration-none" (click)="$event.preventDefault()">
+                <i class="mdi mdi-home-outline me-1"></i>Operations
+              </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">
+              Organization Chart
+            </li>
+          </ol>
+        </nav>
+
+        <div class="org-metric-strip small">
+          <span class="org-metric-pill">
+            <i class="mdi mdi-account-multiple text-info me-1"></i>
+            {{orgMetrics.totalEmployees}} employees
+          </span>
+          <span class="org-metric-pill">
+            <i class="mdi mdi-account-check text-success me-1"></i>
+            {{orgMetrics.activeEmployees}} active
+          </span>
+          <span class="org-metric-pill">
+            <i class="mdi mdi-domain text-primary me-1"></i>
+            {{orgMetrics.departmentCount}} departments
+          </span>
+          <span class="org-metric-pill">
+            <i class="mdi mdi-account-plus text-warning me-1"></i>
+            {{orgMetrics.openPositions}} open
+          </span>
+          <span class="org-metric-pill">
+            <i class="mdi mdi-axis-arrow text-secondary me-1"></i>
+            {{orgMetrics.averageSpanOfControl}} avg span
+          </span>
+          <span *ngIf="currentView" class="org-metric-pill">
+            <i class="mdi mdi-account-circle text-primary me-1"></i>
+            Viewing: {{currentView}}
+          </span>
+        </div>
+      </div>
       
 
       <div class="card border-0">
@@ -59,7 +88,18 @@
                   </button>
                 </div>
 
-                <div class="btn-group" role="group" aria-label="Org chart status filter">
+                <!-- <div class="btn-group" role="group" aria-label="Grid hierarchy mode" *ngIf="viewMode === 'table'">
+                  <button
+                    *ngFor="let option of tableHierarchyOptions"
+                    type="button"
+                    class="btn d-flex align-items-center"
+                    [ngClass]="tableHierarchyMode === option.value ? 'btn-primary' : 'btn-outline-primary'"
+                    (click)="setTableHierarchyMode(option.value)">
+                    {{ option.label }}
+                  </button>
+                </div> -->
+
+                <!-- <div class="btn-group" role="group" aria-label="Org chart status filter">
                   <button
                     *ngFor="let option of statusFilterOptions"
                     type="button"
@@ -68,15 +108,14 @@
                     (click)="setStatusFilter(option.value)">
                     {{ option.label }}
                   </button>
-                </div>
-                
+                </div> -->
+
                 <div class="dropdown" ngbDropdown container="body">
                   <button class="btn btn-primary d-flex align-items-center" 
                           type="button" 
                           id="departmentDropdown"
                           ngbDropdownToggle>
                     <i class="mdi mdi-domain me-1"></i>Departments
-                    <i class="mdi mdi-chevron-down ms-1"></i>
                   </button>
                   <div class="dropdown-menu" 
                        ngbDropdownMenu 
@@ -92,9 +131,17 @@
                        (click)="$event.preventDefault(); openDepartmentModal(dept)">
                       <div class="d-flex justify-content-between align-items-center">
                         <div class="flex-grow-1">
-                          <div class="fw-semibold">{{dept.department_name}}</div>
+                          <div class="fw-semibold d-flex align-items-center gap-2">
+                            <span>{{dept.department_name}}</span>
+                            <span class="badge" [ngClass]="isDepartmentActive(dept) ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'">
+                              {{isDepartmentActive(dept) ? 'Active' : 'Inactive'}}
+                            </span>
+                          </div>
                           <small class="text-muted">
-                            {{dept.user_count || 0}} users
+                            {{dept.user_count || 0}} people assigned
+                          </small>
+                          <small class="d-block text-muted" *ngIf="dept.department_head_name">
+                            Lead: {{dept.department_head_name}}
                           </small>
                         </div>
                         <i class="mdi mdi-pencil text-primary ms-2" title="Edit Department"></i>
@@ -106,73 +153,16 @@
                   </div>
                 </div>
 
-                <!-- User Assignment Section -->
-                <div class="dropdown" ngbDropdown container="body">
-                  <!-- <button class="btn btn-outline-info d-flex align-items-center" 
-                          type="button" 
-                          id="userAssignmentDropdown"
-                          ngbDropdownToggle>
-                    <i class="mdi mdi-account-plus me-1"></i>Assign Users
-                    <i class="mdi mdi-chevron-down ms-1"></i>
-                  </button> -->
-                  <div class="dropdown-menu p-3" 
-                       ngbDropdownMenu 
-                       aria-labelledby="userAssignmentDropdown"
-                       style="min-width: 350px;">
-                    <h6 class="dropdown-header">Assign User to Department</h6>
-                    
-                    <div class="mb-3">
-                      <label class="form-label small fw-semibold">Select User:</label>
-                      <app-user-search-v1 
-                        (notifyParent)="onUserSelected($event)" 
-                        [value]="selectedUserId"
-                        [showLabel]="false"
-                        [placeholder]="'Search and select user...'"
-                        className="mb-0">
-                      </app-user-search-v1>
-                    </div>
-                    
-                    <div class="mb-3" *ngIf="selectedUser">
-                      <label class="form-label small fw-semibold">Assign to Department:</label>
-                      <select class="form-select form-select-sm" 
-                              [(ngModel)]="selectedDepartmentId" 
-                              (change)="assignUserToDepartment()">
-                        <option value="">-- Select Department --</option>
-                        <option *ngFor="let dept of departments" [value]="dept.id">
-                          {{dept.department_name}}
-                        </option>
-                      </select>
-                    </div>
-                    
-                    <div *ngIf="selectedUser" class="text-center">
-                      <small class="text-muted">
-                        Selected: <strong>{{selectedUser.first}} {{selectedUser.last}}</strong>
-                      </small>
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
             
-            <div class="d-flex align-items-center">
-              <div class="d-flex gap-4 small text-muted">
-                <span>
-                  <i class="mdi mdi-account-multiple text-info me-1"></i>
-                  <strong>{{originalData?.length || 0}}</strong> Employees
-                </span>
-                <span *ngIf="currentView">
-                  <i class="mdi mdi-account-circle text-primary me-1"></i>
-                  Viewing: <strong>{{currentView}}</strong>
-                </span>
-              </div>
-            </div>
           </div>
         </div>
         
-        <div class="card-body p-0 position-relative" style="height: calc(100vh - 223px);">
+        <div class="card-body border-0 p-0 position-relative" style="height: calc(100vh - 223px);">
           <div *ngIf="viewMode === 'table'" class="h-100 w-100">
             <ag-grid-angular
-              class="ag-theme-quartz h-100 w-100"
+              class="ag-theme-quartz h-100 w-100 border-0"
               [columnDefs]="tableColumnDefs"
               [rowData]="tableRowData"
               [rowHeight]="tableRowHeight"
@@ -185,6 +175,7 @@
               [groupDefaultExpanded]="tableGroupDefaultExpanded"
               [suppressMoveWhenRowDragging]="true"
               [animateRows]="true"
+              (gridReady)="onTableGridReady($event)"
               (cellValueChanged)="onTableCellValueChanged($event)"
               (rowDragEnd)="onTableRowDragEnd($event)"
               [pagination]="false">
