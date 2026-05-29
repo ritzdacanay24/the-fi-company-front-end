@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { RowDataPacket } from 'mysql2/promise';
 import { MysqlService } from '@/shared/database/mysql.service';
 import { EmailService } from '@/shared/email/email.service';
+import { EmailTemplateService } from '@/shared/email/email-template.service';
 import { UrlBuilder } from '@/shared/url/url-builder';
 import { SCHEDULED_JOB_IDS } from '../scheduled-job-ids';
 import { ScheduledJobRecipientsService } from '../scheduled-job-recipients.service';
@@ -18,6 +19,19 @@ interface VehicleRow extends RowDataPacket {
   licensePlate: string;
 }
 
+interface VehicleExpirationTemplateRow {
+  vin: string;
+  department: string;
+  vehicleMake: string;
+  year: string;
+  exp: string;
+  vehicleNumber: string;
+  licensePlate: string;
+  dueLabel: string;
+  editLink: string;
+  isExpired: boolean;
+}
+
 // Days before expiration to trigger alerts — mirrors PHP logic exactly
 const ALERT_DAYS = new Set([18, 14, 12, 10, 8, 6, 4]);
 const HOT_DAYS = new Set([2, 0]);
@@ -29,6 +43,7 @@ export class VehicleExpirationEmailHandler implements ScheduledJobHandler {
   constructor(
     private readonly mysqlService: MysqlService,
     private readonly emailService: EmailService,
+    private readonly emailTemplateService: EmailTemplateService,
     private readonly scheduledJobRecipientsService: ScheduledJobRecipientsService,
     private readonly urlBuilder: UrlBuilder,
   ) {}
@@ -48,6 +63,7 @@ export class VehicleExpirationEmailHandler implements ScheduledJobHandler {
 
       const sendEmail: Array<VehicleRow & { dateDiff: number }> = [];
       const sendEmailHot: Array<VehicleRow & { dateDiff: number }> = [];
+      const sendEmailExpired: Array<VehicleRow & { dateDiff: number }> = [];
 
       for (const row of vehicles) {
         if (!row.exp) continue;
@@ -59,12 +75,14 @@ export class VehicleExpirationEmailHandler implements ScheduledJobHandler {
           sendEmail.push({ ...row, dateDiff: diffDays });
         } else if (HOT_DAYS.has(diffDays)) {
           sendEmailHot.push({ ...row, dateDiff: diffDays });
+        } else if (diffDays < 0) {
+          sendEmailExpired.push({ ...row, dateDiff: diffDays });
         }
       }
 
-      const totalToEmail = sendEmail.length + sendEmailHot.length;
+      const totalToEmail = sendEmail.length + sendEmailHot.length + sendEmailExpired.length;
       this.logger.log(
-        `[${trigger}] vehicle-expiration-email -> ${sendEmailHot.length} hot, ${sendEmail.length} upcoming`,
+        `[${trigger}] vehicle-expiration-email -> ${sendEmailHot.length} hot, ${sendEmail.length} upcoming, ${sendEmailExpired.length} expired`,
       );
 
       if (totalToEmail > 0) {
@@ -73,29 +91,31 @@ export class VehicleExpirationEmailHandler implements ScheduledJobHandler {
         );
 
         if (to.length > 0) {
-          const isHot = sendEmailHot.length > 0;
-          const subject = isHot
-            ? 'ATTENTION!! Vehicle registration is about to expire. Please renew as soon as possible'
-            : 'Vehicle registration expiration report';
+          const hasExpired = sendEmailExpired.length > 0;
+          const hasUrgent = sendEmailHot.length > 0 || hasExpired;
+          const subject = hasExpired
+            ? 'ATTENTION!! Vehicle registration has expired for one or more vehicles. Immediate action required'
+            : hasUrgent
+              ? 'ATTENTION!! Vehicle registration is about to expire. Please renew as soon as possible'
+              : 'Vehicle registration expiration report';
 
           const listLink = this.urlBuilder.operations.vehicleList();
-          let body = `Hello Team, <br>`;
-          body += `Listed below are vehicles that will expire soon. Once registration is completed, please click <a href="${listLink}" target="_parent">here</a> to update the expiration date.<br><br>`;
-          body += `<table rules="all" style="border-color: #666;" cellpadding="10">`;
-          body += `<tr style='background: #eee;'><td></td><td><strong>Vin</strong></td><td><strong>Department</strong></td><td><strong>Vehicle Make</strong></td><td><strong>Year</strong></td><td><strong>Expiration</strong></td><td><strong>Vehicle Number</strong></td><td><strong>License Plate #</strong></td><td><strong>Due In</strong></td></tr>`;
-
-          for (const row of [...sendEmailHot, ...sendEmail]) {
-            const editLink = this.urlBuilder.operations.vehicleEdit(row.id);
-            body += `<tr><td><a href="${editLink}" target="_parent">View</a></td><td>${row.vin}</td><td>${row.department}</td><td>${row.vehicleMake}</td><td>${row.year}</td><td>${row.exp}</td><td>${row.vehicleNumber}</td><td>${row.licensePlate}</td><td>${row.dateDiff} days</td></tr>`;
-          }
-
-          body += `</table><br><hr>This is an automated email. Please do not respond.<br>Thank you.`;
+          const html = this.emailTemplateService.render('vehicle-expiration-email', {
+            listLink,
+            rows: this.buildTemplateRows([...sendEmailExpired, ...sendEmailHot, ...sendEmail]),
+            hasExpired: sendEmailExpired.length > 0,
+            hasHot: sendEmailHot.length > 0,
+            total: totalToEmail,
+            expiredCount: sendEmailExpired.length,
+            hotCount: sendEmailHot.length,
+            upcomingCount: sendEmail.length,
+          });
 
           await this.emailService.sendMail({
             to,
             scheduledJobId: SCHEDULED_JOB_IDS.VEHICLE_EXPIRATION_EMAIL,
             subject,
-            html: body,
+            html,
           });
         } else {
           this.logger.warn('No recipients configured for vehicle-expiration-email');
@@ -110,7 +130,7 @@ export class VehicleExpirationEmailHandler implements ScheduledJobHandler {
         ok: true,
         statusCode: 200,
         durationMs,
-        message: `${totalToEmail} vehicles with expiring registrations processed (${sendEmailHot.length} hot).`,
+        message: `${totalToEmail} vehicles processed (${sendEmailHot.length} hot, ${sendEmail.length} upcoming, ${sendEmailExpired.length} expired).`,
         lastRun: {
           startedAt: new Date(startedAtMs).toISOString(),
           finishedAt: new Date().toISOString(),
@@ -147,5 +167,20 @@ export class VehicleExpirationEmailHandler implements ScheduledJobHandler {
         },
       };
     }
+  }
+
+  private buildTemplateRows(rows: Array<VehicleRow & { dateDiff: number }>): VehicleExpirationTemplateRow[] {
+    return rows.map((row) => ({
+      vin: row.vin,
+      department: row.department,
+      vehicleMake: row.vehicleMake,
+      year: row.year,
+      exp: row.exp,
+      vehicleNumber: row.vehicleNumber,
+      licensePlate: row.licensePlate,
+      dueLabel: row.dateDiff < 0 ? `${Math.abs(row.dateDiff)} days overdue` : `${row.dateDiff} days`,
+      editLink: this.urlBuilder.operations.vehicleEdit(row.id),
+      isExpired: row.dateDiff < 0,
+    }));
   }
 }

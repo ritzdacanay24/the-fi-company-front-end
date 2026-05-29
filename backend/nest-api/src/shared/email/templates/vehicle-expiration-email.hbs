@@ -1,0 +1,72 @@
+<html>
+  <body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f4f6f8; color: #1f2933;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 980px; background-color: #ffffff; border: 1px solid #dde3ea; border-radius: 10px; overflow: hidden;">
+            {{> email-header}}
+            <tr>
+              <td style="padding: 20px 24px; background-color: #0b5cab; color: #ffffff;">
+                <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Vehicle Registration Expiration Report</h2>
+                <p style="margin: 4px 0 0; font-size: 13px; opacity: 0.9;">{{total}} vehicles matched ({{expiredCount}} expired, {{hotCount}} hot, {{upcomingCount}} upcoming)</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 24px; font-size: 14px; line-height: 1.6;">
+                <p style="margin: 0 0 12px 0;">Hello Team,</p>
+                <p style="margin: 0 0 18px 0;">
+                  Listed below are vehicles with registrations that will expire soon or are already expired.
+                  Once registration is completed, click
+                  <a href="{{listLink}}" target="_parent" style="color: #0b5cab; font-weight: 600;">here</a>
+                  to update the expiration date.
+                </p>
+
+                {{#if hasExpired}}
+                <div style="background-color: #fde8e8; border: 1px solid #f6c7c7; color: #9b1c1c; padding: 12px 14px; border-radius: 8px; margin-bottom: 16px; font-size: 13px;">
+                  Expired registrations were found in this report and should be addressed immediately.
+                </div>
+                {{else if hasHot}}
+                <div style="background-color: #fff4e5; border: 1px solid #ffd79a; color: #8a4b08; padding: 12px 14px; border-radius: 8px; margin-bottom: 16px; font-size: 13px;">
+                  Hot registrations (0-2 days remaining) were found in this report.
+                </div>
+                {{/if}}
+
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse; font-size: 13px;">
+                  <thead>
+                    <tr style="background-color: #f8f9fa;">
+                      <th style="padding: 10px; text-align: left; border-bottom: 2px solid #dee2e6;">Action</th>
+                      <th style="padding: 10px; text-align: left; border-bottom: 2px solid #dee2e6;">Vin</th>
+                      <th style="padding: 10px; text-align: left; border-bottom: 2px solid #dee2e6;">Department</th>
+                      <th style="padding: 10px; text-align: left; border-bottom: 2px solid #dee2e6;">Vehicle Make</th>
+                      <th style="padding: 10px; text-align: left; border-bottom: 2px solid #dee2e6;">Year</th>
+                      <th style="padding: 10px; text-align: left; border-bottom: 2px solid #dee2e6;">Expiration</th>
+                      <th style="padding: 10px; text-align: left; border-bottom: 2px solid #dee2e6;">Vehicle Number</th>
+                      <th style="padding: 10px; text-align: left; border-bottom: 2px solid #dee2e6;">License Plate #</th>
+                      <th style="padding: 10px; text-align: left; border-bottom: 2px solid #dee2e6;">Due In</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {{#each rows}}
+                    <tr>
+                      <td style="padding: 10px; border-bottom: 1px solid #e9ecef;"><a href="{{editLink}}" target="_parent" style="color: #0b5cab;">View</a></td>
+                      <td style="padding: 10px; border-bottom: 1px solid #e9ecef;">{{vin}}</td>
+                      <td style="padding: 10px; border-bottom: 1px solid #e9ecef;">{{department}}</td>
+                      <td style="padding: 10px; border-bottom: 1px solid #e9ecef;">{{vehicleMake}}</td>
+                      <td style="padding: 10px; border-bottom: 1px solid #e9ecef;">{{year}}</td>
+                      <td style="padding: 10px; border-bottom: 1px solid #e9ecef;">{{exp}}</td>
+                      <td style="padding: 10px; border-bottom: 1px solid #e9ecef;">{{vehicleNumber}}</td>
+                      <td style="padding: 10px; border-bottom: 1px solid #e9ecef;">{{licensePlate}}</td>
+                      <td style="padding: 10px; border-bottom: 1px solid #e9ecef; font-weight: {{#if isExpired}}700{{else}}500{{/if}}; color: {{#if isExpired}}#b42318{{else}}#1f2933{{/if}};">{{dueLabel}}</td>
+                    </tr>
+                    {{/each}}
+                  </tbody>
+                </table>
+              </td>
+            </tr>
+            {{> email-footer}}
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
