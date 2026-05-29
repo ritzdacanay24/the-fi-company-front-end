@@ -85,6 +85,8 @@ export class VehicleListComponent implements OnInit {
           return ["bg-danger bg-opacity-75"];
         } else if (e.data && e.data.expiresInDays >= 0) {
           return ["bg-warning bg-opacity-50"];
+        } else if (e.data && e.data.expiresInDays < 0) {
+          return ["bg-danger bg-opacity-75", "text-white"];
         } else {
           return null;
         }
