@@ -48,6 +48,7 @@ export class UserSearchV1Component implements OnInit {
   @Input() placeholder: string = "Search by user name";
   @Input() openOnEnter: boolean = false;
   @Input() editableSearchTerm: boolean = true;
+  @Input() preloadAllOnInit: boolean = false;
   @Input() ngClass: string | any;
   @Input() showLabel: boolean = true;
 
@@ -146,5 +147,9 @@ export class UserSearchV1Component implements OnInit {
 
   ngOnInit() {
     this.getList();
+
+    if (this.preloadAllOnInit) {
+      this.dataInput$.next("");
+    }
   }
 }

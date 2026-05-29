@@ -83,24 +83,30 @@
           <h6 class="mb-1 fw-semibold">Personal Details</h6>
           <div class="small text-muted">Basic profile information used across the org chart.</div>
         </div>
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label">First Name</label>
+        <div class="row align-items-start mb-3">
+          <label class="col-md-3 col-form-label">First Name</label>
+          <div class="col-md-9">
             <input class="form-control" formControlName="first" placeholder="Enter first name">
           </div>
+        </div>
 
-          <div class="col-md-6">
-            <label class="form-label">Last Name</label>
+        <div class="row align-items-start mb-3">
+          <label class="col-md-3 col-form-label">Last Name</label>
+          <div class="col-md-9">
             <input class="form-control" formControlName="last" placeholder="Enter last name">
           </div>
+        </div>
 
-          <div class="col-md-6">
-            <label class="form-label">Email</label>
+        <div class="row align-items-start mb-3">
+          <label class="col-md-3 col-form-label">Email</label>
+          <div class="col-md-9">
             <input class="form-control" formControlName="email" type="email" placeholder="name@company.com">
           </div>
+        </div>
 
-          <div class="col-md-6">
-            <label class="form-label">Work Phone</label>
+        <div class="row align-items-start mb-0">
+          <label class="col-md-3 col-form-label">Work Phone</label>
+          <div class="col-md-9">
             <input class="form-control" formControlName="workPhone" placeholder="Enter work phone">
           </div>
         </div>
@@ -113,30 +119,36 @@
           <h6 class="mb-1 fw-semibold">Work Details</h6>
           <div class="small text-muted">Role and employment information for this user.</div>
         </div>
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label">Title</label>
+        <div class="row align-items-start mb-3">
+          <label class="col-md-3 col-form-label">Title</label>
+          <div class="col-md-9">
             <input class="form-control" formControlName="title" placeholder="Enter job title">
           </div>
+        </div>
 
-          <div class="col-md-6">
-            <label class="form-label">Active Status</label>
+        <div class="row align-items-start mb-3">
+          <label class="col-md-3 col-form-label">Active Status</label>
+          <div class="col-md-9">
             <select class="form-select" formControlName="active">
               <option [ngValue]="1">Active</option>
               <option [ngValue]="0">Inactive</option>
             </select>
           </div>
+        </div>
 
-          <div class="col-md-6">
-            <label class="form-label">Employment Type</label>
+        <div class="row align-items-start mb-3">
+          <label class="col-md-3 col-form-label">Employment Type</label>
+          <div class="col-md-9">
             <select class="form-select" formControlName="employeeType1">
               <option value="">Select type</option>
               <option *ngFor="let option of employmentTypeOptions" [value]="option.value">{{ option.label }}</option>
             </select>
           </div>
+        </div>
 
-          <div class="col-md-6">
-            <label class="form-label">Card ID Number</label>
+        <div class="row align-items-start mb-3">
+          <label class="col-md-3 col-form-label">Card ID Number</label>
+          <div class="col-md-9">
             <div class="input-group">
               <input
                 class="form-control"
@@ -153,15 +165,22 @@
             </div>
             <div class="form-text">Card ID is masked on screen. Use the badge scanner while this field is focused.</div>
           </div>
+        </div>
 
-          <div class="col-md-6">
-            <label class="form-label">Hire Date</label>
+        <div class="row align-items-start mb-3">
+          <label class="col-md-3 col-form-label">Hire Date</label>
+          <div class="col-md-9">
             <input class="form-control" formControlName="hire_date" type="date">
           </div>
+        </div>
 
-          <div class="col-md-6">
-            <label class="form-label">Department</label>
-            <input class="form-control" formControlName="department" placeholder="Enter department">
+        <div class="row align-items-start mb-0">
+          <label class="col-md-3 col-form-label">Department</label>
+          <div class="col-md-9">
+            <select class="form-select" formControlName="department">
+              <option value="">Select department</option>
+              <option *ngFor="let department of departments" [value]="department">{{ department }}</option>
+            </select>
           </div>
         </div>
       </div>
@@ -173,15 +192,14 @@
           <h6 class="mb-1 fw-semibold">Organization & Location</h6>
           <div class="small text-muted">How this user appears in the org chart structure.</div>
         </div>
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label">Location</label>
+        <div class="row align-items-start mb-0">
+          <label class="col-md-3 col-form-label">Location</label>
+          <div class="col-md-9">
             <select class="form-select" formControlName="locationKey">
               <option value="">Select location</option>
               <option *ngFor="let option of locationOptions" [value]="option.value">{{ option.label }}</option>
             </select>
           </div>
-
         </div>
       </div>
     </div>
@@ -203,7 +221,7 @@
 
         <div *ngIf="!isRbacLoading && availableRoles.length > 0" class="row g-2">
           <div class="col-md-6" *ngFor="let role of availableRoles">
-            <label class="border rounded-3 p-3 d-flex align-items-start gap-3 w-100 bg-white" style="cursor:pointer;">
+            <label class="border rounded-3 p-3 d-flex align-items-start gap-3 w-100 bg-body" style="cursor:pointer;">
               <input
                 class="form-check-input mt-1"
                 type="checkbox"

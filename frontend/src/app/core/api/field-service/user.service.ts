@@ -85,6 +85,45 @@ export class UserService extends DataService<any> {
     return await firstValueFrom(this.http.get(`${orgChartUrl}/hasSubordinates?id=${id}`));
   }
 
+  public async createOpenPosition(payload: {
+    title: string;
+    reportsToUserId?: number | null;
+    department?: string | null;
+    city?: string | null;
+    state?: string | null;
+    createdBy?: number | null;
+  }) {
+    return firstValueFrom(this.http.post<any>(`${orgChartUrl}/open-positions`, payload));
+  }
+
+  public async updateOpenPosition(
+    id: number,
+    payload: {
+      title?: string;
+      reportsToUserId?: number | null;
+      department?: string | null;
+      city?: string | null;
+      state?: string | null;
+      active?: number;
+      status?: 'open' | 'filled' | 'closed';
+      filledByUserId?: number | null;
+    },
+  ) {
+    return firstValueFrom(this.http.patch<any>(`${orgChartUrl}/open-positions/${id}`, payload));
+  }
+
+  public async fillOpenPosition(id: number, payload: { filledByUserId?: number | null } = {}) {
+    return firstValueFrom(this.http.post<any>(`${orgChartUrl}/open-positions/${id}/fill`, payload));
+  }
+
+  public async closeOpenPosition(id: number) {
+    return firstValueFrom(this.http.post<any>(`${orgChartUrl}/open-positions/${id}/close`, {}));
+  }
+
+  public async listOpenPositions() {
+    return firstValueFrom(this.http.get<any[]>(`${orgChartUrl}/open-positions`));
+  }
+
   // Org Chart Token Methods
   public generateOrgChartToken(params: { password?: string; expiryHours?: number; userId?: number }): Observable<any> {
     return this.http.post(`${orgChartTokenUrl}/generate`, params);

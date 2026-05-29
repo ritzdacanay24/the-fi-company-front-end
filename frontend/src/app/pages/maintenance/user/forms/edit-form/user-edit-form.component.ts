@@ -2,10 +2,8 @@ import { Component, ElementRef, EventEmitter, Input, Output, ViewChild } from "@
 import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms";
 import { UserSearchV1Component } from "@app/shared/components/user-search-v1/user-search-v1.component";
 import { SharedModule } from "@app/shared/shared.module";
-import { accessRight, departments } from "../../user-constant";
-import { NgSelectModule } from "@ng-select/ng-select";
-import { merge } from "rxjs";
 import { NewUserService } from "@app/core/api/users/users.service";
+import { DepartmentService } from "@app/pages/operations/org-chart/services/department.service";
 
 @Component({
   standalone: true,
@@ -13,7 +11,6 @@ import { NewUserService } from "@app/core/api/users/users.service";
     SharedModule,
     ReactiveFormsModule,
     UserSearchV1Component,
-    NgSelectModule,
   ],
   selector: "app-user-edit-form",
   templateUrl: "./user-edit-form.component.html",
@@ -26,39 +23,35 @@ export class UserEditFormComponent {
   @Output() setFormEmitter: EventEmitter<any> = new EventEmitter();
   @Output() imageUploadSuccess: EventEmitter<any> = new EventEmitter();
 
-  constructor(private fb: FormBuilder, private userService: NewUserService) {
-    merge(
-      this.form.get("orgChartPlaceHolder").valueChanges,
-      this.form.get("openPosition").valueChanges
-    ).subscribe((change) => {
-      if (change) {
-        this.form.get("last").disable();
-        this.form.get("email").disable();
-        this.form.get("area").disable();
-        this.form.get("workArea").disable();
-        this.form.get("access").disable();
-        this.form.get("employeeType").disable();
-        this.form.get("enableTwostep").disable();
-        this.form.get("hire_date").disable();
-      } else {
-        this.form.get("last").enable();
-        this.form.get("email").enable();
-        this.form.get("area").enable();
-        this.form.get("workArea").enable();
-        this.form.get("access").enable();
-        this.form.get("employeeType").enable();
-        this.form.get("enableTwostep").enable();
-        this.form.get("hire_date").enable();
+  constructor(
+    private fb: FormBuilder,
+    private userService: NewUserService,
+    private departmentService: DepartmentService
+  ) {
+    const areaControl = this.form.get('area');
+    const departmentControl = this.form.get('department');
+
+    departmentControl?.valueChanges.subscribe((value) => {
+      if (areaControl?.value !== value) {
+        areaControl?.patchValue(value, { emitEvent: false });
       }
     });
+
+    areaControl?.valueChanges.subscribe((value) => {
+      if (departmentControl?.value !== value) {
+        departmentControl?.patchValue(value, { emitEvent: false });
+      }
+    });
+
     this.form.get("lastLoggedIn").disable();
+    this.loadDepartments();
   }
 
   ngOnInit(): void {
     this.setFormEmitter.emit(this.form);
   }
 
-  departments = departments;
+  departments: string[] = [];
 
   @Input() id = null;
 
@@ -76,11 +69,24 @@ export class UserEditFormComponent {
     this.form.patchValue({ parentId: $event?.id });
   }
 
-  accessRight = accessRight;
+  private loadDepartments(): void {
+    this.departmentService.getDepartments().subscribe({
+      next: (response) => {
+        const names: string[] = (response?.data || [])
+          .map((department) => String(department.department_name || '').trim())
+          .filter(Boolean);
+        this.departments = Array.from(new Set<string>(names)).sort((a, b) => a.localeCompare(b));
+      },
+      error: () => {
+        this.departments = [];
+      },
+    });
+  }
 
   form = this.fb.group({
     access: [1],
     active: [1],
+    department: [null, Validators.required],
     area: [null],
     workArea: [""],
     attempts: [0],
@@ -95,11 +101,7 @@ export class UserEditFormComponent {
     lastLoggedIn: [null],
     image: "",
     enableTwostep: 0,
-    orgChartPlaceHolder: [0],
-    showImage: [1],
-    openPosition: 0,
     hire_date: null,
-    org_chart_expand: 0,
     card_number: [null],
   });
 

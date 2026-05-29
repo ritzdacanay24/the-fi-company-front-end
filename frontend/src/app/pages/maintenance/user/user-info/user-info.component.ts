@@ -37,12 +37,7 @@ export class UserInfoComponent {
   async onSubmit() {
     this.submitted = true;
 
-    if (
-      this.form.invalid &&
-      this.form.value.isEmployee == 1 &&
-      this.form.value.active == 1 &&
-      this.form.value.orgChartPlaceHolder == 1
-    ) {
+    if (this.form.invalid) {
       this.submitted = false;
       getFormValidationErrors();
       return;

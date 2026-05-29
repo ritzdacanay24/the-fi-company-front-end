@@ -2,8 +2,7 @@ import { Component, ElementRef, EventEmitter, Input, Output, ViewChild } from "@
 import { FormBuilder, Validators } from "@angular/forms";
 import { SharedModule } from "@app/shared/shared.module";
 import { UserSearchV1Component } from "@app/shared/components/user-search-v1/user-search-v1.component";
-import { accessRight, departments } from "../../user-constant";
-import { merge } from "rxjs";
+import { DepartmentService } from "@app/pages/operations/org-chart/services/department.service";
 
 @Component({
   standalone: true,
@@ -14,39 +13,14 @@ import { merge } from "rxjs";
 export class UserCreateFormComponent {
   @ViewChild('badgeInput') badgeInput?: ElementRef<HTMLInputElement>;
 
-  constructor(private fb: FormBuilder) {
-    merge(
-      this.form.get("orgChartPlaceHolder").valueChanges,
-      this.form.get("openPosition").valueChanges
-    ).subscribe((change) => {
-      if (change) {
-        this.form.get("last").disable();
-        this.form.get("email").disable();
-        this.form.get("area").disable();
-        this.form.get("workArea").disable();
-        this.form.get("access").disable();
-        this.form.get("employeeType").disable();
-        this.form.get("enableTwostep").disable();
-        this.form.get("hire_date").disable();
-      } else {
-        this.form.get("last").enable();
-        this.form.get("email").enable();
-        this.form.get("area").enable();
-        this.form.get("workArea").enable();
-        this.form.get("access").enable();
-        this.form.get("employeeType").enable();
-        this.form.get("enableTwostep").enable();
-        this.form.get("hire_date").enable();
-      }
-      this.form.get('lastLoggedIn').disable()
-    });
+  constructor(private fb: FormBuilder, private departmentService: DepartmentService) {
+    this.form.get('lastLoggedIn').disable();
   }
 
   ngOnInit(): void {
+    this.loadDepartments();
     this.setFormEmitter.emit(this.form);
   }
-
-  accessRight = accessRight;
 
   title = "Create User Form";
 
@@ -54,13 +28,27 @@ export class UserCreateFormComponent {
 
   @Input() submitted = false;
 
-  departments = departments;
+  departments: string[] = [];
 
   get f() {
     return this.form.controls;
   }
 
   @Output() setFormEmitter: EventEmitter<any> = new EventEmitter();
+
+  private loadDepartments(): void {
+    this.departmentService.getDepartments().subscribe({
+      next: (response) => {
+        const names = (response?.data || [])
+          .map((department) => String(department.department_name || '').trim())
+          .filter(Boolean);
+        this.departments = Array.from(new Set(names)).sort((a, b) => a.localeCompare(b));
+      },
+      error: () => {
+        this.departments = [];
+      },
+    });
+  }
 
   notifyParent($event) {
     this.form.patchValue({ parentId: $event?.id });
@@ -116,6 +104,11 @@ export class UserCreateFormComponent {
     return String(value || '').replace(/\D+/g, '').slice(0, 20);
   }
 
+  toggleActiveStatus() {
+    const currentValue = this.form.get('active')?.value;
+    this.form.get('active')?.patchValue(currentValue ? 0 : 1);
+  }
+
   form = this.fb.group({
     access: [1],
     active: [1],
@@ -129,12 +122,8 @@ export class UserCreateFormComponent {
     created_by: "",
     createdDate: [""],
     parentId: null,
-    employeeType: [0, Validators.required],
     enableTwostep: 0,
     isEmployee: [1],
-    orgChartPlaceHolder: [0],
-    showImage: [1],
-    openPosition: 0,
     hire_date: null,
     card_number: [null],
   });

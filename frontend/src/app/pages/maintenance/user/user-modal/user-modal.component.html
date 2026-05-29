@@ -1,5 +1,5 @@
 <div class="modal-header">
-  <h4 class="modal-title">User Info</h4>
+  <h4 class="modal-title">{{ modalTitle }}</h4>
   <button type="button" class="btn-close" data-bs-dismiss="modal" (click)="dismiss()" aria-label="Close"></button>
 </div>
 <div class="modal-body mh-250">
@@ -8,28 +8,76 @@
 
   <h4 *ngIf="!isLoading && !data && id">Sorry, no data found.</h4>
 
-  <div class="mb-3 mt-3 text-center">
-    <img class="img-thumbnail" [src]="data?.image || imageTemp" style="width:100px" *ngIf="form?.value?.image">
-    <p class="mb-2 pointer text-danger" (click)="removeImage()" *ngIf="form?.value?.image">Remove Image</p>
-    <p class="mb-2" *ngIf="!form?.value?.image">Select profile picture</p>
-    <div class="input-group mb-2">
-      <input (change)="this.onFilechange($event)" class="form-control" type="file" id="file" name="file" [disabled]="form?.disabled" accept="image/*">
-      <button type="button" class="btn btn-outline-primary" 
-              [disabled]="!myFiles || isLoading" 
-              (click)="onUploadAttachments()">
+  <div class="mb-4 mt-3 p-3 border rounded bg-light-subtle">
+    <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+      <div class="d-flex align-items-center gap-3">
+        <ng-container *ngIf="form?.value?.image; else emptyProfileImage">
+          <img
+            class="rounded-circle border"
+            [src]="data?.image || imageTemp"
+            alt="Profile image"
+            style="width: 72px; height: 72px; object-fit: cover;"
+          />
+        </ng-container>
+        <ng-template #emptyProfileImage>
+          <div class="rounded-circle border d-flex align-items-center justify-content-center bg-white"
+               style="width: 72px; height: 72px;">
+            <i class="mdi mdi-account-outline text-muted" style="font-size: 30px;"></i>
+          </div>
+        </ng-template>
+
+        <div>
+          <div class="fw-semibold">Profile Picture</div>
+          <div class="text-muted small" *ngIf="!form?.value?.image">Select a clear image for better user identification.</div>
+          <div class="text-muted small" *ngIf="form?.value?.image">Current profile image is set.</div>
+          <button
+            *ngIf="form?.value?.image"
+            type="button"
+            class="btn btn-link btn-sm text-danger p-0 mt-1"
+            (click)="removeImage()"
+            [disabled]="form?.disabled"
+          >
+            <i class="mdi mdi-delete-outline me-1"></i>Remove current image
+          </button>
+        </div>
+      </div>
+
+      <span class="badge text-bg-secondary">Optional</span>
+    </div>
+
+    <div class="input-group mt-3">
+      <input
+        (change)="this.onFilechange($event)"
+        class="form-control"
+        type="file"
+        id="file"
+        name="file"
+        [disabled]="form?.disabled"
+        accept="image/*"
+      >
+      <button
+        type="button"
+        class="btn btn-primary"
+        [disabled]="!myFiles || isLoading || form?.disabled || !isEditMode()"
+        (click)="onUploadAttachments()"
+      >
         <i class="mdi mdi-upload me-1" *ngIf="!isLoading"></i>
         <i class="mdi mdi-loading mdi-spin me-1" *ngIf="isLoading"></i>
         {{ isLoading ? 'Uploading...' : 'Upload Image' }}
       </button>
     </div>
+
+    <div class="form-text mt-2">
+      Use JPG, PNG, or GIF. Square images work best.
+    </div>
   </div>
 
-  <app-user-edit-form (setFormEmitter)="form = $event" (imageUploadSuccess)="onImageUploadSuccess($event)" [submitted]="submitted"></app-user-edit-form>
+  <app-user-edit-form (setFormEmitter)="onFormReady($event)" (imageUploadSuccess)="onImageUploadSuccess($event)" [submitted]="submitted" [id]="id"></app-user-edit-form>
 
 
 </div>
 <div class="modal-footer">
   <button (click)="dismiss()" type="button" class="btn btn-light">Close</button>
   <button (click)="onSubmit()" type="button" class="btn btn-primary"
-    [disabled]="isLoading || this.form.disabled">{{this.id ? 'Update' : 'Create'}}</button>
+    [disabled]="isLoading || this.form.disabled">{{ isEditMode() ? 'Update' : 'Create' }}</button>
 </div>

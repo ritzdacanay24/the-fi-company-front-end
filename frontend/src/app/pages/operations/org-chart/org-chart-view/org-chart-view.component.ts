@@ -16,15 +16,49 @@ import { OrgChartUserModalService, OrgChartUserModalMode } from "../org-chart-us
 import { NotificationService } from "@app/core/services/notification.service";
 import { SweetAlert } from "@app/shared/sweet-alert/sweet-alert.service";
 import { NgbDropdownModule } from "@ng-bootstrap/ng-bootstrap";
+import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { FormsModule } from "@angular/forms";
+import {
+  ApexAxisChartSeries,
+  ApexChart,
+  ApexDataLabels,
+  ApexGrid,
+  ApexLegend,
+  ApexNonAxisChartSeries,
+  ApexPlotOptions,
+  ApexResponsive,
+  ApexStroke,
+  ApexTooltip,
+  ApexXAxis,
+  ApexYAxis,
+  NgApexchartsModule,
+} from "ng-apexcharts";
 import moment from "moment";
 import * as d3 from "d3";
 import { ColDef, GridApi, GridReadyEvent, RowDragEndEvent } from 'ag-grid-community';
 import { firstValueFrom } from 'rxjs';
+import { OpenPositionModalComponent, OpenPositionModalResult } from '../open-position-modal/open-position-modal.component';
+import { OpenPositionsListModalComponent, OpenPositionsListModalResult } from '../open-positions-list-modal/open-positions-list-modal.component';
+
+type OrgDecisionChartOptions = {
+  series: ApexAxisChartSeries | ApexNonAxisChartSeries;
+  chart: ApexChart;
+  dataLabels?: ApexDataLabels;
+  xaxis?: ApexXAxis;
+  yaxis?: ApexYAxis;
+  tooltip?: ApexTooltip;
+  plotOptions?: ApexPlotOptions;
+  labels?: string[];
+  legend?: ApexLegend;
+  stroke?: ApexStroke;
+  grid?: ApexGrid;
+  responsive?: ApexResponsive[];
+  colors?: string[];
+};
 
 @Component({
   standalone: true,
-  imports: [SharedModule, OrgChartModule, UserSearchV1Component, NgbDropdownModule, FormsModule, AgGridModule],
+  imports: [SharedModule, OrgChartModule, UserSearchV1Component, NgbDropdownModule, FormsModule, AgGridModule, NgApexchartsModule],
   selector: "app-org-chart-view",
   templateUrl: "./org-chart-view.component.html",
   styleUrls: [],
@@ -33,6 +67,11 @@ import { firstValueFrom } from 'rxjs';
       --org-metric-pill-bg: rgba(255, 255, 255, 0.08);
       --org-metric-pill-border: rgba(255, 255, 255, 0.12);
       --org-metric-pill-text: var(--vz-body-color, #212529);
+      --org-analytics-panel-border: rgba(255, 255, 255, 0.12);
+      --org-analytics-panel-bg: linear-gradient(180deg, rgba(59, 130, 246, 0.12), rgba(59, 130, 246, 0.04));
+      --org-analytics-card-border: rgba(255, 255, 255, 0.14);
+      --org-analytics-card-bg: rgba(15, 23, 42, 0.45);
+      --org-analytics-title-color: #dbe7ff;
     }
 
     .dropdown-menu {
@@ -79,6 +118,18 @@ import { firstValueFrom } from 'rxjs';
       backdrop-filter: blur(8px);
     }
 
+    .org-metric-action {
+      border: 1px solid rgba(255, 193, 7, 0.35);
+      background: linear-gradient(180deg, rgba(255, 193, 7, 0.16), rgba(255, 193, 7, 0.08));
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .org-metric-action:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(255, 193, 7, 0.18);
+    }
+
     .org-metric-pill i {
       opacity: 0.95;
     }
@@ -101,11 +152,48 @@ import { firstValueFrom } from 'rxjs';
       margin-left: auto;
     }
 
+    .org-analytics-panel {
+      border-bottom: 1px solid var(--org-analytics-panel-border);
+      background: var(--org-analytics-panel-bg);
+      padding: 0.75rem;
+      flex-shrink: 0;
+    }
+
+    .org-table-scroll-shell {
+      overflow-y: auto;
+      overscroll-behavior: contain;
+    }
+
+    .org-analytics-card {
+      border: 1px solid var(--org-analytics-card-border);
+      border-radius: 0.75rem;
+      background: var(--org-analytics-card-bg);
+      height: 100%;
+    }
+
+    .org-analytics-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--org-analytics-title-color);
+      letter-spacing: 0.02em;
+      margin: 0;
+      padding: 0.6rem 0.75rem 0 0.75rem;
+    }
+
+    .org-analytics-chart {
+      padding: 0.2rem 0.4rem 0.1rem 0.4rem;
+    }
+
     [data-bs-theme='light'] :host,
     :host-context([data-bs-theme='light']) {
       --org-metric-pill-bg: #f8fafc;
       --org-metric-pill-border: #dbe3ee;
       --org-metric-pill-text: #1f2937;
+      --org-analytics-panel-border: rgba(15, 23, 42, 0.08);
+      --org-analytics-panel-bg: linear-gradient(180deg, rgba(13, 110, 253, 0.04), rgba(13, 110, 253, 0.01));
+      --org-analytics-card-border: rgba(15, 23, 42, 0.08);
+      --org-analytics-card-bg: rgba(255, 255, 255, 0.92);
+      --org-analytics-title-color: #495057;
     }
 
     [data-bs-theme='dark'] :host,
@@ -113,6 +201,11 @@ import { firstValueFrom } from 'rxjs';
       --org-metric-pill-bg: rgba(255, 255, 255, 0.08);
       --org-metric-pill-border: rgba(255, 255, 255, 0.14);
       --org-metric-pill-text: #e5edf7;
+      --org-analytics-panel-border: rgba(255, 255, 255, 0.12);
+      --org-analytics-panel-bg: linear-gradient(180deg, rgba(59, 130, 246, 0.12), rgba(59, 130, 246, 0.04));
+      --org-analytics-card-border: rgba(255, 255, 255, 0.14);
+      --org-analytics-card-bg: rgba(15, 23, 42, 0.45);
+      --org-analytics-title-color: #dbe7ff;
     }
 
     /* Drag and Drop Styles */
@@ -161,6 +254,7 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
     public router: Router,
     private userService: UserService,
     private userModalService: UserModalService,
+    private modalService: NgbModal,
     private departmentService: DepartmentService,
     private departmentModalService: DepartmentModalService,
     private notificationService: NotificationService,
@@ -221,8 +315,17 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
   
   chart: any; // Add proper typing for the chart
   viewMode: 'table' | 'chart' = 'table';
+  showAnalyticsPanel = false;
+  readonly analyticsAllLocationsValue = '__all_locations__';
+  analyticsLocationOptions: string[] = [];
+  selectedAnalyticsLocation = this.analyticsAllLocationsValue;
+  syncAnalyticsFilterToTable = true;
   statusFilter: 'active' | 'inactive' | 'all' = 'active';
   tableHierarchyMode: 'reporting' | 'department' = 'reporting';
+  headcountByDepartmentChart: Partial<OrgDecisionChartOptions> = {};
+  openPositionsByDepartmentChart: Partial<OrgDecisionChartOptions> = {};
+  spanOfControlChart: Partial<OrgDecisionChartOptions> = {};
+  locationDistributionChart: Partial<OrgDecisionChartOptions> = {};
   readonly quickEditEmploymentTypeOptions = ['FT', 'PT', 'CT'];
   readonly quickEditActiveStatusOptions = [1, 0];
   readonly quickEditActiveStatusLabels: Record<number, string> = {
@@ -234,9 +337,11 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly unassignedDepartmentOptionValue = '__unassigned_department__';
   tableRowData: any[] = [];
   private tableGridApi: GridApi | null = null;
+  excludeChildrenWhenTreeDataFiltering = false;
   private suppressTableCellValueChanged = false;
   private readonly pendingDepartmentAssignments = new Set<string>();
   private readonly recentDepartmentAssignments = new Map<string, number>();
+  private readonly enableOrgChartNodeDragDrop = false;
   readonly tableRowHeight = 45;
   readonly tableDefaultColDef: ColDef = {
     sortable: true,
@@ -295,7 +400,7 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
       field: 'title',
       headerName: 'Title',
       minWidth: 220,
-      hide: true,
+      hide: false,
       editable: (params: any) => this.isQuickEditableRow(params),
       cellEditor: 'agTextCellEditor',
     },
@@ -331,6 +436,7 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
       cellEditor: 'agRichSelectCellEditor',
       cellEditorParams: {
         values: this.quickEditEmploymentTypeOptions,
+        searchType: 'matchAny',
       },
       valueFormatter: (params: any) => this.getEmploymentTypeLabel(params.value),
     },
@@ -338,6 +444,7 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
       field: 'location',
       headerName: 'Location',
       minWidth: 180,
+      filter: 'agTextColumnFilter',
       editable: (params: any) => this.isQuickEditableRow(params),
       cellEditor: 'agRichSelectCellEditor',
       cellEditorParams: {
@@ -351,14 +458,11 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
       editable: (params: any) => this.isQuickEditableRow(params),
       cellEditor: 'agRichSelectCellEditor',
       cellEditorParams: {
-        values: () => this.getDepartmentNameEditorOptions(),
-        allowTyping: true,
-        filterList: true,
-        highlightMatch: true,
+        values: () => (this.departments || [])
+          .map((department) => String(department.department_name || '').trim())
+          .filter((name) => !!name),
         searchType: 'matchAny',
-        formatValue: (value: string | number | null) => this.getDepartmentOptionLabel(value),
       },
-      valueFormatter: (params: any) => this.getDepartmentOptionLabel(params.value ?? params.data?.department ?? null),
     },
     {
       field: 'manager_id',
@@ -368,13 +472,10 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
       cellEditor: 'agRichSelectCellEditor',
       cellEditorParams: (params: any) => ({
         values: this.getManagerSelectOptions(params?.data),
-        allowTyping: true,
-        filterList: true,
-        highlightMatch: true,
         searchType: 'matchAny',
-        formatValue: (value: string | number | null) => this.getManagerOptionLabel(value),
+        formatValue: (value: string | number) => this.getManagerOptionLabel(value),
       }),
-      valueFormatter: (params: any) => params.data?.manager_name || this.getManagerOptionLabel(params.value ?? params.data?.manager_id ?? null),
+      valueFormatter: (params: any) => this.getManagerOptionLabel(params.value),
     },
     {
       field: 'direct_report_count',
@@ -407,6 +508,50 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
       editable: (params: any) => this.isQuickEditableRow(params),
       cellEditor: 'agDateStringCellEditor',
       valueFormatter: (params: any) => params.value ? moment(params.value).format('MM/DD/YYYY') : 'Not Set'
+    },
+    {
+      field: 'years_of_service_value',
+      headerName: 'Years of Service',
+      minWidth: 170,
+      maxWidth: 210,
+      type: 'numericColumn',
+      cellStyle: {
+        justifyContent: 'flex-end',
+        textAlign: 'right',
+      },
+      valueFormatter: (params: any) => Number.isFinite(Number(params.value))
+        ? `${Number(params.value).toFixed(1)} yrs`
+        : '—',
+    },
+    {
+      field: 'next_anniversary_date',
+      headerName: 'Next Anniversary',
+      minWidth: 210,
+      comparator: (left: any, right: any) => {
+        const leftTime = left ? moment(left).valueOf() : Number.POSITIVE_INFINITY;
+        const rightTime = right ? moment(right).valueOf() : Number.POSITIVE_INFINITY;
+        return leftTime - rightTime;
+      },
+      cellRenderer: (params: any) => {
+        if (!params.value) {
+          return '—';
+        }
+
+        const dateLabel = moment(params.value).format('MM/DD/YYYY');
+        const daysUntil = Number(params.data?.next_anniversary_days);
+        const isUpcoming = !!params.data?.next_anniversary_upcoming;
+
+        if (!isUpcoming || !Number.isFinite(daysUntil)) {
+          return dateLabel;
+        }
+
+        return `
+          <div class="d-inline-flex align-items-center gap-2">
+            <span>${dateLabel}</span>
+            <span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:999px;background:rgba(13, 202, 240, 0.14);color:#0c5460;font-size:11px;font-weight:600;">${daysUntil}d</span>
+          </div>
+        `;
+      },
     },
     {
       field: 'hire_status',
@@ -560,33 +705,129 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  private getOrgChartPalette(): {
+    rootCardBg: string;
+    rootCardText: string;
+    rootCardSubtitleText: string;
+    rootCardShadow: string;
+    employeeCardBg: string;
+    employeeCardBorder: string;
+    employeeCardShadow: string;
+    employeeCardHoverShadow: string;
+    employeeBadgeBg: string;
+    employeeBadgeText: string;
+    employeeNameText: string;
+    employeeTitleText: string;
+    employeeChipBg: string;
+    employeeChipText: string;
+    metricDirectBg: string;
+    metricDirectText: string;
+    metricTotalBg: string;
+    metricTotalText: string;
+    departmentCardBg: string;
+    departmentCardShadow: string;
+    departmentIdBadgeBg: string;
+    departmentIdBadgeText: string;
+    departmentTitleText: string;
+    departmentSubtitleText: string;
+    departmentTotalPillBg: string;
+    departmentTotalPillText: string;
+    openCardBg: string;
+    openCardShadow: string;
+    openIdBadgeBg: string;
+    openIdBadgeText: string;
+    openAvatarBg: string;
+    openNameText: string;
+    openSubtitleText: string;
+  } {
+    if (this.isDarkThemeEnabled()) {
+      return {
+        rootCardBg: 'linear-gradient(135deg, #1f2937 0%, #334155 100%)',
+        rootCardText: '#e5e7eb',
+        rootCardSubtitleText: '#cbd5e1',
+        rootCardShadow: 'none',
+        employeeCardBg: '#111827',
+        employeeCardBorder: '1px solid rgba(148, 163, 184, 0.28)',
+        employeeCardShadow: 'none',
+        employeeCardHoverShadow: 'none',
+        employeeBadgeBg: 'rgba(148, 163, 184, 0.18)',
+        employeeBadgeText: '#cbd5e1',
+        employeeNameText: '#e2e8f0',
+        employeeTitleText: '#94a3b8',
+        employeeChipBg: 'rgba(30, 41, 59, 0.92)',
+        employeeChipText: '#cbd5e1',
+        metricDirectBg: 'rgba(79, 70, 229, 0.22)',
+        metricDirectText: '#c7d2fe',
+        metricTotalBg: 'rgba(13, 148, 136, 0.2)',
+        metricTotalText: '#99f6e4',
+        departmentCardBg: 'linear-gradient(135deg, #1e3a5f 0%, #1d4f74 100%)',
+        departmentCardShadow: 'none',
+        departmentIdBadgeBg: 'rgba(148, 163, 184, 0.2)',
+        departmentIdBadgeText: '#bfdbfe',
+        departmentTitleText: '#e0f2fe',
+        departmentSubtitleText: '#bae6fd',
+        departmentTotalPillBg: 'rgba(15, 23, 42, 0.52)',
+        departmentTotalPillText: '#dbeafe',
+        openCardBg: 'linear-gradient(135deg, #1e3a5f 0%, #1d4f74 100%)',
+        openCardShadow: 'none',
+        openIdBadgeBg: 'rgba(148, 163, 184, 0.2)',
+        openIdBadgeText: '#bfdbfe',
+        openAvatarBg: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+        openNameText: '#e0f2fe',
+        openSubtitleText: '#bae6fd',
+      };
+    }
+
+    return {
+      rootCardBg: 'linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%)',
+      rootCardText: '#1f2937',
+      rootCardSubtitleText: '#475569',
+      rootCardShadow: 'none',
+      employeeCardBg: '#ffffff',
+      employeeCardBorder: '1px solid rgba(15, 23, 42, 0.08)',
+      employeeCardShadow: 'none',
+      employeeCardHoverShadow: 'none',
+      employeeBadgeBg: '#f5f5f5',
+      employeeBadgeText: '#999999',
+      employeeNameText: '#2c3e50',
+      employeeTitleText: '#7f8c8d',
+      employeeChipBg: '#f1f5f9',
+      employeeChipText: '#334155',
+      metricDirectBg: '#eef2ff',
+      metricDirectText: '#4338ca',
+      metricTotalBg: '#ecfeff',
+      metricTotalText: '#0f766e',
+      departmentCardBg: 'linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%)',
+      departmentCardShadow: 'none',
+      departmentIdBadgeBg: 'rgba(255,255,255,0.8)',
+      departmentIdBadgeText: 'rgba(33,150,243,0.6)',
+      departmentTitleText: '#1565C0',
+      departmentSubtitleText: '#1976D2',
+      departmentTotalPillBg: 'rgba(255,255,255,0.85)',
+      departmentTotalPillText: '#1565C0',
+      openCardBg: 'linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%)',
+      openCardShadow: 'none',
+      openIdBadgeBg: 'rgba(255,255,255,0.8)',
+      openIdBadgeText: 'rgba(33,150,243,0.6)',
+      openAvatarBg: 'linear-gradient(135deg, #2196F3 0%, #1976D2 100%)',
+      openNameText: '#1565C0',
+      openSubtitleText: '#1976D2',
+    };
+  }
+
   getNodeContent(d, i, arr, state) {
-    const color = '#FFFFFF';
+    const palette = this.getOrgChartPalette();
     const imageDiffVert = 25 + 2;
-    const directReports = Number(d.data.direct_report_count ?? 0);
     const totalTeamSize = Number(d.data.total_team_size ?? 0);
-    const departmentLabel = d.data.department || 'Unassigned';
-    const employeeMetricsMarkup = !d.data.orgChartPlaceHolder && d.data.openPosition !== 1
-      ? `
-          <div style="margin-top:6px;display:flex;justify-content:center;gap:6px;flex-wrap:wrap;">
-            <span style="display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;background:#eef2ff;color:#4338ca;font-size:8px;font-weight:700;letter-spacing:0.2px;">
-              ${directReports} direct
-            </span>
-            <span style="display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;background:#ecfeff;color:#0f766e;font-size:8px;font-weight:700;letter-spacing:0.2px;">
-              ${totalTeamSize} total
-            </span>
-          </div>
-        `
-      : '';
     
     // Handle virtual root node
     if (d.data.id === -1) {
       return `
         <div style='width:${d.width}px;height:${d.height}px;padding-top:${imageDiffVert - 2}px;padding-left:1px;padding-right:1px'>
-          <div style="font-family: 'Inter', sans-serif;background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);margin-left:-1px;width:${d.width - 2}px;height:${d.height - imageDiffVert}px;border-radius:12px;border: none;box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);display:flex;align-items:center;justify-content:center;">
-            <div style="color:white;text-align:center;">
+          <div style="font-family: 'Inter', sans-serif;background:${palette.rootCardBg};margin-left:-1px;width:${d.width - 2}px;height:${d.height - imageDiffVert}px;border-radius:12px;border: none;box-shadow:${palette.rootCardShadow};display:flex;align-items:center;justify-content:center;">
+            <div style="color:${palette.rootCardText};text-align:center;">
               <div style="font-size:15px;font-weight:bold;letter-spacing:0.5px;">${d.data.name || d.data.first}</div>
-              <div style="font-size:10px;opacity:0.9;margin-top:2px;">Organization Structure</div>
+              <div style="font-size:10px;color:${palette.rootCardSubtitleText};margin-top:2px;">Organization Structure</div>
             </div>
           </div>
         </div>
@@ -620,16 +861,16 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
     // PROFESSIONAL MODERN CARDS
     if (isDepartment) {
       return `
-        <div style="width:${d.width}px;height:${d.height}px;background:linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);border:none;border-radius:12px;position:relative;text-align:center;padding:20px 10px 30px 10px;box-shadow:0 4px 12px rgba(33, 150, 243, 0.2);transition:all 0.3s ease;display:flex;flex-direction:column;justify-content:center;">
-          <div style="position:absolute;top:5px;right:8px;font-size:8px;color:rgba(33,150,243,0.6);background:rgba(255,255,255,0.8);padding:2px 6px;border-radius:10px;font-weight:600;">#${d.data.id}</div>
-          <div style="font-size:13px;font-weight:700;color:#1565C0;line-height:1.3;padding:0 6px;letter-spacing:0.4px;text-align:center;">
+        <div style="width:${d.width}px;height:${d.height}px;background:${palette.departmentCardBg};border:none;border-radius:12px;position:relative;text-align:center;padding:20px 10px 30px 10px;box-shadow:${palette.departmentCardShadow};transition:all 0.3s ease;display:flex;flex-direction:column;justify-content:center;">
+          <div style="position:absolute;top:5px;right:8px;font-size:8px;color:${palette.departmentIdBadgeText};background:${palette.departmentIdBadgeBg};padding:2px 6px;border-radius:10px;font-weight:600;">#${d.data.id}</div>
+          <div style="font-size:13px;font-weight:700;color:${palette.departmentTitleText};line-height:1.3;padding:0 6px;letter-spacing:0.4px;text-align:center;">
             ${d.data.department || d.data.first}
           </div>
-          <div style="font-size:10px;color:#1976D2;margin-top:6px;line-height:1.1;padding:0 6px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">
+          <div style="font-size:10px;color:${palette.departmentSubtitleText};margin-top:6px;line-height:1.1;padding:0 6px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">
             Department
           </div>
           <div style="margin-top:8px;display:flex;justify-content:center;gap:6px;flex-wrap:wrap;">
-            <span style="display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;background:rgba(255,255,255,0.85);color:#1565C0;font-size:8px;font-weight:700;letter-spacing:0.2px;">
+            <span style="display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;background:${palette.departmentTotalPillBg};color:${palette.departmentTotalPillText};font-size:8px;font-weight:700;letter-spacing:0.2px;">
               ${totalTeamSize} total
             </span>
           </div>
@@ -640,17 +881,17 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
     // Open position card (no photo)
     if (isOpenPosition) {
       return `
-        <div style="width:${d.width}px;height:${d.height}px;background:linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);border:none;border-radius:12px;position:relative;text-align:center;padding:8px 6px 30px 6px;box-shadow:0 4px 12px rgba(33, 150, 243, 0.2);transition:all 0.3s ease;">
-          <div style="position:absolute;top:5px;right:8px;font-size:8px;color:rgba(33,150,243,0.6);background:rgba(255,255,255,0.8);padding:2px 6px;border-radius:10px;font-weight:600;">#${d.data.id}</div>
+        <div style="width:${d.width}px;height:${d.height}px;background:${palette.openCardBg};border:none;border-radius:12px;position:relative;text-align:center;padding:8px 6px 30px 6px;box-shadow:${palette.openCardShadow};transition:all 0.3s ease;">
+          <div style="position:absolute;top:5px;right:8px;font-size:8px;color:${palette.openIdBadgeText};background:${palette.openIdBadgeBg};padding:2px 6px;border-radius:10px;font-weight:600;">#${d.data.id}</div>
           <div style="margin-top:6px;">
-            <div style="width:45px;height:45px;border-radius:50%;border:none;display:block;margin:0 auto;background:linear-gradient(135deg, #2196F3 0%, #1976D2 100%);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(33,150,243,0.4);">
-              <i class="mdi mdi-account-plus" style="font-size:24px;color:#fff;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.2));"></i>
+            <div style="width:45px;height:45px;border-radius:50%;border:none;display:block;margin:0 auto;background:${palette.openAvatarBg};display:flex;align-items:center;justify-content:center;box-shadow:none;">
+              <i class="mdi mdi-account-plus" style="font-size:24px;color:#fff;"></i>
             </div>
           </div>
-          <div style="font-size:11px;font-weight:700;color:#1565C0;margin-top:6px;line-height:1.2;padding:0 4px;letter-spacing:0.2px;">
+          <div style="font-size:11px;font-weight:700;color:${palette.openNameText};margin-top:6px;line-height:1.2;padding:0 4px;letter-spacing:0.2px;">
             ${d.data.first} ${d.data.last}
           </div>
-          <div style="font-size:9px;color:#1976D2;margin-top:3px;line-height:1.1;padding:0 4px;font-weight:600;">
+          <div style="font-size:9px;color:${palette.openSubtitleText};margin-top:3px;line-height:1.1;padding:0 4px;font-weight:600;">
             OPEN POSITION
           </div>
         </div>
@@ -659,27 +900,22 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
     
     // Regular employee card
     return `
-      <div style="width:${d.width}px;height:${d.height}px;background:#ffffff;border:none;border-radius:12px;position:relative;text-align:center;padding:8px 6px 30px 6px;box-shadow:0 4px 12px rgba(0,0,0,0.08);transition:all 0.3s ease;cursor:pointer;" 
-           onmouseover="this.style.boxShadow='0 6px 20px rgba(0,0,0,0.15)';this.style.transform='translateY(-2px)';" 
-           onmouseout="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.08)';this.style.transform='translateY(0)';">
-        <div style="position:absolute;top:5px;right:8px;font-size:8px;color:#999;background:#f5f5f5;padding:2px 6px;border-radius:10px;font-weight:600;">#${d.data.id}</div>
+      <div style="width:${d.width}px;height:${d.height}px;background:${palette.employeeCardBg};border:${palette.employeeCardBorder};border-radius:12px;position:relative;text-align:center;padding:8px 6px 30px 6px;box-shadow:${palette.employeeCardShadow};transition:all 0.3s ease;cursor:pointer;" 
+           onmouseover="this.style.boxShadow='${palette.employeeCardHoverShadow}';this.style.transform='translateY(-2px)';" 
+           onmouseout="this.style.boxShadow='${palette.employeeCardShadow}';this.style.transform='translateY(0)';">
+        <div style="position:absolute;top:5px;right:8px;font-size:8px;color:${palette.employeeBadgeText};background:${palette.employeeBadgeBg};padding:2px 6px;border-radius:10px;font-weight:600;">#${d.data.id}</div>
         <div style="margin-top:6px;">
           <img src="${d.data.imageUrl}" 
-               style="width:45px;height:45px;border-radius:50%;border:3px solid #f0f0f0;display:block;margin:0 auto;object-fit:cover;box-shadow:0 3px 10px rgba(0,0,0,0.15);" 
+               style="width:45px;height:45px;border-radius:50%;border:3px solid #f0f0f0;display:block;margin:0 auto;object-fit:cover;box-shadow:none;" 
                onerror="this.src='assets/images/default-user.png'" />
         </div>
-        <div style="font-size:11px;font-weight:700;color:#2c3e50;margin-top:6px;line-height:1.2;padding:0 4px;letter-spacing:0.2px;">
+        <div style="font-size:11px;font-weight:700;color:${palette.employeeNameText};margin-top:6px;line-height:1.2;padding:0 4px;letter-spacing:0.2px;">
           ${d.data.first} ${d.data.last}
         </div>
-        <div style="font-size:9px;color:#7f8c8d;margin-top:3px;line-height:1.1;padding:0 4px;font-weight:500;">
+        <div style="font-size:9px;color:${palette.employeeTitleText};margin-top:3px;line-height:1.1;padding:0 4px;font-weight:500;">
           ${d.data.title || "Employee"}
         </div>
-        <div style="margin-top:5px;display:flex;justify-content:center;gap:4px;flex-wrap:wrap;">
-          <span style="display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;background:#f1f5f9;color:#334155;font-size:8px;font-weight:700;letter-spacing:0.2px;max-width:100%;">
-            Dept: ${departmentLabel}
-          </span>
-        </div>
-        ${employeeMetricsMarkup}
+
       </div>
     `;
   }
@@ -731,6 +967,153 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       () => { }
     );
+  }
+
+  async openOpenPositionModal(): Promise<void> {
+    if (this.readOnly) {
+      return;
+    }
+
+    const modalRef: any = this.modalService.open(OpenPositionsListModalComponent, {
+      size: 'lg',
+      backdrop: 'static',
+    });
+
+    modalRef.result.then(
+      async (result: OpenPositionsListModalResult | undefined) => {
+        if (!result) {
+          return;
+        }
+
+        if (result.action === 'create') {
+          await this.openOpenPositionModalWithMode('create');
+          return;
+        }
+
+        if (result.action === 'manage' && result.position) {
+          await this.openOpenPositionManageModal(result.position);
+        }
+      },
+      () => {},
+    );
+  }
+
+  private async openOpenPositionManageModal(positionNode: any): Promise<void> {
+    const positionId = this.resolveOpenPositionId(positionNode);
+    if (this.readOnly || positionId == null) {
+      return;
+    }
+
+    await this.openOpenPositionModalWithMode('manage', {
+      ...positionNode,
+      openPositionId: positionId,
+    });
+  }
+
+  private async openOpenPositionModalWithMode(mode: 'create' | 'manage', positionNode?: any): Promise<void> {
+    const fillUsers = mode === 'manage'
+      ? (await this.userService.getList(1))
+          .filter((entry) => Number(entry?.id) > 0)
+          .map((entry) => ({
+            id: Number(entry.id),
+            label: `${entry.first || ''} ${entry.last || ''}`.trim() || `Employee ${entry.id}`,
+          }))
+      : [];
+
+    const modalRef: any = this.modalService.open(OpenPositionModalComponent, {
+      size: 'md',
+      backdrop: 'static',
+    });
+
+    modalRef.componentInstance.mode = mode;
+    modalRef.componentInstance.positionId = this.resolveOpenPositionId(positionNode);
+    modalRef.componentInstance.managerOptions = (this.originalData || [])
+      .filter((entry) => !entry?.orgChartPlaceHolder && !entry?.openPosition)
+      .map((entry) => ({
+        id: Number(entry.id),
+        label: `${entry.first || ''} ${entry.last || ''}`.trim() || `Employee ${entry.id}`,
+      }))
+      .filter((entry) => Number.isFinite(entry.id) && entry.id > 0);
+
+    modalRef.componentInstance.departmentOptions = (this.departments || [])
+      .map((department) => String(department.department_name || '').trim())
+      .filter((name) => !!name);
+
+    modalRef.componentInstance.locationOptions = [...this.quickEditLocationOptions];
+    modalRef.componentInstance.fillUserOptions = fillUsers;
+
+    if (positionNode) {
+      modalRef.componentInstance.initialValue = {
+        title: positionNode.title || positionNode.first || '',
+        managerId: this.normalizeTableParentId(positionNode.parentId ?? positionNode.reports_to_user_id),
+        department: positionNode.department || null,
+        location: [positionNode.city, positionNode.state].filter(Boolean).join(', ') || null,
+      };
+    }
+
+    modalRef.result.then(
+      async (result: OpenPositionModalResult | undefined) => {
+        if (!result) {
+          return;
+        }
+
+        try {
+          const locationParts = this.getLocationParts(result.location || null);
+
+          if (result.action === 'create') {
+            if (!result.title) {
+              this.notificationService.error('Position title is required.', false);
+              return;
+            }
+            await this.userService.createOpenPosition({
+              title: result.title,
+              reportsToUserId: result.managerId,
+              department: result.department,
+              city: locationParts.city,
+              state: locationParts.state,
+            });
+            this.notificationService.success('Open position created successfully.');
+          } else if (result.action === 'fill' && positionNode?.openPositionId) {
+            await this.userService.fillOpenPosition(Number(positionNode.openPositionId), {
+              filledByUserId: result.filledByUserId ?? null,
+            });
+            this.notificationService.success('Open position filled successfully.');
+          } else if (result.action === 'close' && positionNode?.openPositionId) {
+            await this.userService.closeOpenPosition(Number(positionNode.openPositionId));
+            this.notificationService.success('Open position closed successfully.');
+          } else if (positionNode?.openPositionId) {
+            if (!result.title) {
+              this.notificationService.error('Position title is required.', false);
+              return;
+            }
+            await this.userService.updateOpenPosition(Number(positionNode.openPositionId), {
+              title: result.title,
+              reportsToUserId: result.managerId,
+              department: result.department,
+              city: locationParts.city,
+              state: locationParts.state,
+            });
+            this.notificationService.success('Open position updated successfully.');
+          }
+
+          await this.getDataWithStatePreservation();
+        } catch (error) {
+          this.notificationService.error('Failed to save open position.', false);
+        }
+      },
+      () => {},
+    );
+  }
+
+  private resolveOpenPositionId(positionNode: any): number | null {
+    const rawId =
+      positionNode?.openPositionId ??
+      positionNode?.open_position_id ??
+      positionNode?.positionId ??
+      positionNode?.position_id ??
+      positionNode?.id;
+    const parsedId = Number(rawId);
+    return Number.isFinite(parsedId) ? parsedId : null;
   }
 
   orgChart;
@@ -899,6 +1282,11 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     if (d.data.orgChartPlaceHolder) {
+      return;
+    }
+
+    if (d.data.openPosition === 1) {
+      void this.openOpenPositionManageModal(d.data);
       return;
     }
 
@@ -1487,6 +1875,19 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
 
   onTableGridReady(event: GridReadyEvent): void {
     this.tableGridApi = event.api;
+    this.onTableFilterChanged();
+    void this.applyAnalyticsLocationFilterToGrid();
+  }
+
+  onTableFilterChanged(): void {
+    if (!this.tableGridApi) {
+      this.excludeChildrenWhenTreeDataFiltering = false;
+      return;
+    }
+
+    const filterModel: any = this.tableGridApi.getFilterModel() || {};
+    // Keep location filtering strict; allow hierarchy searches to include children.
+    this.excludeChildrenWhenTreeDataFiltering = !!filterModel.location;
   }
 
   private refreshDepartmentGridState(): void {
@@ -1705,6 +2106,47 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
     return parsed.isValid() ? parsed.format('YYYY-MM-DD') : null;
   }
 
+  private getYearsOfService(hireDate: unknown): number | null {
+    const normalizedHireDate = this.normalizeHireDateValue(hireDate);
+    if (!normalizedHireDate) {
+      return null;
+    }
+
+    const parsedDate = moment(normalizedHireDate, 'YYYY-MM-DD', true);
+    if (!parsedDate.isValid()) {
+      return null;
+    }
+
+    const years = moment().diff(parsedDate, 'years', true);
+    return years >= 0 ? years : 0;
+  }
+
+  private getNextAnniversaryInfo(hireDate: unknown): { date: string | null; daysUntil: number | null; isUpcoming: boolean } {
+    const normalizedHireDate = this.normalizeHireDateValue(hireDate);
+    if (!normalizedHireDate) {
+      return { date: null, daysUntil: null, isUpcoming: false };
+    }
+
+    const parsedDate = moment(normalizedHireDate, 'YYYY-MM-DD', true);
+    if (!parsedDate.isValid()) {
+      return { date: null, daysUntil: null, isUpcoming: false };
+    }
+
+    const today = moment().startOf('day');
+    let nextAnniversary = parsedDate.clone().year(today.year()).startOf('day');
+
+    if (nextAnniversary.isBefore(today)) {
+      nextAnniversary = nextAnniversary.add(1, 'year');
+    }
+
+    const daysUntil = nextAnniversary.diff(today, 'days');
+    return {
+      date: nextAnniversary.format('YYYY-MM-DD'),
+      daysUntil,
+      isUpcoming: daysUntil >= 0 && daysUntil <= 30,
+    };
+  }
+
   private buildTableRows(data: any[]): void {
     const allNodes = (data || []).filter((node) => node?.id !== null && node?.id !== undefined);
     const users = allNodes.filter((node) => !node?.orgChartPlaceHolder);
@@ -1851,6 +2293,10 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
       const isPlaceholder = !!node.orgChartPlaceHolder;
       const nodeLabel = getNodeLabel(node);
       const department = this.findDepartmentById(node.department_id) || this.findDepartmentByName(node.department);
+      const yearsOfService = isPlaceholder ? null : this.getYearsOfService(node.hire_date);
+      const anniversaryInfo = isPlaceholder
+        ? { date: null, daysUntil: null, isUpcoming: false }
+        : this.getNextAnniversaryInfo(node.hire_date);
       return {
         id: node.id,
         employee_name: nodeLabel,
@@ -1867,6 +2313,10 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
         manager_id: manager?.id ?? this.rootManagerOptionValue,
         manager_name: manager ? `${manager.first || ''} ${manager.last || ''}`.trim() : '—',
         hire_date: node.hire_date || null,
+        years_of_service_value: yearsOfService,
+        next_anniversary_date: anniversaryInfo.date,
+        next_anniversary_days: anniversaryInfo.daysUntil,
+        next_anniversary_upcoming: anniversaryInfo.isUpcoming,
         hire_date_color: isPlaceholder ? '#1d4ed8' : (node.openPosition ? 'red' : this.checkHireColor(node.hire_date)),
         hire_status: isPlaceholder ? 'Department Node' : this.getHireStatusLabel(node.hire_date, !!node.openPosition),
         openPosition: !!node.openPosition,
@@ -1897,6 +2347,8 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
     this.suppressTableCellValueChanged = true;
     this.tableRowData = tableRows;
     this.updateOrgMetrics(tableRows);
+    this.refreshDecisionCharts(tableRows);
+    void this.applyAnalyticsLocationFilterToGrid();
 
     queueMicrotask(() => {
       this.suppressTableCellValueChanged = false;
@@ -2281,6 +2733,7 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
   // Simplified state management - just track basic state
   private currentZoom = 1;
   private currentPan = { x: 0, y: 0 };
+  private themeObserver: MutationObserver | null = null;
 
   // Methods for leadership insights
   getNewHires(): number {
@@ -2311,6 +2764,294 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
       : 0;
   }
 
+  toggleAnalyticsPanel(): void {
+    this.showAnalyticsPanel = !this.showAnalyticsPanel;
+    if (!this.showAnalyticsPanel) {
+      void this.clearAnalyticsLocationFilterFromGrid();
+      return;
+    }
+
+    this.refreshDecisionCharts(this.tableRowData || []);
+    void this.applyAnalyticsLocationFilterToGrid();
+  }
+
+  onAnalyticsLocationChange(location: string): void {
+    this.selectedAnalyticsLocation = location || this.analyticsAllLocationsValue;
+    this.refreshDecisionCharts(this.tableRowData || []);
+    void this.applyAnalyticsLocationFilterToGrid();
+  }
+
+  onSyncAnalyticsFilterToTableChange(enabled: boolean): void {
+    this.syncAnalyticsFilterToTable = !!enabled;
+    if (this.syncAnalyticsFilterToTable) {
+      void this.applyAnalyticsLocationFilterToGrid();
+      return;
+    }
+
+    void this.clearAnalyticsLocationFilterFromGrid();
+  }
+
+  private async applyAnalyticsLocationFilterToGrid(): Promise<void> {
+    if (!this.tableGridApi || !this.syncAnalyticsFilterToTable || !this.showAnalyticsPanel) {
+      return;
+    }
+
+    const locationFilterModel = this.selectedAnalyticsLocation === this.analyticsAllLocationsValue
+      ? null
+      : {
+          filterType: 'text',
+          type: 'contains',
+          filter: this.selectedAnalyticsLocation,
+        };
+
+    const apiWithColumnFilter = this.tableGridApi as any;
+    if (typeof apiWithColumnFilter.setColumnFilterModel === 'function') {
+      await apiWithColumnFilter.setColumnFilterModel('location', locationFilterModel);
+      this.tableGridApi.onFilterChanged();
+      return;
+    }
+
+    const currentFilterModel: any = { ...(this.tableGridApi.getFilterModel() || {}) };
+    if (this.selectedAnalyticsLocation === this.analyticsAllLocationsValue) {
+      delete currentFilterModel.location;
+    } else {
+      currentFilterModel.location = {
+        filterType: 'text',
+        type: 'contains',
+        filter: this.selectedAnalyticsLocation,
+      };
+    }
+
+    this.tableGridApi.setFilterModel(currentFilterModel);
+    this.tableGridApi.onFilterChanged();
+    this.onTableFilterChanged();
+  }
+
+  private async clearAnalyticsLocationFilterFromGrid(): Promise<void> {
+    if (!this.tableGridApi) {
+      return;
+    }
+
+    const apiWithColumnFilter = this.tableGridApi as any;
+    if (typeof apiWithColumnFilter.setColumnFilterModel === 'function') {
+      await apiWithColumnFilter.setColumnFilterModel('location', null);
+      this.tableGridApi.onFilterChanged();
+      return;
+    }
+
+    const currentFilterModel: any = { ...(this.tableGridApi.getFilterModel() || {}) };
+    if (!currentFilterModel.location) {
+      return;
+    }
+
+    delete currentFilterModel.location;
+    this.tableGridApi.setFilterModel(currentFilterModel);
+    this.tableGridApi.onFilterChanged();
+    this.onTableFilterChanged();
+  }
+
+  private refreshDecisionCharts(rows: any[]): void {
+    const chartTheme = this.getDecisionChartTheme();
+    const employeeRows = (rows || []).filter((row) => !row.is_placeholder);
+    const activeEmployees = employeeRows.filter((row) => Number(row.active ?? 0) === 1);
+
+    const availableLocations = Array.from(
+      new Set(
+        activeEmployees
+          .map((row) => String(row.location || 'Unassigned').trim() || 'Unassigned')
+          .filter((location) => !!location),
+      ),
+    ).sort((left, right) => left.localeCompare(right));
+
+    this.analyticsLocationOptions = availableLocations;
+
+    if (
+      this.selectedAnalyticsLocation !== this.analyticsAllLocationsValue
+      && !availableLocations.includes(this.selectedAnalyticsLocation)
+    ) {
+      this.selectedAnalyticsLocation = this.analyticsAllLocationsValue;
+    }
+
+    const scopedRows = this.selectedAnalyticsLocation === this.analyticsAllLocationsValue
+      ? activeEmployees
+      : activeEmployees.filter(
+          (row) => (String(row.location || 'Unassigned').trim() || 'Unassigned') === this.selectedAnalyticsLocation,
+        );
+
+    const departmentCounts = new Map<string, number>();
+    const openPositionCounts = new Map<string, number>();
+    const locationCounts = new Map<string, number>();
+
+    for (const row of scopedRows) {
+      const department = String(row.department || 'Unassigned').trim() || 'Unassigned';
+      departmentCounts.set(department, (departmentCounts.get(department) || 0) + 1);
+
+      if (row.openPosition) {
+        openPositionCounts.set(department, (openPositionCounts.get(department) || 0) + 1);
+      }
+
+      const location = String(row.location || 'Unassigned').trim() || 'Unassigned';
+      locationCounts.set(location, (locationCounts.get(location) || 0) + 1);
+    }
+
+    const topDepartments = Array.from(departmentCounts.entries())
+      .sort((left, right) => right[1] - left[1])
+      .slice(0, 8);
+    const topOpenDepartments = Array.from(openPositionCounts.entries())
+      .sort((left, right) => right[1] - left[1])
+      .slice(0, 8);
+    const topLocations = Array.from(locationCounts.entries())
+      .sort((left, right) => right[1] - left[1])
+      .slice(0, 6);
+    const managersBySpan = scopedRows
+      .filter((row) => Number(row.direct_report_count ?? 0) > 0)
+      .sort((left, right) => Number(right.direct_report_count ?? 0) - Number(left.direct_report_count ?? 0))
+      .slice(0, 10);
+
+    this.headcountByDepartmentChart = {
+      series: [{ name: 'Headcount', data: topDepartments.map((entry) => entry[1]) }],
+      chart: { type: 'bar', height: 240, toolbar: { show: false }, background: 'transparent', foreColor: chartTheme.foreColor },
+      yaxis: { labels: { style: { colors: chartTheme.axisLabelColors } } },
+      grid: { borderColor: chartTheme.gridColor },
+      plotOptions: { bar: { borderRadius: 4, horizontal: true, barHeight: '58%' } },
+      xaxis: {
+        categories: topDepartments.map((entry) => entry[0]),
+        labels: { trim: true, maxHeight: 80, style: { colors: chartTheme.axisLabelColors } },
+      },
+      dataLabels: { enabled: true },
+      colors: ['#2563eb'],
+      tooltip: { theme: chartTheme.tooltipTheme, y: { formatter: (value: number) => `${value} employees` } },
+    };
+
+    this.openPositionsByDepartmentChart = {
+      series: [{ name: 'Open Positions', data: topOpenDepartments.map((entry) => entry[1]) }],
+      chart: { type: 'bar', height: 240, toolbar: { show: false }, background: 'transparent', foreColor: chartTheme.foreColor },
+      yaxis: { labels: { style: { colors: chartTheme.axisLabelColors } } },
+      grid: { borderColor: chartTheme.gridColor },
+      plotOptions: { bar: { borderRadius: 4, horizontal: false, columnWidth: '50%' } },
+      xaxis: {
+        categories: topOpenDepartments.map((entry) => entry[0]),
+        labels: { rotate: -20, trim: true, style: { colors: chartTheme.axisLabelColors } },
+      },
+      dataLabels: { enabled: true },
+      colors: ['#f59e0b'],
+      tooltip: { theme: chartTheme.tooltipTheme, y: { formatter: (value: number) => `${value} open` } },
+    };
+
+    this.spanOfControlChart = {
+      series: [{ name: 'Direct Reports', data: managersBySpan.map((row) => Number(row.direct_report_count ?? 0)) }],
+      chart: { type: 'bar', height: 240, toolbar: { show: false }, background: 'transparent', foreColor: chartTheme.foreColor },
+      yaxis: { labels: { style: { colors: chartTheme.axisLabelColors } } },
+      grid: { borderColor: chartTheme.gridColor },
+      plotOptions: { bar: { borderRadius: 4, horizontal: true, barHeight: '58%' } },
+      xaxis: {
+        categories: managersBySpan.map((row) => String(row.employee_name || `Manager ${row.id}`)),
+        labels: { trim: true, maxHeight: 100, style: { colors: chartTheme.axisLabelColors } },
+      },
+      dataLabels: { enabled: true },
+      colors: ['#10b981'],
+      tooltip: { theme: chartTheme.tooltipTheme, y: { formatter: (value: number) => `${value} direct reports` } },
+    };
+
+    this.locationDistributionChart = {
+      series: topLocations.map((entry) => entry[1]),
+      chart: { type: 'donut', height: 240, toolbar: { show: false }, background: 'transparent', foreColor: chartTheme.foreColor },
+      labels: topLocations.map((entry) => entry[0]),
+      dataLabels: {
+        enabled: true,
+        style: { colors: ['#ffffff'], fontWeight: '700' },
+        dropShadow: {
+          enabled: chartTheme.labelDropShadowEnabled,
+          top: 1,
+          left: 1,
+          blur: chartTheme.labelDropShadowBlur,
+          color: chartTheme.labelDropShadowColor,
+          opacity: chartTheme.labelDropShadowOpacity,
+        },
+      },
+      legend: { position: 'bottom', labels: { colors: chartTheme.axisLabelColors } },
+      stroke: { width: 1 },
+      colors: ['#1d4ed8', '#06b6d4', '#22c55e', '#f97316', '#8b5cf6', '#ef4444'],
+      responsive: [{ breakpoint: 1200, options: { legend: { position: 'bottom' } } }],
+      tooltip: { theme: chartTheme.tooltipTheme, y: { formatter: (value: number) => `${value} employees` } },
+    };
+  }
+
+  private isDarkThemeEnabled(): boolean {
+    const rootTheme = String(document.documentElement?.getAttribute('data-bs-theme') || '').toLowerCase();
+    const bodyTheme = String(document.body?.getAttribute('data-bs-theme') || '').toLowerCase();
+    if (rootTheme === 'dark' || bodyTheme === 'dark') {
+      return true;
+    }
+
+    if (rootTheme === 'light' || bodyTheme === 'light') {
+      return false;
+    }
+
+    return window.matchMedia?.('(prefers-color-scheme: dark)')?.matches ?? false;
+  }
+
+  private getDecisionChartTheme(): {
+    foreColor: string;
+    axisLabelColors: string;
+    gridColor: string;
+    tooltipTheme: 'dark' | 'light';
+    labelDropShadowEnabled: boolean;
+    labelDropShadowBlur: number;
+    labelDropShadowColor: string;
+    labelDropShadowOpacity: number;
+  } {
+    if (this.isDarkThemeEnabled()) {
+      return {
+        foreColor: '#dbe7ff',
+        axisLabelColors: '#dbe7ff',
+        gridColor: 'rgba(148, 163, 184, 0.28)',
+        tooltipTheme: 'dark',
+        labelDropShadowEnabled: true,
+        labelDropShadowBlur: 2,
+        labelDropShadowColor: '#000000',
+        labelDropShadowOpacity: 0.28,
+      };
+    }
+
+    return {
+      foreColor: '#334155',
+      axisLabelColors: '#475569',
+      gridColor: 'rgba(100, 116, 139, 0.24)',
+      tooltipTheme: 'light',
+      labelDropShadowEnabled: false,
+      labelDropShadowBlur: 0,
+      labelDropShadowColor: '#000000',
+      labelDropShadowOpacity: 0,
+    };
+  }
+
+  private setupThemeObserver(): void {
+    this.themeObserver?.disconnect();
+
+    const refreshChartsForTheme = () => {
+      if (this.showAnalyticsPanel) {
+        this.refreshDecisionCharts(this.tableRowData || []);
+      }
+    };
+
+    this.themeObserver = new MutationObserver(() => {
+      refreshChartsForTheme();
+    });
+
+    this.themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-bs-theme', 'class'],
+    });
+
+    if (document.body) {
+      this.themeObserver.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['data-bs-theme', 'class'],
+      });
+    }
+  }
+
   getEstablishedEmployees(): number {
     if (!this.originalData) return 0;
     return this.originalData.filter(emp => {
@@ -2325,6 +3066,73 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!this.originalData) return 0;
     return this.originalData.filter(emp => !emp.hire_date).length;
   }
+
+  private ensureSingleChartRoot(nodes: any[]): any[] {
+    const working = (nodes || []).map((node) => ({ ...node }));
+    if (working.length <= 1) {
+      return working;
+    }
+
+    const nodeIds = new Set<number>(working.map((node) => Number(node.id)).filter((id) => Number.isFinite(id)));
+
+    for (const node of working) {
+      const parentId = node?.parentId;
+      if (parentId === undefined || parentId === '' || parentId === 0) {
+        node.parentId = null;
+        continue;
+      }
+
+      const normalizedParentId = Number(parentId);
+      if (!Number.isFinite(normalizedParentId) || !nodeIds.has(normalizedParentId)) {
+        node.parentId = null;
+      } else {
+        node.parentId = normalizedParentId;
+      }
+    }
+
+    const roots = working.filter((node) => node.parentId === null || node.parentId === undefined);
+    if (roots.length <= 1) {
+      return working;
+    }
+
+    let syntheticRootId = -1;
+    while (nodeIds.has(syntheticRootId)) {
+      syntheticRootId -= 1;
+    }
+
+    for (const root of roots) {
+      root.parentId = syntheticRootId;
+    }
+
+    const syntheticRoot = {
+      id: syntheticRootId,
+      first: 'Organization',
+      last: '',
+      name: 'Organization',
+      title: 'Root',
+      parentId: null,
+      image: 'assets/images/organization-icon.png',
+      imageUrl: 'assets/images/organization-icon.png',
+      active: 1,
+      access: null,
+      employeeType1: '',
+      city: '',
+      state: '',
+      area: '',
+      department: '',
+      hire_date: null,
+      orgChartPlaceHolder: true,
+      showImage: false,
+      openPosition: false,
+      hire_date_color: '#6c757d',
+      org_chart_expand: 1,
+      _readOnly: this.readOnly,
+      _component: this,
+    };
+
+    return [syntheticRoot, ...working];
+  }
+
   async getData(id?) {
     try {
       // Use original user-based org chart (simple and working)
@@ -2402,6 +3210,8 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
         console.warn(`Fixed ${invalidNodes.length} invalid parent references:`, invalidNodes.map(n => `${n.id}->${n.parentId}`));
       }
 
+      e = this.ensureSingleChartRoot(e);
+
       if (!id) {
         this.chart
           .container(this.chartContainer?.nativeElement)
@@ -2473,11 +3283,11 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
               )
               .attr(
                 "stroke-width",
-                d.data._highlighted || d.data._upToTheRootHighlighted ? 20 : 2
+                d.data._highlighted || d.data._upToTheRootHighlighted ? 3 : 1
               );
             
-            // Setup drag and drop only if not read-only and not a virtual node
-            if (!d.data._readOnly && d.data.id !== -1 && d.data.id !== -2) {
+            // Setup drag and drop only if explicitly enabled, not read-only, and not a virtual node.
+            if (this.enableOrgChartNodeDragDrop && !d.data._readOnly && d.data.id !== -1 && d.data.id !== -2) {
               let draggedNode = null;
               
               const dragHandler = d3.drag()
@@ -2628,6 +3438,7 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
   ngOnInit() {
     this.getData();
     this.loadDepartments();
+    this.setupThemeObserver();
   }
 
   fixDataStructure(data: any[]): any[] {
@@ -3002,6 +3813,10 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private addDragAndDropListeners() {
+    if (!this.enableOrgChartNodeDragDrop) {
+      return;
+    }
+
     const container = this.chart.container();
     if (!container) return;
 
@@ -3241,6 +4056,10 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
    * @param newParentId - ID of the node it's being dropped on
    */
   async handleNodeDrop(nodeId: number, newParentId: number) {
+    if (!this.enableOrgChartNodeDragDrop) {
+      return;
+    }
+
     // Safety check - ensure data is loaded
     if (!this.originalData || !Array.isArray(this.originalData) || this.originalData.length === 0) {
       console.warn('Chart data not yet loaded, cannot process drag and drop');
@@ -3357,5 +4176,7 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy() {
     // Component cleanup
+    this.themeObserver?.disconnect();
+    this.themeObserver = null;
   }
 }

@@ -30,9 +30,9 @@
             <i class="mdi mdi-domain text-primary me-1"></i>
             {{orgMetrics.departmentCount}} departments
           </span>
-          <span class="org-metric-pill">
+          <span class="org-metric-pill" title="Open positions">
             <i class="mdi mdi-account-plus text-warning me-1"></i>
-            {{orgMetrics.openPositions}} open
+            {{orgMetrics.openPositions}} open positions
           </span>
           <span class="org-metric-pill">
             <i class="mdi mdi-axis-arrow text-secondary me-1"></i>
@@ -48,29 +48,10 @@
 
       <div class="card border-0">
         <div class="card-header">
+
           <div class="d-flex align-items-stretch justify-content-between flex-wrap gap-3">
             <div class="d-flex align-items-stretch gap-3 flex-grow-1">
-              <div *ngIf="showSearch" class="form-icon d-flex align-items-center" style="min-width: 300px; max-width: 400px;">
-                <app-user-search-v1 (notifyParent)="notifyParent($event)" [value]="query" [showLabel]="false"
-                    [appendToBody]="'body'" [ngClass]="'mb-0 w-100'" [placeholder]="'Search employees...'"
-                    [editableSearchTerm]="false"></app-user-search-v1>
-              </div>
-              
               <div class="d-flex align-items-center gap-2" *ngIf="!readOnly">
-                <button class="btn btn-outline-secondary d-flex align-items-center" (click)="getData()" title="Refresh chart">
-                  <i class="mdi mdi-refresh me-1"></i>Refresh
-                </button>
-                
-                <button class="btn btn-outline-primary d-flex align-items-center" (click)="toggleLayout()" 
-                        [title]="isHorizontalLayout ? 'Switch to Vertical Layout' : 'Switch to Horizontal Layout'">
-                  <i class="mdi me-1" [ngClass]="layoutIcon"></i>
-                  {{isHorizontalLayout ? 'Vertical' : 'Horizontal'}}
-                </button>
-
-                <button class="btn btn-outline-info d-flex align-items-center" (click)="openShareModal()" title="Share org chart externally">
-                  <i class="mdi mdi-share-variant me-1"></i>Share
-                </button>
-
                 <div class="btn-group" role="group" aria-label="Org chart view mode">
                   <button
                     type="button"
@@ -86,6 +67,36 @@
                     (click)="setViewMode('chart')">
                     <i class="mdi mdi-sitemap-outline me-1"></i>Chart
                   </button>
+                </div>
+
+                <div class="dropdown" ngbDropdown container="body">
+                  <button
+                    class="btn btn-outline-secondary d-flex align-items-center"
+                    type="button"
+                    id="actionsDropdown"
+                    ngbDropdownToggle>
+                    <i class="mdi mdi-dots-vertical me-1"></i>Actions
+                  </button>
+                  <div class="dropdown-menu" ngbDropdownMenu aria-labelledby="actionsDropdown">
+                    <button class="dropdown-item" type="button" (click)="getData()">
+                      <i class="mdi mdi-refresh me-2"></i>Refresh
+                    </button>
+                    <button *ngIf="viewMode === 'chart'" class="dropdown-item" type="button" (click)="toggleLayout()">
+                      <i class="mdi me-2" [ngClass]="layoutIcon"></i>
+                      {{isHorizontalLayout ? 'Switch to Vertical Layout' : 'Switch to Horizontal Layout'}}
+                    </button>
+                    <button *ngIf="viewMode === 'chart'" class="dropdown-item" type="button" (click)="openShareModal()">
+                      <i class="mdi mdi-share-variant me-2"></i>Share Org Chart
+                    </button>
+                    <button class="dropdown-item" type="button" (click)="openOpenPositionModal()">
+                      <i class="mdi mdi-account-plus me-2"></i>Open Positions
+                    </button>
+                    <div *ngIf="viewMode === 'table'" class="dropdown-divider"></div>
+                    <button *ngIf="viewMode === 'table'" class="dropdown-item" type="button" (click)="toggleAnalyticsPanel()">
+                      <i class="mdi mdi-chart-areaspline me-2"></i>
+                      {{ showAnalyticsPanel ? 'Hide Analytics' : 'Show Analytics' }}
+                    </button>
+                  </div>
                 </div>
 
                 <!-- <div class="btn-group" role="group" aria-label="Grid hierarchy mode" *ngIf="viewMode === 'table'">
@@ -153,33 +164,149 @@
                   </div>
                 </div>
 
+                <div *ngIf="showSearch && viewMode === 'chart'" class="form-icon d-flex align-items-center ms-auto" style="width:min(420px,100%);flex:0 1 420px;">
+                  <app-user-search-v1 (notifyParent)="notifyParent($event)" [value]="query" [showLabel]="false"
+                    [ngClass]="'mb-0 w-100'" [placeholder]="'Search employees...'"
+                    [editableSearchTerm]="false"></app-user-search-v1>
+                </div>
+
               </div>
             </div>
             
           </div>
         </div>
         
-        <div class="card-body border-0 p-0 position-relative" style="height: calc(100vh - 223px);">
-          <div *ngIf="viewMode === 'table'" class="h-100 w-100">
-            <ag-grid-angular
-              class="ag-theme-quartz h-100 w-100 border-0"
-              [columnDefs]="tableColumnDefs"
-              [rowData]="tableRowData"
-              [rowHeight]="tableRowHeight"
-              [defaultColDef]="tableDefaultColDef"
-              [treeData]="tableTreeData"
-              [getDataPath]="getTableDataPath"
-              [getRowId]="getTableRowId"
-              [autoGroupColumnDef]="tableAutoGroupColumnDef"
-              [groupDisplayType]="tableGroupDisplayType"
-              [groupDefaultExpanded]="tableGroupDefaultExpanded"
-              [suppressMoveWhenRowDragging]="true"
-              [animateRows]="true"
-              (gridReady)="onTableGridReady($event)"
-              (cellValueChanged)="onTableCellValueChanged($event)"
-              (rowDragEnd)="onTableRowDragEnd($event)"
-              [pagination]="false">
-            </ag-grid-angular>
+           <div class="card-body border-0 p-0 position-relative"
+             style="height: calc(100vh - 223px);"
+             [ngClass]="viewMode === 'table' && showAnalyticsPanel ? 'org-table-scroll-shell' : ''">
+          <div *ngIf="viewMode === 'table'" class="d-flex flex-column h-100 w-100">
+            <div *ngIf="showAnalyticsPanel" class="org-analytics-panel">
+              <div class="d-flex align-items-center justify-content-end mb-2">
+                <div class="d-flex align-items-center gap-3 flex-wrap justify-content-end">
+                  <div class="form-check form-switch mb-0">
+                    <input
+                      id="analyticsSyncTable"
+                      class="form-check-input"
+                      type="checkbox"
+                      [ngModel]="syncAnalyticsFilterToTable"
+                      (ngModelChange)="onSyncAnalyticsFilterToTableChange($event)">
+                    <label class="form-check-label small text-muted fw-semibold" for="analyticsSyncTable">
+                      Sync to table
+                    </label>
+                  </div>
+
+                  <div class="d-flex align-items-center gap-2">
+                  <label class="small text-muted fw-semibold mb-0" for="analyticsLocationFilter">Location</label>
+                  <select
+                    id="analyticsLocationFilter"
+                    class="form-select form-select-sm"
+                    style="min-width: 220px;"
+                    [ngModel]="selectedAnalyticsLocation"
+                    (ngModelChange)="onAnalyticsLocationChange($event)">
+                    <option [ngValue]="analyticsAllLocationsValue">All Locations</option>
+                    <option *ngFor="let location of analyticsLocationOptions" [ngValue]="location">
+                      {{ location }}
+                    </option>
+                  </select>
+                  </div>
+                </div>
+              </div>
+
+              <div class="row g-2">
+                <div class="col-12 col-xl-6">
+                  <div class="org-analytics-card">
+                    <p class="org-analytics-title">Headcount by Department (Active)</p>
+                    <div class="org-analytics-chart">
+                      <apx-chart
+                        [series]="headcountByDepartmentChart.series"
+                        [chart]="headcountByDepartmentChart.chart"
+                        [plotOptions]="headcountByDepartmentChart.plotOptions"
+                        [xaxis]="headcountByDepartmentChart.xaxis"
+                        [dataLabels]="headcountByDepartmentChart.dataLabels"
+                        [tooltip]="headcountByDepartmentChart.tooltip"
+                        [colors]="headcountByDepartmentChart.colors">
+                      </apx-chart>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-12 col-xl-6">
+                  <div class="org-analytics-card">
+                    <p class="org-analytics-title">Open Positions by Department</p>
+                    <div class="org-analytics-chart">
+                      <apx-chart
+                        [series]="openPositionsByDepartmentChart.series"
+                        [chart]="openPositionsByDepartmentChart.chart"
+                        [plotOptions]="openPositionsByDepartmentChart.plotOptions"
+                        [xaxis]="openPositionsByDepartmentChart.xaxis"
+                        [dataLabels]="openPositionsByDepartmentChart.dataLabels"
+                        [tooltip]="openPositionsByDepartmentChart.tooltip"
+                        [colors]="openPositionsByDepartmentChart.colors">
+                      </apx-chart>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-12 col-xl-6">
+                  <div class="org-analytics-card">
+                    <p class="org-analytics-title">Span of Control (Top Managers)</p>
+                    <div class="org-analytics-chart">
+                      <apx-chart
+                        [series]="spanOfControlChart.series"
+                        [chart]="spanOfControlChart.chart"
+                        [plotOptions]="spanOfControlChart.plotOptions"
+                        [xaxis]="spanOfControlChart.xaxis"
+                        [dataLabels]="spanOfControlChart.dataLabels"
+                        [tooltip]="spanOfControlChart.tooltip"
+                        [colors]="spanOfControlChart.colors">
+                      </apx-chart>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-12 col-xl-6">
+                  <div class="org-analytics-card">
+                    <p class="org-analytics-title">Location Distribution (Active)</p>
+                    <div class="org-analytics-chart">
+                      <apx-chart
+                        [series]="locationDistributionChart.series"
+                        [chart]="locationDistributionChart.chart"
+                        [labels]="locationDistributionChart.labels"
+                        [legend]="locationDistributionChart.legend"
+                        [responsive]="locationDistributionChart.responsive"
+                        [stroke]="locationDistributionChart.stroke"
+                        [dataLabels]="locationDistributionChart.dataLabels"
+                        [tooltip]="locationDistributionChart.tooltip"
+                        [colors]="locationDistributionChart.colors">
+                      </apx-chart>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex-grow-1" [ngStyle]="showAnalyticsPanel ? {'min-height': '38rem'} : {'min-height': '0'}">
+              <ag-grid-angular
+                class="ag-theme-quartz w-100 border-0"
+                [ngClass]="showAnalyticsPanel ? '' : 'h-100'"
+                [style.height]="showAnalyticsPanel ? '38rem' : null"
+                [columnDefs]="tableColumnDefs"
+                [rowData]="tableRowData"
+                [rowHeight]="tableRowHeight"
+                [defaultColDef]="tableDefaultColDef"
+                [treeData]="tableTreeData"
+                [getDataPath]="getTableDataPath"
+                [getRowId]="getTableRowId"
+                [autoGroupColumnDef]="tableAutoGroupColumnDef"
+                [groupDisplayType]="tableGroupDisplayType"
+                [groupDefaultExpanded]="tableGroupDefaultExpanded"
+                [excludeChildrenWhenTreeDataFiltering]="excludeChildrenWhenTreeDataFiltering"
+                [suppressMoveWhenRowDragging]="true"
+                [animateRows]="true"
+                (gridReady)="onTableGridReady($event)"
+                (filterChanged)="onTableFilterChanged()"
+                (cellValueChanged)="onTableCellValueChanged($event)"
+                (rowDragEnd)="onTableRowDragEnd($event)"
+                [pagination]="false">
+              </ag-grid-angular>
+            </div>
           </div>
 
           <div #chartContainer id="chartContainer" [style.display]="viewMode === 'chart' ? 'block' : 'none'"></div>
@@ -269,7 +396,7 @@
       <div class="action-buttons" style="position: absolute;bottom: 40px;right: 35px;" *ngIf="viewMode === 'chart'">
         <div class="card shadow border-0">
           <div class="card-body p-3">
-            <div class="btn-group-verticalw-50">
+            <div class="btn-group-vertical w-100" role="group" aria-label="Chart quick actions">
               <div class="mb-2" *ngIf="currentView">
                 <div class="alert alert-info py-2 px-3 mb-2 border-0">
                   <div class="d-flex align-items-center justify-content-between">
@@ -286,34 +413,34 @@
 
               <div *ngIf="currentView" class="mb-2">
                 <button (click)="chart?.setExpanded && chart.setExpanded(currentView).render()"
-                    class="btn btn-info mb-1w-50"
+                  class="btn btn-info mb-1 w-100"
                     [disabled]="!chart?.setExpanded">
                     <i class="mdi mdi-plus me-1"></i>Set Expand
                 </button>
                 <button (click)="chart?.setExpanded && chart.setExpanded(currentView, false).render()"
-                    class="btn btn-info mb-1w-50"
+                  class="btn btn-info mb-1 w-100"
                     [disabled]="!chart?.setExpanded">
                     <i class="mdi mdi-minus me-1"></i>Collapse
                 </button>
                 <button (click)="chart?.setUpToTheRootHighlighted && chart.setUpToTheRootHighlighted(currentView).render().fit()"
-                    class="btn btn-info mb-2w-50"
+                  class="btn btn-info mb-2 w-100"
                     [disabled]="!chart?.setUpToTheRootHighlighted">
                     <i class="mdi mdi-sitemap me-1"></i>Mark Root
                 </button>
               </div>
 
               <button (click)="chart?.expandAll && chart.expandAll()" 
-                      class="btn btn-primary mb-2w-50"
+                    class="btn btn-primary mb-2 w-100"
                       [disabled]="!chart?.expandAll">
                   <i class="mdi mdi-unfold-more-horizontal me-1"></i>Expand All
               </button>
               <button (click)="chart?.collapseAll && chart.collapseAll()" 
-                      class="btn btn-primary mb-2w-50"
+                    class="btn btn-primary mb-2 w-100"
                       [disabled]="!chart?.collapseAll">
                   <i class="mdi mdi-unfold-less-horizontal me-1"></i>Collapse All
               </button>
               <button (click)="chart?.fit && chart.fit()" 
-                      class="btn btn-primary mb-2w-50"
+                    class="btn btn-primary mb-2 w-100"
                       [disabled]="!chart?.fit">
                   <i class="mdi mdi-fit-to-screen me-1"></i>Fit
               </button>

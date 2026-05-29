@@ -9,6 +9,7 @@ import {
   AccessControlRole,
   AccessControlUserGrant,
 } from "@app/core/api/access-control/access-control.service";
+import { DepartmentService } from "@app/pages/operations/org-chart/services/department.service";
 
 @Component({
   standalone: true,
@@ -47,6 +48,7 @@ export class OrgChartUserModalComponent {
   userGrants: AccessControlUserGrant[] = [];
   selectedRoleIds: number[] = [];
   selectedScopes: string[] = [];
+  departments: string[] = [];
 
   get displayImage(): string | null {
     return this.imagePreview || this.form.value.image || null;
@@ -66,6 +68,7 @@ export class OrgChartUserModalComponent {
   constructor(
     private readonly api: NewUserService,
     private readonly accessControlApi: AccessControlApiService,
+    private readonly departmentService: DepartmentService,
     private readonly activeModal: NgbActiveModal,
     private readonly fb: FormBuilder,
     private readonly cdRef: ChangeDetectorRef,
@@ -93,12 +96,28 @@ export class OrgChartUserModalComponent {
   }
 
   ngOnInit(): void {
+    this.loadDepartments();
+
     if (this.id !== null && this.id !== undefined) {
       void this.loadData();
       if (this.isEditMode) {
         void this.loadRbacData();
       }
     }
+  }
+
+  private loadDepartments(): void {
+    this.departmentService.getDepartments().subscribe({
+      next: (response) => {
+        const names: string[] = (response?.data || [])
+          .map((department) => String(department.department_name || "").trim())
+          .filter(Boolean);
+        this.departments = Array.from(new Set<string>(names)).sort((a, b) => a.localeCompare(b));
+      },
+      error: () => {
+        this.departments = [];
+      },
+    });
   }
 
   get isEditMode(): boolean {

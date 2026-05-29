@@ -20,11 +20,18 @@ export class UserModalService {
 
   constructor(public modalService: NgbModal) { }
 
-  open(id: string) {
+  open(id: string | number | null | undefined, options?: { title?: string; presetData?: Record<string, unknown> }) {
+    const normalizedId =
+      id === null || id === undefined || String(id).trim() === "" || String(id).toLowerCase() === "undefined" || String(id).toLowerCase() === "null"
+        ? null
+        : id;
+
     this.modalRef = this.modalService.open(UserModalComponent, {
       size: "lg",
     });
-    this.modalRef.componentInstance.id = id;
+    this.modalRef.componentInstance.id = normalizedId;
+    this.modalRef.componentInstance.modalTitle = options?.title ?? (normalizedId ? "User Info" : "Create User");
+    this.modalRef.componentInstance.presetData = options?.presetData ?? null;
     return this.modalRef;
   }
 }
@@ -57,12 +64,43 @@ export class UserModalComponent {
 
 
   @Input() public id;
+  @Input() public modalTitle = "User Info";
+  @Input() public presetData: Record<string, unknown> | null = null;
   @Output() imageUpdated = new EventEmitter<{userId: string, imageUrl: string}>();
 
   data: any;
   isLoading: any;
+  private pendingPresetData: Record<string, unknown> | null = null;
 
   form: FormGroup;
+
+  private normalizeUserId(rawId: unknown): number | null {
+    if (rawId === null || rawId === undefined) {
+      return null;
+    }
+
+    const value = String(rawId).trim();
+    if (!value || value.toLowerCase() === "undefined" || value.toLowerCase() === "null") {
+      return null;
+    }
+
+    const parsed = Number(value);
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+  }
+
+  private extractCreatedId(payload: any): number | null {
+    const candidate =
+      payload?.insertId ??
+      payload?.id ??
+      payload?.data?.insertId ??
+      payload?.data?.id;
+
+    return this.normalizeUserId(candidate);
+  }
+
+  isEditMode(): boolean {
+    return this.normalizeUserId(this.id) !== null;
+  }
 
   removeImage() {
     this.data.image = null;
@@ -95,9 +133,14 @@ export class UserModalComponent {
   }
 
   getData = async () => {
+    const userId = this.normalizeUserId(this.id);
+    if (!userId) {
+      return;
+    }
+
     try {
       this.isLoading = true;
-      this.data = await this.api.getById(this.id);
+      this.data = await this.api.getById(userId);
 
       if (!this.data) {
         this.form.disable();
@@ -127,7 +170,25 @@ export class UserModalComponent {
     }
   };
   ngOnInit() {
-    if (this.id) this.getData();
+    const userId = this.normalizeUserId(this.id);
+    if (userId) {
+      this.id = userId;
+      this.getData();
+      return;
+    }
+
+    this.id = null;
+
+    this.pendingPresetData = this.presetData;
+  }
+
+  onFormReady(form: FormGroup): void {
+    this.form = form;
+
+    if (!this.id && this.pendingPresetData) {
+      this.form.patchValue(this.pendingPresetData);
+      this.pendingPresetData = null;
+    }
   }
 
   dismiss() {
@@ -163,19 +224,25 @@ export class UserModalComponent {
 
   async onUploadAttachments() {
     console.log('Modal onUploadAttachments called');
+    const userId = this.normalizeUserId(this.id);
+    if (!userId) {
+      alert("Save the user first, then upload a profile image.");
+      return;
+    }
+
     if (this.myFiles) {
       this.isLoading = true;
       const formData = new FormData();
       formData.append("file", this.myFiles[0]);
       try {
-        let image: any = await this.api.uploadfile(this.id, formData);
+        let image: any = await this.api.uploadfile(userId, formData);
         console.log('Image uploaded successfully:', image);
         this.form.patchValue({ image: image.url });
         
         // Emit the imageUpdated event for org chart
         console.log('Emitting imageUpdated event from modal upload');
         this.imageUpdated.emit({
-          userId: this.id.toString(),
+          userId: userId.toString(),
           imageUrl: image.url
         });
         
@@ -189,29 +256,26 @@ export class UserModalComponent {
 
   async onSubmit() {
     this.submitted = true;
+    const userId = this.normalizeUserId(this.id);
 
-    if (
-      this.form.invalid &&
-      this.form.value.isEmployee == 1 &&
-      this.form.value.active == 1 &&
-      this.form.value.orgChartPlaceHolder == 1
-    ) {
+    if (this.form.invalid) {
       this.submitted = false;
       getFormValidationErrors();
       return;
     }
 
     if (
-      this.form.value.access == 0 ||
-      this.form.value.active == 0) {
-      let test: any = await this.hasSubordinates(this.id)
+      userId &&
+      (this.form.value.access == 0 ||
+      this.form.value.active == 0)) {
+      let test: any = await this.hasSubordinates(userId)
       if (test && test.length > 0) {
         alert(`Unable able to deactivate user because this user has a total of ${test.length} subordinate(s).`)
         return
       }
     }
 
-    if (this.id) {
+    if (userId) {
       this.update();
     } else {
       this.create();
@@ -219,9 +283,15 @@ export class UserModalComponent {
   }
 
   async update() {
+    const userId = this.normalizeUserId(this.id);
+    if (!userId) {
+      await this.create();
+      return;
+    }
+
     try {
       this.isLoading = true;
-      await this.api.update(this.id, {
+      await this.api.update(userId, {
         ...this.form.value,
         workArea: this.form.value.workArea?.toString(),
         access: this.form.value.access ? 1 : 100,
@@ -230,7 +300,7 @@ export class UserModalComponent {
         await this.onUploadAttachments();
       }
       this.isLoading = false;
-      this.close({ ...this.form.value, id: this.id });
+      this.close({ ...this.form.value, id: userId });
     } catch (err) {
       this.isLoading = false;
     }
@@ -246,14 +316,18 @@ export class UserModalComponent {
       });
 
       let data: any = await this.api.create(this.form.value);
-      this.id = data.insertId;
+      const createdId = this.extractCreatedId(data);
+      if (!createdId) {
+        throw new Error("User was created but no numeric ID was returned by the API response.");
+      }
+      this.id = createdId;
 
       if (this.myFiles) {
         await this.onUploadAttachments();
-        await this.api.update(data.insertId, this.form.value);
+        await this.api.update(createdId, this.form.value);
       }
       this.isLoading = false;
-      this.close({ ...this.form.value, id: data.insertId });
+      this.close({ ...this.form.value, id: createdId });
     } catch (err) {
       this.isLoading = false;
     }

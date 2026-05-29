@@ -1,44 +1,40 @@
-<form [formGroup]="form" class="settings-form" autocomplete="off">
-
+﻿<form [formGroup]="form" class="settings-form" autocomplete="off">
   <div class="body">
-
-    <!-- Personal Information Section -->
     <div class="mb-4 pb-4 border-bottom">
       <div class="mb-3">
         <h3 class="h5 mb-1">Personal Information</h3>
-        <p class="text-muted mb-0">
-          Basic personal details and contact information for the user account.
-        </p>
+        <p class="text-muted mb-0">Basic personal details and contact information for the user account.</p>
       </div>
 
-      <div class="row">
-        <div class="col-md-6 mb-3">
-          <label class="form-label required">First Name</label>
-          <input type="text" class="form-control" name="first" formControlName="first" placeholder="Enter first name"
-            [ngClass]="{ 'is-invalid': submitted && f.first.errors }" />
-        </div>
-        <div class="col-md-6 mb-3">
-          <label class="form-label required">Last Name</label>
-          <input type="text" class="form-control" name="last" formControlName="last" placeholder="Enter last name"
-            [ngClass]="{ 'is-invalid': submitted && f.last.errors }" />
+      <div class="row align-items-start mb-3">
+        <label class="col-md-3 col-form-label required">First Name</label>
+        <div class="col-md-9">
+          <input type="text" class="form-control" name="first" formControlName="first" placeholder="Enter first name" [ngClass]="{ 'is-invalid': submitted && f.first.errors }" />
         </div>
       </div>
 
-      <div class="row">
-        <div class="col-md-6 mb-3">
-          <label class="form-label required">Email</label>
-          <input type="email" class="form-control" name="email" formControlName="email" placeholder="name@company.com"
-            [ngClass]="{ 'is-invalid': submitted && f.email.errors }" />
+      <div class="row align-items-start mb-3">
+        <label class="col-md-3 col-form-label required">Last Name</label>
+        <div class="col-md-9">
+          <input type="text" class="form-control" name="last" formControlName="last" placeholder="Enter last name" [ngClass]="{ 'is-invalid': submitted && f.last.errors }" />
+        </div>
+      </div>
+
+      <div class="row align-items-start mb-3">
+        <label class="col-md-3 col-form-label required">Email</label>
+        <div class="col-md-9">
+          <input type="email" class="form-control" name="email" formControlName="email" placeholder="name@company.com" [ngClass]="{ 'is-invalid': submitted && f.email.errors }" />
           <div class="form-text">
             <i class="mdi mdi-information-outline me-1"></i>
             Primary email address for account notifications and system communications.
           </div>
         </div>
+      </div>
 
-        <div class="col-md-6 mb-3">
-          <label class="form-label required">Title</label>
-          <input type="text" class="form-control" name="title" formControlName="title" placeholder="Enter title"
-            [ngClass]="{ 'is-invalid': submitted && f.title.errors }" />
+      <div class="row align-items-start mb-3">
+        <label class="col-md-3 col-form-label required">Title</label>
+        <div class="col-md-9">
+          <input type="text" class="form-control" name="title" formControlName="title" placeholder="Enter title" [ngClass]="{ 'is-invalid': submitted && f.title.errors }" />
           <div class="form-text">
             <i class="mdi mdi-information-outline me-1"></i>
             Job title for display in org chart and system records.
@@ -47,51 +43,38 @@
       </div>
     </div>
 
-    <!-- Employment Details Section -->
     <div class="mb-4 pb-4 border-bottom">
       <div class="mb-3">
         <h3 class="h5 mb-1">Employment Details</h3>
-        <p class="text-muted mb-0">
-          Department assignment, employment type, and organizational structure information.
-        </p>
+        <p class="text-muted mb-0">Department assignment and core employment details.</p>
       </div>
 
-      <div class="row">
-        <div class="col-md-6 mb-3">
-          <label class="form-label required">Department</label>
-          <select class="form-select" formControlName="area" [ngClass]="{ 'is-invalid': submitted && f.area.errors }">
-            <option selected disabled value="null">--SELECT--</option>
-            <option *ngFor="let row of departments" [value]="row">
-              {{row}}</option>
+      <div class="row align-items-start mb-3">
+        <label class="col-md-3 col-form-label required">Department</label>
+        <div class="col-md-9">
+          <select class="form-select" formControlName="department" [ngClass]="{ 'is-invalid': submitted && f.department.errors }">
+            <option selected disabled value="">--SELECT--</option>
+            <option *ngFor="let row of departments" [value]="row">{{ row }}</option>
           </select>
           <div class="form-text">
             <i class="mdi mdi-information-outline me-1"></i>
-            Department or business unit assignment for access control and reporting.
+            Department assignment for reporting and workflow routing.
           </div>
-        </div>
-
-        <div class="col-md-6 mb-3">
-          <label class="form-label required">Hire Date</label>
-          <input type="date" class="form-control" formControlName="hire_date"
-            [ngClass]="{ 'is-invalid': submitted && f.hire_date.errors }" />
         </div>
       </div>
 
-      <div class="row">
-        <div class="col-md-6 mb-3">
-          <label class="form-label">Badge / Card Number</label>
+      <div class="row align-items-start mb-3">
+        <label class="col-md-3 col-form-label required">Hire Date</label>
+        <div class="col-md-9">
+          <input type="date" class="form-control" formControlName="hire_date" [ngClass]="{ 'is-invalid': submitted && f.hire_date.errors }" />
+        </div>
+      </div>
+
+      <div class="row align-items-start mb-3">
+        <label class="col-md-3 col-form-label">Badge / Card Number</label>
+        <div class="col-md-9">
           <div class="input-group">
-            <input
-              #badgeInput
-                  type="password"
-              class="form-control"
-              formControlName="card_number"
-              placeholder="Scan badge now"
-              inputmode="numeric"
-              autocomplete="off"
-              (input)="onBadgeInput($event)"
-              (keydown.enter)="onBadgeEnter($any($event))"
-            />
+            <input #badgeInput type="password" class="form-control" formControlName="card_number" placeholder="Scan badge now" inputmode="numeric" autocomplete="off" (input)="onBadgeInput($event)" (keydown.enter)="onBadgeEnter($any($event))" />
             <button type="button" class="btn btn-outline-secondary" (click)="focusBadgeInput()">
               <i class="mdi mdi-card-account-details-outline me-1"></i>Scan
             </button>
@@ -103,25 +86,19 @@
         </div>
       </div>
 
-      <div class="row">
-        <div class="col-md-6 mb-3">
-          <label class="form-label required">Access Rights</label>
-          <select class="form-select" formControlName="employeeType"
-            [ngClass]="{ 'is-invalid': submitted && f.employeeType.errors }">
-            <option selected disabled value="null">--SELECT--</option>
-            <option *ngFor="let row of accessRight" [value]="row.value">
-              {{row.name}}</option>
-          </select>
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Access level classification for system permissions and workflow approvals.
-          </div>
-        </div>
-
-        <div class="col-md-6 mb-3">
-          <app-user-search-v1 (notifyParent)="notifyParent($event)" [value]="form.value['parentId']"
-            [ngClass]="{ 'is-invalid': submitted && f.parentId.errors }" [disabled]="form?.disabled" [required]="true"
-            [form_label]="'Reports to'" [editableSearchTerm]="false"></app-user-search-v1>
+      <div class="row align-items-start mb-3">
+        <label class="col-md-3 col-form-label">Reports to</label>
+        <div class="col-md-9">
+          <app-user-search-v1
+            (notifyParent)="notifyParent($event)"
+            [value]="form.value['parentId']"
+            [ngClass]="{ 'is-invalid': submitted && f.parentId.errors }"
+            [disabled]="form?.disabled"
+            [form_label]="'Reports to (User ID)'"
+            [minTermLength]="0"
+            [preloadAllOnInit]="true"
+            [placeholder]="'Search by name, email, or ID'"
+          ></app-user-search-v1>
           <div class="form-text">
             <i class="mdi mdi-information-outline me-1"></i>
             Direct supervisor or manager for approval workflows and organizational hierarchy.
@@ -129,178 +106,82 @@
         </div>
       </div>
 
-      <div class="row">
-        <div class="col-md-6 mb-3">
-          <label class="form-label">User Roles</label>
-          <ng-select [searchable]="true" [addTag]="true" formControlName="workArea" placeholder="Select roles"
-            multiple="true" [bindLabel]="'label'" [bindValue]="'label'"></ng-select>
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Multiple roles can be assigned for different system functions and permissions.
-          </div>
-        </div>
-
-        <div class="col-md-6 mb-3">
-          <label class="form-label required">Last Login Date</label>
-          <input type="datetime-local" class="form-control" name="lastLoggedIn" formControlName="lastLoggedIn"
-            [ngClass]="{ 'is-invalid': submitted && f.lastLoggedIn.errors }" />
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Last successful authentication to the system.
-          </div>
-        </div>
-      </div>
     </div>
 
-    <!-- System Configuration Section -->
     <div class="mb-4 pb-4 border-bottom">
       <div class="mb-3">
         <h3 class="h5 mb-1">System Configuration</h3>
-        <p class="text-muted mb-0">
-          Account status, security settings, and organizational chart preferences.
-        </p>
+        <p class="text-muted mb-0">Account status and security settings.</p>
       </div>
 
-      <!-- Account Status Row -->
-      <div class="row mb-4">
+      <div class="row mb-3" *ngIf="id">
         <div class="col-12">
-          <div class="d-flex align-items-center justify-content-between p-3 border rounded">
+          <div class="d-flex align-items-center justify-content-between p-3 border rounded gap-3 flex-wrap">
             <div>
               <div class="fw-semibold mb-1">Active Account</div>
-              <div class="form-text">
+              <div class="form-text mb-0">
                 <i class="mdi mdi-information-outline me-1"></i>
                 Enable user account for system access and authentication. Inactive accounts cannot log in.
               </div>
             </div>
-            <div class="ms-3">
-              <button type="button" class="btn btn-outline-danger btn-sm" 
-                [class.btn-danger]="!form.get('active')?.value"
-                [class.btn-outline-danger]="form.get('active')?.value"
-                (click)="toggleActiveStatus()">
-                <i class="mdi mdi-account-off me-1"></i>
-                {{ form.get('active')?.value ? 'Deactivate Account' : 'Activate Account' }}
-              </button>
-            </div>
+            <button type="button" class="btn btn-outline-danger btn-sm" [class.btn-danger]="!form.get('active')?.value" [class.btn-outline-danger]="form.get('active')?.value" (click)="toggleActiveStatus()">
+              <i class="mdi mdi-account-off me-1"></i>
+              {{ form.get('active')?.value ? 'Deactivate Account' : 'Activate Account' }}
+            </button>
           </div>
         </div>
       </div>
 
-      <div class="row">
-        <div class="col-md-6 mb-3">
+      <div class="row align-items-start mb-3">
+        <label class="col-md-3 col-form-label">Is Employee</label>
+        <div class="col-md-9 pt-2">
           <div class="form-check form-switch form-switch-md">
-            <input class="form-check-input" type="checkbox" id="isEmployee" formControlName="isEmployee"
-              (change)="setBooleanToNumber('isEmployee')">
-            <label class="form-check-label" for="isEmployee">Is Employee</label>
-          </div>
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Mark as internal employee versus contractor or external user.
+            <input class="form-check-input" type="checkbox" id="isEmployee" formControlName="isEmployee" (change)="setBooleanToNumber('isEmployee')">
+            <label class="form-check-label" for="isEmployee">Mark as internal employee versus contractor or external user.</label>
           </div>
         </div>
+      </div>
 
-        <div class="col-md-6 mb-3">
-          <div class="form-check">
-            <input class="form-check-input" type="checkbox" id="access" formControlName="access"
-              (change)="form.value.access = form.value.access ? 1: 0">
-            <label class="form-check-label" for="access">
-              Access to dashboard
+      <div class="row align-items-start mb-3">
+        <label class="col-md-3 col-form-label">Access to dashboard</label>
+        <div class="col-md-9 pt-2">
+          <div class="form-check form-switch form-switch-md">
+            <input class="form-check-input" type="checkbox" id="access" formControlName="access" (change)="form.value.access = form.value.access ? 1: 0">
+            <label class="form-check-label" for="access">Grant permission to access the main dashboard interface.</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="row align-items-start mb-3">
+        <label class="col-md-3 col-form-label">Email Verification (2FA)</label>
+        <div class="col-md-9 pt-2">
+          <div class="form-check form-switch form-switch-md">
+            <input class="form-check-input" type="checkbox" id="enableTwostep" formControlName="enableTwostep" (change)="onTwoStepToggle()">
+            <label class="form-check-label" for="enableTwostep">
+              <ng-container *ngIf="isTwoStepEnabled(); else editTwoStepOff">
+                Verification codes will be sent to {{ getNotificationTarget() }}.
+              </ng-container>
+              <ng-template #editTwoStepOff>
+                Enable to require a code sent by email during sign-in.
+              </ng-template>
             </label>
           </div>
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Grant permission to access the main dashboard interface.
-          </div>
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="col-md-6 mb-3">
-          <div class="form-check form-switch form-switch-md">
-            <input class="form-check-input" type="checkbox" id="enableTwostep" formControlName="enableTwostep"
-              (change)="onTwoStepToggle()">
-            <label class="form-check-label" for="enableTwostep">Email Verification (2FA)</label>
-          </div>
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            @if (isTwoStepEnabled()) {
-              Verification codes will be sent to {{ getNotificationTarget() }}.
-            } @else {
-              Enable to require a code sent by email during sign-in.
-            }
-          </div>
-          @if (isTwoStepEnabled() && !isEmailValidForNotifications()) {
-            <div class="text-danger small mt-1">
-              Enter a valid email address to use email verification.
-            </div>
-          }
-        </div>
-
-        <div class="col-md-6 mb-3">
-          <div class="form-check form-switch form-switch-md">
-            <input class="form-check-input" type="checkbox" id="orgChartPlaceHolder" formControlName="orgChartPlaceHolder"
-              (change)="setBooleanToNumber('orgChartPlaceHolder')">
-            <label class="form-check-label" for="orgChartPlaceHolder">Department Placeholder</label>
-          </div>
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Display as department placeholder in org chart for structural planning.
-          </div>
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="col-md-6 mb-3">
-          <div class="form-check form-switch form-switch-md">
-            <input class="form-check-input" type="checkbox" id="showImage" formControlName="showImage"
-              (change)="setBooleanToNumber('showImage')">
-            <label class="form-check-label" for="showImage">Show image in org chart</label>
-          </div>
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Display user photo in organizational chart views for better identification.
-          </div>
-        </div>
-
-        <div class="col-md-6 mb-3">
-          <div class="form-check form-switch form-switch-md">
-            <input class="form-check-input" type="checkbox" id="openPosition" formControlName="openPosition"
-              (change)="setBooleanToNumber('openPosition')">
-            <label class="form-check-label" for="openPosition">Open Position</label>
-          </div>
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Mark as an unfilled position in the org chart for recruitment tracking.
-          </div>
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="col-md-6 mb-3">
-          <div class="form-check form-switch form-switch-md">
-            <input class="form-check-input" type="checkbox" id="org_chart_expand" formControlName="org_chart_expand"
-              (change)="setBooleanToNumber('org_chart_expand')">
-            <label class="form-check-label" for="org_chart_expand">Display user on initial page load</label>
-          </div>
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Automatically expand and show this user when org chart loads.
+          <div *ngIf="isTwoStepEnabled() && !isEmailValidForNotifications()" class="text-danger small mt-1">
+            Enter a valid email address to use email verification.
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Account Security Section -->
-    <div class="mb-4">
+    <div class="mb-4" *ngIf="id">
       <div class="mb-3">
         <h3 class="h5 mb-1">Account Security</h3>
-        <p class="text-muted mb-0">
-          Login attempt management and profile image settings.
-        </p>
+        <p class="text-muted mb-0">Login attempt management and profile image settings.</p>
       </div>
 
-      <div class="row">
-        <div class="col-md-6 mb-3">
-          <label class="form-label">Login Attempts</label>
+      <div class="row align-items-start mb-3">
+        <label class="col-md-3 col-form-label">Login Attempts</label>
+        <div class="col-md-9">
           <div class="input-group">
             <span class="input-group-text bg-primary pointer text-white" id="basic-addon1" (click)="clearAttempts()">Clear Attempts</span>
             <input type="text" class="form-control" placeholder="attempts" formControlName="attempts" readonly>
@@ -310,43 +191,8 @@
             Current failed login attempt count. Clear to unlock user account.
           </div>
         </div>
-
-        <div class="col-md-6 mb-3">
-          <label class="form-label">Profile Image</label>
-          
-          <!-- Show current image if exists -->
-          <div class="mb-2" *ngIf="form.value.image">
-            <div class="d-flex align-items-center gap-2 p-2 border rounded">
-              <img [src]="form.value.image" alt="Profile" class="rounded" 
-                   style="width: 40px; height: 40px; object-fit: cover;">
-              <div class="flex-grow-1">
-                <small class="text-muted">Current image</small>
-              </div>
-              <button type="button" class="btn btn-outline-danger btn-sm" (click)="removeImage()">
-                <i class="mdi mdi-delete me-1"></i>Remove
-              </button>
-            </div>
-          </div>
-          
-          <!-- Upload new image -->
-          <div class="input-group">
-            <input type="file" class="form-control" #fileInput 
-                   accept="image/*" (change)="onImageSelected($event)">
-            <button type="button" class="btn btn-outline-primary" 
-                    [disabled]="!selectedFile || isUploadingImage" 
-                    (click)="uploadImage()">
-              <i class="mdi mdi-upload me-1" *ngIf="!isUploadingImage"></i>
-              <i class="mdi mdi-loading mdi-spin me-1" *ngIf="isUploadingImage"></i>
-              {{ isUploadingImage ? 'Uploading...' : 'Upload' }}
-            </button>
-          </div>
-          
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            {{ form.value.image ? 'Upload a new image to replace the current one.' : 'Upload a profile image (JPG, PNG, GIF formats supported).' }}
-          </div>
-        </div>
       </div>
-    </div>
 
+    </div>
   </div>
+</form>
