@@ -136,11 +136,11 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
         const progress = params.value || 0;
         const color = progress >= 100 ? '#65c368' : progress >= 50 ? 'orange' : progress >= 25 ? 'yellow' : '#F40009';
         return `
-          <div style="display:flex;flex-direction:column;justify-content:center;height:100%;gap:2px;">
-            <div class="progress" style="height:2px;overflow:visible;flex-shrink:0;">
-              <div class="progress-bar" style="width:${progress}%;background-color:${color};overflow:visible;"></div>
+          <div style="display:flex;align-items:center;gap:8px;width:100%;">
+            <div class="progress" style="height:8px;min-width:72px;flex:1 1 auto;">
+              <div class="progress-bar" style="width:${progress}%;background-color:${color};"></div>
             </div>
-            <span style="text-align:center;font-size:11px;line-height:1;">${Number(progress).toFixed(0)}%</span>
+            <span style="font-size:11px;line-height:1;min-width:34px;text-align:right;">${Number(progress).toFixed(0)}%</span>
           </div>`;
       }
     },
