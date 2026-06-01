@@ -17,6 +17,7 @@ export class HealthController {
       ok: true,
       service: 'nest-api',
       qadDsn: process.env.QAD_DSN || 'DEV',
+      qadOdbcRecovery: this.qadOdbcService.getRecoveryStats(),
     };
   }
 
@@ -32,6 +33,7 @@ export class HealthController {
         return {
           isConnected: true,
           message: 'QAD is online.',
+          recovery: this.qadOdbcService.getRecoveryStats(),
         };
       } catch (error) {
         probeErrors.push(error instanceof Error ? error.message : String(error));
@@ -42,7 +44,13 @@ export class HealthController {
       isConnected: false,
       message: 'QAD is currently unreachable. QAD-dependent features will be bypassed until connectivity is restored.',
       details: probeErrors,
+      recovery: this.qadOdbcService.getRecoveryStats(),
     };
+  }
+
+  @Get('health/qadRecovery')
+  getQadRecoveryStats() {
+    return this.qadOdbcService.getRecoveryStats();
   }
 
   @Get('health/deploy-status')

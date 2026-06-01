@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import odbc from 'odbc';
 
 type QadResultKeyCase = 'preserve' | 'lower' | 'upper';
@@ -9,7 +9,23 @@ type QadQueryOptions = {
 
 @Injectable()
 export class QadOdbcService {
+  private readonly logger = new Logger(QadOdbcService.name);
   private poolPromise: Promise<odbc.Pool> | null = null;
+  private recoverableErrorCount = 0;
+  private poolResetCount = 0;
+  private retrySuccessCount = 0;
+  private retryFailureCount = 0;
+  private lastRecoverableErrorAt: string | null = null;
+
+  getRecoveryStats(): Record<string, unknown> {
+    return {
+      recoverableErrorCount: this.recoverableErrorCount,
+      poolResetCount: this.poolResetCount,
+      retrySuccessCount: this.retrySuccessCount,
+      retryFailureCount: this.retryFailureCount,
+      lastRecoverableErrorAt: this.lastRecoverableErrorAt,
+    };
+  }
 
   private connectionString(): string {
     const dsn = process.env.QAD_DSN || 'DEV';
@@ -25,13 +41,88 @@ export class QadOdbcService {
     return this.poolPromise;
   }
 
-  private async withConnection<T>(work: (conn: odbc.Connection) => Promise<T>): Promise<T> {
-    const pool = await this.getPool();
-    const conn = await pool.connect();
+  private async resetPool(): Promise<void> {
+    const currentPoolPromise = this.poolPromise;
+    this.poolPromise = null;
+    this.poolResetCount += 1;
+
+    if (!currentPoolPromise) {
+      return;
+    }
+
     try {
+      const pool = await currentPoolPromise;
+      await pool.close();
+    } catch {
+      // Ignore cleanup errors. The goal is to force the next call to recreate the pool.
+    }
+  }
+
+  private isRecoverableError(error: unknown): boolean {
+    if (!error || typeof error !== 'object') {
+      return false;
+    }
+
+    const record = error as Record<string, unknown>;
+    const message = String(record.message || '').toLowerCase();
+    const odbcErrors = Array.isArray(record.odbcErrors)
+      ? (record.odbcErrors as Array<Record<string, unknown>>)
+      : [];
+
+    if (/ssl i\/o error|communication link failure|connection.*failed|socket/i.test(message)) {
+      return true;
+    }
+
+    return odbcErrors.some((entry) => {
+      const state = String(entry.state || '').toUpperCase();
+      const entryMessage = String(entry.message || '').toLowerCase();
+
+      return (
+        state.startsWith('08') ||
+        state === 'HYT00' ||
+        state === 'HYT01' ||
+        /ssl i\/o error|communication link failure|connection.*failed|socket/i.test(entryMessage)
+      );
+    });
+  }
+
+  private async withConnection<T>(
+    work: (conn: odbc.Connection) => Promise<T>,
+    allowRetry = true,
+  ): Promise<T> {
+    const pool = await this.getPool();
+    let conn: odbc.Connection | null = null;
+
+    try {
+      conn = await pool.connect();
       return await work(conn);
+    } catch (error) {
+      if (allowRetry && this.isRecoverableError(error)) {
+        this.recoverableErrorCount += 1;
+        this.lastRecoverableErrorAt = new Date().toISOString();
+
+        this.logger.warn(
+          `Recoverable QAD ODBC error detected. Resetting pool and retrying once. ` +
+            `(recoverable=${this.recoverableErrorCount}, poolResets=${this.poolResetCount + 1})`,
+        );
+
+        await this.resetPool();
+
+        try {
+          const result = await this.withConnection(work, false);
+          this.retrySuccessCount += 1;
+          return result;
+        } catch (retryError) {
+          this.retryFailureCount += 1;
+          throw retryError;
+        }
+      }
+
+      throw error;
     } finally {
-      await conn.close();
+      if (conn) {
+        await conn.close();
+      }
     }
   }
 

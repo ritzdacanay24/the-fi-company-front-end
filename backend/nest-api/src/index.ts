@@ -4,6 +4,7 @@ import express, { NextFunction, Request, Response } from 'express';
 import { ConsoleLogger, Logger, RequestMethod, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { join } from 'path';
+import { AddressInfo, createServer } from 'net';
 import compression from 'compression';
 import { AppModule } from './nest/app.module';
 import { GlobalHttpExceptionFilter } from './nest/filters/http-exception.filter';
@@ -33,8 +34,46 @@ class NestStartupLogger extends ConsoleLogger {
   }
 }
 
+async function assertPortAvailable(port: number): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    const server = createServer();
+
+    const cleanup = () => {
+      server.removeAllListeners();
+    };
+
+    server.once('error', (error) => {
+      cleanup();
+
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code === 'EADDRINUSE') {
+        reject(new Error(`Port ${port} is already in use. Refusing startup to avoid hidden process conflicts.`));
+        return;
+      }
+
+      reject(error);
+    });
+
+    server.once('listening', () => {
+      server.close((closeError) => {
+        cleanup();
+        if (closeError) {
+          reject(closeError);
+          return;
+        }
+        resolve();
+      });
+    });
+
+    server.listen(port, '0.0.0.0');
+  });
+}
+
 async function bootstrap() {
   initializeFileLogging();
+
+  const port = Number(process.env.PORT || 3000);
+  await assertPortAvailable(port);
 
   const app = await NestFactory.create(AppModule, {
     bodyParser: false,
@@ -94,7 +133,6 @@ async function bootstrap() {
 
   app.useGlobalFilters(new GlobalHttpExceptionFilter());
 
-  const port = Number(process.env.PORT || 3000);
   await app.listen(port);
 
   const wsService = app.get(UnifiedWebSocketService);
