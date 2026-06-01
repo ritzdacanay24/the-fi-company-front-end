@@ -31,22 +31,15 @@ export class CustomerEditComponent {
   }
 
   title = "Edit Customer";
-
   form: FormGroup;
-
   id = null;
-
   isLoading = false;
-
   submitted = false;
+  data: any;
 
   @Input() goBack: Function = () => {
-    this.router.navigate([NAVIGATION_ROUTE.LIST], {
-      queryParamsHandling: "merge",
-    });
+    this.router.navigate([NAVIGATION_ROUTE.LIST], { queryParamsHandling: "merge" });
   };
-
-  data: any;
 
   async getData() {
     try {
@@ -57,9 +50,7 @@ export class CustomerEditComponent {
 
   async onSubmit() {
     this.submitted = true;
-
     if (this.form.invalid) return;
-
     try {
       this.isLoading = true;
       await this.api.update(this.id, this.form.value);

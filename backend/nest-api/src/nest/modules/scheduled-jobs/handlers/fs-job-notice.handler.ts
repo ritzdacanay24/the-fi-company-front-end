@@ -11,10 +11,14 @@ import { ScheduledJobHandler, ScheduledJobRunResultDto } from './scheduled-job.h
 interface FieldServiceJob extends RowDataPacket {
   id: number;
   request_id: number;
+  property_id: number | null;
   request_date: string;
   start_time: string;
   property: string;
   service_type: string;
+  customer_id: number | null;
+  customer: string | null;
+  customer_notification_emails: string | null;
   email: string;
   requested_by: string;
   token: string;
@@ -92,18 +96,32 @@ export class FsJobNoticeHandler implements ScheduledJobHandler {
       SELECT
         fs.id,
         fs.request_id,
+        fs.property_id,
         fs.request_date,
         fs.start_time,
         fs.property,
         fs.service_type,
+        COALESCE(prop.fs_customer_id, cust.id) AS customer_id,
+        COALESCE(NULLIF(TRIM(fs.customer), ''), NULLIF(TRIM(req.customer), '')) AS customer,
+        cust_recipients.notification_emails AS customer_notification_emails,
         req.email,
         req.requested_by,
         req.token
       FROM fs_scheduler fs
       LEFT JOIN fs_request req ON req.id = fs.request_id
+      LEFT JOIN eyefidb.fs_property_det prop ON prop.id = fs.property_id
+      LEFT JOIN eyefidb.fs_company_det cust
+        ON LOWER(TRIM(cust.name)) = LOWER(TRIM(COALESCE(NULLIF(TRIM(fs.customer), ''), NULLIF(TRIM(req.customer), ''))))
+      LEFT JOIN (
+        SELECT
+          fs_company_id,
+          GROUP_CONCAT(email ORDER BY email SEPARATOR ', ') AS notification_emails
+        FROM eyefidb.fs_company_notification_recipients
+        WHERE is_active = 1
+        GROUP BY fs_company_id
+      ) cust_recipients ON cust_recipients.fs_company_id = COALESCE(prop.fs_customer_id, cust.id)
       WHERE fs.request_date BETWEEN DATE_FORMAT(NOW(), '%Y-%m-%d')
         AND DATE_ADD(DATE_FORMAT(NOW(), '%Y-%m-%d'), INTERVAL 2 DAY)
-      AND req.email IS NOT NULL
       AND fs.notice_email_date IS NULL
       AND fs.active = 1
       AND fs.status = 'Confirmed'
@@ -117,19 +135,31 @@ export class FsJobNoticeHandler implements ScheduledJobHandler {
     for (const job of jobs) {
       const jobId = job.id;
       const requestId = job.request_id;
+      const propertyId = job.property_id;
       const requestDate = job.request_date;
       const startTime = job.start_time;
       const property = job.property;
+      const customerId = job.customer_id;
+      const customer = String(job.customer ?? '').trim();
+      const customerRecipients = this.parseEmailList(job.customer_notification_emails);
       const email = String(job.email ?? '').trim();
+      const requesterRecipients = this.parseEmailList(email);
+
+      if (!customerId) {
+        this.logger.warn(`Skipping fs-job-notice for job ${jobId}: unable to map customer from property_id ${propertyId ?? 'NULL'} or customer '${customer || 'N/A'}'`);
+        continue;
+      }
+
+      if (customerRecipients.length === 0) {
+        this.logger.warn(`Skipping fs-job-notice for job ${jobId}: no active notification recipients configured for customer ${customerId}`);
+        continue;
+      }
+
+      const noticeRecipients = [...new Set([...requesterRecipients, ...customerRecipients])];
       const requestedBy = job.requested_by as string;
       const token = job.token as string;
 
       try {
-        if (!email || !email.includes('@')) {
-          this.logger.warn(`Skipping fs-job-notice for job ${jobId}: invalid requester email '${email}'`);
-          continue;
-        }
-
         const link = this.urlBuilder.fieldService.requestConfirmation(token);
         const html = this.emailTemplateService.render('fs-job-notice', {
           requestId,
@@ -141,9 +171,9 @@ export class FsJobNoticeHandler implements ScheduledJobHandler {
         });
 
         await this.emailService.sendMail({
-          to: email,
+          to: noticeRecipients,
           scheduledJobId: SCHEDULED_JOB_IDS.FS_JOB_NOTICE,
-          subject: `Appointment Notice - Request ID ${requestId}`,
+          subject: `Appointment Notice - Request ID ${requestId}${customer ? ` - ${customer}` : ''}`,
           html,
         });
 
@@ -195,5 +225,15 @@ export class FsJobNoticeHandler implements ScheduledJobHandler {
 
   private async resolveSummaryRecipients(): Promise<string[]> {
     return this.scheduledJobRecipientsService.resolveSubscribedEmails(SCHEDULED_JOB_IDS.FS_JOB_NOTICE);
+  }
+
+  private parseEmailList(value: string | null | undefined): string[] {
+    const raw = String(value ?? '')
+      .replace(/[;\r\n]+/g, ',')
+      .split(',')
+      .map((email) => email.trim().toLowerCase())
+      .filter(Boolean);
+
+    return [...new Set(raw)].filter((email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email));
   }
 }

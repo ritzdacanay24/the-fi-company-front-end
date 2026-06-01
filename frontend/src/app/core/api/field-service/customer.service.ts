@@ -5,6 +5,19 @@ import { firstValueFrom } from 'rxjs';
 
 const customerV2Url = 'apiV2/customer';
 
+export interface CustomerNotificationRecipient {
+  id: number;
+  customerId: number;
+  email: string;
+  isActive: boolean;
+}
+
+export interface CustomerNotificationRecipientUpsert {
+  id?: number;
+  email: string;
+  isActive: boolean;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -47,6 +60,24 @@ export class CustomerService extends DataService<any> {
 
   override delete = async (id: number): Promise<{ message: string }> => {
     await firstValueFrom(this.http.delete<any>(`${customerV2Url}/${id}`));
+    return { message: 'Deleted' };
+  };
+
+  listNotificationRecipients = async (id: number): Promise<CustomerNotificationRecipient[]> =>
+    firstValueFrom(this.http.get<CustomerNotificationRecipient[]>(`${customerV2Url}/${id}/notification-recipients`));
+
+  updateNotificationRecipients = async (
+    id: number,
+    recipients: CustomerNotificationRecipientUpsert[],
+  ): Promise<CustomerNotificationRecipient[]> =>
+    firstValueFrom(
+      this.http.put<CustomerNotificationRecipient[]>(`${customerV2Url}/${id}/notification-recipients`, {
+        recipients,
+      }),
+    );
+
+  deleteNotificationRecipient = async (id: number, recipientId: number): Promise<{ message: string }> => {
+    await firstValueFrom(this.http.delete(`${customerV2Url}/${id}/notification-recipients/${recipientId}`));
     return { message: 'Deleted' };
   };
 }

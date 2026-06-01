@@ -255,14 +255,16 @@ export class EmailService {
     const manageUrl = `${this.dashboardWebBaseUrl}/maintenance/scheduled-jobs/list`;
 
     const footer = `
-      <hr style="margin-top:24px;border:none;border-top:1px solid #d0d7de;" />
-      <p style="font-size:12px;color:#6b7280;line-height:1.5;margin:8px 0 0;">
+      <div style="padding-top:24px;">
+        <hr style="margin-top:0;border:none;border-top:1px solid #d0d7de;" />
+        <p style="font-size:12px;color:#6b7280;line-height:1.5;margin:12px 0 0;">
         You are receiving this because you are subscribed to the <strong>${this.escapeHtml(jobId)}</strong> scheduled job.
         <br />
         <a href="${unsubscribeUrl}" target="_blank" rel="noopener noreferrer">Unsubscribe from this email</a>
         &nbsp;|&nbsp;
         <a href="${manageUrl}" target="_blank" rel="noopener noreferrer">Manage notification preferences</a>
-      </p>
+        </p>
+      </div>
     `;
 
     return `${html}${footer}`;
@@ -272,12 +274,14 @@ export class EmailService {
     const manageUrl = `${this.dashboardWebBaseUrl}/maintenance/scheduled-jobs/list`;
 
     const footer = `
-      <hr style="margin-top:24px;border:none;border-top:1px solid #d0d7de;" />
-      <p style="font-size:12px;color:#6b7280;line-height:1.5;margin:8px 0 0;">
+      <div style="padding-top:24px;">
+        <hr style="margin-top:0;border:none;border-top:1px solid #d0d7de;" />
+        <p style="font-size:12px;color:#6b7280;line-height:1.5;margin:12px 0 0;">
         You are receiving this because you are subscribed to the <strong>${this.escapeHtml(jobId)}</strong> scheduled job.
         <br />
         <a href="${manageUrl}" target="_blank" rel="noopener noreferrer">Manage notification preferences</a>
-      </p>
+        </p>
+      </div>
     `;
 
     return `${html}${footer}`;

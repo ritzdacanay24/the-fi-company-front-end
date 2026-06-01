@@ -1188,8 +1188,22 @@ CREATE TABLE IF NOT EXISTS `fs_company_det` (
   `image` varchar(200) NOT NULL,
   `active` int(11) NOT NULL DEFAULT '1',
   `background_color` varchar(100) DEFAULT NULL,
+  `notification_emails` text DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=latin1;
+
+CREATE TABLE IF NOT EXISTS `fs_company_notification_recipients` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `fs_company_id` int(11) NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_date` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_date` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_fs_company_notification_email` (`fs_company_id`,`email`),
+  KEY `idx_fs_company_notification_company` (`fs_company_id`),
+  KEY `idx_fs_company_notification_active` (`is_active`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `fs_config` (
   `id` int(11) NOT NULL AUTO_INCREMENT,

@@ -1,4 +1,4 @@
-import { Component, Input } from "@angular/core";
+import { Component, Input, ViewChild } from "@angular/core";
 import { FormGroup } from "@angular/forms";
 import { ActivatedRoute, Router } from "@angular/router";
 import { CustomerFormComponent } from "../customer-form/customer-form.component";
@@ -50,6 +50,7 @@ export class CustomerCreateComponent {
   };
 
   data: any;
+  @ViewChild(CustomerFormComponent) customerForm!: CustomerFormComponent;
 
   async getData() {
     try {
@@ -73,7 +74,13 @@ export class CustomerCreateComponent {
 
     try {
       this.isLoading = true;
-      await this.api.create(this.form.value);
+      const created = await this.api.create(this.form.value);
+      if (created.insertId) {
+        const recipients = this.customerForm.getRecipients();
+        if (recipients.length > 0) {
+          await this.api.updateNotificationRecipients(created.insertId, recipients);
+        }
+      }
       this.isLoading = false;
       this.toastservice.show("Successfully Created");
       this.goBack();

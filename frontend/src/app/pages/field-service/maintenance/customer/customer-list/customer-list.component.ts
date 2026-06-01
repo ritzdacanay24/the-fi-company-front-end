@@ -10,6 +10,7 @@ import { CustomerService } from "src/app/core/api/field-service/customer.service
 import { SharedModule } from "src/app/shared/shared.module";
 import { highlightRowView, autoSizeColumns } from "src/assets/js/util";
 import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
+import { CustomerNotificationEmailsRendererComponent } from "./customer-notification-emails-renderer.component";
 
 @Component({
   standalone: true,
@@ -72,6 +73,14 @@ export class CustomerListComponent implements OnInit {
       field: "background_color",
       headerName: "Background Color",
       filter: "agMultiColumnFilter",
+    },
+    {
+      field: "notification_emails",
+      headerName: "Notification Emails",
+      filter: "agMultiColumnFilter",
+      cellRenderer: CustomerNotificationEmailsRendererComponent,
+      minWidth: 320,
+      flex: 2,
     },
     { field: "active", headerName: "Active", filter: "agMultiColumnFilter" },
   ];
