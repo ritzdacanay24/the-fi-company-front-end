@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { RowDataPacket } from 'mysql2/promise';
 import { MysqlService } from '@/shared/database/mysql.service';
 import { EmailService } from '@/shared/email/email.service';
+import { EmailTemplateService } from '@/shared/email/email-template.service';
 import { UrlBuilder } from '@/shared/url/url-builder';
 import { SCHEDULED_JOB_IDS } from '../scheduled-job-ids';
 import { ScheduledJobRecipientsService } from '../scheduled-job-recipients.service';
@@ -23,6 +24,7 @@ export class PastDueFieldServiceRequestsHandler implements ScheduledJobHandler {
     private readonly mysqlService: MysqlService,
     private readonly emailService: EmailService,
     private readonly scheduledJobRecipientsService: ScheduledJobRecipientsService,
+    private readonly emailTemplateService: EmailTemplateService,
     private readonly urlBuilder: UrlBuilder,
   ) {}
 
@@ -96,29 +98,17 @@ export class PastDueFieldServiceRequestsHandler implements ScheduledJobHandler {
         };
       }
 
-      let tableRows = '';
-      for (const row of rows) {
-        const link = this.urlBuilder.fieldService.requestEdit(row.request_id);
-        tableRows += `<tr>
-          <td>${row.request_id}</td>
-          <td>${row.created_date}</td>
-          <td>${row.total_days}</td>
-          <td><a href="${link}">View</a></td>
-        </tr>`;
-      }
+      const templateRows = rows.map((row) => ({
+        requestId: row.request_id,
+        createdDate: row.created_date,
+        totalDaysOpen: row.total_days,
+        link: this.urlBuilder.fieldService.requestEdit(row.request_id),
+      }));
 
-      const html = `Good morning team, <br> Please review the below past due requests.<br><br>
-        <table rules="all" style="border-color: #666;" cellpadding="5" border="1">
-          <tr style="background: #eee;">
-            <td><strong>Request ID</strong></td>
-            <td><strong>Request Created Date</strong></td>
-            <td><strong>Total Days Open</strong></td>
-            <td><strong>View Request</strong></td>
-          </tr>
-          ${tableRows}
-        </table><br><hr>
-        This automated email will be sent daily at 6 am<br>
-        Thank you.`;
+      const html = this.emailTemplateService.render('past-due-field-service-requests', {
+        requestCount: rows.length,
+        rows: templateRows,
+      });
 
       await this.emailService.sendMail({
         to,

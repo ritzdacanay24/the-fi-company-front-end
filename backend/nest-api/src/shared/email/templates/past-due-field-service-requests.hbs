@@ -1,0 +1,50 @@
+<html>
+  <body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f4f6f8; color: #1f2933;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 900px; background-color: #ffffff; border: 1px solid #dde3ea; border-radius: 10px; overflow: hidden;">
+            {{> email-header}}
+            <tr>
+              <td style="padding: 20px 24px; background-color: #0b5cab; color: #ffffff;">
+                <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Past Due Field Service Requests</h2>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 24px; font-size: 14px; line-height: 1.6;">
+                <p style="margin: 0 0 12px 0;">Good morning team,</p>
+                <p style="margin: 0 0 12px 0;">Please review the past due requests below.</p>
+                <p style="margin: 0 0 16px 0;"><strong>Total requests:</strong> {{requestCount}}</p>
+
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse; margin-bottom: 18px;">
+                  <thead>
+                    <tr>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Request ID</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Request Created Date</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">Total Days Open</th>
+                      <th align="left" style="border: 1px solid #dde3ea; padding: 8px; background: #f8fafc;">View Request</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {{#each rows}}
+                    <tr>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{requestId}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{createdDate}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;">{{totalDaysOpen}}</td>
+                      <td style="border: 1px solid #dde3ea; padding: 8px;"><a href="{{link}}">View</a></td>
+                    </tr>
+                    {{/each}}
+                  </tbody>
+                </table>
+
+                <p style="margin: 0 0 8px 0;">This automated email is sent daily at 6:00 AM.</p>
+                <p style="margin: 0;">Thank you.</p>
+              </td>
+            </tr>
+            {{> email-footer}}
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
