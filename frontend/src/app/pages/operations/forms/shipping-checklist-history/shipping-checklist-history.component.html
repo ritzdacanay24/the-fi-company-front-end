@@ -1,0 +1,47 @@
+<div class="container-fluid">
+  <div class="row justify-content-center">
+    <div class="col-12">
+      <div class="mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+          <h4 class="mb-1">Shipping Checklist History</h4>
+          <div class="text-body-secondary">Full checklist list with filters and quick open actions</div>
+        </div>
+        <a class="btn btn-outline-secondary" routerLink="/operations/forms/shipping-checklist">Back to Checklist</a>
+      </div>
+
+      <div class="card border-0 shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <span class="fw-semibold">All Shipping Checklists</span>
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <select class="form-select form-select-sm" style="width: 220px;" [(ngModel)]="statusFilter" (ngModelChange)="onFilterChanged()">
+              <option value="all">All Statuses</option>
+              <option value="draft">Draft</option>
+              <option value="submitted">Pending Secondary Verification</option>
+              <option value="verified">Verified</option>
+            </select>
+            <input
+              class="form-control form-control-sm"
+              style="width: 240px;"
+              type="text"
+              [(ngModel)]="searchTerm"
+              (ngModelChange)="onFilterChanged()"
+              placeholder="Search checklist, customer, SO..."
+            />
+            <button class="btn btn-sm btn-outline-secondary" (click)="loadHistory()" [disabled]="isLoading">Refresh</button>
+          </div>
+        </div>
+
+        <div class="card-body p-0">
+          <ag-grid-angular
+            class="ag-theme-quartz no-border shipping-checklist-history-grid"
+            [columnDefs]="columnDefs"
+            [defaultColDef]="defaultColDef"
+            [components]="components"
+            [rowData]="filteredRows"
+          >
+          </ag-grid-angular>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

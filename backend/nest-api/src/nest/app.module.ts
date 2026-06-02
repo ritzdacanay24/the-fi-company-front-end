@@ -59,6 +59,7 @@ import { RmaModule } from './modules/rma/rma.module';
 import { SafetyIncidentModule } from './modules/safety-incident';
 import { ShortagesModule } from './modules/shortages/shortages.module';
 import { ShippingModule } from './modules/shipping/shipping.module';
+import { ShippingChecklistsModule } from './modules/shipping-checklists/shipping-checklists.module';
 import { ShippingRequestModule } from './modules/shipping-request/shipping-request.module';
 import { WorkOrderOwnerModule } from './modules/work-order-owner/work-order-owner.module';
 import { WorkOrderRoutingModule } from './modules/work-order-routing/work-order-routing.module';
@@ -199,6 +200,7 @@ import { UrlModule } from '../shared/url/url.module';
     SafetyIncidentModule,
     ShortagesModule,
     ShippingModule,
+    ShippingChecklistsModule,
     ShippingRequestModule,
     WorkOrderOwnerModule,
     WorkOrderRoutingModule,

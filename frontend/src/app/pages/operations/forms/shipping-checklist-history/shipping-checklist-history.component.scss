@@ -1,0 +1,14 @@
+:host {
+  display: block;
+}
+
+.shipping-checklist-history-grid {
+  width: 100%;
+  height: calc(100vh - 235px);
+  min-height: 460px;
+}
+
+:host ::ng-deep .shipping-checklist-history-grid .status-pill {
+  font-size: 0.72rem;
+  letter-spacing: 0.01em;
+}

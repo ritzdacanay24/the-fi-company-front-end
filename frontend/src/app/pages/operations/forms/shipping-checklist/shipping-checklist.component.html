@@ -1,0 +1,697 @@
+<div [class.opacity-50]="isLoading" class="pb-3">
+  <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3 no-print">
+    <div class="d-flex align-items-start gap-3 flex-wrap">
+      <img
+        *ngIf="templateLogoUrl"
+        [src]="templateLogoUrl"
+        [alt]="(selectedTemplate?.customerName || 'Customer') + ' logo'"
+        class="template-logo"
+        (error)="$any($event.target).style.display='none'"
+      />
+      <div>
+      <h4 class="mb-1">Shipping Checklist Form</h4>
+      <div class="text-body-secondary">Customer-specific workflow persisted in database</div>
+      <div class="d-flex flex-wrap gap-2 mt-2" *ngIf="selectedInstanceId">
+        <span class="badge meta-chip">Instance #{{ selectedInstanceId }}</span>
+        <span class="badge meta-chip">Checklist {{ form.get('formCode')?.value || '-' }}</span>
+        <span class="badge meta-chip">Created By {{ createdByDisplay || '-' }}</span>
+        <span class="badge" [ngClass]="isVerifiedFinal ? 'text-bg-success' : isPendingSecondaryVerification ? 'text-bg-warning' : 'text-bg-secondary'">
+          {{ isVerifiedFinal ? 'Verified' : isPendingSecondaryVerification ? 'Pending Secondary Verification' : 'Draft' }}
+        </span>
+      </div>
+      </div>
+    </div>
+
+    <div class="d-flex align-items-center gap-2 no-print">
+      <button
+        class="btn btn-outline-primary"
+        type="button"
+        (click)="saveDraft()"
+        [disabled]="isSaving || !selectedInstanceId || isChecklistLocked"
+      >
+        Save Draft
+      </button>
+
+      <div class="dropdown" ngbDropdown placement="bottom-end" container="body">
+        <button
+          class="btn btn-outline-secondary"
+          type="button"
+          ngbDropdownToggle
+          aria-expanded="false"
+        >
+          Actions
+        </button>
+        <div ngbDropdownMenu class="dropdown-menu-end shadow-sm shipping-actions-menu">
+        <a ngbDropdownItem routerLink="/operations/forms/shipping-checklist/templates">Edit Templates</a>
+        <a ngbDropdownItem routerLink="/operations/forms/shipping-checklist/settings">Settings</a>
+        <a ngbDropdownItem routerLink="/operations/forms/shipping-checklist/history">View Checklist History</a>
+        <button ngbDropdownItem type="button" (click)="startNew()" [disabled]="isSaving">New Checklist</button>
+        <button
+          *ngIf="selectedInstanceId && !isVerifiedFinal"
+          ngbDropdownItem
+          type="button"
+          (click)="isPendingSecondaryVerification ? verifyChecklist() : submitChecklist()"
+          [disabled]="isSaving || !canSubmit"
+        >
+          {{ isPendingSecondaryVerification ? 'Complete Verification' : 'Submit for Verification' }}
+        </button>
+        <button
+          *ngIf="selectedInstanceId && isChecklistLocked"
+          ngbDropdownItem
+          class="text-danger"
+          type="button"
+          (click)="reopenChecklist()"
+          [disabled]="isSaving"
+        >
+          Reopen Draft
+        </button>
+        <div *ngIf="selectedInstanceId" class="dropdown-divider"></div>
+        <button
+          *ngIf="selectedInstanceId"
+          ngbDropdownItem
+          type="button"
+          (click)="printChecklist()"
+          [disabled]="!isVerifiedFinal || isSaving"
+        >
+          Download PDF
+        </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="print-only print-document">
+    <div class="print-header-shell">
+      <div class="print-brand-block">
+        <img
+          *ngIf="templateLogoUrl"
+          [src]="templateLogoUrl"
+          [alt]="(selectedTemplate?.customerName || 'Customer') + ' logo'"
+          class="print-logo"
+        />
+        <div>
+          <div class="print-kicker">Shipping Checklist</div>
+          <h1 class="print-title">{{ form.get('formTitle')?.value || selectedTemplate?.formTitle || 'Shipping Checklist' }}</h1>
+          <div class="print-subtitle">{{ selectedTemplate?.customerName || form.get('customerName')?.value || 'Customer' }} &middot; {{ form.get('formCode')?.value || '-' }}</div>
+        </div>
+      </div>
+      <div class="print-status">
+        <div class="print-status-label">Status</div>
+        <div class="print-status-value">{{ isVerifiedFinal ? 'Verified' : isPendingSecondaryVerification ? 'Pending Secondary Verification' : 'Draft' }}</div>
+      </div>
+    </div>
+
+    <div class="print-section">
+      <div class="print-section-title">Checklist Summary</div>
+      <div class="print-meta-grid">
+        <div><span>Instance #</span><strong>{{ selectedInstanceId || '-' }}</strong></div>
+        <div><span>Created By</span><strong>{{ createdByDisplay || '-' }}</strong></div>
+        <div><span>Date</span><strong>{{ form.get('formDate')?.value || '-' }}</strong></div>
+        <div><span>Sales Order</span><strong>{{ form.get('salesOrder')?.value || '-' }}</strong></div>
+        <div><span>Packing Slip</span><strong>{{ form.get('packingSlip')?.value || '-' }}</strong></div>
+        <div><span>Ship Via</span><strong>{{ form.get('shipVia')?.value || '-' }}</strong></div>
+        <div><span>Total Pallets</span><strong>{{ form.get('totalPallets')?.value || 0 }}</strong></div>
+      </div>
+    </div>
+
+    <div class="print-section">
+      <div class="print-section-title">Shipping Details</div>
+      <table class="print-info-table">
+        <tr>
+          <th>Customer</th>
+          <td>{{ form.get('customerName')?.value || selectedTemplate?.customerName || '-' }}</td>
+          <th>Checklist #</th>
+          <td>{{ form.get('formCode')?.value || '-' }}</td>
+        </tr>
+        <tr>
+          <th>Verifier</th>
+          <td>{{ form.get('verifierName')?.value || '-' }}</td>
+          <th>2nd Verifier</th>
+          <td>{{ selectedTemplate?.assignedVerifierName || 'Unassigned' }}</td>
+        </tr>
+        <tr>
+          <th>Shipping Acct</th>
+          <td>{{ form.get('shippingAccount')?.value || '-' }}</td>
+          <th>Arrival Date</th>
+          <td>{{ form.get('arrivalDate')?.value || '-' }}</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="print-section">
+      <div class="print-section-title">Line Items</div>
+      <table class="print-table print-lines-table">
+        <thead>
+          <tr>
+            <th style="width: 8%">Ship</th>
+            <th style="width: 28%">Part #</th>
+            <th style="width: 12%">Qty</th>
+            <th>Serials</th>
+            <th style="width: 14%">Pallet Qty</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of linesArray.controls; let i = index">
+            <td class="print-center">{{ row.get('isSelected')?.value ? 'Yes' : 'No' }}</td>
+            <td>{{ row.get('partNumber')?.value || '-' }}</td>
+            <td>{{ row.get('qty')?.value || '-' }}</td>
+            <td class="print-serial-cell">{{ normalizeSerialNumbers(serialsArrayAt(i).getRawValue()).join(', ') || '-' }}</td>
+            <td>{{ row.get('palletQty')?.value || '-' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="print-section">
+      <div class="print-section-title">Verification</div>
+      <table class="print-table print-verification-table">
+        <thead>
+          <tr>
+            <th style="width: 10%">#</th>
+            <th>Checklist Item</th>
+            <th style="width: 14%">Result</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of responsesArray.controls; let i = index">
+            <td>{{ row.get('questionCode')?.value }}</td>
+            <td>
+              <div class="fw-semibold">{{ row.get('questionText')?.value }}</div>
+              <div class="print-attachments" *ngIf="getQuestionAttachments(row.get('questionCode')?.value || '').length > 0">
+                <span class="print-attachments-label">Attachments:</span>
+                <span class="print-attachment" *ngFor="let image of getQuestionAttachments(row.get('questionCode')?.value || '')">
+                  {{ displayAttachmentName(image.fileName, image.id) }}
+                </span>
+              </div>
+            </td>
+            <td class="print-result">{{ (row.get('responseValue')?.value || '-') | uppercase }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="print-section">
+      <div class="print-section-title">Notes</div>
+      <div class="print-notes">{{ form.get('notes')?.value || 'No notes entered.' }}</div>
+    </div>
+  </div>
+
+  <form [formGroup]="form" class="card border-0 shadow-sm screen-only">
+
+    <div class="card-header bg-body d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div class="fw-semibold">Step 1: Select Customer Template</div>
+      <span class="badge" [ngClass]="!selectedInstanceId ? 'text-bg-secondary' : (isVerifiedFinal ? 'text-bg-success' : isPendingSecondaryVerification ? 'text-bg-warning' : 'text-bg-warning')">
+        {{ !selectedInstanceId ? 'Pending Checklist ID' : (isVerifiedFinal ? 'Verified' : isPendingSecondaryVerification ? 'Pending Secondary Verification' : 'Draft') }}
+      </span>
+    </div>
+
+    <div class="card-body" [class.checklist-locked]="isChecklistLocked">
+      <div class="alert alert-warning py-2 px-3 mb-3" *ngIf="isChecklistLocked">
+        This checklist is locked because it has been submitted or verified. Use <strong>Reopen Draft</strong> if you need to correct the data.
+      </div>
+
+      <div class="row g-3">
+        <div class="col-xl-4 col-lg-6">
+          <label class="form-label">Customer Template</label>
+          <select
+            class="form-select"
+            [ngModel]="selectedTemplate?.id || ''"
+            (ngModelChange)="onTemplateChanged($event)"
+            [ngModelOptions]="{ standalone: true }"
+            [disabled]="isChecklistLocked"
+          >
+            <option value="">Select template...</option>
+            <option *ngFor="let template of templates" [value]="template.id">
+              {{ template.customerName }} - {{ template.formTitle }}
+            </option>
+          </select>
+        </div>
+
+        <div class="col-xl-4 col-lg-6" *ngIf="selectedTemplate">
+          <label class="form-label">Template Logo</label>
+          <div class="template-logo-slot">
+            <img
+              *ngIf="templateLogoUrl; else missingTemplateLogo"
+              [src]="templateLogoUrl"
+              [alt]="(selectedTemplate?.customerName || 'Customer') + ' logo preview'"
+              class="template-logo template-logo-inline"
+              (error)="$any($event.target).style.display='none'"
+            />
+            <ng-template #missingTemplateLogo>
+              <div class="small text-body-secondary">No customer logo configured in Customer Master settings.</div>
+            </ng-template>
+          </div>
+        </div>
+
+        <div class="col-xl-4 col-lg-6" *ngIf="selectedInstanceId">
+          <label class="form-label">Form Title</label>
+          <input class="form-control" formControlName="formTitle" placeholder="Enter checklist form title" />
+        </div>
+        <div class="col-xl-2 col-lg-6" *ngIf="selectedInstanceId">
+          <label class="form-label">Checklist Number</label>
+          <input class="form-control" formControlName="formCode" placeholder="e.g. SHIP-CHK-001" />
+        </div>
+        <div class="col-xl-2 col-lg-6" *ngIf="selectedInstanceId">
+          <label class="form-label">Instance ID</label>
+          <input class="form-control" [value]="selectedInstanceId || 'New'" readonly />
+        </div>
+        <div class="col-xl-2 col-lg-6" *ngIf="selectedInstanceId">
+          <label class="form-label">Status</label>
+          <input class="form-control" [value]="isVerifiedFinal ? 'Verified' : isPendingSecondaryVerification ? 'Pending Secondary Verification' : 'Draft'" readonly />
+        </div>
+        <div class="col-xl-4 col-lg-6" *ngIf="selectedInstanceId">
+          <label class="form-label">Created By</label>
+          <input class="form-control" [value]="createdByDisplay || '-'" readonly />
+        </div>
+      </div>
+
+      <div class="border-top mt-4 pt-3" *ngIf="selectedInstanceId">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+          <h6 class="mb-0">Step 2: Header Information</h6>
+          <span class="small text-body-secondary">Update key shipping details for this checklist</span>
+        </div>
+
+      <div class="row g-3 mt-1" *ngIf="selectedInstanceId">
+        <div class="col-xl-4 col-lg-6">
+          <label class="form-label">Date</label>
+          <input class="form-control" type="date" formControlName="formDate" />
+        </div>
+        <div class="col-xl-4 col-lg-6">
+          <label class="form-label">Sales Order</label>
+          <div class="input-group">
+            <input
+              class="form-control"
+              formControlName="salesOrder"
+              placeholder="Enter sales order number"
+              (keydown.enter)="loadSalesOrderLines()"
+              [readonly]="isChecklistLocked || !!selectedInstanceId"
+            />
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              (click)="loadSalesOrderLines()"
+              [disabled]="isLoadingSalesOrderLines || isChecklistLocked"
+            >
+              {{ isLoadingSalesOrderLines ? 'Loading...' : 'Pull SO Lines' }}
+            </button>
+          </div>
+          <small class="text-body-secondary">Auto-fills part # and qty from Sales Order lines.</small>
+          <small class="text-body-secondary d-block">Create Checklist ID also auto-pulls SO lines.</small>
+        </div>
+        <div class="col-xl-4 col-lg-6">
+          <label class="form-label">Ship Via</label>
+          <input class="form-control" formControlName="shipVia" placeholder="e.g. FedEx Priority" />
+        </div>
+        <div class="col-xl-4 col-lg-6">
+          <label class="form-label">Packing Slip</label>
+          <input class="form-control" formControlName="packingSlip" placeholder="Enter packing slip number" />
+        </div>
+        <div class="col-xl-4 col-lg-6">
+          <label class="form-label">Shipping Acct</label>
+          <input class="form-control" formControlName="shippingAccount" placeholder="Enter shipping account" />
+        </div>
+        <div class="col-xl-4 col-lg-6">
+          <label class="form-label">Arrival Date</label>
+          <input class="form-control" type="date" formControlName="arrivalDate" />
+        </div>
+      </div>
+      </div>
+
+      <div class="border-top mt-4 pt-3" *ngIf="selectedInstanceId">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+          <h6 class="mb-0">Step 3: Line Items</h6>
+          <div class="d-flex flex-wrap gap-2 no-print">
+            <button class="btn btn-sm btn-outline-success" type="button" (click)="setAllLineSelections(true)" [disabled]="isChecklistLocked">Ship All</button>
+            <button class="btn btn-sm btn-outline-warning" type="button" (click)="setAllLineSelections(false)" [disabled]="isChecklistLocked">Clear Ship</button>
+            <button class="btn btn-sm btn-outline-secondary" type="button" (click)="addRow()" [disabled]="isChecklistLocked">Add Row</button>
+          </div>
+        </div>
+
+      <div class="table-responsive" formArrayName="lines">
+        <table class="table table-bordered table-striped table-sm align-middle mb-0 shipping-checklist-table">
+          <thead class="table-light">
+            <tr>
+              <th style="width: 90px;">Ship</th>
+              <th>Part #</th>
+              <th>Qty</th>
+              <th>Serial Numbers</th>
+              <th>Pallet Qty</th>
+            </tr>
+          </thead>
+          <tbody>
+            <ng-container *ngFor="let row of linesArray.controls; let i = index">
+              <tr [formGroupName]="i">
+                <td class="text-center">
+                  <div class="form-check d-inline-flex align-items-center justify-content-center mb-0">
+                    <input class="form-check-input" type="checkbox" formControlName="isSelected" [id]="'ship-line-' + i" [disabled]="isChecklistLocked" />
+                  </div>
+                </td>
+                <td><input class="form-control form-control-sm" formControlName="partNumber" placeholder="Part number" [readonly]="isChecklistLocked" /></td>
+                <td><input class="form-control form-control-sm" formControlName="qty" placeholder="Qty" [readonly]="isChecklistLocked" /></td>
+                <td>
+                  <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <button class="btn btn-sm btn-outline-secondary serial-action-btn" type="button" (click)="toggleSerials(i)" [disabled]="isChecklistLocked">
+                      {{ isSerialsExpanded(i) ? 'Hide Serials' : 'Manage Serials' }}
+                    </button>
+                    <span class="badge serial-count-badge">{{ getSerialCount(i) }} serial(s)</span>
+                    <button class="btn btn-sm btn-outline-primary serial-add-btn" type="button" (click)="addSerialRow(i)" [disabled]="isChecklistLocked">Add</button>
+                  </div>
+                </td>
+                <td><input class="form-control form-control-sm" formControlName="palletQty" placeholder="Pallet qty" [readonly]="isChecklistLocked" /></td>
+              </tr>
+              <tr *ngIf="isSerialsExpanded(i)" [formGroupName]="i">
+                <td colspan="5" class="bg-body-tertiary">
+                  <div formArrayName="serialNumbers" class="d-grid gap-2">
+                    <div
+                      *ngFor="let serialCtrl of serialsArrayAt(i).controls; let serialIndex = index"
+                      [formGroupName]="serialIndex"
+                      class="d-flex gap-2 align-items-center"
+                    >
+                      <span class="small serial-label" style="width: 56px;">SN {{ serialIndex + 1 }}</span>
+                      <input class="form-control form-control-sm" formControlName="serial" placeholder="Scan or enter serial number" [readonly]="isChecklistLocked" />
+                      <button class="btn btn-sm btn-outline-danger" type="button" (click)="removeSerialRow(i, serialIndex)" [disabled]="isChecklistLocked">Remove</button>
+                    </div>
+                    <div class="small serial-empty-text" *ngIf="serialsArrayAt(i).length === 0">No serials yet for this line.</div>
+                  </div>
+                </td>
+              </tr>
+            </ng-container>
+            <tr *ngIf="linesArray.length === 0">
+              <td colspan="5" class="text-center text-body-secondary py-3">No line rows loaded</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="d-flex justify-content-end align-items-center mt-3">
+        <div class="d-flex align-items-center gap-2">
+          <label class="mb-0 fw-semibold">Total Pallets:</label>
+          <input class="form-control form-control-sm" style="max-width: 120px;" formControlName="totalPallets" placeholder="0" readonly />
+        </div>
+      </div>
+      <div class="small text-body-secondary mt-1">Auto-summed from selected line items.</div>
+      </div>
+
+      <div class="border-top mt-4 pt-3" *ngIf="selectedInstanceId">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+          <div class="d-flex flex-wrap align-items-center gap-2">
+            <h6 class="mb-0">Step 4: Checklist Verification</h6>
+            <span class="small text-body-secondary">Include image proof where needed</span>
+          </div>
+          <div class="d-flex flex-wrap gap-2 no-print">
+            <button class="btn btn-sm btn-outline-success" type="button" (click)="setAllResponses('yes')" [disabled]="isChecklistLocked">Yes All</button>
+            <button class="btn btn-sm btn-outline-danger" type="button" (click)="setAllResponses('no')" [disabled]="isChecklistLocked">No All</button>
+            <button class="btn btn-sm btn-outline-secondary" type="button" (click)="setAllResponses('na')" [disabled]="isChecklistLocked">N/A All</button>
+            <button class="btn btn-sm btn-outline-warning" type="button" (click)="clearAllResponses()" [disabled]="isChecklistLocked">Clear All</button>
+          </div>
+        </div>
+
+      <div class="table-responsive" formArrayName="responses">
+        <table class="table table-bordered table-striped table-sm align-middle mb-0 shipping-checklist-table">
+          <thead class="table-light">
+            <tr>
+              <th>Checklist</th>
+              <th style="width: 260px;">Complete (Yes/No/N/A)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of responsesArray.controls; let i = index" [formGroupName]="i">
+              <td>
+                <span class="small fw-semibold text-body-secondary me-1">{{ row.get('questionCode')?.value }}</span>
+                <span>{{ row.get('questionText')?.value }}</span>
+                <ng-container *ngIf="row.get('questionCode')?.value as questionCode">
+                  <div class="mt-2" *ngIf="getQuestionAttachments(questionCode).length > 0">
+                    <div class="small fw-semibold text-body-secondary mb-1">Attachments for this item</div>
+                    <div class="d-flex flex-wrap gap-2">
+                      <div *ngFor="let image of getQuestionAttachments(questionCode)" class="d-inline-flex align-items-center gap-1">
+                        <button
+                          type="button"
+                          class="badge attachment-chip text-decoration-none border-0"
+                          (click)="openAttachmentViewer(image)"
+                          [title]="image.fileName"
+                        >
+                          {{ displayAttachmentName(image.fileName, image.id) }}
+                        </button>
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline-danger py-0 px-2"
+                          [disabled]="image.id <= 0 || isChecklistLocked"
+                          (click)="deleteQuestionAttachment(questionCode, image.id)"
+                          title="Delete image"
+                        >
+                          x
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </ng-container>
+              </td>
+              <td>
+                <div class="d-flex flex-wrap gap-3">
+                  <div class="form-check form-check-inline mb-0">
+                    <input
+                      class="form-check-input"
+                      type="radio"
+                      [id]="'response-yes-' + i"
+                      formControlName="responseValue"
+                      value="yes"
+                      [disabled]="isChecklistLocked"
+                    />
+                    <label class="form-check-label" [for]="'response-yes-' + i">Yes</label>
+                  </div>
+
+                  <div class="form-check form-check-inline mb-0">
+                    <input
+                      class="form-check-input"
+                      type="radio"
+                      [id]="'response-no-' + i"
+                      formControlName="responseValue"
+                      value="no"
+                      [disabled]="isChecklistLocked"
+                    />
+                    <label class="form-check-label" [for]="'response-no-' + i">No</label>
+                  </div>
+
+                  <div class="form-check form-check-inline mb-0">
+                    <input
+                      class="form-check-input"
+                      type="radio"
+                      [id]="'response-na-' + i"
+                      formControlName="responseValue"
+                      value="na"
+                      [disabled]="isChecklistLocked"
+                    />
+                    <label class="form-check-label" [for]="'response-na-' + i">N/A</label>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card mt-3">
+        <div class="card-header bg-body fw-semibold">Attach Images</div>
+        <div class="card-body">
+          <div class="row g-3 align-items-end">
+            <div class="col-xl-6 col-lg-7">
+              <label class="form-label">Checklist Item</label>
+              <select
+                class="form-select"
+                [(ngModel)]="selectedUploadQuestionCode"
+                (ngModelChange)="onUploadTargetChanged($event)"
+                [ngModelOptions]="{ standalone: true }"
+                [disabled]="isChecklistLocked"
+              >
+                <option value="">Select checklist item...</option>
+                <option *ngFor="let target of uploadTargets" [value]="target.questionCode">
+                  {{ target.questionCode }} - {{ target.questionText }}
+                </option>
+              </select>
+            </div>
+
+            <div class="col-xl-6 col-lg-5">
+              <label class="form-label">Upload Images</label>
+              <input
+                class="form-control"
+                type="file"
+                accept="image/*"
+                multiple
+                [disabled]="isChecklistLocked || !selectedUploadQuestionCode || isUploadingQuestion(selectedUploadQuestionCode)"
+                (change)="onSelectedTargetFilesChosen($event)"
+              />
+              <small class="text-body-secondary" *ngIf="!selectedUploadQuestionCode">Select checklist item first</small>
+              <small class="text-body-secondary" *ngIf="selectedUploadQuestionCode && isUploadingQuestion(selectedUploadQuestionCode)">Uploading...</small>
+            </div>
+          </div>
+
+          <div class="mt-3" *ngIf="getSelectedUploadAttachments().length > 0">
+            <div class="small fw-semibold mb-2">Attached Images</div>
+            <div class="d-flex flex-wrap gap-2">
+              <div *ngFor="let image of getSelectedUploadAttachments()" class="d-inline-flex align-items-center gap-1">
+                <button
+                  type="button"
+                  class="badge attachment-chip text-decoration-none border-0"
+                  (click)="openAttachmentViewer(image)"
+                  [title]="image.fileName"
+                >
+                  {{ displayAttachmentName(image.fileName, image.id) }}
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-danger py-0 px-2"
+                  [disabled]="isChecklistLocked || image.id <= 0 || isUploadingQuestion(selectedUploadQuestionCode)"
+                  (click)="deleteSelectedUploadAttachment(image.id)"
+                  title="Delete image"
+                >
+                  x
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      </div>
+
+      <div class="border-top mt-4 pt-3" *ngIf="selectedInstanceId">
+        <h6 class="mb-2">Step 5: Verification & Notes</h6>
+
+      <div class="row g-3 mt-1">
+        <div class="col-xl-3 col-lg-6">
+          <label class="form-label">Verifier Name</label>
+          <input class="form-control" formControlName="verifierName" placeholder="Enter verifier full name" [readonly]="isChecklistLocked" />
+        </div>
+        <div class="col-xl-3 col-lg-6">
+          <label class="form-label">Verifier Date</label>
+          <input class="form-control" type="date" formControlName="verifierDate" [readonly]="isChecklistLocked" />
+        </div>
+        <div class="col-xl-3 col-lg-6">
+          <label class="form-label">2nd Verifier Name</label>
+          <input class="form-control" formControlName="secondVerifierName" readonly />
+        </div>
+        <div class="col-xl-3 col-lg-6">
+          <label class="form-label">2nd Verifier Routing</label>
+          <input class="form-control" [value]="selectedTemplate?.assignedVerifierEmail || 'No verifier assigned on template'" readonly />
+        </div>
+        <div class="col-xl-3 col-lg-6">
+          <label class="form-label">2nd Verifier Date</label>
+          <input class="form-control" type="date" formControlName="secondVerifierDate" [readonly]="isChecklistLocked" />
+        </div>
+      </div>
+
+      <div class="mt-3">
+        <label class="form-label">Notes</label>
+        <textarea class="form-control" rows="3" formControlName="notes" placeholder="Add shipping notes, exceptions, or verification comments" [readonly]="isChecklistLocked"></textarea>
+      </div>
+      </div>
+    </div>
+
+    <div class="card-footer" *ngIf="!selectedInstanceId">
+      <div class="d-flex flex-wrap gap-2 align-items-end">
+        <div style="min-width: 280px; flex: 1 1 320px;">
+          <label class="form-label mb-1">Sales Order (Required)</label>
+          <input class="form-control" formControlName="salesOrder" placeholder="Enter sales order number" />
+        </div>
+        <button
+          class="btn btn-outline-secondary"
+          type="button"
+          (click)="loadSalesOrderLines()"
+          [disabled]="!form.get('salesOrder')?.value || isLoadingSalesOrderLines || isSaving"
+        >
+          {{ isLoadingSalesOrderLines ? 'Loading...' : 'Preview SO Lines' }}
+        </button>
+        <button
+          class="btn btn-primary"
+          type="button"
+          (click)="createChecklistFromTemplate()"
+          [disabled]="!selectedTemplate || !form.get('salesOrder')?.value || isSaving"
+        >
+          Create Checklist ID
+        </button>
+      </div>
+      <div class="small text-body-secondary mt-2">SO lines are auto-pulled when creating checklist ID. Sales Order is locked after creation to preserve draft traceability.</div>
+    </div>
+  </form>
+
+  <div class="mt-3 card no-print" *ngIf="pendingSecondaryVerifications.length > 0">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <span class="fw-semibold">Pending Secondary Verifications</span>
+      <span class="text-body-secondary small">Submitted checklists awaiting final verification</span>
+    </div>
+    <div class="card-body pt-2 pb-3 px-3">
+      <div class="table-responsive border rounded-2">
+        <table class="table table-sm table-hover mb-0 align-middle shipping-checklist-table">
+          <thead class="table-light">
+            <tr>
+              <th>ID</th>
+              <th>Checklist #</th>
+              <th>Customer</th>
+              <th>Sales Order</th>
+              <th>Email Sent</th>
+              <th>Updated</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of pendingSecondaryVerifications">
+              <td>{{ row.id }}</td>
+              <td>{{ row.checklistNumber }}</td>
+              <td>{{ row.customerName }}</td>
+              <td>{{ row.salesOrder }}</td>
+              <td>{{ row.secondVerifierEmailSentAt ? (row.secondVerifierEmailSentAt | date: 'short') : 'Pending send' }}</td>
+              <td>{{ row.updatedAt | date: 'short' }}</td>
+              <td class="text-end">
+                <button class="btn btn-sm btn-outline-primary" type="button" (click)="openInstance(row.id)">Open</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-3 card no-print">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <span class="fw-semibold">Recent Shipping Checklists</span>
+      <div class="d-flex align-items-center gap-2">
+        <span class="text-body-secondary small">Showing latest 10</span>
+        <a class="btn btn-sm btn-outline-secondary" routerLink="/operations/forms/shipping-checklist/history">View All</a>
+      </div>
+    </div>
+    <div class="card-body pt-2 pb-3 px-3">
+      <div class="table-responsive border rounded-2">
+        <table class="table table-sm table-hover mb-0 align-middle shipping-checklist-table">
+          <thead class="table-light">
+            <tr>
+              <th>ID</th>
+              <th>Checklist #</th>
+              <th>Customer</th>
+              <th>Status</th>
+              <th>Sales Order</th>
+              <th>Packing Slip</th>
+              <th>Updated</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of recentChecklistPreview" class="cursor-pointer" (click)="openInstance(row.id)">
+              <td>{{ row.id }}</td>
+              <td>{{ row.checklistNumber }}</td>
+              <td>{{ row.customerName }}</td>
+              <td>
+                <span class="badge" [ngClass]="row.status === 'verified' ? 'text-bg-success' : row.status === 'submitted' ? 'text-bg-warning' : 'text-bg-secondary'">
+                  {{ row.status === 'verified' ? 'Verified' : row.status === 'submitted' ? 'Pending Secondary Verification' : 'Draft' }}
+                </span>
+              </td>
+              <td>{{ row.salesOrder }}</td>
+              <td>{{ row.packingSlip }}</td>
+              <td>{{ row.updatedAt | date: 'short' }}</td>
+            </tr>
+            <tr *ngIf="recentChecklistPreview.length === 0">
+              <td colspan="7" class="text-center text-body-secondary py-3">No checklist instances yet</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

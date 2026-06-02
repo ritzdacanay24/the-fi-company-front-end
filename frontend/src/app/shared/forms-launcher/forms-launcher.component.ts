@@ -24,6 +24,7 @@ export class FormsLauncherComponent {
     { label: 'RMA',              icon: 'mdi mdi-refresh',               route: '/quality/rma/create',                          color: 'text-warning' },
     { label: 'Safety Incident',  icon: 'mdi mdi-shield-alert',          route: '/operations/forms/safety-incident/create',     color: 'text-danger'  },
     { label: 'Shipping Request', icon: 'mdi mdi-truck-delivery',        route: '/operations/forms/shipping-request/create',    color: 'text-primary' },
+    { label: 'Shipping Checklist', icon: 'mdi mdi-clipboard-check-outline', route: '/operations/forms/shipping-checklist',      color: 'text-info' },
     { label: 'IGT Transfer',     icon: 'mdi mdi-swap-horizontal',       route: '/operations/forms/igt-transfer/create',        color: 'text-info'    },
     { label: 'Parts Order',      icon: 'mdi mdi-package-variant-closed', route: '/operations/parts-order/create',              color: 'text-success' },
     { label: 'Material Request', icon: 'mdi mdi-clipboard-list',        route: '/operations/material-request/create',          color: 'text-primary' },

@@ -1,0 +1,121 @@
+<div class="container-fluid">
+  <div class="mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+      <h4 class="mb-1">Shipping Checklist Settings</h4>
+      <div class="text-body-secondary">Extensible settings hub for checklist administration.</div>
+    </div>
+    <a class="btn btn-outline-secondary" routerLink="/operations/forms/shipping-checklist">Back to Checklist</a>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-lg-3">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header fw-semibold">Settings Modules</div>
+        <div class="list-group list-group-flush settings-section-list">
+          <button
+            class="list-group-item list-group-item-action text-start"
+            type="button"
+            *ngFor="let section of sections"
+            [class.active]="selectedSectionKey === section.key"
+            [class.disabled]="!section.enabled"
+            (click)="selectSection(section)"
+          >
+            <div class="fw-semibold">{{ section.label }}</div>
+            <div class="small text-body-secondary">{{ section.description }}</div>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-9" *ngIf="selectedSectionKey === 'customers'">
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <span class="fw-semibold">Customer Master</span>
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <label class="form-check form-switch m-0">
+              <input class="form-check-input" type="checkbox" [checked]="activeOnly" (change)="onActiveOnlyChanged($any($event.target).checked)" />
+              <span class="form-check-label small">Active only</span>
+            </label>
+            <input
+              class="form-control form-control-sm"
+              style="width: 260px;"
+              type="text"
+              [value]="searchTerm"
+              (input)="onSearchTermChanged($any($event.target).value)"
+              placeholder="Search code, name, logo..."
+            />
+            <button class="btn btn-sm btn-outline-secondary" (click)="loadCustomers()" [disabled]="isLoading">Refresh</button>
+            <button class="btn btn-sm btn-outline-primary" (click)="startNewCustomer()" [disabled]="isSaving">New Customer</button>
+          </div>
+        </div>
+
+        <div class="card-body p-0">
+          <ag-grid-angular
+            class="ag-theme-quartz no-border customer-settings-grid"
+            [columnDefs]="columnDefs"
+            [defaultColDef]="defaultColDef"
+            [rowData]="filteredRowsData"
+            (rowClicked)="onRowClicked($event)"
+          >
+          </ag-grid-angular>
+        </div>
+      </div>
+
+      <div class="card border-0 shadow-sm">
+        <div class="card-header fw-semibold">{{ selectedCustomerId ? 'Edit Customer' : 'Create Customer' }}</div>
+        <div class="card-body">
+          <form [formGroup]="customerForm" class="row g-3" (ngSubmit)="saveCustomer()">
+            <div class="col-md-3">
+              <label class="form-label">Customer Code</label>
+              <input class="form-control" formControlName="customerCode" placeholder="e.g. lnw" />
+            </div>
+
+            <div class="col-md-5">
+              <label class="form-label">Customer Name</label>
+              <input class="form-control" formControlName="customerName" placeholder="e.g. L&W" />
+            </div>
+
+            <div class="col-md-4 d-flex align-items-end">
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" id="customerActive" formControlName="isActive" />
+                <label class="form-check-label" for="customerActive">Active</label>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label">Logo URL</label>
+              <div class="d-flex flex-wrap align-items-center gap-2">
+                <input class="form-control" formControlName="logoUrl" placeholder="https://..." />
+                <label class="btn btn-outline-secondary mb-0" [class.disabled]="isUploadingLogo">
+                  <input
+                    type="file"
+                    class="d-none"
+                    accept="image/*"
+                    (change)="onLogoFileSelected($event)"
+                    [disabled]="isUploadingLogo"
+                  />
+                  {{ isUploadingLogo ? 'Uploading...' : 'Upload Logo' }}
+                </label>
+              </div>
+              <div class="small text-body-secondary mt-1">Paste a URL or upload an image file to auto-fill the logo URL.</div>
+
+              <div class="customer-logo-preview mt-2" *ngIf="logoPreviewUrl; else noLogoPreview">
+                <img [src]="logoPreviewUrl" alt="Logo preview" class="customer-logo-preview-image" (error)="$any($event.target).style.display='none'" />
+              </div>
+              <ng-template #noLogoPreview>
+                <div class="small text-body-secondary mt-2">Enter a valid http/https image URL to preview.</div>
+              </ng-template>
+            </div>
+
+            <div class="col-12 d-flex justify-content-end gap-2">
+              <button class="btn btn-outline-secondary" type="button" (click)="startNewCustomer()" [disabled]="isSaving">Clear</button>
+              <button class="btn btn-primary" type="submit" [disabled]="isSaving || isLoading">
+                {{ isSaving ? 'Saving...' : (selectedCustomerId ? 'Update Customer' : 'Create Customer') }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

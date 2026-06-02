@@ -1,0 +1,16 @@
+.backup-verifier-pills {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.4rem;
+}
+
+.backup-verifier-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4rem;
+	padding-right: 0.35rem;
+}
+
+.backup-pill-remove {
+	transform: scale(0.75);
+}

@@ -27,6 +27,42 @@ const routes: Routes = [
         runGuardsAndResolvers: "always",
       },
       {
+        title: "Shipping Checklist",
+        path: "shipping-checklist",
+        loadComponent: () =>
+          import("./shipping-checklist/shipping-checklist.component").then(
+            (m) => m.ShippingChecklistComponent
+          ),
+        runGuardsAndResolvers: "always",
+      },
+      {
+        title: "Shipping Checklist Templates",
+        path: "shipping-checklist/templates",
+        loadComponent: () =>
+          import("./shipping-checklist-template-manager/shipping-checklist-template-manager.component").then(
+            (m) => m.ShippingChecklistTemplateManagerComponent
+          ),
+        runGuardsAndResolvers: "always",
+      },
+      {
+        title: "Shipping Checklist History",
+        path: "shipping-checklist/history",
+        loadComponent: () =>
+          import("./shipping-checklist-history/shipping-checklist-history.component").then(
+            (m) => m.ShippingChecklistHistoryComponent
+          ),
+        runGuardsAndResolvers: "always",
+      },
+      {
+        title: "Shipping Checklist Settings",
+        path: "shipping-checklist/settings",
+        loadComponent: () =>
+          import("./shipping-checklist-settings/shipping-checklist-settings.component").then(
+            (m) => m.ShippingChecklistSettingsComponent
+          ),
+        runGuardsAndResolvers: "always",
+      },
+      {
         title: "Vehicle Information",
         path: "vehicle",
         loadChildren: () =>

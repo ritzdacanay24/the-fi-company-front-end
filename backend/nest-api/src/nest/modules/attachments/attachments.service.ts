@@ -54,6 +54,9 @@ export class AttachmentsService {
     if (field.includes('field service')) {
       return 'fieldService';
     }
+    if (field.includes('shipping checklist') || field.includes('shippingchecklist')) {
+      return 'shippingChecklist';
+    }
     if (field.includes('capa')) {
       return 'capa';
     }
@@ -126,7 +129,39 @@ export class AttachmentsService {
   }
 
   async deleteById(id: number) {
+    const row = await this.metadataService.getById(id);
+    const fileName = typeof row?.fileName === 'string' ? row.fileName.trim() : '';
+    if (fileName) {
+      const subFolder = this.resolveDeleteSubFolder(row as Record<string, unknown>);
+      await this.storageService.deleteStoredFile(fileName, subFolder);
+    }
+
     return this.metadataService.deleteById(id);
+  }
+
+  private resolveDeleteSubFolder(row: Record<string, unknown>): string {
+    const explicitSubFolder = typeof row?.subFolder === 'string' ? row.subFolder.trim() : '';
+    if (explicitSubFolder) {
+      return explicitSubFolder;
+    }
+
+    const link = typeof row?.link === 'string' ? row.link.trim() : '';
+    if (link) {
+      const parsed = link.match(/\/(?:uploads|attachments)\/([^?#]+)\/[^/?#]+(?:[?#].*)?$/i);
+      const folder = parsed?.[1] || '';
+      const normalized = folder
+        .split('/')
+        .filter(Boolean)
+        .map((segment) => segment.replace(/[^a-zA-Z0-9_-]/g, ''))
+        .filter(Boolean)
+        .join('/');
+
+      if (normalized) {
+        return normalized;
+      }
+    }
+
+    return this.resolveSubFolder(row);
   }
 
   private normalizeCreatePayload(
@@ -147,8 +182,21 @@ export class AttachmentsService {
       uniqueId,
       link,
       ext,
-      storage_source: 'local',
+      storage_source: this.normalizeStorageSource(payload.storage_source) || 'local',
     };
+  }
+
+  private normalizeStorageSource(value: unknown): 'local' | 'legacy' | undefined {
+    if (typeof value !== 'string') {
+      return undefined;
+    }
+
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'local' || normalized === 'legacy') {
+      return normalized;
+    }
+
+    return undefined;
   }
 
   private normalizeCreatedDate(value: unknown): string {

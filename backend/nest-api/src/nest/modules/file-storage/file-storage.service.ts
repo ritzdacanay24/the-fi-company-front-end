@@ -13,7 +13,7 @@ export class FileStorageService {
 
   async storeUploadedFile(
     file?: { originalname?: string; buffer?: Buffer },
-    subFolder = 'fieldService',
+    subFolder = 'general',
   ): Promise<string> {
     if (!file?.buffer || !file?.originalname) {
       throw new BadRequestException('File is required');
@@ -21,7 +21,7 @@ export class FileStorageService {
 
     const storedFileName = this.buildStoredFileName(file.originalname);
 
-    const safeSubFolder = this.sanitizeSubFolder(subFolder, 'fieldService');
+    const safeSubFolder = this.sanitizeSubFolder(subFolder, 'general');
     await this.writeFileToUploadTargets(storedFileName, file.buffer, safeSubFolder);
     return storedFileName;
   }
@@ -56,8 +56,8 @@ export class FileStorageService {
     };
   }
 
-  async deleteStoredFile(fileName: string, subFolder = 'fieldService'): Promise<void> {
-    const safeSubFolder = this.sanitizeSubFolder(subFolder, 'fieldService');
+  async deleteStoredFile(fileName: string, subFolder = 'general'): Promise<void> {
+    const safeSubFolder = this.sanitizeSubFolder(subFolder, 'general');
     const targetDirs = this.getUploadTargetDirs(safeSubFolder);
 
     await Promise.all(
@@ -87,12 +87,12 @@ export class FileStorageService {
     }
   }
 
-  resolveLink(fileName: unknown, subFolder = 'fieldService'): string | null {
+  resolveLink(fileName: unknown, subFolder = 'general'): string | null {
     if (typeof fileName !== 'string' || !fileName) {
       return null;
     }
 
-    const safeSubFolder = this.sanitizeSubFolder(subFolder, 'fieldService');
+    const safeSubFolder = this.sanitizeSubFolder(subFolder, 'general');
     const publicBaseUrl = this.getPublicBaseUrl(safeSubFolder);
     return `${publicBaseUrl}/${encodeURIComponent(fileName)}`;
   }
@@ -299,7 +299,7 @@ export class FileStorageService {
   }
 
   private getUploadTargetDirs(subFolder: string): string[] {
-    const safeSubFolder = this.sanitizeSubFolder(subFolder, 'fieldService');
+    const safeSubFolder = this.sanitizeSubFolder(subFolder, 'general');
     if (this.explicitUploadDirs.length > 0) {
       return this.explicitUploadDirs;
     }
@@ -308,7 +308,7 @@ export class FileStorageService {
   }
 
   private getPublicBaseUrl(subFolder: string): string {
-    const safeSubFolder = this.sanitizeSubFolder(subFolder, 'fieldService');
+    const safeSubFolder = this.sanitizeSubFolder(subFolder, 'general');
     if (this.explicitPublicBaseUrl) {
       return this.explicitPublicBaseUrl;
     }
@@ -349,7 +349,7 @@ export class FileStorageService {
 
     const field = typeof row?.field === 'string' ? row.field.toLowerCase() : '';
     if (field.includes('field service')) {
-      return 'fieldService';
+      return 'general';
     }
 
     if (field.includes('vehicle inspection')) {
@@ -362,6 +362,10 @@ export class FileStorageService {
 
     if (field.includes('shippingrequest') || field.includes('shipping request')) {
       return 'shippingRequest';
+    }
+
+    if (field.includes('shipping checklist') || field.includes('shippingchecklist')) {
+      return 'shippingChecklist';
     }
 
     if (field.includes('safety incident')) {
@@ -377,7 +381,7 @@ export class FileStorageService {
       return 'capa';
     }
 
-    return 'fieldService';
+    return 'general';
   }
 
   private normalizeExistingLink(existingLink: string, fileName: string, subFolder: string): string {
@@ -406,7 +410,7 @@ export class FileStorageService {
       .filter((segment) => segment && segment !== '.' && segment !== '..')
       .map((segment) => encodeURIComponent(segment));
 
-    const encodedSubFolder = safeSegments.length > 0 ? safeSegments.join('/') : 'fieldService';
+    const encodedSubFolder = safeSegments.length > 0 ? safeSegments.join('/') : 'general';
     return `${this.remoteBaseUrl}/${encodedSubFolder}/${encodeURIComponent(fileName)}`;
   }
 
