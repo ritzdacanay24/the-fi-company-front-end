@@ -49,9 +49,13 @@ export class GraphicsWorkOrderHandler implements ScheduledJobHandler {
       // Step 3: Create graphics schedule records for each QAD work order
       for (const workOrder of qadWorkOrders) {
         try {
-          await this.createGraphicsScheduleRecord(workOrder);
-          createdCount++;
-          this.logger.log(`Created graphics schedule for work order ${workOrder.WO_NBR}`);
+          const created = await this.createGraphicsScheduleRecord(workOrder);
+          if (created) {
+            createdCount++;
+            this.logger.log(`Created graphics schedule for work order ${workOrder.WO_NBR}`);
+          } else {
+            this.logger.debug(`Skipped existing graphics work order ${workOrder.WO_NBR}`);
+          }
         } catch (recordError) {
           this.logger.warn(
             `Failed to create graphics schedule for WO ${workOrder.WO_NBR}: ${recordError}`,
@@ -193,7 +197,7 @@ export class GraphicsWorkOrderHandler implements ScheduledJobHandler {
   /**
    * Create a graphics schedule record in MySQL from a QAD work order
    */
-  private async createGraphicsScheduleRecord(workOrder: QadWorkOrder): Promise<void> {
+  private async createGraphicsScheduleRecord(workOrder: QadWorkOrder): Promise<boolean> {
     const nowDate = new Date().toISOString().slice(0, 19).replace('T', ' ');
     const priority = 50; // Legacy task default for scheduled-created records
     const criticalOrder = workOrder.WO_SO_JOB === 'DROPIN' ? 1 : 0;
@@ -205,76 +209,108 @@ export class GraphicsWorkOrderHandler implements ScheduledJobHandler {
     const prototypeCheck = 0;
     const plexRequired = 0;
     const userId = 0; // Scheduled job user ID
+    const lockName = `graphics-work-order:${workOrder.WO_NBR}`;
 
-    // Clean description of non-printable characters
-    const cleanDesc = workOrder.FULLDESC.replace(/[\x00-\x1F\x7F-\xFF]/g, '');
+    const lockRows = await this.mysqlService.query<RowDataPacket[]>(
+      'SELECT GET_LOCK(?, 10) AS gotLock',
+      [lockName],
+    );
+    const gotLock = Number(lockRows?.[0]?.['gotLock'] ?? 0) === 1;
+    if (!gotLock) {
+      throw new Error(`Could not acquire lock for work order ${workOrder.WO_NBR}`);
+    }
 
-    // Insert new graphics schedule record
-    const insertSql = `
-      INSERT INTO eyefidb.graphicsSchedule(
-        itemNumber, description, customer, qty, dueDate, customerPartNumber,
-        purchaseOrder, userId, createdDate, priority, status, partials,
-        prototypeCheck, origDueDate, graphicsWorkOrder, instructions, plexRequired,
-        graphicsSalesOrder, criticalOrder, ordered_date, active
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `;
+    try {
+      const existingRows = await this.mysqlService.query<RowDataPacket[]>(
+        `
+          SELECT id
+          FROM eyefidb.graphicsSchedule
+          WHERE graphicsWorkOrder = ? AND active = 1
+          LIMIT 1
+        `,
+        [workOrder.WO_NBR],
+      );
 
-    const result = await this.mysqlService.execute(insertSql, [
-      workOrder.WO_PART,
-      cleanDesc,
-      customer,
-      workOrder.WO_QTY_ORD,
-      workOrder.WO_DUE_DATE,
-      customerPartNumber,
-      purchaseOrder,
-      userId,
-      nowDate,
-      priority,
-      0, // status
-      partials,
-      prototypeCheck,
-      workOrder.WO_DUE_DATE,
-      workOrder.WO_NBR, // graphicsWorkOrder
-      workOrder.WO_RMKS, // instructions
-      plexRequired,
-      graphicsSalesOrder,
-      criticalOrder,
-      workOrder.WO_ORD_DATE, // ordered_date
-      1, // active
-    ]);
+      if (existingRows.length > 0) {
+        return false;
+      }
 
-    // Get the last inserted ID and update orderNum
-    if (result && typeof result === 'object' && 'insertId' in result && result.insertId) {
-      const lastInsertId = Number(result.insertId);
-      const updatedId = `G${lastInsertId}`;
+      // Clean description of non-printable characters
+      const cleanDesc = workOrder.FULLDESC.replace(/[\x00-\x1F\x7F-\xFF]/g, '');
 
-      const updateSql = `
-        UPDATE eyefidb.graphicsSchedule
-        SET orderNum = ?
-        WHERE id = ?
+      // Insert new graphics schedule record
+      const insertSql = `
+        INSERT INTO eyefidb.graphicsSchedule(
+          itemNumber, description, customer, qty, dueDate, customerPartNumber,
+          purchaseOrder, userId, createdDate, priority, status, partials,
+          prototypeCheck, origDueDate, graphicsWorkOrder, instructions, plexRequired,
+          graphicsSalesOrder, criticalOrder, ordered_date, active
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
-      await this.mysqlService.query(updateSql, [updatedId, lastInsertId]);
-
-      // Insert user transaction record
-      const userTransSql = `
-        INSERT INTO eyefidb.userTrans (
-          field, o, n, createDate, comment, userId, so, type, partNumber, reasonCode
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `;
-
-      await this.mysqlService.query(userTransSql, [
-        'New Graphics WO Created',
-        0,
-        updatedId,
-        nowDate,
-        'Created by task',
-        userId,
-        updatedId,
-        'Graphics',
+      const result = await this.mysqlService.execute(insertSql, [
         workOrder.WO_PART,
-        '',
+        cleanDesc,
+        customer,
+        workOrder.WO_QTY_ORD,
+        workOrder.WO_DUE_DATE,
+        customerPartNumber,
+        purchaseOrder,
+        userId,
+        nowDate,
+        priority,
+        0, // status
+        partials,
+        prototypeCheck,
+        workOrder.WO_DUE_DATE,
+        workOrder.WO_NBR, // graphicsWorkOrder
+        workOrder.WO_RMKS, // instructions
+        plexRequired,
+        graphicsSalesOrder,
+        criticalOrder,
+        workOrder.WO_ORD_DATE, // ordered_date
+        1, // active
       ]);
+
+      // Get the last inserted ID and update orderNum
+      if (result && typeof result === 'object' && 'insertId' in result && result.insertId) {
+        const lastInsertId = Number(result.insertId);
+        const updatedId = `G${lastInsertId}`;
+
+        const updateSql = `
+          UPDATE eyefidb.graphicsSchedule
+          SET orderNum = ?
+          WHERE id = ?
+        `;
+
+        await this.mysqlService.query(updateSql, [updatedId, lastInsertId]);
+
+        // Insert user transaction record
+        const userTransSql = `
+          INSERT INTO eyefidb.userTrans (
+            field, o, n, createDate, comment, userId, so, type, partNumber, reasonCode
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+
+        await this.mysqlService.query(userTransSql, [
+          'New Graphics WO Created',
+          0,
+          updatedId,
+          nowDate,
+          'Created by task',
+          userId,
+          updatedId,
+          'Graphics',
+          workOrder.WO_PART,
+          '',
+        ]);
+
+        return true;
+      }
+
+      return false;
+    } finally {
+      await this.mysqlService.query('SELECT RELEASE_LOCK(?)', [lockName]);
     }
   }
 }
