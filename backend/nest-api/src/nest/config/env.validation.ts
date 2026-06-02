@@ -87,4 +87,7 @@ export const envValidationSchema = Joi.object({
   JWT_SECRET: Joi.string().trim().default('w<$4c$Hmd%/*]`Oom>(hdXW|0M=X={we6;Mpvtg+V.o<$|#_}qG(GaVDEsn,~*4i'),
   JWT_REFRESH_SECRET: Joi.string().trim().optional(),
   JWT_EXPIRES_IN: Joi.string().default('24h'),
+  MINDEE_API_KEY: Joi.string().trim().allow('').optional(),
+  MINDEE_MODEL_ID: Joi.string().trim().default('c3254c99-5d36-4f4d-85b5-16066a62f865'),
+  MINDEE_BASE_URL: Joi.string().trim().uri().default('https://api-v2.mindee.net/v2'),
 });

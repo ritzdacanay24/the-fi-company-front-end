@@ -54,7 +54,8 @@ export class TripExpenseRepository {
     return this.mysqlService.query<TripExpenseRecord[]>(
       `
         SELECT a.*, NULLIF(a.originalFileLink, '') AS link,
-               'legacy' AS storage_source,
+               'fieldService' AS subFolder,
+               NULL AS storage_source,
                CONCAT(b.first, ' ', b.last) AS created_by_name
         FROM fs_workOrderTrip a
         LEFT JOIN db.users b ON b.id = a.created_by
@@ -69,7 +70,8 @@ export class TripExpenseRepository {
     return this.mysqlService.query<TripExpenseRecord[]>(
       `
         SELECT a.*, NULLIF(a.originalFileLink, '') AS link,
-               'legacy' AS storage_source,
+               'fieldService' AS subFolder,
+               NULL AS storage_source,
                CONCAT(b.first, ' ', b.last) AS created_by_name,
                c.fs_scheduler_id
         FROM fs_workOrderTrip a
@@ -85,7 +87,8 @@ export class TripExpenseRepository {
     const rows = await this.mysqlService.query<TripExpenseRecord[]>(
       `
         SELECT a.*, NULLIF(a.originalFileLink, '') AS link,
-               'legacy' AS storage_source,
+               'fieldService' AS subFolder,
+               NULL AS storage_source,
                CONCAT(b.first, ' ', b.last) AS created_by_name
         FROM fs_workOrderTrip a
         LEFT JOIN db.users b ON b.id = a.created_by

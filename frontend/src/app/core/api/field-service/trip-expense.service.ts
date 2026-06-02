@@ -1,7 +1,6 @@
 import { Injectable } from "@angular/core";
 import { firstValueFrom, map } from "rxjs";
 import { HttpClient } from "@angular/common/http";
-import { MindeeService } from "../mindee/mindee.service";
 import { MindeeApiResponse, ExpenseReceiptPrediction, MindeeRequestOptions } from "../mindee/mindee-interfaces";
 import { environment } from "src/environments/environment";
 
@@ -13,10 +12,7 @@ const tripExpenseV2Url = 'apiV2/trip-expense';
 export class TripExpenseService {
   private readonly productionAttachmentsBaseUrl = 'https://dashboard.eye-fi.com/attachments/fieldService';
 
-  constructor(
-    private http: HttpClient,
-    private mindeeService: MindeeService
-  ) {}
+  constructor(private http: HttpClient) {}
 
   /**
    * Parse expense receipt using Mindee API (new implementation)
@@ -28,7 +24,29 @@ export class TripExpenseService {
     file: File,
     options?: MindeeRequestOptions
   ): Promise<MindeeApiResponse<ExpenseReceiptPrediction>> {
-    return this.mindeeService.parseExpenseReceipt(file, undefined, options);
+    const formData = new FormData();
+    formData.append('file', file, file.name);
+    formData.append('modelId', 'c3254c99-5d36-4f4d-85b5-16066a62f865');
+    formData.append('apiKey', environment.mindeeApiKey || '');
+
+    if (options) {
+      if (options.raw_text === true) {
+        formData.append('raw_text', 'true');
+      }
+      if (options.polygon === true) {
+        formData.append('polygon', 'true');
+      }
+      if (options.rag === true) {
+        formData.append('rag', 'true');
+      }
+      if (options.alias) {
+        formData.append('alias', options.alias);
+      }
+    }
+
+    return firstValueFrom(
+      this.http.post<MindeeApiResponse<ExpenseReceiptPrediction>>(`${tripExpenseV2Url}/parse-receipt`, formData)
+    );
   }
 
   /**
@@ -44,16 +62,17 @@ export class TripExpenseService {
       throw new Error('No file found in FormData');
     }
 
-    // Temporarily override API key for backward compatibility
-    const originalGetApiKey = (this.mindeeService as any).getApiKey;
-    (this.mindeeService as any).getApiKey = () => key;
+    const options: MindeeRequestOptions = {
+      raw_text: formData.get('raw_text') === 'true' ? true : undefined,
+      polygon: formData.get('polygon') === 'true' ? true : undefined,
+      rag: formData.get('rag') === 'true' ? true : undefined,
+      alias: String(formData.get('alias') || '') || undefined,
+    };
 
-    try {
-      return await this.mindeeService.parseExpenseReceipt(file);
-    } finally {
-      // Restore original method
-      (this.mindeeService as any).getApiKey = originalGetApiKey;
-    }
+    // Keep backward-compatible signature; key argument is no longer needed because
+    // extraction is now routed through backend parse endpoint.
+    void key;
+    return this.parseExpenseReceipt(file, options);
   };
 
   getByWorkOrderId(workOrderId) {

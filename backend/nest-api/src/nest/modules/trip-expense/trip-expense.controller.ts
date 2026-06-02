@@ -59,4 +59,14 @@ export class TripExpenseController {
   delete(@Param('id', ParseIntPipe) id: number) {
     return this.service.delete(id);
   }
+
+  @Post('parse-receipt')
+  @Permissions('write')
+  @UseInterceptors(FileInterceptor('file'))
+  parseReceipt(
+    @UploadedFile() file?: { originalname?: string; buffer?: Buffer; mimetype?: string },
+    @Body() payload: Record<string, unknown> = {},
+  ) {
+    return this.service.parseReceipt(file, payload);
+  }
 }

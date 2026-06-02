@@ -36,7 +36,7 @@
 // ];
 
 // Return the current API key
-echo json_encode("md_dDpvruhnQKhMKCP50tiaVZygqQSV6LF2");
+echo json_encode("md_wtj-JyuOmOYf-fd9SjxL8wPhibP-K4ikMG5-SExsviI");
 
 // Uncomment the line below if you want to see debug information
 // echo json_encode($debugInfo);

@@ -297,8 +297,7 @@ export class ReceiptAddEditComponent implements OnInit {
         // Use the new Mindee service for better error handling and type safety
         const mindeeResponse = await this.api.parseExpenseReceipt(compressedFile, {
           raw_text: false,
-          polygon: true,
-          confidence: false
+          polygon: true
         });
         
         console.log('Mindee response structure:', mindeeResponse);
@@ -670,8 +669,7 @@ export class ReceiptAddEditComponent implements OnInit {
         try {
           const mindeeResponse = await this.api.parseExpenseReceipt(compressedFile, {
             raw_text: false,
-            polygon: true,
-            confidence: false
+            polygon: true
           });
 
           const inferenceData = (mindeeResponse as any).inference || mindeeResponse;

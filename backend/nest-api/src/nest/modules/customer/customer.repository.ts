@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
+import { PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { BaseRepository } from '@/shared/repositories/base.repository';
 import { MysqlService } from '@/shared/database/mysql.service';
 
@@ -100,9 +100,7 @@ export class CustomerRepository extends BaseRepository<RowDataPacket> {
     });
   }
 
-  private async syncNotificationEmails(customerId: number, connection: {
-    execute: (sql: string, values?: unknown[]) => Promise<unknown>;
-  }): Promise<void> {
+  private async syncNotificationEmails(customerId: number, connection: PoolConnection): Promise<void> {
     await connection.execute(
       `UPDATE eyefidb.fs_company_det c
        LEFT JOIN (

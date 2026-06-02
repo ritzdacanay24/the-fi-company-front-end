@@ -303,14 +303,14 @@ export class ShippingChecklistsRepository {
 
   async upsertTemplate(payload: ShippingChecklistTemplateUpsert): Promise<number> {
     return this.mysqlService.withTransaction(async (connection) => {
-      const customerId = await this.upsertCustomerMaster(connection, payload);
+      const customerId = await this.upsertCustomerMasterFromTemplate(connection, payload);
       const templateId = await this.upsertTemplateRow(connection, payload, customerId);
       await this.replaceTemplateQuestions(connection, templateId, payload.questions);
       return templateId;
     });
   }
 
-  private async upsertCustomerMaster(connection: PoolConnection, payload: ShippingChecklistTemplateUpsert): Promise<number> {
+  private async upsertCustomerMasterFromTemplate(connection: PoolConnection, payload: ShippingChecklistTemplateUpsert): Promise<number> {
     const result = await connection.execute<ResultSetHeader>(
       `
         INSERT INTO eyefidb.customer_master (

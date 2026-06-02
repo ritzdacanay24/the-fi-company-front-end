@@ -41,6 +41,7 @@ import { EditIconV2Component } from "@app/shared/ag-grid/edit-icon-v2/edit-icon-
 import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
 import { JobSearchComponent } from '@app/shared/components/job-search/job-search.component';
 import { AuthenticationService } from "@app/core/services/auth.service";
+import { FileViewerModalComponent } from "@app/shared/components/file-viewer-modal/file-viewer-modal.component";
 
 
 
@@ -473,7 +474,53 @@ export class UploadedReceiptComponent implements OnInit {
 
   // Grid methods
   viewReceipt(e) {
-    window.open(e.rowData.link, 'Image', 'width=largeImage.stylewidth,height=largeImage.style.height,resizable=1');
+    this.openReceiptInSharedMedia(e?.rowData);
+  }
+
+  private openReceiptInSharedMedia(rowData: any): void {
+    const row = rowData || {};
+    const currentLink = String(row?.link || '').trim();
+    if (!currentLink) {
+      return;
+    }
+
+    const viewerItems = (this.data || [])
+      .filter((item: any) => !(item as any)?.isDraft)
+      .map((item: any) => {
+        const url = String(item?.link || '').trim();
+        if (!url) {
+          return null;
+        }
+
+        const fileName = String(item?.fileName || item?.vendor_name || 'Receipt').trim();
+        return {
+          url,
+          fileName,
+        };
+      })
+      .filter((item: any) => Boolean(item?.url));
+
+    if (!viewerItems.length) {
+      return;
+    }
+
+    const initialIndex = Math.max(
+      0,
+      viewerItems.findIndex((item: any) => String(item.url || '').trim() === currentLink),
+    );
+
+    const modalRef = this.modalService.open(FileViewerModalComponent, {
+      size: 'xl',
+      centered: true,
+      backdrop: true,
+      keyboard: true,
+    });
+
+    modalRef.componentInstance.items = viewerItems;
+    modalRef.componentInstance.initialIndex = initialIndex;
+    modalRef.componentInstance.enableNavigation = true;
+    modalRef.componentInstance.url = viewerItems[initialIndex]?.url || currentLink;
+    modalRef.componentInstance.fileName = viewerItems[initialIndex]?.fileName || 'Receipt';
   }
 
   onGridReady(params: any) {
@@ -648,6 +695,15 @@ export class UploadedReceiptComponent implements OnInit {
             }
             // Use default image renderer for regular receipts
             return data?.link ? `<img src="${data.link}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;" />` : '';
+          },
+          onCellClicked: (params) => {
+            const data = params.data as any;
+            if (data?.isDraft) {
+              this.openDraft(data.draftName);
+              return;
+            }
+
+            this.openReceiptInSharedMedia(data);
           }
         },
         {
