@@ -2,6 +2,7 @@ import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query, U
 import { Permissions, RolePermissionGuard } from '../access-control';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { TripExpenseService } from './trip-expense.service';
+import { Public } from '@/nest/decorators/public.decorator';
 
 @Controller('trip-expense')
 @UseGuards(RolePermissionGuard)
@@ -61,7 +62,7 @@ export class TripExpenseController {
   }
 
   @Post('parse-receipt')
-  @Permissions('write')
+  @Public()
   @UseInterceptors(FileInterceptor('file'))
   parseReceipt(
     @UploadedFile() file?: { originalname?: string; buffer?: Buffer; mimetype?: string },

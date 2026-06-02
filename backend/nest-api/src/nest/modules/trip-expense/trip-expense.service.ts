@@ -146,7 +146,9 @@ export class TripExpenseService {
 
   private resolveMindeeApiKey(payload: Record<string, unknown>): string {
     const envKey = String(process.env.MINDEE_API_KEY || '').trim();
-    const payloadKey = String(payload?.apiKey || '').trim();
+    const payloadKey = String(
+      payload?.apiKey || payload?.apikey || payload?.mindeeApiKey || '',
+    ).trim();
     const apiKey = payloadKey || envKey;
 
     if (!apiKey) {
