@@ -36,6 +36,7 @@
           <div class="input-group " style="width: 260px; max-width: 100%;">
             <span class="input-group-text"><i class="mdi mdi-magnify"></i></span>
             <input type="search" class="form-control" placeholder="Search current tab..." [(ngModel)]="homeSearchQuery"
+              (ngModelChange)="onHomeSearchQueryChanged()"
               aria-label="Search current tab" />
           </div>
           <button class="btn btn-outline-secondary " type="button" (click)="refreshHomeGridData()">
@@ -45,33 +46,32 @@
         </div>
 
         <div>
-          <span class="badge text-dark" *ngIf="homeTab === 'tickets'">{{ filteredRecentTickets.length }} total</span>
+          <span class="badge text-dark" *ngIf="homeTab === 'open'">{{ filteredOpenTickets.length }} open</span>
+          <span class="badge text-dark" *ngIf="homeTab === 'all'">{{ filteredAllTickets.length }} total</span>
           <span class="badge text-dark" *ngIf="homeTab === 'audit'">{{ filteredAuditLogRows.length }} events</span>
-          <span class="badge text-dark" *ngIf="homeTab === 'approved-report'">
-            {{ filteredApprovedReportRows.length }} records | {{ formatCurrency(totalApprovedAmount) }} approved
-          </span>
         </div>
       </div>
     </div>
 
     <ul class="nav nav-tabs" role="tablist">
       <li class="nav-item" role="presentation">
-        <button class="nav-link" [class.active]="homeTab === 'tickets'" (click)="homeTab = 'tickets'" type="button"
-          role="tab" [attr.aria-selected]="homeTab === 'tickets'">
-          Recent Tickets
-          <span class="badge rounded-pill text-bg-primary ms-1">{{ filteredRecentTickets.length }}</span>
+        <button class="nav-link" [class.active]="homeTab === 'open'" (click)="onHomeTabSelected('open')" type="button"
+          role="tab" [attr.aria-selected]="homeTab === 'open'">
+          Open
+          <span class="badge rounded-pill text-bg-primary ms-1">{{ filteredOpenTickets.length }}</span>
         </button>
       </li>
       <li class="nav-item" role="presentation">
-        <button class="nav-link" [class.active]="homeTab === 'audit'" (click)="homeTab = 'audit'" type="button"
+        <button class="nav-link" [class.active]="homeTab === 'all'" (click)="onHomeTabSelected('all')" type="button"
+          role="tab" [attr.aria-selected]="homeTab === 'all'">
+          All
+          <span class="badge rounded-pill text-bg-secondary ms-1">{{ filteredAllTickets.length }}</span>
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" [class.active]="homeTab === 'audit'" (click)="onHomeTabSelected('audit')" type="button"
           role="tab" [attr.aria-selected]="homeTab === 'audit'">
           Audit Log
-        </button>
-      </li>
-      <li class="nav-item" role="presentation">
-        <button class="nav-link" [class.active]="homeTab === 'approved-report'" (click)="homeTab = 'approved-report'"
-          type="button" role="tab" [attr.aria-selected]="homeTab === 'approved-report'">
-          Approved Report
         </button>
       </li>
     </ul>
@@ -129,9 +129,15 @@
       </div>
     </div> -->
 
-    <div class="card-body p-0" *ngIf="homeTab === 'tickets' && filteredRecentTickets.length > 0; else noTickets">
+    <div class="card-body p-0" *ngIf="homeTab === 'open' && filteredOpenTickets.length > 0; else noOpenTickets">
       <ag-grid-angular class="ag-theme-quartz no-border permit-home-grid"
-        [gridOptions]="ticketGridOptions" [components]="ticketGridComponents" [rowData]="filteredRecentTickets">
+        [gridOptions]="ticketGridOptions" [components]="ticketGridComponents" [rowData]="filteredOpenTickets">
+      </ag-grid-angular>
+    </div>
+
+    <div class="card-body p-0" *ngIf="homeTab === 'all' && filteredAllTickets.length > 0; else noAllTickets">
+      <ag-grid-angular class="ag-theme-quartz no-border permit-home-grid"
+        [gridOptions]="ticketGridOptions" [components]="ticketGridComponents" [rowData]="filteredAllTickets">
       </ag-grid-angular>
     </div>
 
@@ -141,15 +147,14 @@
       </ag-grid-angular>
     </div>
 
-    <div class="card-body p-0"
-      *ngIf="homeTab === 'approved-report' && filteredApprovedReportRows.length > 0; else noApprovedRows">
-      <ag-grid-angular class="ag-theme-quartz no-border permit-home-grid"
-        [gridOptions]="approvedReportGridOptions" [rowData]="filteredApprovedReportRows">
-      </ag-grid-angular>
-    </div>
+    <ng-template #noOpenTickets>
+      <div *ngIf="homeTab === 'open'" class="card-body text-center py-5 text-muted">
+        No open tickets right now.
+      </div>
+    </ng-template>
 
-    <ng-template #noTickets>
-      <div *ngIf="homeTab === 'tickets'" class="card-body text-center py-5 text-muted">
+    <ng-template #noAllTickets>
+      <div *ngIf="homeTab === 'all'" class="card-body text-center py-5 text-muted">
         No tickets yet. Select a form type and click Create Ticket to begin.
       </div>
     </ng-template>
@@ -160,11 +165,6 @@
       </div>
     </ng-template>
 
-    <ng-template #noApprovedRows>
-      <div *ngIf="homeTab === 'approved-report'" class="card-body text-center py-5 text-muted">
-        No approved financial records yet.
-      </div>
-    </ng-template>
   </div>
 
   <div class="mb-4 permit-page-header permit-form-header" *ngIf="viewMode === 'form' && activeTicket">

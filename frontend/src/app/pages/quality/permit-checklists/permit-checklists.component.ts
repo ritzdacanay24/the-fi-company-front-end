@@ -220,6 +220,8 @@ export class PermitChecklistsComponent implements OnInit {
   private pendingRouteReturnTicketId = "";
   private pendingRouteFormType = "";
   private pendingRouteView = "";
+  private pendingRouteHomeTab = "";
+  private pendingRouteHomeSearch = "";
   private ticketGridApi: any;
   private pendingHomeScrollTicketId: string | null = null;
   private pendingHomeScrollAttempts = 0;
@@ -229,7 +231,7 @@ export class PermitChecklistsComponent implements OnInit {
   private lastOpenedTicketId: string | null = null;
 
   viewMode: "home" | "form" | "summary" = "home";
-  homeTab: "tickets" | "audit" | "approved-report" = "tickets";
+  homeTab: "open" | "all" | "audit" = "open";
   showOpenItemsOnly = localStorage.getItem('pc_showOpenItemsOnly') === 'true';
   condensedForm = localStorage.getItem('pc_condensedForm') === 'true';
   signPackageDraft = "";
@@ -320,10 +322,19 @@ export class PermitChecklistsComponent implements OnInit {
   ];
 
   draftFormType: PermitChecklistType = "seismic";
-  homeSearchQuery = "";
+  private _homeSearchQuery = "";
+  get homeSearchQuery(): string {
+    return this._homeSearchQuery;
+  }
+  set homeSearchQuery(value: string) {
+    this._homeSearchQuery = String(value || "");
+    this.applyTicketFilters();
+  }
   showRecentChangesPanel = false;
   tickets: PermitChecklistTicket[] = [];
   recentTickets: PermitChecklistTicket[] = [];
+  filteredAllTickets: PermitChecklistTicket[] = [];
+  filteredOpenTickets: PermitChecklistTicket[] = [];
   transactions: PermitChecklistTransaction[] = [];
   auditLogRows: PermitChecklistAuditRow[] = [];
   activeTicketId: string | null = null;
@@ -646,6 +657,8 @@ export class PermitChecklistsComponent implements OnInit {
       this.pendingRouteReturnTicketId = (params.get("returnTicketId") || "").trim();
       this.pendingRouteFormType = (params.get("formType") || "").trim().toLowerCase();
       this.pendingRouteView = (params.get("view") || "").trim().toLowerCase();
+      this.pendingRouteHomeTab = (params.get("homeTab") || "").trim().toLowerCase();
+      this.pendingRouteHomeSearch = params.get("homeSearch") || "";
       this.applyRouteQueryState();
     });
   }
@@ -655,6 +668,13 @@ export class PermitChecklistsComponent implements OnInit {
     const returnTicketId = this.pendingRouteReturnTicketId;
     const formType = this.pendingRouteFormType;
     const view = this.pendingRouteView;
+    const homeTab = this.normalizeHomeTab(this.pendingRouteHomeTab);
+    const homeSearch = this.pendingRouteHomeSearch;
+
+    this.homeTab = homeTab;
+    if (this.homeSearchQuery !== homeSearch) {
+      this.homeSearchQuery = homeSearch;
+    }
 
     if (formType === "seismic" || formType === "dca") {
       this.draftFormType = formType;
@@ -684,12 +704,22 @@ export class PermitChecklistsComponent implements OnInit {
     this.viewMode = "home";
 
     if (returnTicketId) {
-      this.homeTab = "tickets";
       this.pendingHomeScrollTicketId = returnTicketId;
       this.pendingHomeScrollAttempts = 0;
       this.lastOpenedTicketId = returnTicketId;
-      this.scheduleHomeGridRestore(0);
+
+      if (this.homeTab === "open" || this.homeTab === "all") {
+        this.scheduleHomeGridRestore(0);
+      }
     }
+  }
+
+  private normalizeHomeTab(value: string): "open" | "all" | "audit" {
+    if (value === "all" || value === "audit") {
+      return value;
+    }
+
+    return "open";
   }
 
   ngOnDestroy(): void {
@@ -864,28 +894,6 @@ export class PermitChecklistsComponent implements OnInit {
       })
       .filter((row) => row.approvedAmount > 0)
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-  }
-
-  get filteredRecentTickets(): PermitChecklistTicket[] {
-    const term = this.homeSearchQuery.trim().toLowerCase();
-    if (!term) {
-      return this.recentTickets;
-    }
-
-    return this.recentTickets.filter((ticket) => {
-      const customer = ticket.values?.["customer"] || "";
-      return [
-        ticket.ticketId,
-        ticket.formType,
-        ticket.status,
-        ticket.createdBy,
-        customer,
-        ticket.updatedAt,
-      ]
-        .join(" ")
-        .toLowerCase()
-        .includes(term);
-    });
   }
 
   get filteredAuditLogRows(): PermitChecklistAuditRow[] {
@@ -2563,7 +2571,6 @@ export class PermitChecklistsComponent implements OnInit {
       this.pendingHomeScrollAttempts = 0;
     }
 
-    this.homeTab = "tickets";
     this.viewMode = "home";
     this.activeTicketId = null;
     this.syncUrlState();
@@ -2572,11 +2579,28 @@ export class PermitChecklistsComponent implements OnInit {
   }
 
   goToAuditLog(): void {
-    this.homeTab = "audit";
+    this.onHomeTabSelected("audit");
     this.viewMode = "home";
     this.activeTicketId = null;
     this.syncUrlState();
     this.statusMessage = "Showing transaction history.";
+  }
+
+  onHomeTabSelected(tab: "open" | "all" | "audit"): void {
+    if (this.homeTab === tab) {
+      return;
+    }
+
+    this.homeTab = tab;
+    if (this.viewMode === "home") {
+      this.syncUrlState();
+    }
+  }
+
+  onHomeSearchQueryChanged(): void {
+    if (this.viewMode === "home") {
+      this.syncUrlState();
+    }
   }
 
   onDraftFormTypeChanged(): void {
@@ -2904,12 +2928,14 @@ export class PermitChecklistsComponent implements OnInit {
 
   private syncUrlState(): void {
     const activeTicket = this.activeTicket;
-    const returnTicketId = activeTicket ? null : (this.lastOpenedTicketId || null);
+    const returnTicketId = this.lastOpenedTicketId || activeTicket?.ticketId || null;
     const queryParams = {
       ticketId: activeTicket?.ticketId ?? null,
       returnTicketId,
       formType: activeTicket?.formType ?? this.draftFormType,
       view: activeTicket ? (this.viewMode === "summary" ? "summary" : "form") : null,
+      homeTab: this.homeTab,
+      homeSearch: this.homeSearchQuery || null,
     };
 
     this.router.navigate([], {
@@ -3166,6 +3192,32 @@ export class PermitChecklistsComponent implements OnInit {
 
   private refreshRecentTickets(): void {
     this.recentTickets = [...this.tickets].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    this.applyTicketFilters();
+  }
+
+  private applyTicketFilters(): void {
+    const term = this.homeSearchQuery.trim().toLowerCase();
+
+    this.filteredAllTickets = !term
+      ? [...this.recentTickets]
+      : this.recentTickets.filter((ticket) => {
+          const customer = ticket.values?.["customer"] || "";
+          return [
+            ticket.ticketId,
+            ticket.formType,
+            ticket.status,
+            ticket.createdBy,
+            customer,
+            ticket.updatedAt,
+          ]
+            .join(" ")
+            .toLowerCase()
+            .includes(term);
+        });
+
+    this.filteredOpenTickets = this.filteredAllTickets.filter(
+      (ticket) => ticket.status !== "finalized" && ticket.status !== "archived"
+    );
   }
 
   private appendTransaction(
@@ -3648,8 +3700,14 @@ export class PermitChecklistsComponent implements OnInit {
       return;
     }
 
-    if (this.viewMode !== "home" || this.homeTab !== "tickets") {
+    if (this.viewMode !== "home") {
       this.scheduleHomeGridRestore(80);
+      return;
+    }
+
+    if (this.homeTab !== "open" && this.homeTab !== "all") {
+      this.pendingHomeScrollTicketId = null;
+      this.pendingHomeScrollAttempts = 0;
       return;
     }
 
