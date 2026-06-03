@@ -29,8 +29,6 @@ export class PartsOrderService {
   private readonly updateRecipientsKey: EmailNotificationAccessValue = 'update_parts_order';
 
   private readonly partsOrderNoticeRecipients = [
-    'ritz.dacanay@the-fi-company.com',
-    'juvenal.torres@the-fi-company.com',
     'orderslv@the-fi-company.com',
   ];
 
@@ -94,7 +92,7 @@ export class PartsOrderService {
   }
 
   async getById(id: number): Promise<PartsOrderRow | null> {
-    return (await this.repository.findOne({ id })) as PartsOrderRow | null;
+    return (await this.repository.findOneWithUser(id)) as PartsOrderRow | null;
   }
 
   async getBySoLineNumber(soNumber: string): Promise<PartsOrderRow | null> {
@@ -362,10 +360,20 @@ export class PartsOrderService {
   }
 
   private async sendPartsOrderEmail(id: number, payload: Record<string, unknown>): Promise<void> {
-    const recipients = await this.getConfiguredRecipients(
+    const order = await this.getById(id);
+    const creatorRecipient = this.resolveCreatorRecipient(order);
+    const internalRecipients = await this.getConfiguredRecipients(
       this.createRecipientsKey,
       this.partsOrderNoticeRecipients,
     );
+    const toRecipients = creatorRecipient ? [creatorRecipient] : internalRecipients;
+    const ccRecipients = creatorRecipient
+      ? internalRecipients.filter((email) => email.toLowerCase() !== creatorRecipient.toLowerCase())
+      : [];
+
+    if (!toRecipients.length) {
+      return;
+    }
 
     const nowDate = new Date().toISOString().slice(0, 10);
     const link = new URL(
@@ -403,7 +411,8 @@ export class PartsOrderService {
     });
 
     await this.emailService.sendMail({
-      to: recipients,
+      to: toRecipients,
+      cc: ccRecipients.length ? ccRecipients : undefined,
       subject: `ID - ${id} Parts Order - ${nowDate}`,
       html,
     });
@@ -493,13 +502,13 @@ export class PartsOrderService {
     return labels[field] || field;
   }
 
-  private resolveChangeRecipients(before: PartsOrderRow, after: PartsOrderRow): string[] {
-    const candidate = String(after.contact_email || before.contact_email || '').trim();
+  private resolveCreatorRecipient(row: PartsOrderRow | null): string | null {
+    const candidate = String(row?.created_by_email || '').trim();
     if (candidate && this.isValidEmail(candidate)) {
-      return [candidate];
+      return candidate;
     }
 
-    return [];
+    return null;
   }
 
   private isValidEmail(email: string): boolean {
@@ -512,13 +521,17 @@ export class PartsOrderService {
     after: PartsOrderRow,
     changes: PartsOrderChangeItem[],
   ): Promise<void> {
-    const recipients = this.resolveChangeRecipients(before, after);
-    const ccRecipients = await this.getConfiguredRecipients(
+    const creatorRecipient = this.resolveCreatorRecipient(after) || this.resolveCreatorRecipient(before);
+    const internalRecipients = await this.getConfiguredRecipients(
       this.updateRecipientsKey,
       this.partsOrderNoticeRecipients,
     );
+    const toRecipients = creatorRecipient ? [creatorRecipient] : internalRecipients;
+    const ccRecipients = creatorRecipient
+      ? internalRecipients.filter((email) => email.toLowerCase() !== creatorRecipient.toLowerCase())
+      : [];
 
-    if (!recipients.length && !ccRecipients.length) {
+    if (!toRecipients.length) {
       return;
     }
 
@@ -538,8 +551,8 @@ export class PartsOrderService {
     });
 
     await this.emailService.sendMail({
-      to: recipients.length ? recipients : ccRecipients,
-      cc: recipients.length ? ccRecipients : undefined,
+      to: toRecipients,
+      cc: ccRecipients.length ? ccRecipients : undefined,
       subject: `Parts Order ${id} Updated`,
       html,
     });

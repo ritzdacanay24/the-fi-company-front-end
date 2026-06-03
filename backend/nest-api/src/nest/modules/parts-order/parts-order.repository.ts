@@ -47,9 +47,24 @@ export class PartsOrderRepository extends BaseRepository<RowDataPacket> {
     return this.findOne({ so_number: soNumber });
   }
 
+  async findOneWithUser(id: number): Promise<RowDataPacket | null> {
+    const rows = await this.rawQuery<RowDataPacket>(
+      `
+        SELECT a.*, CONCAT(b.first, ' ', b.last) AS created_by_name, b.email AS created_by_email
+        FROM eyefidb.fs_parts_order a
+        LEFT JOIN db.users b ON b.id = a.created_by
+        WHERE a.id = ?
+        LIMIT 1
+      `,
+      [id],
+    );
+
+    return rows.length ? rows[0] : null;
+  }
+
   async findAllWithUser(): Promise<RowDataPacket[]> {
     return this.rawQuery<RowDataPacket>(`
-      SELECT a.*, CONCAT(b.first, ' ', b.last) AS created_by_name
+      SELECT a.*, CONCAT(b.first, ' ', b.last) AS created_by_name, b.email AS created_by_email
       FROM eyefidb.fs_parts_order a
       LEFT JOIN db.users b ON b.id = a.created_by
       ORDER BY a.id DESC
