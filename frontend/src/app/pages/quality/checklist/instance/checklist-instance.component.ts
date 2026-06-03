@@ -3437,14 +3437,21 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       // Save progress first, then submit. This prevents async save calls from
       // overwriting a freshly-submitted status back to in_progress/completed.
       this.saveProgress(() => {
+        this.showLoadingAlert(
+          'Submitting Final Inspection',
+          'Please wait while we generate the final submission and send notification emails...',
+        );
+
         this.photoChecklistService.updateInstanceStatus(this.instanceId, 'submitted').subscribe({
           next: () => {
             this.saving = false;
+            this.closeAlert();
             this.showSuccessAlert('Checklist submitted successfully!');
             this.router.navigate([this.getExecutionRoute()], { queryParams: this.getExecutionReturnQueryParams() });
           },
           error: (error) => {
             this.saving = false;
+            this.closeAlert();
             console.error('Error submitting checklist:', error);
             this.showErrorAlert('Error submitting checklist. Please try again.');
           }
