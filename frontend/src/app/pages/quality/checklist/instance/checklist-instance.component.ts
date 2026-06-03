@@ -2354,6 +2354,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         this.canModifyChecklist = true;
         this.lockOwnerName = null;
         this.startHeartbeat();
+        this.refreshChecklistData();
       } else {
         this.isOwner = false;
         this.canModifyChecklist = false;
@@ -2380,6 +2381,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
           this.canModifyChecklist = true;
           this.lockOwnerName = null;
           this.startHeartbeat();
+          this.refreshChecklistData();
           this.cdr.detectChanges();
         },
         error: (err) => {
