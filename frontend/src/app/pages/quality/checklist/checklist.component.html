@@ -211,8 +211,13 @@
         <div class="col-md-6" *ngFor="let serial of newInstanceSerialNumbers; let i = index; trackBy: trackByIndex">
           <label class="form-label small text-muted mb-1">Checklist {{ i + 1 }}</label>
           <input class="form-control form-control-sm"
+                 [class.is-invalid]="isSerialMarkedInvalid(i)"
                  [(ngModel)]="newInstanceSerialNumbers[i]"
+                 (ngModelChange)="onSerialValueChange(i, $event)"
                  [placeholder]="'Serial #' + (i + 1)" />
+          <div class="invalid-feedback d-block" *ngIf="isSerialMarkedInvalid(i)">
+            {{ getSerialValidationMessage(i) }}
+          </div>
         </div>
       </div>
     </div>

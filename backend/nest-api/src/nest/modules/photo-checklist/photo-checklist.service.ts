@@ -494,7 +494,24 @@ export class PhotoChecklistService {
     operator_name?: string;
     status?: string;
   }) {
-    const insertId = await this.repository.createInstance(payload);
+    const normalizedSerial = String(payload.serial_number || '').trim();
+    if (normalizedSerial) {
+      const existing = await this.repository.findNonArchivedInstanceBySerialNumber(normalizedSerial);
+      if (existing) {
+        throw new BadRequestException({
+          code: 'DUPLICATE_SERIAL_NUMBER',
+          message: `Checklist serial number "${normalizedSerial}" already exists on instance #${Number(existing.id)}.`,
+          serial_number: normalizedSerial,
+          existing_instance_id: Number(existing.id),
+          existing_status: String(existing.status || ''),
+        });
+      }
+    }
+
+    const insertId = await this.repository.createInstance({
+      ...payload,
+      serial_number: normalizedSerial || undefined,
+    });
     return {
       success: true,
       instance_id: insertId,

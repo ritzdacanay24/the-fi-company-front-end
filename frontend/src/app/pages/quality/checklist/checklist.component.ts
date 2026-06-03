@@ -41,6 +41,8 @@ export class ChecklistComponent implements OnInit {
     newInstanceCount = 1;
     newInstanceSerialNumbers: string[] = [''];
     creatingInstances = false;
+    duplicateSerialIndexes = new Set<number>();
+    existingConflictSerialIndexes = new Set<number>();
 
     // Tab management
     activeTab = 'templates';
@@ -714,6 +716,7 @@ export class ChecklistComponent implements OnInit {
             next: (instances) => {
                 this.instances = instances;
                 this.instanceGridRows = instances || [];
+                this.refreshSerialValidationState();
             },
             error: (error) => {
                 console.error('Error loading instances:', error);
@@ -871,7 +874,27 @@ export class ChecklistComponent implements OnInit {
 
         // Validate form data manually
         if (!workOrder || !partNumber || !serialNumber) {
-            alert('Please fill in all required fields.');
+            await SweetAlert.fire({ icon: 'warning', title: 'Missing Required Fields', text: 'Please fill in all required fields.' });
+            return;
+        }
+
+        const batchDuplicates = this.getDuplicateSerialsInBatch([serialNumber]);
+        if (batchDuplicates.length > 0) {
+            await SweetAlert.fire({
+                icon: 'error',
+                title: 'Duplicate Serial Number',
+                text: `Duplicate serial number in input: ${batchDuplicates.join(', ')}`,
+            });
+            return;
+        }
+
+        const existingConflicts = this.getExistingInstanceSerialConflicts([serialNumber]);
+        if (existingConflicts.length > 0) {
+            await SweetAlert.fire({
+                icon: 'error',
+                title: 'Serial Already Exists',
+                text: `Serial number already exists: ${existingConflicts.join(', ')}`,
+            });
             return;
         }
 
@@ -898,7 +921,12 @@ export class ChecklistComponent implements OnInit {
             },
             error: (error) => {
                 console.error('Error creating checklist instance:', error);
-                alert('Error creating checklist. Please try again.');
+                const message = String(error?.error?.message || error?.error?.error || '').trim();
+                void SweetAlert.fire({
+                    icon: 'error',
+                    title: 'Unable To Create Checklist',
+                    text: message || 'Error creating checklist. Please try again.',
+                });
             }
         });
     }
@@ -911,6 +939,8 @@ export class ChecklistComponent implements OnInit {
         };
         this.newInstanceCount = 1;
         this.newInstanceSerialNumbers = [''];
+        this.duplicateSerialIndexes.clear();
+        this.existingConflictSerialIndexes.clear();
         this.creatingInstances = false;
         this.selectedTemplate = null;
     }
@@ -926,10 +956,31 @@ export class ChecklistComponent implements OnInit {
     onNewInstanceCountChange(): void {
         this.newInstanceCount = Math.min(100, Math.max(1, Number(this.newInstanceCount || 1)));
         this.regenerateSerials();
+        this.refreshSerialValidationState();
     }
 
     onBaseSerialChange(): void {
         this.regenerateSerials();
+        this.refreshSerialValidationState();
+    }
+
+    onSerialValueChange(index: number, value: string): void {
+        this.newInstanceSerialNumbers[index] = String(value || '');
+        this.refreshSerialValidationState();
+    }
+
+    isSerialMarkedInvalid(index: number): boolean {
+        return this.duplicateSerialIndexes.has(index) || this.existingConflictSerialIndexes.has(index);
+    }
+
+    getSerialValidationMessage(index: number): string {
+        if (this.duplicateSerialIndexes.has(index)) {
+            return 'Duplicate in this batch.';
+        }
+        if (this.existingConflictSerialIndexes.has(index)) {
+            return 'This serial number already exists.';
+        }
+        return '';
     }
 
     private regenerateSerials(): void {
@@ -956,6 +1007,103 @@ export class ChecklistComponent implements OnInit {
         }
     }
 
+    private getDuplicateSerialsInBatch(serials: string[]): string[] {
+        const counts = new Map<string, { count: number; sample: string }>();
+        for (const rawSerial of serials) {
+            const serial = String(rawSerial || '').trim();
+            if (!serial) {
+                continue;
+            }
+            const key = serial.toLowerCase();
+            const existing = counts.get(key);
+            if (existing) {
+                existing.count += 1;
+            } else {
+                counts.set(key, { count: 1, sample: serial });
+            }
+        }
+
+        const duplicates: string[] = [];
+        counts.forEach((entry) => {
+            if (entry.count > 1) {
+                duplicates.push(entry.sample);
+            }
+        });
+
+        return duplicates;
+    }
+
+    private refreshSerialValidationState(): void {
+        this.duplicateSerialIndexes.clear();
+        this.existingConflictSerialIndexes.clear();
+
+        const grouped = new Map<string, number[]>();
+        this.newInstanceSerialNumbers.forEach((rawValue, index) => {
+            const serial = String(rawValue || '').trim();
+            if (!serial) {
+                return;
+            }
+            const key = serial.toLowerCase();
+            const indexes = grouped.get(key) || [];
+            indexes.push(index);
+            grouped.set(key, indexes);
+        });
+
+        grouped.forEach((indexes) => {
+            if (indexes.length > 1) {
+                indexes.forEach((index) => this.duplicateSerialIndexes.add(index));
+            }
+        });
+
+        const existingSerials = new Set(
+            (this.instances || [])
+                .filter((instance) => String(instance?.status || '').toLowerCase() !== 'archived')
+                .map((instance) => String(instance?.serial_number || '').trim().toLowerCase())
+                .filter(Boolean),
+        );
+
+        this.newInstanceSerialNumbers.forEach((rawValue, index) => {
+            const serial = String(rawValue || '').trim().toLowerCase();
+            if (!serial) {
+                return;
+            }
+            if (existingSerials.has(serial)) {
+                this.existingConflictSerialIndexes.add(index);
+            }
+        });
+    }
+
+    private getExistingInstanceSerialConflicts(serials: string[]): string[] {
+        const candidates = new Set(
+            serials
+                .map((serial) => String(serial || '').trim().toLowerCase())
+                .filter(Boolean),
+        );
+
+        if (!candidates.size) {
+            return [];
+        }
+
+        const conflicts = new Set<string>();
+        for (const instance of this.instances || []) {
+            const status = String(instance?.status || '').toLowerCase();
+            if (status === 'archived') {
+                continue;
+            }
+
+            const serial = String(instance?.serial_number || '').trim();
+            if (!serial) {
+                continue;
+            }
+
+            if (candidates.has(serial.toLowerCase())) {
+                conflicts.add(serial);
+            }
+        }
+
+        return Array.from(conflicts);
+    }
+
     async createChecklistInstancesBatch(): Promise<void> {
         const template = this.selectedTemplate;
         if (!template) return;
@@ -968,7 +1116,33 @@ export class ChecklistComponent implements OnInit {
         const serials = this.newInstanceSerialNumbers.map(s => s.trim()).filter(Boolean);
 
         if (!workOrder || !partNumber || !serials.length) {
-            alert('Please fill in all required fields and ensure all serial numbers are set.');
+            await SweetAlert.fire({
+                icon: 'warning',
+                title: 'Missing Required Fields',
+                text: 'Please fill in all required fields and ensure all serial numbers are set.',
+            });
+            return;
+        }
+
+        this.refreshSerialValidationState();
+
+        const duplicatesInBatch = this.getDuplicateSerialsInBatch(serials);
+        if (duplicatesInBatch.length > 0) {
+            await SweetAlert.fire({
+                icon: 'error',
+                title: 'Duplicate Serial Numbers',
+                text: `Duplicate serial numbers entered: ${duplicatesInBatch.join(', ')}`,
+            });
+            return;
+        }
+
+        const existingConflicts = this.getExistingInstanceSerialConflicts(serials);
+        if (existingConflicts.length > 0) {
+            await SweetAlert.fire({
+                icon: 'error',
+                title: 'Serial Numbers Already Exist',
+                text: `Serial numbers already exist: ${existingConflicts.join(', ')}`,
+            });
             return;
         }
 
@@ -1006,7 +1180,12 @@ export class ChecklistComponent implements OnInit {
             }
         } catch (err) {
             console.error('Error creating checklist instances:', err);
-            alert('One or more checklists could not be created. Please try again.');
+            const message = String((err as any)?.error?.message || (err as any)?.error?.error || '').trim();
+            await SweetAlert.fire({
+                icon: 'error',
+                title: 'Unable To Create Checklists',
+                text: message || 'One or more checklists could not be created. Please try again.',
+            });
         } finally {
             this.creatingInstances = false;
         }

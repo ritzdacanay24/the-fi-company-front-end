@@ -309,6 +309,27 @@ export class PhotoChecklistRepository {
     return result.insertId;
   }
 
+  async findNonArchivedInstanceBySerialNumber(serialNumber: string): Promise<RowDataPacket | null> {
+    const normalizedSerial = String(serialNumber || '').trim();
+    if (!normalizedSerial) {
+      return null;
+    }
+
+    const rows = await this.mysqlService.query<RowDataPacket[]>(
+      `SELECT id, status, serial_number
+       FROM checklist_instances
+       WHERE serial_number IS NOT NULL
+         AND TRIM(serial_number) <> ''
+         AND LOWER(TRIM(serial_number)) = LOWER(?)
+         AND status <> 'archived'
+       ORDER BY id DESC
+       LIMIT 1`,
+      [normalizedSerial],
+    );
+
+    return rows[0] || null;
+  }
+
   async createTemplate(payload: any): Promise<number> {
     const templatesSql = `
       INSERT INTO checklist_templates (
