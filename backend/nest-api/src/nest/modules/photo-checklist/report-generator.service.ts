@@ -2,6 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { MysqlService } from '@/shared/database/mysql.service';
 import { RowDataPacket } from 'mysql2/promise';
 import { PhotoChecklistService } from './photo-checklist.service';
+import { EmailService } from '@/shared/email/email.service';
+import { EmailTemplateService } from '@/shared/email/email-template.service';
 
 interface ReportJob extends RowDataPacket {
   id: number;
@@ -20,11 +22,44 @@ export class ReportGeneratorService {
   private readonly logger = new Logger(ReportGeneratorService.name);
   private readonly reportSubFolder = 'inspectionCheckList/final-submissions';
   private readonly attachmentsRemoteBaseUrl = this.resolveAttachmentsRemoteBaseUrl();
+  private readonly dashboardWebBaseUrl = String(process.env.DASHBOARD_WEB_BASE_URL || '').replace(/\/+$/, '');
+  private readonly displayTimeZone = String(process.env.INSPECTION_CHECKLIST_DISPLAY_TIME_ZONE || 'America/Los_Angeles').trim();
 
   constructor(
     private readonly mysqlService: MysqlService,
     private readonly checklistService: PhotoChecklistService,
+    private readonly emailService: EmailService,
+    private readonly emailTemplateService: EmailTemplateService,
   ) {}
+
+  /**
+   * Strict immediate path used by final submit.
+   * Must complete PDF generation + email in request cycle, otherwise throw.
+   */
+  async processFinalSubmissionNow(instanceId: number): Promise<void> {
+    const exportResult = await this.checklistService.exportInstancePdf(instanceId);
+    if (!exportResult?.buffer) {
+      throw new Error(`Could not generate in-memory PDF for instance ${instanceId}`);
+    }
+
+    let storedReportUrl = '';
+    try {
+      const result = await this.checklistService.generateFinalSubmissionPdf(instanceId);
+      storedReportUrl = String(result?.download_url || result?.file_url || result?.file_name || '');
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      if (errorMsg.includes('ATTACHMENTS_UPLOAD_ROOT_DIRS')) {
+        this.logger.warn(
+          `Storage not configured for final-submission persistence (instance ${instanceId}); continuing with email attachment only.`,
+        );
+      } else {
+        throw error;
+      }
+    }
+
+    await this.recordImmediateResult(instanceId, 'completed', null, storedReportUrl || undefined);
+    await this.sendFinalSubmissionNotification(instanceId, exportResult.buffer, exportResult.fileName);
+  }
 
   /**
    * Poll and process queued report generation jobs.
@@ -288,6 +323,176 @@ export class ReportGeneratorService {
       SET ${updateParts.join(', ')}
       WHERE id = ?
     `, params);
+  }
+
+  private async recordImmediateResult(
+    instanceId: number,
+    status: 'completed' | 'failed',
+    errorMessage: string | null,
+    reportFileName?: string,
+  ): Promise<void> {
+    const templateRows = await this.mysqlService.query<RowDataPacket[]>(
+      `
+        SELECT ci.template_id, ct.quality_revision_id
+        FROM checklist_instances ci
+        LEFT JOIN checklist_templates ct ON ct.id = ci.template_id
+        WHERE ci.id = ?
+        LIMIT 1
+      `,
+      [instanceId],
+    );
+
+    const templateId = Number(templateRows?.[0]?.template_id || 0) || null;
+    const templateRevisionId = Number(templateRows?.[0]?.quality_revision_id || 0) || null;
+
+    await this.mysqlService.query(
+      `
+        INSERT INTO inspection_instance_report_jobs (
+          instance_id,
+          template_id,
+          template_revision_id,
+          status,
+          error_message,
+          report_file_name,
+          created_at,
+          updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
+      `,
+      [
+        instanceId,
+        templateId,
+        templateRevisionId,
+        status,
+        errorMessage,
+        reportFileName || null,
+      ],
+    );
+  }
+
+  private async sendFinalSubmissionNotification(
+    instanceId: number,
+    prebuiltPdfBuffer?: Buffer,
+    prebuiltPdfFileName?: string,
+  ): Promise<void> {
+    const instance = await this.checklistService.getInstanceById(instanceId) as Record<string, unknown>;
+    const creatorId = Number(instance?.operator_id || 0);
+    const ownerId = Number(instance?.owner_id || 0);
+    const creatorName = String(instance?.operator_name || '').trim() || `User #${creatorId || '-'}`;
+    const ownerName = String(instance?.owner_name || '').trim() || (ownerId ? `User #${ownerId}` : creatorName);
+
+    const recipients = await this.getActiveUserEmailsByIds([creatorId, ownerId]);
+    if (recipients.length === 0) {
+      throw new Error(`No active creator/owner recipient emails found for instance ${instanceId}`);
+    }
+
+    let attachmentBuffer = prebuiltPdfBuffer;
+    let attachmentFileName = prebuiltPdfFileName;
+    if (!attachmentBuffer) {
+      const exportResult = await this.checklistService.exportInstancePdf(instanceId);
+      if (!exportResult?.buffer) {
+        throw new Error(`PDF attachment buffer unavailable for instance ${instanceId}`);
+      }
+      attachmentBuffer = exportResult.buffer;
+      attachmentFileName = exportResult.fileName;
+    }
+
+    const workOrder = String(instance?.work_order_number || '-').trim() || '-';
+    const partNumber = String(instance?.part_number || '-').trim() || '-';
+    const serialNumber = String(instance?.serial_number || '-').trim() || '-';
+    const templateName = String(instance?.template_name || instance?.name || 'Inspection Checklist').trim();
+    const submittedAt = String(instance?.submitted_at || instance?.updated_at || '').trim();
+    const submittedLabel = this.formatSubmittedAtLabel(submittedAt);
+    const instanceUrl = this.dashboardWebBaseUrl
+      ? `${this.dashboardWebBaseUrl}/inspection-checklist/instance?id=${instanceId}`
+      : '';
+
+    const subject = `Inspection Checklist Final Submission #${instanceId}`;
+    const html = this.emailTemplateService.render('inspection-checklist-final-submission', {
+      instanceId,
+      templateName: templateName || '-',
+      creatorName,
+      ownerName,
+      submittedLabel,
+      workOrder,
+      partNumber,
+      serialNumber,
+      instanceUrl,
+    });
+
+    await this.emailService.sendMail({
+      to: recipients,
+      subject,
+      html,
+      attachments: [
+        {
+          filename: attachmentFileName || `instance-${instanceId}-final-submission.pdf`,
+          content: attachmentBuffer,
+          contentType: 'application/pdf',
+        },
+      ],
+    });
+
+    this.logger.log(`Final submission email sent for instance ${instanceId} to ${recipients.join(', ')}`);
+  }
+
+  private async getActiveUserEmailsByIds(userIds: number[]): Promise<string[]> {
+    const normalized = Array.from(new Set(userIds.filter((id) => Number.isFinite(id) && id > 0)));
+    if (normalized.length === 0) {
+      return [];
+    }
+
+    const placeholders = normalized.map(() => '?').join(',');
+    const rows = await this.mysqlService.query<RowDataPacket[]>(
+      `
+        SELECT email
+        FROM db.users
+        WHERE id IN (${placeholders})
+          AND active = 1
+          AND email IS NOT NULL
+          AND TRIM(email) <> ''
+      `,
+      normalized,
+    );
+
+    return Array.from(
+      new Set(
+        (rows || [])
+          .map((row) => String(row.email || '').trim())
+          .filter((email) => email.length > 0),
+      ),
+    );
+  }
+
+  private formatSubmittedAtLabel(rawValue: string): string {
+    const raw = String(rawValue || '').trim();
+    if (!raw) {
+      return '-';
+    }
+
+    const normalized = /^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}$/.test(raw)
+      ? `${raw.replace(' ', 'T')}Z`
+      : raw;
+
+    const timestamp = new Date(normalized);
+    if (Number.isNaN(timestamp.getTime())) {
+      return raw;
+    }
+
+    try {
+      return new Intl.DateTimeFormat('en-US', {
+        timeZone: this.displayTimeZone,
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true,
+        timeZoneName: 'short',
+      }).format(timestamp);
+    } catch {
+      return timestamp.toISOString();
+    }
   }
 
   private resolveAttachmentsRemoteBaseUrl(): string {

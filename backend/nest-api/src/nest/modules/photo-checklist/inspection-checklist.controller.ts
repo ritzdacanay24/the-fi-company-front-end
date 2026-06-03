@@ -253,7 +253,7 @@ export class InspectionChecklistController {
     const result = await this.service.updateInstance(id, updates);
 
     if (nextStatus === 'submitted') {
-      await this.reportGeneratorService.createReportJob(id);
+      await this.reportGeneratorService.processFinalSubmissionNow(id);
     }
 
     return result;
@@ -356,11 +356,11 @@ export class InspectionChecklistController {
 
     const report = await this.reportGeneratorService.getReportDownloadInfo(id);
     if (report.status === 'none') {
-      await this.reportGeneratorService.createReportJob(id);
+      const generated = await this.service.generateFinalSubmissionPdf(id) as Record<string, unknown>;
       return {
         success: true,
-        status: 'queued',
-        message: 'Final submission PDF is being generated. Please refresh shortly.',
+        status: 'ready',
+        download_url: String(generated?.download_url || generated?.file_url || generated?.file_name || ''),
       };
     }
 

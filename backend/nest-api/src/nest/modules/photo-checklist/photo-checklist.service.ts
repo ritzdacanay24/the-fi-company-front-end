@@ -1,5 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { randomBytes } from 'crypto';
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { RowDataPacket } from 'mysql2/promise';
 import PDFDocument from 'pdfkit';
 import sharp from 'sharp';
@@ -27,6 +29,8 @@ type ChecklistItemNode = Record<string, unknown> & {
 export class PhotoChecklistService {
   private readonly checklistMediaPublicOrigin = this.resolveChecklistMediaPublicOrigin();
   private readonly checklistMediaRemoteBaseUrl = this.resolveChecklistMediaRemoteBaseUrl();
+  private readonly displayTimeZone = String(process.env.INSPECTION_CHECKLIST_DISPLAY_TIME_ZONE || 'America/Los_Angeles').trim();
+  private readonly dashboardWebBaseUrl = String(process.env.DASHBOARD_WEB_BASE_URL || '').trim().replace(/\/+$/, '');
 
   constructor(
     private readonly repository: PhotoChecklistRepository,
@@ -306,7 +310,7 @@ export class PhotoChecklistService {
       doc.text(`Operator: ${String(instance.operator_name)}`);
     }
     if (instance.submitted_at) {
-      doc.text(`Submitted At: ${new Date(String(instance.submitted_at)).toLocaleString()}`);
+      doc.text(`Submitted At: ${this.formatSubmittedAtLabel(String(instance.submitted_at))}`);
     }
     if (templateId) {
       doc.text(`Template ID: ${templateId}`);
@@ -327,7 +331,7 @@ export class PhotoChecklistService {
       const completion = completionByItemId.get(itemId);
 
       const renderableImages: Buffer[] = [];
-      for (const photo of photos.slice(0, 2)) {
+      for (const photo of photos) {
         const rawUrl = String(photo.file_url || '').trim();
         if (!rawUrl) {
           continue;
@@ -336,6 +340,7 @@ export class PhotoChecklistService {
         const productionUrl = this.resolveProductionChecklistMediaUrl(rawUrl, 'inspectionCheckList');
         const imageBuffer = await this.fetchChecklistImageBuffer(productionUrl || rawUrl, {
           subFolder: 'inspectionCheckList',
+          fileName: String(photo.file_name || '').trim(),
         });
         if (imageBuffer) {
           renderableImages.push(await this.compressImageForPdf(imageBuffer));
@@ -346,8 +351,9 @@ export class PhotoChecklistService {
 
       doc.font('Helvetica-Bold').fontSize(11).fillColor('#1a1a1a').text(title);
       doc.font('Helvetica').fontSize(9).fillColor('#444444').text(
-        `Required: ${isRequired ? 'Yes' : 'No'} | Submission: ${submissionType} | Photos: ${photos.length} | Videos: ${videos.length}`,
+        `Submission: ${submissionType} | Required: ${isRequired ? 'Yes' : 'No'}`,
       );
+      doc.text(`Evidence: ${photos.length} photo(s), ${videos.length} video(s)`);
 
       const completed = completion && Object.prototype.hasOwnProperty.call(completion, 'completed')
         ? !!completion.completed
@@ -359,15 +365,28 @@ export class PhotoChecklistService {
         doc.text(`Notes: ${notes}`);
       }
 
-      const urls = media
+      const mediaLinks = media
         .slice(0, 3)
-        .map((entry) => this.resolveProductionChecklistMediaUrl(String(entry.file_url || ''), 'inspectionCheckList'))
-        .filter(Boolean);
+        .map((entry, index) => {
+          const url = this.resolveProductionChecklistMediaUrl(String(entry.file_url || ''), 'inspectionCheckList');
+          if (!url) {
+            return null;
+          }
+
+          const fileType = String(entry.file_type || '').toLowerCase() === 'video' ? 'Video' : 'Photo';
+          const shortName = this.toShortMediaDisplayLabel(url);
+          return {
+            url,
+            label: `${fileType} ${index + 1}: ${shortName}`,
+          };
+        })
+        .filter((entry): entry is { url: string; label: string } => !!entry);
 
       if (renderableImages.length > 0) {
         doc.moveDown(0.2);
         doc.text('Submitted Photos:');
         for (const imageBuffer of renderableImages) {
+          this.ensurePdfSpace(doc, 160);
           const imageTop = doc.y;
           try {
             doc.image(imageBuffer, doc.page.margins.left, imageTop, { fit: [240, 140], valign: 'center' });
@@ -378,11 +397,11 @@ export class PhotoChecklistService {
         }
       }
 
-      if (urls.length > 0) {
+      if (mediaLinks.length > 0) {
         doc.moveDown(0.1);
-        doc.text('Media:');
-        urls.forEach((url) => {
-          doc.fillColor('#1a4f8b').text(`- ${url}`, { link: url, underline: false });
+        doc.text('Media Links:');
+        mediaLinks.forEach((entry) => {
+          doc.fillColor('#1a4f8b').text(`- ${entry.label}`, { link: entry.url, underline: false });
         });
         doc.fillColor('#444444');
       }
@@ -429,7 +448,7 @@ export class PhotoChecklistService {
 
     return {
       success: true,
-      instance_id: instanceId,
+      id: instanceId,
       file_name: storedFileName,
       file_url: serverUrl,
       download_url: serverUrl,
@@ -1665,6 +1684,63 @@ export class PhotoChecklistService {
     return normalized || 'checklist-template';
   }
 
+  private formatSubmittedAtLabel(rawValue: string): string {
+    const raw = String(rawValue || '').trim();
+    if (!raw) {
+      return '-';
+    }
+
+    const normalized = /^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}$/.test(raw)
+      ? `${raw.replace(' ', 'T')}Z`
+      : raw;
+
+    const timestamp = new Date(normalized);
+    if (Number.isNaN(timestamp.getTime())) {
+      return raw;
+    }
+
+    try {
+      return new Intl.DateTimeFormat('en-US', {
+        timeZone: this.displayTimeZone,
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true,
+        timeZoneName: 'short',
+      }).format(timestamp);
+    } catch {
+      return timestamp.toISOString();
+    }
+  }
+
+  private toShortMediaDisplayLabel(rawUrl: string): string {
+    const raw = String(rawUrl || '').trim();
+    if (!raw) {
+      return 'Attachment';
+    }
+
+    let fileName = '';
+    try {
+      const parsed = new URL(raw);
+      const segments = parsed.pathname.split('/').filter(Boolean);
+      fileName = decodeURIComponent(segments[segments.length - 1] || '').trim();
+    } catch {
+      const normalized = raw.split('?')[0];
+      const segments = normalized.split('/').filter(Boolean);
+      fileName = decodeURIComponent(segments[segments.length - 1] || '').trim();
+    }
+
+    const fallback = fileName || 'Attachment';
+    if (fallback.length <= 48) {
+      return fallback;
+    }
+
+    return `${fallback.slice(0, 22)}...${fallback.slice(-16)}`;
+  }
+
   private stripHtmlText(value: unknown): string {
     const raw = String(value || '').trim();
     if (!raw) {
@@ -1692,7 +1768,7 @@ export class PhotoChecklistService {
 
   private async fetchChecklistImageBuffer(
     rawUrl: string,
-    options?: { subFolder?: string },
+    options?: { subFolder?: string; fileName?: string },
   ): Promise<Buffer | null> {
     const candidates = this.buildChecklistImageUrlCandidates(rawUrl, options);
 
@@ -1700,11 +1776,6 @@ export class PhotoChecklistService {
       try {
         const response = await fetch(candidate, { method: 'GET' });
         if (!response.ok) {
-          continue;
-        }
-
-        const contentType = String(response.headers.get('content-type') || '').toLowerCase();
-        if (!contentType.includes('image/')) {
           continue;
         }
 
@@ -1719,7 +1790,80 @@ export class PhotoChecklistService {
       }
     }
 
+    return this.readChecklistImageBufferFromDisk(rawUrl, options);
+  }
+
+  private async readChecklistImageBufferFromDisk(
+    rawUrl: string,
+    options?: { subFolder?: string; fileName?: string },
+  ): Promise<Buffer | null> {
+    const subFolder = options?.subFolder || 'inspectionCheckList';
+    const fileNames = this.extractChecklistImageFileNameCandidates(rawUrl, options?.fileName);
+    if (fileNames.length === 0) {
+      return null;
+    }
+
+    const configuredUploadDirs = String(process.env.ATTACHMENTS_FS_UPLOAD_DIRS || '')
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean);
+    const configuredRootDirs = String(process.env.ATTACHMENTS_UPLOAD_ROOT_DIRS || '')
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean);
+
+    const searchDirs = Array.from(new Set([
+      ...configuredUploadDirs,
+      ...configuredRootDirs.map((rootDir) => join(rootDir, subFolder)),
+      ...configuredRootDirs,
+      join(process.cwd(), 'uploads', subFolder),
+      join(process.cwd(), 'uploads'),
+    ]));
+
+    for (const dir of searchDirs) {
+      for (const fileName of fileNames) {
+        const absolutePath = join(dir, fileName);
+        try {
+          const buffer = await readFile(absolutePath);
+          if (buffer.length > 0) {
+            return buffer;
+          }
+        } catch {
+          // Continue trying next location.
+        }
+      }
+    }
+
     return null;
+  }
+
+  private extractChecklistImageFileNameCandidates(rawUrl: string, explicitFileName?: string): string[] {
+    const candidates: string[] = [];
+    const fromOption = String(explicitFileName || '').trim();
+    if (fromOption) {
+      candidates.push(fromOption);
+    }
+
+    const source = String(rawUrl || '').trim();
+    if (source) {
+      try {
+        const parsed = new URL(source);
+        const segments = parsed.pathname.split('/').filter(Boolean);
+        const fileName = decodeURIComponent(segments[segments.length - 1] || '').trim();
+        if (fileName) {
+          candidates.push(fileName);
+        }
+      } catch {
+        const withoutQuery = source.split('?')[0];
+        const segments = withoutQuery.split('/').filter(Boolean);
+        const fileName = decodeURIComponent(segments[segments.length - 1] || '').trim();
+        if (fileName) {
+          candidates.push(fileName);
+        }
+      }
+    }
+
+    return Array.from(new Set(candidates.filter(Boolean)));
   }
 
   private async compressImageForPdf(input: Buffer): Promise<Buffer> {
@@ -1747,7 +1891,7 @@ export class PhotoChecklistService {
 
   private buildChecklistImageUrlCandidates(
     rawUrl: string,
-    options?: { subFolder?: string },
+    options?: { subFolder?: string; fileName?: string },
   ): string[] {
     const source = String(rawUrl || '').trim();
     if (!source) {
@@ -1771,6 +1915,22 @@ export class PhotoChecklistService {
     if (!/^https?:\/\//i.test(source) && this.checklistMediaPublicOrigin) {
       const normalizedPath = source.startsWith('/') ? source : `/${source}`;
       candidates.push(`${this.checklistMediaPublicOrigin}${normalizedPath}`);
+    }
+
+    const fileName = String(options?.fileName || '').trim();
+    if (fileName) {
+      const resolvedLink = this.fileStorageService.resolveLink(fileName, subFolder);
+      if (resolvedLink) {
+        candidates.push(this.resolveProductionChecklistMediaUrl(resolvedLink, subFolder));
+        candidates.push(resolvedLink);
+      }
+    }
+
+    if (this.dashboardWebBaseUrl) {
+      const absoluteCandidates = candidates
+        .filter((value) => String(value || '').startsWith('/'))
+        .map((value) => `${this.dashboardWebBaseUrl}${value}`);
+      candidates.push(...absoluteCandidates);
     }
 
     return Array.from(new Set(candidates.filter((url) => !!String(url || '').trim())));

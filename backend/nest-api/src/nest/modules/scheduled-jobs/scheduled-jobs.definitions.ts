@@ -199,7 +199,7 @@ export const SCHEDULED_JOB_DEFINITIONS: ScheduledJobDefinition[] = [
     name: 'Inspection Checklist Report Generator',
     cron: '*/30 * * * * *',
     url: 'nest://scheduled-jobs/inspection-checklist-report-generator',
-    active: true,
+    active: false,
     note: 'System job that generates queued final-submission PDFs every 30 seconds. No email subscription is used for this job.',
   },
   {

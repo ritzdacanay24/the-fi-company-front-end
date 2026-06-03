@@ -137,7 +137,7 @@
       <!-- End Header Section -->
 
       <!-- Owner-lock read-only banner (only for non-owners) -->
-      <div *ngIf="!isOwner && (lockOwnerName || instance?.operator_name)"
+      <div *ngIf="!isOwner && instance?.status !== 'submitted' && (lockOwnerName || instance?.operator_name)"
            class="alert alert-warning alert-dismissible mb-0 rounded-0 border-0 border-bottom border-warning d-flex align-items-center gap-3 px-3 py-2 flex-shrink-0"
            style="border-left: 4px solid var(--bs-warning) !important;">
         <i class="mdi mdi-lock-alert fs-5 text-warning flex-shrink-0"></i>

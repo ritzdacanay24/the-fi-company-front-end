@@ -1,0 +1,66 @@
+<html>
+  <body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f4f6f8; color: #1f2933;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 620px; background-color: #ffffff; border: 1px solid #dde3ea; border-radius: 10px; overflow: hidden;">
+            {{> email-header}}
+            <tr>
+              <td style="padding: 20px 24px; background-color: #0b5cab; color: #ffffff;">
+                <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Inspection Checklist Final Submission</h2>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 24px; font-size: 14px; line-height: 1.6;">
+                <p style="margin-top: 0;">A checklist instance has been finalized and submitted. The PDF summary is attached.</p>
+                <table cellpadding="6" cellspacing="0" style="border-collapse: collapse; margin: 12px 0 20px 0; width: 100%;">
+                  <tr>
+                    <td style="width: 160px;"><strong>Instance ID</strong></td>
+                    <td>{{instanceId}}</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Template</strong></td>
+                    <td>{{templateName}}</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Creator</strong></td>
+                    <td>{{creatorName}}</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Owner</strong></td>
+                    <td>{{ownerName}}</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Submitted At</strong></td>
+                    <td>{{submittedLabel}}</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Work Order</strong></td>
+                    <td>{{workOrder}}</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Part Number</strong></td>
+                    <td>{{partNumber}}</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Serial Number</strong></td>
+                    <td>{{serialNumber}}</td>
+                  </tr>
+                </table>
+                {{#if instanceUrl}}
+                <p style="margin: 0 0 24px 0;">
+                  <a href="{{instanceUrl}}" style="display: inline-block; padding: 10px 18px; border-radius: 6px; background-color: #0b5cab; color: #ffffff; text-decoration: none; font-weight: 600;">
+                    Open Checklist Instance
+                  </a>
+                </p>
+                {{/if}}
+                <p style="margin: 0; color: #5a6b7b; font-size: 12px;">A PDF copy of the final submission is attached to this email.</p>
+              </td>
+            </tr>
+            {{> email-footer}}
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

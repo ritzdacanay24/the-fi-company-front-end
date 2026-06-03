@@ -6,9 +6,10 @@ import { PhotoChecklistService } from './photo-checklist.service';
 import { PhotoChecklistRepository } from './photo-checklist.repository';
 import { FileStorageModule } from '../file-storage/file-storage.module';
 import { ReportGeneratorService } from './report-generator.service';
+import { EmailModule } from '@/shared/email/email.module';
 
 @Module({
-  imports: [AccessControlModule, FileStorageModule],
+  imports: [AccessControlModule, FileStorageModule, EmailModule],
   controllers: [PhotoChecklistController, InspectionChecklistController],
   providers: [PhotoChecklistService, PhotoChecklistRepository, ReportGeneratorService],
   exports: [PhotoChecklistService, ReportGeneratorService],
