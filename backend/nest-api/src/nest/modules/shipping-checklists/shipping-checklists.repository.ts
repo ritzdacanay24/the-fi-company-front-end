@@ -427,6 +427,46 @@ export class ShippingChecklistsRepository {
     });
   }
 
+  async deleteInstance(instanceId: number): Promise<boolean> {
+    return this.mysqlService.withTransaction(async (connection) => {
+      const instanceRows = await connection.execute<RowDataPacket[]>(
+        `SELECT id FROM eyefidb.shipping_checklist_instances WHERE id = ? LIMIT 1`,
+        [instanceId],
+      );
+
+      if (!Array.isArray(instanceRows[0]) || instanceRows[0].length === 0) {
+        return false;
+      }
+
+      await connection.execute<ResultSetHeader>(
+        `
+          DELETE s
+          FROM eyefidb.shipping_checklist_instance_line_serials s
+          INNER JOIN eyefidb.shipping_checklist_instance_lines l ON l.id = s.line_id
+          WHERE l.instance_id = ?
+        `,
+        [instanceId],
+      );
+
+      await connection.execute<ResultSetHeader>(
+        `DELETE FROM eyefidb.shipping_checklist_instance_responses WHERE instance_id = ?`,
+        [instanceId],
+      );
+
+      await connection.execute<ResultSetHeader>(
+        `DELETE FROM eyefidb.shipping_checklist_instance_lines WHERE instance_id = ?`,
+        [instanceId],
+      );
+
+      await connection.execute<ResultSetHeader>(
+        `DELETE FROM eyefidb.shipping_checklist_instances WHERE id = ?`,
+        [instanceId],
+      );
+
+      return true;
+    });
+  }
+
   private async upsertTemplateRow(
     connection: PoolConnection,
     payload: ShippingChecklistTemplateUpsert,

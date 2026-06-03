@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import PDFDocument from 'pdfkit';
 import { PassThrough } from 'stream';
@@ -319,6 +319,20 @@ export class ShippingChecklistsService {
 
     if (existingInstance) {
       payload.salesOrder = String(existingInstance.sales_order || '').trim() || payload.salesOrder;
+
+      const isReopenFromVerified = String(existingInstance.status || '').toLowerCase() === 'verified' && payload.status === 'draft';
+      if (isReopenFromVerified) {
+        const verifiedAt = this.parseDateTimeOrNull(existingInstance.second_verifier_date)
+          || this.parseDateTimeOrNull(existingInstance.updated_at);
+
+        if (verifiedAt && Date.now() - verifiedAt.getTime() > 2 * 24 * 60 * 60 * 1000) {
+          throw new BadRequestException('Checklist cannot be reopened more than 2 days after verification.');
+        }
+      }
+    }
+
+    if (payload.status === 'verified' && !payload.secondVerifierDate) {
+      payload.secondVerifierDate = new Date().toISOString().slice(0, 10);
     }
 
     const instanceId = await this.repository.upsertInstance(payload);
@@ -327,10 +341,24 @@ export class ShippingChecklistsService {
       await this.sendSecondaryVerificationEmail(instanceId, payload);
     }
 
+    if (payload.status === 'verified' && (!existingInstance || existingInstance.status !== 'verified')) {
+      const creatorHint = String(payload.createdBy || existingInstance?.created_by || '').trim();
+      await this.sendCreatorVerificationCompletedEmail(instanceId, payload, creatorHint);
+    }
+
     return {
       success: true,
       instanceId,
     };
+  }
+
+  async deleteInstance(id: number) {
+    const deleted = await this.repository.deleteInstance(id);
+    if (!deleted) {
+      return { success: false, error: `Instance ${id} not found` };
+    }
+
+    return { success: true, id };
   }
 
   async verifyInstance(payloadInput: Record<string, unknown>) {
@@ -566,6 +594,60 @@ export class ShippingChecklistsService {
     }
   }
 
+  private async sendCreatorVerificationCompletedEmail(
+    instanceId: number,
+    payload: ShippingChecklistInstanceUpsert,
+    creatorHint: string,
+  ): Promise<void> {
+    const recipients = await this.resolveCreatorRecipients(creatorHint);
+    if (recipients.length === 0) {
+      return;
+    }
+
+    const dashboardBase = String(this.configService.get<string>('DASHBOARD_WEB_BASE_URL') || '').replace(/\/+$/, '');
+    const link = dashboardBase ? `${dashboardBase}/operations/forms/shipping-checklist?id=${instanceId}` : '';
+    const subject = `[Shipping Checklist] Verification completed - ${payload.formTitle}`;
+    const verifiedDate = String(payload.secondVerifierDate || new Date().toISOString().slice(0, 10)).trim();
+    const html = this.emailTemplateService.render('shipping-checklist-verification-completed', {
+      customerName: payload.customerName || '',
+      checklistTitle: payload.formTitle || '',
+      salesOrder: payload.salesOrder || '',
+      verifiedDate,
+      verifiedBy: payload.secondVerifierName || '',
+      link,
+    });
+
+    let pdfAttachment:
+      | {
+          filename: string;
+          content: Buffer;
+          contentType: string;
+        }
+      | undefined;
+
+    try {
+      const pdf = await this.getInstancePdf(instanceId);
+      pdfAttachment = {
+        filename: pdf.fileName,
+        content: pdf.buffer,
+        contentType: 'application/pdf',
+      };
+    } catch {
+      // Keep email delivery even if PDF generation fails.
+    }
+
+    try {
+      await this.emailService.sendMail({
+        to: recipients,
+        subject,
+        html,
+        attachments: pdfAttachment ? [pdfAttachment] : undefined,
+      });
+    } catch {
+      // Do not block save flow if notification fails.
+    }
+  }
+
   private toPositiveInt(value: unknown, fallback: number): number {
     const n = Number(value);
     if (Number.isFinite(n) && n > 0) {
@@ -621,7 +703,7 @@ export class ShippingChecklistsService {
     formCode: string;
     logoBuffer: Buffer | null;
   }): Promise<Buffer> {
-    const doc = new PDFDocument({ size: 'A4', layout: 'landscape', margin: 28 });
+    const doc = new PDFDocument({ size: 'A4', layout: 'portrait', margin: 28, bufferPages: true });
     const stream = new PassThrough();
     const chunks: Buffer[] = [];
 
@@ -662,53 +744,33 @@ export class ShippingChecklistsService {
       .fillColor(accent)
       .font('Helvetica-Bold')
       .fontSize(9)
-      .text('SHIPPING CHECKLIST', leftX + 170, headerTop, { width: 250, continued: false })
+      .text('SHIPPING CHECKLIST', leftX + 170, headerTop, { width: 220, continued: false })
       .fillColor(heading)
       .font('Helvetica-Bold')
-      .fontSize(18)
-      .text(formTitle, leftX + 170, headerTop + 12, { width: 360 });
+      .fontSize(17)
+      .text(formTitle, leftX + 170, headerTop + 12, { width: 240 });
 
     doc
       .fillColor(muted)
       .font('Helvetica')
       .fontSize(9)
-      .text(`${customerName} · ${formCode}`, leftX + 170, headerTop + 36, { width: 360 });
+      .text(`${customerName} · ${formCode}`, leftX + 170, headerTop + 34, { width: 240 });
 
-    const statusBoxX = rightX - 150;
-    doc.roundedRect(statusBoxX, headerTop, 150, 42, 6).fillAndStroke('#f6f8fb', border);
     doc
       .fillColor(muted)
       .font('Helvetica-Bold')
-      .fontSize(7)
-      .text('STATUS', statusBoxX + 10, headerTop + 8, { width: 130, align: 'right' })
+      .fontSize(8)
+      .text('STATUS', rightX - 140, headerTop + 2, { width: 140, align: 'right' })
       .fillColor(heading)
       .fontSize(12)
-      .text(status, statusBoxX + 10, headerTop + 19, { width: 130, align: 'right' });
+      .text(status, rightX - 140, headerTop + 14, { width: 140, align: 'right' })
+      .fillColor(muted)
+      .font('Helvetica')
+      .fontSize(8)
+      .text(`Instance # ${instanceId}`, rightX - 140, headerTop + 30, { width: 140, align: 'right' });
 
-    const sectionY = 88;
+    const sectionY = 84;
     doc.moveTo(leftX, sectionY).lineTo(rightX, sectionY).lineWidth(1.2).stroke(accent);
-
-    const writeFooter = () => {
-      const footerY = doc.page.height - 24;
-      doc
-        .save()
-        .strokeColor(border)
-        .lineWidth(0.7)
-        .moveTo(leftX, footerY - 6)
-        .lineTo(rightX, footerY - 6)
-        .stroke()
-        .fillColor(muted)
-        .font('Helvetica')
-        .fontSize(7.5)
-        .text(`Generated ${new Date().toISOString().slice(0, 19).replace('T', ' ')}`, leftX, footerY, {
-          width: 250,
-        })
-        .text('Page 1', leftX, footerY, {
-          width: rightX - leftX,
-          align: 'right',
-        })
-        .restore();
-    };
 
     let y = sectionY + 10;
     y = this.writePdfSectionTitle(doc, 'Checklist Summary', y, accent);
@@ -739,7 +801,29 @@ export class ShippingChecklistsService {
     y = this.writePdfSectionTitle(doc, 'Notes', y, accent);
     y = this.writeNotesBox(doc, String(payload.instance.notes || 'No notes entered.'), y, border, muted);
 
-    writeFooter();
+    const pageRange = doc.bufferedPageRange();
+    const generatedAt = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    for (let i = 0; i < pageRange.count; i += 1) {
+      doc.switchToPage(pageRange.start + i);
+      const footerY = doc.page.height - doc.page.margins.bottom - 18;
+      doc
+        .save()
+        .strokeColor(border)
+        .lineWidth(0.7)
+        .moveTo(leftX, footerY - 6)
+        .lineTo(rightX, footerY - 6)
+        .stroke()
+        .fillColor(muted)
+        .font('Helvetica')
+        .fontSize(7.5)
+        .text(`Generated ${generatedAt}`, leftX, footerY, { width: 280, lineBreak: false })
+        .text(`Page ${i + 1} of ${pageRange.count}`, leftX, footerY, {
+          width: rightX - leftX,
+          align: 'right',
+          lineBreak: false,
+        })
+        .restore();
+    }
 
     doc.end();
     return finished;
@@ -768,26 +852,31 @@ export class ShippingChecklistsService {
       ['Total Pallets', String(instance.totalPallets ?? '0')],
     ];
 
-    const boxWidth = 170;
-    const boxHeight = 30;
-    const gap = 8;
     const startX = 28;
+    const contentWidth = doc.page.width - 56;
+    const colGap = 18;
+    const colWidth = Math.floor((contentWidth - colGap) / 2);
+    const rowHeight = 16;
 
     rows.forEach((row, index) => {
-      const col = index % 3;
-      const rowIndex = Math.floor(index / 3);
-      const x = startX + (boxWidth + gap) * col;
-      const boxY = y + (boxHeight + gap) * rowIndex;
-      doc.roundedRect(x, boxY, boxWidth, boxHeight, 5).fillAndStroke('#fbfcfe', border);
-      doc.fillColor(muted).font('Helvetica-Bold').fontSize(7).text(row[0].toUpperCase(), x + 8, boxY + 6);
-      doc.fillColor(heading).font('Helvetica-Bold').fontSize(10).text(row[1], x + 8, boxY + 15, {
-        width: boxWidth - 16,
-        ellipsis: true,
-      });
+      const col = index % 2;
+      const rowIndex = Math.floor(index / 2);
+      const x = startX + col * (colWidth + colGap);
+      const rowY = y + rowIndex * rowHeight;
+      doc
+        .fillColor(muted)
+        .font('Helvetica-Bold')
+        .fontSize(8)
+        .text(`${row[0]}:`, x, rowY, { width: 120 });
+      doc
+        .fillColor(heading)
+        .font('Helvetica')
+        .fontSize(9)
+        .text(String(row[1] || '—'), x + 122, rowY, { width: colWidth - 122, ellipsis: true });
     });
 
-    const totalRows = Math.ceil(rows.length / 3);
-    return y + totalRows * (boxHeight + gap) + 4;
+    const totalRows = Math.ceil(rows.length / 2);
+    return y + totalRows * rowHeight + 2;
   }
 
   private writeInfoCards(
@@ -798,29 +887,30 @@ export class ShippingChecklistsService {
     muted: string,
     heading: string,
   ): number {
-    const cardWidth = 120;
-    const cardHeight = 32;
-    const gap = 9;
     const startX = 28;
-    const cardsPerRow = 4;
+    const contentWidth = doc.page.width - 56;
+    const colGap = 18;
+    const colWidth = Math.floor((contentWidth - colGap) / 2);
+    const rowHeight = 16;
 
     rows.forEach((row, index) => {
-      const col = index % cardsPerRow;
-      const rowIndex = Math.floor(index / cardsPerRow);
-      const x = startX + (cardWidth + gap) * col;
-      const cardY = y + (cardHeight + gap) * rowIndex;
-
-      doc.roundedRect(x, cardY, cardWidth, cardHeight, 5).fillAndStroke('#fbfcfe', border);
-      doc.fillColor(muted).font('Helvetica-Bold').fontSize(7).text(row[0].toUpperCase(), x + 7, cardY + 5, {
-        width: cardWidth - 14,
-      });
-      doc.fillColor(heading).font('Helvetica-Bold').fontSize(9).text(row[1], x + 7, cardY + 15, {
-        width: cardWidth - 14,
-        ellipsis: true,
-      });
+      const col = index % 2;
+      const rowIndex = Math.floor(index / 2);
+      const x = startX + col * (colWidth + colGap);
+      const rowY = y + rowIndex * rowHeight;
+      doc
+        .fillColor(muted)
+        .font('Helvetica-Bold')
+        .fontSize(8)
+        .text(`${row[0]}:`, x, rowY, { width: 120 });
+      doc
+        .fillColor(heading)
+        .font('Helvetica')
+        .fontSize(9)
+        .text(String(row[1] || '—'), x + 122, rowY, { width: colWidth - 122, ellipsis: true });
     });
 
-    return y + Math.ceil(rows.length / cardsPerRow) * (cardHeight + gap) + 4;
+    return y + Math.ceil(rows.length / 2) * rowHeight + 2;
   }
 
   private writeLineItemsTable(
@@ -831,7 +921,7 @@ export class ShippingChecklistsService {
     heading: string,
     muted: string,
   ): number {
-    const colWidths = [40, 170, 60, 205, 70];
+    const colWidths = [36, 140, 52, 241, 70];
     const headers = ['Ship', 'Part #', 'Qty', 'Serials', 'Pallet Qty'];
     const startX = 28;
 
@@ -864,7 +954,7 @@ export class ShippingChecklistsService {
       const rowHeight = Math.max(18, ...values.map((value, i) => doc.heightOfString(String(value), { width: colWidths[i] - 8 }))) + 8;
 
       if (y + rowHeight > doc.page.height - 80) {
-        doc.addPage({ size: 'A4', layout: 'landscape', margin: 28 });
+        doc.addPage({ size: 'A4', layout: 'portrait', margin: 28 });
         y = drawHeader(28);
       }
 
@@ -891,7 +981,7 @@ export class ShippingChecklistsService {
     heading: string,
     muted: string,
   ): number {
-    const colWidths = [48, 385, 112];
+    const colWidths = [44, 400, 95];
     const headers = ['#', 'Checklist Item', 'Result'];
     const startX = 28;
 
@@ -919,7 +1009,7 @@ export class ShippingChecklistsService {
       const rowHeight = Math.max(18, doc.heightOfString(itemText, { width: colWidths[1] - 8 }) + 8);
 
       if (y + rowHeight > doc.page.height - 80) {
-        doc.addPage({ size: 'A4', layout: 'landscape', margin: 28 });
+        doc.addPage({ size: 'A4', layout: 'portrait', margin: 28 });
         y = drawHeader(28);
       }
 
@@ -950,7 +1040,7 @@ export class ShippingChecklistsService {
   private writeNotesBox(doc: PDFKit.PDFDocument, notes: string, y: number, border: string, muted: string): number {
     const boxHeight = Math.max(26, doc.heightOfString(notes, { width: 527 - 12 }) + 14);
     if (y + boxHeight > doc.page.height - 60) {
-      doc.addPage({ size: 'A4', layout: 'landscape', margin: 28 });
+      doc.addPage({ size: 'A4', layout: 'portrait', margin: 28 });
       y = 28;
     }
 
@@ -994,6 +1084,35 @@ export class ShippingChecklistsService {
     return this.normalizeRecipientList(recipients);
   }
 
+  private async resolveCreatorRecipients(createdByRaw: string): Promise<string[]> {
+    const createdBy = String(createdByRaw || '').trim();
+    if (!createdBy) {
+      return [];
+    }
+
+    const recipients = this.normalizeRecipientList([createdBy]);
+    const target = createdBy.toLowerCase();
+
+    try {
+      const matches = await this.usersService.search(createdBy);
+      const exactMatches = matches.filter((user) => {
+        const email = String(user.email || '').trim().toLowerCase();
+        const fullName = `${String(user.first || '').trim()} ${String(user.last || '').trim()}`.trim().toLowerCase();
+        return email === target || fullName === target;
+      });
+
+      recipients.push(
+        ...exactMatches
+          .map((user) => String(user.email || '').trim())
+          .filter((email) => email.length > 0),
+      );
+    } catch {
+      // Ignore directory lookup failures and keep any direct email values.
+    }
+
+    return this.normalizeRecipientList(recipients);
+  }
+
   private normalizeRecipientList(values: string[]): string[] {
     const result: string[] = [];
     const seen = new Set<string>();
@@ -1016,6 +1135,21 @@ export class ShippingChecklistsService {
     }
 
     return result;
+  }
+
+  private parseDateTimeOrNull(value: unknown): Date | null {
+    const normalized = String(value || '').trim();
+    if (!normalized) {
+      return null;
+    }
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+      const parsed = new Date(`${normalized}T00:00:00Z`);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    const parsed = new Date(normalized);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
   }
 
   private toDateOnly(value: unknown): string | null {

@@ -1,6 +1,6 @@
 import { PhotosService } from './photos/photos.service';
 import { Component, Inject, OnDestroy, OnInit, Renderer2, TemplateRef, ViewChild } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { first } from 'rxjs/operators';
 import { WorkOrderInfoService } from '@app/core/api/work-order/work-order-info.service';
 import { PhotoChecklistConfigService, ChecklistTemplate, ChecklistInstance } from '@app/core/api/photo-checklist-config/photo-checklist-config.service';
@@ -197,11 +197,17 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
   navOptions = [
     { name: 'Open',           value: 'open',           icon: 'mdi mdi-progress-clock me-1 align-bottom',        count: 0, countStyle: 'warning' },
     { name: 'Submitted',      value: 'submitted',      icon: 'mdi mdi-send-check-outline me-1 align-bottom',    count: 0, countStyle: 'info'    },
+    { name: 'My Assignments', value: 'my_assignments', icon: 'mdi mdi-account-check-outline me-1 align-bottom', count: 0, countStyle: 'primary' },
   ];
   currentUser: any = null;
   quickSearch = '';
+  previousInstanceId: number | null = null;
   isStandaloneMode = false;
   gridApi: GridApi | null = null;
+  private restoringGridStateFromUrl = false;
+  private hasAppliedPreviousRowRestore = false;
+  private pendingFilterModelFromUrl: any = null;
+  private pendingSortModelFromUrl: any[] | null = null;
   selectedInstanceIds: number[] = [];
   transferUsers: AccessControlUserSummary[] = [];
   transferTargetUserId: number | null = null;
@@ -223,6 +229,15 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
     return this.selectedTransferCount > 0;
   }
 
+  get hasActiveFilters(): boolean {
+    const hasSearch = !!this.quickSearch?.trim();
+    const hasNonDefaultTab = this.activeTab !== 'open';
+    const hasGridFilters = !!Object.keys(this.gridApi?.getFilterModel?.() || {}).length;
+    const hasGridSort = !!(this.gridApi?.getColumnState?.() || []).some((c: any) => !!c?.sort);
+
+    return hasSearch || hasNonDefaultTab || hasGridFilters || hasGridSort;
+  }
+
   get selectedTransferUserName(): string {
     const found = this.transferUsers.find((u) => Number(u.id) === Number(this.transferTargetUserId || 0));
     return found?.name || '';
@@ -234,6 +249,7 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
     private photoChecklistConfigService: PhotoChecklistConfigService,
     private photoChecklistV2Service: PhotoChecklistV2Service,
     private accessControlApiService: AccessControlApiService,
+    private activatedRoute: ActivatedRoute,
     private router: Router,
     private authService: AuthenticationService,
     private notificationService: NotificationService,
@@ -299,12 +315,14 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
   }
 
   getOpenChecklists() {
+    this.hasAppliedPreviousRowRestore = false;
     this.loading = true;
     this.photoChecklistConfigService.getInstances().pipe(first()).subscribe(data => {
       this.loading = false;
       // Load all checklists and let ag-grid handle filtering/sorting in-grid.
       this.openChecklists = data || [];
       this.applyTabFilter();
+      this.focusPreviousInstanceRow();
     }, () => this.loading = false);
   }
 
@@ -325,6 +343,10 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
 
       if (this.activeTab === 'submitted') {
         rows = rows.filter((c) => this.normalizeChecklistStatus(c?.status) === 'submitted');
+      }
+
+      if (this.activeTab === 'my_assignments') {
+        rows = rows.filter((c) => this.isAssignedToCurrentUser(c) && this.isOpenTabStatus(c?.status));
       }
     }
 
@@ -351,6 +373,7 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
 
     this.activeTab = tab;
     this.applyTabFilter();
+    this.syncViewStateToUrl();
     this.gridApi?.deselectAll();
     this.selectedInstanceIds = [];
   }
@@ -360,6 +383,9 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
     const submittedCount = this.openChecklists.filter(
       (c) => this.normalizeChecklistStatus(c?.status) === 'submitted',
     ).length;
+    const myAssignmentsCount = this.openChecklists.filter(
+      (c) => this.isAssignedToCurrentUser(c) && this.isOpenTabStatus(c?.status),
+    ).length;
 
     this.navOptions = this.navOptions.map((option) => {
       if (option.value === 'open') {
@@ -368,12 +394,100 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
       if (option.value === 'submitted') {
         return { ...option, count: submittedCount };
       }
+      if (option.value === 'my_assignments') {
+        return { ...option, count: myAssignmentsCount };
+      }
       return option;
     });
   }
 
   onQuickSearch(term: string): void {
     this.applyTabFilter();
+    this.syncViewStateToUrl();
+  }
+
+  private parseFilterModelFromQuery(raw: unknown): any | null {
+    const value = String(raw || '').trim();
+    if (!value) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(value);
+    } catch {
+      // Backward compatibility for previously encoded URLs.
+      try {
+        return JSON.parse(decodeURIComponent(value));
+      } catch {
+        return null;
+      }
+    }
+  }
+
+  private encodeForQuery(value: unknown): string {
+    return JSON.stringify(value ?? {});
+  }
+
+  private syncViewStateToUrl(): void {
+    const filterModel = this.gridApi?.getFilterModel?.() || {};
+    const sortModel = this.gridApi?.getColumnState?.()
+      ?.filter((c: any) => !!c?.sort)
+      ?.map((c: any) => ({ colId: c.colId, sort: c.sort, sortIndex: c.sortIndex })) || [];
+
+    const hasFilterModel = !!Object.keys(filterModel).length;
+    const hasSortModel = !!sortModel.length;
+
+    this.router.navigate([], {
+      relativeTo: this.activatedRoute,
+      queryParams: {
+        t: this.activeTab !== 'open' ? this.activeTab : null,
+        q: this.quickSearch?.trim() || null,
+        p: this.previousInstanceId || null,
+        f: hasFilterModel ? this.encodeForQuery(filterModel) : null,
+        s: hasSortModel ? this.encodeForQuery(sortModel) : null,
+        // remove legacy keys from URL
+        tab: null,
+        previousId: null,
+        gf: null,
+        gs: null,
+      },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
+
+  private focusPreviousInstanceRow(): void {
+    if (!this.gridApi || !this.previousInstanceId || this.hasAppliedPreviousRowRestore) {
+      return;
+    }
+
+    let rowIndexToFocus: number | null = null;
+    let matchedNode: any = null;
+    this.gridApi.forEachNodeAfterFilterAndSort((node) => {
+      if (rowIndexToFocus !== null) {
+        return;
+      }
+
+      if (Number(node?.data?.id || 0) === this.previousInstanceId) {
+        rowIndexToFocus = node.rowIndex ?? null;
+        matchedNode = node;
+      }
+    });
+
+    if (rowIndexToFocus !== null) {
+      if (matchedNode) {
+        this.gridApi.ensureNodeVisible(matchedNode, 'middle');
+      } else {
+        this.gridApi.ensureIndexVisible(rowIndexToFocus, 'middle');
+      }
+
+      // Restore visible context by selecting the previously opened row.
+      if (matchedNode?.setSelected) {
+        matchedNode.setSelected(true, true);
+      }
+
+      this.hasAppliedPreviousRowRestore = true;
+    }
   }
 
   private normalizeText(value: unknown): string {
@@ -415,6 +529,37 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
     return Array.from(new Set(candidates));
   }
 
+  private isAssignedToCurrentUser(instance: ChecklistInstance): boolean {
+    const user = this.currentUser;
+    if (!user || !instance) {
+      return false;
+    }
+
+    const currentUserIds = this.getCurrentUserIdCandidates(user);
+    const instanceIds = [
+      instance?.owner_id,
+      instance?.operator_id,
+      (instance as any)?.ownerId,
+      (instance as any)?.operatorId,
+    ]
+      .filter((value) => value !== null && value !== undefined && value !== '')
+      .map((value) => String(value));
+
+    if (instanceIds.some((id) => currentUserIds.includes(id))) {
+      return true;
+    }
+
+    const currentUserName = this.getCurrentUserName(user);
+    if (!currentUserName) {
+      return false;
+    }
+
+    const ownerName = this.normalizeText(instance?.owner_name || (instance as any)?.ownerName || '');
+    const operatorName = this.normalizeText(instance?.operator_name || (instance as any)?.operatorName || '');
+
+    return ownerName === currentUserName || operatorName === currentUserName;
+  }
+
   results = [];
   openPhotos(action?: string, instanceId?: number) {
     if (instanceId) {
@@ -432,9 +577,27 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
   }
 
   openChecklistInstance(instanceId: number) {
+    const currentFilterModel = this.pendingFilterModelFromUrl
+      ? this.pendingFilterModelFromUrl
+      : (this.gridApi?.getFilterModel?.() || {});
+
+    const currentSortModel = this.pendingSortModelFromUrl?.length
+      ? this.pendingSortModelFromUrl
+      : (this.gridApi?.getColumnState?.()
+          ?.filter((c: any) => !!c?.sort)
+          ?.map((c: any) => ({ colId: c.colId, sort: c.sort, sortIndex: c.sortIndex })) || []);
+
     // Navigate to the checklist instance page with query parameters
     this.router.navigate(['/inspection-checklist/instance'], {
-      queryParams: { id: instanceId, returnTo: 'execution' }
+      queryParams: {
+        id: instanceId,
+        returnTo: 'execution',
+        p: instanceId,
+        t: this.activeTab !== 'open' ? this.activeTab : null,
+        q: this.quickSearch?.trim() || null,
+        f: Object.keys(currentFilterModel || {}).length ? this.encodeForQuery(currentFilterModel) : null,
+        s: currentSortModel.length ? this.encodeForQuery(currentSortModel) : null,
+      }
     });
   }
 
@@ -451,6 +614,66 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
 
   onGridReady(event: GridReadyEvent): void {
     this.gridApi = event.api;
+
+    if (this.pendingFilterModelFromUrl) {
+      this.restoringGridStateFromUrl = true;
+      this.gridApi.setFilterModel(this.pendingFilterModelFromUrl);
+      this.gridApi.onFilterChanged();
+      this.restoringGridStateFromUrl = false;
+    }
+
+    if (this.pendingSortModelFromUrl?.length) {
+      this.restoringGridStateFromUrl = true;
+      this.gridApi.applyColumnState({
+        state: this.pendingSortModelFromUrl,
+        defaultState: { sort: null }
+      });
+      this.restoringGridStateFromUrl = false;
+    }
+
+    this.focusPreviousInstanceRow();
+  }
+
+  onGridModelUpdated(): void {
+    this.focusPreviousInstanceRow();
+  }
+
+  onGridFilterChanged(): void {
+    if (this.restoringGridStateFromUrl) {
+      return;
+    }
+
+    this.syncViewStateToUrl();
+  }
+
+  onGridSortChanged(): void {
+    if (this.restoringGridStateFromUrl) {
+      return;
+    }
+
+    this.syncViewStateToUrl();
+  }
+
+  clearAllFilters(): void {
+    this.restoringGridStateFromUrl = true;
+
+    this.quickSearch = '';
+    this.activeTab = 'open';
+    this.pendingFilterModelFromUrl = null;
+    this.pendingSortModelFromUrl = null;
+
+    if (this.gridApi) {
+      this.gridApi.setFilterModel(null);
+      this.gridApi.applyColumnState({ defaultState: { sort: null } });
+      this.gridApi.onFilterChanged();
+    }
+
+    this.restoringGridStateFromUrl = false;
+
+    this.applyTabFilter();
+    this.gridApi?.deselectAll();
+    this.selectedInstanceIds = [];
+    this.syncViewStateToUrl();
   }
 
   onSelectionChanged(event: SelectionChangedEvent): void {
@@ -785,6 +1008,22 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
     if (this.isStandaloneMode) {
       this.renderer.addClass(this.document.body, this.standaloneBodyClass);
     }
+
+    const qp = this.activatedRoute.snapshot.queryParams || {};
+    const requestedTab = String(qp['t'] || qp['tab'] || '').trim().toLowerCase();
+    const allowedTabs = new Set(['open', 'submitted', 'my_assignments']);
+    if (allowedTabs.has(requestedTab)) {
+      this.activeTab = requestedTab;
+    }
+
+    this.quickSearch = String(qp['q'] || '').trim();
+
+    const previousId = Number(qp['p'] || qp['previousId'] || 0);
+    this.previousInstanceId = Number.isFinite(previousId) && previousId > 0 ? previousId : null;
+
+    this.pendingFilterModelFromUrl = this.parseFilterModelFromQuery(qp['f'] || qp['gf']);
+    const parsedSortModel = this.parseFilterModelFromQuery(qp['s'] || qp['gs']);
+    this.pendingSortModelFromUrl = Array.isArray(parsedSortModel) ? parsedSortModel : null;
     
     this.getOpenChecklists();
     this.filteredChecklists = [...this.openChecklists]; // Initialize filtered list

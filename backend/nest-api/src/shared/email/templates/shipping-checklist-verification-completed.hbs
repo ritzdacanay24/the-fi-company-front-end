@@ -1,0 +1,56 @@
+<html>
+  <body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f4f6f8; color: #1f2933;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 620px; background-color: #ffffff; border: 1px solid #dde3ea; border-radius: 10px; overflow: hidden;">
+            {{> email-header}}
+            <tr>
+              <td style="padding: 20px 24px; background-color: #0b5cab; color: #ffffff;">
+                <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Verification Completed</h2>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 24px; font-size: 14px; line-height: 1.6;">
+                <p style="margin-top: 0;">A shipping checklist has completed final verification.</p>
+                <table cellpadding="6" cellspacing="0" style="border-collapse: collapse; margin: 12px 0 20px 0; width: 100%;">
+                  <tr>
+                    <td style="width: 140px;"><strong>Customer</strong></td>
+                    <td>{{customerName}}</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Checklist</strong></td>
+                    <td>{{checklistTitle}}</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Sales Order</strong></td>
+                    <td>{{salesOrder}}</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Verified On</strong></td>
+                    <td>{{verifiedDate}}</td>
+                  </tr>
+                  {{#if verifiedBy}}
+                  <tr>
+                    <td><strong>Verified By</strong></td>
+                    <td>{{verifiedBy}}</td>
+                  </tr>
+                  {{/if}}
+                </table>
+                {{#if link}}
+                <p style="margin: 0 0 24px 0;">
+                  <a href="{{link}}" style="display: inline-block; padding: 10px 18px; border-radius: 6px; background-color: #0b5cab; color: #ffffff; text-decoration: none; font-weight: 600;">
+                    Open Checklist
+                  </a>
+                </p>
+                {{/if}}
+                <p style="margin: 0; color: #5a6b7b; font-size: 12px;">A PDF copy of the checklist is attached to this email.</p>
+              </td>
+            </tr>
+            {{> email-footer}}
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

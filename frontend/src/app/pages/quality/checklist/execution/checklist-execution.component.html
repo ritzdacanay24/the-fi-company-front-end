@@ -49,6 +49,14 @@
             <button class="btn btn-outline-secondary" (click)="loadOpenChecklists()" title="Refresh">
               <i class="mdi mdi-refresh"></i>
             </button>
+            <button
+              *ngIf="hasActiveFilters"
+              class="btn btn-outline-danger"
+              type="button"
+              (click)="clearAllFilters()"
+              title="Clear all filters">
+              <i class="mdi mdi-filter-remove-outline"></i>
+            </button>
             <div class="ms-auto">
               <button class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1"
                       type="button"
@@ -98,6 +106,22 @@
               </span>
             </button>
           </li>
+          <li class="nav-item" role="presentation">
+            <button
+              type="button"
+              class="nav-link"
+              [class.active]="activeTab === 'my_assignments'"
+              (click)="setActiveTab('my_assignments')"
+              role="tab"
+              [attr.aria-selected]="activeTab === 'my_assignments'">
+              <i class="mdi mdi-account-check-outline me-1"></i>
+              My Assignments
+              <span class="badge rounded-pill ms-1"
+                    [ngClass]="activeTab === 'my_assignments' ? 'text-bg-primary' : 'text-bg-light text-body border'">
+                {{ navOptions[2].count }}
+              </span>
+            </button>
+          </li>
         </ul>
 
         <div class="card-body p-0">
@@ -112,6 +136,9 @@
             [rowSelection]="'multiple'"
             [rowMultiSelectWithClick]="true"
             (gridReady)="onGridReady($event)"
+            (modelUpdated)="onGridModelUpdated()"
+            (filterChanged)="onGridFilterChanged()"
+            (sortChanged)="onGridSortChanged()"
             (selectionChanged)="onSelectionChanged($event)"
             (cellClicked)="onGridCellClicked($event)">
           </ag-grid-angular>

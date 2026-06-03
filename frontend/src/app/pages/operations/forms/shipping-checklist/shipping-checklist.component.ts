@@ -11,6 +11,7 @@ import { AuthenticationService } from '@app/core/services/auth.service';
 import { FileViewerModalComponent } from '@app/shared/components/file-viewer-modal/file-viewer-modal.component';
 import { SharedModule } from '@app/shared/shared.module';
 import { ToastrService } from 'ngx-toastr';
+import Swal from 'sweetalert2';
 import {
   ShippingChecklistInstancePayload,
   ShippingChecklistTemplate,
@@ -37,6 +38,8 @@ interface ShippingChecklistListItem {
   imports: [CommonModule, SharedModule, ReactiveFormsModule],
 })
 export class ShippingChecklistComponent implements OnInit {
+  private readonly minLineRows = 1;
+
   form: FormGroup;
   templates: ShippingChecklistTemplate[] = [];
   instances: ShippingChecklistListItem[] = [];
@@ -78,11 +81,11 @@ export class ShippingChecklistComponent implements OnInit {
       formDate: [''],
       shipVia: [''],
       shippingAccount: [''],
-      salesOrder: [''],
+      salesOrder: ['', Validators.required],
       packingSlip: [''],
       arrivalDate: [''],
       totalPallets: [''],
-      verifierName: [''],
+      verifierName: ['', Validators.required],
       verifierDate: [''],
       secondVerifierName: [''],
       secondVerifierEmail: [''],
@@ -140,6 +143,37 @@ export class ShippingChecklistComponent implements OnInit {
     return Boolean(this.selectedInstanceId) && (this.checklistStatus === 'submitted' || this.checklistStatus === 'verified');
   }
 
+  get canEditSecondVerifierDate(): boolean {
+    return false;
+  }
+
+  get showVerificationProcessStep(): boolean {
+    return Boolean(this.selectedInstanceId) && (this.isPendingSecondaryVerification || this.isVerifiedFinal);
+  }
+
+  get secondVerifierRoutingEmail(): string {
+    const instanceVerifierEmail = String(this.form.get('secondVerifierEmail')?.value || '').trim();
+    return instanceVerifierEmail || this.getAssignedVerifierEmail();
+  }
+
+  get hasSecondVerifierRouting(): boolean {
+    return this.secondVerifierRoutingEmail.length > 0;
+  }
+
+  get canManageChecklist(): boolean {
+    const user = this.authService.currentUserValue;
+    if (!user) {
+      return false;
+    }
+
+    if (Number(user?.isAdmin || 0) === 1) {
+      return true;
+    }
+
+    const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
+    return permissions.some((permission: unknown) => String(permission || '').toLowerCase().includes('manage'));
+  }
+
   get templateLogoUrl(): string {
     const raw = String(this.selectedTemplate?.logoUrl || '').trim();
     if (!raw) {
@@ -186,36 +220,26 @@ export class ShippingChecklistComponent implements OnInit {
   async loadTemplatesAndInstances(): Promise<void> {
     this.isLoading = true;
     if (this.linesArray.length === 0) {
-      this.resetLineRows(14);
+      this.resetLineRows(this.minLineRows);
     }
 
     try {
-      try {
-        const templates = await this.service.getTemplates();
-        this.templates = templates;
-      } catch {
-        this.templates = [];
-        this.toastr.error('Unable to load checklist templates');
-      }
+      const templates = await this.service.getTemplates();
+      this.templates = templates;
 
-      try {
-        const instances = await this.service.getInstances();
-        this.instances = (instances || []).map((item) => ({
-          id: Number(item.id),
-          checklistNumber: String(item.formCode || this.templates.find((template) => template.id === Number(item.templateId))?.formCode || '-'),
-          customerName: String(item.customerName || ''),
-          status: String(item.status || ''),
-          salesOrder: String(item.salesOrder || ''),
-          packingSlip: String(item.packingSlip || ''),
-          secondVerifierEmailSentAt: String(item.secondVerifierEmailSentAt || ''),
-          updatedAt: String(item.updatedAt || ''),
-        }));
-      } catch {
-        this.instances = [];
-        this.toastr.error('Unable to load checklist instances');
-      }
-    } catch {
-      this.toastr.error('Unable to load shipping checklist workflow data');
+      const instances = await this.service.getInstances();
+      this.instances = (instances || []).map((item) => ({
+        id: Number(item.id),
+        checklistNumber: String(item.formCode || this.templates.find((template) => template.id === Number(item.templateId))?.formCode || '-'),
+        customerName: String(item.customerName || ''),
+        status: String(item.status || ''),
+        salesOrder: String(item.salesOrder || ''),
+        packingSlip: String(item.packingSlip || ''),
+        secondVerifierEmailSentAt: String(item.secondVerifierEmailSentAt || ''),
+        updatedAt: String(item.updatedAt || ''),
+      }));
+    } catch (error) {
+      throw error;
     } finally {
       this.isLoading = false;
     }
@@ -237,7 +261,7 @@ export class ShippingChecklistComponent implements OnInit {
     this.questionAttachments = {};
     this.uploadScopeId = this.createUploadScopeId();
     this.applyTemplate(template);
-    this.resetLineRows(14);
+    this.resetLineRows(this.minLineRows);
   }
 
   async createChecklistFromTemplate(): Promise<void> {
@@ -258,7 +282,13 @@ export class ShippingChecklistComponent implements OnInit {
 
     const loaded = await this.loadSalesOrderLines();
     if (!loaded) {
-      return;
+      this.toastr.warning('Sales Order lines unavailable. Continuing with manual line entry.');
+    }
+
+    const currentFormDate = this.normalizeDate(this.form.get('formDate')?.value);
+    if (!currentFormDate) {
+      const today = this.normalizeDate(new Date().toISOString().slice(0, 10));
+      this.form.patchValue({ formDate: today }, { emitEvent: false });
     }
 
     await this.persist('draft');
@@ -409,6 +439,7 @@ export class ShippingChecklistComponent implements OnInit {
         .filter((row: any) => row.partNumber.length > 0);
 
       if (mappedRows.length === 0) {
+        this.resetLineRows(this.minLineRows);
         this.toastr.warning(`No SO line items found for ${salesOrder}.`);
         return false;
       }
@@ -422,9 +453,8 @@ export class ShippingChecklistComponent implements OnInit {
       this.expandedLineIndexes = {};
       this.toastr.success(`Loaded ${mappedRows.length} line item(s) from SO ${salesOrder}.`);
       return true;
-    } catch {
-      this.toastr.error('Failed to load Sales Order line items.');
-      return false;
+    } catch (error) {
+      throw error;
     } finally {
       this.isLoadingSalesOrderLines = false;
     }
@@ -496,7 +526,7 @@ export class ShippingChecklistComponent implements OnInit {
         }
       });
       if (this.linesArray.length === 0) {
-        this.resetLineRows(14);
+        this.resetLineRows(this.minLineRows);
       }
 
       const responseRows = Array.isArray(instance.responses) ? instance.responses : [];
@@ -518,9 +548,11 @@ export class ShippingChecklistComponent implements OnInit {
         this.selectedUploadQuestionCode = String(this.uploadTargets[0].questionCode || '');
       }
 
+      this.applyFormLockState();
+
       this.toastr.success(`Loaded checklist #${id}`);
-    } catch {
-      this.toastr.error('Failed to load checklist instance');
+    } catch (error) {
+      throw error;
     } finally {
       this.isLoading = false;
     }
@@ -543,11 +575,17 @@ export class ShippingChecklistComponent implements OnInit {
       return;
     }
 
-    const confirmed = window.confirm(
-      `Reopen checklist #${this.selectedInstanceId} as draft? This will unlock the form for edits and clear the pending verification state.`,
-    );
+    const confirmed = await Swal.fire({
+      icon: 'warning',
+      title: 'Reopen Draft?',
+      text: `Reopen checklist #${this.selectedInstanceId} as draft? This will unlock the form for edits and clear the pending verification state.`,
+      showCancelButton: true,
+      confirmButtonText: 'Reopen Draft',
+      cancelButtonText: 'Cancel',
+      reverseButtons: true,
+    });
 
-    if (!confirmed) {
+    if (!confirmed.isConfirmed) {
       return;
     }
 
@@ -572,13 +610,28 @@ export class ShippingChecklistComponent implements OnInit {
       return;
     }
 
-    const wasNew = !this.selectedInstanceId;
-    const assignedVerifierEmail = this.selectedInstanceId
-      ? String(this.form.get('secondVerifierEmail')?.value || '').trim()
-      : this.getAssignedVerifierEmail();
+    if (status === 'submitted') {
+      const currentVerifierDate = this.normalizeDate(this.form.get('verifierDate')?.value);
+      if (!currentVerifierDate) {
+        const today = this.normalizeDate(new Date().toISOString().slice(0, 10));
+        this.form.patchValue({ verifierDate: today }, { emitEvent: false });
+      }
+    }
 
-    if (status === 'submitted' && !assignedVerifierEmail) {
-      this.toastr.warning('Assign a verifier on the template before submitting for verification.');
+    if (status === 'verified') {
+      const currentSecondVerifierDate = this.normalizeDate(this.form.get('secondVerifierDate')?.value);
+      if (!currentSecondVerifierDate) {
+        const today = this.normalizeDate(new Date().toISOString().slice(0, 10));
+        this.form.patchValue({ secondVerifierDate: today }, { emitEvent: false });
+      }
+    }
+
+    const wasNew = !this.selectedInstanceId;
+    const assignedVerifierEmail = String(this.form.get('secondVerifierEmail')?.value || '').trim() || this.getAssignedVerifierEmail();
+    const assignedVerifierName = String(this.form.get('secondVerifierName')?.value || '').trim() || String(this.selectedTemplate?.assignedVerifierName || '').trim();
+
+    if (status === 'submitted' && !assignedVerifierEmail && !assignedVerifierName) {
+      this.toastr.warning('Assign a 2nd verifier on the template before submitting for verification.');
       return;
     }
 
@@ -625,6 +678,7 @@ export class ShippingChecklistComponent implements OnInit {
       }
 
       this.checklistStatus = status;
+      this.applyFormLockState();
 
       this.toastr.success(status === 'submitted' ? 'Checklist submitted for verification' : status === 'verified' ? 'Checklist verified' : 'Draft saved');
       await this.loadTemplatesAndInstances();
@@ -632,8 +686,8 @@ export class ShippingChecklistComponent implements OnInit {
       if (wasNew && this.selectedInstanceId) {
         await this.openInstance(this.selectedInstanceId);
       }
-    } catch {
-      this.toastr.error('Failed to persist checklist');
+    } catch (error) {
+      throw error;
     } finally {
       this.isSaving = false;
     }
@@ -672,8 +726,9 @@ export class ShippingChecklistComponent implements OnInit {
     });
 
     this.form.setControl('responses', this.fb.array<FormGroup>([]));
-    this.resetLineRows(14);
+    this.resetLineRows(this.minLineRows);
     this.refreshUploadTargets();
+    this.applyFormLockState();
   }
 
   private getCurrentUserDisplayName(): string {
@@ -701,8 +756,50 @@ export class ShippingChecklistComponent implements OnInit {
       link.click();
       URL.revokeObjectURL(pdfUrl);
       this.toastr.success('PDF downloaded');
-    } catch {
-      this.toastr.error('Failed to generate PDF');
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async deleteChecklist(): Promise<void> {
+    if (!this.selectedInstanceId) {
+      this.toastr.warning('Open a checklist first.');
+      return;
+    }
+
+    if (!this.canManageChecklist) {
+      this.toastr.error('Manage rights are required to delete a checklist.');
+      return;
+    }
+
+    const confirmed = await Swal.fire({
+      icon: 'warning',
+      title: 'Delete Checklist?',
+      text: `Delete checklist instance #${this.selectedInstanceId}? This cannot be undone.`,
+      showCancelButton: true,
+      confirmButtonText: 'Delete Checklist',
+      cancelButtonText: 'Cancel',
+      reverseButtons: true,
+    });
+    if (!confirmed.isConfirmed) {
+      return;
+    }
+
+    this.isSaving = true;
+    try {
+      const result = await this.service.deleteInstance(Number(this.selectedInstanceId));
+      if (!result.success) {
+        this.toastr.error(result.error || 'Failed to delete checklist.');
+        return;
+      }
+
+      this.toastr.success('Checklist deleted');
+      await this.loadTemplatesAndInstances();
+      this.startNew();
+    } catch (error) {
+      throw error;
+    } finally {
+      this.isSaving = false;
     }
   }
 
@@ -806,8 +903,16 @@ export class ShippingChecklistComponent implements OnInit {
       return;
     }
 
-    const confirmed = window.confirm('Delete this image attachment?');
-    if (!confirmed) {
+    const confirmed = await Swal.fire({
+      icon: 'warning',
+      title: 'Delete Image?',
+      text: 'Delete this image attachment?',
+      showCancelButton: true,
+      confirmButtonText: 'Delete Image',
+      cancelButtonText: 'Cancel',
+      reverseButtons: true,
+    });
+    if (!confirmed.isConfirmed) {
       return;
     }
 
@@ -819,8 +924,8 @@ export class ShippingChecklistComponent implements OnInit {
       await this.refreshQuestionAttachments(normalizedQuestionCode);
       this.patchResponseImageUrls(normalizedQuestionCode);
       this.toastr.success('Image deleted');
-    } catch {
-      this.toastr.error('Failed to delete image');
+    } catch (error) {
+      throw error;
     } finally {
       this.uploadingByQuestion[key] = false;
     }
@@ -828,12 +933,10 @@ export class ShippingChecklistComponent implements OnInit {
 
   buildPayload(status: 'draft' | 'submitted' | 'verified'): ShippingChecklistInstancePayload {
     const raw = this.form.getRawValue();
-    const isExistingInstance = Boolean(this.selectedInstanceId);
     const existingVerifierEmail = String(raw.secondVerifierEmail || '').trim();
     const existingVerifierName = String(raw.secondVerifierName || '').trim();
-    const assignedVerifierEmail = isExistingInstance
-      ? existingVerifierEmail
-      : this.getAssignedVerifierEmail() || existingVerifierEmail;
+    const assignedVerifierEmail = existingVerifierEmail || this.getAssignedVerifierEmail();
+    const isExistingInstance = Boolean(this.selectedInstanceId);
     const assignedVerifierName = isExistingInstance
       ? existingVerifierName
       : String(this.selectedTemplate?.assignedVerifierName || '').trim() || existingVerifierName;
@@ -850,8 +953,7 @@ export class ShippingChecklistComponent implements OnInit {
           serialNumbers,
           palletQty: String(line.palletQty || '').trim(),
         };
-      })
-      .filter((line: any) => line.partNumber || line.qty || line.serialNumbers.length > 0 || line.palletQty);
+      });
 
     const totalPallets = this.calculateTotalPalletsFromLines(raw.lines || []);
 
@@ -870,6 +972,9 @@ export class ShippingChecklistComponent implements OnInit {
     const createdBy = this.selectedInstanceId
       ? String(this.createdByDisplay || currentUserDisplay).trim()
       : currentUserDisplay;
+    const normalizedFormDate = this.normalizeDate(raw.formDate);
+    const todayDate = this.normalizeDate(new Date().toISOString().slice(0, 10));
+    const normalizedVerifierDate = this.normalizeDate(raw.verifierDate);
 
     return {
       templateId: Number(raw.templateId),
@@ -878,7 +983,7 @@ export class ShippingChecklistComponent implements OnInit {
       formTitle: String(raw.formTitle || '').trim(),
       formCode: String(raw.formCode || '').trim(),
       status,
-      formDate: this.normalizeDate(raw.formDate),
+      formDate: this.selectedInstanceId ? normalizedFormDate : normalizedFormDate || todayDate,
       shipVia: String(raw.shipVia || '').trim(),
       shippingAccount: String(raw.shippingAccount || '').trim(),
       salesOrder: String(raw.salesOrder || '').trim(),
@@ -886,15 +991,16 @@ export class ShippingChecklistComponent implements OnInit {
       arrivalDate: this.normalizeDate(raw.arrivalDate),
       totalPallets,
       verifierName: String(raw.verifierName || '').trim(),
-      verifierDate: this.normalizeDate(raw.verifierDate),
+      verifierDate:
+        status === 'submitted'
+          ? normalizedVerifierDate || todayDate
+          : normalizedVerifierDate,
       secondVerifierName: assignedVerifierName || String(raw.secondVerifierName || '').trim(),
       secondVerifierEmail: assignedVerifierEmail || String(raw.secondVerifierEmail || '').trim(),
       secondVerifierDate:
         status === 'verified'
-          ? this.normalizeDate(new Date().toISOString().slice(0, 10))
-          : status === 'draft'
-            ? null
-            : this.normalizeDate(raw.secondVerifierDate),
+          ? this.normalizeDate(raw.secondVerifierDate) || this.normalizeDate(new Date().toISOString().slice(0, 10))
+          : null,
       notes: String(raw.notes || '').trim(),
       createdBy,
       lines,
@@ -1024,6 +1130,15 @@ export class ShippingChecklistComponent implements OnInit {
     return String(this.selectedTemplate?.assignedVerifierEmail || '').trim();
   }
 
+  private applyFormLockState(): void {
+    if (this.isChecklistLocked) {
+      this.form.disable({ emitEvent: false });
+      return;
+    }
+
+    this.form.enable({ emitEvent: false });
+  }
+
   private bindLineTotalsSync(): void {
     this.linesValueChangesSub?.unsubscribe();
     this.linesValueChangesSub = this.linesArray.valueChanges.subscribe(() => {
@@ -1142,8 +1257,8 @@ export class ShippingChecklistComponent implements OnInit {
       await this.refreshQuestionAttachments(questionCode);
       this.patchResponseImageUrls(questionCode);
       this.toastr.success('Images uploaded');
-    } catch {
-      this.toastr.error('Failed to upload one or more images');
+    } catch (error) {
+      throw error;
     } finally {
       this.uploadingByQuestion[key] = false;
       input.value = '';

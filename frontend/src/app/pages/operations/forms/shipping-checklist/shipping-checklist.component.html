@@ -1,4 +1,4 @@
-<div [class.opacity-50]="isLoading" class="pb-3">
+<div [class.opacity-50]="isLoading" class="pb-3 shipping-checklist-shell">
   <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3 no-print">
     <div class="d-flex align-items-start gap-3 flex-wrap">
       <img
@@ -10,15 +10,7 @@
       />
       <div>
       <h4 class="mb-1">Shipping Checklist Form</h4>
-      <div class="text-body-secondary">Customer-specific workflow persisted in database</div>
-      <div class="d-flex flex-wrap gap-2 mt-2" *ngIf="selectedInstanceId">
-        <span class="badge meta-chip">Instance #{{ selectedInstanceId }}</span>
-        <span class="badge meta-chip">Checklist {{ form.get('formCode')?.value || '-' }}</span>
-        <span class="badge meta-chip">Created By {{ createdByDisplay || '-' }}</span>
-        <span class="badge" [ngClass]="isVerifiedFinal ? 'text-bg-success' : isPendingSecondaryVerification ? 'text-bg-warning' : 'text-bg-secondary'">
-          {{ isVerifiedFinal ? 'Verified' : isPendingSecondaryVerification ? 'Pending Secondary Verification' : 'Draft' }}
-        </span>
-      </div>
+      <div class="text-body-secondary">Create a draft from template and Sales Order, then submit for verification to lock the checklist and preserve an audit trail.</div>
       </div>
     </div>
 
@@ -74,6 +66,16 @@
           [disabled]="!isVerifiedFinal || isSaving"
         >
           Download PDF
+        </button>
+        <button
+          *ngIf="selectedInstanceId && canManageChecklist"
+          ngbDropdownItem
+          class="text-danger"
+          type="button"
+          (click)="deleteChecklist()"
+          [disabled]="isSaving"
+        >
+          Delete Checklist
         </button>
         </div>
       </div>
@@ -211,14 +213,14 @@
       </div>
 
       <div class="row g-3">
-        <div class="col-xl-4 col-lg-6">
-          <label class="form-label">Customer Template</label>
+        <div class="col-xl-4 col-lg-6" *ngIf="!selectedInstanceId">
+          <label class="form-label">Customer Template <span class="required-asterisk">*</span></label>
           <select
             class="form-select"
             [ngModel]="selectedTemplate?.id || ''"
             (ngModelChange)="onTemplateChanged($event)"
             [ngModelOptions]="{ standalone: true }"
-            [disabled]="isChecklistLocked"
+            [disabled]="isChecklistLocked || !!selectedInstanceId"
           >
             <option value="">Select template...</option>
             <option *ngFor="let template of templates" [value]="template.id">
@@ -227,41 +229,66 @@
           </select>
         </div>
 
-        <div class="col-xl-4 col-lg-6" *ngIf="selectedTemplate">
-          <label class="form-label">Template Logo</label>
-          <div class="template-logo-slot">
-            <img
-              *ngIf="templateLogoUrl; else missingTemplateLogo"
-              [src]="templateLogoUrl"
-              [alt]="(selectedTemplate?.customerName || 'Customer') + ' logo preview'"
-              class="template-logo template-logo-inline"
-              (error)="$any($event.target).style.display='none'"
-            />
-            <ng-template #missingTemplateLogo>
-              <div class="small text-body-secondary">No customer logo configured in Customer Master settings.</div>
-            </ng-template>
+        <div class="col-12" *ngIf="selectedInstanceId">
+          <div class="summary-report border rounded-2 p-3 bg-body-tertiary">
+            <div class="summary-report-title">Template Summary</div>
+            <div class="small text-body-secondary mb-3">
+              Customer template and Sales Order are locked after checklist creation to preserve data consistency.
+              Use <strong>New Checklist</strong> to select a different customer template.
+            </div>
+            <div class="row g-4 summary-report-grid">
+              <div class="col-lg-6">
+                <div class="summary-item row">
+                  <div class="col-sm-4 summary-label">Customer</div>
+                  <div class="col-sm-8 summary-value" [title]="selectedTemplate?.customerName || form.get('customerName')?.value || '-'">
+                    {{ selectedTemplate?.customerName || form.get('customerName')?.value || '-' }}
+                  </div>
+                </div>
+                <div class="summary-item row">
+                  <div class="col-sm-4 summary-label">Template</div>
+                  <div class="col-sm-8 summary-value" [title]="selectedTemplate?.formTitle || form.get('formTitle')?.value || '-'">
+                    {{ selectedTemplate?.formTitle || form.get('formTitle')?.value || '-' }}
+                  </div>
+                </div>
+                <div class="summary-item row">
+                  <div class="col-sm-4 summary-label">Checklist #</div>
+                  <div class="col-sm-8 summary-value">{{ form.get('formCode')?.value || '-' }}</div>
+                </div>
+                <div class="summary-item row">
+                  <div class="col-sm-4 summary-label">Sales Order</div>
+                  <div class="col-sm-8 summary-value">{{ form.get('salesOrder')?.value || '-' }}</div>
+                </div>
+                <div class="summary-item row">
+                  <div class="col-sm-4 summary-label">Date</div>
+                  <div class="col-sm-8 summary-value">{{ form.get('formDate')?.value || '-' }}</div>
+                </div>
+              </div>
+
+              <div class="col-lg-6">
+                <div class="summary-item row">
+                  <div class="col-sm-4 summary-label">Instance ID</div>
+                  <div class="col-sm-8 summary-value">{{ selectedInstanceId || '-' }}</div>
+                </div>
+                <div class="summary-item row">
+                  <div class="col-sm-4 summary-label">Status</div>
+                  <div class="col-sm-8 summary-value">{{ isVerifiedFinal ? 'Verified' : isPendingSecondaryVerification ? 'Pending Secondary Verification' : 'Draft' }}</div>
+                </div>
+                <div class="summary-item row">
+                  <div class="col-sm-4 summary-label">Created By</div>
+                  <div class="col-sm-8 summary-value" [title]="createdByDisplay || '-'">{{ createdByDisplay || '-' }}</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
         <div class="col-xl-4 col-lg-6" *ngIf="selectedInstanceId">
-          <label class="form-label">Form Title</label>
+          <label class="form-label">Form Title <span class="required-asterisk">*</span></label>
           <input class="form-control" formControlName="formTitle" placeholder="Enter checklist form title" />
         </div>
         <div class="col-xl-2 col-lg-6" *ngIf="selectedInstanceId">
           <label class="form-label">Checklist Number</label>
           <input class="form-control" formControlName="formCode" placeholder="e.g. SHIP-CHK-001" />
-        </div>
-        <div class="col-xl-2 col-lg-6" *ngIf="selectedInstanceId">
-          <label class="form-label">Instance ID</label>
-          <input class="form-control" [value]="selectedInstanceId || 'New'" readonly />
-        </div>
-        <div class="col-xl-2 col-lg-6" *ngIf="selectedInstanceId">
-          <label class="form-label">Status</label>
-          <input class="form-control" [value]="isVerifiedFinal ? 'Verified' : isPendingSecondaryVerification ? 'Pending Secondary Verification' : 'Draft'" readonly />
-        </div>
-        <div class="col-xl-4 col-lg-6" *ngIf="selectedInstanceId">
-          <label class="form-label">Created By</label>
-          <input class="form-control" [value]="createdByDisplay || '-'" readonly />
         </div>
       </div>
 
@@ -272,32 +299,6 @@
         </div>
 
       <div class="row g-3 mt-1" *ngIf="selectedInstanceId">
-        <div class="col-xl-4 col-lg-6">
-          <label class="form-label">Date</label>
-          <input class="form-control" type="date" formControlName="formDate" />
-        </div>
-        <div class="col-xl-4 col-lg-6">
-          <label class="form-label">Sales Order</label>
-          <div class="input-group">
-            <input
-              class="form-control"
-              formControlName="salesOrder"
-              placeholder="Enter sales order number"
-              (keydown.enter)="loadSalesOrderLines()"
-              [readonly]="isChecklistLocked || !!selectedInstanceId"
-            />
-            <button
-              type="button"
-              class="btn btn-outline-secondary"
-              (click)="loadSalesOrderLines()"
-              [disabled]="isLoadingSalesOrderLines || isChecklistLocked"
-            >
-              {{ isLoadingSalesOrderLines ? 'Loading...' : 'Pull SO Lines' }}
-            </button>
-          </div>
-          <small class="text-body-secondary">Auto-fills part # and qty from Sales Order lines.</small>
-          <small class="text-body-secondary d-block">Create Checklist ID also auto-pulls SO lines.</small>
-        </div>
         <div class="col-xl-4 col-lg-6">
           <label class="form-label">Ship Via</label>
           <input class="form-control" formControlName="shipVia" placeholder="e.g. FedEx Priority" />
@@ -350,16 +351,13 @@
                 <td><input class="form-control form-control-sm" formControlName="qty" placeholder="Qty" [readonly]="isChecklistLocked" /></td>
                 <td>
                   <div class="d-flex flex-wrap gap-2 align-items-center">
-                    <button class="btn btn-sm btn-outline-secondary serial-action-btn" type="button" (click)="toggleSerials(i)" [disabled]="isChecklistLocked">
-                      {{ isSerialsExpanded(i) ? 'Hide Serials' : 'Manage Serials' }}
-                    </button>
                     <span class="badge serial-count-badge">{{ getSerialCount(i) }} serial(s)</span>
                     <button class="btn btn-sm btn-outline-primary serial-add-btn" type="button" (click)="addSerialRow(i)" [disabled]="isChecklistLocked">Add</button>
                   </div>
                 </td>
                 <td><input class="form-control form-control-sm" formControlName="palletQty" placeholder="Pallet qty" [readonly]="isChecklistLocked" /></td>
               </tr>
-              <tr *ngIf="isSerialsExpanded(i)" [formGroupName]="i">
+              <tr [formGroupName]="i">
                 <td colspan="5" class="bg-body-tertiary">
                   <div formArrayName="serialNumbers" class="d-grid gap-2">
                     <div
@@ -554,42 +552,60 @@
       </div>
 
       <div class="border-top mt-4 pt-3" *ngIf="selectedInstanceId">
-        <h6 class="mb-2">Step 5: Verification & Notes</h6>
+        <h6 class="mb-2">Step 5: Notes</h6>
+
+      <div class="mt-1">
+        <label class="form-label">Notes</label>
+        <textarea class="form-control" rows="3" formControlName="notes" placeholder="Add shipping notes, exceptions, or verification comments" [readonly]="isChecklistLocked"></textarea>
+      </div>
+      </div>
+
+      <div class="border-top mt-4 pt-3" *ngIf="showVerificationProcessStep">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+          <h6 class="mb-0">Step 6: Verification Process</h6>
+          <span class="small text-body-secondary">Available after submission for final verification workflow</span>
+        </div>
 
       <div class="row g-3 mt-1">
         <div class="col-xl-3 col-lg-6">
-          <label class="form-label">Verifier Name</label>
+          <label class="form-label">Verifier Name <span class="required-asterisk">*</span></label>
           <input class="form-control" formControlName="verifierName" placeholder="Enter verifier full name" [readonly]="isChecklistLocked" />
         </div>
         <div class="col-xl-3 col-lg-6">
           <label class="form-label">Verifier Date</label>
           <input class="form-control" type="date" formControlName="verifierDate" [readonly]="isChecklistLocked" />
         </div>
+        <div class="w-100"></div>
         <div class="col-xl-3 col-lg-6">
           <label class="form-label">2nd Verifier Name</label>
           <input class="form-control" formControlName="secondVerifierName" readonly />
         </div>
         <div class="col-xl-3 col-lg-6">
-          <label class="form-label">2nd Verifier Routing</label>
-          <input class="form-control" [value]="selectedTemplate?.assignedVerifierEmail || 'No verifier assigned on template'" readonly />
+          <label class="form-label">2nd Verifier Date</label>
+          <input class="form-control" type="date" formControlName="secondVerifierDate" [readonly]="!canEditSecondVerifierDate" />
         </div>
         <div class="col-xl-3 col-lg-6">
-          <label class="form-label">2nd Verifier Date</label>
-          <input class="form-control" type="date" formControlName="secondVerifierDate" [readonly]="isChecklistLocked" />
+          <label class="form-label">2nd Verifier Routing</label>
+          <input class="form-control" [value]="secondVerifierRoutingEmail || 'No verifier assigned on template'" readonly />
+          <div class="small mt-1" [ngClass]="hasSecondVerifierRouting ? 'text-body-secondary' : 'text-danger'">
+            {{ hasSecondVerifierRouting ? 'Verifier email assigned.' : 'Verifier email is not assigned. Set it in Template Settings.' }}
+          </div>
         </div>
       </div>
-
-      <div class="mt-3">
-        <label class="form-label">Notes</label>
-        <textarea class="form-control" rows="3" formControlName="notes" placeholder="Add shipping notes, exceptions, or verification comments" [readonly]="isChecklistLocked"></textarea>
       </div>
+
+      <div class="border-top mt-4 pt-3" *ngIf="selectedInstanceId && !showVerificationProcessStep">
+        <h6 class="mb-2">Step 6: Verification Process</h6>
+        <div class="small text-body-secondary">
+          This step appears after you click <strong>Submit for Verification</strong>.
+        </div>
       </div>
     </div>
 
     <div class="card-footer" *ngIf="!selectedInstanceId">
       <div class="d-flex flex-wrap gap-2 align-items-end">
         <div style="min-width: 280px; flex: 1 1 320px;">
-          <label class="form-label mb-1">Sales Order (Required)</label>
+          <label class="form-label mb-1">Sales Order <span class="required-asterisk">*</span></label>
           <input class="form-control" formControlName="salesOrder" placeholder="Enter sales order number" />
         </div>
         <button

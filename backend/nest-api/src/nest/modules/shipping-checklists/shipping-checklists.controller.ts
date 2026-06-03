@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Post, Query, StreamableFile, UseGuards, Header } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Query, StreamableFile, UseGuards, Header } from '@nestjs/common';
 import { Permissions, RolePermissionGuard } from '../access-control';
 import { ShippingChecklistsService } from './shipping-checklists.service';
 
@@ -64,5 +64,11 @@ export class ShippingChecklistsController {
   @Permissions('write')
   async upsertInstance(@Body() payload: Record<string, unknown>) {
     return this.service.upsertInstance(payload);
+  }
+
+  @Delete('instances/:id')
+  @Permissions('manage')
+  async deleteInstance(@Param('id', ParseIntPipe) id: number) {
+    return this.service.deleteInstance(id);
   }
 }

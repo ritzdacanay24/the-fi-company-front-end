@@ -2,6 +2,17 @@
 	display: block;
 }
 
+.shipping-checklist-shell {
+	width: 100%;
+	margin-inline: auto;
+}
+
+@media (min-width: 1200px) {
+	.shipping-checklist-shell {
+		max-width: 1320px;
+	}
+}
+
 .print-only {
 	display: none;
 }
@@ -38,6 +49,22 @@
 	--bs-table-hover-bg: var(--bs-secondary-bg);
 }
 
+.shipping-checklist-table .form-check-inline {
+	margin-right: 0;
+	padding: 0.2rem 0.6rem;
+	border: 1px solid var(--bs-border-color);
+	border-radius: 999px;
+	background: var(--bs-body-bg);
+}
+
+.shipping-checklist-table .form-check-inline .form-check-input {
+	margin-top: 0.15rem;
+}
+
+.shipping-checklist-table .form-check-inline .form-check-label {
+	padding-left: 0.2rem;
+}
+
 .serial-action-btn {
 	--bs-btn-color: var(--bs-emphasis-color);
 	--bs-btn-border-color: var(--bs-border-color);
@@ -69,6 +96,64 @@
 	background: var(--bs-secondary-bg);
 	color: var(--bs-emphasis-color);
 	border: 1px solid var(--bs-border-color);
+}
+
+.summary-report {
+	background: linear-gradient(180deg, var(--bs-body-bg) 0%, var(--bs-tertiary-bg) 100%);
+}
+
+.summary-report-title {
+	font-size: 0.96rem;
+	font-weight: 700;
+	letter-spacing: 0.01em;
+	margin-bottom: 0.35rem;
+}
+
+.summary-report-grid .summary-item {
+	padding: 0.2rem 0;
+	align-items: baseline;
+}
+
+.summary-report-grid .summary-label {
+	font-size: 0.8rem;
+	font-weight: 700;
+	color: var(--bs-secondary-color);
+	text-transform: none;
+	white-space: nowrap;
+	position: relative;
+	padding-right: 0.9rem;
+}
+
+.summary-report-grid .summary-label::after {
+	content: ':';
+	position: absolute;
+	right: 0.35rem;
+	color: var(--bs-secondary-color);
+}
+
+.summary-report-grid .summary-value {
+	font-size: 0.9rem;
+	font-weight: 600;
+	color: var(--bs-emphasis-color);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.required-asterisk {
+	color: #dc3545;
+	font-weight: 700;
+}
+
+@media (max-width: 575.98px) {
+	.summary-report-grid .summary-label::after {
+		display: none;
+	}
+
+	.summary-report-grid .summary-label,
+	.summary-report-grid .summary-value {
+		white-space: normal;
+	}
 }
 
 .step1-create-footer {

@@ -187,6 +187,14 @@ export class ShippingChecklistsService {
     };
   };
 
+  deleteInstance = async (id: number): Promise<{ success: boolean; error?: string }> => {
+    const response = await firstValueFrom(this.http.delete<{ success: boolean; error?: string }>(`${url}/instances/${id}`));
+    return {
+      success: Boolean(response?.success),
+      error: response?.error,
+    };
+  };
+
   downloadInstancePdf = async (id: number): Promise<Blob> =>
     firstValueFrom(this.http.get(`${url}/instances/${id}/pdf`, { responseType: 'blob' }));
 

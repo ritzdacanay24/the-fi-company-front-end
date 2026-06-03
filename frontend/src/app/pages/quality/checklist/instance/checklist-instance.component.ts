@@ -2218,7 +2218,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
           this.loading = false;
           this.isLoadingInstance = false;
           this.showWarningAlert(`Access Denied: This checklist belongs to ${instance.operator_name}. You can only modify your own checklists.`);
-          this.router.navigate([this.getExecutionRoute()]);
+          this.router.navigate([this.getExecutionRoute()], { queryParams: this.getExecutionReturnQueryParams() });
           return;
         }
 
@@ -2278,7 +2278,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
 
         this.loading = false;
         this.showErrorAlert(`Error loading checklist instance #${this.instanceId}. It may have been deleted or you don't have permission to access it.`);
-        this.router.navigate(['/inspection-checklist/execution']);
+        this.router.navigate(['/inspection-checklist/execution'], { queryParams: this.getExecutionReturnQueryParams() });
       }
     });
   }
@@ -3439,7 +3439,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
           next: () => {
             this.saving = false;
             this.showSuccessAlert('Checklist submitted successfully!');
-            this.router.navigate([this.getExecutionRoute()]);
+            this.router.navigate([this.getExecutionRoute()], { queryParams: this.getExecutionReturnQueryParams() });
           },
           error: (error) => {
             this.saving = false;
@@ -3588,8 +3588,40 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     return '/quality/checklist/execution';
   }
 
+  private getExecutionReturnQueryParams(): Record<string, string | number> {
+    const params = this.route.snapshot.queryParams || {};
+    const query: Record<string, string | number> = {};
+
+    const tab = String(params['t'] || params['tab'] || '').trim();
+    if (tab) {
+      query['t'] = tab;
+    }
+
+    const q = String(params['q'] || '').trim();
+    if (q) {
+      query['q'] = q;
+    }
+
+    const f = String(params['f'] || params['gf'] || '').trim();
+    if (f) {
+      query['f'] = f;
+    }
+
+    const s = String(params['s'] || params['gs'] || '').trim();
+    if (s) {
+      query['s'] = s;
+    }
+
+    const previousId = Number(params['p'] || params['previousId'] || 0);
+    if (Number.isFinite(previousId) && previousId > 0) {
+      query['p'] = previousId;
+    }
+
+    return query;
+  }
+
   goBack(): void {
-    this.router.navigate([this.getExecutionRoute()]);
+    this.router.navigate([this.getExecutionRoute()], { queryParams: this.getExecutionReturnQueryParams() });
   }
 
   deleteInspection(offcanvas?: any): void {
