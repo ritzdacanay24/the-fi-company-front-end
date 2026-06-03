@@ -376,6 +376,12 @@ export class InspectionChecklistController {
     return this.service.deleteInstance(id);
   }
 
+  @Patch('instances/:id/archive')
+  @Permissions('manage')
+  async archiveInstance(@Param('id', ParseIntPipe) id: number) {
+    return this.service.archiveInstance(id);
+  }
+
   // ── Owner-lock endpoints ──────────────────────────────────────────────────
 
   @Post('instances/:id/claim')
