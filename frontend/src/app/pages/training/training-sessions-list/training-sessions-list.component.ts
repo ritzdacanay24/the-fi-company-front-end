@@ -291,6 +291,140 @@ export class TrainingSessionsListComponent implements OnInit, OnDestroy {
     });
   }
 
+  addToOutlookCalendar(session: TrainingSession): void {
+    const eventUrl = this.buildOutlookCalendarUrl(session);
+    window.open(eventUrl, '_blank', 'noopener');
+  }
+
+  downloadIcsCalendarFile(session: TrainingSession): void {
+    const ics = this.buildIcsContent(session);
+    const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+    const objectUrl = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = objectUrl;
+    a.download = this.toSafeFileName(`${session.title || 'training-session'}.ics`);
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(objectUrl);
+  }
+
+  private buildOutlookCalendarUrl(session: TrainingSession): string {
+    const start = this.toSessionDateTime(session.date, session.startTime);
+    const fallbackEnd = start ? new Date(start.getTime() + (60 * 60 * 1000)) : null;
+    const end = this.toSessionDateTime(session.date, session.endTime) || fallbackEnd;
+
+    const subject = String(session.title || 'Training Session').trim();
+    const location = String(session.location || '').trim();
+    const description = String(session.description || '').trim();
+    const facilitator = String(session.facilitatorName || '').trim();
+
+    const detailsLines: string[] = [];
+    if (description) {
+      detailsLines.push(description);
+    }
+    if (facilitator) {
+      detailsLines.push(`Facilitator: ${facilitator}`);
+    }
+    const details = detailsLines.join('\n\n');
+
+    const params = new URLSearchParams({
+      path: '/calendar/action/compose',
+      rru: 'addevent',
+      subject,
+      startdt: start ? this.toOutlookDateTime(start) : '',
+      enddt: end ? this.toOutlookDateTime(end) : '',
+      location,
+      body: details,
+    });
+
+    return `https://outlook.office.com/calendar/0/deeplink/compose?${params.toString()}`;
+  }
+
+  private toSessionDateTime(dateValue: string, timeValue?: string): Date | null {
+    const date = String(dateValue || '').trim();
+    if (!date) {
+      return null;
+    }
+
+    const time = String(timeValue || '').trim() || '00:00';
+    const normalizedTime = time.length === 5 ? `${time}:00` : time;
+    const parsed = new Date(`${date}T${normalizedTime}`);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  private toOutlookDateTime(date: Date): string {
+    const pad = (value: number) => String(value).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+      + `T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+  }
+
+  private buildIcsContent(session: TrainingSession): string {
+    const start = this.toSessionDateTime(session.date, session.startTime);
+    const fallbackEnd = start ? new Date(start.getTime() + (60 * 60 * 1000)) : null;
+    const end = this.toSessionDateTime(session.date, session.endTime) || fallbackEnd;
+
+    const subject = this.escapeIcsText(String(session.title || 'Training Session'));
+    const location = this.escapeIcsText(String(session.location || ''));
+    const facilitator = this.escapeIcsText(String(session.facilitatorName || ''));
+    const descriptionBody = this.escapeIcsText(String(session.description || ''));
+
+    const description = [
+      descriptionBody,
+      facilitator ? `Facilitator: ${facilitator}` : '',
+    ].filter(Boolean).join('\\n\\n');
+
+    const uid = `${session.id || Date.now()}-${Date.now()}@eyefi-training`;
+    const dtStamp = this.toIcsUtc(new Date());
+    const dtStart = this.toIcsLocal(start || new Date());
+    const dtEnd = this.toIcsLocal(end || new Date((start || new Date()).getTime() + (60 * 60 * 1000)));
+
+    return [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//Eyefi//Training Calendar//EN',
+      'CALSCALE:GREGORIAN',
+      'METHOD:PUBLISH',
+      'BEGIN:VEVENT',
+      `UID:${uid}`,
+      `DTSTAMP:${dtStamp}`,
+      `DTSTART:${dtStart}`,
+      `DTEND:${dtEnd}`,
+      `SUMMARY:${subject}`,
+      `LOCATION:${location}`,
+      `DESCRIPTION:${description}`,
+      'END:VEVENT',
+      'END:VCALENDAR',
+      '',
+    ].join('\r\n');
+  }
+
+  private toSafeFileName(name: string): string {
+    const normalized = String(name || 'training-session.ics').trim() || 'training-session.ics';
+    return normalized.replace(/[<>:"/\\|?*]+/g, '-');
+  }
+
+  private escapeIcsText(value: string): string {
+    return String(value || '')
+      .replace(/\\/g, '\\\\')
+      .replace(/;/g, '\\;')
+      .replace(/,/g, '\\,')
+      .replace(/\r?\n/g, '\\n');
+  }
+
+  private toIcsLocal(date: Date): string {
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}`
+      + `T${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`;
+  }
+
+  private toIcsUtc(date: Date): string {
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${date.getUTCFullYear()}${pad(date.getUTCMonth() + 1)}${pad(date.getUTCDate())}`
+      + `T${pad(date.getUTCHours())}${pad(date.getUTCMinutes())}${pad(date.getUTCSeconds())}Z`;
+  }
+
   confirmDeleteSession(session: TrainingSession): void {
     this.sessionToDelete = session;
     this.showDeleteModal = true;

@@ -237,6 +237,22 @@
                             <i class="mdi mdi-content-copy me-2 text-info"></i>
                             Duplicate Session
                           </button>
+
+                          <button
+                            class="dropdown-item d-flex align-items-center"
+                            (click)="addToOutlookCalendar(session)"
+                            title="Add to Outlook Calendar">
+                            <i class="mdi mdi-calendar-plus me-2 text-primary"></i>
+                            Add to Outlook
+                          </button>
+
+                          <button
+                            class="dropdown-item d-flex align-items-center"
+                            (click)="downloadIcsCalendarFile(session)"
+                            title="Download calendar invite file">
+                            <i class="mdi mdi-calendar-export me-2 text-info"></i>
+                            Download .ics
+                          </button>
                           
                           <div class="dropdown-divider"></div>
                           

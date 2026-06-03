@@ -188,7 +188,7 @@ export class TrainingService {
 
     const existingSession = await this.mysqlService.query<RowDataPacket[]>(
       `
-        SELECT id, created_by, status
+        SELECT id, created_by, status, title, date, start_time, end_time, location, facilitator_name
         FROM training_sessions
         WHERE id = :id
         LIMIT 1
@@ -258,6 +258,44 @@ export class TrainingService {
       ? body.expectedAttendeeIds.map((id) => this.toPositiveInt(id)).filter((id): id is number => Boolean(id))
       : undefined;
 
+    let addedAttendeeIds: number[] = [];
+    let removedAttendeeRows: RowDataPacket[] = [];
+    if (expectedAttendeeIds) {
+      const previousAttendees = await this.mysqlService.query<RowDataPacket[]>(
+        `
+          SELECT
+            u.id AS employee_id,
+            u.first,
+            u.last,
+            u.email,
+            ts.title,
+            ts.date,
+            ts.start_time,
+            ts.end_time,
+            ts.location
+          FROM training_attendees ta
+          JOIN db.users u ON u.id = ta.employee_id
+          JOIN training_sessions ts ON ts.id = ta.session_id
+          WHERE ta.session_id = :session_id
+        `,
+        { session_id: sessionId },
+      );
+
+      const previousIdSet = new Set(previousAttendees.map((row) => Number(row.employee_id || 0)).filter((id) => id > 0));
+      const nextIdSet = new Set(expectedAttendeeIds);
+
+      addedAttendeeIds = expectedAttendeeIds.filter((id) => !previousIdSet.has(id));
+      removedAttendeeRows = previousAttendees.filter((row) => !nextIdSet.has(Number(row.employee_id || 0)));
+    }
+
+    const hasCalendarImpact =
+      String(session.title || '').trim() !== title
+      || String(session.date || '').trim() !== date
+      || String(session.start_time || '').trim() !== startTime
+      || String(session.end_time || '').trim() !== endTime
+      || String(session.location || '').trim() !== location
+      || String(session.facilitator_name || '').trim() !== facilitatorName;
+
     await this.mysqlService.withTransaction(async (connection: PoolConnection) => {
       await connection.execute(
         `
@@ -310,6 +348,18 @@ export class TrainingService {
       }
     });
 
+    for (const removedAttendee of removedAttendeeRows) {
+      await this.notifySessionAttendeeRemoved(removedAttendee);
+    }
+
+    if (addedAttendeeIds.length > 0) {
+      await this.notifySessionCreatedAttendees(sessionId, addedAttendeeIds);
+    }
+
+    if (hasCalendarImpact) {
+      await this.notifySessionUpdatedAttendees(sessionId, addedAttendeeIds);
+    }
+
     return this.getSession(String(sessionId));
   }
 
@@ -318,6 +368,8 @@ export class TrainingService {
     if (!sessionId) {
       return { error: 'Session id is required' };
     }
+
+    await this.notifySessionCancelledAttendees(sessionId);
 
     await this.mysqlService.execute('DELETE FROM training_sessions WHERE id = :id', { id: sessionId });
     return { message: 'Session deleted successfully' };
@@ -668,6 +720,8 @@ export class TrainingService {
       },
     );
 
+    await this.notifySessionCreatedAttendees(sessionId, [employeeId]);
+
     return { message: 'Expected attendee added successfully' };
   }
 
@@ -731,6 +785,8 @@ export class TrainingService {
       return { error: 'sessionId and employeeIds are required' };
     }
 
+    const newlyAddedEmployeeIds: number[] = [];
+
     await this.mysqlService.withTransaction(async (connection: PoolConnection) => {
       for (const employeeId of employeeIds) {
         const existing = await connection.execute<RowDataPacket[]>(
@@ -758,8 +814,14 @@ export class TrainingService {
             added_by: addedBy,
           },
         );
+
+        newlyAddedEmployeeIds.push(employeeId);
       }
     });
+
+    if (newlyAddedEmployeeIds.length > 0) {
+      await this.notifySessionCreatedAttendees(sessionId, newlyAddedEmployeeIds);
+    }
 
     return { message: 'Expected attendees added successfully' };
   }
@@ -1315,11 +1377,169 @@ export class TrainingService {
     return this.toPositiveInt(value);
   }
 
-  private async notifySessionCreatedAttendees(sessionId: number): Promise<void> {
+  private buildOutlookCalendarUrl(payload: {
+    title: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    location: string;
+    facilitatorName?: string;
+  }): string {
+    const start = this.toOutlookDateTime(payload.date, payload.startTime);
+    const end = this.toOutlookDateTime(payload.date, payload.endTime)
+      || (start ? this.addMinutesToOutlookDateTime(start, 60) : null);
+
+    const detailsLines: string[] = [];
+    if (payload.facilitatorName) {
+      detailsLines.push(`Facilitator: ${payload.facilitatorName}`);
+    }
+    const details = detailsLines.join('\n\n');
+
+    const params = new URLSearchParams({
+      path: '/calendar/action/compose',
+      rru: 'addevent',
+      subject: payload.title || 'Training Session',
+      startdt: start || '',
+      enddt: end || '',
+      location: payload.location || '',
+      body: details,
+    });
+
+    return `https://outlook.office.com/calendar/0/deeplink/compose?${params.toString()}`;
+  }
+
+  private buildSessionEventUid(sessionId: number): string {
+    return `training-session-${sessionId}@eyefi`;
+  }
+
+  private escapeIcsText(value: string): string {
+    return String(value || '')
+      .replace(/\\/g, '\\\\')
+      .replace(/;/g, '\\;')
+      .replace(/,/g, '\\,')
+      .replace(/\r?\n/g, '\\n');
+  }
+
+  private toIcsLocal(date: string, time: string): string | null {
+    const safeDate = String(date || '').trim();
+    if (!safeDate) {
+      return null;
+    }
+
+    const safeTime = String(time || '').trim() || '00:00:00';
+    const normalizedTime = safeTime.length === 5 ? `${safeTime}:00` : safeTime;
+    const parsed = new Date(`${safeDate}T${normalizedTime}`);
+    if (!Number.isFinite(parsed.getTime())) {
+      return null;
+    }
+
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${parsed.getFullYear()}${pad(parsed.getMonth() + 1)}${pad(parsed.getDate())}`
+      + `T${pad(parsed.getHours())}${pad(parsed.getMinutes())}${pad(parsed.getSeconds())}`;
+  }
+
+  private toIcsUtcNow(): string {
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${now.getUTCFullYear()}${pad(now.getUTCMonth() + 1)}${pad(now.getUTCDate())}`
+      + `T${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}${pad(now.getUTCSeconds())}Z`;
+  }
+
+  private buildSessionCalendarAttachment(payload: {
+    sessionId: number;
+    title: string;
+    description?: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    location: string;
+    facilitatorName?: string;
+    method: 'REQUEST' | 'CANCEL';
+    sequence?: number;
+  }): { filename: string; content: string; contentType: string } {
+    const dtStart = this.toIcsLocal(payload.date, payload.startTime) || this.toIcsLocal(payload.date, '00:00:00') || '';
+    const dtEnd = this.toIcsLocal(payload.date, payload.endTime) || dtStart;
+    const summary = this.escapeIcsText(String(payload.title || 'Training Session'));
+    const location = this.escapeIcsText(String(payload.location || ''));
+
+    const detailsLines = [
+      String(payload.description || '').trim(),
+      payload.facilitatorName ? `Facilitator: ${String(payload.facilitatorName).trim()}` : '',
+    ].filter(Boolean);
+    const description = this.escapeIcsText(detailsLines.join('\n\n'));
+
+    const sequence = Number.isFinite(Number(payload.sequence)) ? Math.max(0, Math.floor(Number(payload.sequence))) : 0;
+    const uid = this.buildSessionEventUid(payload.sessionId);
+    const dtStamp = this.toIcsUtcNow();
+
+    const eventLines = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      `METHOD:${payload.method}`,
+      'PRODID:-//Eyefi//Training//EN',
+      'CALSCALE:GREGORIAN',
+      'BEGIN:VEVENT',
+      `UID:${uid}`,
+      `DTSTAMP:${dtStamp}`,
+      `SEQUENCE:${sequence}`,
+      `SUMMARY:${summary}`,
+      `DTSTART:${dtStart}`,
+      `DTEND:${dtEnd}`,
+      `LOCATION:${location}`,
+      `DESCRIPTION:${description}`,
+      payload.method === 'CANCEL' ? 'STATUS:CANCELLED' : 'STATUS:CONFIRMED',
+      'END:VEVENT',
+      'END:VCALENDAR',
+      '',
+    ];
+
+    const methodToken = payload.method.toLowerCase();
+    return {
+      filename: `training-session-${payload.sessionId}-${methodToken}.ics`,
+      content: eventLines.join('\r\n'),
+      contentType: `text/calendar; method=${payload.method}; charset=UTF-8`,
+    };
+  }
+
+  private toOutlookDateTime(date: string, time: string): string | null {
+    const safeDate = String(date || '').trim();
+    if (!safeDate) {
+      return null;
+    }
+
+    const safeTime = String(time || '').trim() || '00:00:00';
+    const normalizedTime = safeTime.length === 5 ? `${safeTime}:00` : safeTime;
+    const parsed = new Date(`${safeDate}T${normalizedTime}`);
+    if (!Number.isFinite(parsed.getTime())) {
+      return null;
+    }
+
+    const pad = (value: number) => String(value).padStart(2, '0');
+    return `${parsed.getFullYear()}-${pad(parsed.getMonth() + 1)}-${pad(parsed.getDate())}`
+      + `T${pad(parsed.getHours())}:${pad(parsed.getMinutes())}:${pad(parsed.getSeconds())}`;
+  }
+
+  private addMinutesToOutlookDateTime(dateTime: string, minutes: number): string | null {
+    const parsed = new Date(dateTime);
+    if (!Number.isFinite(parsed.getTime())) {
+      return null;
+    }
+    parsed.setMinutes(parsed.getMinutes() + minutes);
+
+    const pad = (value: number) => String(value).padStart(2, '0');
+    return `${parsed.getFullYear()}-${pad(parsed.getMonth() + 1)}-${pad(parsed.getDate())}`
+      + `T${pad(parsed.getHours())}:${pad(parsed.getMinutes())}:${pad(parsed.getSeconds())}`;
+  }
+
+  private async notifySessionCreatedAttendees(sessionId: number, targetEmployeeIds?: number[]): Promise<void> {
     try {
+      const targetIds = Array.isArray(targetEmployeeIds)
+        ? Array.from(new Set(targetEmployeeIds.map((id) => Number(id)).filter((id) => Number.isFinite(id) && id > 0)))
+        : [];
+
       const attendeeRows = await this.mysqlService.query<RowDataPacket[]>(
         `
-          SELECT
+          SELECT DISTINCT
             u.id,
             u.first,
             u.last,
@@ -1328,7 +1548,9 @@ export class TrainingService {
             ts.date,
             ts.start_time,
             ts.end_time,
-            ts.location
+            ts.location,
+            ts.facilitator_name,
+            ts.description
           FROM training_attendees ta
           JOIN db.users u ON u.id = ta.employee_id
           JOIN training_sessions ts ON ts.id = ta.session_id
@@ -1340,12 +1562,25 @@ export class TrainingService {
       );
 
       for (const attendee of attendeeRows) {
+        const attendeeId = Number(attendee.id || 0);
+        if (targetIds.length > 0 && !targetIds.includes(attendeeId)) {
+          continue;
+        }
+
         const email = String(attendee.email || '').trim();
         if (!email) {
           continue;
         }
 
         const fullName = `${String(attendee.first || '').trim()} ${String(attendee.last || '').trim()}`.trim() || 'Team Member';
+        const calendarUrl = this.buildOutlookCalendarUrl({
+          title: String(attendee.title || '').trim(),
+          date: String(attendee.date || '').trim(),
+          startTime: String(attendee.start_time || '').trim(),
+          endTime: String(attendee.end_time || '').trim(),
+          location: String(attendee.location || '').trim(),
+          facilitatorName: String(attendee.facilitator_name || '').trim(),
+        });
         const subject = `Training Session Assigned: ${String(attendee.title || 'Training Session').trim()}`;
         const html = this.emailTemplateService.render('training-session-assigned', {
           fullName,
@@ -1354,12 +1589,27 @@ export class TrainingService {
           startTime: String(attendee.start_time || '').trim(),
           endTime: String(attendee.end_time || '').trim(),
           location: String(attendee.location || '').trim(),
+          calendarUrl,
+        });
+
+        const calendarAttachment = this.buildSessionCalendarAttachment({
+          sessionId,
+          title: String(attendee.title || '').trim(),
+          description: String(attendee.description || '').trim(),
+          date: String(attendee.date || '').trim(),
+          startTime: String(attendee.start_time || '').trim(),
+          endTime: String(attendee.end_time || '').trim(),
+          location: String(attendee.location || '').trim(),
+          facilitatorName: String(attendee.facilitator_name || '').trim(),
+          method: 'REQUEST',
+          sequence: 0,
         });
 
         await this.emailService.sendMail({
           to: email,
           subject,
           html,
+          attachments: [calendarAttachment],
         });
       }
     } catch (error) {
@@ -1412,7 +1662,10 @@ export class TrainingService {
             ts.date,
             ts.start_time,
             ts.end_time,
-            ts.location
+            ts.location,
+            ts.description,
+            ts.facilitator_name,
+            ts.updated_at
           FROM training_attendees ta
           JOIN db.users u ON u.id = ta.employee_id
           JOIN training_sessions ts ON ts.id = ta.session_id
@@ -1440,15 +1693,119 @@ export class TrainingService {
           location: String(attendee.location || '').trim(),
         });
 
+        const calendarAttachment = this.buildSessionCalendarAttachment({
+          sessionId,
+          title: String(attendee.title || '').trim(),
+          description: String(attendee.description || '').trim(),
+          date: String(attendee.date || '').trim(),
+          startTime: String(attendee.start_time || '').trim(),
+          endTime: String(attendee.end_time || '').trim(),
+          location: String(attendee.location || '').trim(),
+          facilitatorName: String(attendee.facilitator_name || '').trim(),
+          method: 'CANCEL',
+          sequence: Number(new Date(String(attendee.updated_at || new Date().toISOString())).getTime() / 1000),
+        });
+
         await this.emailService.sendMail({
           to: email,
           subject,
           html,
+          attachments: [calendarAttachment],
         });
       }
     } catch (error) {
       this.logger.warn(
         `Failed to send training session cancellation notifications for session ${sessionId}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  private async notifySessionUpdatedAttendees(sessionId: number, excludeEmployeeIds?: number[]): Promise<void> {
+    try {
+      const excludedIds = Array.isArray(excludeEmployeeIds)
+        ? new Set(excludeEmployeeIds.map((id) => Number(id)).filter((id) => Number.isFinite(id) && id > 0))
+        : new Set<number>();
+
+      const attendeeRows = await this.mysqlService.query<RowDataPacket[]>(
+        `
+          SELECT DISTINCT
+            u.id,
+            u.first,
+            u.last,
+            u.email,
+            ts.title,
+            ts.description,
+            ts.date,
+            ts.start_time,
+            ts.end_time,
+            ts.location,
+            ts.facilitator_name,
+            ts.updated_at
+          FROM training_attendees ta
+          JOIN db.users u ON u.id = ta.employee_id
+          JOIN training_sessions ts ON ts.id = ta.session_id
+          WHERE ta.session_id = :session_id
+            AND u.active = 1
+            AND COALESCE(TRIM(u.email), '') <> ''
+        `,
+        { session_id: sessionId },
+      );
+
+      for (const attendee of attendeeRows) {
+        const attendeeId = Number(attendee.id || 0);
+        if (excludedIds.has(attendeeId)) {
+          continue;
+        }
+
+        const email = String(attendee.email || '').trim();
+        if (!email) {
+          continue;
+        }
+
+        const fullName = `${String(attendee.first || '').trim()} ${String(attendee.last || '').trim()}`.trim() || 'Team Member';
+        const calendarUrl = this.buildOutlookCalendarUrl({
+          title: String(attendee.title || '').trim(),
+          date: String(attendee.date || '').trim(),
+          startTime: String(attendee.start_time || '').trim(),
+          endTime: String(attendee.end_time || '').trim(),
+          location: String(attendee.location || '').trim(),
+          facilitatorName: String(attendee.facilitator_name || '').trim(),
+        });
+
+        const subject = `Training Session Updated: ${String(attendee.title || 'Training Session').trim()}`;
+        const html = this.emailTemplateService.render('training-session-updated', {
+          fullName,
+          title: String(attendee.title || '').trim(),
+          date: String(attendee.date || '').trim(),
+          startTime: String(attendee.start_time || '').trim(),
+          endTime: String(attendee.end_time || '').trim(),
+          location: String(attendee.location || '').trim(),
+          calendarUrl,
+        });
+
+        const calendarAttachment = this.buildSessionCalendarAttachment({
+          sessionId,
+          title: String(attendee.title || '').trim(),
+          description: String(attendee.description || '').trim(),
+          date: String(attendee.date || '').trim(),
+          startTime: String(attendee.start_time || '').trim(),
+          endTime: String(attendee.end_time || '').trim(),
+          location: String(attendee.location || '').trim(),
+          facilitatorName: String(attendee.facilitator_name || '').trim(),
+          method: 'REQUEST',
+          sequence: Number(new Date(String(attendee.updated_at || new Date().toISOString())).getTime() / 1000),
+        });
+
+        await this.emailService.sendMail({
+          to: email,
+          subject,
+          html,
+          attachments: [calendarAttachment],
+        });
+      }
+    } catch (error) {
+      this.logger.warn(
+        `Failed to send training session update notifications for session ${sessionId}: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
   }
