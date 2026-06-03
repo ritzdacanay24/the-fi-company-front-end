@@ -7,6 +7,7 @@ import { SharedModule } from "@app/shared/shared.module";
 import { EmailNotificationFormComponent } from "../email-notification-form/email-notification-form.component";
 import { EmailNotificationService } from "@app/core/api/email-notification/email-notification.component";
 import { UserSearchV1Component } from "@app/shared/components/user-search-v1/user-search-v1.component";
+import Swal from "sweetalert2";
 
 @Component({
   standalone: true,
@@ -26,13 +27,16 @@ export class EmailNotificationEditComponent {
     private toastrService: ToastrService
   ) {}
 
+  recipientSearchValue: any = null;
+
   addTag = async ($event) => {
     try {
-      this.form.patchValue({ notification_emails: $event });
+      this.form.patchValue({ notification_emails: $event, user_id: null });
       await this.api.create({ ...this.form.getRawValue() });
       this.form.patchValue({ notification_emails: null });
+      this.recipientSearchValue = null;
       await this.getByFileName();
-      return $event;
+      return null;
     } catch (err) {
       return "";}
   };
@@ -69,10 +73,16 @@ export class EmailNotificationEditComponent {
       this.form.patchValue(this.data);
       this.form.get("location").disable();
       await this.getByFileName();
-    } catch (err) {}
+    } catch (err: any) {
+      if (err?.error?.code === "RC_EMAIL_NOTIFICATION_NOT_FOUND") {
+        this.toastrService.info("This email notification no longer exists.");
+        this.goBack();
+        return;
+      }
+    }
   }
 
-  listByFileName;
+  listByFileName = [];
   async getByFileName() {
     try {
       this.listByFileName = await this.api.find({
@@ -88,7 +98,7 @@ export class EmailNotificationEditComponent {
         this.listByFileName[i].user_id == $event.id &&
         this.data.location == this.listByFileName[i].location
       ) {
-        alert("User already in list");
+        this.toastrService.warning("User already exists in this notification group.");
         isFound = true;
         break;
       }
@@ -98,13 +108,26 @@ export class EmailNotificationEditComponent {
       this.form.patchValue({ user_id: $event?.id });
       await this.api.create({ ...this.form.getRawValue() });
       this.form.patchValue({ user_id: null });
+      this.recipientSearchValue = null;
       this.getByFileName();
     }
   }
 
   async removeById(id) {
-    if (!confirm("Are you sure you want to remove?")) return;
+    const result = await Swal.fire({
+      title: "Remove recipient?",
+      text: "This recipient will stop receiving this notification.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Remove",
+      cancelButtonText: "Cancel",
+      confirmButtonColor: "#dc3545",
+    });
+
+    if (!result.isConfirmed) return;
+
     await this.api.delete(id);
+    this.toastrService.success("Recipient removed.");
     this.getByFileName();
   }
 

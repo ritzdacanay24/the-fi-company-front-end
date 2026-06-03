@@ -9,6 +9,7 @@ import { UserSearchV1Component } from "@app/shared/components/user-search-v1/use
 import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErrors";
 import { EmailNotificationFormComponent } from "../email-notification-form/email-notification-form.component";
 import { EmailNotificationService } from "@app/core/api/email-notification/email-notification.component";
+import Swal from "sweetalert2";
 
 @Component({
   standalone: true,
@@ -28,11 +29,14 @@ export class EmailNotificationCreateComponent {
     private api: EmailNotificationService
   ) {}
 
+  recipientSearchValue: any = null;
+
   addTag = async ($event) => {
     try {
-      this.form.patchValue({ notification_emails: $event });
+      this.form.patchValue({ notification_emails: $event, user_id: null });
       await this.api.create(this.form.value);
       this.form.patchValue({ notification_emails: null });
+      this.recipientSearchValue = null;
       await this.getByFileName(this.fileNameLocation);
       return;
     } catch (err) {}
@@ -49,9 +53,14 @@ export class EmailNotificationCreateComponent {
 
   ngOnInit(): void {}
 
-  listByFileName;
+  listByFileName = [];
   async getByFileName(location) {
     try {
+      if (!location) {
+        this.listByFileName = [];
+        return;
+      }
+
       this.listByFileName = await this.api.find({
         location: location,
       });
@@ -67,7 +76,7 @@ export class EmailNotificationCreateComponent {
         this.listByFileName[i].user_id == $event.id &&
         this.fileNameLocation == this.listByFileName[i].location
       ) {
-        alert("User already in list");
+        this.toastrService.warning("User already exists in this notification group.");
         isFound = true;
         break;
       }
@@ -77,13 +86,26 @@ export class EmailNotificationCreateComponent {
       this.form.patchValue({ user_id: $event?.id });
       await this.api.create(this.form.value);
       this.form.patchValue({ user_id: null });
+      this.recipientSearchValue = null;
       this.getByFileName(this.fileNameLocation);
     }
   }
 
   async removeById(id) {
-    if (!confirm("Are you sure you want to remove?")) return;
+    const result = await Swal.fire({
+      title: "Remove recipient?",
+      text: "This recipient will stop receiving this notification.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Remove",
+      cancelButtonText: "Cancel",
+      confirmButtonColor: "#dc3545",
+    });
+
+    if (!result.isConfirmed) return;
+
     await this.api.delete(id);
+    this.toastrService.success("Recipient removed.");
     this.getByFileName(this.fileNameLocation);
   }
 
@@ -96,7 +118,7 @@ export class EmailNotificationCreateComponent {
   @Input() goBack: Function = (id?: string) => {
     this.router.navigate([NAVIGATION_ROUTE.LIST], {
       queryParamsHandling: "merge",
-      queryParams: { id: id },
+      queryParams: { id: id ?? null },
     });
   };
 

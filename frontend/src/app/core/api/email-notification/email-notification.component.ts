@@ -30,6 +30,9 @@ export class EmailNotificationService extends DataService<any> {
   override update = (id: number, params: any) =>
     firstValueFrom(this.http.put<any>(`${v2Url}/${id}`, params));
 
+  override delete = (id: number) =>
+    firstValueFrom(this.http.delete<any>(`${v2Url}/${id}`));
+
   deleteById = (id: number) =>
     firstValueFrom(this.http.delete<any>(`${v2Url}/${id}`));
 

@@ -35,22 +35,43 @@ export class EmailNotificationRepository extends BaseRepository<EmailNotificatio
 
   async getList(): Promise<EmailNotificationRecord[]> {
     return this.rawQuery<EmailNotificationRecord>(
-      `SELECT a.*, b.email
+      `SELECT a.*, IFNULL(NULLIF(TRIM(b.email), ''), a.notification_emails) AS email,
+              CASE
+                WHEN a.user_id IS NOT NULL THEN NULLIF(TRIM(CONCAT(COALESCE(b.first, ''), ' ', COALESCE(b.last, ''))), '')
+                ELSE NULL
+              END AS display_name,
+              CASE
+                WHEN a.user_id IS NULL THEN 'Manual Email'
+                WHEN b.active = 1 THEN 'Active'
+                ELSE 'Inactive'
+              END AS user_status
        FROM safety_incident_config a
-       LEFT JOIN db.users b ON b.id = a.user_id`,
+       LEFT JOIN db.users b ON b.id = a.user_id
+       WHERE a.user_id IS NULL OR (b.active = 1 AND IFNULL(b.access, 1) = 1)`,
     );
   }
 
   async findWithFilters(filters: Record<string, unknown>): Promise<EmailNotificationRecord[]> {
-    let sql = `SELECT a.*, IFNULL(b.email, a.notification_emails) AS email
+    let sql = `SELECT a.*, IFNULL(NULLIF(TRIM(b.email), ''), a.notification_emails) AS email,
+                      CASE
+                        WHEN a.user_id IS NOT NULL THEN NULLIF(TRIM(CONCAT(COALESCE(b.first, ''), ' ', COALESCE(b.last, ''))), '')
+                        ELSE NULL
+                      END AS display_name,
+                      CASE
+                        WHEN a.user_id IS NULL THEN 'Manual Email'
+                        WHEN b.active = 1 THEN 'Active'
+                        ELSE 'Inactive'
+                      END AS user_status
                FROM safety_incident_config a
                LEFT JOIN db.users b ON b.id = a.user_id`;
     const params: unknown[] = [];
+    const whereClauses: string[] = ['(a.user_id IS NULL OR (b.active = 1 AND IFNULL(b.access, 1) = 1))'];
     const keys = Object.keys(filters);
     if (keys.length > 0) {
-      sql += ' WHERE ' + keys.map((k) => `a.${k} = ?`).join(' AND ');
+      whereClauses.push(...keys.map((k) => `a.${k} = ?`));
       keys.forEach((k) => params.push(filters[k]));
     }
+    sql += ` WHERE ${whereClauses.join(' AND ')}`;
     return this.rawQuery<EmailNotificationRecord>(sql, params);
   }
 

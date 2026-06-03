@@ -39,7 +39,9 @@ export type EmailNotificationAccessValue =
   | 'overdue_shipping_request_email'
   | 'overdue_shortages_email'
   | 'overdue_field_service_workorder'
-  | 'overdue_rma_email';
+  | 'overdue_rma_email'
+  | 'create_parts_order'
+  | 'update_parts_order';
 
 @Injectable()
 export class EmailNotificationsService {
@@ -56,11 +58,12 @@ export class EmailNotificationsService {
 
     const rows = await this.mysqlService.query<EmailNotificationRecipientRow[]>(
       `
-        SELECT IFNULL(b.email, a.notification_emails) AS email
+        SELECT IFNULL(NULLIF(TRIM(b.email), ''), a.notification_emails) AS email
         FROM safety_incident_config a
         INNER JOIN email_notification_access_options o ON o.value = a.location
         LEFT JOIN db.users b ON b.id = a.user_id
         WHERE a.location = ?
+          AND (a.user_id IS NULL OR (b.active = 1 AND IFNULL(b.access, 1) = 1))
       `,
       [key],
     );

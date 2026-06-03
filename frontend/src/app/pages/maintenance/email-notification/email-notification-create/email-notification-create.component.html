@@ -1,38 +1,89 @@
 <div class="row">
-  <div class="content-grid col-xxl-7">
-    <div class="card">
-      <div class="card-header d-flex align-items-center">
-        <button class="btn btn-light shadow-none bg-light rounded border-0 me-2 me-auto" *ngIf="goBack"
-          (click)="goBack()"><i class="mdi mdi-arrow-left pointer text-muted"></i> Back</button>
-        <h4 class="card-title mb-0 flex-grow-1 text-end"> {{title}} </h4>
+  <div class="content-grid col-xl-9 col-xxl-8">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-bottom-0 pt-4 pb-3 px-4 d-flex align-items-center justify-content-between flex-wrap gap-3">
+        <div>
+          <h4 class="card-title mb-1">{{ title }}</h4>
+          <p class="text-muted mb-0">Create and maintain recipients for a notification group.</p>
+        </div>
+        <button class="btn btn-outline-secondary" *ngIf="goBack" (click)="goBack()">
+          <i class="mdi mdi-arrow-left me-1"></i>
+          Back To List
+        </button>
       </div>
-      <div class="card-body" style="min-height:300px">
-        <app-email-notification-form (setFormEmitter)="setFormEmitter($event)"
-          [submitted]="submitted"></app-email-notification-form>
 
-
-        <div class="row" *ngIf="fileNameLocation">
-          <div class="col-md">
-            <app-user-search-v1 (notifyParent)="notifyParent($event)"
-              [ngClass]="{ 'is-invalid': submitted && form.value.user_id.errors }"
-              [form_label]="'Search & add users to list'" [addTag]="addTag"
-              [appendToBody]="'body'"></app-user-search-v1>
-          </div>
+      <div class="card-body px-4 pb-4">
+        <div class="rounded border bg-light-subtle p-3 mb-4">
+          <app-email-notification-form
+            (setFormEmitter)="setFormEmitter($event)"
+            [submitted]="submitted"
+          ></app-email-notification-form>
         </div>
 
-        <table class="table table-bordered">
-          <tbody>
-            <tr *ngFor="let row of listByFileName">
-              <td>{{row.id}}</td>
-              <td>{{row.email}}</td>
-              <td class="text-danger text-center"><span (click)="removeById(row.id)" class="pointer">X</span></td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="rounded border p-3 mb-4" *ngIf="fileNameLocation">
+          <div class="fw-semibold mb-2">Add Recipient</div>
+          <app-user-search-v1
+            (notifyParent)="notifyParent($event)"
+            [ngClass]="{ 'is-invalid': submitted && form.value.user_id.errors }"
+            [form_label]="'Search user or type an email address'"
+            [addTag]="addTag"
+            [value]="recipientSearchValue"
+            [appendToBody]="'body'"
+          ></app-user-search-v1>
+        </div>
 
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <h6 class="mb-0">Recipients</h6>
+          <span class="badge text-bg-secondary">{{ (listByFileName || []).length }}</span>
+        </div>
 
+        <div class="table-responsive border rounded">
+          <table class="table table-sm align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 80px;">ID</th>
+                <th>Email</th>
+                <th style="width: 160px;">Source</th>
+                <th style="width: 130px;">Status</th>
+                <th style="width: 110px;" class="text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody *ngIf="(listByFileName || []).length; else createEmptyState">
+              <tr *ngFor="let row of listByFileName">
+                <td>{{ row.id }}</td>
+                <td>{{ row.email }}</td>
+                <td>
+                  <span class="badge" [ngClass]="row.user_id ? 'text-bg-primary' : 'text-bg-light border text-muted'">
+                    {{ row.user_id ? 'User' : 'Manual Email' }}
+                  </span>
+                </td>
+                <td>
+                  <span class="badge" [ngClass]="row.user_id ? 'text-bg-success' : 'text-bg-secondary'">
+                    {{ row.user_status }}
+                  </span>
+                </td>
+                <td class="text-center">
+                  <button class="btn btn-sm btn-outline-danger" (click)="removeById(row.id)">
+                    Remove
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <ng-template #createEmptyState>
+            <tbody>
+              <tr>
+                <td colspan="5" class="text-center py-4 text-muted">
+                  No recipients configured yet.
+                </td>
+              </tr>
+            </tbody>
+          </ng-template>
+        </div>
       </div>
-      <div class="card-footer d-flex  d-flex justify-content-between">
+
+      <div class="card-footer bg-white border-top d-flex justify-content-end px-4 py-3">
         <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Close</button>
       </div>
     </div>

@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { QadOdbcService } from '@/shared/database/qad-odbc.service';
 import { EmailService } from '@/shared/email/email.service';
 import { EmailTemplateService } from '@/shared/email/email-template.service';
+import { EmailNotificationsService, type EmailNotificationAccessValue } from '../email-notifications';
 import { PartsOrderRepository } from './parts-order.repository';
 
 interface PartsOrderRow extends Record<string, unknown> {
@@ -16,13 +17,29 @@ interface PartsOrderRow extends Record<string, unknown> {
   isPastDue?: 'Yes' | 'No';
 }
 
+interface PartsOrderChangeItem {
+  field: string;
+  oldValue: string;
+  newValue: string;
+}
+
 @Injectable()
 export class PartsOrderService {
+  private readonly createRecipientsKey: EmailNotificationAccessValue = 'create_parts_order';
+  private readonly updateRecipientsKey: EmailNotificationAccessValue = 'update_parts_order';
+
+  private readonly partsOrderNoticeRecipients = [
+    'ritz.dacanay@the-fi-company.com',
+    'juvenal.torres@the-fi-company.com',
+    'orderslv@the-fi-company.com',
+  ];
+
   constructor(
     private readonly repository: PartsOrderRepository,
     private readonly qadOdbcService: QadOdbcService,
     private readonly emailService: EmailService,
     private readonly emailTemplateService: EmailTemplateService,
+    private readonly emailNotificationsService: EmailNotificationsService,
     private readonly configService: ConfigService,
   ) {}
 
@@ -110,6 +127,11 @@ export class PartsOrderService {
   }
 
   async update(id: number, payload: Record<string, unknown>): Promise<{ success: true }> {
+    const existing = await this.getById(id);
+    if (!existing) {
+      throw new NotFoundException(`Parts order ${id} not found`);
+    }
+
     const normalized = this.normalizePayload(payload);
     const sanitized = this.repository.sanitizePayload(normalized);
 
@@ -120,6 +142,16 @@ export class PartsOrderService {
     const affectedRows = await this.repository.updateById(id, sanitized);
     if (!affectedRows) {
       throw new NotFoundException(`Parts order ${id} not found`);
+    }
+
+    const latest = await this.getById(id);
+    if (!latest) {
+      throw new NotFoundException(`Parts order ${id} not found after update`);
+    }
+
+    const changes = this.collectChanges(existing, latest, Object.keys(sanitized));
+    if (changes.length > 0) {
+      await this.sendPartsOrderChangeEmail(id, existing, latest, changes);
     }
 
     return { success: true };
@@ -330,11 +362,10 @@ export class PartsOrderService {
   }
 
   private async sendPartsOrderEmail(id: number, payload: Record<string, unknown>): Promise<void> {
-    const recipients = [
-      'ritz.dacanay@the-fi-company.com',
-      'juvenal.torres@the-fi-company.com',
-      'orderslv@the-fi-company.com',
-    ];
+    const recipients = await this.getConfiguredRecipients(
+      this.createRecipientsKey,
+      this.partsOrderNoticeRecipients,
+    );
 
     const nowDate = new Date().toISOString().slice(0, 10);
     const link = new URL(
@@ -376,5 +407,149 @@ export class PartsOrderService {
       subject: `ID - ${id} Parts Order - ${nowDate}`,
       html,
     });
+  }
+
+  private collectChanges(
+    before: PartsOrderRow,
+    after: PartsOrderRow,
+    candidateFields: string[],
+  ): PartsOrderChangeItem[] {
+    const changes: PartsOrderChangeItem[] = [];
+    const uniqueFields = Array.from(new Set(candidateFields));
+
+    for (const field of uniqueFields) {
+      const oldRaw = before[field];
+      const newRaw = after[field];
+      const oldValue = this.normalizeComparisonValue(field, oldRaw);
+      const newValue = this.normalizeComparisonValue(field, newRaw);
+
+      if (oldValue === newValue) {
+        continue;
+      }
+
+      changes.push({
+        field: this.fieldLabel(field),
+        oldValue: this.humanizeValue(oldValue),
+        newValue: this.humanizeValue(newValue),
+      });
+    }
+
+    return changes;
+  }
+
+  private normalizeComparisonValue(field: string, value: unknown): string {
+    if (field === 'details') {
+      const details = this.parseDetails(value).map((row) => ({
+        part_number: String(row.part_number || '').trim(),
+        billable: String(row.billable || '').trim(),
+        qty: String(row.qty || '').trim(),
+      }));
+
+      return JSON.stringify(details);
+    }
+
+    if (value === null || value === undefined) {
+      return '';
+    }
+
+    return String(value).trim();
+  }
+
+  private humanizeValue(value: string): string {
+    if (!value) {
+      return 'None';
+    }
+
+    return value;
+  }
+
+  private fieldLabel(field: string): string {
+    const labels: Record<string, string> = {
+      oem: 'OEM',
+      casino_name: 'Casino Name',
+      arrival_date: 'Arrival Date',
+      ship_via_account: 'Ship Via Account',
+      address: 'Address',
+      contact_name: 'Contact Name',
+      contact_phone_number: 'Contact Phone Number',
+      contact_email: 'Contact Email',
+      billable: 'Billable',
+      part_number: 'Part Number',
+      part_qty: 'Part Quantity',
+      instructions: 'Instructions',
+      created_by: 'Created By',
+      created_date: 'Created Date',
+      so_number: 'SV Number',
+      status: 'Status',
+      tracking_number: 'Tracking Number',
+      tracking_number_carrier: 'Tracking Number Carrier',
+      return_tracking_number_carrier: 'Return Tracking Number Carrier',
+      return_tracking_number: 'Return Tracking Number',
+      serial_number: 'Serial Number',
+      details: 'Parts Details',
+      active: 'Active',
+    };
+
+    return labels[field] || field;
+  }
+
+  private resolveChangeRecipients(before: PartsOrderRow, after: PartsOrderRow): string[] {
+    const candidate = String(after.contact_email || before.contact_email || '').trim();
+    if (candidate && this.isValidEmail(candidate)) {
+      return [candidate];
+    }
+
+    return [];
+  }
+
+  private isValidEmail(email: string): boolean {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }
+
+  private async sendPartsOrderChangeEmail(
+    id: number,
+    before: PartsOrderRow,
+    after: PartsOrderRow,
+    changes: PartsOrderChangeItem[],
+  ): Promise<void> {
+    const recipients = this.resolveChangeRecipients(before, after);
+    const ccRecipients = await this.getConfiguredRecipients(
+      this.updateRecipientsKey,
+      this.partsOrderNoticeRecipients,
+    );
+
+    if (!recipients.length && !ccRecipients.length) {
+      return;
+    }
+
+    const link = new URL(
+      `/field-service/parts-order/edit?id=${id}`,
+      this.configService.getOrThrow<string>('DASHBOARD_WEB_BASE_URL'),
+    ).toString();
+
+    const html = this.emailTemplateService.render('parts-order-updated', {
+      id,
+      soNumber: String(after.so_number || before.so_number || ''),
+      changedBy: String(after.updated_by_name || after.created_by_name || 'System'),
+      changedAt: new Date().toISOString(),
+      changes,
+      hasChanges: changes.length > 0,
+      link,
+    });
+
+    await this.emailService.sendMail({
+      to: recipients.length ? recipients : ccRecipients,
+      cc: recipients.length ? ccRecipients : undefined,
+      subject: `Parts Order ${id} Updated`,
+      html,
+    });
+  }
+
+  private async getConfiguredRecipients(
+    key: EmailNotificationAccessValue,
+    fallback: string[],
+  ): Promise<string[]> {
+    const configured = await this.emailNotificationsService.getRecipients(key);
+    return configured.length ? configured : fallback;
   }
 }

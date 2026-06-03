@@ -11,12 +11,15 @@
 
   <ng-template ng-option-tmp let-item="item" let-index="index" let-search="searchTerm">
     <div>
-      <p> {{ item.first }} {{ item.last }} <span class="text-end float-end">#{{ item.id }}</span></p>
-      <p> {{ item.email }}</p>
+      <p>
+        {{ getItemLabel(item) }}
+        <span class="text-end float-end" *ngIf="getItemId(item)">{{ getItemId(item) }}</span>
+      </p>
+      <p *ngIf="getItemSubLabel(item)">{{ getItemSubLabel(item) }}</p>
     </div>
   </ng-template>
 
   <ng-template ng-label-tmp let-item="item">
-    <span>{{ item.first }} {{ item.last }}</span>
+    <span>{{ getItemLabel(item) }}</span>
   </ng-template>
 </ng-select>

@@ -1,12 +1,82 @@
 <div class="row">
-  <div class="col-lg-12">
-    <div class="card">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <h4 class="card-title mb-0 flex-grow-1 text-start"> {{title}} </h4>
+  <div class="col-12">
+    <div class="notification-hero card border-0 shadow-sm mb-3">
+      <div class="card-body px-4 py-4 d-flex align-items-center justify-content-between flex-wrap gap-3">
+        <div>
+          <div class="hero-eyebrow">Maintenance</div>
+          <h4 class="card-title mb-1">{{ title }}</h4>
+          <p class="text-muted mb-0">Manage recipient lists by notification group.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <button class="btn btn-outline-secondary" (click)="getData()">
+            <i class="mdi mdi-refresh me-1"></i>
+            Refresh
+          </button>
+          <button class="btn btn-primary" (click)="onCreate()">
+            <i class="mdi mdi-plus me-1"></i>
+            Create Notification
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+      <div class="col-sm-6 col-lg-4">
+        <div class="card border-0 shadow-sm stat-card">
+          <div class="card-body">
+            <div class="stat-label">Total Recipients</div>
+            <div class="stat-value">{{ totalRecipients }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-4">
+        <div class="card border-0 shadow-sm stat-card">
+          <div class="card-body">
+            <div class="stat-label">Notification Groups</div>
+            <div class="stat-value">{{ totalGroups }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-4">
+        <div class="card border-0 shadow-sm stat-card">
+          <div class="card-body">
+            <div class="stat-label">Manual Email Entries</div>
+            <div class="stat-value">{{ manualEmailRecipients }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-bottom-0 pt-3 pb-2 px-4">
+        <div class="row g-3 align-items-center">
+          <div class="col-lg-6">
+            <p class="text-muted mb-0 small">Each row is one notification group with recipient totals and data health.</p>
+          </div>
+          <div class="col-lg-6">
+            <label class="toolbar-label mb-1">Search Notification Groups</label>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-white border-end-0"><i class="mdi mdi-magnify"></i></span>
+              <input
+                type="text"
+                class="form-control search-input border-start-0"
+                placeholder="Search by group name, description, or health"
+                [(ngModel)]="searchTerm"
+                (ngModelChange)="onSearchChange($event)"
+              />
+              <button class="btn btn-outline-secondary" type="button" (click)="clearSearch()">Clear</button>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="card-body p-0">
-        <ag-grid-angular class="ag-theme-quartz no-border" [rowData]="data" [columnDefs]="columnDefs"
-          [gridOptions]="gridOptions" style="width: 100%;height: calc(100vh - 150px);">
+        <ag-grid-angular
+          class="ag-theme-quartz no-border"
+          [rowData]="data"
+          [columnDefs]="columnDefs"
+          [gridOptions]="gridOptions"
+          style="width: 100%; height: calc(100vh - 220px); min-height: 520px;"
+        >
         </ag-grid-angular>
       </div>
     </div>

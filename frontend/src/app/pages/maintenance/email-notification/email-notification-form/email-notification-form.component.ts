@@ -1,13 +1,12 @@
 import { Component, EventEmitter, Input, Output } from "@angular/core";
 import { FormBuilder } from "@angular/forms";
 import { SharedModule } from "@app/shared/shared.module";
-import { UserSearchV1Component } from "@app/shared/components/user-search-v1/user-search-v1.component";
 import { EmailNotificationService } from "@app/core/api/email-notification/email-notification.component";
 import _ from "lodash";
 
 @Component({
   standalone: true,
-  imports: [SharedModule, UserSearchV1Component],
+  imports: [SharedModule],
   selector: "app-email-notification-form",
   templateUrl: "./email-notification-form.component.html",
 })

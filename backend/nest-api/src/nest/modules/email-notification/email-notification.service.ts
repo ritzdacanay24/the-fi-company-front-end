@@ -33,8 +33,11 @@ export class EmailNotificationService {
   }
 
   async delete(id: number) {
-    await this.getById(id);
-    await this.repo.deleteById(id);
+    const affectedRows = await this.repo.deleteById(id);
+    if (!affectedRows) {
+      return { message: 'Already deleted' };
+    }
+
     return { message: 'Deleted successfully' };
   }
 

@@ -72,6 +72,42 @@ export class UserSearchV1Component implements OnInit {
   trackByFn(item: any) {
     return item.id;
   }
+
+  getItemLabel(item: any): string {
+    if (!item) {
+      return "";
+    }
+
+    if (typeof item === "string") {
+      return item;
+    }
+
+    const first = String(item.first || "").trim();
+    const last = String(item.last || "").trim();
+    const fullName = `${first} ${last}`.trim();
+
+    if (fullName) {
+      return fullName;
+    }
+
+    return String(item.email || item.notification_emails || "");
+  }
+
+  getItemSubLabel(item: any): string {
+    if (!item || typeof item === "string") {
+      return "";
+    }
+
+    return String(item.email || "");
+  }
+
+  getItemId(item: any): string {
+    if (!item || typeof item === "string") {
+      return "";
+    }
+
+    return item.id ? `#${item.id}` : "";
+  }
   ngOnChanges(changes: SimpleChanges) {
     if (changes["value"]?.currentValue) {
       if (!changes["multiple"]?.currentValue) {
