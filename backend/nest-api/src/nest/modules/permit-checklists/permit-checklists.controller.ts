@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Get, Post, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Header, Param, Post, StreamableFile, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Permissions, RolePermissionGuard } from '../access-control';
 import { PermitChecklistUploadFile, PermitChecklistsService } from './permit-checklists.service';
@@ -12,6 +12,17 @@ export class PermitChecklistsController {
   @Permissions('read')
   async bootstrap() {
     return this.service.bootstrap();
+  }
+
+  @Get('tickets/:ticketId/pdf')
+  @Permissions('read')
+  @Header('Content-Type', 'application/pdf')
+  async getTicketPdf(@Param('ticketId') ticketId: string): Promise<StreamableFile> {
+    const result = await this.service.getTicketPdf(ticketId);
+    return new StreamableFile(result.buffer, {
+      type: 'application/pdf',
+      disposition: `attachment; filename="${result.fileName}"`,
+    });
   }
 
   @Post('upsert-ticket')

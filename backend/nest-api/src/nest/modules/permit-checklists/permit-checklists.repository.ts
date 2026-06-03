@@ -47,6 +47,12 @@ interface DeleteAuthUserRow extends RowDataPacket {
 export class PermitChecklistsRepository {
   constructor(@Inject(MysqlService) private readonly mysqlService: MysqlService) {}
 
+  async getTicketById(ticketId: string): Promise<PermitTicketRow | null> {
+    const sql = `SELECT * FROM quality_permit_checklist_tickets WHERE ticket_id = ? LIMIT 1`;
+    const rows = await this.mysqlService.query<PermitTicketRow[]>(sql, [ticketId]);
+    return rows[0] || null;
+  }
+
   async getTickets(): Promise<PermitTicketRow[]> {
     const sql = `SELECT * FROM quality_permit_checklist_tickets ORDER BY updated_at DESC`;
     return this.mysqlService.query<PermitTicketRow[]>(sql);

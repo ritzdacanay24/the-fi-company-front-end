@@ -1,5 +1,6 @@
 import { CommonModule } from "@angular/common";
 import { Component, EventEmitter, Input, Output } from "@angular/core";
+import { jsPDF } from "jspdf";
 
 interface SummaryField {
   key: string;
@@ -94,22 +95,164 @@ export class PermitChecklistSummaryComponent {
     this.attachmentSelected.emit(attachment);
   }
 
-  printSummary(): void {
+  downloadSummaryPdf(): void {
     if (!this.template || !this.ticket) {
       return;
     }
 
-    const html = this.buildSummaryHtml();
-    const printWindow = window.open("", "_blank", "width=1080,height=900");
-    if (!printWindow) {
-      return;
-    }
+    const doc = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: "a4",
+    });
 
-    printWindow.document.open();
-    printWindow.document.write(html);
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 10;
+    const contentWidth = pageWidth - margin * 2;
+    const labelWidth = contentWidth * 0.42;
+    const valueWidth = contentWidth - labelWidth;
+    const bottomMargin = 12;
+    let currentY = margin;
+
+    const ensurePage = (requiredHeight: number): void => {
+      if (currentY + requiredHeight <= pageHeight - bottomMargin) {
+        return;
+      }
+      doc.addPage();
+      currentY = margin;
+    };
+
+    const addSectionTitle = (title: string): void => {
+      ensurePage(10);
+      doc.setFillColor(248, 250, 252);
+      doc.setDrawColor(219, 227, 239);
+      doc.rect(margin, currentY, contentWidth, 8, "FD");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.setTextColor(31, 41, 55);
+      doc.text(title.toUpperCase(), margin + 2, currentY + 5.5);
+      currentY += 8;
+    };
+
+    const addTableRows = (rows: Array<{ label: string; value: string }>): void => {
+      if (!rows.length) {
+        return;
+      }
+
+      doc.setFontSize(9);
+      rows.forEach((row) => {
+        const labelText = String(row.label || "-");
+        const valueText = String(row.value || "-");
+        const labelLines = doc.splitTextToSize(labelText, labelWidth - 4);
+        const valueLines = doc.splitTextToSize(valueText, valueWidth - 4);
+        const lineCount = Math.max(labelLines.length, valueLines.length, 1);
+        const rowHeight = Math.max(6, lineCount * 4 + 2);
+
+        ensurePage(rowHeight + 1);
+
+        doc.setFillColor(252, 253, 255);
+        doc.setDrawColor(229, 234, 242);
+        doc.rect(margin, currentY, labelWidth, rowHeight, "FD");
+        doc.rect(margin + labelWidth, currentY, valueWidth, rowHeight, "D");
+
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(51, 65, 85);
+        doc.text(labelLines, margin + 2, currentY + 4.5);
+
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(17, 24, 39);
+        doc.text(valueLines, margin + labelWidth + 2, currentY + 4.5);
+
+        currentY += rowHeight;
+      });
+    };
+
+    const addMetaCards = (): void => {
+      const cards = [
+        { label: "Status", value: String(this.ticket.status || "-").toUpperCase() },
+        { label: "Completion", value: `${this.completionPercent}%` },
+        { label: "Approved Amount", value: this.formatCurrency(this.approvedAmount) },
+        { label: "Created By", value: this.ticket.createdBy || "-" },
+        { label: "Created", value: this.formatDateTime(this.ticket.createdAt) },
+        { label: "Finalized", value: this.formatDateTime(this.ticket.finalizedAt) },
+      ];
+
+      const cols = 2;
+      const gap = 4;
+      const cardWidth = (contentWidth - gap) / cols;
+      const cardHeight = 14;
+
+      cards.forEach((card, index) => {
+        const row = Math.floor(index / cols);
+        const col = index % cols;
+        const x = margin + col * (cardWidth + gap);
+        const y = currentY + row * (cardHeight + gap);
+
+        ensurePage(cardHeight + gap);
+        doc.setDrawColor(219, 227, 239);
+        doc.setFillColor(255, 255, 255);
+        doc.rect(x, y, cardWidth, cardHeight, "FD");
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(7.5);
+        doc.setTextColor(100, 116, 139);
+        doc.text(card.label.toUpperCase(), x + 2, y + 4);
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9);
+        doc.setTextColor(15, 23, 42);
+        const valueLines = doc.splitTextToSize(String(card.value || "-"), cardWidth - 4);
+        doc.text(valueLines, x + 2, y + 8.5);
+      });
+
+      const cardRows = Math.ceil(cards.length / cols);
+      currentY += cardRows * (cardHeight + gap);
+    };
+
+    // Header block
+    doc.setFillColor(248, 251, 255);
+    doc.setDrawColor(219, 227, 239);
+    doc.rect(margin, currentY, contentWidth, 20, "FD");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(15);
+    doc.setTextColor(15, 23, 42);
+    doc.text(this.ticket.ticketId || "Checklist Summary", margin + 3, currentY + 7);
+    doc.setFontSize(10);
+    doc.setTextColor(51, 65, 85);
+    doc.text(this.template.title || "Permit Checklist", margin + 3, currentY + 13);
+    currentY += 24;
+
+    addMetaCards();
+    currentY += 2;
+
+    addSectionTitle("Header Information");
+    addTableRows(this.template.headerFields.map((field) => ({
+      label: field.label,
+      value: this.valueFor(field.key),
+    })));
+
+    currentY += 2;
+    addSectionTitle("Process Timeline");
+    addTableRows(this.template.processFields.map((field) => ({
+      label: field.label,
+      value: this.valueFor(field.key),
+    })));
+
+    currentY += 2;
+    addSectionTitle("Attachments");
+    addTableRows(
+      this.summaryAttachments.length
+        ? this.summaryAttachments.map((attachment) => ({
+            label: attachment.uploadedBy || "Unknown User",
+            value: `${attachment.fileName} (${this.formatFileSize(attachment.fileSize)} | ${this.formatDateTime(
+              attachment.uploadedAt
+            )})`,
+          }))
+        : [{ label: "Attachments", value: "No attachments uploaded." }]
+    );
+
+    doc.save(`${this.ticket.ticketId || "permit-checklist"}-summary.pdf`);
   }
 
   private buildSummaryHtml(): string {

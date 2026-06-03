@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { promises as fs } from 'fs';
 import { basename, extname, join } from 'path';
+import PDFDocument from 'pdfkit';
 import { PermitChecklistsRepository } from './permit-checklists.repository';
 
 type TicketStatus = 'draft' | 'saved' | 'submitted' | 'finalized' | 'archived';
@@ -21,6 +22,38 @@ export class PermitChecklistsService {
   private readonly uploadsPathPrefix = `${this.resolvePathPrefix(this.uploadsPublicBase)}/permit-checklists`;
 
   constructor(private readonly repository: PermitChecklistsRepository) {}
+
+  async getTicketPdf(ticketIdInput: string | undefined): Promise<{ buffer: Buffer; fileName: string }> {
+    const ticketId = String(ticketIdInput || '').trim();
+    if (!ticketId) {
+      throw new NotFoundException('ticketId is required');
+    }
+
+    const row = await this.repository.getTicketById(ticketId);
+    if (!row) {
+      throw new NotFoundException(`Ticket ${ticketId} not found`);
+    }
+
+    const values = this.decodeJsonObject(row.values_json);
+    const financials = this.decodeJsonObject(row.financials_json);
+    const attachments = this.decodeJsonArray(row.attachments_json);
+
+    const fileName = `${this.sanitizeFileBase(ticketId)}.pdf`;
+    const buffer = await this.generateTicketPdfBuffer({
+      ticketId: String(row.ticket_id),
+      formType: String(row.form_type || '').toUpperCase(),
+      status: String(row.status || '-').toUpperCase(),
+      createdBy: String(row.created_by || '-'),
+      createdAt: this.toIso(row.created_at),
+      updatedAt: this.toIso(row.updated_at),
+      finalizedAt: row.finalized_at ? this.toIso(row.finalized_at) : '',
+      values,
+      financials,
+      attachments,
+    });
+
+    return { buffer, fileName };
+  }
 
   async uploadAttachment(ticketIdInput: string | undefined, file: PermitChecklistUploadFile, uploadedByInput?: string) {
     const ticketId = String(ticketIdInput || '').trim();
@@ -512,5 +545,165 @@ export class PermitChecklistsService {
     }
 
     return value.startsWith('/') ? value : `/${value}`;
+  }
+
+  private async generateTicketPdfBuffer(payload: {
+    ticketId: string;
+    formType: string;
+    status: string;
+    createdBy: string;
+    createdAt: string;
+    updatedAt: string;
+    finalizedAt: string;
+    values: Record<string, unknown>;
+    financials: Record<string, unknown>;
+    attachments: Array<Record<string, unknown>>;
+  }): Promise<Buffer> {
+    const doc = new PDFDocument({ size: 'A4', margin: 28, bufferPages: true });
+    const chunks: Buffer[] = [];
+
+    const pdfBufferPromise = new Promise<Buffer>((resolve, reject) => {
+      doc.on('data', (chunk) => chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+    });
+
+    const pageWidth = doc.page.width;
+    const margin = 28;
+    const contentWidth = pageWidth - margin * 2;
+    const labelWidth = contentWidth * 0.38;
+    const valueWidth = contentWidth - labelWidth;
+    const pageBottom = doc.page.height - margin;
+    let y = margin;
+
+    const ensureSpace = (needed: number): void => {
+      if (y + needed <= pageBottom) {
+        return;
+      }
+      doc.addPage();
+      y = margin;
+    };
+
+    const drawSectionTitle = (title: string): void => {
+      ensureSpace(26);
+      doc.save();
+      doc.fillColor('#f8fafc').rect(margin, y, contentWidth, 18).fill();
+      doc.restore();
+      doc.strokeColor('#dbe3ef').lineWidth(1).rect(margin, y, contentWidth, 18).stroke();
+      doc.font('Helvetica-Bold').fontSize(10).fillColor('#1f2937').text(String(title || '').toUpperCase(), margin + 6, y + 6);
+      y += 18;
+    };
+
+    const drawRow = (label: string, value: string): void => {
+      const labelText = String(label || '-');
+      const valueText = String(value || '-');
+      doc.font('Helvetica-Bold').fontSize(9);
+      const labelHeight = doc.heightOfString(labelText, { width: labelWidth - 10 });
+      doc.font('Helvetica').fontSize(9);
+      const valueHeight = doc.heightOfString(valueText, { width: valueWidth - 10 });
+      const rowHeight = Math.max(20, Math.max(labelHeight, valueHeight) + 10);
+
+      ensureSpace(rowHeight + 1);
+
+      doc.save();
+      doc.fillColor('#fcfdff').rect(margin, y, labelWidth, rowHeight).fill();
+      doc.restore();
+      doc.strokeColor('#e5eaf2').lineWidth(1).rect(margin, y, labelWidth, rowHeight).stroke();
+      doc.strokeColor('#e5eaf2').lineWidth(1).rect(margin + labelWidth, y, valueWidth, rowHeight).stroke();
+
+      doc.font('Helvetica-Bold').fontSize(9).fillColor('#334155').text(labelText, margin + 5, y + 5, {
+        width: labelWidth - 10,
+      });
+      doc.font('Helvetica').fontSize(9).fillColor('#111827').text(valueText, margin + labelWidth + 5, y + 5, {
+        width: valueWidth - 10,
+      });
+
+      y += rowHeight;
+    };
+
+    doc.save();
+    doc.fillColor('#f8fbff').rect(margin, y, contentWidth, 62).fill();
+    doc.restore();
+    doc.strokeColor('#dbe3ef').lineWidth(1).rect(margin, y, contentWidth, 62).stroke();
+    doc.font('Helvetica-Bold').fontSize(16).fillColor('#0f172a').text(payload.ticketId, margin + 8, y + 10);
+    doc.font('Helvetica').fontSize(10).fillColor('#334155').text(`Permit Checklist (${payload.formType})`, margin + 8, y + 32);
+    y += 72;
+
+    drawSectionTitle('Checklist Summary');
+    drawRow('Status', payload.status);
+    drawRow('Created By', payload.createdBy);
+    drawRow('Created At', payload.createdAt ? new Date(payload.createdAt).toLocaleString() : '-');
+    drawRow('Last Updated', payload.updatedAt ? new Date(payload.updatedAt).toLocaleString() : '-');
+    drawRow('Finalized At', payload.finalizedAt ? new Date(payload.finalizedAt).toLocaleString() : '-');
+
+    const valueRows = Object.entries(payload.values || {})
+      .map(([key, value]) => ({
+        key,
+        label: this.toPdfLabel(key),
+        value: String(value ?? '').trim(),
+      }))
+      .filter((entry) => entry.value.length > 0)
+      .sort((a, b) => a.label.localeCompare(b.label));
+
+    drawSectionTitle('Form Values');
+    if (!valueRows.length) {
+      drawRow('Fields', 'No values captured.');
+    } else {
+      for (const row of valueRows) {
+        drawRow(row.label, row.value);
+      }
+    }
+
+    const approvedAmount = Number((payload.financials?.approvedAmount as number) || 0);
+    const quoteAmount = Number((payload.financials?.quoteAmount as number) || 0);
+    const invoiceAmount = Number((payload.financials?.invoiceAmount as number) || 0);
+    const approvalDate = String(payload.financials?.approvalDate || '').trim();
+    const invoiceReference = String(payload.financials?.invoiceReference || '').trim();
+
+    drawSectionTitle('Financials');
+    drawRow('Quote Amount', this.formatPdfCurrency(quoteAmount));
+    drawRow('Invoice Amount', this.formatPdfCurrency(invoiceAmount));
+    drawRow('Approved Amount', this.formatPdfCurrency(approvedAmount));
+    drawRow('Approval Date', approvalDate || '-');
+    drawRow('Invoice Reference', invoiceReference || '-');
+
+    drawSectionTitle('Attachments');
+    if (!payload.attachments.length) {
+      drawRow('Files', 'No attachments uploaded.');
+    } else {
+      for (const attachment of payload.attachments) {
+        const fileName = String(attachment.fileName || 'Attachment');
+        const uploadedBy = String(attachment.uploadedBy || 'Unknown User');
+        const uploadedAt = String(attachment.uploadedAt || '').trim();
+        const summary = `${uploadedBy} | ${uploadedAt ? new Date(uploadedAt).toLocaleString() : '-'}`;
+        drawRow(fileName, summary);
+      }
+    }
+
+    doc.end();
+    return await pdfBufferPromise;
+  }
+
+  private toPdfLabel(rawKey: string): string {
+    const key = String(rawKey || '').trim();
+    if (!key) {
+      return 'Field';
+    }
+
+    return key
+      .replace(/([a-z])([A-Z])/g, '$1 $2')
+      .replace(/_/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/^./, (c) => c.toUpperCase());
+  }
+
+  private formatPdfCurrency(value: number): string {
+    const numeric = Number(value || 0);
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits: 2,
+    }).format(Number.isFinite(numeric) ? numeric : 0);
   }
 }

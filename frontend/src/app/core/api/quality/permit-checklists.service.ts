@@ -1,5 +1,5 @@
 import { Injectable } from "@angular/core";
-import { HttpClient } from "@angular/common/http";
+import { HttpClient, HttpResponse } from "@angular/common/http";
 import { firstValueFrom } from "rxjs";
 import { DataService } from "../DataService";
 
@@ -65,4 +65,12 @@ export class PermitChecklistsService extends DataService<any> {
 
   syncTransactions = async (transactions: any[]): Promise<any> =>
     await firstValueFrom(this.http.post(`${url}/sync-transactions`, { transactions }));
+
+  downloadTicketPdf = async (ticketId: string): Promise<HttpResponse<Blob>> =>
+    await firstValueFrom(
+      this.http.get(`${url}/tickets/${encodeURIComponent(ticketId)}/pdf`, {
+        observe: "response",
+        responseType: "blob",
+      })
+    );
 }

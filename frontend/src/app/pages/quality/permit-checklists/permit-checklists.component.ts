@@ -2657,9 +2657,46 @@ export class PermitChecklistsComponent implements OnInit {
     this.persistLocalData();
     void this.flushTransactionsToApi(ticket.ticketId);
 
-    this.viewMode = "summary";
     this.syncUrlState();
-    this.statusMessage = `Ticket ${ticket.ticketId} submitted. Review summary and print PDF.`;
+    this.statusMessage = `Ticket ${ticket.ticketId} submitted. Downloading PDF...`;
+    void this.downloadTicketPdfFromBackend(ticket.ticketId);
+  }
+
+  private async downloadTicketPdfFromBackend(ticketId: string): Promise<void> {
+    try {
+      const response = await this.permitChecklistsService.downloadTicketPdf(ticketId);
+      const blob = response.body;
+      if (!blob) {
+        this.statusMessage = "PDF download failed: empty response from server.";
+        return;
+      }
+
+      const fileName = this.resolvePdfFileName(response.headers.get("content-disposition"), ticketId);
+      const objectUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = objectUrl;
+      anchor.download = fileName;
+      anchor.click();
+      URL.revokeObjectURL(objectUrl);
+
+      this.statusMessage = `Ticket ${ticketId} submitted. PDF downloaded.`;
+      this.toastr.success("PDF downloaded.");
+    } catch {
+      this.statusMessage = "Unable to download PDF from backend.";
+      this.toastr.error("PDF download failed.");
+    }
+  }
+
+  private resolvePdfFileName(contentDisposition: string | null, ticketId: string): string {
+    const fallback = `${ticketId || "permit-checklist"}.pdf`;
+    const raw = String(contentDisposition || "");
+    const match = raw.match(/filename\*?=(?:UTF-8''|\")?([^\";]+)/i);
+    if (!match?.[1]) {
+      return fallback;
+    }
+
+    const decoded = decodeURIComponent(match[1]).trim().replace(/^\"|\"$/g, "");
+    return decoded || fallback;
   }
 
   finalizeTicket(): void {
