@@ -2,33 +2,29 @@
   <div class="row justify-content-center">
     <div class="col-12">
 
-      <!-- Breadcrumb -->
-      <nav aria-label="breadcrumb" class="mb-3">
-        <ol class="breadcrumb mb-0">
-          <li class="breadcrumb-item">
-            <a href="#" class="text-decoration-none" (click)="$event.preventDefault()">
-              <i class="mdi mdi-home-outline me-1"></i>Quality
-            </a>
-          </li>
-          <li class="breadcrumb-item active" aria-current="page">
-            Inspection Checklists
-          </li>
-        </ol>
-      </nav>
-
       <!-- Page Header with Context -->
       <div class="mb-4">
-        <div class="d-flex align-items-center justify-content-between mb-3">
+        <div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-3">
           <div class="d-flex align-items-center">
-            <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center"
-              style="width: 60px; height: 60px;">
-              <i class="mdi mdi-clipboard-check text-white fs-4"></i>
-            </div>
+            
             <div>
               <h2 class="mb-1 text-primary">Inspection Checklists</h2>
               <p class="text-muted mb-0">Select a checklist template to start an inspection</p>
             </div>
           </div>
+
+          <nav aria-label="breadcrumb" class="ms-auto">
+            <ol class="breadcrumb mb-0 justify-content-end">
+              <li class="breadcrumb-item">
+                <a href="#" class="text-decoration-none" (click)="$event.preventDefault()">
+                  <i class="mdi mdi-home-outline me-1"></i>Quality
+                </a>
+              </li>
+              <li class="breadcrumb-item active" aria-current="page">
+                Inspection Checklists
+              </li>
+            </ol>
+          </nav>
 
         </div>
 
@@ -70,7 +66,7 @@
               <div *ngIf="!loading">
                 <ag-grid-angular class="ag-theme-quartz no-border" [rowData]="templateGridRows"
                   [gridOptions]="templateGridOptions" [class.d-none]="templateGridRows.length === 0"
-                  style="width: 100%; height: calc(100vh - 318px);">
+                  style="width: 100%; height: calc(100vh - 258px);">
                 </ag-grid-angular>
 
                 <!-- Empty State -->
@@ -102,7 +98,7 @@
               <div>
                 <ag-grid-angular class="ag-theme-quartz no-border" [suppressAggFuncInHeader]="true"
                   [rowData]="instanceGridRows" [gridOptions]="instanceGridOptions"
-                  [class.d-none]="instanceGridRows.length === 0" style="width: 100%; height: calc(100vh - 330px );">
+                  [class.d-none]="instanceGridRows.length === 0" style="width: 100%; height: calc(100vh - 258px );">
                 </ag-grid-angular>
 
                 <!-- Empty State -->
