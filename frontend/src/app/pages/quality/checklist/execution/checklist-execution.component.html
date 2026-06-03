@@ -68,9 +68,44 @@
 
         </div>
 
+        <ul class="nav nav-tabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button
+              type="button"
+              class="nav-link"
+              [class.active]="activeTab === 'open'"
+              (click)="setActiveTab('open')"
+              role="tab"
+              [attr.aria-selected]="activeTab === 'open'">
+              <i class="mdi mdi-progress-clock me-1"></i>
+              Open
+              <span class="badge rounded-pill ms-1"
+                    [ngClass]="activeTab === 'open' ? 'text-bg-warning' : 'text-bg-light text-body border'">
+                {{ navOptions[0].count }}
+              </span>
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button
+              type="button"
+              class="nav-link"
+              [class.active]="activeTab === 'submitted'"
+              (click)="setActiveTab('submitted')"
+              role="tab"
+              [attr.aria-selected]="activeTab === 'submitted'">
+              <i class="mdi mdi-send-check-outline me-1"></i>
+              Submitted
+              <span class="badge rounded-pill ms-1"
+                    [ngClass]="activeTab === 'submitted' ? 'text-bg-info' : 'text-bg-light text-body border'">
+                {{ navOptions[1].count }}
+              </span>
+            </button>
+          </li>
+        </ul>
+
         <div class="card-body p-0">
           <ag-grid-angular
-            class="ag-theme-quartz"
+            class="ag-theme-quartz no-border"
             style="height: calc(100vh - 300px); width: 100%;"
             [columnDefs]="columnDefs"
             [rowData]="filteredChecklists"

@@ -195,10 +195,8 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
   // Tab navigation
   activeTab = 'open';
   navOptions = [
-    { name: 'My Assignments', value: 'my_assignments', icon: 'mdi mdi-account-check-outline me-1 align-bottom', count: 0, countStyle: 'primary' },
     { name: 'Open',           value: 'open',           icon: 'mdi mdi-progress-clock me-1 align-bottom',        count: 0, countStyle: 'warning' },
     { name: 'Submitted',      value: 'submitted',      icon: 'mdi mdi-send-check-outline me-1 align-bottom',    count: 0, countStyle: 'info'    },
-    { name: 'All',            value: 'all',            icon: 'mdi mdi-format-list-bulleted me-1 align-bottom',  count: 0, countStyle: 'secondary' },
   ];
   currentUser: any = null;
   quickSearch = '';
@@ -316,9 +314,23 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
   }
 
   private applyTabFilter(): void {
-    this.filteredChecklists = [...this.openChecklists];
+    let rows = [...this.openChecklists];
+    const hasSearch = !!this.quickSearch?.trim();
 
-    if (this.quickSearch?.trim()) {
+    // Search should span both tabs. Only apply tab-status filtering when search is empty.
+    if (!hasSearch) {
+      if (this.activeTab === 'open') {
+        rows = rows.filter((c) => this.isOpenTabStatus(c?.status));
+      }
+
+      if (this.activeTab === 'submitted') {
+        rows = rows.filter((c) => this.normalizeChecklistStatus(c?.status) === 'submitted');
+      }
+    }
+
+    this.filteredChecklists = rows;
+
+    if (hasSearch) {
       const term = this.quickSearch.trim().toLowerCase();
       this.filteredChecklists = this.filteredChecklists.filter(c =>
         c.work_order_number?.toLowerCase().includes(term) ||
@@ -328,6 +340,36 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
         c.operator_name?.toLowerCase().includes(term)
       );
     }
+
+    this.updateTabCounts();
+  }
+
+  setActiveTab(tab: string): void {
+    if (!tab || this.activeTab === tab) {
+      return;
+    }
+
+    this.activeTab = tab;
+    this.applyTabFilter();
+    this.gridApi?.deselectAll();
+    this.selectedInstanceIds = [];
+  }
+
+  private updateTabCounts(): void {
+    const openCount = this.openChecklists.filter((c) => this.isOpenTabStatus(c?.status)).length;
+    const submittedCount = this.openChecklists.filter(
+      (c) => this.normalizeChecklistStatus(c?.status) === 'submitted',
+    ).length;
+
+    this.navOptions = this.navOptions.map((option) => {
+      if (option.value === 'open') {
+        return { ...option, count: openCount };
+      }
+      if (option.value === 'submitted') {
+        return { ...option, count: submittedCount };
+      }
+      return option;
+    });
   }
 
   onQuickSearch(term: string): void {
