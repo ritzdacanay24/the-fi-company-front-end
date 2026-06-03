@@ -146,10 +146,20 @@
           This checklist is currently being edited by <strong>{{lockOwnerName || instance?.operator_name}}</strong>.
           To upload photos or make changes, you need to transfer ownership to yourself.
         </div>
-        <button type="button" class="btn btn-warning btn-sm d-inline-flex align-items-center gap-1 flex-shrink-0"
-                (click)="openTransferOwnerModal()">
-          <i class="mdi mdi-account-switch"></i>Transfer Ownership
-        </button>
+        <div class="d-inline-flex align-items-center gap-2 flex-shrink-0">
+          <button
+            type="button"
+            class="btn btn-success btn-sm d-inline-flex align-items-center gap-1"
+            (click)="transferOwnershipToMe()">
+            <i class="mdi mdi-account-arrow-right"></i>Transfer to Self
+          </button>
+          <button
+            type="button"
+            class="btn btn-warning btn-sm d-inline-flex align-items-center gap-1"
+            (click)="openTransferOwnerModal()">
+            <i class="mdi mdi-account-switch"></i>Transfer Ownership
+          </button>
+        </div>
       </div>
 
       <!-- Transfer Ownership button for owner/admin (always visible in header) -->
@@ -2327,6 +2337,13 @@
               *ngIf="(isOwner || isCurrentUserAdmin) && (isOwner || lockOwnerName)"
               (click)="offcanvas.dismiss(); openTransferOwnerModal()">
         <i class="mdi mdi-account-switch me-2"></i>Transfer Ownership
+      </button>
+
+      <button type="button"
+          class="list-group-item list-group-item-action"
+          *ngIf="!isOwner && (lockOwnerName || instance?.operator_name)"
+          (click)="offcanvas.dismiss(); transferOwnershipToMe()">
+        <i class="mdi mdi-account-arrow-right me-2"></i>Transfer to Self
       </button>
 
       <button type="button"
