@@ -23,6 +23,7 @@ import { GridLayoutComponent } from '@app/shared/grid-layout/grid-layout.compone
 import { AppSwitcherComponent } from '@app/components/app-switcher/app-switcher.component';
 import { FormsLauncherComponent } from '@app/shared/forms-launcher/forms-launcher.component';
 import { AppBannersComponent } from './banners/app-banners.component';
+import { GuideOffcanvasComponent } from '@app/shared/components/guide-offcanvas/guide-offcanvas.component';
 
 
 
@@ -57,7 +58,8 @@ import { AppBannersComponent } from './banners/app-banners.component';
     DragDropModule,
     GridLayoutComponent,
     FormsLauncherComponent,
-    AppBannersComponent
+    AppBannersComponent,
+    GuideOffcanvasComponent,
   ],
   exports: [
     AppBannersComponent

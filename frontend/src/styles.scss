@@ -388,6 +388,10 @@ $color-muted: #596066; // neutral text
   z-index: 1101;
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.25);
 }
+
+.guide-offcanvas-panel {
+  width: min(460px, 94vw) !important;
+}
 .coverflowslide .slide {
   position: relative;
   transition: transform 0.3s;
