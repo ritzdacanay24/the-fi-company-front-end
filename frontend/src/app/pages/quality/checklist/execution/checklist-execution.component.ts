@@ -196,7 +196,7 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
   activeTab = 'open';
   navOptions = [
     { name: 'Open',           value: 'open',           icon: 'mdi mdi-progress-clock me-1 align-bottom',        count: 0, countStyle: 'warning' },
-    { name: 'Submitted',      value: 'submitted',      icon: 'mdi mdi-send-check-outline me-1 align-bottom',    count: 0, countStyle: 'info'    },
+    { name: 'All',            value: 'submitted',      icon: 'mdi mdi-view-list-outline me-1 align-bottom',     count: 0, countStyle: 'info'    },
     { name: 'My Assignments', value: 'my_assignments', icon: 'mdi mdi-account-check-outline me-1 align-bottom', count: 0, countStyle: 'primary' },
   ];
   currentUser: any = null;
@@ -341,9 +341,8 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
         rows = rows.filter((c) => this.isOpenTabStatus(c?.status));
       }
 
-      if (this.activeTab === 'submitted') {
-        rows = rows.filter((c) => this.normalizeChecklistStatus(c?.status) === 'submitted');
-      }
+      // Keep tab key as 'submitted' for backward URL compatibility,
+      // but this tab now represents "All" statuses.
 
       if (this.activeTab === 'my_assignments') {
         rows = rows.filter((c) => this.isAssignedToCurrentUser(c) && this.isOpenTabStatus(c?.status));
@@ -380,9 +379,7 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
 
   private updateTabCounts(): void {
     const openCount = this.openChecklists.filter((c) => this.isOpenTabStatus(c?.status)).length;
-    const submittedCount = this.openChecklists.filter(
-      (c) => this.normalizeChecklistStatus(c?.status) === 'submitted',
-    ).length;
+    const allCount = this.openChecklists.length;
     const myAssignmentsCount = this.openChecklists.filter(
       (c) => this.isAssignedToCurrentUser(c) && this.isOpenTabStatus(c?.status),
     ).length;
@@ -392,7 +389,7 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
         return { ...option, count: openCount };
       }
       if (option.value === 'submitted') {
-        return { ...option, count: submittedCount };
+        return { ...option, count: allCount };
       }
       if (option.value === 'my_assignments') {
         return { ...option, count: myAssignmentsCount };
