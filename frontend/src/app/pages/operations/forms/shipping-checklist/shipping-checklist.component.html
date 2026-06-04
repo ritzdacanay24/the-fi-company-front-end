@@ -8,7 +8,7 @@
         class="template-logo"
         (error)="$any($event.target).style.display='none'"
       />
-      <div>
+      <div data-tour="shipping-header">
       <h4 class="mb-1">Shipping Checklist Form</h4>
       <div class="text-body-secondary">Create a draft from template and Sales Order, then submit for verification to lock the checklist and preserve an audit trail.</div>
       </div>
@@ -16,6 +16,17 @@
 
     <div class="d-flex align-items-center gap-2 no-print">
       <button
+        class="btn btn-soft-primary"
+        type="button"
+        (click)="startGuidedTour()"
+        title="Start step-by-step workflow tour"
+      >
+        <i class="mdi mdi-map-marker-path me-1"></i>
+        Guided Tour
+      </button>
+
+      <button
+        data-tour="shipping-save-draft"
         class="btn btn-outline-primary"
         type="button"
         (click)="saveDraft()"
@@ -24,7 +35,7 @@
         Save Draft
       </button>
 
-      <div class="dropdown" ngbDropdown placement="bottom-end" container="body">
+      <div class="dropdown" ngbDropdown placement="bottom-end" container="body" data-tour="shipping-actions">
         <button
           class="btn btn-outline-secondary"
           type="button"
@@ -79,6 +90,35 @@
         </button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <div
+    class="card border-warning-subtle bg-warning-subtle mb-3 no-print verification-ready-card"
+    data-tour="shipping-ready-verify"
+    *ngIf="isPendingSecondaryVerification"
+  >
+    <div class="card-body d-flex justify-content-between align-items-start flex-wrap gap-3 py-3">
+      <div class="d-flex align-items-start gap-2">
+        <i class="mdi mdi-shield-check-outline fs-4 text-warning"></i>
+        <div>
+          <div class="fw-semibold text-body-emphasis">Checklist Ready for Final Verification</div>
+          <div class="small text-body-secondary">
+            Checklist <strong>#{{ selectedInstanceId }}</strong> is pending secondary verification.
+            Review the checklist details and click <strong>Complete Verification</strong> to finalize it.
+          </div>
+        </div>
+      </div>
+
+      <button
+        class="btn btn-warning"
+        type="button"
+        (click)="verifyChecklist()"
+        [disabled]="isSaving"
+      >
+        <i class="mdi mdi-check-decagram-outline me-1"></i>
+        Complete Verification
+      </button>
     </div>
   </div>
 
@@ -208,7 +248,7 @@
     </div>
 
     <div class="card-body" [class.checklist-locked]="isChecklistLocked">
-      <div class="alert alert-warning py-2 px-3 mb-3" *ngIf="isChecklistLocked">
+      <div class="alert alert-warning py-2 px-3 mb-3" *ngIf="isChecklistLocked" data-tour="shipping-locked-state">
         This checklist is locked because it has been submitted or verified. Use <strong>Reopen Draft</strong> if you need to correct the data.
       </div>
 
@@ -216,6 +256,7 @@
         <div class="col-xl-4 col-lg-6" *ngIf="!selectedInstanceId">
           <label class="form-label">Customer Template <span class="required-asterisk">*</span></label>
           <select
+            data-tour="shipping-template"
             class="form-select"
             [ngModel]="selectedTemplate?.id || ''"
             (ngModelChange)="onTemplateChanged($event)"
@@ -328,7 +369,7 @@
           </div>
         </div>
 
-      <div class="table-responsive" formArrayName="lines">
+      <div class="table-responsive" formArrayName="lines" data-tour="shipping-line-items">
         <table class="table table-bordered table-striped table-sm align-middle mb-0 shipping-checklist-table">
           <thead class="table-light">
             <tr>
@@ -404,7 +445,7 @@
           </div>
         </div>
 
-      <div class="table-responsive" formArrayName="responses">
+      <div class="table-responsive" formArrayName="responses" data-tour="shipping-verification">
         <table class="table table-bordered table-striped table-sm align-middle mb-0 shipping-checklist-table">
           <thead class="table-light">
             <tr>
@@ -488,7 +529,7 @@
         </table>
       </div>
 
-      <div class="card mt-3">
+      <div class="card mt-3" data-tour="shipping-attachments">
         <div class="card-header bg-body fw-semibold">Attach Images</div>
         <div class="card-body">
           <div class="row g-3 align-items-end">
@@ -584,7 +625,7 @@
           <label class="form-label">2nd Verifier Date</label>
           <input class="form-control" type="date" formControlName="secondVerifierDate" [readonly]="!canEditSecondVerifierDate" />
         </div>
-        <div class="col-xl-3 col-lg-6">
+        <div class="col-xl-3 col-lg-6" data-tour="shipping-verifier-routing">
           <label class="form-label">2nd Verifier Routing</label>
           <input class="form-control" [value]="secondVerifierRoutingEmail || 'No verifier assigned on template'" readonly />
           <div class="small mt-1" [ngClass]="hasSecondVerifierRouting ? 'text-body-secondary' : 'text-danger'">
@@ -606,7 +647,7 @@
       <div class="d-flex flex-wrap gap-2 align-items-end">
         <div style="min-width: 280px; flex: 1 1 320px;">
           <label class="form-label mb-1">Sales Order <span class="required-asterisk">*</span></label>
-          <input class="form-control" formControlName="salesOrder" placeholder="Enter sales order number" />
+          <input data-tour="shipping-sales-order" class="form-control" formControlName="salesOrder" placeholder="Enter sales order number" />
         </div>
         <button
           class="btn btn-outline-secondary"
@@ -617,12 +658,13 @@
           {{ isLoadingSalesOrderLines ? 'Loading...' : 'Preview SO Lines' }}
         </button>
         <button
+          data-tour="shipping-create-checklist"
           class="btn btn-primary"
           type="button"
           (click)="createChecklistFromTemplate()"
           [disabled]="!selectedTemplate || !form.get('salesOrder')?.value || isSaving"
         >
-          Create Checklist ID
+          Create Checklist
         </button>
       </div>
       <div class="small text-body-secondary mt-2">SO lines are auto-pulled when creating checklist ID. Sales Order is locked after creation to preserve draft traceability.</div>
@@ -666,7 +708,7 @@
     </div>
   </div>
 
-  <div class="mt-3 card no-print">
+  <div class="mt-3 card no-print" data-tour="shipping-recent">
     <div class="card-header d-flex justify-content-between align-items-center">
       <span class="fw-semibold">Recent Shipping Checklists</span>
       <div class="d-flex align-items-center gap-2">

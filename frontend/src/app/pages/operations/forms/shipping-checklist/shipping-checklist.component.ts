@@ -18,6 +18,7 @@ import {
   ShippingChecklistsService,
 } from '@app/core/api/operations/shipping-checklists/shipping-checklists.service';
 import { environment } from 'src/environments/environment';
+import { AppTourDefinition, AppTourService } from '@app/core/services/app-tour.service';
 
 interface ShippingChecklistListItem {
   id: number;
@@ -39,6 +40,9 @@ interface ShippingChecklistListItem {
 })
 export class ShippingChecklistComponent implements OnInit {
   private readonly minLineRows = 1;
+  private readonly shippingChecklistTourId = 'shipping-checklist-workflow';
+  private draftSaveVersion = 0;
+  private tourDraftSaveBaseline = 0;
 
   form: FormGroup;
   templates: ShippingChecklistTemplate[] = [];
@@ -71,6 +75,7 @@ export class ShippingChecklistComponent implements OnInit {
     private readonly authService: AuthenticationService,
     private readonly modalService: NgbModal,
     private readonly toastr: ToastrService,
+    private readonly appTourService: AppTourService,
   ) {
     this.form = this.fb.group({
       templateId: [null, Validators.required],
@@ -97,6 +102,7 @@ export class ShippingChecklistComponent implements OnInit {
   }
 
   async ngOnInit(): Promise<void> {
+    this.registerShippingChecklistTour();
     await this.loadTemplatesAndInstances();
 
     const idParam = this.route.snapshot.queryParamMap.get('id');
@@ -109,6 +115,13 @@ export class ShippingChecklistComponent implements OnInit {
   ngOnDestroy(): void {
     this.linesValueChangesSub?.unsubscribe();
     this.linesValueChangesSub = null;
+  }
+
+  async startGuidedTour(): Promise<void> {
+    this.tourDraftSaveBaseline = this.draftSaveVersion;
+    // Re-register at launch so labels and conditional steps reflect current page state.
+    this.registerShippingChecklistTour();
+    await this.appTourService.startTour(this.shippingChecklistTourId);
   }
 
   get linesArray(): FormArray<FormGroup> {
@@ -202,6 +215,123 @@ export class ShippingChecklistComponent implements OnInit {
 
   get isSubmittedFinal(): boolean {
     return this.isVerifiedFinal;
+  }
+
+  private registerShippingChecklistTour(): void {
+    const isEditMode = Boolean(this.selectedInstanceId);
+
+    const definition: AppTourDefinition = {
+      id: this.shippingChecklistTourId,
+      name: 'Shipping Checklist Workflow',
+      version: 2,
+      steps: [
+        {
+          selector: '[data-tour="shipping-header"]',
+          title: isEditMode ? 'Editing Checklist Overview' : 'Page Overview',
+          description: isEditMode
+            ? 'You are editing an existing checklist. This tour will focus on completion, verification, and follow-up actions.'
+            : 'This form creates and verifies shipping checklists with a full audit trail.',
+        },
+        {
+          selector: '[data-tour="shipping-template"]',
+          title: 'Step 1: Select Template',
+          description: 'Choose the customer template first. This determines checklist questions and default verifier routing.',
+          includeWhen: () => !this.selectedInstanceId,
+        },
+        {
+          selector: '[data-tour="shipping-sales-order"]',
+          title: 'Add Sales Order',
+          description: 'Enter the Sales Order number, then preview lines before creating the checklist.',
+          includeWhen: () => !this.selectedInstanceId,
+        },
+        {
+          selector: '[data-tour="shipping-create-checklist"]',
+          title: 'Create Checklist',
+          description: 'Click this button now to create a real draft checklist. Keep the tour panel open, then click Continue once created.',
+          includeWhen: () => !this.selectedInstanceId,
+          requiresAction: true,
+          actionComplete: () => Boolean(this.selectedInstanceId),
+          incompleteMessage: 'Create Checklist first. After it appears, click Continue.',
+          nextLabel: 'Continue',
+        },
+        {
+          selector: '[data-tour="shipping-save-draft"]',
+          title: 'Save Draft',
+          description: 'Changes are not auto-saved. Click Save Draft now so your progress is stored before submission or verification.',
+          includeWhen: () => Boolean(this.selectedInstanceId) && this.checklistStatus === 'draft' && !this.isChecklistLocked,
+          requiresAction: true,
+          actionComplete: () => this.draftSaveVersion > this.tourDraftSaveBaseline,
+          incompleteMessage: 'Click Save Draft first. Then continue the tour.',
+          nextLabel: 'Continue',
+        },
+        {
+          selector: '[data-tour="shipping-line-items"]',
+          title: 'Step 3: Line Items',
+          description: 'Mark ship rows, enter quantities, and add serial numbers. Total pallets are auto-calculated from selected rows.',
+          optional: true,
+        },
+        {
+          selector: '[data-tour="shipping-verification"]',
+          title: 'Step 4: Verification',
+          description: 'Complete each checklist item with Yes, No, or N/A. Required responses must be completed before submission.',
+          optional: true,
+        },
+        {
+          selector: '[data-tour="shipping-verification"]',
+          title: 'Required Items Before Submit',
+          description: 'If Submit is disabled, check required checklist items here and ensure each one has a response.',
+          includeWhen: () => Boolean(this.selectedInstanceId) && !this.canSubmit && !this.isChecklistLocked,
+          optional: true,
+        },
+        {
+          selector: '[data-tour="shipping-attachments"]',
+          title: 'Attach Image Proof',
+          description: 'Attach images to specific checklist questions as evidence for verification and audits.',
+          optional: true,
+        },
+        {
+          selector: '[data-tour="shipping-verifier-routing"]',
+          title: 'Missing Verifier Routing',
+          description: 'Final verification email routing is missing. Open Actions and go to Template Settings to assign a verifier email.',
+          includeWhen: () => this.showVerificationProcessStep && !this.hasSecondVerifierRouting,
+          optional: true,
+        },
+        {
+          selector: '[data-tour="shipping-locked-state"]',
+          title: 'Checklist Locked State',
+          description: 'Submitted or verified checklists are locked for audit integrity. Use Reopen Draft from Actions only when corrections are needed.',
+          includeWhen: () => this.isChecklistLocked,
+          optional: true,
+        },
+        {
+          selector: '[data-tour="shipping-ready-verify"]',
+          title: 'Complete Final Verification',
+          description: 'When this alert appears, the checklist is ready for verifier sign-off. Use this button to complete final verification.',
+          includeWhen: () => this.isPendingSecondaryVerification,
+          optional: true,
+        },
+        {
+          selector: '[data-tour="shipping-actions"]',
+          title: 'Submit for Verification',
+          description: 'Use Actions to submit Draft checklists for verification, reopen drafts when needed, and access other workflow controls.',
+          includeWhen: () => !this.isPendingSecondaryVerification,
+        },
+        {
+          selector: '[data-tour="shipping-actions"]',
+          title: 'Templates, Settings, and History',
+          description: 'Use Actions to reach template management, workflow settings, and checklist history for troubleshooting and admin updates.',
+          includeWhen: () => this.canManageChecklist,
+          optional: true,
+        },
+        {
+          selector: '[data-tour="shipping-recent"]',
+          title: 'Recent Checklists',
+          description: 'Open recent checklist instances to continue work or review status quickly.',
+        },
+      ],
+    };
+
+    this.appTourService.registerTour(definition);
   }
 
   private extractOrigin(urlInput: string): string {
@@ -643,7 +773,7 @@ export class ShippingChecklistComponent implements OnInit {
     if (!this.selectedInstanceId) {
       const salesOrder = String(this.form.get('salesOrder')?.value || '').trim();
       if (!salesOrder) {
-        this.toastr.warning('Sales Order is required before creating checklist ID.');
+        this.toastr.warning('Sales Order is required before creating checklist.');
         return;
       }
     }
@@ -666,6 +796,10 @@ export class ShippingChecklistComponent implements OnInit {
       if (!result?.success) {
         this.toastr.error(result?.error || 'Unable to save checklist');
         return;
+      }
+
+      if (status === 'draft') {
+        this.draftSaveVersion += 1;
       }
 
       if (result.id) {

@@ -183,6 +183,14 @@
 	opacity: 0.55;
 }
 
+.verification-ready-card {
+	border-width: 1px;
+}
+
+.verification-ready-card .btn {
+	min-width: 210px;
+}
+
 .attachment-chip:hover,
 .attachment-chip:focus {
 	background: var(--bs-tertiary-bg);
