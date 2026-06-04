@@ -78,6 +78,7 @@ export class SupportRequestComponent {
   submitted = false;
   successTicketNumber = '';
   selectedSupportCategory: SupportCategory | null = null;
+  lockedSupportCategory: SupportCategory | null = null;
   isAuthenticated = false;
   authenticatedDisplayName = '';
   authenticatedEmail = '';
@@ -184,6 +185,10 @@ export class SupportRequestComponent {
   }
 
   backToCategorySelection(): void {
+    if (this.lockedSupportCategory) {
+      return;
+    }
+
     this.selectedSupportCategory = null;
     this.submitted = false;
     this.form.patchValue({ support_category: '' });
@@ -254,16 +259,23 @@ export class SupportRequestComponent {
   private applyPrefillFromQueryParams(): void {
     const source = String(this.route.snapshot.queryParamMap.get('source') || '').toLowerCase();
     const category = String(this.route.snapshot.queryParamMap.get('category') || '').toLowerCase();
+    const lockCategory = String(this.route.snapshot.queryParamMap.get('lockCategory') || '').toLowerCase();
     const type = String(this.route.snapshot.queryParamMap.get('type') || '').toLowerCase();
     const priority = String(this.route.snapshot.queryParamMap.get('priority') || '').toLowerCase();
     const title = String(this.route.snapshot.queryParamMap.get('title') || '').trim();
 
-    if (category === 'dashboard_app') {
+    if (lockCategory === 'dashboard_app') {
+      this.lockedSupportCategory = 'dashboard_app';
       this.selectedSupportCategory = 'dashboard_app';
       this.form.patchValue({ support_category: 'dashboard_app' });
     }
 
-    if (category === 'it_access') {
+    if (!this.lockedSupportCategory && category === 'dashboard_app') {
+      this.selectedSupportCategory = 'dashboard_app';
+      this.form.patchValue({ support_category: 'dashboard_app' });
+    }
+
+    if (!this.lockedSupportCategory && category === 'it_access') {
       this.openItSupportInNewTab();
       this.selectedSupportCategory = null;
       this.form.patchValue({ support_category: '' });

@@ -11,6 +11,7 @@ export interface SupportEntryOptions {
   dashboardTitle?: string;
   dashboardType?: TicketType;
   dashboardPriority?: TicketPriority;
+  forceDashboardOnly?: boolean;
 }
 
 @Injectable({
@@ -27,6 +28,11 @@ export class SupportEntryService {
   ) {}
 
   async openSupport(options: SupportEntryOptions): Promise<void> {
+    if (options.forceDashboardOnly) {
+      await this.openDashboardSupport(options);
+      return;
+    }
+
     const modalRef = this.modalService.open(SupportEntryModalComponent, {
       centered: true,
       backdrop: 'static',
@@ -67,6 +73,7 @@ export class SupportEntryService {
       queryParams: {
         source: options.source,
         category: 'dashboard_app',
+        lockCategory: 'dashboard_app',
         type: defaults.type,
         priority: defaults.priority,
         title: defaults.title,

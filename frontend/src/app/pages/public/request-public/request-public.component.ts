@@ -305,6 +305,7 @@ export class RequestPublicComponent implements OnInit, OnDestroy {
       dashboardType: TicketType.QUESTION,
       dashboardPriority: TicketPriority.MEDIUM,
       dashboardTitle: 'Public Request Portal Support',
+      forceDashboardOnly: true,
     });
   }
 
