@@ -2,12 +2,15 @@
   <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3 no-print">
     <div class="d-flex align-items-start gap-3 flex-wrap">
       <img
-        *ngIf="templateLogoUrl"
+        *ngIf="templateLogoUrl; else headerLogoFallback"
         [src]="templateLogoUrl"
         [alt]="(selectedTemplate?.customerName || 'Customer') + ' logo'"
         class="template-logo"
         (error)="$any($event.target).style.display='none'"
       />
+      <ng-template #headerLogoFallback>
+        <div class="template-logo-fallback" *ngIf="templateLogoFallbackText">{{ templateLogoFallbackText }}</div>
+      </ng-template>
       <div data-tour="shipping-header">
       <h4 class="mb-1">Shipping Checklist Form</h4>
       <div class="text-body-secondary">Create a draft from template and Sales Order, then submit for verification to lock the checklist and preserve an audit trail.</div>
@@ -16,13 +19,13 @@
 
     <div class="d-flex align-items-center gap-2 no-print">
       <button
-        class="btn btn-soft-primary"
+        class="btn btn-outline-info"
         type="button"
-        (click)="startGuidedTour()"
-        title="Start step-by-step workflow tour"
+        (click)="openHelpGuide()"
+        title="Open step-by-step instructions panel"
       >
-        <i class="mdi mdi-map-marker-path me-1"></i>
-        Guided Tour
+        <i class="mdi mdi-book-open-page-variant-outline me-1"></i>
+        Help Guide
       </button>
 
       <button
@@ -126,11 +129,14 @@
     <div class="print-header-shell">
       <div class="print-brand-block">
         <img
-          *ngIf="templateLogoUrl"
+          *ngIf="templateLogoUrl; else printLogoFallback"
           [src]="templateLogoUrl"
           [alt]="(selectedTemplate?.customerName || 'Customer') + ' logo'"
           class="print-logo"
         />
+        <ng-template #printLogoFallback>
+          <div class="print-logo-fallback" *ngIf="templateLogoFallbackText">{{ templateLogoFallbackText }}</div>
+        </ng-template>
         <div>
           <div class="print-kicker">Shipping Checklist</div>
           <h1 class="print-title">{{ form.get('formTitle')?.value || selectedTemplate?.formTitle || 'Shipping Checklist' }}</h1>

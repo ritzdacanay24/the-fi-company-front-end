@@ -4,7 +4,10 @@
     <app-topbar (mobileMenuButtonClicked)="onToggleMobileMenu()"></app-topbar>
     <!-- Side Bar -->
     <app-sidebar></app-sidebar>
-    <div class="main-content">
+    <div
+        class="main-content"
+        [style.margin-right]="guidePanelState.isOpen && isDesktopGuideViewport ? '400px' : null"
+        [style.transition]="'margin-right 0.3s ease'">
         <div class="page-content">
             <div class="container-fluid">
                 <!-- Main Content -->

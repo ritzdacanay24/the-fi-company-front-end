@@ -19,6 +19,10 @@ import {
 } from '@app/core/api/operations/shipping-checklists/shipping-checklists.service';
 import { environment } from 'src/environments/environment';
 import { AppTourDefinition, AppTourService } from '@app/core/services/app-tour.service';
+import { AppGuideContext, AppGuideService } from '@app/core/services/app-guide.service';
+import { GuideOffcanvasComponent } from '@app/shared/components/guide-offcanvas/guide-offcanvas.component';
+import { NgbOffcanvas } from '@ng-bootstrap/ng-bootstrap';
+import { AppGuidePanelService } from '@app/core/services/app-guide-panel.service';
 
 interface ShippingChecklistListItem {
   id: number;
@@ -41,6 +45,7 @@ interface ShippingChecklistListItem {
 export class ShippingChecklistComponent implements OnInit {
   private readonly minLineRows = 1;
   private readonly shippingChecklistTourId = 'shipping-checklist-workflow';
+  private readonly shippingChecklistGuideId = 'shipping-checklist';
   private draftSaveVersion = 0;
   private tourDraftSaveBaseline = 0;
 
@@ -74,8 +79,11 @@ export class ShippingChecklistComponent implements OnInit {
     private readonly attachmentsService: AttachmentsService,
     private readonly authService: AuthenticationService,
     private readonly modalService: NgbModal,
+    private readonly offcanvasService: NgbOffcanvas,
     private readonly toastr: ToastrService,
     private readonly appTourService: AppTourService,
+    private readonly appGuideService: AppGuideService,
+    private readonly appGuidePanelService: AppGuidePanelService,
   ) {
     this.form = this.fb.group({
       templateId: [null, Validators.required],
@@ -115,6 +123,7 @@ export class ShippingChecklistComponent implements OnInit {
   ngOnDestroy(): void {
     this.linesValueChangesSub?.unsubscribe();
     this.linesValueChangesSub = null;
+    this.appGuidePanelService.close();
   }
 
   async startGuidedTour(): Promise<void> {
@@ -122,6 +131,44 @@ export class ShippingChecklistComponent implements OnInit {
     // Re-register at launch so labels and conditional steps reflect current page state.
     this.registerShippingChecklistTour();
     await this.appTourService.startTour(this.shippingChecklistTourId);
+  }
+
+  openHelpGuide(): void {
+    const context = this.buildGuideContext();
+    const guide = this.appGuideService.buildGuide(this.shippingChecklistGuideId, context);
+    if (!guide) {
+      this.toastr.warning('Guide is not available for this page yet.');
+      return;
+    }
+
+    const modeLabel = context.mode === 'new'
+      ? 'New Checklist'
+      : context.mode === 'pending_verification'
+        ? 'Pending Verification'
+        : context.mode === 'verified'
+          ? 'Verified'
+          : 'Draft';
+
+    const isDesktop = window.innerWidth >= 1200;
+
+    const ref = this.offcanvasService.open(GuideOffcanvasComponent, {
+      position: 'end',
+      panelClass: isDesktop ? undefined : 'guide-offcanvas-panel',
+      scroll: false,
+      backdrop: !isDesktop,
+    });
+
+    if (isDesktop) {
+      this.appGuidePanelService.open(guide, modeLabel);
+      ref.result.finally(() => {
+        this.appGuidePanelService.close();
+      }).catch(() => {
+        // Dismissed path is handled by finally.
+      });
+    }
+
+    ref.componentInstance.data = guide;
+    ref.componentInstance.modeLabel = modeLabel;
   }
 
   get linesArray(): FormArray<FormGroup> {
@@ -211,6 +258,32 @@ export class ShippingChecklistComponent implements OnInit {
     }
 
     return `${hostBase}/${raw.replace(/^\.\//, '')}`;
+  }
+
+  get templateLogoFallbackText(): string {
+    const logoText = String(this.selectedTemplate?.logoText || '').trim();
+    if (logoText) {
+      return logoText.toUpperCase();
+    }
+
+    const customerCode = String(this.form.get('customerCode')?.value || '').trim();
+    if (customerCode) {
+      return customerCode.toUpperCase();
+    }
+
+    const customerName = String(this.selectedTemplate?.customerName || this.form.get('customerName')?.value || '').trim();
+    if (!customerName) {
+      return '';
+    }
+
+    const initials = customerName
+      .split(/\s+/)
+      .filter((token) => token.length > 0)
+      .slice(0, 3)
+      .map((token) => token.charAt(0).toUpperCase())
+      .join('');
+
+    return initials || customerName.slice(0, 3).toUpperCase();
   }
 
   get isSubmittedFinal(): boolean {
@@ -332,6 +405,24 @@ export class ShippingChecklistComponent implements OnInit {
     };
 
     this.appTourService.registerTour(definition);
+  }
+
+  private buildGuideContext(): AppGuideContext {
+    const mode: AppGuideContext['mode'] = !this.selectedInstanceId
+      ? 'new'
+      : this.isPendingSecondaryVerification
+        ? 'pending_verification'
+        : this.isVerifiedFinal
+          ? 'verified'
+          : 'draft';
+
+    return {
+      mode,
+      selectedInstanceId: this.selectedInstanceId,
+      canManage: this.canManageChecklist,
+      isLocked: this.isChecklistLocked,
+      hasVerifierRouting: this.hasSecondVerifierRouting,
+    };
   }
 
   private extractOrigin(urlInput: string): string {

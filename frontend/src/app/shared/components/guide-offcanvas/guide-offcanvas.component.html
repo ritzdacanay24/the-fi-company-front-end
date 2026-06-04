@@ -1,0 +1,56 @@
+<div class="offcanvas-header border-bottom">
+  <div>
+    <h5 class="offcanvas-title mb-0">{{ data?.title || 'Guide' }}</h5>
+    <div class="small text-body-secondary mt-1">{{ data?.subtitle }}</div>
+    <span class="badge text-bg-light border mt-2" *ngIf="modeLabel">Mode: {{ modeLabel }}</span>
+  </div>
+  <button type="button" class="btn-close" aria-label="Close" (click)="closeGuide()"></button>
+</div>
+
+<div class="offcanvas-body guide-body">
+  <div class="guide-toolbar d-flex gap-2 mb-3">
+    <button type="button" class="btn btn-sm btn-outline-secondary" (click)="closeGuide()">Close</button>
+  </div>
+
+  <ng-container *ngIf="data?.sections?.length; else emptyState">
+    <section class="guide-section mb-3" *ngFor="let section of data?.sections; let idx = index">
+      <div class="guide-section__header d-flex align-items-center gap-2 mb-2">
+        <span class="guide-section__index">{{ idx + 1 }}</span>
+        <h6 class="fw-semibold mb-0">{{ section.title }}</h6>
+        <span
+          class="guide-section__priority badge ms-auto"
+          [ngClass]="{
+            'text-bg-danger-subtle text-danger-emphasis': section.priority === 'required',
+            'text-bg-info-subtle text-info-emphasis': section.priority === 'recommended',
+            'text-bg-secondary-subtle text-secondary-emphasis': section.priority === 'when_needed'
+          }"
+          *ngIf="section.priority">
+          {{ section.priority === 'required' ? 'Required' : section.priority === 'recommended' ? 'Recommended' : 'When Needed' }}
+        </span>
+      </div>
+
+      <ul class="mb-0 ps-3 small text-body-secondary guide-section__points">
+          <li *ngFor="let point of section.points">{{ point }}</li>
+      </ul>
+
+      <div class="guide-section__result small mt-2" *ngIf="section.expectedResult">
+        <span class="guide-section__result-label">Expected result:</span>
+        <span>{{ section.expectedResult }}</span>
+      </div>
+
+      <div class="d-flex flex-wrap gap-2 mt-3" *ngIf="section.actions?.length">
+        <button
+          *ngFor="let action of section.actions"
+          type="button"
+          class="btn btn-sm btn-outline-primary"
+          (click)="jumpTo(action.selector)">
+          {{ action.label }}
+        </button>
+      </div>
+    </section>
+  </ng-container>
+
+  <ng-template #emptyState>
+    <div class="alert alert-light border mb-0">No contextual guide sections are available right now.</div>
+  </ng-template>
+</div>

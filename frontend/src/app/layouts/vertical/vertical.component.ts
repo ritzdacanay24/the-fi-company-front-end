@@ -4,6 +4,7 @@ import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
 import { getSidebarSize } from 'src/app/store/layouts/layout-selector';
 import { RootReducerState } from 'src/app/store';
 import { Store } from '@ngrx/store';
+import { AppGuidePanelService, AppGuidePanelState } from '@app/core/services/app-guide-panel.service';
 
 @Component({
   selector: 'app-vertical',
@@ -14,6 +15,12 @@ export class VerticalComponent implements OnInit {
 
   isCondensed = false;
   getsize:any;
+  isDesktopGuideViewport = window.innerWidth >= 1200;
+  guidePanelState: AppGuidePanelState = {
+    isOpen: false,
+    data: null,
+    modeLabel: '',
+  };
 
   // Sidebar preferences
   sidebarPreferences = {
@@ -27,12 +34,21 @@ export class VerticalComponent implements OnInit {
     return value || 'lg';
   }
 
-  constructor(private eventService: EventService, private router: Router, private activatedRoute: ActivatedRoute,private store: Store<RootReducerState>) {
+  constructor(
+    private eventService: EventService,
+    private router: Router,
+    private activatedRoute: ActivatedRoute,
+    private store: Store<RootReducerState>,
+    private appGuidePanelService: AppGuidePanelService,
+  ) {
     // Load preferences on initialization
     this.loadSidebarPreferences();
   }
 
   ngOnInit(): void {
+    this.appGuidePanelService.state$.subscribe((state) => {
+      this.guidePanelState = state;
+    });
 
     this.router.events.subscribe((event: any) => {
       if (document.documentElement.getAttribute('data-preloader') == 'enable') {
@@ -137,6 +153,11 @@ export class VerticalComponent implements OnInit {
   }
 
   onResize(event: any) {
+    this.isDesktopGuideViewport = event.target.innerWidth >= 1200;
+    if (!this.isDesktopGuideViewport) {
+      this.appGuidePanelService.close();
+    }
+
     if (document.body.getAttribute('layout') == "twocolumn") {
       if (event.target.innerWidth <= 767) {
         this.eventService.broadcast('changeLayout', 'vertical');
@@ -146,6 +167,10 @@ export class VerticalComponent implements OnInit {
         document.body.classList.remove('vertical-sidebar-enable');
       }
     }
+  }
+
+  closeGlobalGuide(): void {
+    this.appGuidePanelService.close();
   }
 
   // Sidebar preferences management
