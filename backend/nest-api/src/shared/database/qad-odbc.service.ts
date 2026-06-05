@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import odbc from 'odbc';
 
 type QadResultKeyCase = 'preserve' | 'lower' | 'upper';
@@ -11,20 +11,36 @@ type QadQueryOptions = {
 export class QadOdbcService {
   private readonly logger = new Logger(QadOdbcService.name);
   private poolPromise: Promise<odbc.Pool> | null = null;
+  private poolCreatedAtMs: number | null = null;
   private recoverableErrorCount = 0;
   private poolResetCount = 0;
+  private proactivePoolResetCount = 0;
   private retrySuccessCount = 0;
   private retryFailureCount = 0;
   private lastRecoverableErrorAt: string | null = null;
+  private readonly poolMaxAgeMs = this.readPoolMaxAgeMs();
 
   getRecoveryStats(): Record<string, unknown> {
     return {
       recoverableErrorCount: this.recoverableErrorCount,
       poolResetCount: this.poolResetCount,
+      proactivePoolResetCount: this.proactivePoolResetCount,
       retrySuccessCount: this.retrySuccessCount,
       retryFailureCount: this.retryFailureCount,
       lastRecoverableErrorAt: this.lastRecoverableErrorAt,
+      poolMaxAgeMs: this.poolMaxAgeMs,
+      currentPoolAgeMs: this.poolCreatedAtMs ? Date.now() - this.poolCreatedAtMs : null,
     };
+  }
+
+  private readPoolMaxAgeMs(): number {
+    const raw = Number(process.env.QAD_POOL_MAX_AGE_MS ?? 30 * 60 * 1000);
+
+    if (!Number.isFinite(raw) || raw < 60_000) {
+      return 30 * 60 * 1000;
+    }
+
+    return raw;
   }
 
   private connectionString(): string {
@@ -35,16 +51,36 @@ export class QadOdbcService {
   }
 
   private async getPool(): Promise<odbc.Pool> {
+    await this.recyclePoolIfExpired();
+
     if (!this.poolPromise) {
       this.poolPromise = odbc.pool(this.connectionString());
+      this.poolCreatedAtMs = Date.now();
     }
     return this.poolPromise;
+  }
+
+  private async recyclePoolIfExpired(): Promise<void> {
+    if (!this.poolPromise || !this.poolCreatedAtMs) {
+      return;
+    }
+
+    const ageMs = Date.now() - this.poolCreatedAtMs;
+    if (ageMs < this.poolMaxAgeMs) {
+      return;
+    }
+
+    this.proactivePoolResetCount += 1;
+    this.logger.log(
+      `Recycling QAD ODBC pool after ${ageMs}ms (maxAge=${this.poolMaxAgeMs}ms, proactiveResets=${this.proactivePoolResetCount})`,
+    );
+    await this.resetPool();
   }
 
   private async resetPool(): Promise<void> {
     const currentPoolPromise = this.poolPromise;
     this.poolPromise = null;
-    this.poolResetCount += 1;
+    this.poolCreatedAtMs = null;
 
     if (!currentPoolPromise) {
       return;
@@ -106,6 +142,7 @@ export class QadOdbcService {
             `(recoverable=${this.recoverableErrorCount}, poolResets=${this.poolResetCount + 1})`,
         );
 
+        this.poolResetCount += 1;
         await this.resetPool();
 
         try {
@@ -126,11 +163,53 @@ export class QadOdbcService {
     }
   }
 
+  private summarizeSql(sql: string): string {
+    return String(sql || '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 400);
+  }
+
+  private formatOdbcError(error: unknown): {
+    message: string;
+    diagnostics: Array<Record<string, unknown>>;
+  } {
+    const fallbackMessage = error instanceof Error ? error.message : String(error || 'Unknown ODBC error');
+    const record = error && typeof error === 'object' ? (error as Record<string, unknown>) : {};
+    const diagnostics = Array.isArray(record.odbcErrors)
+      ? (record.odbcErrors as Array<Record<string, unknown>>).map((entry) => ({
+          state: entry.state,
+          code: entry.code,
+          message: entry.message,
+        }))
+      : [];
+
+    const firstDiagnostic = diagnostics[0];
+    const message = firstDiagnostic?.message
+      ? String(firstDiagnostic.message)
+      : fallbackMessage;
+
+    return { message, diagnostics };
+  }
+
   async query<T = Record<string, unknown>[]>(sql: string, options?: QadQueryOptions): Promise<T> {
-    return this.withConnection(async (conn) => {
-      const rows = (await conn.query(sql)) as T;
-      return this.normalizeKeys(rows, options?.keyCase || 'preserve');
-    });
+    try {
+      return await this.withConnection(async (conn) => {
+        const rows = (await conn.query(sql)) as T;
+        return this.normalizeKeys(rows, options?.keyCase || 'preserve');
+      });
+    } catch (error) {
+      const { message, diagnostics } = this.formatOdbcError(error);
+      throw new InternalServerErrorException({
+        code: 'RC_QAD_ODBC_QUERY_FAILED',
+        message: `QAD ODBC query failed: ${message}`,
+        details: {
+          source: 'qad-odbc',
+          sqlSnippet: this.summarizeSql(sql),
+          diagnostics,
+        },
+      });
+    }
   }
 
   async queryWithParams<T = Record<string, unknown>[]>(
@@ -138,10 +217,24 @@ export class QadOdbcService {
     params: readonly (string | number)[],
     options?: QadQueryOptions,
   ): Promise<T> {
-    return this.withConnection(async (conn) => {
-      const rows = (await conn.query(sql, [...params])) as T;
-      return this.normalizeKeys(rows, options?.keyCase || 'preserve');
-    });
+    try {
+      return await this.withConnection(async (conn) => {
+        const rows = (await conn.query(sql, [...params])) as T;
+        return this.normalizeKeys(rows, options?.keyCase || 'preserve');
+      });
+    } catch (error) {
+      const { message, diagnostics } = this.formatOdbcError(error);
+      throw new InternalServerErrorException({
+        code: 'RC_QAD_ODBC_QUERY_FAILED',
+        message: `QAD ODBC query failed: ${message}`,
+        details: {
+          source: 'qad-odbc',
+          sqlSnippet: this.summarizeSql(sql),
+          params: [...params],
+          diagnostics,
+        },
+      });
+    }
   }
 
   private normalizeKeys<T>(rows: T, keyCase: QadResultKeyCase): T {

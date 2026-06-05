@@ -107,6 +107,9 @@ async function bootstrap() {
   app.setGlobalPrefix('apiV2', {
     exclude: [
       { path: 'health', method: RequestMethod.GET },
+      { path: 'health/qadConnectionStatus', method: RequestMethod.GET },
+      { path: 'health/qadRecovery', method: RequestMethod.GET },
+      { path: 'health/deploy-status', method: RequestMethod.GET },
     ],
   });
 

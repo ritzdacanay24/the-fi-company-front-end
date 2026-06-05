@@ -21,6 +21,7 @@ export const envValidationSchema = Joi.object({
   QAD_DSN: Joi.string().optional(),
   QAD_USER: Joi.string().optional(),
   QAD_PASSWORD: Joi.string().optional(),
+  QAD_POOL_MAX_AGE_MS: Joi.number().integer().min(60000).default(1800000),
   TOMTOM_API_KEY: Joi.string().trim().allow('').optional(),
   SMTP_HOST: Joi.alternatives().conditional('NODE_ENV', {
     is: 'development',
