@@ -921,6 +921,7 @@ export class ShippingChecklistsService {
     heading: string,
     muted: string,
   ): number {
+    const shippedLines = lines.filter((line) => this.toBoolean(line.isSelected, false));
     const colWidths = [36, 140, 52, 241, 70];
     const headers = ['Ship', 'Part #', 'Qty', 'Serials', 'Pallet Qty'];
     const startX = 28;
@@ -942,9 +943,23 @@ export class ShippingChecklistsService {
     y = drawHeader(y);
     doc.font('Helvetica').fontSize(8);
 
-    lines.forEach((line, index) => {
+    if (shippedLines.length === 0) {
+      const emptyRowHeight = 24;
+      const tableWidth = colWidths.reduce((sum, width) => sum + width, 0);
+      doc.roundedRect(startX, y, tableWidth, emptyRowHeight, 4).fillAndStroke('#ffffff', border);
+      doc
+        .fillColor(muted)
+        .font('Helvetica-Oblique')
+        .fontSize(8)
+        .text('No shipped line items selected.', startX + 6, y + 7, {
+          width: tableWidth - 12,
+        });
+      return y + emptyRowHeight + 4;
+    }
+
+    shippedLines.forEach((line, index) => {
       const values = [
-        Number(line.isSelected) === 1 || line.isSelected === true ? 'Yes' : 'No',
+        'Yes',
         String(line.partNumber || '—'),
         String(line.qty || '—'),
         this.normalizeSerialNumbers((line.serialNumbers as unknown[] | string[] | undefined) || line.serialNumber).join(', ') || '—',

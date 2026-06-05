@@ -61,6 +61,7 @@ export class ShippingChecklistComponent implements OnInit {
   isLoading = false;
   isSaving = false;
   isLoadingSalesOrderLines = false;
+  isLoadingPackingSlipSerials = false;
   uploadingByQuestion: Record<string, boolean> = {};
   questionAttachments: Record<string, Array<{ id: number; fileName: string; link: string }>> = {};
   uploadTargets: Array<{ questionCode: string; questionText: string }> = [];
@@ -664,6 +665,67 @@ export class ShippingChecklistComponent implements OnInit {
       throw error;
     } finally {
       this.isLoadingSalesOrderLines = false;
+    }
+  }
+
+  async loadPackingSlipSerials(): Promise<void> {
+    const packingSlip = String(this.form.get('packingSlip')?.value || '').trim();
+    if (!packingSlip) {
+      return;
+    }
+
+    this.isLoadingPackingSlipSerials = true;
+    try {
+      const payload: any = await firstValueFrom(this.salesOrderInfoService.getPackingSlipSerials(packingSlip));
+      const lines = Array.isArray(payload?.lines) ? payload.lines : [];
+
+      if (!lines.length) {
+        this.toastr.info(`No serial rows found for packing slip ${packingSlip}.`);
+        return;
+      }
+
+      for (const row of lines) {
+        const lineNumber = Number(row?.lineNumber);
+        if (!Number.isFinite(lineNumber) || lineNumber <= 0) {
+          continue;
+        }
+
+        const serialNumbers = this.normalizeSerialNumbers(row?.serialNumbers);
+
+        let lineIndex = this.linesArray.controls.findIndex((control) => Number(control.get('lineOrder')?.value) === lineNumber);
+        if (lineIndex < 0) {
+          this.linesArray.push(this.createLineGroup(lineNumber, { lineOrder: lineNumber }));
+          lineIndex = this.linesArray.length - 1;
+        }
+
+        this.linesArray.at(lineIndex).patchValue({ isSelected: true }, { emitEvent: false });
+
+        const serialsArray = this.serialsArrayAt(lineIndex);
+        const existing = new Set(
+          this.normalizeSerialNumbers(serialsArray.getRawValue()).map((value) => String(value || '').trim()).filter(Boolean),
+        );
+
+        for (const serial of serialNumbers) {
+          const token = String(serial || '').trim();
+          if (!token || existing.has(token)) {
+            continue;
+          }
+          serialsArray.push(this.createSerialGroup(token));
+          existing.add(token);
+        }
+
+        if ((this.normalizeSerialNumbers(serialsArray.getRawValue()).length || 0) > 0) {
+          this.expandedLineIndexes[lineIndex] = true;
+        }
+      }
+
+      this.recalculateTotalPalletsFromLines();
+
+      this.toastr.success(`Loaded packing slip serials for ${packingSlip}.`);
+    } catch (error) {
+      throw error;
+    } finally {
+      this.isLoadingPackingSlipSerials = false;
     }
   }
 

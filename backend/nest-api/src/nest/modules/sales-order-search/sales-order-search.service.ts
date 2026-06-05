@@ -336,6 +336,167 @@ export class SalesOrderSearchService {
     return rows.map((row) => addLowercaseAliases(row));
   }
 
+  async getPackingSlipSerials(packingSlip: string): Promise<Record<string, unknown>> {
+    const normalizedPackingSlip = String(packingSlip || '').trim();
+    if (!normalizedPackingSlip) {
+      return toJsonSafe({
+        packingSlip: '',
+        lines: [],
+      }) as Record<string, unknown>;
+    }
+
+    const sql = `
+      SELECT TOP 100 *
+      FROM abs_mstr
+      WHERE UPPER(abs_par_id) = UPPER(?)
+        AND abs_domain = 'EYE'
+      ORDER BY abs_line ASC
+      WITH (NOLOCK)
+    `;
+
+    const packingSlipCandidates: string[] = [];
+    const seenCandidates = new Set<string>();
+    const pushCandidate = (value: string) => {
+      const token = String(value || '').trim();
+      if (!token) {
+        return;
+      }
+      const key = token.toUpperCase();
+      if (seenCandidates.has(key)) {
+        return;
+      }
+      seenCandidates.add(key);
+      packingSlipCandidates.push(token);
+    };
+
+    pushCandidate(normalizedPackingSlip);
+    if (!/^s/i.test(normalizedPackingSlip)) {
+      pushCandidate(`S${normalizedPackingSlip}`);
+    } else {
+      pushCandidate(normalizedPackingSlip.slice(1));
+    }
+
+    let rows: GenericRow[] = [];
+    let matchedPackingSlip = normalizedPackingSlip;
+    for (const candidate of packingSlipCandidates) {
+      const candidateRows = await this.qadOdbcService.queryWithParams<GenericRow[]>(sql, [candidate], {
+        keyCase: 'upper',
+      });
+
+      if (candidateRows.length > 0) {
+        rows = candidateRows;
+        matchedPackingSlip = candidate;
+        break;
+      }
+    }
+
+    const serialKeyCandidates = [
+      'ABS_SERIAL',
+      'ABS_SER',
+      'ABS_SER_NBR',
+      'ABS_SERNBR',
+      'ABS_SERIAL_NBR',
+      'ABS_SERIAL_NUMBER',
+      'ABS_SN',
+      'ABS_SN_NBR',
+      'ABS_SN_NUMBER',
+      'ABS_LOT',
+      'ABS_LOTSER',
+      'ABS_LOT_SER',
+      'ABS_REF',
+      'ABS_REF_NUM',
+      'ABS_REF1',
+      'ABS_REF2',
+      'ABS_TAG',
+      'ABS_BARCODE',
+    ];
+
+    const linesMap = new Map<number, Set<string>>();
+    const usedSourceFields = new Set<string>();
+
+    for (const row of rows) {
+      const lineRaw = row['ABS_LINE'];
+      const lineNumber = Number(lineRaw);
+      if (!Number.isFinite(lineNumber) || lineNumber <= 0) {
+        continue;
+      }
+
+      const serialCandidates: string[] = [];
+
+      for (const key of serialKeyCandidates) {
+        const candidate = this.normalizeCandidateSerial(row[key], matchedPackingSlip);
+        if (candidate) {
+          serialCandidates.push(candidate);
+          usedSourceFields.add(key);
+        }
+      }
+
+      const dynamicSerialKeys = Object.keys(row)
+        .filter((key) => this.isLikelySerialField(key));
+
+      for (const key of dynamicSerialKeys) {
+        const candidate = this.normalizeCandidateSerial(row[key], matchedPackingSlip);
+        if (candidate) {
+          serialCandidates.push(candidate);
+          usedSourceFields.add(key);
+        }
+      }
+
+      if (!linesMap.has(lineNumber)) {
+        linesMap.set(lineNumber, new Set<string>());
+      }
+
+      for (const serialValue of serialCandidates) {
+        linesMap.get(lineNumber)?.add(serialValue);
+      }
+    }
+
+    const lines = Array.from(linesMap.entries())
+      .sort((a, b) => a[0] - b[0])
+      .map(([lineNumber, serialSet]) => ({
+        lineNumber,
+        serialNumbers: Array.from(serialSet.values()),
+      }));
+
+    return toJsonSafe({
+      packingSlip: matchedPackingSlip,
+      requestedPackingSlip: normalizedPackingSlip,
+      lines,
+      rawCount: rows.length,
+      serialSourceFields: Array.from(usedSourceFields.values()).sort(),
+    }) as Record<string, unknown>;
+  }
+
+  private isLikelySerialField(key: string): boolean {
+    const normalizedKey = String(key || '').toUpperCase();
+    if (!normalizedKey.startsWith('ABS_')) {
+      return false;
+    }
+
+    if (/ABS_(LINE|ORDER|ITEM|QTY|SHIP|INV|PAR_ID|DOMAIN|SITE|DATE|TIME|CUST|BOL|PO|NBR)$/.test(normalizedKey)) {
+      return false;
+    }
+
+    return /(SER|LOT|TAG|BAR|REF|SN)/.test(normalizedKey);
+  }
+
+  private normalizeCandidateSerial(rawValue: unknown, packingSlip: string): string {
+    const token = String(rawValue ?? '').trim();
+    if (!token) {
+      return '';
+    }
+
+    if (token.toUpperCase() === String(packingSlip || '').toUpperCase()) {
+      return '';
+    }
+
+    if (/^[0-9]+(\.[0-9]+)?$/.test(token)) {
+      return '';
+    }
+
+    return token;
+  }
+
   private asNumber(value: unknown): number {
     const num = Number(value);
     return Number.isFinite(num) ? num : 0;

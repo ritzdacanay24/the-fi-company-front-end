@@ -17,4 +17,8 @@ export class SalesOrderInfoService {
     getTransactions(customerCoNumber: string): Observable<any> {
         return this.http.get<any>(`apiV2/sales-order-search/transactions?order=${customerCoNumber}`);
     }
+
+    getPackingSlipSerials(packingSlip: string): Observable<any> {
+        return this.http.get<any>(`apiV2/sales-order-search/packing-slip-serials?packingSlip=${encodeURIComponent(packingSlip)}`);
+    }
 }

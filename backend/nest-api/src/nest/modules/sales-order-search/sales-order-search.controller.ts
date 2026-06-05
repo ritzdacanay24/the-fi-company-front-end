@@ -33,4 +33,13 @@ export class SalesOrderSearchController {
     }
     return this.service.getTransactions(normalized);
   }
+
+  @Get('packing-slip-serials')
+  async getPackingSlipSerials(@Query('packingSlip') packingSlip?: string) {
+    const normalized = String(packingSlip || '').trim();
+    if (!normalized) {
+      throw new BadRequestException('packingSlip is required');
+    }
+    return this.service.getPackingSlipSerials(normalized);
+  }
 }
