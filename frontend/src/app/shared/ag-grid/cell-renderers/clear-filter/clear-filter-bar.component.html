@@ -2,4 +2,8 @@
     <span class="text-muted pointer" *ngIf="(params.api?.getFilterModel() | json) != '{}'"
         (click)="$event.stopPropagation();this.clearFilters();" title="Clear filters">
         <i class="ri-filter-2-line text-warning  align-middle ms-2 fs-15"></i></span>
+
+    <span class="text-muted pointer" *ngIf="hasSavedGridState()"
+        (click)="$event.stopPropagation();clearSavedGridState();" title="Clear saved grid state">
+        <i class="ri-delete-bin-6-line text-danger align-middle ms-2 fs-15"></i></span>
 </div>

@@ -1043,13 +1043,14 @@ export class ReportsRepository extends BaseRepository<RowDataPacket> {
         inJoin: 'LEFT JOIN',
         inventoryJoin: `
           LEFT JOIN (
-            SELECT a.ld_part,
+            SELECT {fn LTRIM({fn RTRIM(CAST(a.ld_part AS CHAR(25)))})} AS ld_part,
                    SUM(ld_qty_oh) AS onHandQty
             FROM ld_det a
             WHERE a.ld_domain = 'EYE'
+              AND a.ld_status = 'ACT'
               AND a.ld_qty_oh > 0
-            GROUP BY a.ld_part
-          ) c ON c.ld_part = a.pt_part
+            GROUP BY {fn LTRIM({fn RTRIM(CAST(a.ld_part AS CHAR(25)))})}
+          ) c ON c.ld_part = {fn LTRIM({fn RTRIM(CAST(a.pt_part AS CHAR(25)))})}
         `,
         podSiteClause: '',
         woJoinSiteClause: '',
@@ -1060,14 +1061,15 @@ export class ReportsRepository extends BaseRepository<RowDataPacket> {
         inJoin: 'JOIN',
         inventoryJoin: `
           JOIN (
-            SELECT a.ld_part,
+            SELECT {fn LTRIM({fn RTRIM(CAST(a.ld_part AS CHAR(25)))})} AS ld_part,
                    SUM(ld_qty_oh) AS onHandQty
             FROM ld_det a
             WHERE a.ld_domain = 'EYE'
               AND a.ld_site = 'JX'
+              AND a.ld_status = 'ACT'
               AND a.ld_qty_oh > 0
-            GROUP BY a.ld_part
-          ) c ON c.ld_part = a.pt_part
+            GROUP BY {fn LTRIM({fn RTRIM(CAST(a.ld_part AS CHAR(25)))})}
+          ) c ON c.ld_part = {fn LTRIM({fn RTRIM(CAST(a.pt_part AS CHAR(25)))})}
         `,
         podSiteClause: '',
         woJoinSiteClause: " AND wo_site = 'JX'",
@@ -1078,7 +1080,7 @@ export class ReportsRepository extends BaseRepository<RowDataPacket> {
         inJoin: 'LEFT JOIN',
         inventoryJoin: `
           JOIN (
-            SELECT a.ld_part,
+            SELECT {fn LTRIM({fn RTRIM(CAST(a.ld_part AS CHAR(25)))})} AS ld_part,
                    SUM(ld_qty_oh) AS onHandQty
             FROM ld_det a
             JOIN (
@@ -1090,9 +1092,10 @@ export class ReportsRepository extends BaseRepository<RowDataPacket> {
             ) cc ON cc.loc_loc = a.ld_loc
             WHERE a.ld_domain = 'EYE'
               AND ld_site = 'EYE01'
+              AND a.ld_status = 'ACT'
               AND a.ld_qty_oh > 0
-            GROUP BY a.ld_part
-          ) c ON c.ld_part = a.pt_part
+            GROUP BY {fn LTRIM({fn RTRIM(CAST(a.ld_part AS CHAR(25)))})}
+          ) c ON c.ld_part = {fn LTRIM({fn RTRIM(CAST(a.pt_part AS CHAR(25)))})}
         `,
         podSiteClause: " AND pod_site = 'EYE01'",
         woJoinSiteClause: " AND wo_site = 'EYE01'",
@@ -1103,7 +1106,7 @@ export class ReportsRepository extends BaseRepository<RowDataPacket> {
         inJoin: 'LEFT JOIN',
         inventoryJoin: `
           JOIN (
-            SELECT a.ld_part,
+            SELECT {fn LTRIM({fn RTRIM(CAST(a.ld_part AS CHAR(25)))})} AS ld_part,
                    SUM(ld_qty_oh) AS onHandQty
             FROM ld_det a
             JOIN (
@@ -1114,9 +1117,10 @@ export class ReportsRepository extends BaseRepository<RowDataPacket> {
               GROUP BY loc_loc
             ) cc ON cc.loc_loc = a.ld_loc
             WHERE a.ld_domain = 'EYE'
+              AND a.ld_status = 'ACT'
               AND a.ld_qty_oh > 0
-            GROUP BY a.ld_part
-          ) c ON c.ld_part = a.pt_part
+            GROUP BY {fn LTRIM({fn RTRIM(CAST(a.ld_part AS CHAR(25)))})}
+          ) c ON c.ld_part = {fn LTRIM({fn RTRIM(CAST(a.pt_part AS CHAR(25)))})}
         `,
         podSiteClause: " AND pod_site = 'EYE01'",
         woJoinSiteClause: " AND wo_site = 'EYE01'",
@@ -1171,8 +1175,8 @@ export class ReportsRepository extends BaseRepository<RowDataPacket> {
                pt_price,
                pt_part_type,
                sct_cst_tot,
-               CAST(CASE WHEN onHandQty * sct_cst_tot > 0
-                         THEN ((in_avg_iss * sct_cst_tot) / (onHandQty * sct_cst_tot)) * 365
+               CAST(CASE WHEN COALESCE(onHandQty, 0) > 0 AND COALESCE(in_avg_iss, 0) != 0
+                         THEN (COALESCE(in_avg_iss, 0) / COALESCE(onHandQty, 0)) * 365
                          ELSE 0 END AS DECIMAL(16,1)) AS inventory_turns,
                (in_avg_iss * sct_cst_tot) AS average_usage_value,
                onHandQty,
@@ -1195,45 +1199,63 @@ export class ReportsRepository extends BaseRepository<RowDataPacket> {
                onHandQty * sct_cst_tot AS oh_value,
                pl_prod_line,
                b.in_iss_date,
-               CASE WHEN (RIGHT(a.pt_part, 1) != 'U' AND RIGHT(a.pt_part, 1) != 'R' AND RIGHT(a.pt_part, 1) != 'N')
-                    THEN '-' ELSE 'COI' END AS is_coi
-        FROM pt_mstr a
+               '1' as is_coi
+        FROM (
+          SELECT {fn LTRIM({fn RTRIM(CAST(pt_part AS CHAR(25)))})} AS pt_part,
+                 MAX(pt_abc) AS pt_abc,
+                 MAX(pt_status) AS pt_status,
+                 MAX(pt_sfty_stk) AS pt_sfty_stk,
+                 MAX(pt_price) AS pt_price,
+                 MAX(pt_part_type) AS pt_part_type,
+                 MAX(pt_desc1) AS pt_desc1,
+                 MAX(pt_desc2) AS pt_desc2,
+                 MAX(pt_added) AS pt_added,
+                 MAX(pt_avg_int) AS pt_avg_int,
+                 MAX(pt_iss_pol) AS pt_iss_pol,
+                 MAX(pt_buyer) AS pt_buyer,
+                 MAX(pt_pm_code) AS pt_pm_code,
+                 MAX(pt_um) AS pt_um,
+                 MAX(pt_prod_line) AS pt_prod_line
+          FROM pt_mstr
+          WHERE pt_domain = 'EYE'
+          GROUP BY {fn LTRIM({fn RTRIM(CAST(pt_part AS CHAR(25)))})}
+        ) a
         ${selected.inJoin} (
-          SELECT in_part,
+          SELECT {fn LTRIM({fn RTRIM(CAST(in_part AS CHAR(25)))})} AS in_part,
                  MAX(in_avg_iss) AS in_avg_iss,
                  MAX(in_iss_date) AS in_iss_date
           FROM in_mstr
           WHERE in_domain = 'EYE'
             AND in_site = '${selected.inSite}'
-          GROUP BY in_part
-        ) b ON b.in_part = a.pt_part
+          GROUP BY {fn LTRIM({fn RTRIM(CAST(in_part AS CHAR(25)))})}
+        ) b ON b.in_part = {fn LTRIM({fn RTRIM(CAST(a.pt_part AS CHAR(25)))})}
         LEFT JOIN (
-          SELECT sct_part,
-                 MAX(sct_cst_tot) AS sct_cst_tot
+             SELECT {fn LTRIM({fn RTRIM(CAST(sct_part AS CHAR(25)))})} AS sct_part,
+               MAX(sct_cst_tot) AS sct_cst_tot
           FROM sct_det
           WHERE sct_sim = 'Standard'
             AND sct_domain = 'EYE'
             AND sct_site = 'EYE01'
-          GROUP BY sct_part
-        ) d ON CAST(a.pt_part AS CHAR(25)) = d.sct_part
+             GROUP BY {fn LTRIM({fn RTRIM(CAST(sct_part AS CHAR(25)))})}
+        ) d ON {fn LTRIM({fn RTRIM(CAST(a.pt_part AS CHAR(25)))})} = {fn LTRIM({fn RTRIM(CAST(d.sct_part AS CHAR(25)))})}
         LEFT JOIN (
-          SELECT MAX(cp_cust) AS cp_cust,
-                 cp_part
+             SELECT MAX(cp_cust) AS cp_cust,
+               {fn LTRIM({fn RTRIM(CAST(cp_part AS CHAR(25)))})} AS cp_part
           FROM cp_mstr
           WHERE cp_domain = 'EYE'
-          GROUP BY cp_part
-        ) cust ON cust.cp_part = a.pt_part
+             GROUP BY {fn LTRIM({fn RTRIM(CAST(cp_part AS CHAR(25)))})}
+        ) cust ON {fn LTRIM({fn RTRIM(CAST(cust.cp_part AS CHAR(25)))})} = {fn LTRIM({fn RTRIM(CAST(a.pt_part AS CHAR(25)))})}
         ${selected.inventoryJoin}
         LEFT JOIN (
-          SELECT pod_part,
+             SELECT {fn LTRIM({fn RTRIM(CAST(pod_part AS CHAR(25)))})} AS pod_part,
                  SUM((pod_qty_ord) * pod_std_cost) AS orderedQty,
                  SUM(CASE WHEN a.pod_status != 'c' THEN ((pod_qty_ord - pod_qty_rcvd) * pod_std_cost) ELSE 0 END) AS openPoQty,
                  SUM(CASE WHEN a.pod_status != 'c' THEN pod_qty_ord - pod_qty_rcvd ELSE 0 END) AS openpoqtycount,
                  MAX(CASE WHEN a.pod_status = 'c' THEN pod_due_date END) AS last_due_date
           FROM pod_det a
           WHERE a.pod_domain = 'EYE'${selected.podSiteClause}
-          GROUP BY pod_part
-        ) e ON e.pod_part = a.pt_part
+             GROUP BY {fn LTRIM({fn RTRIM(CAST(pod_part AS CHAR(25)))})}
+        ) e ON {fn LTRIM({fn RTRIM(CAST(e.pod_part AS CHAR(25)))})} = {fn LTRIM({fn RTRIM(CAST(a.pt_part AS CHAR(25)))})}
         LEFT JOIN (
           SELECT MAX(pl_prod_line) AS pl_prod_line,
                  MAX(pl_inv_acct) AS pl_inv_acct,
@@ -1245,7 +1267,7 @@ export class ReportsRepository extends BaseRepository<RowDataPacket> {
         ) pl ON pl.pl_prod_line = a.pt_prod_line
         LEFT JOIN (
           SELECT COUNT(CASE WHEN wod_qty_req - wod_qty_iss = 0 THEN 1 ELSE 0 END) AS wod_qty_open,
-                 wod_part
+                 {fn LTRIM({fn RTRIM(CAST(wod_part AS CHAR(25)))})} AS wod_part
           FROM wod_det a
           JOIN wo_mstr b ON a.wod_nbr = b.wo_nbr
             AND wo_domain = 'EYE'
@@ -1254,20 +1276,18 @@ export class ReportsRepository extends BaseRepository<RowDataPacket> {
           WHERE wod_domain = 'EYE'
             AND wod_qty_req != wod_qty_iss
             AND wod_status != 'c'${selected.wodSiteClause}
-          GROUP BY wod_part
-        ) g ON g.wod_part = a.pt_part
+          GROUP BY {fn LTRIM({fn RTRIM(CAST(wod_part AS CHAR(25)))})}
+        ) g ON {fn LTRIM({fn RTRIM(CAST(g.wod_part AS CHAR(25)))})} = {fn LTRIM({fn RTRIM(CAST(a.pt_part AS CHAR(25)))})}
         LEFT JOIN (
-          SELECT sod_part,
+          SELECT {fn LTRIM({fn RTRIM(CAST(sod_part AS CHAR(25)))})} AS sod_part,
                  SUM((sod_qty_ord - sod_qty_ship) * sod_price) AS open_balance,
                  COUNT(sod_part) AS total_lines
           FROM sod_det
           WHERE sod_domain = 'EYE'
             AND sod_qty_ord - sod_qty_ship > 0
-          GROUP BY sod_part
-        ) so ON so.sod_part = a.pt_part
-        WHERE pt_domain = 'EYE'
+          GROUP BY {fn LTRIM({fn RTRIM(CAST(sod_part AS CHAR(25)))})}
+        ) so ON {fn LTRIM({fn RTRIM(CAST(so.sod_part AS CHAR(25)))})} = {fn LTRIM({fn RTRIM(CAST(a.pt_part AS CHAR(25)))})}
       ) a
-      WHERE is_coi <> 'COI'
     `;
   }
 

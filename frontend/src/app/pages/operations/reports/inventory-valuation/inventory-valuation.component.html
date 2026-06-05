@@ -33,7 +33,7 @@
 
             <select class="form-control form-control-sm valuation-site-select"
               [(ngModel)]="sites"
-              (ngModelChange)="getData()">
+              (ngModelChange)="onSiteChange($event)">
               <option *ngFor="let row of ['JX01', 'RMLV', 'FGLV', 'All']" [value]="row">{{row}}</option>
             </select>
 
@@ -51,11 +51,23 @@
                 [disabled]="!quickSearch">
                 Clear
               </button>
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-primary"
+                (click)="refreshData()"
+                [disabled]="isLoading">
+                Refresh
+              </button>
             </div>
           </div>
 
           <div class="valuation-toolbar-right">
-            <small class="text-muted" *ngIf="lastUpdate">Updated: {{ lastUpdate | date:'medium' }}</small>
+            <small class="text-muted" *ngIf="lastUpdateDate; else lastUpdateText">
+              Updated: {{ lastUpdateDate | date:'medium' }}
+            </small>
+            <ng-template #lastUpdateText>
+              <small class="text-muted" *ngIf="lastUpdate">Updated: {{ lastUpdate }}</small>
+            </ng-template>
           </div>
         </div>
 
@@ -80,7 +92,6 @@
       </div>
 
       <ag-grid-angular
-        (filterChanged)="onFilterChanged($event)"
         [gridOptions]="gridOptions"
         class="{{tableConfig.theme}} ag-full-md inventory-grid"
         [rowData]="data">

@@ -36,9 +36,6 @@ export class InventoryByProdLineService {
 
       WHERE ld_domain = 'EYE'
         and a.ld_qty_oh > 0
-        and case when (
-          RIGHT(b.pt_part, 1) != 'U' AND RIGHT(b.pt_part, 1) != 'R' AND RIGHT(b.pt_part, 1) != 'N'
-        ) THEN '-' ELSE 'COI' END <> 'COI'
       GROUP BY b.pt_prod_line
     `;
 
@@ -73,9 +70,6 @@ export class InventoryByProdLineService {
 
       WHERE ld_domain = 'EYE'
         and a.ld_qty_oh > 0
-        and case when (
-          RIGHT(b.pt_part, 1) != 'U' AND RIGHT(b.pt_part, 1) != 'R' AND RIGHT(b.pt_part, 1) != 'N'
-        ) THEN '-' ELSE 'COI' END <> 'COI'
       GROUP BY ld_part
       ORDER BY sum(a.ld_qty_oh*c.sct_cst_tot) DESC
     `;

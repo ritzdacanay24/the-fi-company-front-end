@@ -220,20 +220,6 @@ export class ShippingChecklistComponent implements OnInit {
     return this.secondVerifierRoutingEmail.length > 0;
   }
 
-  get canManageChecklist(): boolean {
-    const user = this.authService.currentUserValue;
-    if (!user) {
-      return false;
-    }
-
-    if (Number(user?.isAdmin || 0) === 1) {
-      return true;
-    }
-
-    const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
-    return permissions.some((permission: unknown) => String(permission || '').toLowerCase().includes('manage'));
-  }
-
   get templateLogoUrl(): string {
     const raw = String(this.selectedTemplate?.logoUrl || '').trim();
     if (!raw) {
@@ -393,7 +379,7 @@ export class ShippingChecklistComponent implements OnInit {
           selector: '[data-tour="shipping-actions"]',
           title: 'Templates, Settings, and History',
           description: 'Use Actions to reach template management, workflow settings, and checklist history for troubleshooting and admin updates.',
-          includeWhen: () => this.canManageChecklist,
+          includeWhen: () => true,
           optional: true,
         },
         {
@@ -419,7 +405,7 @@ export class ShippingChecklistComponent implements OnInit {
     return {
       mode,
       selectedInstanceId: this.selectedInstanceId,
-      canManage: this.canManageChecklist,
+      canManage: true,
       isLocked: this.isChecklistLocked,
       hasVerifierRouting: this.hasSecondVerifierRouting,
     };
@@ -989,11 +975,6 @@ export class ShippingChecklistComponent implements OnInit {
   async deleteChecklist(): Promise<void> {
     if (!this.selectedInstanceId) {
       this.toastr.warning('Open a checklist first.');
-      return;
-    }
-
-    if (!this.canManageChecklist) {
-      this.toastr.error('Manage rights are required to delete a checklist.');
       return;
     }
 

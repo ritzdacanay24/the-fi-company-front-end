@@ -12,7 +12,10 @@ import moment from 'moment';
 
 import { agGridOptions } from '@app/shared/config/ag-grid.config';
 import { agGridDateFilterdateFilter, currencyFormatter } from 'src/assets/js/util';
+import { loadAgGridStateFromStorage, saveAgGridStateToStorage } from '@app/shared/utils/ag-grid-state-storage.util';
 import { GridOptions, RowNode } from 'ag-grid-community';
+
+const INVENTORY_VALUATION_GRID_STATE_KEY = 'inventoryValuationGridStateV1';
 
 
 function formatMoney(number) {
@@ -31,6 +34,7 @@ export class InventoryValuationComponent implements OnInit {
 
   data: any;
   sub: any;
+  isLoading = false;
 
   theme = 'ag-theme-quartz';
 
@@ -50,6 +54,7 @@ export class InventoryValuationComponent implements OnInit {
   columnDefs = [
     {
       headerName: 'Additional Item Info',
+      groupId: 'additionalItemInfo',
       children: [
         { field: "pt_part", headerName: "Part", filter: "agMultiColumnFilter", pinned: 'left' },
         { field: "cp_cust", headerName: "Customer", filter: "agMultiColumnFilter", cellRenderer: this.ifValueIsNull },
@@ -78,6 +83,7 @@ export class InventoryValuationComponent implements OnInit {
     },
     {
       headerName: 'Purchase Order Info',
+      groupId: 'purchaseOrderInfo',
       marryChildren: true,
       children: [
         { field: "orderedqty", headerName: "Total PO Acty", filter: "agNumberColumnFilter", cellRenderer: this.convert1 },
@@ -88,6 +94,7 @@ export class InventoryValuationComponent implements OnInit {
     },
     {
       headerName: 'Sales Order Info',
+      groupId: 'salesOrderInfo',
       marryChildren: true,
       children: [
         { field: "open_balance", headerName: "Open Balance", filter: "agNumberColumnFilter", cellRenderer: this.convert1 },
@@ -96,6 +103,7 @@ export class InventoryValuationComponent implements OnInit {
     },
     {
       headerName: 'Work Order Info',
+      groupId: 'workOrderInfo',
       marryChildren: true,
       children: [
         { field: "wod_qty_open", headerName: "Open Lines", filter: "agNumberColumnFilter", cellRenderer: this.ifValueIsNull },
@@ -103,6 +111,7 @@ export class InventoryValuationComponent implements OnInit {
     },
     {
       headerName: 'Annualized',
+      groupId: 'annualizedInfo',
       marryChildren: true,
       children: [
         { field: "in_avg_iss", headerName: "Average Issues", filter: "agNumberColumnFilter", headerClass: 'bg-info-light', cellRenderer: this.fixed, pinned: 'right' },
@@ -128,6 +137,7 @@ export class InventoryValuationComponent implements OnInit {
   ];
   resultsq: any;
   lastUpdate: any;
+  lastUpdateDate: Date | null = null;
 
 
   ifValueIsNull(params) {
@@ -186,8 +196,15 @@ export class InventoryValuationComponent implements OnInit {
 
   gridOptions = {
     ...agGridOptions,
+    context: {
+      ...(agGridOptions as any)?.context,
+      gridStateStorageKey: INVENTORY_VALUATION_GRID_STATE_KEY,
+    },
     columnDefs: this.columnDefs,
+    initialState: this.getInitialGridState(),
     onGridReady: this.onGridReady.bind(this),
+    onStateUpdated: this.onGridStateUpdated.bind(this),
+    onGridPreDestroyed: this.onGridPreDestroyed.bind(this),
     pagination: false,
     onFirstDataRendered: (params) => {
       const allColumnIds = this.getAllColumnIds(params);
@@ -214,6 +231,12 @@ export class InventoryValuationComponent implements OnInit {
 
   sites = 'All';
   quickSearch = '';
+  activeFilterSummary = 'No active filters';
+  activeFilterCount = 0;
+  filteredRowCount = 0;
+  totalRowCount = 0;
+  private isRestoringGridState = true;
+  private readonly allowedSites = new Set(['All', 'JX01', 'RMLV', 'FGLV']);
 
   filterModal = {
     "pt_added": {
@@ -229,17 +252,43 @@ export class InventoryValuationComponent implements OnInit {
       return;
     }
 
-    if (params.api.getModel().getRowCount() == this.data.length) {
-      this.applyPinnedRows('top', []);
-    } else {
-      let pinnedBottomData = this.generatePinnedBottomData('top');
-      this.applyPinnedRows('top', [pinnedBottomData]);
+    this.updateFilterSummary(params);
+    this.renderPinnedFilterSummaryRow();
+  }
+
+  onGridStateUpdated(event?: any): void {
+    if (this.isRestoringGridState) {
+      return;
     }
+    saveAgGridStateToStorage(INVENTORY_VALUATION_GRID_STATE_KEY, event?.api || this.gridApi);
+  }
+
+  onGridPreDestroyed(event?: any): void {
+    saveAgGridStateToStorage(INVENTORY_VALUATION_GRID_STATE_KEY, event?.api || this.gridApi);
+  }
+
+  private getInitialGridState(): any {
+    return loadAgGridStateFromStorage(INVENTORY_VALUATION_GRID_STATE_KEY);
+  }
+
+  private renderPinnedFilterSummaryRow(): void {
+    if (!this.gridApi || !Array.isArray(this.data)) {
+      return;
+    }
+
+    if (this.activeFilterCount === 0) {
+      this.applyPinnedRows('top', []);
+      return;
+    }
+
+    const rowMeta = `${this.filteredRowCount}/${this.totalRowCount} rows, ${this.activeFilterCount} filters`;
+    const pinnedTopData = this.generatePinnedBottomData('top', `Filtered Summary (${rowMeta})`);
+    this.applyPinnedRows('top', [pinnedTopData]);
   }
 
   constructor(
     private http: HttpClient,
-    private authenticationService: AuthenticationService
+    private authenticationService: AuthenticationService,
   ) { }
 
   formatCurrency(value: any): string {
@@ -260,6 +309,16 @@ export class InventoryValuationComponent implements OnInit {
     this.applyQuickFilter();
   }
 
+  onSiteChange(value: string): void {
+    const normalized = String(value || '').trim();
+    this.sites = this.allowedSites.has(normalized) ? normalized : 'All';
+    this.getData();
+  }
+
+  refreshData(): void {
+    this.getData();
+  }
+
   private applyQuickFilter(): void {
     if (!this.gridApi) {
       return;
@@ -268,12 +327,119 @@ export class InventoryValuationComponent implements OnInit {
     const quickFilterText = String(this.quickSearch || '').trim();
     if (typeof this.gridApi.setGridOption === 'function') {
       this.gridApi.setGridOption('quickFilterText', quickFilterText);
+      this.updateFilterSummary();
       return;
     }
 
     if (typeof this.gridApi.setQuickFilter === 'function') {
       this.gridApi.setQuickFilter(quickFilterText);
+      this.updateFilterSummary();
     }
+  }
+
+  private updateFilterSummary(params?: any): void {
+    const api = params?.api || this.gridApi;
+    if (!api) {
+      return;
+    }
+
+    this.totalRowCount = Array.isArray(this.data) ? this.data.length : 0;
+    this.filteredRowCount = typeof api.getDisplayedRowCount === 'function'
+      ? api.getDisplayedRowCount()
+      : this.totalRowCount;
+
+    const filterModel = typeof api.getFilterModel === 'function' ? (api.getFilterModel() || {}) : {};
+    const summaryParts: string[] = [];
+
+    Object.entries(filterModel).forEach(([colId, model]) => {
+      if (!model) {
+        return;
+      }
+
+      const label = this.resolveColumnLabel(colId);
+      const description = this.describeFilterModel(model);
+      summaryParts.push(`${label}: ${description}`);
+    });
+
+    const quickFilterText = String(this.quickSearch || '').trim();
+    if (quickFilterText) {
+      summaryParts.unshift(`Search: "${quickFilterText}"`);
+    }
+
+    this.activeFilterCount = summaryParts.length;
+    this.activeFilterSummary = summaryParts.length ? summaryParts.join(' | ') : 'No active filters';
+  }
+
+  private resolveColumnLabel(columnId: string): string {
+    const colFromApi = this.gridApi?.getColumn?.(columnId)
+      || this.gridColumnApi?.getColumn?.(columnId);
+    const colDefFromApi = colFromApi?.getColDef?.();
+    if (colDefFromApi?.headerName) {
+      return colDefFromApi.headerName;
+    }
+
+    const findInDefs = (defs: any[]): string | null => {
+      for (const def of defs || []) {
+        if (def?.field === columnId || def?.colId === columnId) {
+          return def.headerName || columnId;
+        }
+
+        if (Array.isArray(def?.children)) {
+          const found = findInDefs(def.children);
+          if (found) {
+            return found;
+          }
+        }
+      }
+
+      return null;
+    };
+
+    return findInDefs(this.columnDefs) || columnId;
+  }
+
+  private describeFilterModel(model: any): string {
+    if (!model || typeof model !== 'object') {
+      return 'filtered';
+    }
+
+    if (model.filterType === 'set') {
+      const selectedCount = Array.isArray(model.values) ? model.values.length : 0;
+      return selectedCount > 0 ? `${selectedCount} selected` : 'set filter';
+    }
+
+    if (model.filterType === 'multi' && Array.isArray(model.filterModels)) {
+      const activeModels = model.filterModels.filter(Boolean);
+      if (!activeModels.length) {
+        return 'filtered';
+      }
+
+      return activeModels.map((entry) => this.describeFilterModel(entry)).join(' + ');
+    }
+
+    if (Array.isArray(model.conditions) && model.conditions.length > 0) {
+      const joiner = model.operator || 'AND';
+      const conditions = model.conditions.map((entry) => this.describeFilterModel(entry));
+      return conditions.join(` ${joiner} `);
+    }
+
+    if (model.type === 'inRange' && model.dateFrom && model.dateTo) {
+      return `${model.type} ${model.dateFrom} to ${model.dateTo}`;
+    }
+
+    if (model.type === 'inRange' && model.filter != null && model.filterTo != null) {
+      return `${model.type} ${model.filter} to ${model.filterTo}`;
+    }
+
+    if (model.type && model.filter != null) {
+      return `${model.type} ${model.filter}`;
+    }
+
+    if (model.type && model.dateFrom) {
+      return `${model.type} ${model.dateFrom}`;
+    }
+
+    return 'filtered';
   }
 
   getInventoryValuation(showAll): any {
@@ -290,7 +456,7 @@ export class InventoryValuationComponent implements OnInit {
     }
   }
 
-  generatePinnedBottomData(v = 'bottom') {
+  generatePinnedBottomData(v = 'bottom', summaryLabel?: string) {
     if (!this.gridApi) {
       return {};
     }
@@ -304,7 +470,7 @@ export class InventoryValuationComponent implements OnInit {
     }
 
 
-    return this.calculatePinnedBottomData(result, v);
+    return this.calculatePinnedBottomData(result, v, summaryLabel);
   }
 
   private applyPinnedRows(position: 'top' | 'bottom', rows: any[]): void {
@@ -354,7 +520,7 @@ export class InventoryValuationComponent implements OnInit {
     return ids;
   }
 
-  calculatePinnedBottomData(target: any, v = 'bottom') {
+  calculatePinnedBottomData(target: any, v = 'bottom', summaryLabel?: string) {
     //**list of columns for aggregation**
     const columnsWithAggregation = [
       'total_lines',
@@ -404,7 +570,13 @@ export class InventoryValuationComponent implements OnInit {
     target.inventory_turns_testing = '-';
     target.inventory_turns = '-';
     target.sct_cst_tot = '-';
-    target.pt_part = v == 'top' ? 'Filtered Summary' : 'Summary';
+    target.pt_part = summaryLabel || (v == 'top' ? '-' : 'Summary');
+
+    if (v === 'top') {
+      target.cp_cust = '-';
+      target.full_desc = this.activeFilterSummary;
+    }
+
     return target;
   }
 
@@ -442,14 +614,17 @@ export class InventoryValuationComponent implements OnInit {
   }
 
   getData() {
+    this.isLoading = true;
     this.showHideOverlay(true);
     const showAll = this.sites || 'All';
     this.sub = this
       .getInventoryValuation(showAll)
       .pipe(first())
       .subscribe((data) => {
+        this.isLoading = false;
         this.showHideOverlay(false);
         this.lastUpdate = data.lastUpdate;
+        this.lastUpdateDate = this.parseLastUpdateDate(data.lastUpdate);
         this.data = data.results
         this.resultsq = data.resultsq;
 
@@ -458,12 +633,15 @@ export class InventoryValuationComponent implements OnInit {
 
         this.calculateTurnsSummary();
         this.applyQuickFilter();
+
         setTimeout(() => {
           if (!this.gridApi) {
             return;
           }
           let pinnedBottomData = this.generatePinnedBottomData();
           this.applyPinnedRows('bottom', [pinnedBottomData]);
+          this.updateFilterSummary();
+          this.renderPinnedFilterSummaryRow();
         }, 500)
 
 
@@ -471,7 +649,20 @@ export class InventoryValuationComponent implements OnInit {
         //   if (this.filterModal) this.gridApi.setFilterModel(this.filterModal);
         // });
 
-      }, () => this.showHideOverlay(true));
+      }, () => {
+        this.isLoading = false;
+        this.showHideOverlay(true);
+      });
+  }
+
+  private parseLastUpdateDate(value: unknown): Date | null {
+    const raw = String(value ?? '').trim();
+    if (!raw || /^live$/i.test(raw)) {
+      return null;
+    }
+
+    const parsed = new Date(raw);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
   }
 
   ngOnDestroy() {
@@ -500,9 +691,18 @@ export class InventoryValuationComponent implements OnInit {
 
   onGridReady(params: any) {
     this.gridApi = params.api;
-    this.gridColumnApi = params.columnApi;
+    this.gridColumnApi = params.columnApi || params.api;
     this.tableConfig.gridApi = params.api;
+
     this.applyQuickFilter();
+
+    this.updateFilterSummary(params);
+    this.renderPinnedFilterSummaryRow();
+
+    // Let AG Grid finish applying initialState before persisting updates.
+    setTimeout(() => {
+      this.isRestoringGridState = false;
+    }, 0);
 
   }
 }
