@@ -145,6 +145,11 @@ export class FsJobNoticeHandler implements ScheduledJobHandler {
       const email = String(job.email ?? '').trim();
       const requesterRecipients = this.parseEmailList(email);
 
+      if (!requestId) {
+        this.logger.warn(`Skipping fs-job-notice for job ${jobId}: missing request_id`);
+        continue;
+      }
+
       if (!customerId) {
         this.logger.warn(`Skipping fs-job-notice for job ${jobId}: unable to map customer from property_id ${propertyId ?? 'NULL'} or customer '${customer || 'N/A'}'`);
         continue;
@@ -158,6 +163,11 @@ export class FsJobNoticeHandler implements ScheduledJobHandler {
       const noticeRecipients = [...new Set([...requesterRecipients, ...customerRecipients])];
       const requestedBy = job.requested_by as string;
       const token = job.token as string;
+
+      if (!String(token ?? '').trim()) {
+        this.logger.warn(`Skipping fs-job-notice for job ${jobId}: missing request token`);
+        continue;
+      }
 
       try {
         const link = this.urlBuilder.fieldService.requestConfirmation(token);
