@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, map, catchError, of } from 'rxjs';
+import { Observable, Subject, map, catchError, of } from 'rxjs';
 import { environment } from 'src/environments/environment';
 
 export type TaskStatus = 'Open' | 'In Process' | 'Review' | 'Completed' | 'Locked';
@@ -57,6 +57,7 @@ export interface ProjectManagerTasksState {
 export class ProjectManagerTasksDataService {
   private readonly apiUrl = environment.pmApiUrl;
   private readonly stateCache = new Map<string, ProjectManagerTasksState>();
+  readonly saveFallback$ = new Subject<string>();
 
   constructor(private readonly http: HttpClient) {}
 
@@ -84,6 +85,7 @@ export class ProjectManagerTasksDataService {
     return this.http.put<void>(`${this.apiUrl}/${projectId}/tasks`, { taskRecords: state.taskRecords }).pipe(
       catchError(() => {
         this.saveStateToCache(state, projectId);
+        this.saveFallback$.next(projectId);
         return of(undefined);
       }),
     );

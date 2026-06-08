@@ -3,8 +3,9 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { SharedModule } from '@app/shared/shared.module';
+import { AccessControlApiService } from '@app/core/api/access-control/access-control.service';
 import { AgGridModule } from 'ag-grid-angular';
-import { CellValueChangedEvent, ColDef, GridApi, GridOptions, GridReadyEvent, IRowNode, RowDragEndEvent } from 'ag-grid-community';
+import { CellValueChangedEvent, ColDef, GridApi, GridOptions, GridReadyEvent, IRowNode, RowDragEndEvent, RowSelectedEvent } from 'ag-grid-community';
 import { PmTaskComment, PmTaskAttachment, PmTaskRecord, ProjectManagerTasksDataService, TaskGate, TaskStatus } from './services/project-manager-tasks-data.service';
 import { ProjectDashboardItem, ProjectManagerProjectsService } from './services/project-manager-projects.service';
 import { PmTaskCommentModalComponent } from './pm-task-comment-modal.component';
@@ -84,7 +85,7 @@ export class ProjectManagerTasksComponent implements OnInit {
   private groupColorMap = new Map<string, string>();
   private groupColorIndex = 0;
   private subgroupCatalog: Record<string, Set<string>> = {};
-  private readonly singleClickDropdownCols = new Set(['gate', 'status', 'dependsOn']);
+  private readonly singleClickDropdownCols = new Set(['gate', 'status', 'dependsOn', 'startDate', 'finishDate']);
   private lastInteractedTaskId: number | null = null;
   actionMessage = '';
   actionMessageType: 'success' | 'warning' = 'success';
@@ -102,6 +103,7 @@ export class ProjectManagerTasksComponent implements OnInit {
 
   selectedPeople = new Set<string>(['Ankit Batra', 'Aldo Verber']);
   selectedAssignees = new Set<string>();
+  private assigneeDirectory: string[] = [];
 
   toggleTaskComplete(taskId: number): void {
     const task = this.taskRecords.find(t => t.id === taskId);
@@ -115,6 +117,140 @@ export class ProjectManagerTasksComponent implements OnInit {
     }
     this.persistTaskState();
     this.rebuildTreeRows();
+  }
+
+  private toggleRowsComplete(rows: PmTaskRecord[]): void {
+    if (!rows.length) return;
+
+    const shouldMarkComplete = rows.some((task) => task.status !== 'Completed');
+    rows.forEach((task) => {
+      task.status = shouldMarkComplete ? 'Completed' : 'Open';
+      task.completion = shouldMarkComplete ? 100 : 0;
+    });
+
+    this.persistTaskState();
+    this.rebuildTreeRows();
+  }
+
+  private setRowsCompleteState(rows: PmTaskRecord[], shouldComplete: boolean): void {
+    if (!rows.length) return;
+
+    rows.forEach((task) => {
+      task.status = shouldComplete ? 'Completed' : 'Open';
+      task.completion = shouldComplete ? 100 : 0;
+    });
+
+    this.persistTaskState();
+    this.rebuildTreeRows();
+  }
+
+  private getTaskRowsFromSelectedNode(node: any): PmTaskRecord[] {
+    if (!node) {
+      return [];
+    }
+
+    if (node.group) {
+      const taskIds = new Set<number>();
+      const leafChildren = node.allLeafChildren || [];
+      leafChildren.forEach((child: any) => {
+        const taskId = Number(child?.data?.taskId);
+        if (Number.isFinite(taskId)) {
+          taskIds.add(taskId);
+        }
+      });
+      return this.taskRecords.filter((task) => taskIds.has(task.id));
+    }
+
+    const taskId = Number(node?.data?.taskId);
+    if (!Number.isFinite(taskId)) {
+      return [];
+    }
+
+    const task = this.taskRecords.find((item) => item.id === taskId);
+    return task ? [task] : [];
+  }
+
+  private getRowsForCompleteAction(params: any): PmTaskRecord[] {
+    const row = params?.data as PmTreeRow | undefined;
+
+    if (params?.node?.group) {
+      const taskIds = new Set<number>();
+      const leafChildren = params.node.allLeafChildren || [];
+      leafChildren.forEach((child: any) => {
+        const taskId = Number(child?.data?.taskId);
+        if (Number.isFinite(taskId)) {
+          taskIds.add(taskId);
+        }
+      });
+
+      if (taskIds.size) {
+        return this.taskRecords.filter((t) => taskIds.has(t.id));
+      }
+    }
+
+    // AG Grid can generate parent/group rows where data is undefined; resolve by node route.
+    if (!row && params?.node?.group) {
+      const route: string[] = [];
+      let cursor = params.node;
+      while (cursor && cursor.level >= 0) {
+        const key = String(cursor.key || '').trim();
+        if (key && key !== '__add_item__') {
+          route.unshift(key);
+        }
+        cursor = cursor.parent;
+      }
+
+      const groupName = route[0] || '';
+      const subgroupPath = route.slice(1).join('/');
+      if (!groupName) return [];
+
+      if (!subgroupPath) {
+        return this.taskRecords.filter((t) => t.groupName === groupName);
+      }
+
+      return this.taskRecords.filter(
+        (t) => t.groupName === groupName && (t.subGroupName === subgroupPath || t.subGroupName.startsWith(`${subgroupPath}/`)),
+      );
+    }
+
+    if (!row) return [];
+
+    if (row.rowType === 'task' && row.taskId !== null) {
+      const task = this.taskRecords.find((t) => t.id === row.taskId);
+      return task ? [task] : [];
+    }
+
+    if (row.rowType === 'group') {
+      return this.taskRecords.filter((t) => t.groupName === row.groupName);
+    }
+
+    if (row.rowType === 'subgroup') {
+      const subgroupPath = String(row.subGroupName || '').trim();
+      if (!subgroupPath) return [];
+      return this.taskRecords.filter((t) => t.groupName === row.groupName && (t.subGroupName === subgroupPath || t.subGroupName.startsWith(`${subgroupPath}/`)));
+    }
+
+    if (row.rowType === 'add-item') {
+      const subgroupPath = String(row.subGroupName || '').trim();
+      if (!row.groupName) return [];
+      if (!subgroupPath) {
+        return this.taskRecords.filter((t) => t.groupName === row.groupName);
+      }
+      return this.taskRecords.filter((t) => t.groupName === row.groupName && (t.subGroupName === subgroupPath || t.subGroupName.startsWith(`${subgroupPath}/`)));
+    }
+
+    return [];
+  }
+
+  private getCompleteIconHtml(done: boolean): string {
+    return done
+      ? `<svg width="18" height="18" viewBox="0 0 18 18"><circle cx="9" cy="9" r="8" fill="#00c875" stroke="#00c875" stroke-width="1.5"/><polyline points="4.5,9 7.5,12 13.5,6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+      : `<svg width="18" height="18" viewBox="0 0 18 18"><circle cx="9" cy="9" r="8" fill="none" stroke="#c5cad3" stroke-width="1.5"/></svg>`;
+  }
+
+  private isCompleteForParams(params: any): boolean {
+    const targetRows = this.getRowsForCompleteAction(params);
+    return targetRows.length > 0 && targetRows.every((task) => task.status === 'Completed');
   }
 
   toggleAssignee(person: string, checked: boolean): void {
@@ -144,6 +280,8 @@ export class ProjectManagerTasksComponent implements OnInit {
   rowData: PmTreeRow[] = [];
 
   columnDefs: ColDef<PmTreeRow>[] = [
+    { field: 'groupName', rowGroup: true, hide: true },
+    { field: 'subGroupName', rowGroup: true, hide: true },
     {
       headerName: '',
       colId: 'dragHandle',
@@ -156,56 +294,6 @@ export class ProjectManagerTasksComponent implements OnInit {
       suppressMovable: true,
       valueGetter: () => ''
     },
-    {
-      headerName: '',
-      colId: 'addAction',
-      width: 36,
-      pinned: 'right',
-      sortable: false,
-      filter: false,
-      resizable: false,
-      suppressMovable: true,
-      cellRenderer: (params: any) => {
-        if (!params.data) return '';
-        if (params.data.rowType === 'add-item') {
-          return `<span style="color:#0073ea;font-size:12px;cursor:pointer;display:flex;align-items:center;height:100%;user-select:none">＋</span>`;
-        }
-        if (params.data.rowType === 'task') return '';
-        return `<span style="cursor:pointer;font-size:18px;color:var(--vz-primary);font-weight:700;display:flex;align-items:center;justify-content:center;height:100%;user-select:none;opacity:0.7" title="Add item here">+</span>`;
-      },
-      onCellClicked: (params: any) => {
-        if (!params.data || params.data.rowType === 'task') return;
-        this.openAddTaskPanel(params.data.groupName, params.data.subGroupName || '');
-      }
-    },
-    {
-      headerName: '',
-      colId: 'complete',
-      width: 36,
-      pinned: 'right',
-      sortable: false,
-      filter: false,
-      resizable: false,
-      suppressMovable: true,
-      cellRenderer: (params: any) => {
-        if (!params.data || params.data.rowType !== 'task') return '';
-        const done = params.data.status === 'Completed';
-        return done
-          ? `<span title="Mark incomplete" style="display:flex;align-items:center;justify-content:center;height:100%;cursor:pointer">
-               <svg width="18" height="18" viewBox="0 0 18 18">
-                 <circle cx="9" cy="9" r="8" fill="#00c875" stroke="#00c875" stroke-width="1.5"/>
-                 <polyline points="4.5,9 7.5,12 13.5,6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-               </svg></span>`
-          : `<span title="Mark complete" style="display:flex;align-items:center;justify-content:center;height:100%;cursor:pointer">
-               <svg width="18" height="18" viewBox="0 0 18 18">
-                 <circle cx="9" cy="9" r="8" fill="none" stroke="#c5cad3" stroke-width="1.5"/>
-               </svg></span>`;
-      },
-      onCellClicked: (params: any) => {
-        if (!params.data || params.data.rowType !== 'task' || params.data.taskId === null) return;
-        this.toggleTaskComplete(params.data.taskId);
-      }
-    },
     { field: 'taskId', headerName: '#', width: 70, valueFormatter: params => params.value ?? '' },
     {
       field: 'gate',
@@ -215,10 +303,51 @@ export class ProjectManagerTasksComponent implements OnInit {
       cellEditor: 'agSelectCellEditor',
       cellEditorParams: { values: this.gateOptions }
     },
-    { field: 'taskName', headerName: 'Task Name', minWidth: 320, flex: 2, pinned: 'left', filter: 'agTextColumnFilter', editable: params => params.data?.rowType === 'task' },
-    { field: 'project', headerName: 'Project', minWidth: 180, filter: 'agTextColumnFilter', editable: params => params.data?.rowType === 'task' },
-    { field: 'assignedTo', headerName: 'Assigned To', minWidth: 170, filter: 'agTextColumnFilter',
+    {
+      field: 'taskName',
+      headerName: 'Task Name',
+      minWidth: 320,
+      flex: 2,
+      hide: true,
+      filter: 'agTextColumnFilter',
       editable: params => params.data?.rowType === 'task',
+      cellRenderer: (params: any) => {
+        const rowType = params.data?.rowType as RowType | undefined;
+        const isParentRow = !!params.node?.group || rowType === 'group' || rowType === 'subgroup';
+        if (isParentRow) {
+          const label = String(params.data?.label ?? params.value ?? '');
+          if (!label) {
+            return '';
+          }
+          return label;
+        }
+
+        const value = String(params.value ?? '');
+        if (!value) {
+          return '';
+        }
+
+        if (rowType !== 'task' && rowType !== 'add-item') {
+          return value;
+        }
+
+        const depth = Number(params.node?.level ?? 0);
+        const indent = Math.max(0, depth) * 28;
+        return `<span style="display:inline-block;padding-left:${indent}px">${value}</span>`;
+      }
+    },
+    { field: 'project', headerName: 'Project', minWidth: 180, filter: 'agTextColumnFilter', editable: params => params.data?.rowType === 'task' },
+    {
+      field: 'assignedTo', headerName: 'Assigned To', minWidth: 170, filter: 'agTextColumnFilter',
+      editable: params => params.data?.rowType === 'task',
+      cellEditor: 'agRichSelectCellEditor',
+      cellEditorParams: {
+        values: () => this.getAssigneeOptions(),
+        allowTyping: true,
+        filterList: true,
+        searchType: 'matchAny',
+        highlightMatch: true,
+      },
       cellRenderer: (params: any) => {
         if (!params.value) return '';
         const names: string[] = typeof params.value === 'string'
@@ -230,10 +359,31 @@ export class ProjectManagerTasksComponent implements OnInit {
         }).join('');
       }
     },
-    { field: 'durationDays', headerName: 'Duration', width: 120, valueFormatter: params => (params.value === null || params.value === undefined ? '' : `${params.value} days`) },
-    { field: 'startDate', headerName: 'Start', width: 120, editable: params => params.data?.rowType === 'task' },
-    { field: 'finishDate', headerName: 'Finish', width: 120, editable: params => params.data?.rowType === 'task' },
-    { field: 'dependsOn', headerName: 'Depends On', width: 120,
+    {
+      field: 'durationDays',
+      headerName: 'Duration',
+      width: 120,
+      aggFunc: (params: any) => this.aggregateDurationSpan(params),
+      valueFormatter: params => (params.value === null || params.value === undefined ? '' : `${params.value} days`)
+    },
+    {
+      field: 'startDate',
+      headerName: 'Start',
+      width: 120,
+      editable: params => params.data?.rowType === 'task',
+      cellEditor: 'agDateStringCellEditor',
+      aggFunc: (params: any) => this.aggregateMinDate(params?.values),
+    },
+    {
+      field: 'finishDate',
+      headerName: 'Finish',
+      width: 120,
+      editable: params => params.data?.rowType === 'task',
+      cellEditor: 'agDateStringCellEditor',
+      aggFunc: (params: any) => this.aggregateMaxDate(params?.values),
+    },
+    {
+      field: 'dependsOn', headerName: 'Depends On', width: 120,
       editable: params => params.data?.rowType === 'task',
       cellEditor: 'agRichSelectCellEditor',
       cellEditorParams: {
@@ -255,11 +405,11 @@ export class ProjectManagerTasksComponent implements OnInit {
       cellRenderer: (params: any) => {
         if (!params.value) return '';
         const colors: Record<string, string> = {
-          'Open':      '#6c757d',
-          'In Process':'#0d6efd',
-          'Review':    '#fd7e14',
+          'Open': '#6c757d',
+          'In Process': '#0d6efd',
+          'Review': '#fd7e14',
           'Completed': '#198754',
-          'Locked':    '#dc3545'
+          'Locked': '#dc3545'
         };
         const bg = colors[params.value] ?? '#6c757d';
         return `<span style="background:${bg};color:#fff;padding:2px 8px;border-radius:10px;font-size:11px;white-space:nowrap">${params.value}</span>`;
@@ -268,20 +418,33 @@ export class ProjectManagerTasksComponent implements OnInit {
     {
       field: 'completion',
       headerName: 'Progress',
-      width: 140,
+      width: 150,
+      pinned: 'right',
+      aggFunc: (params: any) => this.aggregateCompletionPercent(params),
       editable: params => params.data?.rowType === 'task',
       cellRenderer: (params: any) => {
         if (params.data?.rowType === 'add-item' || params.value === null || params.value === undefined) return '';
-        if (params.data?.rowType !== 'task' && params.data?.rowType !== 'group' && params.data?.rowType !== 'subgroup') return '';
+        const isGroupNode = !!params.node?.group;
+        if (!isGroupNode && params.data?.rowType !== 'task') return '';
         const pct = Math.max(0, Math.min(100, Number(params.value) || 0));
-        const color = pct >= 100 ? '#00c875' : pct >= 50 ? '#0073ea' : pct > 0 ? '#fdab3d' : '#e0e0e0';
-        const barH = params.data?.rowType === 'task' ? '8px' : '6px';
-        const opacity = params.data?.rowType === 'task' ? '' : 'opacity:0.85;';
-        return `<div style="display:flex;align-items:center;gap:6px;height:100%;${opacity}">
-          <div style="flex:1;height:${barH};background:#e9ecef;border-radius:4px;overflow:hidden">
-            <div style="width:${pct}%;height:100%;background:${color};border-radius:4px;transition:width 0.3s"></div>
+        const isTaskRow = params.data?.rowType === 'task';
+        const barH = isTaskRow ? 8 : 6;
+        const opacity = isTaskRow ? '' : 'opacity:0.85;';
+        const fillColor = pct >= 100
+          ? '#59b563'
+          : pct >= 50
+            ? '#f4b000'
+            : pct >= 20
+              ? '#d8df00'
+              : pct > 0
+                ? '#e11d2e'
+                : '#adb5bd';
+        const fillWidth = pct > 0 ? `max(${pct}%, 2px)` : '0%';
+        return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;height:100%;${opacity}">
+          <div class="progress" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100" style="width:72px;height:${barH}px;background:#e8ecf1;border-radius:999px;overflow:hidden;">
+            <div class="progress-bar" style="width:${fillWidth};height:100%;background:${fillColor};"></div>
           </div>
-          <span style="font-size:11px;color:#666;min-width:28px;text-align:right">${pct}%</span>
+          <span style="font-size:11px;color:#3f4954;min-width:34px;text-align:right;line-height:1;">${pct}%</span>
         </div>`;
       }
     },
@@ -323,36 +486,40 @@ export class ProjectManagerTasksComponent implements OnInit {
 
   gridOptions: GridOptions<PmTreeRow> = {
     animateRows: true,
-    treeData: true,
-    getDataPath: data => data.path,
+    suppressAggFuncInHeader: true,
     getRowId: params => params.data.rowId,
-    rowSelection: 'multiple',
+    groupAllowUnbalanced: true,
+    groupDisplayType: null,
+    rowSelection: {
+      mode: 'multiRow',
+      checkboxLocation: 'autoGroupColumn',
+      checkboxes: (params: any) => params?.data?.rowType !== 'add-item',
+      groupSelects: 'descendants',
+    } as any,
     rowDragMultiRow: true,
     groupDefaultExpanded: -1,
     autoGroupColumnDef: {
-      headerName: 'Item',
-      field: 'label',
-      rowDrag: params => !!params.data && (params.data.rowType === 'group' || params.data.rowType === 'subgroup' || params.data.rowType === 'task'),
-      cellRendererParams: { suppressCount: true },
+      headerName: 'Task Name',
+      field: 'taskName',
+      minWidth: 250,
+      editable: (params: any) => params?.data?.rowType === 'task' && !params?.node?.group,
       cellRenderer: 'agGroupCellRenderer',
-      cellRendererSelector: (params: any) => {
-        if (params.data?.rowType === 'add-item') {
-          return {
-            component: () => `<span style="color:var(--vz-primary);cursor:pointer;font-size:12px;font-weight:600;font-style:italic;opacity:0.8;letter-spacing:0.01em">＋ Add item…</span>`
-          };
-        }
-        return undefined;
-      }
+      cellRendererParams: {
+        suppressCount: true,
+      },
     },
     getRowStyle: (params: any) => {
-      if (!params.data) return {};
-      const color = params.data._groupColor || '#0073ea';
-      if (params.data.rowType === 'group') {
+      if (params.node?.group && params.node.level === 0) {
+        const color = this.getGroupColor(String(params.node.key || ''));
         return { background: `${color}12`, borderLeft: `3px solid ${color}`, fontWeight: '700' };
       }
-      if (params.data.rowType === 'subgroup') {
+      if (params.node?.group && params.node.level > 0) {
+        const route = this.getNodeGroupRoute(params.node);
+        const color = this.getGroupColor(route[0] || '');
         return { background: `${color}08`, borderLeft: `3px solid ${color}99`, fontWeight: '600' };
       }
+      if (!params.data) return {};
+      const color = params.data._groupColor || '#0073ea';
       if (params.data.rowType === 'add-item') {
         return {
           background: `rgba(var(--vz-primary-rgb), 0.04)`,
@@ -365,22 +532,30 @@ export class ProjectManagerTasksComponent implements OnInit {
       return { borderLeft: `3px solid transparent` };
     },
     getRowClass: (params: any) => {
+      if (params.node?.group && params.node.level === 0) return 'pm-group-row';
+      if (params.node?.group) return 'pm-subgroup-row';
       if (params.data?.rowType === 'add-item') return 'pm-add-item-row';
-      if (params.data?.rowType === 'group') return 'pm-group-row';
-      if (params.data?.rowType === 'subgroup') return 'pm-subgroup-row';
       return '';
     },
-    isRowSelectable: (params: any) => params.data?.rowType === 'task',
+    isRowSelectable: undefined,
     singleClickEdit: true,
     stopEditingWhenCellsLoseFocus: true,
     undoRedoCellEditing: true,
     undoRedoCellEditingLimit: 20,
     suppressMoveWhenRowDragging: true,
-    suppressRowClickSelection: false,
+    suppressRowClickSelection: true,
     onCellClicked: (event: any) => {
-      // add-item rows are handled by the addAction column's onCellClicked to avoid double-opening
       const row = event?.data as PmTreeRow | undefined;
-      if (!row || row.rowType !== 'task') {
+      if (!row) {
+        return;
+      }
+
+      if (row.rowType === 'add-item') {
+        this.openAddTaskPanel(row.groupName, row.subGroupName || '');
+        return;
+      }
+
+      if (row.rowType !== 'task') {
         return;
       }
 
@@ -397,6 +572,15 @@ export class ProjectManagerTasksComponent implements OnInit {
       });
     },
     onCellValueChanged: (event: CellValueChangedEvent<PmTreeRow>) => this.handleCellValueChanged(event),
+    onRowSelected: (event: RowSelectedEvent<PmTreeRow>) => {
+      if (!event?.node || event.node.data?.rowType === 'add-item') {
+        return;
+      }
+
+      if (event.node.data?.rowType === 'task') {
+        this.lastInteractedTaskId = event.node.data.taskId;
+      }
+    },
     onRowDragEnd: (event: RowDragEndEvent<PmTreeRow>) => this.handleRowDragEnd(event),
     onGridReady: (event: GridReadyEvent<PmTreeRow>) => {
       this.gridApi = event.api;
@@ -411,14 +595,25 @@ export class ProjectManagerTasksComponent implements OnInit {
     private router: Router,
     private tasksDataService: ProjectManagerTasksDataService,
     private projectsService: ProjectManagerProjectsService,
+    private accessControlApi: AccessControlApiService,
     private modalService: NgbModal
   ) {
     // Initialized from query params to keep URL and local state in sync.
   }
 
   ngOnInit(): void {
+    this.loadAssigneeDirectory();
+
     this.allProjects = this.projectsService.getProjects();
     this.applyProjectContext((this.route.snapshot.queryParamMap.get('projectId') || '').trim());
+
+    this.tasksDataService.saveFallback$.subscribe((projectId) => {
+      if (projectId !== this.activeProjectId) {
+        return;
+      }
+      this.actionMessageType = 'warning';
+      this.actionMessage = 'Save to DB failed. Changes are cached locally for now.';
+    });
 
     this.projectsService.getProjects$().subscribe(projects => {
       this.allProjects = projects;
@@ -621,9 +816,8 @@ export class ProjectManagerTasksComponent implements OnInit {
       source: 'manual'
     };
 
-    if (task.groupName) {
-      this.ensureSubgroup(task.groupName, task.subGroupName || 'Tasks');
-      if (!task.subGroupName) task.subGroupName = 'Tasks';
+    if (task.groupName && task.subGroupName) {
+      this.ensureSubgroup(task.groupName, task.subGroupName);
     }
     this.taskRecords = [task, ...this.taskRecords];
     this.persistTaskState();
@@ -878,6 +1072,32 @@ export class ProjectManagerTasksComponent implements OnInit {
     this.rebuildTreeRows();
     this.actionMessageType = 'success';
     this.actionMessage = `Archived ${targetTaskIds.size} task(s) as Locked.`;
+  }
+
+  markSelectedComplete(): void {
+    const selectedTaskIds = this.getSelectedTaskIds();
+    if (!selectedTaskIds.size) {
+      this.actionMessageType = 'warning';
+      this.actionMessage = 'Check at least one task before marking complete.';
+      return;
+    }
+
+    this.taskRecords = this.taskRecords.map(task => {
+      if (!selectedTaskIds.has(task.id)) {
+        return task;
+      }
+
+      return {
+        ...task,
+        status: 'Completed',
+        completion: 100,
+      };
+    });
+
+    this.persistTaskState();
+    this.rebuildTreeRows();
+    this.actionMessageType = 'success';
+    this.actionMessage = `Marked ${selectedTaskIds.size} task(s) as Completed.`;
   }
 
   deleteSelectedTasks(): void {
@@ -1162,7 +1382,21 @@ export class ProjectManagerTasksComponent implements OnInit {
   }
 
   private resolveTreeDropTarget(overNode?: IRowNode<PmTreeRow>): { groupName: string; subGroupName: string } | null {
-    if (!overNode?.data) {
+    if (!overNode) {
+      return null;
+    }
+
+    if (overNode.group) {
+      const route = this.getNodeGroupRoute(overNode);
+      const groupName = route[0] || '';
+      const subGroupName = route.slice(1).join('/');
+      if (!groupName) {
+        return null;
+      }
+      return { groupName, subGroupName };
+    }
+
+    if (!overNode.data) {
       return null;
     }
 
@@ -1208,133 +1442,118 @@ export class ProjectManagerTasksComponent implements OnInit {
     const expanded = this.captureExpandedState();
     this.seedSubgroupCatalog();
 
-    const groups = this.availableGroups;
     const rows: PmTreeRow[] = [];
+    rows.push({
+      rowId: 'add-item__root',
+      path: [],
+      rowType: 'add-item',
+      label: '+ Add New Task',
+      groupName: '',
+      subGroupName: '',
+      taskId: null,
+      gate: '',
+      taskName: '+ Add New Task',
+      project: '',
+      assignedTo: '',
+      durationDays: null,
+      startDate: '',
+      finishDate: '',
+      dependsOn: '',
+      bucket: '',
+      status: '',
+      completion: null,
+      source: '',
+      _groupColor: '#888888'
+    });
 
-    groups.forEach(groupName => {
-      const groupColor = this.getGroupColor(groupName);
-      const groupTasks = this.taskRecords.filter(task => task.groupName === groupName);
-      const groupRange = this.computeDateRange(groupTasks);
-      const doneCount = groupTasks.filter(t => t.status === 'Completed').length;
-      const completePct = groupTasks.length ? Math.round(doneCount / groupTasks.length * 100) : 0;
-      const groupAvgCompletion = groupTasks.length
-        ? Math.round(groupTasks.reduce((sum, t) => sum + (t.completion || 0), 0) / groupTasks.length)
-        : 0;
+    let groupedTasks = this.taskRecords.filter(t => !!String(t.groupName || '').trim());
+    if (this.hideDone) groupedTasks = groupedTasks.filter(t => t.status !== 'Completed');
+    if (this.filterPerson) groupedTasks = groupedTasks.filter(t => t.assignedTo.includes(this.filterPerson));
+    if (this.filterStatus) groupedTasks = groupedTasks.filter(t => t.status === this.filterStatus);
+    if (this.activeGateFilter !== 'All') groupedTasks = groupedTasks.filter(t => t.gate === this.activeGateFilter);
+
+    groupedTasks.forEach(task => {
+      const groupColor = this.getGroupColor(task.groupName || 'Ungrouped');
+      const projectLabel = String(task.project || '').trim()
+        || String(this.currentProjectSummary?.code || '').trim()
+        || String(this.currentProjectSummary?.name || '').trim()
+        || String(this.activeProjectId || '').trim();
+      rows.push({
+        rowId: this.toTaskRowId(task.id),
+        path: [],
+        rowType: 'task',
+        label: task.taskName,
+        groupName: task.groupName,
+        subGroupName: task.subGroupName || '',
+        taskId: task.id,
+        gate: task.gate,
+        taskName: task.taskName,
+        project: projectLabel,
+        assignedTo: task.assignedTo.join(', '),
+        durationDays: task.durationDays,
+        startDate: task.startDate,
+        finishDate: task.finishDate,
+        dependsOn: task.dependsOn,
+        bucket: task.bucket,
+        status: task.status,
+        completion: task.completion,
+        source: task.source,
+        _groupColor: groupColor,
+        _commentCount: task.comments?.length ?? 0
+      } as PmTreeRow & { _commentCount: number });
+    });
+
+    const visibleGroups = Array.from(new Set(groupedTasks.map(task => task.groupName).filter(Boolean)));
+    visibleGroups.forEach(groupName => {
+      const groupColor = this.getGroupColor(groupName || 'Ungrouped');
 
       rows.push({
-        rowId: this.toGroupRowId(groupName),
-        path: [groupName],
-        rowType: 'group',
-        label: `${groupName}  (${doneCount}/${groupTasks.length} done  ${completePct}%)`,
+        rowId: `add-item__${groupName}__root`,
+        path: [],
+        rowType: 'add-item',
+        label: `+ Add New Task to ${groupName}`,
         groupName,
         subGroupName: '',
         taskId: null,
-        gate: '', taskName: '', project: '', assignedTo: '',
-        durationDays: groupRange.durationDays,
-        startDate: groupRange.startDate,
-        finishDate: groupRange.finishDate,
-        dependsOn: '', bucket: '', status: '', completion: groupAvgCompletion, source: '',
+        gate: '',
+        taskName: `+ Add New Task to ${groupName}`,
+        project: '',
+        assignedTo: '',
+        durationDays: null,
+        startDate: '',
+        finishDate: '',
+        dependsOn: '',
+        bucket: '',
+        status: '',
+        completion: null,
+        source: '',
         _groupColor: groupColor
       });
 
-      // Expand all slash-paths into a set that also includes every ancestor prefix
-      const explicitPaths = Array.from(this.subgroupCatalog[groupName] || []);
-      const allPathSet = new Set<string>();
-      explicitPaths.forEach(p => {
-        const segs = p.split('/');
-        segs.forEach((_, i) => allPathSet.add(segs.slice(0, i + 1).join('/')));
-      });
-
-      // Sort: shallow before deep, then lexicographic — ensures parents are inserted first
-      const allPaths = Array.from(allPathSet).sort((a, b) => {
-        const da = a.split('/').length;
-        const db = b.split('/').length;
-        return da !== db ? da - db : a.localeCompare(b);
-      });
-
-      // Leaf paths are those not used as a prefix by any other path
-      const leafPaths = new Set(
-        allPaths.filter(p => !allPaths.some(o => o !== p && o.startsWith(p + '/')))
-      );
-
-      allPaths.forEach(subGroupPath => {
-        const segments = subGroupPath.split('/');
-        const leafName = segments[segments.length - 1];
-        const agPath = [groupName, ...segments];
-        const subgroupId = this.toSubgroupRowId(groupName, subGroupPath);
-
-        const allSubgroupTasks = this.taskRecords.filter(
-          t => t.groupName === groupName && t.subGroupName === subGroupPath
-        );
-        let subgroupTasks = [...allSubgroupTasks];
-        if (this.hideDone)          subgroupTasks = subgroupTasks.filter(t => t.status !== 'Completed');
-        if (this.filterPerson)      subgroupTasks = subgroupTasks.filter(t => t.assignedTo.includes(this.filterPerson));
-        if (this.filterStatus)      subgroupTasks = subgroupTasks.filter(t => t.status === this.filterStatus);
-        if (this.activeGateFilter !== 'All') subgroupTasks = subgroupTasks.filter(t => t.gate === this.activeGateFilter);
-
-        const subRange = this.computeDateRange(subgroupTasks);
-        const subgroupAvgCompletion = allSubgroupTasks.length
-          ? Math.round(allSubgroupTasks.reduce((sum, t) => sum + (t.completion || 0), 0) / allSubgroupTasks.length)
-          : 0;
-
+      const explicitPaths = Array.from(this.subgroupCatalog[groupName] || []).filter(path => !!String(path || '').trim());
+      explicitPaths.forEach(subGroupPath => {
         rows.push({
-          rowId: subgroupId,
-          path: agPath,
-          rowType: 'subgroup',
-          label: leafName,
+          rowId: `add-item__${groupName}__${subGroupPath}`,
+          path: [],
+          rowType: 'add-item',
+          label: `+ Add New Task to ${groupName} / ${subGroupPath}`,
           groupName,
           subGroupName: subGroupPath,
           taskId: null,
-          gate: '', taskName: '', project: '', assignedTo: '',
-          durationDays: subRange.durationDays,
-          startDate: subRange.startDate,
-          finishDate: subRange.finishDate,
-          dependsOn: '', bucket: '', status: '', completion: subgroupAvgCompletion, source: '',
+          gate: '',
+          taskName: `+ Add New Task to ${groupName} / ${subGroupPath}`,
+          project: '',
+          assignedTo: '',
+          durationDays: null,
+          startDate: '',
+          finishDate: '',
+          dependsOn: '',
+          bucket: '',
+          status: '',
+          completion: null,
+          source: '',
           _groupColor: groupColor
         });
-
-        subgroupTasks.forEach(task => {
-          rows.push({
-            rowId: this.toTaskRowId(task.id),
-            path: [...agPath, `${task.taskName} [${task.id}]`],
-            rowType: 'task',
-            label: task.taskName,
-            groupName: task.groupName,
-            subGroupName: task.subGroupName,
-            taskId: task.id,
-            gate: task.gate,
-            taskName: task.taskName,
-            project: task.project,
-            assignedTo: task.assignedTo.join(', '),
-            durationDays: task.durationDays,
-            startDate: task.startDate,
-            finishDate: task.finishDate,
-            dependsOn: task.dependsOn,
-            bucket: task.bucket,
-            status: task.status,
-            completion: task.completion,
-            source: task.source,
-            _groupColor: groupColor,
-            _commentCount: task.comments?.length ?? 0
-          } as PmTreeRow & { _commentCount: number });
-        });
-
-        // add-item sentinel only at leaf subgroups
-        if (leafPaths.has(subGroupPath)) {
-          rows.push({
-            rowId: `add-item__${groupName}__${subGroupPath}`,
-            path: [...agPath, '__add_item__'],
-            rowType: 'add-item',
-            label: '+ Add Item',
-            groupName,
-            subGroupName: subGroupPath,
-            taskId: null,
-            gate: '', taskName: '', project: '', assignedTo: '',
-            durationDays: null, startDate: '', finishDate: '',
-            dependsOn: '', bucket: '', status: '', completion: null, source: '',
-            _groupColor: groupColor
-          });
-        }
       });
     });
 
@@ -1346,6 +1565,10 @@ export class ProjectManagerTasksComponent implements OnInit {
     if (this.activeGateFilter !== 'All') ungroupedTasks = ungroupedTasks.filter(t => t.gate === this.activeGateFilter);
 
     ungroupedTasks.forEach(task => {
+      const projectLabel = String(task.project || '').trim()
+        || String(this.currentProjectSummary?.code || '').trim()
+        || String(this.currentProjectSummary?.name || '').trim()
+        || String(this.activeProjectId || '').trim();
       rows.push({
         rowId: this.toTaskRowId(task.id),
         path: [`${task.taskName} [${task.id}]`],
@@ -1356,7 +1579,7 @@ export class ProjectManagerTasksComponent implements OnInit {
         taskId: task.id,
         gate: task.gate,
         taskName: task.taskName,
-        project: task.project,
+        project: projectLabel,
         assignedTo: task.assignedTo.join(', '),
         durationDays: task.durationDays,
         startDate: task.startDate,
@@ -1386,8 +1609,11 @@ export class ProjectManagerTasksComponent implements OnInit {
     }
 
     this.gridApi.forEachNode(node => {
-      if (node.expanded && node.data?.rowType !== 'task') {
-        expanded.add(node.data.rowId);
+      if (node.expanded) {
+        const key = this.getExpansionKey(node);
+        if (key) {
+          expanded.add(key);
+        }
       }
     });
 
@@ -1400,13 +1626,37 @@ export class ProjectManagerTasksComponent implements OnInit {
     }
 
     this.gridApi.forEachNode(node => {
-      if (node.data?.rowType === 'task') {
-        return;
-      }
-      if (expanded.has(node.data!.rowId)) {
+      const key = this.getExpansionKey(node);
+      if (key && expanded.has(key)) {
         node.setExpanded(true);
       }
     });
+  }
+
+  private getNodeGroupRoute(node: IRowNode<PmTreeRow>): string[] {
+    const route: string[] = [];
+    let cursor: IRowNode<PmTreeRow> | null = node;
+
+    while (cursor && cursor.level >= 0) {
+      if (cursor.group) {
+        const key = String(cursor.key || '').trim();
+        if (key) {
+          route.unshift(key);
+        }
+      }
+      cursor = cursor.parent;
+    }
+
+    return route;
+  }
+
+  private getExpansionKey(node: IRowNode<PmTreeRow>): string | null {
+    if (node.group) {
+      const route = this.getNodeGroupRoute(node);
+      return route.length ? `group__${route.join('__')}` : null;
+    }
+
+    return node.data?.rowType !== 'task' ? node.data?.rowId ?? null : null;
   }
 
   private seedSubgroupCatalog(): void {
@@ -1416,7 +1666,9 @@ export class ProjectManagerTasksComponent implements OnInit {
       if (!catalog[task.groupName]) {
         catalog[task.groupName] = new Set<string>();
       }
-      catalog[task.groupName].add(task.subGroupName);
+      if (String(task.subGroupName || '').trim()) {
+        catalog[task.groupName].add(task.subGroupName);
+      }
     });
 
     // Keep manually created empty subgroups.
@@ -1465,6 +1717,165 @@ export class ProjectManagerTasksComponent implements OnInit {
 
     const ms = finish.getTime() - start.getTime();
     return Math.max(1, Math.ceil(ms / 86400000));
+  }
+
+  private normalizeDateMs(value: unknown): number | null {
+    const raw = String(value || '').trim();
+    if (!raw) {
+      return null;
+    }
+
+    const ms = Date.parse(raw);
+    if (Number.isNaN(ms)) {
+      return null;
+    }
+
+    return ms;
+  }
+
+  private toIsoDate(valueMs: number): string {
+    return new Date(valueMs).toISOString().slice(0, 10);
+  }
+
+  private aggregateMinDate(values: unknown[]): string {
+    if (!Array.isArray(values) || !values.length) {
+      return '';
+    }
+
+    let min: number | null = null;
+    values.forEach((value) => {
+      const ms = this.normalizeDateMs(value);
+      if (ms === null) {
+        return;
+      }
+      if (min === null || ms < min) {
+        min = ms;
+      }
+    });
+
+    return min === null ? '' : this.toIsoDate(min);
+  }
+
+  private aggregateMaxDate(values: unknown[]): string {
+    if (!Array.isArray(values) || !values.length) {
+      return '';
+    }
+
+    let max: number | null = null;
+    values.forEach((value) => {
+      const ms = this.normalizeDateMs(value);
+      if (ms === null) {
+        return;
+      }
+      if (max === null || ms > max) {
+        max = ms;
+      }
+    });
+
+    return max === null ? '' : this.toIsoDate(max);
+  }
+
+  private aggregateDurationSpan(params: any): number | null {
+    const leaves = params?.rowNode?.allLeafChildren || [];
+    let minStart: number | null = null;
+    let maxFinish: number | null = null;
+
+    leaves.forEach((leaf: any) => {
+      const row = leaf?.data as PmTreeRow | undefined;
+      if (!row || row.rowType !== 'task') {
+        return;
+      }
+
+      const startMs = this.normalizeDateMs(row.startDate);
+      const finishMs = this.normalizeDateMs(row.finishDate);
+
+      if (startMs !== null && (minStart === null || startMs < minStart)) {
+        minStart = startMs;
+      }
+
+      if (finishMs !== null && (maxFinish === null || finishMs > maxFinish)) {
+        maxFinish = finishMs;
+      }
+    });
+
+    if (minStart === null || maxFinish === null || maxFinish < minStart) {
+      return null;
+    }
+
+    return Math.max(1, Math.ceil((maxFinish - minStart) / 86400000) + 1);
+  }
+
+  private aggregateCompletionPercent(params: any): number | null {
+    const leaves = params?.rowNode?.allLeafChildren || [];
+    let total = 0;
+    let count = 0;
+
+    leaves.forEach((leaf: any) => {
+      const row = leaf?.data as PmTreeRow | undefined;
+      if (!row || row.rowType !== 'task') {
+        return;
+      }
+
+      const value = Number(row.completion);
+      const normalized = Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : 0;
+      total += normalized;
+      count += 1;
+    });
+
+    if (!count) {
+      return null;
+    }
+
+    return Math.round(total / count);
+  }
+
+  private getAssigneeOptions(): string[] {
+    const set = new Set<string>();
+
+    this.assigneeDirectory.forEach((name) => {
+      const normalized = String(name || '').trim();
+      if (normalized) {
+        set.add(normalized);
+      }
+    });
+
+    this.taskRecords.forEach((task) => {
+      (task.assignedTo || []).forEach((name) => {
+        const normalized = String(name || '').trim();
+        if (normalized) {
+          set.add(normalized);
+        }
+      });
+    });
+
+    this.allProjects.forEach((project) => {
+      const owner = String((project as any).owner || '').trim();
+      if (owner) {
+        set.add(owner);
+      }
+    });
+
+    this.selectedAssignees.forEach((name) => {
+      const normalized = String(name || '').trim();
+      if (normalized) {
+        set.add(normalized);
+      }
+    });
+
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }
+
+  private loadAssigneeDirectory(): void {
+    this.accessControlApi.getUsers()
+      .then((users) => {
+        const names = users
+          .map((user) => String(user?.name || '').trim())
+          .filter(Boolean);
+        this.assigneeDirectory = Array.from(new Set(names)).sort((a, b) => a.localeCompare(b));
+      })
+      .catch(() => {
+        this.assigneeDirectory = [];
+      });
   }
 
   private toGroupRowId(groupName: string): string {
