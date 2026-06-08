@@ -57,7 +57,12 @@ export class ShortagesListComponent implements OnInit {
       this.id = params["id"];
       this.selectedViewType =
         params["selectedViewType"] || this.selectedViewType;
+      this.selectedQueueType =
+        params["selectedQueueType"] || this.selectedQueueType;
+      this.query = params["query"] || "";
       this.comment = params["comment"];
+
+      this.gridApi?.setGridOption("quickFilterText", this.query || "");
     });
 
     this.getData();
@@ -372,6 +377,7 @@ export class ShortagesListComponent implements OnInit {
       queryParamsHandling: "merge",
       queryParams: {
         id: id,
+        goBackUrl: this.router.url,
       },
     });
   }
@@ -395,6 +401,8 @@ export class ShortagesListComponent implements OnInit {
       this.router.navigate(["."], {
         queryParams: {
           selectedViewType: this.selectedViewType,
+          selectedQueueType: this.selectedQueueType,
+          query: this.query || null,
         },
         relativeTo: this.activatedRoute,
         queryParamsHandling: "merge",
