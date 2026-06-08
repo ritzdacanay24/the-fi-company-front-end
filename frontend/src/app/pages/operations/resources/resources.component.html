@@ -1,0 +1,165 @@
+<div class="container-fluid py-4 resources-page">
+  <div class="row justify-content-center">
+    <div class="col-12 col-xxl-10">
+      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+        <div>
+          <h2 class="mb-1">Resources</h2>
+          <p class="text-muted mb-0">Quick access to common operations links and tools.</p>
+        </div>
+        <button type="button" class="btn btn-outline-primary"
+          (click)="openAdminUpload(adminUploadOffcanvas)">
+          <i class="ri-upload-2-line me-1"></i>
+          Upload Resource
+        </button>
+      </div>
+
+      <ng-template #adminUploadOffcanvas let-offcanvas>
+        <div class="offcanvas-header bg-body-tertiary border-bottom">
+          <h5 class="offcanvas-title fw-semibold">Upload Resource</h5>
+          <button type="button" class="btn-close" aria-label="Close" (click)="offcanvas.dismiss()"></button>
+        </div>
+        <div class="offcanvas-body">
+          <form [formGroup]="uploadForm" class="row g-3">
+            <div class="col-12">
+              <label class="form-label">Category</label>
+              <input class="form-control" type="text" formControlName="category" />
+            </div>
+            <div class="col-12">
+              <label class="form-label">Title</label>
+              <input class="form-control" type="text" formControlName="title" />
+            </div>
+            <div class="col-12">
+              <label class="form-label">Document File</label>
+              <input class="form-control" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv" (change)="onUploadFileSelected($event)" />
+            </div>
+            <div class="col-12">
+              <label class="form-label">Description</label>
+              <textarea class="form-control" rows="3" formControlName="description"></textarea>
+            </div>
+            <div class="col-12 d-grid">
+              <button type="button" class="btn btn-primary" [disabled]="uploadForm.invalid || isUploading"
+                (click)="uploadResource(offcanvas)">
+                <span *ngIf="isUploading" class="spinner-border spinner-border-sm me-2"></span>
+                Upload
+              </button>
+            </div>
+          </form>
+        </div>
+      </ng-template>
+
+      <ng-template #adminEditOffcanvas let-offcanvas>
+        <div class="offcanvas-header bg-body-tertiary border-bottom">
+          <h5 class="offcanvas-title fw-semibold">Edit Resource</h5>
+          <button type="button" class="btn-close" aria-label="Close" (click)="offcanvas.dismiss()"></button>
+        </div>
+        <div class="offcanvas-body">
+          <form [formGroup]="editForm" class="row g-3">
+            <div class="col-12">
+              <label class="form-label">Category</label>
+              <input class="form-control" type="text" formControlName="category" />
+            </div>
+            <div class="col-12">
+              <label class="form-label">Title</label>
+              <input class="form-control" type="text" formControlName="title" />
+            </div>
+            <div class="col-12">
+              <label class="form-label">Replace Document (optional)</label>
+              <input class="form-control" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv" (change)="onEditFileSelected($event)" />
+            </div>
+            <div class="col-12">
+              <label class="form-label">Description</label>
+              <textarea class="form-control" rows="3" formControlName="description"></textarea>
+            </div>
+            <div class="col-12">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="resourceActive" formControlName="active" />
+                <label class="form-check-label" for="resourceActive">Active</label>
+              </div>
+            </div>
+            <div class="col-12 d-grid">
+              <button type="button" class="btn btn-primary" [disabled]="editForm.invalid || isSavingEdit"
+                (click)="saveEdit(offcanvas)">
+                <span *ngIf="isSavingEdit" class="spinner-border spinner-border-sm me-2"></span>
+                Save Changes
+              </button>
+            </div>
+          </form>
+        </div>
+      </ng-template>
+
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+          <input
+            type="search"
+            class="form-control form-control-lg"
+            placeholder="Search resources..."
+            [ngModel]="searchTerm"
+            (ngModelChange)="onSearch($event)"
+          />
+        </div>
+      </div>
+
+      <div *ngIf="groupedResources.length === 0" class="card border-0 shadow-sm">
+        <div class="card-body text-center py-5">
+          <i class="ri-search-line fs-1 text-muted"></i>
+          <h5 class="mt-3 mb-1">No resources found</h5>
+          <p class="text-muted mb-0">Try a different search term.</p>
+        </div>
+      </div>
+
+      <div *ngFor="let group of groupedResources; trackBy: trackByCategory" class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-light border-bottom d-flex align-items-center">
+          <i class="ri-folder-2-line text-primary me-2"></i>
+          <div>
+            <h5 class="mb-0">{{ group.category }}</h5>
+            <small class="text-muted">{{ group.items.length }} item{{ group.items.length === 1 ? '' : 's' }}</small>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 32%;">Resource</th>
+                <th style="width: 43%;">Description</th>
+                <th style="width: 10%;" class="text-center">Type</th>
+                <th style="width: 15%;" class="text-end">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of group.items; trackBy: trackById">
+                <td>
+                  <div class="fw-semibold">{{ item.title }}</div>
+                  <small class="text-muted">{{ item.fileName }}</small>
+                  <div class="small text-muted">
+                    Uploaded {{ item.uploadedAt | date: 'MMM d, y' }}
+                    <span *ngIf="item.uploadedBy"> • {{ item.uploadedBy }}</span>
+                  </div>
+                </td>
+                <td class="text-muted">{{ item.description }}</td>
+                <td class="text-center">
+                  <span class="badge bg-secondary-subtle text-secondary">{{ item.size }}</span>
+                </td>
+                <td class="text-end">
+                  <div class="btn-group btn-group-sm" role="group">
+                    <button type="button" class="btn btn-outline-primary" (click)="previewResource(item)">
+                      <i class="ri-eye-line"></i>
+                    </button>
+                    <button type="button" class="btn btn-primary" (click)="downloadResource(item)">
+                      <i class="ri-download-line me-1"></i>
+                      Download
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary"
+                      (click)="openAdminEdit(adminEditOffcanvas, item)">
+                      <i class="ri-edit-line"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

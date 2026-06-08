@@ -56,6 +56,23 @@ export class FileStorageService {
     };
   }
 
+  async resolveLocalFilePath(fileName: string, subFolder = 'general'): Promise<string | null> {
+    const safeSubFolder = this.sanitizeSubFolder(subFolder, 'general');
+    const targetDirs = this.getUploadTargetDirs(safeSubFolder);
+
+    for (const uploadDir of targetDirs) {
+      const filePath = join(uploadDir, fileName);
+      try {
+        await stat(filePath);
+        return filePath;
+      } catch {
+        // Try next dir.
+      }
+    }
+
+    return null;
+  }
+
   async deleteStoredFile(fileName: string, subFolder = 'general'): Promise<void> {
     const safeSubFolder = this.sanitizeSubFolder(subFolder, 'general');
     const targetDirs = this.getUploadTargetDirs(safeSubFolder);

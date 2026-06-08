@@ -10,6 +10,7 @@ import { AccessGuard } from "@app/core/guards/access.guard";
 import { LocationLookupComponent } from "./location-lookup/location-lookup.component";
 import { UniversalLookupComponent } from "@app/shared/components/universal-lookup/universal-lookup.component";
 import { AllocationManagementComponent } from "./allocation-management/allocation-management.component";
+import { ResourcesComponent } from "./resources/resources.component";
 
 const routes: Routes = [
   {
@@ -230,6 +231,12 @@ const routes: Routes = [
       import("../../components/shipping-dashboard/shipping-dashboard.component").then(
         (m) => m.ShippingDashboardComponent
       ),
+    runGuardsAndResolvers: "always",
+  },
+  {
+    title: "Resources",
+    path: "resources",
+    component: ResourcesComponent,
     runGuardsAndResolvers: "always",
   },
 ];

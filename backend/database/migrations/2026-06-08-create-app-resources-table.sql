@@ -1,0 +1,22 @@
+CREATE TABLE IF NOT EXISTS app_resources (
+  id INT NOT NULL AUTO_INCREMENT,
+  category VARCHAR(100) NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  description TEXT NULL,
+  file_name VARCHAR(255) NOT NULL,
+  mime_type VARCHAR(120) NULL,
+  size_bytes BIGINT NULL,
+  link TEXT NOT NULL,
+  icon VARCHAR(64) NULL DEFAULT 'ri-file-pdf-line',
+  color VARCHAR(32) NULL DEFAULT '#dc3545',
+  sort_order INT NOT NULL DEFAULT 0,
+  active TINYINT(1) NOT NULL DEFAULT 1,
+  created_by INT NULL,
+  created_by_name VARCHAR(255) NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_app_resources_active (active),
+  KEY idx_app_resources_category (category),
+  KEY idx_app_resources_sort_order (sort_order)
+);

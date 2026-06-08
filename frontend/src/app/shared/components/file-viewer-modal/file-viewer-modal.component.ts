@@ -315,7 +315,29 @@ export class FileViewerModalComponent {
   }
 
   isOfficeDocument(): boolean {
-    return this.hasExtension([".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx"]);
+    if (!this.hasExtension([".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx"])) {
+      return false;
+    }
+    // Office Online embed only works for publicly accessible URLs.
+    // Internal/localhost/relative URLs will always fail with "An error occurred".
+    const url = String(this.url || '').trim();
+    return /^https?:\/\//i.test(url) && !this.isPrivateUrl(url);
+  }
+
+  private isPrivateUrl(url: string): boolean {
+    try {
+      const { hostname } = new URL(url);
+      return (
+        hostname === 'localhost' ||
+        hostname === '127.0.0.1' ||
+        hostname === '::1' ||
+        /^10\.\d+\.\d+\.\d+$/.test(hostname) ||
+        /^172\.(1[6-9]|2\d|3[01])\.\d+\.\d+$/.test(hostname) ||
+        /^192\.168\.\d+\.\d+$/.test(hostname)
+      );
+    } catch {
+      return true;
+    }
   }
 
   isVideo(): boolean {
