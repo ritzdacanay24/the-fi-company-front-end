@@ -22,6 +22,15 @@ const GROUP_PALETTE = [
 
 const DEPENDS_ON_OPTIONS = ['3FS', '6FS', '8FS', '1FS', '2FS', '4FS', '5FS', '7FS', '9FS', '10FS'];
 
+const DEFAULT_PROJECT_TASK_TEMPLATES = [
+  'DFM completed / checkbox',
+  'Pixel Mapping / software files',
+  'Installation Instructions',
+  'Work Instruction',
+  'PDC',
+  'Quality Documents',
+];
+
 interface PmTreeRow {
   rowId: string;
   path: string[];
@@ -87,6 +96,7 @@ export class ProjectManagerTasksComponent implements OnInit {
   private subgroupCatalog: Record<string, Set<string>> = {};
   private readonly singleClickDropdownCols = new Set(['gate', 'status', 'dependsOn', 'startDate', 'finishDate']);
   private lastInteractedTaskId: number | null = null;
+  private requestedTaskBoardFromQuery = '';
   actionMessage = '';
   actionMessageType: 'success' | 'warning' = 'success';
   currentProjectSummary: ProjectDashboardItem | null = null;
@@ -103,7 +113,16 @@ export class ProjectManagerTasksComponent implements OnInit {
 
   selectedPeople = new Set<string>(['Ankit Batra', 'Aldo Verber']);
   selectedAssignees = new Set<string>();
+  selectedAssignee = '';
   private assigneeDirectory: string[] = [];
+  projectTaskBoardName = 'Project Tasks';
+  projectTaskBoardNameDraft = 'Project Tasks';
+  taskBoardNames: string[] = ['Project Tasks'];
+  newTaskBoardName = '';
+  showTaskBoardCreator = false;
+  defaultTaskTemplates: string[] = [...DEFAULT_PROJECT_TASK_TEMPLATES];
+  defaultTaskTemplateDraft: string[] = [...DEFAULT_PROJECT_TASK_TEMPLATES];
+  newDefaultTaskTemplateName = '';
 
   toggleTaskComplete(taskId: number): void {
     const task = this.taskRecords.find(t => t.id === taskId);
@@ -184,7 +203,7 @@ export class ProjectManagerTasksComponent implements OnInit {
       });
 
       if (taskIds.size) {
-        return this.taskRecords.filter((t) => taskIds.has(t.id));
+        return this.getActiveBoardTasks().filter((t) => taskIds.has(t.id));
       }
     }
 
@@ -205,10 +224,10 @@ export class ProjectManagerTasksComponent implements OnInit {
       if (!groupName) return [];
 
       if (!subgroupPath) {
-        return this.taskRecords.filter((t) => t.groupName === groupName);
+        return this.getActiveBoardTasks().filter((t) => t.groupName === groupName);
       }
 
-      return this.taskRecords.filter(
+      return this.getActiveBoardTasks().filter(
         (t) => t.groupName === groupName && (t.subGroupName === subgroupPath || t.subGroupName.startsWith(`${subgroupPath}/`)),
       );
     }
@@ -221,22 +240,22 @@ export class ProjectManagerTasksComponent implements OnInit {
     }
 
     if (row.rowType === 'group') {
-      return this.taskRecords.filter((t) => t.groupName === row.groupName);
+      return this.getActiveBoardTasks().filter((t) => t.groupName === row.groupName);
     }
 
     if (row.rowType === 'subgroup') {
       const subgroupPath = String(row.subGroupName || '').trim();
       if (!subgroupPath) return [];
-      return this.taskRecords.filter((t) => t.groupName === row.groupName && (t.subGroupName === subgroupPath || t.subGroupName.startsWith(`${subgroupPath}/`)));
+      return this.getActiveBoardTasks().filter((t) => t.groupName === row.groupName && (t.subGroupName === subgroupPath || t.subGroupName.startsWith(`${subgroupPath}/`)));
     }
 
     if (row.rowType === 'add-item') {
       const subgroupPath = String(row.subGroupName || '').trim();
       if (!row.groupName) return [];
       if (!subgroupPath) {
-        return this.taskRecords.filter((t) => t.groupName === row.groupName);
+        return this.getActiveBoardTasks().filter((t) => t.groupName === row.groupName);
       }
-      return this.taskRecords.filter((t) => t.groupName === row.groupName && (t.subGroupName === subgroupPath || t.subGroupName.startsWith(`${subgroupPath}/`)));
+      return this.getActiveBoardTasks().filter((t) => t.groupName === row.groupName && (t.subGroupName === subgroupPath || t.subGroupName.startsWith(`${subgroupPath}/`)));
     }
 
     return [];
@@ -261,8 +280,17 @@ export class ProjectManagerTasksComponent implements OnInit {
     }
   }
 
+  onAssigneeSelect(person: string): void {
+    this.selectedAssignee = String(person || '').trim();
+    this.selectedAssignees.clear();
+    if (this.selectedAssignee) {
+      this.selectedAssignees.add(this.selectedAssignee);
+    }
+  }
+
   taskForm = this.fb.group({
-    gate: ['G4' as TaskGate, Validators.required],
+    projectTaskName: ['Project Tasks'],
+    gate: ['' as TaskGate | ''],
     groupName: [''],
     subGroupName: [''],
     project: ['VWL-035XX-XXX', Validators.required],
@@ -301,7 +329,8 @@ export class ProjectManagerTasksComponent implements OnInit {
       width: 95,
       editable: params => params.data?.rowType === 'task',
       cellEditor: 'agSelectCellEditor',
-      cellEditorParams: { values: this.gateOptions }
+      cellEditorParams: { values: ['', ...this.gateOptions] },
+      valueFormatter: (params: any) => String(params.value || '').trim() || 'Project'
     },
     {
       field: 'taskName',
@@ -625,6 +654,7 @@ export class ProjectManagerTasksComponent implements OnInit {
       const gateContext = (params.get('gateContext') || '').trim();
       const gate = Number(params.get('gate') || 0);
       const projectId = (params.get('projectId') || '').trim();
+      this.requestedTaskBoardFromQuery = String(params.get('taskBoard') || '').trim();
 
       this.applyGateContext(gateContext, gate);
       this.applyProjectContext(projectId);
@@ -735,9 +765,13 @@ export class ProjectManagerTasksComponent implements OnInit {
   openAddTaskPanel(group = '', subgroup = ''): void {
     this.showManagePanel = false;
     this.showBulkPanel = false;
+    const defaultGate: TaskGate | '' = this.activeGateFilter === 'All' ? '' : this.activeGateFilter;
+    this.taskForm.patchValue({ gate: defaultGate, projectTaskName: this.projectTaskBoardName });
     if (group) {
       this.taskForm.patchValue({ groupName: group, subGroupName: subgroup });
     }
+    this.selectedAssignee = '';
+    this.selectedAssignees.clear();
     this.activeModalRef = this.modalService.open(this.addTaskModalTpl, {
       size: 'lg',
       centered: true,
@@ -747,6 +781,7 @@ export class ProjectManagerTasksComponent implements OnInit {
     this.activeModalRef.result.catch(() => {
       // dismissed — clear form
       this.taskForm.patchValue({ taskName: '' });
+      this.selectedAssignee = '';
       this.selectedAssignees.clear();
     });
     setTimeout(() => {
@@ -763,10 +798,119 @@ export class ProjectManagerTasksComponent implements OnInit {
     this.showManagePanel = false;
     this.showAddTaskPanel = false;
     this.showBulkPanel = false;
+    this.defaultTaskTemplateDraft = [...this.defaultTaskTemplates];
+    this.newDefaultTaskTemplateName = '';
+    this.projectTaskBoardNameDraft = this.projectTaskBoardName;
+    this.newTaskBoardName = '';
     this.activeModalRef = this.modalService.open(this.manageGroupsModalTpl, {
       size: 'md',
       centered: true
     });
+  }
+
+  onTaskBoardChange(boardName: string): void {
+    const normalized = String(boardName || '').trim() || 'Project Tasks';
+    this.projectTaskBoardName = normalized;
+    this.projectTaskBoardNameDraft = normalized;
+    this.taskForm.patchValue({ projectTaskName: normalized });
+    this.syncFilterQueryParams();
+    this.rebuildTreeRows();
+    this.persistTaskState();
+  }
+
+  createTaskBoard(): void {
+    const normalized = String(this.newTaskBoardName || '').trim();
+    if (!normalized) {
+      return;
+    }
+    if (!this.taskBoardNames.some((name) => name.toLowerCase() === normalized.toLowerCase())) {
+      this.taskBoardNames = [...this.taskBoardNames, normalized];
+    }
+    this.newTaskBoardName = '';
+    this.showTaskBoardCreator = false;
+    this.onTaskBoardChange(normalized);
+    this.actionMessageType = 'success';
+    this.actionMessage = `Created task board ${normalized}.`;
+  }
+
+  saveProjectTaskBoardName(): void {
+    const normalized = String(this.projectTaskBoardNameDraft || '').trim();
+    const nextName = normalized || 'Project Tasks';
+    const currentName = this.projectTaskBoardName;
+
+    this.projectTaskBoardName = nextName;
+    this.projectTaskBoardNameDraft = nextName;
+
+    this.taskRecords = this.taskRecords.map((task) => {
+      const board = String(task.projectTaskName || 'Project Tasks').trim() || 'Project Tasks';
+      if (board.toLowerCase() !== currentName.toLowerCase()) {
+        return task;
+      }
+      return { ...task, projectTaskName: nextName };
+    });
+
+    this.taskBoardNames = Array.from(new Set(
+      this.taskBoardNames
+        .map((name) => name.toLowerCase() === currentName.toLowerCase() ? nextName : name)
+        .map((name) => String(name || '').trim())
+        .filter(Boolean)
+    ));
+    if (!this.taskBoardNames.length) {
+      this.taskBoardNames = ['Project Tasks'];
+    }
+
+    this.taskForm.patchValue({ projectTaskName: nextName });
+    this.persistTaskState();
+    this.rebuildTreeRows();
+    this.actionMessageType = 'success';
+    this.actionMessage = 'Project task board name updated.';
+  }
+
+  addDefaultTaskTemplateDraft(): void {
+    const name = String(this.newDefaultTaskTemplateName || '').trim();
+    if (!name) {
+      return;
+    }
+    if (this.defaultTaskTemplateDraft.some((item) => item.toLowerCase() === name.toLowerCase())) {
+      return;
+    }
+    this.defaultTaskTemplateDraft = [...this.defaultTaskTemplateDraft, name];
+    this.newDefaultTaskTemplateName = '';
+  }
+
+  updateDefaultTaskTemplateDraft(index: number, value: string): void {
+    if (index < 0 || index >= this.defaultTaskTemplateDraft.length) {
+      return;
+    }
+    this.defaultTaskTemplateDraft[index] = String(value || '');
+  }
+
+  removeDefaultTaskTemplateDraft(index: number): void {
+    if (index < 0 || index >= this.defaultTaskTemplateDraft.length) {
+      return;
+    }
+    this.defaultTaskTemplateDraft.splice(index, 1);
+    this.defaultTaskTemplateDraft = [...this.defaultTaskTemplateDraft];
+  }
+
+  resetDefaultTaskTemplateDraft(): void {
+    this.defaultTaskTemplateDraft = [...DEFAULT_PROJECT_TASK_TEMPLATES];
+    this.newDefaultTaskTemplateName = '';
+  }
+
+  saveDefaultTaskTemplates(): void {
+    const normalized = Array.from(new Set(
+      this.defaultTaskTemplateDraft
+        .map((item) => String(item || '').trim())
+        .filter(Boolean)
+        .slice(0, 100)
+    ));
+
+    this.defaultTaskTemplates = normalized.length ? normalized : [...DEFAULT_PROJECT_TASK_TEMPLATES];
+    this.defaultTaskTemplateDraft = [...this.defaultTaskTemplates];
+    this.persistTaskState();
+    this.actionMessageType = 'success';
+    this.actionMessage = 'Default project task templates updated.';
   }
 
   toggleBulkPanel(): void {
@@ -800,7 +944,8 @@ export class ProjectManagerTasksComponent implements OnInit {
     const value = this.taskForm.getRawValue();
     const task: PmTaskRecord = {
       id: this.nextId++,
-      gate: (value.gate || 'G4') as TaskGate,
+      projectTaskName: String(value.projectTaskName || this.projectTaskBoardName).trim() || 'Project Tasks',
+      gate: (value.gate || '') as TaskGate | '',
       groupName: value.groupName?.trim() || '',
       subGroupName: value.subGroupName?.trim() || '',
       taskName: value.taskName || '',
@@ -824,6 +969,7 @@ export class ProjectManagerTasksComponent implements OnInit {
     this.rebuildTreeRows();
     this.closeAddTaskPanel();
     this.taskForm.patchValue({ taskName: '' });
+    this.selectedAssignee = '';
     this.selectedAssignees.clear();
   }
 
@@ -958,6 +1104,7 @@ export class ProjectManagerTasksComponent implements OnInit {
         status: this.filterStatus || null,
         hideDone: this.hideDone ? '1' : null,
         gateFilter: this.activeGateFilter !== 'All' ? this.activeGateFilter : null,
+        taskBoard: this.projectTaskBoardName || null,
         q: this.quickFilterText.trim() || null
       },
       queryParamsHandling: 'merge',
@@ -978,7 +1125,8 @@ export class ProjectManagerTasksComponent implements OnInit {
 
     const bulkTasks: PmTaskRecord[] = Array.from(this.selectedPeople).map(person => ({
       id: this.nextId++,
-      gate: (value.gate || 'G4') as TaskGate,
+      projectTaskName: this.projectTaskBoardName,
+      gate: (value.gate || '') as TaskGate | '',
       groupName: 'Engineering',
       subGroupName: 'Involved People',
       taskName: `${baseTaskName} - ${person}`,
@@ -1286,6 +1434,13 @@ export class ProjectManagerTasksComponent implements OnInit {
       this.nextId = 1;
       this.taskRecords = [];
       this.subgroupCatalog = {};
+      this.projectTaskBoardName = 'Project Tasks';
+      this.projectTaskBoardNameDraft = 'Project Tasks';
+      this.taskBoardNames = ['Project Tasks'];
+      this.newTaskBoardName = '';
+      this.requestedTaskBoardFromQuery = '';
+      this.defaultTaskTemplates = [...DEFAULT_PROJECT_TASK_TEMPLATES];
+      this.defaultTaskTemplateDraft = [...DEFAULT_PROJECT_TASK_TEMPLATES];
       this.seedSubgroupCatalog();
       return;
     }
@@ -1297,15 +1452,84 @@ export class ProjectManagerTasksComponent implements OnInit {
 
       this.nextId = state.nextId;
       this.taskRecords = state.taskRecords;
+      this.projectTaskBoardName = String(state.projectTaskBoardName || '').trim() || 'Project Tasks';
+      this.projectTaskBoardNameDraft = this.projectTaskBoardName;
+      this.taskBoardNames = Array.from(new Set(
+        [
+          ...(state.taskBoardNames || []),
+          ...state.taskRecords.map(task => String(task.projectTaskName || '').trim()).filter(Boolean),
+          this.projectTaskBoardName,
+        ]
+          .map((name) => String(name || '').trim())
+          .filter(Boolean)
+      ));
+      if (!this.taskBoardNames.length) {
+        this.taskBoardNames = ['Project Tasks'];
+      }
+      if (this.requestedTaskBoardFromQuery) {
+        const requested = this.requestedTaskBoardFromQuery;
+        if (!this.taskBoardNames.some((name) => name.toLowerCase() === requested.toLowerCase())) {
+          this.taskBoardNames = [...this.taskBoardNames, requested];
+        }
+        this.projectTaskBoardName = requested;
+        this.projectTaskBoardNameDraft = requested;
+        this.taskForm.patchValue({ projectTaskName: requested });
+        this.requestedTaskBoardFromQuery = '';
+      }
+      this.defaultTaskTemplates = state.defaultTaskTemplates?.length
+        ? [...state.defaultTaskTemplates]
+        : [...DEFAULT_PROJECT_TASK_TEMPLATES];
+      this.defaultTaskTemplateDraft = [...this.defaultTaskTemplates];
 
       const catalog: Record<string, Set<string>> = {};
       Object.keys(state.subgroupCatalog).forEach(group => {
         catalog[group] = new Set(state.subgroupCatalog[group]);
       });
       this.subgroupCatalog = catalog;
+
+      if (!this.taskRecords.length) {
+        this.seedDefaultProjectTasks();
+      }
+
       this.seedSubgroupCatalog();
       this.rebuildTreeRows();
     });
+  }
+
+  private seedDefaultProjectTasks(): void {
+    const projectLabel = String(this.currentProjectSummary?.code || this.currentProjectSummary?.id || this.activeProjectId || '').trim();
+    const startDate = String(this.taskForm.get('startDate')?.value || '').trim() || new Date().toISOString().slice(0, 10);
+    const finishDate = String(this.taskForm.get('finishDate')?.value || '').trim() || startDate;
+    const gate = (this.taskForm.get('gate')?.value || '') as TaskGate | '';
+
+    const groupName = 'Project Inputs';
+    const subGroupName = 'Default Tasks';
+    this.ensureSubgroup(groupName, subGroupName);
+
+    const templates = this.defaultTaskTemplates.length ? this.defaultTaskTemplates : DEFAULT_PROJECT_TASK_TEMPLATES;
+    const seededTasks: PmTaskRecord[] = templates.map((taskName) => ({
+      id: this.nextId++,
+      projectTaskName: this.projectTaskBoardName,
+      gate,
+      groupName,
+      subGroupName,
+      taskName,
+      project: projectLabel,
+      assignedTo: [],
+      durationDays: this.calculateDuration(startDate, finishDate),
+      startDate,
+      finishDate,
+      dependsOn: '',
+      bucket: 'General',
+      status: 'Open',
+      completion: 0,
+      source: 'manual',
+    }));
+
+    this.taskRecords = seededTasks;
+    this.persistTaskState();
+    this.actionMessageType = 'success';
+    this.actionMessage = 'Default project tasks were added.';
   }
 
   private persistTaskState(): void {
@@ -1317,8 +1541,19 @@ export class ProjectManagerTasksComponent implements OnInit {
     this.tasksDataService.saveState({
       nextId: this.nextId,
       taskRecords: this.taskRecords,
-      subgroupCatalog
+      subgroupCatalog,
+      defaultTaskTemplates: this.defaultTaskTemplates,
+      projectTaskBoardName: this.projectTaskBoardName,
+      taskBoardNames: this.taskBoardNames
     }, this.activeProjectId);
+  }
+
+  private getActiveBoardTasks(): PmTaskRecord[] {
+    const activeBoard = String(this.projectTaskBoardName || '').trim() || 'Project Tasks';
+    return this.taskRecords.filter((task) => {
+      const board = String(task.projectTaskName || 'Project Tasks').trim() || 'Project Tasks';
+      return board.toLowerCase() === activeBoard.toLowerCase();
+    });
   }
 
   private patchDefaultProjectFromSelection(): void {
@@ -1466,11 +1701,11 @@ export class ProjectManagerTasksComponent implements OnInit {
       _groupColor: '#888888'
     });
 
-    let groupedTasks = this.taskRecords.filter(t => !!String(t.groupName || '').trim());
+    let groupedTasks = this.getActiveBoardTasks().filter(t => !!String(t.groupName || '').trim());
     if (this.hideDone) groupedTasks = groupedTasks.filter(t => t.status !== 'Completed');
     if (this.filterPerson) groupedTasks = groupedTasks.filter(t => t.assignedTo.includes(this.filterPerson));
     if (this.filterStatus) groupedTasks = groupedTasks.filter(t => t.status === this.filterStatus);
-    if (this.activeGateFilter !== 'All') groupedTasks = groupedTasks.filter(t => t.gate === this.activeGateFilter);
+    if (this.activeGateFilter !== 'All') groupedTasks = groupedTasks.filter(t => t.gate === this.activeGateFilter || !String(t.gate || '').trim());
 
     groupedTasks.forEach(task => {
       const groupColor = this.getGroupColor(task.groupName || 'Ungrouped');
@@ -1558,11 +1793,11 @@ export class ProjectManagerTasksComponent implements OnInit {
     });
 
     // ungrouped tasks — rendered as flat top-level rows
-    let ungroupedTasks = this.taskRecords.filter(t => !t.groupName);
+    let ungroupedTasks = this.getActiveBoardTasks().filter(t => !t.groupName);
     if (this.hideDone) ungroupedTasks = ungroupedTasks.filter(t => t.status !== 'Completed');
     if (this.filterPerson) ungroupedTasks = ungroupedTasks.filter(t => t.assignedTo.includes(this.filterPerson));
     if (this.filterStatus) ungroupedTasks = ungroupedTasks.filter(t => t.status === this.filterStatus);
-    if (this.activeGateFilter !== 'All') ungroupedTasks = ungroupedTasks.filter(t => t.gate === this.activeGateFilter);
+    if (this.activeGateFilter !== 'All') ungroupedTasks = ungroupedTasks.filter(t => t.gate === this.activeGateFilter || !String(t.gate || '').trim());
 
     ungroupedTasks.forEach(task => {
       const projectLabel = String(task.project || '').trim()
@@ -1661,7 +1896,7 @@ export class ProjectManagerTasksComponent implements OnInit {
 
   private seedSubgroupCatalog(): void {
     const catalog: Record<string, Set<string>> = {};
-    this.taskRecords.forEach(task => {
+    this.getActiveBoardTasks().forEach(task => {
       if (!task.groupName) return; // ungrouped tasks — not in catalog
       if (!catalog[task.groupName]) {
         catalog[task.groupName] = new Set<string>();
@@ -1829,7 +2064,7 @@ export class ProjectManagerTasksComponent implements OnInit {
     return Math.round(total / count);
   }
 
-  private getAssigneeOptions(): string[] {
+  getAssigneeOptions(): string[] {
     const set = new Set<string>();
 
     this.assigneeDirectory.forEach((name) => {

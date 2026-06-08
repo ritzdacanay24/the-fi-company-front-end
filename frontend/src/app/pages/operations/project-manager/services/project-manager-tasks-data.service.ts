@@ -29,7 +29,8 @@ export interface PmTaskAttachment {
 
 export interface PmTaskRecord {
   id: number;
-  gate: TaskGate;
+  projectTaskName?: string;
+  gate: TaskGate | '';
   groupName: string;
   subGroupName: string;
   taskName: string;
@@ -51,6 +52,9 @@ export interface ProjectManagerTasksState {
   nextId: number;
   taskRecords: PmTaskRecord[];
   subgroupCatalog: Record<string, string[]>;
+  defaultTaskTemplates?: string[];
+  projectTaskBoardName?: string;
+  taskBoardNames?: string[];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -71,6 +75,9 @@ export class ProjectManagerTasksDataService {
         nextId: res.nextId || 1,
         taskRecords: this.normalizeTaskRecords(res.taskRecords || []),
         subgroupCatalog: this.normalizeSubgroupCatalog(res.subgroupCatalog || {}),
+        defaultTaskTemplates: this.normalizeTaskTemplates(res.defaultTaskTemplates || []),
+        projectTaskBoardName: this.normalizeBoardName(res.projectTaskBoardName),
+        taskBoardNames: this.normalizeBoardList(res.taskBoardNames || []),
       })),
       catchError(() => of(this.loadStateFromCache(projectId))),
     );
@@ -82,7 +89,16 @@ export class ProjectManagerTasksDataService {
       this.saveStateToCache(state, projectId);
       return of(undefined);
     }
-    return this.http.put<void>(`${this.apiUrl}/${projectId}/tasks`, { taskRecords: state.taskRecords }).pipe(
+    const payload: ProjectManagerTasksState = {
+      nextId: state.nextId,
+      taskRecords: this.normalizeTaskRecords(state.taskRecords || []),
+      subgroupCatalog: this.normalizeSubgroupCatalog(state.subgroupCatalog || {}),
+      defaultTaskTemplates: this.normalizeTaskTemplates(state.defaultTaskTemplates || []),
+      projectTaskBoardName: this.normalizeBoardName(state.projectTaskBoardName),
+      taskBoardNames: this.normalizeBoardList(state.taskBoardNames || [])
+    };
+
+    return this.http.put<void>(`${this.apiUrl}/${projectId}/tasks`, payload).pipe(
       catchError(() => {
         this.saveStateToCache(state, projectId);
         this.saveFallback$.next(projectId);
@@ -133,7 +149,10 @@ export class ProjectManagerTasksDataService {
     return {
       nextId: cached.nextId,
       taskRecords: this.normalizeTaskRecords(cached.taskRecords),
-      subgroupCatalog: this.normalizeSubgroupCatalog(cached.subgroupCatalog)
+      subgroupCatalog: this.normalizeSubgroupCatalog(cached.subgroupCatalog),
+      defaultTaskTemplates: this.normalizeTaskTemplates(cached.defaultTaskTemplates || []),
+      projectTaskBoardName: this.normalizeBoardName(cached.projectTaskBoardName),
+      taskBoardNames: this.normalizeBoardList(cached.taskBoardNames || [])
     };
   }
 
@@ -141,7 +160,10 @@ export class ProjectManagerTasksDataService {
     this.stateCache.set(projectId, {
       nextId: state.nextId,
       taskRecords: this.normalizeTaskRecords(state.taskRecords),
-      subgroupCatalog: this.normalizeSubgroupCatalog(state.subgroupCatalog)
+      subgroupCatalog: this.normalizeSubgroupCatalog(state.subgroupCatalog),
+      defaultTaskTemplates: this.normalizeTaskTemplates(state.defaultTaskTemplates || []),
+      projectTaskBoardName: this.normalizeBoardName(state.projectTaskBoardName),
+      taskBoardNames: this.normalizeBoardList(state.taskBoardNames || [])
     });
   }
 
@@ -149,7 +171,10 @@ export class ProjectManagerTasksDataService {
     return {
       nextId: 1,
       taskRecords: [],
-      subgroupCatalog: {}
+      subgroupCatalog: {},
+      defaultTaskTemplates: [],
+      projectTaskBoardName: 'Project Tasks',
+      taskBoardNames: ['Project Tasks']
     };
   }
 
@@ -177,6 +202,7 @@ export class ProjectManagerTasksDataService {
   private normalizeTaskRecords(records: PmTaskRecord[]): PmTaskRecord[] {
     return records.map(task => ({
       ...task,
+      projectTaskName: this.normalizeBoardName(task.projectTaskName),
       assignedTo: Array.isArray(task.assignedTo)
         ? task.assignedTo
         : (task.assignedTo ? [(task.assignedTo as unknown) as string] : [])
@@ -190,6 +216,35 @@ export class ProjectManagerTasksDataService {
       normalized[group] = Array.from(new Set(values.filter(Boolean)));
     });
     return normalized;
+  }
+
+  private normalizeTaskTemplates(input: string[]): string[] {
+    if (!Array.isArray(input)) {
+      return [];
+    }
+    const normalized = input
+      .map((item) => String(item || '').trim())
+      .filter(Boolean)
+      .slice(0, 100);
+    return Array.from(new Set(normalized));
+  }
+
+  private normalizeBoardName(input: unknown): string {
+    const value = String(input || '').trim();
+    return value || 'Project Tasks';
+  }
+
+  private normalizeBoardList(input: string[]): string[] {
+    if (!Array.isArray(input)) {
+      return ['Project Tasks'];
+    }
+    const normalized = Array.from(new Set(
+      input
+        .map((item) => this.normalizeBoardName(item))
+        .filter(Boolean)
+        .slice(0, 100)
+    ));
+    return normalized.length ? normalized : ['Project Tasks'];
   }
 
 }

@@ -5,6 +5,7 @@ import { MysqlService } from '@/shared/database/mysql.service';
 export interface PmTaskRow extends RowDataPacket {
   id: number;
   project_id: string;
+  project_task_name: string;
   gate: string;
   group_name: string;
   sub_group_name: string;
@@ -41,6 +42,20 @@ export interface PmTaskAttachmentRow extends RowDataPacket {
   uploaded_at: string;
 }
 
+export interface PmTaskStateRow extends RowDataPacket {
+  project_id: string;
+  project_task_board_name: string;
+  default_task_templates: string | null;
+  task_board_names: string | null;
+  updated_at: string;
+}
+
+export interface PmTaskStateUpsertInput {
+  project_task_board_name: string;
+  default_task_templates: string;
+  task_board_names: string;
+}
+
 @Injectable()
 export class PmTasksRepository {
   constructor(@Inject(MysqlService) private readonly mysqlService: MysqlService) {}
@@ -70,14 +85,23 @@ export class PmTasksRepository {
     );
   }
 
+  async getTaskStateByProject(projectId: string): Promise<PmTaskStateRow | null> {
+    const rows = await this.mysqlService.query<PmTaskStateRow[]>(
+      `SELECT * FROM eyefidb.pm_task_state WHERE project_id = ? LIMIT 1`,
+      [projectId],
+    );
+    return rows[0] || null;
+  }
+
   async insertTask(projectId: string, task: Omit<PmTaskRow, 'id' | 'created_at' | 'updated_at'>): Promise<number> {
     const result = await this.mysqlService.execute<ResultSetHeader>(
       `INSERT INTO eyefidb.pm_tasks
-         (project_id, gate, group_name, sub_group_name, task_name, assigned_to,
+         (project_id, project_task_name, gate, group_name, sub_group_name, task_name, assigned_to,
           duration_days, start_date, finish_date, depends_on, bucket, status, completion, source)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         projectId,
+        task.project_task_name,
         task.gate,
         task.group_name,
         task.sub_group_name,
@@ -159,5 +183,51 @@ export class PmTasksRepository {
     for (const task of tasks) {
       await this.insertTask(projectId, task);
     }
+  }
+
+  async replaceProjectState(
+    projectId: string,
+    tasks: Omit<PmTaskRow, 'created_at' | 'updated_at'>[],
+    state: PmTaskStateUpsertInput,
+  ): Promise<void> {
+    await this.mysqlService.withTransaction(async (connection) => {
+      await connection.query(`DELETE FROM eyefidb.pm_tasks WHERE project_id = ?`, [projectId]);
+
+      for (const task of tasks) {
+        await connection.execute(
+          `INSERT INTO eyefidb.pm_tasks
+             (project_id, project_task_name, gate, group_name, sub_group_name, task_name, assigned_to,
+              duration_days, start_date, finish_date, depends_on, bucket, status, completion, source)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)` ,
+          [
+            projectId,
+            task.project_task_name,
+            task.gate,
+            task.group_name,
+            task.sub_group_name,
+            task.task_name,
+            task.assigned_to || null,
+            task.duration_days,
+            task.start_date || null,
+            task.finish_date || null,
+            task.depends_on,
+            task.bucket,
+            task.status,
+            task.completion,
+            task.source,
+          ],
+        );
+      }
+
+      await connection.execute(
+        `INSERT INTO eyefidb.pm_task_state (project_id, project_task_board_name, default_task_templates, task_board_names)
+         VALUES (?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE
+           project_task_board_name = VALUES(project_task_board_name),
+           default_task_templates = VALUES(default_task_templates),
+           task_board_names = VALUES(task_board_names)`,
+        [projectId, state.project_task_board_name, state.default_task_templates, state.task_board_names],
+      );
+    });
   }
 }

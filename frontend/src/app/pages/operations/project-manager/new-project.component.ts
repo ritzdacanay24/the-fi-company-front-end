@@ -5,8 +5,10 @@ import { Subscription } from 'rxjs';
 import { SharedModule } from '@app/shared/shared.module';
 import { ExecutionRole, ProjectWorkflowEngineService } from './services/project-workflow-engine.service';
 import { ProjectDashboardItem, ProjectManagerProjectsService } from './services/project-manager-projects.service';
+import { ProjectManagerTasksDataService } from './services/project-manager-tasks-data.service';
 import { Router } from '@angular/router';
 import { AuthenticationService } from '@app/core/services/auth.service';
+import { NgbDropdownModule } from '@ng-bootstrap/ng-bootstrap';
 
 type IntakeStoragePayload = {
   formValue: any;
@@ -25,7 +27,7 @@ type IntakeStoragePayload = {
 @Component({
   standalone: true,
   selector: 'app-new-project',
-  imports: [SharedModule, ReactiveFormsModule],
+  imports: [SharedModule, ReactiveFormsModule, NgbDropdownModule],
   templateUrl: './new-project.component.html',
   styleUrls: ['./new-project.component.scss']
 })
@@ -48,6 +50,9 @@ export class NewProjectComponent implements OnDestroy {
   activeProjectId = '';
   lastSavedProjectId = '';
   executionRole: ExecutionRole = 'Project Manager';
+  taskBoardNames: string[] = ['Project Tasks'];
+  selectedTaskBoardName = 'Project Tasks';
+  newTaskBoardName = '';
 
   gate1CompletedAt: string | null = null;
   gate2CompletedAt: string | null = null;
@@ -152,6 +157,7 @@ export class NewProjectComponent implements OnDestroy {
     private router: Router,
     private workflow: ProjectWorkflowEngineService,
     private projectsService: ProjectManagerProjectsService,
+    private tasksDataService: ProjectManagerTasksDataService,
     private authService: AuthenticationService
   ) {
     this.syncExecutionRoleFromCurrentUser();
@@ -173,6 +179,8 @@ export class NewProjectComponent implements OnDestroy {
       const projectId = (params.get('projectId') || '').trim();
       const view = (params.get('view') || '').trim();
       const requestedGate = this.parseGateInputSystem(params.get('gate'));
+      const requestedTaskBoard = String(params.get('taskBoard') || '').trim();
+      this.selectedTaskBoardName = requestedTaskBoard || this.selectedTaskBoardName || 'Project Tasks';
       if (view === 'workflow' || view === 'checklist') {
         this.activeView = view;
       }
@@ -185,6 +193,7 @@ export class NewProjectComponent implements OnDestroy {
         this.generatedProjectId = selected.id;
         this.isDraftProject = selected.status === 'Draft';
         this.loadProjectIntakeState(selected.id, selected);
+        this.refreshTaskBoards(selected.id);
         this.applyRequestedGateFromQuery(requestedGate);
         return;
       }
@@ -194,6 +203,7 @@ export class NewProjectComponent implements OnDestroy {
         this.generatedProjectId = projectId;
         this.isDraftProject = false;
         this.loadProjectIntakeState(projectId);
+        this.refreshTaskBoards(projectId);
         this.applyRequestedGateFromQuery(requestedGate);
         return;
       }
@@ -203,6 +213,8 @@ export class NewProjectComponent implements OnDestroy {
       this.lastSavedProjectId = '';
       this.generatedProjectId = '';
       this.isDraftProject = false;
+      this.taskBoardNames = ['Project Tasks'];
+      this.selectedTaskBoardName = requestedTaskBoard || 'Project Tasks';
       this.applyRequestedGateFromQuery(requestedGate);
     });
   }
@@ -933,12 +945,13 @@ export class NewProjectComponent implements OnDestroy {
     return labels[this.activeInputSystem] || 'Gate 1';
   }
 
-  get taskBoardQueryParams(): { gateContext: 'gate1' | 'gate2' | 'gate3' | 'gate4' | 'gate5' | 'gate6'; gate: number; projectId: string } {
+  get taskBoardQueryParams(): { gateContext: 'gate1' | 'gate2' | 'gate3' | 'gate4' | 'gate5' | 'gate6'; gate: number; projectId: string; taskBoard: string } {
     const gateNumber = Number(this.activeInputSystem.replace('gate', ''));
     return {
       gateContext: this.activeInputSystem,
       gate: Number.isFinite(gateNumber) ? gateNumber : this.activeGate,
-      projectId: this.linkProjectId
+      projectId: this.linkProjectId,
+      taskBoard: this.selectedTaskBoardName || 'Project Tasks'
     };
   }
 
@@ -957,6 +970,88 @@ export class NewProjectComponent implements OnDestroy {
 
     this.router.navigate([`${this.baseRoute}/tasks`], {
       queryParams: this.taskBoardQueryParams
+    });
+  }
+
+  selectTaskBoard(boardName: string): void {
+    const normalized = String(boardName || '').trim();
+    if (!normalized) {
+      return;
+    }
+    this.selectedTaskBoardName = normalized;
+    this.persistTaskBoardSelection();
+    this.openTasksBoard();
+  }
+
+  createTaskBoardFromIntake(): void {
+    const normalized = String(this.newTaskBoardName || '').trim();
+    if (!normalized || !this.canOpenTasksBoard) {
+      return;
+    }
+    if (!this.taskBoardNames.some(name => name.toLowerCase() === normalized.toLowerCase())) {
+      this.taskBoardNames = [...this.taskBoardNames, normalized];
+    }
+    this.selectedTaskBoardName = normalized;
+    this.newTaskBoardName = '';
+    this.persistTaskBoardSelection();
+  }
+
+  createTaskBoardFromPrompt(): void {
+    if (!this.canOpenTasksBoard) {
+      return;
+    }
+
+    const input = window.prompt('Enter new task board name', '');
+    if (input === null) {
+      return;
+    }
+
+    this.newTaskBoardName = String(input || '').trim();
+    this.createTaskBoardFromIntake();
+  }
+
+  private refreshTaskBoards(projectId: string): void {
+    const normalizedProjectId = String(projectId || '').trim();
+    if (!normalizedProjectId) {
+      this.taskBoardNames = ['Project Tasks'];
+      this.selectedTaskBoardName = 'Project Tasks';
+      return;
+    }
+
+    this.tasksDataService.loadState$(normalizedProjectId).subscribe((state) => {
+      const boardNames = Array.from(new Set([
+        ...(state.taskBoardNames || []),
+        ...(state.taskRecords || []).map(task => String(task.projectTaskName || '').trim()).filter(Boolean),
+        String(state.projectTaskBoardName || '').trim() || 'Project Tasks',
+      ])).filter(Boolean);
+
+      this.taskBoardNames = boardNames.length ? boardNames : ['Project Tasks'];
+      if (!this.taskBoardNames.some(name => name.toLowerCase() === this.selectedTaskBoardName.toLowerCase())) {
+        this.selectedTaskBoardName = this.taskBoardNames[0];
+      }
+    });
+  }
+
+  private persistTaskBoardSelection(): void {
+    if (!this.canOpenTasksBoard) {
+      return;
+    }
+
+    const projectId = this.linkProjectId;
+    this.tasksDataService.loadState$(projectId).subscribe((state) => {
+      const boardNames = Array.from(new Set([
+        ...(state.taskBoardNames || []),
+        ...this.taskBoardNames,
+        this.selectedTaskBoardName,
+      ].map(name => String(name || '').trim()).filter(Boolean)));
+
+      this.taskBoardNames = boardNames.length ? boardNames : ['Project Tasks'];
+
+      this.tasksDataService.saveState({
+        ...state,
+        projectTaskBoardName: this.selectedTaskBoardName || 'Project Tasks',
+        taskBoardNames: this.taskBoardNames,
+      }, projectId);
     });
   }
 

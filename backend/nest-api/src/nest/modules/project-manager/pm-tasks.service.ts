@@ -3,6 +3,7 @@ import { PmTasksRepository, PmTaskRow } from './pm-tasks.repository';
 
 export interface UpsertTaskDto {
   id?: number; // omit for new tasks
+  projectTaskName?: string;
   gate: string;
   groupName: string;
   subGroupName: string;
@@ -32,7 +33,12 @@ export interface AddAttachmentDto {
 }
 
 export interface TaskStateDto {
+  nextId?: number;
   taskRecords: UpsertTaskDto[];
+  subgroupCatalog?: Record<string, string[]>;
+  defaultTaskTemplates?: string[];
+  projectTaskBoardName?: string;
+  taskBoardNames?: string[];
 }
 
 @Injectable()
@@ -40,10 +46,11 @@ export class PmTasksService {
   constructor(private readonly repository: PmTasksRepository) {}
 
   async getState(projectId: string): Promise<object> {
-    const [tasks, comments, attachments] = await Promise.all([
+    const [tasks, comments, attachments, meta] = await Promise.all([
       this.repository.getTasksByProject(projectId),
       this.repository.getCommentsByProject(projectId),
       this.repository.getAttachmentsByProject(projectId),
+      this.repository.getTaskStateByProject(projectId),
     ]);
 
     const commentsByTask = this.groupBy(comments, c => c.task_id);
@@ -51,6 +58,7 @@ export class PmTasksService {
 
     const taskRecords = tasks.map(t => ({
       id: t.id,
+      projectTaskName: String(t.project_task_name || '').trim() || 'Project Tasks',
       gate: t.gate,
       groupName: t.group_name,
       subGroupName: t.sub_group_name,
@@ -74,20 +82,28 @@ export class PmTasksService {
     }));
 
     const maxId = tasks.reduce((m, t) => Math.max(m, t.id), 0);
+    const boardNames = Array.from(new Set([
+      ...this.parseJson<string[]>(meta?.task_board_names || null, []),
+      ...taskRecords.map((task) => String(task.projectTaskName || '').trim()).filter(Boolean),
+      String(meta?.project_task_board_name || '').trim() || 'Project Tasks',
+    ]));
 
     return {
       nextId: maxId + 1,
       taskRecords,
       subgroupCatalog: this.buildSubgroupCatalog(tasks),
-      test:1
+      defaultTaskTemplates: this.parseJson<string[]>(meta?.default_task_templates || null, []),
+      projectTaskBoardName: String(meta?.project_task_board_name || '').trim() || 'Project Tasks',
+      taskBoardNames: boardNames
     };
   }
 
   /** Replace all tasks for a project with the provided list. */
   async saveState(projectId: string, dto: TaskStateDto): Promise<void> {
-    const rows: Omit<PmTaskRow, 'created_at' | 'updated_at'>[] = dto.taskRecords.map(t => ({
+    const rows: Omit<PmTaskRow, 'created_at' | 'updated_at'>[] = (dto.taskRecords || []).map(t => ({
       id: t.id || 0,
       project_id: projectId,
+      project_task_name: String(t.projectTaskName || '').trim() || 'Project Tasks',
       gate: t.gate,
       group_name: t.groupName,
       sub_group_name: t.subGroupName,
@@ -103,7 +119,26 @@ export class PmTasksService {
       source: t.source,
     } as any));
 
-    await this.repository.replaceTasksForProject(projectId, rows);
+    const normalizedTemplates = Array.from(new Set((dto.defaultTaskTemplates || [])
+      .map((item) => String(item || '').trim())
+      .filter(Boolean)
+      .slice(0, 100)));
+
+    const normalizedBoards = Array.from(new Set((dto.taskBoardNames || [])
+      .map((item) => String(item || '').trim())
+      .filter(Boolean)
+      .slice(0, 100)));
+
+    const activeBoardName = String(dto.projectTaskBoardName || '').trim() || 'Project Tasks';
+    if (!normalizedBoards.includes(activeBoardName)) {
+      normalizedBoards.unshift(activeBoardName);
+    }
+
+    await this.repository.replaceProjectState(projectId, rows, {
+      project_task_board_name: activeBoardName,
+      default_task_templates: JSON.stringify(normalizedTemplates),
+      task_board_names: JSON.stringify(normalizedBoards),
+    });
   }
 
   async addComment(taskId: number, dto: AddCommentDto): Promise<number> {

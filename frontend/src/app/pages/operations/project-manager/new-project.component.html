@@ -179,9 +179,20 @@
               <div class="gate-header d-flex align-items-center justify-content-between">
                 <span>Gate #1</span>
                 <div class="d-flex align-items-center gap-2">
-                  <button type="button" class="btn btn-outline-primary btn-sm" [disabled]="!canOpenTasksBoard" (click)="openTasksBoard()">
-                    Open Tasks Board ({{ taskBoardContextLabel }})
-                  </button>
+                  <div class="btn-group btn-group-sm task-board-actions" role="group" aria-label="Task board actions" ngbDropdown placement="bottom-end" container="body">
+                    <button type="button" class="btn btn-outline-primary" [disabled]="!canOpenTasksBoard" (click)="openTasksBoard()">
+                      Open Tasks Board ({{ taskBoardContextLabel }})
+                    </button>
+                    <button type="button" class="btn btn-outline-primary dropdown-toggle dropdown-toggle-split" ngbDropdownToggle [disabled]="!canOpenTasksBoard" aria-label="Toggle task board menu"></button>
+                    <div ngbDropdownMenu class="dropdown-menu task-board-menu">
+                      <h6 class="dropdown-header">Task Boards</h6>
+                      <button type="button" class="dropdown-item" *ngFor="let board of taskBoardNames" [class.active]="board === selectedTaskBoardName" (click)="selectTaskBoard(board)">
+                        {{ board }}
+                      </button>
+                      <div class="dropdown-divider"></div>
+                      <button type="button" class="dropdown-item" (click)="createTaskBoardFromPrompt()">+ Create New Board</button>
+                    </div>
+                  </div>
                   <select class="form-select form-select-sm gate-status-select" formControlName="gate1Status">
                     <option>Not Started</option>
                     <option>In Progress</option>
@@ -294,9 +305,20 @@
               <div class="gate-header d-flex align-items-center justify-content-between">
                 <span>Gate #2 — Concept</span>
                 <div class="d-flex align-items-center gap-2">
-                  <button type="button" class="btn btn-outline-primary btn-sm" [disabled]="!canOpenTasksBoard" (click)="openTasksBoard()">
-                    Open Tasks Board ({{ taskBoardContextLabel }})
-                  </button>
+                  <div class="btn-group btn-group-sm task-board-actions" role="group" aria-label="Task board actions" ngbDropdown placement="bottom-end" container="body">
+                    <button type="button" class="btn btn-outline-primary" [disabled]="!canOpenTasksBoard" (click)="openTasksBoard()">
+                      Open Tasks Board ({{ taskBoardContextLabel }})
+                    </button>
+                    <button type="button" class="btn btn-outline-primary dropdown-toggle dropdown-toggle-split" ngbDropdownToggle [disabled]="!canOpenTasksBoard" aria-label="Toggle task board menu"></button>
+                    <div ngbDropdownMenu class="dropdown-menu task-board-menu">
+                      <h6 class="dropdown-header">Task Boards</h6>
+                      <button type="button" class="dropdown-item" *ngFor="let board of taskBoardNames" [class.active]="board === selectedTaskBoardName" (click)="selectTaskBoard(board)">
+                        {{ board }}
+                      </button>
+                      <div class="dropdown-divider"></div>
+                      <button type="button" class="dropdown-item" (click)="createTaskBoardFromPrompt()">+ Create New Board</button>
+                    </div>
+                  </div>
                   <select class="form-select form-select-sm gate-status-select" formControlName="gate2Status">
                     <option>Not Started</option>
                     <option>In Progress</option>
@@ -341,9 +363,20 @@
               <div class="gate-header d-flex align-items-center justify-content-between">
                 <span>Gate #3 — Awarded</span>
                 <div class="d-flex align-items-center gap-2">
-                  <button type="button" class="btn btn-outline-primary btn-sm" [disabled]="!canOpenTasksBoard" (click)="openTasksBoard()">
-                    Open Tasks Board ({{ taskBoardContextLabel }})
-                  </button>
+                  <div class="btn-group btn-group-sm task-board-actions" role="group" aria-label="Task board actions" ngbDropdown placement="bottom-end" container="body">
+                    <button type="button" class="btn btn-outline-primary" [disabled]="!canOpenTasksBoard" (click)="openTasksBoard()">
+                      Open Tasks Board ({{ taskBoardContextLabel }})
+                    </button>
+                    <button type="button" class="btn btn-outline-primary dropdown-toggle dropdown-toggle-split" ngbDropdownToggle [disabled]="!canOpenTasksBoard" aria-label="Toggle task board menu"></button>
+                    <div ngbDropdownMenu class="dropdown-menu task-board-menu">
+                      <h6 class="dropdown-header">Task Boards</h6>
+                      <button type="button" class="dropdown-item" *ngFor="let board of taskBoardNames" [class.active]="board === selectedTaskBoardName" (click)="selectTaskBoard(board)">
+                        {{ board }}
+                      </button>
+                      <div class="dropdown-divider"></div>
+                      <button type="button" class="dropdown-item" (click)="createTaskBoardFromPrompt()">+ Create New Board</button>
+                    </div>
+                  </div>
                   <select class="form-select form-select-sm gate-status-select" formControlName="gate3Status">
                     <option>Not Started</option>
                     <option>In Progress</option>
@@ -385,9 +418,20 @@
               <div class="gate-header d-flex align-items-center justify-content-between">
                 <span>Gate #4 — Engineering</span>
                 <div class="d-flex align-items-center gap-2">
-                  <button type="button" class="btn btn-outline-primary btn-sm" [disabled]="!canOpenTasksBoard" (click)="openTasksBoard()">
-                    Open Tasks Board ({{ taskBoardContextLabel }})
-                  </button>
+                  <div class="btn-group btn-group-sm task-board-actions" role="group" aria-label="Task board actions" ngbDropdown placement="bottom-end" container="body">
+                    <button type="button" class="btn btn-outline-primary" [disabled]="!canOpenTasksBoard" (click)="openTasksBoard()">
+                      Open Tasks Board ({{ taskBoardContextLabel }})
+                    </button>
+                    <button type="button" class="btn btn-outline-primary dropdown-toggle dropdown-toggle-split" ngbDropdownToggle [disabled]="!canOpenTasksBoard" aria-label="Toggle task board menu"></button>
+                    <div ngbDropdownMenu class="dropdown-menu task-board-menu">
+                      <h6 class="dropdown-header">Task Boards</h6>
+                      <button type="button" class="dropdown-item" *ngFor="let board of taskBoardNames" [class.active]="board === selectedTaskBoardName" (click)="selectTaskBoard(board)">
+                        {{ board }}
+                      </button>
+                      <div class="dropdown-divider"></div>
+                      <button type="button" class="dropdown-item" (click)="createTaskBoardFromPrompt()">+ Create New Board</button>
+                    </div>
+                  </div>
                   <select class="form-select form-select-sm gate-status-select" formControlName="gate4Status">
                     <option>Not Started</option>
                     <option>In Progress</option>
@@ -449,9 +493,20 @@
               <div class="gate-header d-flex align-items-center justify-content-between">
                 <span>Gate #5 — Validation</span>
                 <div class="d-flex align-items-center gap-2">
-                  <button type="button" class="btn btn-outline-primary btn-sm" [disabled]="!canOpenTasksBoard" (click)="openTasksBoard()">
-                    Open Tasks Board ({{ taskBoardContextLabel }})
-                  </button>
+                  <div class="btn-group btn-group-sm task-board-actions" role="group" aria-label="Task board actions" ngbDropdown placement="bottom-end" container="body">
+                    <button type="button" class="btn btn-outline-primary" [disabled]="!canOpenTasksBoard" (click)="openTasksBoard()">
+                      Open Tasks Board ({{ taskBoardContextLabel }})
+                    </button>
+                    <button type="button" class="btn btn-outline-primary dropdown-toggle dropdown-toggle-split" ngbDropdownToggle [disabled]="!canOpenTasksBoard" aria-label="Toggle task board menu"></button>
+                    <div ngbDropdownMenu class="dropdown-menu task-board-menu">
+                      <h6 class="dropdown-header">Task Boards</h6>
+                      <button type="button" class="dropdown-item" *ngFor="let board of taskBoardNames" [class.active]="board === selectedTaskBoardName" (click)="selectTaskBoard(board)">
+                        {{ board }}
+                      </button>
+                      <div class="dropdown-divider"></div>
+                      <button type="button" class="dropdown-item" (click)="createTaskBoardFromPrompt()">+ Create New Board</button>
+                    </div>
+                  </div>
                   <select class="form-select form-select-sm gate-status-select" formControlName="gate5Status">
                     <option>Not Started</option>
                     <option>In Progress</option>
@@ -496,9 +551,20 @@
               <div class="gate-header d-flex align-items-center justify-content-between">
                 <span>Gate #6 — Production</span>
                 <div class="d-flex align-items-center gap-2">
-                  <button type="button" class="btn btn-outline-primary btn-sm" [disabled]="!canOpenTasksBoard" (click)="openTasksBoard()">
-                    Open Tasks Board ({{ taskBoardContextLabel }})
-                  </button>
+                  <div class="btn-group btn-group-sm task-board-actions" role="group" aria-label="Task board actions" ngbDropdown placement="bottom-end" container="body">
+                    <button type="button" class="btn btn-outline-primary" [disabled]="!canOpenTasksBoard" (click)="openTasksBoard()">
+                      Open Tasks Board ({{ taskBoardContextLabel }})
+                    </button>
+                    <button type="button" class="btn btn-outline-primary dropdown-toggle dropdown-toggle-split" ngbDropdownToggle [disabled]="!canOpenTasksBoard" aria-label="Toggle task board menu"></button>
+                    <div ngbDropdownMenu class="dropdown-menu task-board-menu">
+                      <h6 class="dropdown-header">Task Boards</h6>
+                      <button type="button" class="dropdown-item" *ngFor="let board of taskBoardNames" [class.active]="board === selectedTaskBoardName" (click)="selectTaskBoard(board)">
+                        {{ board }}
+                      </button>
+                      <div class="dropdown-divider"></div>
+                      <button type="button" class="dropdown-item" (click)="createTaskBoardFromPrompt()">+ Create New Board</button>
+                    </div>
+                  </div>
                   <select class="form-select form-select-sm gate-status-select" formControlName="gate6Status">
                     <option>Not Started</option>
                     <option>In Progress</option>

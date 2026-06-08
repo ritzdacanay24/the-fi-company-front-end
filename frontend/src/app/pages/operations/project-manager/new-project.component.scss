@@ -210,6 +210,27 @@ textarea.form-control {
   background-color: rgba(255, 255, 255, 0.05);
 }
 
+.task-board-actions {
+  white-space: nowrap;
+}
+
+.task-board-actions .dropdown-toggle-split {
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+.task-board-menu {
+  min-width: 220px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.task-board-menu .dropdown-item.active,
+.task-board-menu .dropdown-item:active {
+  background-color: var(--vz-primary);
+  color: #fff;
+}
+
 .gate-status-select {
   width: auto;
   min-width: 130px;
