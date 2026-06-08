@@ -247,6 +247,7 @@ export class PermitChecklistsComponent implements OnInit {
         { key: "contactName", label: "Contact Name" },
         { key: "property", label: "Property" },
         { key: "signPackage", label: "Sign Package" },
+        { key: "location", label: "Location" },
         { key: "customerPoBillingReference", label: "Customer PO# / Billing Reference" },
         { key: "fiSalesOrderOnQad", label: "Fi Sales Order (SO) number on QAD" },
         { key: "soDueDateOnQad", label: "SO due Date on QAD" },
@@ -279,6 +280,7 @@ export class PermitChecklistsComponent implements OnInit {
         { key: "contactName", label: "Contact Name" },
         { key: "property", label: "Property" },
         { key: "signPackage", label: "Sign Package" },
+        { key: "location", label: "Location" },
         { key: "customerPoBillingReference", label: "Customer PO# / Billing Reference" },
         { key: "fiSalesOrderOnQad", label: "Fi Sales Order (SO) number on QAD" },
         { key: "soDueDateOnQad", label: "SO due Date on QAD" },
@@ -761,12 +763,20 @@ export class PermitChecklistsComponent implements OnInit {
     return this.activeTicket?.financials ?? this.createEmptyFinancials(this.activeFormType);
   }
 
+  get applicableHeaderFields(): ChecklistField[] {
+    return this.getApplicableFields(this.activeTemplate.headerFields, this.activeTicket);
+  }
+
+  get applicableProcessFields(): ChecklistField[] {
+    return this.getApplicableFields(this.activeTemplate.processFields, this.activeTicket);
+  }
+
   get headerCompletedCount(): number {
-    return this.getCompletedCount(this.activeTemplate.headerFields);
+    return this.getCompletedCount(this.applicableHeaderFields, this.activeTicket);
   }
 
   get processCompletedCount(): number {
-    return this.getCompletedCount(this.activeTemplate.processFields);
+    return this.getCompletedCount(this.applicableProcessFields, this.activeTicket);
   }
 
   get openFieldCount(): number {
@@ -774,21 +784,23 @@ export class PermitChecklistsComponent implements OnInit {
   }
 
   get visibleHeaderFields(): ChecklistField[] {
+    const fields = this.applicableHeaderFields;
     if (!this.showOpenItemsOnly) {
-      return this.activeTemplate.headerFields;
+      return fields;
     }
-    return this.activeTemplate.headerFields.filter((field) => !this.isFieldPopulated(field.key));
+    return fields.filter((field) => !this.isFieldPopulated(field.key));
   }
 
   get visibleProcessFields(): ChecklistField[] {
+    const fields = this.applicableProcessFields;
     if (!this.showOpenItemsOnly) {
-      return this.activeTemplate.processFields;
+      return fields;
     }
-    return this.activeTemplate.processFields.filter((field) => !this.isFieldPopulated(field.key));
+    return fields.filter((field) => !this.isFieldPopulated(field.key));
   }
 
   get totalFieldCount(): number {
-    return this.activeTemplate.headerFields.length + this.activeTemplate.processFields.length;
+    return this.applicableHeaderFields.length + this.applicableProcessFields.length;
   }
 
   get totalCompletedCount(): number {
@@ -796,7 +808,7 @@ export class PermitChecklistsComponent implements OnInit {
   }
 
   get headerCompletionPercent(): number {
-    const total = this.activeTemplate.headerFields.length;
+    const total = this.applicableHeaderFields.length;
     if (total === 0) {
       return 0;
     }
@@ -804,7 +816,7 @@ export class PermitChecklistsComponent implements OnInit {
   }
 
   get processCompletionPercent(): number {
-    const total = this.activeTemplate.processFields.length;
+    const total = this.applicableProcessFields.length;
     if (total === 0) {
       return 0;
     }
@@ -2794,11 +2806,31 @@ export class PermitChecklistsComponent implements OnInit {
     this.statusMessage = "Current form cleared.";
   }
 
-  private getCompletedCount(fields: ChecklistField[]): number {
+  private getCompletedCount(fields: ChecklistField[], ticket: PermitChecklistTicket | undefined): number {
+    if (!ticket) {
+      return 0;
+    }
+
     return fields.filter((field) => {
-      const value = this.activeValues[field.key];
+      const value = ticket.values?.[field.key];
       return typeof value === "string" ? value.trim().length > 0 : !!value;
     }).length;
+  }
+
+  private getApplicableFields(fields: ChecklistField[], ticket: PermitChecklistTicket | undefined): ChecklistField[] {
+    if (!ticket) {
+      return fields;
+    }
+
+    return fields.filter((field) => this.isFieldApplicable(ticket, field.key));
+  }
+
+  private isFieldApplicable(ticket: PermitChecklistTicket | undefined, fieldKey: string): boolean {
+    if (!ticket) {
+      return true;
+    }
+
+    return Object.prototype.hasOwnProperty.call(ticket.values || {}, fieldKey);
   }
 
   private buildHeaderInfoColumnDefs(): ColDef[] {
@@ -2835,7 +2867,9 @@ export class PermitChecklistsComponent implements OnInit {
       return { completed: 0, total: 0, percent: 0 };
     }
 
-    const allFields = [...template.headerFields, ...template.processFields];
+    const allFields = [...template.headerFields, ...template.processFields].filter((field) =>
+      this.isFieldApplicable(ticket, field.key)
+    );
     const completed = allFields.filter((field) => {
       const value = ticket.values?.[field.key];
       return typeof value === "string" ? value.trim().length > 0 : !!value;
