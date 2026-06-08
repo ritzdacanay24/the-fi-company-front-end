@@ -2,16 +2,25 @@ import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common
 import odbc from 'odbc';
 
 type QadResultKeyCase = 'preserve' | 'lower' | 'upper';
+export type QadOdbcTarget = 'dev' | 'test' | 'prod';
+
+type QadPoolConfig = {
+  key: string;
+  targetLabel: string;
+  dsn: string;
+  user: string;
+  password: string;
+};
 
 type QadQueryOptions = {
   keyCase?: QadResultKeyCase;
+  target?: QadOdbcTarget;
 };
 
 @Injectable()
 export class QadOdbcService {
   private readonly logger = new Logger(QadOdbcService.name);
-  private poolPromise: Promise<odbc.Pool> | null = null;
-  private poolCreatedAtMs: number | null = null;
+  private readonly pools = new Map<string, { promise: Promise<odbc.Pool>; createdAtMs: number }>();
   private recoverableErrorCount = 0;
   private poolResetCount = 0;
   private proactivePoolResetCount = 0;
@@ -29,7 +38,7 @@ export class QadOdbcService {
       retryFailureCount: this.retryFailureCount,
       lastRecoverableErrorAt: this.lastRecoverableErrorAt,
       poolMaxAgeMs: this.poolMaxAgeMs,
-      currentPoolAgeMs: this.poolCreatedAtMs ? Date.now() - this.poolCreatedAtMs : null,
+      activePoolCount: this.pools.size,
     };
   }
 
@@ -43,51 +52,81 @@ export class QadOdbcService {
     return raw;
   }
 
-  private connectionString(): string {
-    const dsn = process.env.QAD_DSN || 'DEV';
-    const user = process.env.QAD_USER || 'change_me';
-    const password = process.env.QAD_PASSWORD || 'change_me';
-    return `DSN=${dsn};UID=${user};PWD=${password}`;
-  }
+  private resolvePoolConfig(target?: QadOdbcTarget): QadPoolConfig {
+    const normalizedTarget = String(target || '').trim().toLowerCase() as QadOdbcTarget;
 
-  private async getPool(): Promise<odbc.Pool> {
-    await this.recyclePoolIfExpired();
-
-    if (!this.poolPromise) {
-      this.poolPromise = odbc.pool(this.connectionString());
-      this.poolCreatedAtMs = Date.now();
+    if (normalizedTarget === 'dev' || normalizedTarget === 'test' || normalizedTarget === 'prod') {
+      const upper = normalizedTarget.toUpperCase();
+      return {
+        key: normalizedTarget,
+        targetLabel: normalizedTarget,
+        dsn: process.env[`QAD_DSN_${upper}`] || process.env.QAD_DSN || 'DEV',
+        user: process.env[`QAD_USER_${upper}`] || process.env.QAD_USER || 'change_me',
+        password: process.env[`QAD_PASSWORD_${upper}`] || process.env.QAD_PASSWORD || 'change_me',
+      };
     }
-    return this.poolPromise;
+
+    return {
+      key: 'default',
+      targetLabel: 'default',
+      dsn: process.env.QAD_DSN || 'DEV',
+      user: process.env.QAD_USER || 'change_me',
+      password: process.env.QAD_PASSWORD || 'change_me',
+    };
   }
 
-  private async recyclePoolIfExpired(): Promise<void> {
-    if (!this.poolPromise || !this.poolCreatedAtMs) {
+  private connectionString(config: QadPoolConfig): string {
+    return `DSN=${config.dsn};UID=${config.user};PWD=${config.password}`;
+  }
+
+  private async getPool(target?: QadOdbcTarget): Promise<{ pool: odbc.Pool; config: QadPoolConfig }> {
+    const config = this.resolvePoolConfig(target);
+    await this.recyclePoolIfExpired(config.key);
+
+    const existing = this.pools.get(config.key);
+    if (existing) {
+      const pool = await existing.promise;
+      return { pool, config };
+    }
+
+    const promise = odbc.pool(this.connectionString(config));
+    this.pools.set(config.key, {
+      promise,
+      createdAtMs: Date.now(),
+    });
+
+    const pool = await promise;
+    return { pool, config };
+  }
+
+  private async recyclePoolIfExpired(poolKey: string): Promise<void> {
+    const existing = this.pools.get(poolKey);
+    if (!existing) {
       return;
     }
 
-    const ageMs = Date.now() - this.poolCreatedAtMs;
+    const ageMs = Date.now() - existing.createdAtMs;
     if (ageMs < this.poolMaxAgeMs) {
       return;
     }
 
     this.proactivePoolResetCount += 1;
     this.logger.log(
-      `Recycling QAD ODBC pool after ${ageMs}ms (maxAge=${this.poolMaxAgeMs}ms, proactiveResets=${this.proactivePoolResetCount})`,
+      `Recycling QAD ODBC pool '${poolKey}' after ${ageMs}ms (maxAge=${this.poolMaxAgeMs}ms, proactiveResets=${this.proactivePoolResetCount})`,
     );
-    await this.resetPool();
+    await this.resetPool(poolKey);
   }
 
-  private async resetPool(): Promise<void> {
-    const currentPoolPromise = this.poolPromise;
-    this.poolPromise = null;
-    this.poolCreatedAtMs = null;
+  private async resetPool(poolKey: string): Promise<void> {
+    const existing = this.pools.get(poolKey);
+    this.pools.delete(poolKey);
 
-    if (!currentPoolPromise) {
+    if (!existing) {
       return;
     }
 
     try {
-      const pool = await currentPoolPromise;
+      const pool = await existing.promise;
       await pool.close();
     } catch {
       // Ignore cleanup errors. The goal is to force the next call to recreate the pool.
@@ -123,10 +162,11 @@ export class QadOdbcService {
   }
 
   private async withConnection<T>(
+    target: QadOdbcTarget | undefined,
     work: (conn: odbc.Connection) => Promise<T>,
     allowRetry = true,
   ): Promise<T> {
-    const pool = await this.getPool();
+    const { pool, config } = await this.getPool(target);
     let conn: odbc.Connection | null = null;
 
     try {
@@ -138,15 +178,15 @@ export class QadOdbcService {
         this.lastRecoverableErrorAt = new Date().toISOString();
 
         this.logger.warn(
-          `Recoverable QAD ODBC error detected. Resetting pool and retrying once. ` +
+          `Recoverable QAD ODBC error detected on '${config.targetLabel}'. Resetting pool and retrying once. ` +
             `(recoverable=${this.recoverableErrorCount}, poolResets=${this.poolResetCount + 1})`,
         );
 
         this.poolResetCount += 1;
-        await this.resetPool();
+        await this.resetPool(config.key);
 
         try {
-          const result = await this.withConnection(work, false);
+          const result = await this.withConnection(target, work, false);
           this.retrySuccessCount += 1;
           return result;
         } catch (retryError) {
@@ -194,7 +234,7 @@ export class QadOdbcService {
 
   async query<T = Record<string, unknown>[]>(sql: string, options?: QadQueryOptions): Promise<T> {
     try {
-      return await this.withConnection(async (conn) => {
+      return await this.withConnection(options?.target, async (conn) => {
         const rows = (await conn.query(sql)) as T;
         return this.normalizeKeys(rows, options?.keyCase || 'preserve');
       });
@@ -206,6 +246,7 @@ export class QadOdbcService {
         details: {
           source: 'qad-odbc',
           sqlSnippet: this.summarizeSql(sql),
+          target: options?.target || 'default',
           diagnostics,
         },
       });
@@ -218,7 +259,7 @@ export class QadOdbcService {
     options?: QadQueryOptions,
   ): Promise<T> {
     try {
-      return await this.withConnection(async (conn) => {
+      return await this.withConnection(options?.target, async (conn) => {
         const rows = (await conn.query(sql, [...params])) as T;
         return this.normalizeKeys(rows, options?.keyCase || 'preserve');
       });
@@ -231,6 +272,7 @@ export class QadOdbcService {
           source: 'qad-odbc',
           sqlSnippet: this.summarizeSql(sql),
           params: [...params],
+          target: options?.target || 'default',
           diagnostics,
         },
       });

@@ -8,8 +8,10 @@ import {
 import { AgGridModule } from "ag-grid-angular";
 import { ColDef, ColGroupDef, GridApi, GridOptions } from "ag-grid-community";
 import { NgSelectModule } from "@ng-select/ng-select";
-import { DateRangeComponent } from "@app/shared/components/date-range/date-range.component";
-import { PhyscialInventoryService } from "@app/core/api/operations/physcial-inventory/physcial-inventory.service";
+import {
+  PhysicalInventoryTarget,
+  PhyscialInventoryService,
+} from "@app/core/api/operations/physcial-inventory/physcial-inventory.service";
 import { currencyFormatter } from "src/assets/js/util";
 import moment from "moment";
 import { NgxBarcode6Module } from "ngx-barcode6";
@@ -55,7 +57,6 @@ export class OrderByPipe implements PipeTransform {
     SharedModule,
     AgGridModule,
     NgSelectModule,
-    DateRangeComponent,
     OrderByPipe,
     NgxBarcode6Module,
     GridSettingsComponent,
@@ -68,6 +69,8 @@ export class OrderByPipe implements PipeTransform {
 export class TagsComponent implements OnInit {
   totalBlankTags;
   pageId = "/physical-inventory/tags";
+  targetOptions: PhysicalInventoryTarget[] = [];
+  selectedTarget: PhysicalInventoryTarget = "prod";
 
   externalFilterChanged = (newValue) => {
     this.ageType = newValue;
@@ -88,11 +91,25 @@ export class TagsComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.targetOptions = this.api.availableTargets;
+    this.selectedTarget = this.api.getTarget();
+
     this.activatedRoute.queryParams.subscribe((params) => {
       this.id = params["id"];
     });
 
     this.getData();
+  }
+
+  async onTargetChange(value: string) {
+    const nextTarget = String(value || "").trim().toLowerCase() as PhysicalInventoryTarget;
+    if (nextTarget !== "dev" && nextTarget !== "test" && nextTarget !== "prod") {
+      return;
+    }
+
+    this.selectedTarget = nextTarget;
+    this.api.setTarget(nextTarget);
+    await this.getData();
   }
 
   gridApi: GridApi;
@@ -606,7 +623,7 @@ export class TagsComponent implements OnInit {
   async getData() {
     try {
       this.gridApi?.showLoadingOverlay();
-      this.data = await this.api.getTags();
+      this.data = await this.api.getTags(this.selectedTarget);
       this.calculateCounts();
       this.gridApi?.hideOverlay();
     } catch (err) {
@@ -669,7 +686,7 @@ export class TagsComponent implements OnInit {
           : "Third Counts",
     };
 
-    this.api.updatePrint(params).subscribe(
+    this.api.updatePrint(params, this.selectedTarget).subscribe(
       (data: any) => {
         this.gridApi.deselectAll();
 

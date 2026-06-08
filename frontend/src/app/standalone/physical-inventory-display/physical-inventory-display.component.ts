@@ -2,7 +2,10 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { interval, Subscription } from 'rxjs';
 import { PhysicalInventoryDisplayService } from './services/physical-inventory-display.service';
-import { PhyscialInventoryService } from '@app/core/api/operations/physcial-inventory/physcial-inventory.service';
+import {
+  PhysicalInventoryTarget,
+  PhyscialInventoryService,
+} from '@app/core/api/operations/physcial-inventory/physcial-inventory.service';
 import { InventoryChartsComponent } from './components/inventory-charts/inventory-charts.component';
 
 @Component({
@@ -54,6 +57,8 @@ export class PhysicalInventoryDisplayComponent implements OnInit, OnDestroy {
   // Display settings
   currentTheme: 'light' | 'dark' = 'dark';
   zoomLevel = 100;
+  targetOptions: PhysicalInventoryTarget[] = [];
+  currentTarget: PhysicalInventoryTarget = 'prod';
 
   constructor(
     private inventoryService: PhyscialInventoryService,
@@ -61,6 +66,9 @@ export class PhysicalInventoryDisplayComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.targetOptions = this.inventoryService.availableTargets;
+    this.currentTarget = this.inventoryService.getTarget();
+
     // Load initial data
     this.loadInventoryData();
 
@@ -78,7 +86,7 @@ export class PhysicalInventoryDisplayComponent implements OnInit, OnDestroy {
   async loadInventoryData(): Promise<void> {
     this.isLoading = true;
     try {
-      const data = await this.inventoryService.getTags();
+      const data = await this.inventoryService.getTags(this.currentTarget);
       this.calculateStats(data);
       this.lastUpdated = new Date();
     } catch (error) {
@@ -256,6 +264,18 @@ export class PhysicalInventoryDisplayComponent implements OnInit, OnDestroy {
   manualRefresh(): void {
     this.loadInventoryData();
     this.startAutoRefresh(); // Reset countdown
+  }
+
+  async onTargetChange(value: string): Promise<void> {
+    const nextTarget = String(value || '').trim().toLowerCase() as PhysicalInventoryTarget;
+    if (nextTarget !== 'dev' && nextTarget !== 'test' && nextTarget !== 'prod') {
+      return;
+    }
+
+    this.currentTarget = nextTarget;
+    this.inventoryService.setTarget(nextTarget);
+    await this.loadInventoryData();
+    this.startAutoRefresh();
   }
 
   getProgressColor(percentage: number): string {

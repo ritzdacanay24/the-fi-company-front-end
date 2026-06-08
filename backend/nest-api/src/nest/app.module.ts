@@ -110,6 +110,7 @@ import { CommentsModule } from './modules/comments/comments.module';
 import { RequestModule } from './modules/request';
 import { RequestCommentsModule } from './modules/request-comments';
 import { PublicFieldServiceModule } from './modules/public-field-service';
+import { PhysicalInventoryModule } from './modules/physical-inventory';
 import { ReceivingModule } from './modules/receiving/receiving.module';
 import { ProjectManagerModule } from './modules/project-manager/project-manager.module';
 import { SalesOrderSearchModule } from './modules/sales-order-search';
@@ -252,6 +253,7 @@ import { UrlModule } from '../shared/url/url.module';
     RequestModule,
     RequestCommentsModule,
     PublicFieldServiceModule,
+    PhysicalInventoryModule,
     ReceivingModule,
     SalesOrderSearchModule,
     WorkOrderModule,

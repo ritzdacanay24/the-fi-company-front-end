@@ -16,6 +16,10 @@
       </div>
     </div>
     <div class="header-right">
+      <select class="form-select form-select-sm me-2" [value]="currentTarget"
+              (change)="onTargetChange($any($event.target).value)">
+        <option *ngFor="let target of targetOptions" [value]="target">{{ target | uppercase }}</option>
+      </select>
       <button class="btn-icon" (click)="toggleViewMode()" title="Toggle View">
         <i class="mdi" [class.mdi-chart-bar]="viewMode === 'stats'" 
            [class.mdi-view-dashboard]="viewMode === 'charts'"></i>
