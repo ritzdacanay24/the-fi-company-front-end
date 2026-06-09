@@ -1,20 +1,27 @@
 .charts-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-  color: #ffffff;
-  padding: 2rem;
+  background: transparent;
+  color: var(--analytics-text, var(--bs-body-color, #212529));
+  --analytics-surface: var(--bs-secondary-bg, rgba(255, 255, 255, 0.8));
+  --analytics-surface-muted: color-mix(in srgb, var(--analytics-surface) 92%, var(--analytics-text, #212529) 8%);
+  --analytics-border: var(--bs-border-color, rgba(15, 23, 42, 0.1));
+  --analytics-muted-text: color-mix(in srgb, var(--analytics-text, #212529) 84%, transparent);
+  --analytics-chart-text: var(--analytics-text, #212529);
+  --analytics-chart-grid: color-mix(in srgb, var(--analytics-border, #e9ebec) 80%, transparent);
+  --analytics-chart-point-border: var(--analytics-surface, #ffffff);
   overflow-y: auto;
 }
 
 // Header Section
 .charts-header {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--analytics-surface);
   backdrop-filter: blur(10px);
   border-radius: 16px;
   padding: 2rem;
   margin-bottom: 2rem;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+  border: 1px solid var(--analytics-border);
+  color: var(--analytics-text);
 
   .header-content {
     display: flex;
@@ -31,14 +38,14 @@
 
     i {
       font-size: 2.5rem;
-      color: #17a2b8;
+      color: var(--bs-info, #17a2b8);
     }
 
     h1 {
       margin: 0;
       font-size: 2rem;
       font-weight: 700;
-      background: linear-gradient(135deg, #17a2b8 0%, #28a745 100%);
+      background: linear-gradient(135deg, var(--bs-info, #17a2b8) 0%, var(--bs-success, #28a745) 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -51,13 +58,13 @@
     flex-wrap: wrap;
 
     .stat-card {
-      background: rgba(255, 255, 255, 0.08);
+      background: var(--analytics-surface-muted);
       border-radius: 12px;
       padding: 1rem 1.5rem;
       display: flex;
       align-items: center;
       gap: 1rem;
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--analytics-border);
       transition: all 0.3s ease;
 
       &:hover {
@@ -67,15 +74,15 @@
 
       i {
         font-size: 2rem;
-        color: #ffc107;
+        color: var(--bs-warning, #ffc107);
       }
 
       &.success i {
-        color: #28a745;
+        color: var(--bs-success, #28a745);
       }
 
       &.info i {
-        color: #17a2b8;
+        color: var(--bs-info, #17a2b8);
       }
 
       .stat-content {
@@ -84,18 +91,19 @@
           font-weight: 700;
           line-height: 1;
           margin-bottom: 0.25rem;
+          color: var(--analytics-text);
         }
 
         .stat-label {
           font-size: 0.85rem;
-          color: rgba(255, 255, 255, 0.7);
+          color: var(--analytics-muted-text);
         }
       }
     }
   }
 
   .refresh-btn {
-    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+    background: linear-gradient(135deg, var(--bs-info, #17a2b8) 0%, var(--bs-primary, #2271b1) 100%);
     border: none;
     border-radius: 8px;
     padding: 0.75rem 1.5rem;
@@ -106,7 +114,7 @@
     align-items: center;
     gap: 0.5rem;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 12px rgba(23, 162, 184, 0.3);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--bs-info, #17a2b8) 30%, transparent);
 
     i {
       font-size: 1.2rem;
@@ -114,7 +122,7 @@
 
     &:hover {
       transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(23, 162, 184, 0.4);
+      box-shadow: 0 6px 20px color-mix(in srgb, var(--bs-info, #17a2b8) 40%, transparent);
     }
 
     &:active {
@@ -131,18 +139,19 @@
   margin-bottom: 2rem;
 
   .chart-card {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--analytics-surface);
     backdrop-filter: blur(10px);
     border-radius: 16px;
     padding: 1.5rem;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+    border: 1px solid var(--analytics-border);
     transition: all 0.3s ease;
+    color: var(--analytics-text);
 
     &:hover {
       transform: translateY(-4px);
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
-      border-color: rgba(23, 162, 184, 0.3);
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
+      border-color: color-mix(in srgb, var(--bs-info, #17a2b8) 35%, var(--analytics-border));
     }
 
     &.large {
@@ -161,7 +170,7 @@
     .chart-footer {
       margin-top: 1rem;
       padding-top: 1rem;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      border-top: 1px solid var(--analytics-border);
       display: flex;
       justify-content: space-around;
       flex-wrap: wrap;
@@ -172,7 +181,7 @@
         align-items: center;
         gap: 0.5rem;
         font-size: 0.9rem;
-        color: rgba(255, 255, 255, 0.8);
+        color: var(--analytics-muted-text);
 
         i {
           font-size: 1.2rem;
@@ -184,13 +193,14 @@
 
 // Detailed Stats Section
 .detailed-stats {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--analytics-surface);
   backdrop-filter: blur(10px);
   border-radius: 16px;
   padding: 2rem;
   margin-bottom: 2rem;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+  border: 1px solid var(--analytics-border);
+  color: var(--analytics-text);
 
   h3 {
     display: flex;
@@ -199,10 +209,11 @@
     margin: 0 0 1.5rem 0;
     font-size: 1.5rem;
     font-weight: 700;
+    color: var(--analytics-text);
 
     i {
       font-size: 1.75rem;
-      color: #ffc107;
+      color: var(--bs-warning, #ffc107);
     }
   }
 
@@ -212,35 +223,36 @@
     gap: 1.5rem;
 
     .detail-card {
-      background: rgba(255, 255, 255, 0.03);
+      background: var(--analytics-surface-muted);
       border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--analytics-border);
       overflow: hidden;
       transition: all 0.3s ease;
 
       &:hover {
         transform: translateY(-2px);
-        border-color: rgba(23, 162, 184, 0.3);
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        border-color: color-mix(in srgb, var(--bs-info, #17a2b8) 35%, var(--analytics-border));
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
       }
 
       .detail-header {
-        background: rgba(23, 162, 184, 0.15);
+        background: color-mix(in srgb, var(--bs-info, #17a2b8) 15%, transparent);
         padding: 1rem 1.25rem;
         display: flex;
         align-items: center;
         gap: 0.75rem;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        border-bottom: 1px solid var(--analytics-border);
 
         i {
           font-size: 1.5rem;
-          color: #17a2b8;
+          color: var(--bs-info, #17a2b8);
         }
 
         h4 {
           margin: 0;
           font-size: 1.1rem;
           font-weight: 600;
+          color: var(--analytics-text);
         }
       }
 
@@ -252,14 +264,14 @@
           justify-content: space-between;
           align-items: center;
           padding: 0.75rem 0;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+          border-bottom: 1px solid var(--analytics-border);
 
           &:last-child {
             border-bottom: none;
           }
 
           &.highlight {
-            background: rgba(23, 162, 184, 0.1);
+            background: color-mix(in srgb, var(--bs-info, #17a2b8) 10%, transparent);
             margin: 0.5rem -0.5rem 0;
             padding: 0.75rem 0.5rem;
             border-radius: 6px;
@@ -267,7 +279,6 @@
 
             .label {
               font-weight: 600;
-              font-size: 1.05rem;
             }
 
             .value {
@@ -277,32 +288,33 @@
           }
 
           .label {
-            color: rgba(255, 255, 255, 0.7);
+            color: var(--analytics-muted-text);
             font-size: 0.95rem;
           }
 
           .value {
             font-weight: 600;
             font-size: 1.1rem;
+            color: var(--analytics-text);
 
             &.text-success {
-              color: #28a745;
+              color: var(--bs-success, #28a745);
             }
 
             &.text-info {
-              color: #17a2b8;
+              color: var(--bs-info, #17a2b8);
             }
 
             &.text-warning {
-              color: #ffc107;
+              color: var(--bs-warning, #ffc107);
             }
 
             &.text-danger {
-              color: #dc3545;
+              color: var(--bs-danger, #dc3545);
             }
 
             &.text-primary {
-              color: #007bff;
+              color: var(--bs-primary, #007bff);
             }
           }
         }
@@ -313,7 +325,7 @@
 
 // Footer
 .charts-footer {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--analytics-surface);
   border-radius: 12px;
   padding: 1rem 1.5rem;
   display: flex;
@@ -321,22 +333,50 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--analytics-border);
+  color: var(--analytics-text);
 
   .footer-content {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--analytics-muted-text);
     font-size: 0.9rem;
 
     i {
       font-size: 1.2rem;
-      color: #17a2b8;
+      color: var(--bs-info, #17a2b8);
     }
   }
 }
 
+:host-context(.theme-light),
+:host-context([data-bs-theme='light']) {
+  .charts-container {
+    --analytics-text: var(--bs-body-color, #212529);
+    --analytics-surface: var(--bs-secondary-bg, #ffffff);
+    --analytics-surface-muted: color-mix(in srgb, var(--analytics-surface) 94%, var(--analytics-text) 6%);
+    --analytics-border: var(--bs-border-color, #e9ebec);
+    --analytics-muted-text: color-mix(in srgb, var(--analytics-text) 76%, transparent);
+    --analytics-chart-text: var(--analytics-text);
+    --analytics-chart-grid: color-mix(in srgb, var(--analytics-border) 86%, transparent);
+    --analytics-chart-point-border: var(--analytics-surface);
+  }
+}
+
+:host-context(.theme-dark),
+:host-context([data-bs-theme='dark']) {
+  .charts-container {
+    --analytics-text: var(--bs-body-color, #ced4da);
+    --analytics-surface: var(--bs-secondary-bg, #212529);
+    --analytics-surface-muted: color-mix(in srgb, var(--analytics-surface) 86%, var(--analytics-text) 14%);
+    --analytics-border: var(--bs-border-color, #32383e);
+    --analytics-muted-text: color-mix(in srgb, var(--analytics-text) 88%, transparent);
+    --analytics-chart-text: var(--analytics-text);
+    --analytics-chart-grid: color-mix(in srgb, var(--analytics-border) 82%, transparent);
+    --analytics-chart-point-border: var(--analytics-surface);
+  }
+}
 // Responsive Design
 @media (max-width: 1200px) {
   .charts-grid {
@@ -354,7 +394,7 @@
 
 @media (max-width: 768px) {
   .charts-container {
-    padding: 1rem;
+    padding: 0.75rem;
   }
 
   .charts-header {
@@ -398,21 +438,21 @@
 
 // Text Color Utilities
 .text-success {
-  color: #28a745 !important;
+  color: var(--bs-success, #28a745) !important;
 }
 
 .text-info {
-  color: #17a2b8 !important;
+  color: var(--bs-info, #17a2b8) !important;
 }
 
 .text-warning {
-  color: #ffc107 !important;
+  color: var(--bs-warning, #ffc107) !important;
 }
 
 .text-danger {
-  color: #dc3545 !important;
+  color: var(--bs-danger, #dc3545) !important;
 }
 
 .text-primary {
-  color: #007bff !important;
+  color: var(--bs-primary, #007bff) !important;
 }

@@ -46,8 +46,14 @@ export class PhysicalInventoryDisplayComponent implements OnInit, OnDestroy {
   };
 
   // Loading state
-  isLoading = false;
+  isInitialLoading = false;
+  isRefreshing = false;
+  private hasCompletedInitialLoad = false;
   lastUpdated: Date | null = null;
+
+  get showLoadingOverlay(): boolean {
+    return this.isInitialLoading;
+  }
 
   // Auto-refresh
   private refreshSubscription?: Subscription;
@@ -84,15 +90,46 @@ export class PhysicalInventoryDisplayComponent implements OnInit, OnDestroy {
   }
 
   async loadInventoryData(): Promise<void> {
-    this.isLoading = true;
+    const isInitialLoad = !this.hasCompletedInitialLoad;
+    if (isInitialLoad) {
+      this.isInitialLoading = true;
+    } else {
+      this.isRefreshing = true;
+    }
+
     try {
-      const data = await this.inventoryService.getTags(this.currentTarget);
-      this.calculateStats(data);
-      this.lastUpdated = new Date();
+      const summary = await this.inventoryService.getSummary(this.currentTarget);
+      this.stats = summary?.stats || this.stats;
+      this.progress = summary?.progress || this.progress;
+      this.normalizeProgress();
+      this.lastUpdated = summary?.lastUpdated ? new Date(summary.lastUpdated) : new Date();
+
+      this.displayService.updateInventoryStats({
+        totalTags: this.stats.totalTags,
+        scanned: this.stats.completedFirstCounts,
+        notScanned: this.stats.outstandingFirstCounts,
+        percentComplete: this.progress.firstCount,
+        lastUpdate: new Date(),
+        completedFirstCounts: this.stats.completedFirstCounts,
+        completedSecondCounts: this.stats.completedSecondCounts,
+        completedThirdCounts: this.stats.completedThirdCounts,
+        firstCountVariance: this.stats.firstCountVariance,
+        secondCountVariance: this.stats.secondCountVariance,
+        postedTags: this.stats.postedTags,
+        unpostedTags: this.stats.unpostedTags,
+        bulkTagsWithQty: this.stats.bulkTagsWithQty,
+        totalValue: this.stats.totalValue,
+        varianceValue: this.stats.varianceValue
+      });
     } catch (error) {
       console.error('Error loading inventory data:', error);
     } finally {
-      this.isLoading = false;
+      if (isInitialLoad) {
+        this.isInitialLoading = false;
+        this.hasCompletedInitialLoad = true;
+      } else {
+        this.isRefreshing = false;
+      }
     }
   }
 
@@ -169,15 +206,17 @@ export class PhysicalInventoryDisplayComponent implements OnInit, OnDestroy {
 
     this.progress.secondCount = this.stats.firstCountVariance > 0
       ? Math.round((this.stats.completedSecondCounts / this.stats.firstCountVariance) * 100)
-      : 100;
+      : 0;
 
     this.progress.thirdCount = this.stats.secondCountVariance > 0
       ? Math.round((this.stats.completedThirdCounts / this.stats.secondCountVariance) * 100)
-      : 100;
+      : 0;
 
     this.progress.posted = this.stats.totalTags > 0
       ? Math.round((this.stats.postedTags / this.stats.totalTags) * 100)
       : 0;
+
+    this.normalizeProgress();
 
     // Update the service with stats for charts component
     this.displayService.updateInventoryStats({
@@ -288,5 +327,33 @@ export class PhysicalInventoryDisplayComponent implements OnInit, OnDestroy {
     if (varianceCount === 0) return 'success';
     if (varianceCount <= 5) return 'warning';
     return 'danger';
+  }
+
+  private normalizeProgress(): void {
+    if (this.stats.firstCountVariance <= 0) {
+      this.progress.secondCount = 0;
+    }
+
+    if (this.stats.secondCountVariance <= 0) {
+      this.progress.thirdCount = 0;
+    }
+  }
+
+  formatCompactCurrency(value: number): string {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      notation: 'compact',
+      maximumFractionDigits: 1,
+    }).format(value || 0);
+  }
+
+  formatFullCurrency(value: number): string {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value || 0);
   }
 }

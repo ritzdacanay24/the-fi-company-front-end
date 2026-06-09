@@ -37,10 +37,18 @@ export class InventoryChartsComponent implements OnInit, OnDestroy {
 
   private statsSubscription?: Subscription;
   private refreshSubscription?: Subscription;
+  private themeObserver?: MutationObserver;
+  private themeContainerElement?: HTMLElement;
+  private isDarkTheme = false;
 
-  constructor(private displayService: PhysicalInventoryDisplayService) {}
+  constructor(
+    private displayService: PhysicalInventoryDisplayService,
+    private hostElementRef: ElementRef<HTMLElement>
+  ) {}
 
   ngOnInit(): void {
+    this.syncThemeFromApp();
+    this.observeThemeChanges();
     this.loadStats();
     this.startAutoRefresh();
   }
@@ -49,6 +57,7 @@ export class InventoryChartsComponent implements OnInit, OnDestroy {
     this.destroyCharts();
     this.statsSubscription?.unsubscribe();
     this.refreshSubscription?.unsubscribe();
+    this.themeObserver?.disconnect();
   }
 
   private loadStats(): void {
@@ -67,7 +76,7 @@ export class InventoryChartsComponent implements OnInit, OnDestroy {
       
       this.stats.secondCountPercentage = this.stats.totalSecondCounts > 0
         ? (this.stats.completedSecondCounts / this.stats.totalSecondCounts) * 100
-        : 100; // 100% if no second counts needed
+        : 0;
       
       // Calculate overall progress
       const totalCounts = this.stats.totalFirstCounts + this.stats.totalSecondCounts;
@@ -108,6 +117,8 @@ export class InventoryChartsComponent implements OnInit, OnDestroy {
 
     const firstCountRemaining = this.stats.totalFirstCounts - this.stats.completedFirstCounts;
     const secondCountRemaining = this.stats.totalSecondCounts - this.stats.completedSecondCounts;
+    const theme = this.getChartTheme();
+    const palette = this.getSemanticPalette();
 
     this.completionChart = new Chart<'doughnut'>(ctx, {
       type: 'doughnut',
@@ -121,16 +132,16 @@ export class InventoryChartsComponent implements OnInit, OnDestroy {
             secondCountRemaining
           ],
           backgroundColor: [
-            'rgba(40, 167, 69, 0.8)',
-            'rgba(255, 193, 7, 0.3)',
-            'rgba(23, 162, 184, 0.8)',
-            'rgba(108, 117, 125, 0.3)'
+            palette.success.strong,
+            palette.warning.soft,
+            palette.info.strong,
+            palette.neutral.soft
           ],
           borderColor: [
-            'rgba(40, 167, 69, 1)',
-            'rgba(255, 193, 7, 1)',
-            'rgba(23, 162, 184, 1)',
-            'rgba(108, 117, 125, 1)'
+            palette.success.base,
+            palette.warning.base,
+            palette.info.base,
+            palette.neutral.base
           ],
           borderWidth: 2
         }]
@@ -142,7 +153,7 @@ export class InventoryChartsComponent implements OnInit, OnDestroy {
           legend: {
             position: 'bottom',
             labels: {
-              color: '#ffffff',
+              color: theme.text,
               font: {
                 size: 12
               },
@@ -152,7 +163,7 @@ export class InventoryChartsComponent implements OnInit, OnDestroy {
           title: {
             display: true,
             text: 'Inventory Count Completion',
-            color: '#ffffff',
+            color: theme.text,
             font: {
               size: 18,
               weight: 'bold'
@@ -184,6 +195,8 @@ export class InventoryChartsComponent implements OnInit, OnDestroy {
 
     const ctx = this.progressChartRef.nativeElement.getContext('2d');
     if (!ctx) return;
+    const theme = this.getChartTheme();
+    const palette = this.getSemanticPalette();
 
     this.progressChart = new Chart<'bar'>(ctx, {
       type: 'bar',
@@ -192,8 +205,8 @@ export class InventoryChartsComponent implements OnInit, OnDestroy {
         datasets: [{
           label: 'Completed',
           data: [this.stats.completedFirstCounts, this.stats.completedSecondCounts],
-          backgroundColor: 'rgba(40, 167, 69, 0.8)',
-          borderColor: 'rgba(40, 167, 69, 1)',
+          backgroundColor: palette.success.strong,
+          borderColor: palette.success.base,
           borderWidth: 2
         }, {
           label: 'Remaining',
@@ -201,8 +214,8 @@ export class InventoryChartsComponent implements OnInit, OnDestroy {
             this.stats.totalFirstCounts - this.stats.completedFirstCounts,
             this.stats.totalSecondCounts - this.stats.completedSecondCounts
           ],
-          backgroundColor: 'rgba(255, 193, 7, 0.3)',
-          borderColor: 'rgba(255, 193, 7, 1)',
+          backgroundColor: palette.warning.soft,
+          borderColor: palette.warning.base,
           borderWidth: 2
         }]
       },
@@ -213,25 +226,25 @@ export class InventoryChartsComponent implements OnInit, OnDestroy {
           x: {
             stacked: true,
             ticks: {
-              color: '#ffffff',
+              color: theme.text,
               font: {
                 size: 14
               }
             },
             grid: {
-              color: 'rgba(255, 255, 255, 0.1)'
+              color: theme.grid
             }
           },
           y: {
             stacked: true,
             ticks: {
-              color: '#ffffff',
+              color: theme.text,
               font: {
                 size: 12
               }
             },
             grid: {
-              color: 'rgba(255, 255, 255, 0.1)'
+              color: theme.grid
             }
           }
         },
@@ -239,7 +252,7 @@ export class InventoryChartsComponent implements OnInit, OnDestroy {
           legend: {
             position: 'top',
             labels: {
-              color: '#ffffff',
+              color: theme.text,
               font: {
                 size: 12
               },
@@ -249,7 +262,7 @@ export class InventoryChartsComponent implements OnInit, OnDestroy {
           title: {
             display: true,
             text: 'Count Progress Overview',
-            color: '#ffffff',
+            color: theme.text,
             font: {
               size: 18,
               weight: 'bold'
@@ -270,6 +283,8 @@ export class InventoryChartsComponent implements OnInit, OnDestroy {
 
     const ctx = this.countComparisonChartRef.nativeElement.getContext('2d');
     if (!ctx) return;
+    const theme = this.getChartTheme();
+    const palette = this.getSemanticPalette();
 
     this.countComparisonChart = new Chart<'line'>(ctx, {
       type: 'line',
@@ -278,15 +293,15 @@ export class InventoryChartsComponent implements OnInit, OnDestroy {
         datasets: [{
           label: 'Completion %',
           data: [this.stats.firstCountPercentage, this.stats.secondCountPercentage],
-          borderColor: 'rgba(23, 162, 184, 1)',
-          backgroundColor: 'rgba(23, 162, 184, 0.2)',
+          borderColor: palette.info.base,
+          backgroundColor: palette.info.soft,
           borderWidth: 3,
           fill: true,
           tension: 0.4,
           pointRadius: 6,
           pointHoverRadius: 8,
-          pointBackgroundColor: 'rgba(23, 162, 184, 1)',
-          pointBorderColor: '#ffffff',
+          pointBackgroundColor: palette.info.base,
+          pointBorderColor: theme.pointBorder,
           pointBorderWidth: 2
         }]
       },
@@ -296,27 +311,27 @@ export class InventoryChartsComponent implements OnInit, OnDestroy {
         scales: {
           x: {
             ticks: {
-              color: '#ffffff',
+              color: theme.text,
               font: {
                 size: 14
               }
             },
             grid: {
-              color: 'rgba(255, 255, 255, 0.1)'
+              color: theme.grid
             }
           },
           y: {
             min: 0,
             max: 100,
             ticks: {
-              color: '#ffffff',
+              color: theme.text,
               font: {
                 size: 12
               },
               callback: (value) => value + '%'
             },
             grid: {
-              color: 'rgba(255, 255, 255, 0.1)'
+              color: theme.grid
             }
           }
         },
@@ -327,7 +342,7 @@ export class InventoryChartsComponent implements OnInit, OnDestroy {
           title: {
             display: true,
             text: 'Completion Rate Comparison',
-            color: '#ffffff',
+            color: theme.text,
             font: {
               size: 18,
               weight: 'bold'
@@ -355,6 +370,8 @@ export class InventoryChartsComponent implements OnInit, OnDestroy {
 
     const ctx = this.trendChartRef.nativeElement.getContext('2d');
     if (!ctx) return;
+    const theme = this.getChartTheme();
+    const palette = this.getSemanticPalette();
 
     // Mock trend data - you can replace this with real historical data
     const labels = ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Current'];
@@ -368,8 +385,8 @@ export class InventoryChartsComponent implements OnInit, OnDestroy {
         datasets: [{
           label: 'First Count Progress',
           data: firstCountData,
-          borderColor: 'rgba(40, 167, 69, 1)',
-          backgroundColor: 'rgba(40, 167, 69, 0.1)',
+          borderColor: palette.success.base,
+          backgroundColor: palette.success.faint,
           borderWidth: 3,
           fill: true,
           tension: 0.4,
@@ -378,8 +395,8 @@ export class InventoryChartsComponent implements OnInit, OnDestroy {
         }, {
           label: 'Second Count Progress',
           data: secondCountData,
-          borderColor: 'rgba(23, 162, 184, 1)',
-          backgroundColor: 'rgba(23, 162, 184, 0.1)',
+          borderColor: palette.info.base,
+          backgroundColor: palette.info.faint,
           borderWidth: 3,
           fill: true,
           tension: 0.4,
@@ -393,27 +410,27 @@ export class InventoryChartsComponent implements OnInit, OnDestroy {
         scales: {
           x: {
             ticks: {
-              color: '#ffffff',
+              color: theme.text,
               font: {
                 size: 12
               }
             },
             grid: {
-              color: 'rgba(255, 255, 255, 0.1)'
+              color: theme.grid
             }
           },
           y: {
             min: 0,
             max: 100,
             ticks: {
-              color: '#ffffff',
+              color: theme.text,
               font: {
                 size: 12
               },
               callback: (value) => value + '%'
             },
             grid: {
-              color: 'rgba(255, 255, 255, 0.1)'
+              color: theme.grid
             }
           }
         },
@@ -421,7 +438,7 @@ export class InventoryChartsComponent implements OnInit, OnDestroy {
           legend: {
             position: 'top',
             labels: {
-              color: '#ffffff',
+              color: theme.text,
               font: {
                 size: 12
               },
@@ -431,7 +448,7 @@ export class InventoryChartsComponent implements OnInit, OnDestroy {
           title: {
             display: true,
             text: 'Historical Progress Trend',
-            color: '#ffffff',
+            color: theme.text,
             font: {
               size: 18,
               weight: 'bold'
@@ -464,5 +481,113 @@ export class InventoryChartsComponent implements OnInit, OnDestroy {
 
   refreshCharts(): void {
     this.loadStats();
+  }
+
+  private getThemeContainerElement(): HTMLElement | null {
+    if (this.themeContainerElement && this.themeContainerElement.isConnected) {
+      return this.themeContainerElement;
+    }
+
+    this.themeContainerElement = this.hostElementRef.nativeElement.closest('.inventory-display-container') as HTMLElement | undefined;
+    return this.themeContainerElement ?? null;
+  }
+
+  private syncThemeFromApp(): void {
+    const container = this.getThemeContainerElement();
+    const usesContainerDarkClass = container?.classList.contains('theme-dark') ?? false;
+    const usesContainerLightClass = container?.classList.contains('theme-light') ?? false;
+
+    if (usesContainerDarkClass || usesContainerLightClass) {
+      this.isDarkTheme = usesContainerDarkClass;
+      return;
+    }
+
+    this.isDarkTheme = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+  }
+
+  private observeThemeChanges(): void {
+    this.themeObserver?.disconnect();
+    this.themeObserver = new MutationObserver((mutations) => {
+      const hasThemeMutation = mutations.some((mutation) => mutation.attributeName === 'data-bs-theme' || mutation.attributeName === 'class');
+      if (!hasThemeMutation) {
+        return;
+      }
+
+      const wasDarkTheme = this.isDarkTheme;
+      this.syncThemeFromApp();
+      if (wasDarkTheme !== this.isDarkTheme) {
+        this.updateCharts();
+      }
+    });
+
+    this.themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-bs-theme'],
+    });
+
+    const container = this.getThemeContainerElement();
+    if (container) {
+      this.themeObserver.observe(container, {
+        attributes: true,
+        attributeFilter: ['class'],
+      });
+    }
+  }
+
+  private getChartTheme(): { text: string; grid: string; pointBorder: string } {
+    const hostStyles = getComputedStyle(this.hostElementRef.nativeElement);
+    const read = (name: string): string => hostStyles.getPropertyValue(name).trim();
+
+    const text = read('--analytics-chart-text');
+    const grid = read('--analytics-chart-grid');
+    const pointBorder = read('--analytics-chart-point-border');
+
+    if (text && grid && pointBorder) {
+      return {
+        text,
+        grid,
+        pointBorder,
+      };
+    }
+
+    if (this.isDarkTheme) {
+      return {
+        text: '#ced4da',
+        grid: 'rgba(50, 56, 62, 0.6)',
+        pointBorder: '#212529',
+      };
+    }
+
+    return {
+      text: '#212529',
+      grid: 'rgba(15, 23, 42, 0.12)',
+      pointBorder: '#ffffff',
+    };
+  }
+
+  private getSemanticPalette(): {
+    success: { base: string; strong: string; soft: string; faint: string };
+    info: { base: string; strong: string; soft: string; faint: string };
+    warning: { base: string; strong: string; soft: string; faint: string };
+    neutral: { base: string; strong: string; soft: string; faint: string };
+  } {
+    const rootStyles = getComputedStyle(document.documentElement);
+    const readRgb = (name: string, fallback: string): string => {
+      const value = rootStyles.getPropertyValue(name).trim();
+      return value || fallback;
+    };
+    const token = (rgb: string) => ({
+      base: `rgba(${rgb}, 1)`,
+      strong: `rgba(${rgb}, 0.8)`,
+      soft: `rgba(${rgb}, 0.25)`,
+      faint: `rgba(${rgb}, 0.12)`,
+    });
+
+    return {
+      success: token(readRgb('--bs-success-rgb', '40, 167, 69')),
+      info: token(readRgb('--bs-info-rgb', '23, 162, 184')),
+      warning: token(readRgb('--bs-warning-rgb', '255, 193, 7')),
+      neutral: token(readRgb('--bs-secondary-rgb', '108, 117, 125')),
+    };
   }
 }

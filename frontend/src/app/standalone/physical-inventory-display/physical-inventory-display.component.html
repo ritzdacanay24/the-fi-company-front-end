@@ -23,10 +23,9 @@
       <button class="btn-icon" (click)="toggleViewMode()" title="Toggle View">
         <i class="mdi" [class.mdi-chart-bar]="viewMode === 'stats'" 
            [class.mdi-view-dashboard]="viewMode === 'charts'"></i>
-        <span class="btn-label">{{ viewMode === 'stats' ? 'Charts' : 'Stats' }}</span>
       </button>
-      <button class="btn-icon" (click)="manualRefresh()" [disabled]="isLoading" title="Refresh">
-        <i class="mdi mdi-refresh" [class.spin]="isLoading"></i>
+      <button class="btn-icon" (click)="manualRefresh()" [disabled]="isRefreshing" title="Refresh">
+        <i class="mdi mdi-refresh" [class.spin]="isRefreshing"></i>
       </button>
       <button class="btn-icon" (click)="toggleTheme()" title="Toggle Theme">
         <i class="mdi" [class.mdi-weather-sunny]="currentTheme === 'dark'" 
@@ -65,7 +64,7 @@
       <div class="stat-header">
         <h3>
           <i class="mdi mdi-counter me-2"></i>
-          First Count Progress
+          First Count
         </h3>
         <span class="badge" [class.badge-success]="progress.firstCount >= 90"
               [class.badge-warning]="progress.firstCount >= 70 && progress.firstCount < 90"
@@ -103,16 +102,20 @@
       <div class="stat-header">
         <h3>
           <i class="mdi mdi-counter me-2"></i>
-          Second Count Progress
+          Second Count
         </h3>
-        <span class="badge" [class.badge-success]="progress.secondCount >= 90"
+        <span class="badge" *ngIf="stats.firstCountVariance > 0; else secondCountNa"
+              [class.badge-success]="progress.secondCount >= 90"
               [class.badge-warning]="progress.secondCount >= 70 && progress.secondCount < 90"
               [class.badge-danger]="progress.secondCount < 70">
           {{ progress.secondCount }}%
         </span>
+        <ng-template #secondCountNa>
+          <span class="badge badge-na">N/A</span>
+        </ng-template>
       </div>
       <div class="progress-bar-container">
-        <div class="progress-bar" [style.width.%]="progress.secondCount"
+        <div class="progress-bar" [style.width.%]="stats.firstCountVariance > 0 ? progress.secondCount : 0"
              [class.bg-success]="progress.secondCount >= 90"
              [class.bg-warning]="progress.secondCount >= 70 && progress.secondCount < 90"
              [class.bg-danger]="progress.secondCount < 70"></div>
@@ -141,16 +144,20 @@
       <div class="stat-header">
         <h3>
           <i class="mdi mdi-counter me-2"></i>
-          Third Count Progress
+          Third Count
         </h3>
-        <span class="badge" [class.badge-success]="progress.thirdCount >= 90"
+        <span class="badge" *ngIf="stats.secondCountVariance > 0; else thirdCountNa"
+              [class.badge-success]="progress.thirdCount >= 90"
               [class.badge-warning]="progress.thirdCount >= 70 && progress.thirdCount < 90"
               [class.badge-danger]="progress.thirdCount < 70">
           {{ progress.thirdCount }}%
         </span>
+        <ng-template #thirdCountNa>
+          <span class="badge badge-na">N/A</span>
+        </ng-template>
       </div>
       <div class="progress-bar-container">
-        <div class="progress-bar" [style.width.%]="progress.thirdCount"
+        <div class="progress-bar" [style.width.%]="stats.secondCountVariance > 0 ? progress.thirdCount : 0"
              [class.bg-success]="progress.thirdCount >= 90"
              [class.bg-warning]="progress.thirdCount >= 70 && progress.thirdCount < 90"
              [class.bg-danger]="progress.thirdCount < 70"></div>
@@ -172,7 +179,7 @@
       <div class="stat-header">
         <h3>
           <i class="mdi mdi-check-circle me-2"></i>
-          Posting Progress
+          Posting
         </h3>
         <span class="badge" [class.badge-success]="progress.posted >= 90"
               [class.badge-warning]="progress.posted >= 70 && progress.posted < 90"
@@ -205,7 +212,8 @@
       </div>
       <div class="stat-content">
         <div class="stat-label">Total Inventory Value</div>
-        <div class="stat-value">{{ stats.totalValue | currency }}</div>
+        <div class="stat-value">{{ formatCompactCurrency(stats.totalValue) }}</div>
+        <div class="stat-subvalue">{{ formatFullCurrency(stats.totalValue) }}</div>
       </div>
     </div>
 
@@ -217,8 +225,9 @@
       <div class="stat-content">
         <div class="stat-label">Total Variance Value</div>
         <div class="stat-value" [class.text-danger]="stats.varianceValue !== 0">
-          {{ stats.varianceValue | currency }}
+          {{ formatCompactCurrency(stats.varianceValue) }}
         </div>
+        <div class="stat-subvalue">{{ formatFullCurrency(stats.varianceValue) }}</div>
       </div>
     </div>
 
@@ -244,7 +253,7 @@
   </div>
 
   <!-- Loading Overlay -->
-  <div class="loading-overlay" *ngIf="isLoading">
+  <div class="loading-overlay" *ngIf="showLoadingOverlay">
     <div class="spinner"></div>
     <div class="loading-text">Refreshing inventory data...</div>
   </div>
