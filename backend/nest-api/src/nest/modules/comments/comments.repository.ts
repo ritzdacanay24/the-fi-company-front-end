@@ -12,9 +12,10 @@ interface CommentOwnerRow extends RowDataPacket {
 export class CommentsRepository {
   constructor(@Inject(MysqlService) private readonly mysqlService: MysqlService) {}
 
-  async find(params: { orderNum?: string; type?: string; active?: number }): Promise<RowDataPacket[]> {
+  async find(params: { orderNum?: string; type?: string; active?: number; requesterUserId?: number }): Promise<RowDataPacket[]> {
     const where: string[] = [];
     const values: unknown[] = [];
+    const requesterUserId = Number(params.requesterUserId || 0);
 
     if (params.orderNum) {
       where.push('a.orderNum = ?');
@@ -27,8 +28,18 @@ export class CommentsRepository {
     }
 
     if (typeof params.active === 'number' && !Number.isNaN(params.active)) {
-      where.push('a.active = ?');
-      values.push(params.active);
+      if (params.active === 1) {
+        where.push('(a.active = 1 OR (a.active = 3 AND a.userId = ?))');
+        values.push(requesterUserId);
+      } else if (params.active === 2 || params.active === 3) {
+        where.push('a.active = ?');
+        values.push(params.active);
+        where.push('a.userId = ?');
+        values.push(requesterUserId);
+      } else {
+        where.push('a.active = ?');
+        values.push(params.active);
+      }
     }
 
     const whereClause = where.length > 0 ? `WHERE ${where.join(' AND ')}` : '';
@@ -54,6 +65,7 @@ export class CommentsRepository {
     pageName: string;
     commentsHtml: string;
     pid: string | null;
+    active: number;
   }): Promise<number> {
     const sql = `
       INSERT INTO eyefidb.comments(
@@ -66,8 +78,9 @@ export class CommentsRepository {
         , pageName
         , comments_html
         , pid
+        , active
       )
-      VALUES (?, NOW(), ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const result = await this.mysqlService.execute<ResultSetHeader>(sql, [
@@ -79,6 +92,7 @@ export class CommentsRepository {
       payload.pageName,
       payload.commentsHtml,
       payload.pid,
+      payload.active,
     ]);
 
     return result.insertId;

@@ -7,6 +7,7 @@ import { UserService } from "@app/core/api/field-service/user.service";
 import { NgbDropdownModule } from "@ng-bootstrap/ng-bootstrap";
 import { Lightbox } from "ngx-lightbox";
 import { QuillModule, QuillModules } from "ngx-quill";
+import { firstValueFrom } from "rxjs";
 import "quill-mention";
 import { stripHtml } from "src/assets/js/util";
 
@@ -33,6 +34,10 @@ import { stripHtml } from "src/assets/js/util";
         <div>
           <h5 class="mb-0">{{ title }}</h5>
           <small class="text-muted" *ngIf="orderNum">SO Line: {{ orderNum }}</small>
+          <div class="d-flex align-items-center gap-2 mt-1" *ngIf="draftBadgeLabel">
+            <span class="badge draft-badge" [ngClass]="draftBadgeClass">{{ draftBadgeLabel }}</span>
+            <small class="draft-status" *ngIf="draftStatusAt">{{ draftStatusAt | date:'shortTime' }}</small>
+          </div>
         </div>
 
         <div class="d-flex align-items-center gap-2">
@@ -68,8 +73,28 @@ import { stripHtml } from "src/assets/js/util";
           <div class="comment-list" *ngIf="!loading && comments.length > 0" (click)="onCommentMediaClick($event)">
             <div class="comment-item" *ngFor="let c of comments">
               <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
-                <strong>{{ c.userName || c.created_by_name || 'User' }}</strong>
-                <small class="text-muted">{{ c.createdDate | date:'short' }}</small>
+                <div class="d-flex align-items-center gap-2 flex-grow-1 min-w-0">
+                  <img
+                    class="comment-avatar"
+                    [src]="getCommentUserImage(c)"
+                    alt="User avatar"
+                    (error)="onCommentAvatarError($event)"
+                  />
+                  <strong class="comment-author">{{ c.userName || c.created_by_name || 'User' }}</strong>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  <span class="badge private-badge" *ngIf="isPrivateCommentRow(c)">Private</span>
+                  <small class="text-muted">{{ c.createdDate | date:'short' }}</small>
+                  <button
+                    *ngIf="currentUserId && +c.userId === currentUserId"
+                    type="button"
+                    class="btn-delete-comment"
+                    title="Delete comment"
+                    (click)="deleteComment(c, $event)"
+                  >
+                    <i class="mdi mdi-trash-can-outline"></i>
+                  </button>
+                </div>
               </div>
               <div class="comment-text" [innerHTML]="c.comments"></div>
             </div>
@@ -77,14 +102,45 @@ import { stripHtml } from "src/assets/js/util";
         </div>
 
         <div class="comment-composer">
+          <div class="draft-inline-banner" *ngIf="showDiscardDraftAction">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <span class="badge draft-badge" [ngClass]="draftBadgeClass || 'badge-restored'">
+                {{ draftBadgeLabel || 'Draft in progress' }}
+              </span>
+              <small class="draft-status" *ngIf="draftStatusAt">{{ draftStatusAt | date:'shortTime' }}</small>
+            </div>
+
+            <button
+              type="button"
+              class="btn btn-link btn-sm p-0 text-decoration-none"
+              [disabled]="saving || loading"
+              (click)="discardDraft()"
+            >
+              Discard draft
+            </button>
+          </div>
+
           <label class="form-label mb-2">Add Comment</label>
           <quill-editor
             [(ngModel)]="newComment"
+            (ngModelChange)="onDraftInputChanged()"
             [modules]="quillConfig"
             placeholder="Enter comments here.."
             class="comment-editor"
             (onEditorCreated)="onComposerEditorCreated($event)"
           ></quill-editor>
+
+          <div class="form-check mb-2">
+            <input
+              id="offcanvas-private-comment"
+              type="checkbox"
+              class="form-check-input"
+              [(ngModel)]="isPrivateComment"
+            />
+            <label class="form-check-label" for="offcanvas-private-comment">
+              Private message (only you can see this)
+            </label>
+          </div>
 
           <div class="d-flex justify-content-end">
             <button class="btn btn-primary btn-sm" [disabled]="saving || isEditorContentEmpty()" (click)="save()">
@@ -93,6 +149,8 @@ import { stripHtml } from "src/assets/js/util";
           </div>
         </div>
       </div>
+
+      <div class="draft-toast" *ngIf="showDraftToast">{{ draftToastText }}</div>
     </div>
 
     <div class="media-preview-backdrop" *ngIf="isVideoPreviewOpen" (click)="closeVideoPreview()">
@@ -122,21 +180,51 @@ import { stripHtml } from "src/assets/js/util";
   `,
   styles: [`
     .comment-offcanvas {
+      --comment-panel-bg: var(--bs-body-bg, #fff);
+      --comment-panel-text: var(--bs-body-color, #212529);
+      --comment-panel-border: var(--bs-border-color, #dee2e6);
+      --comment-panel-muted: var(--bs-secondary-color, #6c757d);
+      --comment-card-bg: var(--bs-tertiary-bg, #f8f9fa);
+      --comment-toolbar-bg: var(--bs-body-bg, #fff);
+      --comment-editor-bg: var(--bs-body-bg, #fff);
+
       position: fixed;
       top: 0;
       right: 0;
       width: 420px;
       max-width: 100vw;
       height: 100vh;
-      background: var(--bs-body-bg, #fff);
-      color: var(--bs-body-color, #212529);
-      border-left: 1px solid var(--bs-border-color, #dee2e6);
+      background: var(--comment-panel-bg);
+      color: var(--comment-panel-text);
+      border-left: 1px solid var(--comment-panel-border);
       box-shadow: -8px 0 24px rgba(0, 0, 0, 0.15);
-      z-index: 1060;
+      z-index: 1045;
       transition: transform 0.25s ease;
       display: flex;
       flex-direction: column;
       transform: translateX(100%);
+    }
+
+    :host-context([data-bs-theme="dark"]) .comment-offcanvas,
+    :host-context(.theme-dark) .comment-offcanvas {
+      --comment-panel-bg: #1f2633;
+      --comment-panel-text: #e9edf5;
+      --comment-panel-border: #394458;
+      --comment-panel-muted: #aeb8c9;
+      --comment-card-bg: #273043;
+      --comment-toolbar-bg: #222a3a;
+      --comment-editor-bg: #1f2633;
+    }
+
+    :host-context([data-bs-theme="light"]) .comment-offcanvas,
+    :host-context(.theme-light) .comment-offcanvas {
+      --comment-panel-bg: var(--bs-body-bg, #fff);
+      --comment-panel-text: var(--bs-body-color, #212529);
+      --comment-panel-border: var(--bs-border-color, #dee2e6);
+      --comment-panel-muted: var(--bs-secondary-color, #6c757d);
+      --comment-card-bg: var(--bs-tertiary-bg, #f8f9fa);
+      --comment-toolbar-bg: var(--bs-body-bg, #fff);
+      --comment-editor-bg: var(--bs-body-bg, #fff);
     }
 
     .comment-offcanvas.open {
@@ -179,11 +267,69 @@ import { stripHtml } from "src/assets/js/util";
 
     .comment-offcanvas-header {
       padding: 0.9rem 1rem;
-      border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+      border-bottom: 1px solid var(--comment-panel-border);
       display: flex;
       align-items: flex-start;
       justify-content: space-between;
       gap: 0.5rem;
+    }
+
+    .comment-offcanvas-header .text-muted {
+      color: var(--comment-panel-muted) !important;
+    }
+
+    .draft-status {
+      font-size: 0.75rem;
+      line-height: 1.2;
+      color: var(--comment-panel-muted);
+    }
+
+    .draft-badge {
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+
+    .draft-badge.badge-dirty {
+      background: var(--bs-warning-bg-subtle, #fff3cd);
+      color: var(--bs-warning-text-emphasis, #664d03);
+      border: 1px solid var(--bs-warning-border-subtle, #ffecb5);
+    }
+
+    .draft-badge.badge-saving {
+      background: var(--bs-info-bg-subtle, #cff4fc);
+      color: var(--bs-info-text-emphasis, #055160);
+      border: 1px solid var(--bs-info-border-subtle, #b6effb);
+    }
+
+    .draft-badge.badge-saved,
+    .draft-badge.badge-restored {
+      background: var(--bs-success-bg-subtle, #d1e7dd);
+      color: var(--bs-success-text-emphasis, #0f5132);
+      border: 1px solid var(--bs-success-border-subtle, #badbcc);
+    }
+
+    .draft-toast {
+      position: absolute;
+      right: 0.85rem;
+      bottom: 0.85rem;
+      z-index: 2;
+      background: var(--bs-success-bg-subtle, #d1e7dd);
+      color: var(--bs-success-text-emphasis, #0f5132);
+      border: 1px solid var(--bs-success-border-subtle, #badbcc);
+      border-radius: 0.45rem;
+      padding: 0.35rem 0.55rem;
+      font-size: 0.78rem;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+    }
+
+    .private-badge {
+      background: var(--bs-warning-bg-subtle, #fff3cd);
+      color: var(--bs-warning-text-emphasis, #664d03);
+      border: 1px solid var(--bs-warning-border-subtle, #ffecb5);
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
     }
 
     .comment-offcanvas-body {
@@ -205,9 +351,21 @@ import { stripHtml } from "src/assets/js/util";
     .comment-composer {
       position: sticky;
       bottom: 0;
-      border-top: 1px solid var(--bs-border-color, #dee2e6);
-      background: var(--bs-body-bg, #fff);
+      border-top: 1px solid var(--comment-panel-border);
+      background: var(--comment-panel-bg);
       padding: 0.85rem 1rem 1rem;
+    }
+
+    .draft-inline-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      margin-bottom: 0.45rem;
+      padding: 0.4rem 0.55rem;
+      border: 1px solid var(--comment-panel-border);
+      border-radius: 0.45rem;
+      background: var(--comment-card-bg);
     }
 
     .comment-editor {
@@ -220,6 +378,8 @@ import { stripHtml } from "src/assets/js/util";
 
     :host ::ng-deep .comment-editor .ql-toolbar.ql-snow {
       display: block;
+      border-color: var(--comment-panel-border);
+      background: var(--comment-toolbar-bg);
       overflow-x: scroll;
       overflow-y: hidden;
       white-space: nowrap;
@@ -254,10 +414,42 @@ import { stripHtml } from "src/assets/js/util";
       vertical-align: middle;
     }
 
+    :host ::ng-deep .comment-editor .ql-toolbar.ql-snow .ql-stroke {
+      stroke: var(--comment-panel-text);
+    }
+
+    :host ::ng-deep .comment-editor .ql-toolbar.ql-snow .ql-fill {
+      fill: var(--comment-panel-text);
+    }
+
+    :host ::ng-deep .comment-editor .ql-toolbar.ql-snow .ql-picker,
+    :host ::ng-deep .comment-editor .ql-toolbar.ql-snow .ql-picker-label,
+    :host ::ng-deep .comment-editor .ql-toolbar.ql-snow button {
+      color: var(--comment-panel-text);
+    }
+
     :host ::ng-deep .comment-editor .ql-container {
+      border-color: var(--comment-panel-border);
+      background: var(--comment-editor-bg);
       min-height: 140px;
+      height: 180px;
       max-height: 220px;
+      overflow: hidden;
+    }
+
+    :host ::ng-deep .comment-editor .ql-editor {
+      color: var(--comment-panel-text);
+      height: 100%;
+      max-height: 100%;
       overflow-y: auto;
+      box-sizing: border-box;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    :host ::ng-deep .comment-editor .ql-editor.ql-blank::before {
+      color: var(--comment-panel-muted);
+      font-style: italic;
     }
 
     .comment-list {
@@ -267,18 +459,60 @@ import { stripHtml } from "src/assets/js/util";
     }
 
     .comment-item {
-      border: 1px solid var(--bs-border-color, #dee2e6);
+      border: 1px solid var(--comment-panel-border);
       border-radius: 0.5rem;
       padding: 0.6rem 0.7rem;
-      background: var(--bs-tertiary-bg, #f8f9fa);
+      background: var(--comment-card-bg);
+      position: relative;
+    }
+
+    .btn-delete-comment {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: none;
+      padding: 0.1rem 0.25rem;
+      cursor: pointer;
+      color: var(--bs-danger, #dc3545);
+      opacity: 0.7;
+      line-height: 1;
+      border-radius: 0.3rem;
+      transition: opacity 0.15s ease;
+    }
+
+    .btn-delete-comment:hover {
+      opacity: 1;
+      background: var(--bs-danger-bg-subtle, #f8d7da);
+    }
+
+    .comment-item:hover .btn-delete-comment {
+      display: inline-flex;
+    }
+
+    .comment-avatar {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 1px solid var(--comment-panel-border);
+      flex: 0 0 auto;
+      background: var(--comment-panel-bg);
+    }
+
+    .comment-author {
+      min-width: 0;
+      word-break: break-word;
     }
 
     .comment-text {
       font-size: 0.9rem;
+      color: var(--comment-panel-text);
       word-break: break-word;
       overflow-wrap: anywhere;
       max-width: 100%;
       overflow-x: auto;
+      overflow-y: hidden;
       -webkit-overflow-scrolling: touch;
     }
 
@@ -339,9 +573,9 @@ import { stripHtml } from "src/assets/js/util";
     .media-preview-dialog {
       width: min(900px, 100%);
       max-height: 90vh;
-      background: var(--bs-body-bg, #fff);
-      color: var(--bs-body-color, #212529);
-      border: 1px solid var(--bs-border-color, #dee2e6);
+      background: var(--comment-panel-bg);
+      color: var(--comment-panel-text);
+      border: 1px solid var(--comment-panel-border);
       border-radius: 0.75rem;
       display: flex;
       flex-direction: column;
@@ -351,7 +585,7 @@ import { stripHtml } from "src/assets/js/util";
     .media-preview-header,
     .media-preview-footer {
       padding: 0.75rem 1rem;
-      border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+      border-bottom: 1px solid var(--comment-panel-border);
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -360,7 +594,7 @@ import { stripHtml } from "src/assets/js/util";
 
     .media-preview-footer {
       border-bottom: 0;
-      border-top: 1px solid var(--bs-border-color, #dee2e6);
+      border-top: 1px solid var(--comment-panel-border);
     }
 
     .media-preview-body {
@@ -369,7 +603,23 @@ import { stripHtml } from "src/assets/js/util";
       display: flex;
       align-items: center;
       justify-content: center;
-      background: var(--bs-tertiary-bg, #f8f9fa);
+      background: var(--comment-card-bg);
+    }
+
+    :host ::ng-deep .comment-offcanvas .dropdown-menu {
+      background: var(--comment-panel-bg);
+      border-color: var(--comment-panel-border);
+      color: var(--comment-panel-text);
+    }
+
+    :host ::ng-deep .comment-offcanvas .dropdown-item,
+    :host ::ng-deep .comment-offcanvas .dropdown-header {
+      color: var(--comment-panel-text);
+    }
+
+    :host ::ng-deep .comment-offcanvas .dropdown-item:hover,
+    :host ::ng-deep .comment-offcanvas .dropdown-item:focus {
+      background: var(--comment-card-bg);
     }
 
     .media-preview-video {
@@ -383,6 +633,8 @@ import { stripHtml } from "src/assets/js/util";
 })
 export class CommentOffcanvasComponent implements OnChanges, OnDestroy {
   private static readonly PANEL_WIDTH_STORAGE_KEY = "shipping.commentOffcanvas.width";
+  private static readonly COMMENT_DRAFT_ACTIVE_VALUE = 2;
+  private static readonly COMMENT_PRIVATE_ACTIVE_VALUE = 3;
 
   @Input() isOpen = false;
   @Input() orderNum: string | null = null;
@@ -401,16 +653,49 @@ export class CommentOffcanvasComponent implements OnChanges, OnDestroy {
 
   loading = false;
   saving = false;
+  currentUserId: number | null = null;
   newComment = "";
+  isPrivateComment = false;
   quillConfig: QuillModules = {};
   listUsers: any[] = [];
   isVideoPreviewOpen = false;
   videoPreviewItems: string[] = [];
   videoPreviewIndex = 0;
+  draftStatusText: "dirty" | "saving" | "saved" | "restored" | "" = "";
+  draftStatusAt: Date | null = null;
+  showDiscardDraftAction = false;
+  showDraftToast = false;
+  draftToastText = "Draft auto-saved";
+  private draftToastTimer: ReturnType<typeof setTimeout> | null = null;
   private toolbarCleanup: Array<() => void> = [];
   private resizeCleanup: Array<() => void> = [];
+  private currentOrderContext: string | null = null;
+  private skipPersistDraftForOrder: string | null = null;
+  private previousBodyOverflow: string | null = null;
+  private bodyScrollLocked = false;
   panelWidth = 420;
   isResizing = false;
+
+  discardDraft = async (): Promise<void> => {
+    const orderNum = String(this.orderNum || this.currentOrderContext || "").trim();
+    if (!orderNum) {
+      return;
+    }
+
+    if (!window.confirm("Discard this draft?")) {
+      return;
+    }
+
+    await this.clearDraftForOrder(orderNum);
+    this.newComment = "";
+    this.draftStatusText = "";
+    this.draftStatusAt = null;
+    this.hideDraftToast();
+    this.mentionedRecipients.clear();
+    this.isPrivateComment = false;
+    this.skipPersistDraftForOrder = orderNum;
+    this.updateDiscardDraftActionState();
+  };
 
   constructor(
     private commentsService: CommentsService,
@@ -454,16 +739,64 @@ export class CommentOffcanvasComponent implements OnChanges, OnDestroy {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
+    if (this.isOpen) {
+      this.lockBodyScroll();
+    } else {
+      this.unlockBodyScroll();
+    }
+
     const becameOpen = !!changes["isOpen"]?.currentValue;
     const orderChanged = !!changes["orderNum"];
 
+    const previousOrder = String(changes["orderNum"]?.previousValue || "").trim();
+    const nextOrder = String(this.orderNum || "").trim();
+
+    if (this.isOpen && orderChanged && previousOrder && previousOrder !== nextOrder) {
+      void this.persistDraftForOrder(previousOrder);
+    }
+
     if (this.isOpen && this.orderNum && (becameOpen || orderChanged)) {
+      // Show loading state immediately while comments are being fetched.
+      this.loading = true;
+      this.comments = [];
+      this.currentUserId = this.getCurrentUserId();
+      this.updateDiscardDraftActionState();
       this.panelWidth = this.clampPanelWidth(this.panelWidth);
       this.panelWidthChange.emit(this.panelWidth);
+      this.currentOrderContext = String(this.orderNum);
+      this.skipPersistDraftForOrder = null;
+      this.isPrivateComment = false;
       this.ensureUsersLoaded();
       this.loadComments({ forceScrollToBottom: true });
     }
   }
+
+  isPrivateCommentRow = (row: any): boolean => {
+    return Number(row?.active) === CommentOffcanvasComponent.COMMENT_PRIVATE_ACTIVE_VALUE;
+  };
+
+  isOwnComment = (row: any): boolean => {
+    return !!this.currentUserId && Number(row?.userId) === this.currentUserId;
+  };
+
+  deleteComment = async (row: any, event: MouseEvent): Promise<void> => {
+    event.stopPropagation();
+
+    if (!row?.id) {
+      return;
+    }
+
+    if (!window.confirm("Delete this comment?")) {
+      return;
+    }
+
+    try {
+      await firstValueFrom(this.commentsService.deleteComment({ id: row.id, active: 0 }));
+      await this.loadComments();
+    } catch {
+      // silently ignore
+    }
+  };
 
   async loadComments(options?: { forceScrollToBottom?: boolean }): Promise<void> {
     if (!this.orderNum) {
@@ -482,10 +815,16 @@ export class CommentOffcanvasComponent implements OnChanges, OnDestroy {
         active: 1,
       });
       this.comments = Array.isArray(results) ? results : [];
+
+      if (this.orderNum) {
+        await this.restoreDraftForOrder(this.orderNum);
+      }
     } catch {
       this.comments = [];
+      this.newComment = "";
     } finally {
       this.loading = false;
+      this.updateDiscardDraftActionState();
       if (forceScrollToBottom || shouldKeepBottom) {
         this.queueScrollToBottom();
       }
@@ -519,14 +858,24 @@ export class CommentOffcanvasComponent implements OnChanges, OnDestroy {
       userId: userInfo?.id,
       userName: userInfo?.full_name,
       pid: null,
+      active: this.isPrivateComment
+        ? CommentOffcanvasComponent.COMMENT_PRIVATE_ACTIVE_VALUE
+        : 1,
     };
 
     try {
+      await this.clearDraftForOrder(this.orderNum);
+
       await this.commentsService.createComment(payload);
       this.newComment = "";
+      this.isPrivateComment = false;
+      this.draftStatusText = "";
+      this.draftStatusAt = null;
+      this.hideDraftToast();
       this.mentionedRecipients.clear();
       this.saved.emit({
         ...payload,
+        isPrivate: this.isPrivateComment,
         bg_class_name: "bg-success",
         color_class_name: "text-success",
       });
@@ -537,6 +886,14 @@ export class CommentOffcanvasComponent implements OnChanges, OnDestroy {
   }
 
   close(): void {
+    if (
+      this.currentOrderContext &&
+      this.skipPersistDraftForOrder !== this.currentOrderContext
+    ) {
+      void this.persistDraftForOrder(this.currentOrderContext);
+    }
+
+    this.skipPersistDraftForOrder = null;
     this.closed.emit();
   }
 
@@ -641,6 +998,67 @@ export class CommentOffcanvasComponent implements OnChanges, OnDestroy {
     // Intentionally no-op for now; near-bottom is measured just before refresh.
   }
 
+  onDraftInputChanged(): void {
+    if (this.saving || this.loading) {
+      return;
+    }
+
+    this.skipPersistDraftForOrder = null;
+
+    if (this.isEditorContentEmpty()) {
+      if (this.draftStatusText === "dirty") {
+        this.draftStatusText = "";
+        this.draftStatusAt = null;
+      }
+      this.updateDiscardDraftActionState();
+      return;
+    }
+
+    this.draftStatusText = "dirty";
+    this.draftStatusAt = null;
+    this.updateDiscardDraftActionState();
+  }
+
+  get draftBadgeLabel(): string {
+    if (this.draftStatusText === "dirty") {
+      return "Draft not saved";
+    }
+    if (this.draftStatusText === "saving") {
+      return "Saving draft...";
+    }
+    if (this.draftStatusText === "saved") {
+      return "Draft saved";
+    }
+    if (this.draftStatusText === "restored") {
+      return "Draft restored";
+    }
+    return "";
+  }
+
+  get draftBadgeClass(): string {
+    if (this.draftStatusText === "dirty") {
+      return "badge-dirty";
+    }
+    if (this.draftStatusText === "saving") {
+      return "badge-saving";
+    }
+    if (this.draftStatusText === "saved") {
+      return "badge-saved";
+    }
+    if (this.draftStatusText === "restored") {
+      return "badge-restored";
+    }
+    return "";
+  }
+
+  private updateDiscardDraftActionState(): void {
+    this.showDiscardDraftAction =
+      !!this.orderNum &&
+      !this.loading &&
+      !this.saving &&
+      (!this.isEditorContentEmpty() || this.draftStatusText === "restored");
+  }
+
   onSelectCommentViewMode(mode: "offcanvas" | "modal"): void {
     if (mode === this.commentViewMode) {
       return;
@@ -652,6 +1070,8 @@ export class CommentOffcanvasComponent implements OnChanges, OnDestroy {
   ngOnDestroy(): void {
     this.cleanupToolbarHandlers();
     this.cleanupResizeHandlers();
+    this.hideDraftToast();
+    this.unlockBodyScroll();
   }
 
   onComposerEditorCreated(editor: any): void {
@@ -820,6 +1240,141 @@ export class CommentOffcanvasComponent implements OnChanges, OnDestroy {
     this.resizeCleanup = [];
   }
 
+  private getCurrentUserId(): number | null {
+    const id = Number(this.authenticationService.currentUserValue?.id);
+    return Number.isFinite(id) ? id : null;
+  }
+
+  private async persistDraftForOrder(orderNum: string): Promise<void> {
+    const text = this.newComment;
+    if (!orderNum || this.isEditorContentEmpty()) {
+      return;
+    }
+
+    const userInfo = this.authenticationService.currentUserValue;
+    if (!userInfo?.id) {
+      return;
+    }
+
+    const existingDraft = await this.getLatestDraftForOrder(orderNum);
+    if (existingDraft && String(existingDraft.comments || "") === String(text || "")) {
+      return;
+    }
+
+    this.draftStatusText = "saving";
+    this.draftStatusAt = null;
+
+    if (existingDraft?.id) {
+      await firstValueFrom(this.commentsService.deleteComment({ id: existingDraft.id, active: 0 }));
+    }
+
+    await this.commentsService.createComment({
+      insert: 1,
+      locationPath: window.location.href.split("?")[0],
+      pageName: location.pathname,
+      comments: text,
+      emailToSendFromMention: [],
+      emailCallBackUrl: `${window.location.href.split("?")[0]}?comment=${orderNum}`,
+      created_by_name: userInfo.full_name,
+      createdDate: new Date(),
+      comments_html: stripHtml(text),
+      type: this.type,
+      orderNum,
+      userId: userInfo.id,
+      userName: userInfo.full_name,
+      pid: null,
+      active: CommentOffcanvasComponent.COMMENT_DRAFT_ACTIVE_VALUE,
+    });
+
+    this.draftStatusText = "saved";
+    this.draftStatusAt = new Date();
+    this.showDraftToastNow();
+  }
+
+  private async restoreDraftForOrder(orderNum: string): Promise<void> {
+    const draft = await this.getLatestDraftForOrder(orderNum);
+    this.newComment = String(draft?.comments || "");
+
+    if (draft?.comments) {
+      this.draftStatusText = "restored";
+      this.draftStatusAt = new Date();
+    } else {
+      this.draftStatusText = "";
+      this.draftStatusAt = null;
+    }
+  }
+
+  private showDraftToastNow(): void {
+    this.hideDraftToast();
+    this.showDraftToast = true;
+    this.draftToastTimer = setTimeout(() => {
+      this.showDraftToast = false;
+      this.draftToastTimer = null;
+    }, 2000);
+  }
+
+  private hideDraftToast(): void {
+    if (this.draftToastTimer) {
+      clearTimeout(this.draftToastTimer);
+      this.draftToastTimer = null;
+    }
+    this.showDraftToast = false;
+  }
+
+  private async clearDraftForOrder(orderNum: string): Promise<void> {
+    const userId = this.getCurrentUserId();
+    if (!userId) {
+      return;
+    }
+
+    const drafts = await this.commentsService.find({
+      orderNum,
+      type: this.type,
+      active: CommentOffcanvasComponent.COMMENT_DRAFT_ACTIVE_VALUE,
+    });
+
+    const mine = (Array.isArray(drafts) ? drafts : []).filter(
+      (row: any) => Number(row?.userId) === userId && Number(row?.id) > 0
+    );
+
+    if (!mine.length) {
+      return;
+    }
+
+    for (const draft of mine) {
+      await firstValueFrom(this.commentsService.deleteComment({ id: draft.id, active: 0 }));
+    }
+  }
+
+  private async getLatestDraftForOrder(orderNum: string): Promise<any | null> {
+    const userId = this.getCurrentUserId();
+    if (!userId) {
+      return null;
+    }
+
+    const drafts = await this.commentsService.find({
+      orderNum,
+      type: this.type,
+      active: CommentOffcanvasComponent.COMMENT_DRAFT_ACTIVE_VALUE,
+    });
+
+    const mine = (Array.isArray(drafts) ? drafts : []).filter(
+      (row: any) => Number(row?.userId) === userId
+    );
+
+    if (!mine.length) {
+      return null;
+    }
+
+    const sorted = [...mine].sort((a: any, b: any) => {
+      const idA = Number(a?.id || 0);
+      const idB = Number(b?.id || 0);
+      return idB - idA;
+    });
+
+    return sorted[0] || null;
+  }
+
   private isThreadNearBottom(thresholdPx = 96): boolean {
     const thread = this.commentThread?.nativeElement;
     if (!thread) {
@@ -880,6 +1435,43 @@ export class CommentOffcanvasComponent implements OnChanges, OnDestroy {
     return Array.from(container.querySelectorAll(".mention[data-id]"))
       .map((node) => node.getAttribute("data-id")?.trim() || "")
       .filter(Boolean);
+  }
+
+  getCommentUserImage(comment: any): string {
+    const image = String(comment?.image || "").trim();
+    if (!image) {
+      return "assets/images/default-user.png";
+    }
+    return image;
+  }
+
+  onCommentAvatarError(event: Event): void {
+    const target = event.target as HTMLImageElement | null;
+    if (!target) {
+      return;
+    }
+    target.onerror = null;
+    target.src = "assets/images/default-user.png";
+  }
+
+  private lockBodyScroll(): void {
+    if (typeof document === "undefined" || this.bodyScrollLocked) {
+      return;
+    }
+
+    this.previousBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    this.bodyScrollLocked = true;
+  }
+
+  private unlockBodyScroll(): void {
+    if (typeof document === "undefined" || !this.bodyScrollLocked) {
+      return;
+    }
+
+    document.body.style.overflow = this.previousBodyOverflow || "";
+    this.previousBodyOverflow = null;
+    this.bodyScrollLocked = false;
   }
 
   isEditorContentEmpty(): boolean {

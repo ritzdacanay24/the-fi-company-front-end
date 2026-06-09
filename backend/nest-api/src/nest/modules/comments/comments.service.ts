@@ -18,15 +18,17 @@ export class CommentsService {
     private readonly emailTemplateService: EmailTemplateService,
   ) {}
 
-  async find(orderNum?: string, type?: string, active?: string) {
+  async find(requesterUserId: number, orderNum?: string, type?: string, active?: string) {
     const normalizedOrderNum = String(orderNum || '').trim();
     const normalizedType = String(type || '').trim();
     const normalizedActive = Number(active ?? 1);
+    const normalizedUserId = Number(requesterUserId);
 
     return this.repository.find({
       orderNum: normalizedOrderNum || undefined,
       type: normalizedType || undefined,
       active: Number.isNaN(normalizedActive) ? 1 : normalizedActive,
+      requesterUserId: Number.isNaN(normalizedUserId) ? 0 : normalizedUserId,
     });
   }
 
@@ -38,11 +40,14 @@ export class CommentsService {
     pageName?: string;
     comments_html?: string;
     pid?: string | number | null;
+    active?: number | string;
   }, requesterUserId: number) {
     const comments = String(payload?.comments || '').trim();
     const orderNum = String(payload?.orderNum || '').trim();
     const type = String(payload?.type || '').trim();
     const userId = Number(requesterUserId);
+    const active = Number(payload?.active ?? 1);
+    const normalizedActive = [1, 2, 3].includes(active) ? active : 1;
 
     if (!comments || !orderNum || !type || !userId) {
       return { success: false, message: 'comments, orderNum, type and authenticated user context are required' };
@@ -57,16 +62,19 @@ export class CommentsService {
       pageName: String(payload?.pageName || ''),
       commentsHtml: String(payload?.comments_html || ''),
       pid: payload?.pid === null || payload?.pid === undefined ? null : String(payload.pid),
+      active: normalizedActive,
     });
 
-    await this.sendMentionNotifications({
-      comments,
-      orderNum,
-      type,
-      locationPath: String(payload?.locationPath || ''),
-      pageName: String(payload?.pageName || ''),
-      createdBy: userId,
-    });
+    if (normalizedActive === 1) {
+      await this.sendMentionNotifications({
+        comments,
+        orderNum,
+        type,
+        locationPath: String(payload?.locationPath || ''),
+        pageName: String(payload?.pageName || ''),
+        createdBy: userId,
+      });
+    }
 
     return { success: true, insertId };
   }

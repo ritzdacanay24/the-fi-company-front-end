@@ -24,6 +24,8 @@ export class ReportGeneratorService {
   private readonly attachmentsRemoteBaseUrl = this.resolveAttachmentsRemoteBaseUrl();
   private readonly dashboardWebBaseUrl = String(process.env.DASHBOARD_WEB_BASE_URL || '').replace(/\/+$/, '');
   private readonly displayTimeZone = String(process.env.INSPECTION_CHECKLIST_DISPLAY_TIME_ZONE || 'America/Los_Angeles').trim();
+  private readonly finalSubmissionEmailEnabled =
+    String(process.env.INSPECTION_CHECKLIST_FINAL_SUBMISSION_EMAIL_ENABLED || 'false').trim().toLowerCase() === 'true';
 
   constructor(
     private readonly mysqlService: MysqlService,
@@ -58,6 +60,14 @@ export class ReportGeneratorService {
     }
 
     await this.recordImmediateResult(instanceId, 'completed', null, storedReportUrl || undefined);
+
+    if (!this.finalSubmissionEmailEnabled) {
+      this.logger.log(
+        `Final submission email is disabled by configuration; skipped email dispatch for instance ${instanceId}`,
+      );
+      return;
+    }
+
     await this.sendFinalSubmissionNotification(instanceId, exportResult.buffer, exportResult.fileName);
   }
 

@@ -37,6 +37,18 @@
 
   <app-loading [isLoading]="isLoading" [showBorder]="false"></app-loading>
 
+  <div class="form-check mt-2 mb-2">
+    <input
+      class="form-check-input"
+      type="checkbox"
+      id="modalPrivateComment"
+      [(ngModel)]="isPrivateComment"
+    >
+    <label class="form-check-label" for="modalPrivateComment">
+      Private message (only you can see this)
+    </label>
+  </div>
+
   <!-- <div class="form-check">
     <input class="form-check-input" type="checkbox" id="flexCheckDefault" [(ngModel)]="commentEmailNotification" (ngModelChange)="onCommentEmailNotification()">
     <label class="form-check-label" for="flexCheckDefault">
@@ -66,6 +78,7 @@
           <p class="mb-0">{{row.userName}}</p>
           <p class="text-muted mb-0">{{row.createdDate}}</p>
         </div>
+        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle ms-2" *ngIf="isPrivateRow(row)">Private</span>
         <span class="ms-auto">{{row.createdDate | dateAgo}} </span>
         <i class="mdi mdi-trash-can-outline text-danger pointer ms-3" (click)="deleteComment(row.id)"
           *ngIf="canDeleteComment(row)"></i>
@@ -93,6 +106,7 @@
               <p class="mb-0">{{row1.userName}}</p>
               <p class="text-muted mb-0" [class.text-success]="row1.insert">{{row1.createdDate | dateAgo}}</p>
             </div>
+            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle ms-2" *ngIf="isPrivateRow(row1)">Private</span>
             <i class="mdi mdi-trash-can-outline text-danger pointer ms-3" (click)="deleteComment(row1.id, row.childs)"
               *ngIf="canDeleteComment(row1)"></i>
           </div>

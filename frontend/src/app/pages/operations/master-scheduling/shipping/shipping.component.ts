@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from "@angular/core";
+import { Component, NgZone, OnDestroy, OnInit } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
 import { SharedModule } from "@app/shared/shared.module";
 import {
@@ -151,6 +151,7 @@ export class ShippingComponent implements OnInit, OnDestroy {
 
   constructor(
     public router: Router,
+    private ngZone: NgZone,
     private api: MasterSchedulingService,
     public activatedRoute: ActivatedRoute,
     private commentsModalService: CommentsModalService,
@@ -514,8 +515,9 @@ export class ShippingComponent implements OnInit, OnDestroy {
       return;
     }
 
+    // Open panel immediately; do not block on any fallback lookups.
     this.selectedCommentOrderNum = orderNum;
-    this.selectedCommentRowId = id || this.findRowIdBySalesOrderLine(orderNum);
+    this.selectedCommentRowId = id ? String(id) : null;
 
     if (this.commentViewMode === "modal") {
       this.openCommentModal(orderNum);
@@ -523,6 +525,14 @@ export class ShippingComponent implements OnInit, OnDestroy {
     }
 
     this.isCommentPanelOpen = true;
+
+    if (!this.selectedCommentRowId) {
+      queueMicrotask(() => {
+        if (!this.selectedCommentRowId) {
+          this.selectedCommentRowId = this.findRowIdBySalesOrderLine(orderNum);
+        }
+      });
+    }
   };
 
   setCommentViewMode = (mode: "offcanvas" | "modal") => {
@@ -567,6 +577,12 @@ export class ShippingComponent implements OnInit, OnDestroy {
 
     const rowNode = this.gridApi.getRowNode(this.selectedCommentRowId);
     if (!rowNode?.data) {
+      return;
+    }
+
+    // Private comments are only visible to the author — do not update other
+    // users' grids or broadcast via WebSocket.
+    if (result?.isPrivate) {
       return;
     }
 
@@ -2224,12 +2240,15 @@ export class ShippingComponent implements OnInit, OnDestroy {
       width: 110,
       cellRenderer: CommentsRendererV2Component,
       cellRendererParams: {
-        onClick: (params: any) =>
-          this.viewComment(
-            params.rowData.sales_order_line_number,
-            params.rowData.id,
-            params.rowData.SOD_NBR
-          ),
+        onClick: (params: any) => {
+          this.ngZone.run(() => {
+            this.viewComment(
+              params.rowData.sales_order_line_number || params.rowData.SALES_ORDER_LINE_NUMBER,
+              params.rowData.id,
+              params.rowData.SOD_NBR
+            );
+          });
+        },
       },
       valueGetter: (params) => {
         if (params.data)

@@ -3439,7 +3439,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       this.saveProgress(() => {
         this.showLoadingAlert(
           'Submitting Final Inspection',
-          'Please wait while we generate the final submission and send notification emails...',
+          'Please wait while we generate the final submission report...',
         );
 
         this.photoChecklistService.updateInstanceStatus(this.instanceId, 'submitted').subscribe({

@@ -59,14 +59,13 @@ export class CommentsRendererV2Component {
               }
             </div>
             <div class="card-body" style="overflow:hidden;">
-             <div style="text-overflow: ellipsis;white-space: normal;
-             -webkit-box-orient: vertical;
-              display: -webkit-box;
-              -webkit-line-clamp: 4;
-              overflow: hidden;
-              text-overflow: ellipsis;
+             <div style="max-width: 500px;
+              max-height: 180px;
+              overflow-y: auto;
+              overflow-x: hidden;
               white-space: normal;
-              max-width: 500px;"  
+              word-break: break-word;
+              padding-right: 4px;"
               class="blockquote p-0 ps-2 mb-0">
                 <p>${this.recent_comments?.comments}</p>
                 </div>

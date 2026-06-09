@@ -119,6 +119,7 @@ export class DateAgoPipe implements PipeTransform {
   ],
 })
 export class CommentsModalComponent implements OnInit {
+  private static readonly COMMENT_PRIVATE_ACTIVE_VALUE = 3;
 
   private readonly mentionedRecipients = new Set<string>();
 
@@ -325,6 +326,11 @@ export class CommentsModalComponent implements OnInit {
   quillConfig: QuillModules = {};
 
   htmlText = "";
+  isPrivateComment = false;
+
+  isPrivateRow(row: any): boolean {
+    return Number(row?.active) === CommentsModalComponent.COMMENT_PRIVATE_ACTIVE_VALUE;
+  }
 
   setFocus(editor: any) {
     editor?.focus();
@@ -430,11 +436,13 @@ export class CommentsModalComponent implements OnInit {
       userId: this.userId || this.userInfo.id,
       userName: this.userName || this.userInfo.full_name,
       pid: pid ? pid : null,
+      active: this.isPrivateComment ? CommentsModalComponent.COMMENT_PRIVATE_ACTIVE_VALUE : 1,
     };
 
     try {
       this.isLoading = true;
       await this.commentsService.createComment(saveParams);
+      this.isPrivateComment = false;
       this.mentionedRecipients.clear();
       this.ngbActiveModal.close({
         ...saveParams,

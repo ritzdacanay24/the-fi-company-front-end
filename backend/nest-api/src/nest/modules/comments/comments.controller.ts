@@ -10,11 +10,12 @@ export class CommentsController {
 
   @Get('find')
   async find(
+    @CurrentUserId() currentUserId: number,
     @Query('orderNum') orderNum?: string,
     @Query('type') type?: string,
     @Query('active') active?: string,
   ) {
-    return this.service.find(orderNum, type, active);
+    return this.service.find(currentUserId, orderNum, type, active);
   }
 
   @Post('create')
@@ -30,6 +31,7 @@ export class CommentsController {
       pageName?: string;
       comments_html?: string;
       pid?: string | number | null;
+      active?: number | string;
     },
   ) {
     return this.service.create(payload, currentUserId);
