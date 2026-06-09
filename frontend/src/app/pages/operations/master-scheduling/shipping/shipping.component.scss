@@ -177,6 +177,10 @@
 	background-color: rgba(220, 53, 69, 0.12) !important;
 }
 
+.shipping-page {
+	transition: margin-right 0.25s ease;
+}
+
 /* Clean highlight without layout shift */
 :host ::ng-deep .ag-theme-quartz .ag-row.due-date-match-row {
 	background-color: rgba(185, 28, 28, 0.08) !important;

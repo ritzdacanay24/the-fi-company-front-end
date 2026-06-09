@@ -1,6 +1,28 @@
 <div style="cursor: grab;" class="modal-header bg-light " cdkDrag cdkDragRootElement=".modal-content" cdkDragBoundary=".modal" cdkDragHandle >
   <h4 class="modal-title" id="modal-basic-title">{{title}}</h4>
+
+  <div class="d-flex align-items-center gap-2 ms-auto">
+    <div ngbDropdown *ngIf="showCommentViewActions">
+      <button class="btn btn-sm btn-outline-secondary" ngbDropdownToggle type="button" title="Comment view settings">
+        <i class="mdi mdi-cog-outline"></i>
+      </button>
+      <div ngbDropdownMenu>
+        <h6 class="dropdown-header">Comment View</h6>
+        <button ngbDropdownItem type="button" (click)="switchCommentViewMode('offcanvas')">
+          <i class="mdi mdi-dock-right me-2"></i>
+          Offcanvas
+          <span class="ms-2 text-success" *ngIf="commentViewMode === 'offcanvas'">Active</span>
+        </button>
+        <button ngbDropdownItem type="button" (click)="switchCommentViewMode('modal')">
+          <i class="mdi mdi-window-maximize me-2"></i>
+          Modal
+          <span class="ms-2 text-success" *ngIf="commentViewMode === 'modal'">Active</span>
+        </button>
+      </div>
+    </div>
+
   <button type="button" class="btn-close" data-bs-dismiss="modal" (click)="dismiss()" aria-label="Close"></button>
+  </div>
 </div>
 
 <div class="modal-body bg-light pt-0">

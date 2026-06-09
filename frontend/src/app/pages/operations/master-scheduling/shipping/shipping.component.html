@@ -1,3 +1,4 @@
+<div class="shipping-page" [style.margin-right.px]="commentPanelPushWidth">
 <div class="row">
     <div class="col-12 col-xl-12">
 
@@ -111,3 +112,16 @@
         </div>
     </div>
 </div>
+</div>
+
+<app-comment-offcanvas
+    [isOpen]="isCommentPanelOpen"
+    [orderNum]="selectedCommentOrderNum"
+    [type]="'Sales Order'"
+    [title]="'Shipping Comments'"
+    [commentViewMode]="commentViewMode"
+    (closed)="closeCommentPanel()"
+    (commentViewModeChange)="setCommentViewMode($event)"
+    (panelWidthChange)="onCommentPanelWidthChange($event)"
+    (saved)="onCommentSaved($event)">
+</app-comment-offcanvas>

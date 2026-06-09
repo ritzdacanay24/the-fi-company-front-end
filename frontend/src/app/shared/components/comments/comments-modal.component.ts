@@ -275,6 +275,8 @@ export class CommentsModalComponent implements OnInit {
   @Input() public title = "Comments";
   @Input() public userId: number;
   @Input() public userName: string;
+  @Input() public showCommentViewActions = false;
+  @Input() public commentViewMode: "offcanvas" | "modal" = "modal";
 
   userInfo;
 
@@ -391,6 +393,14 @@ export class CommentsModalComponent implements OnInit {
 
   dismiss() {
     this.ngbActiveModal.dismiss();
+  }
+
+  switchCommentViewMode(mode: "offcanvas" | "modal"): void {
+    if (mode === this.commentViewMode) {
+      return;
+    }
+
+    this.ngbActiveModal.close({ __commentViewMode: mode });
   }
 
   close() {

@@ -9,11 +9,11 @@ export class CommentsModalService {
   constructor(public modalService: NgbModal) { }
 
   open(
-    orderNum?: undefined,
+    orderNum?: string,
     type?: any,
-    title?: undefined,
-    userId?: undefined,
-    userName?: undefined
+    title?: string,
+    userId?: number,
+    userName?: string
   ) {
     let modalRef = this.modalService.open(CommentsModalComponent, {
       backdrop:false,

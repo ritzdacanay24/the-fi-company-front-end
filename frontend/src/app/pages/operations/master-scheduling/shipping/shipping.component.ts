@@ -63,6 +63,7 @@ import { OwnerRendererV2Component } from "@app/shared/ag-grid/owner-renderer-v2/
 import { OwnersService } from "@app/core/api/owners/owners.service";
 import { OwnerManagementModalService } from "@app/shared/components/owner-management-modal/owner-management-modal.component";
 import { Subscription } from "rxjs";
+import { CommentOffcanvasComponent } from "@app/shared/components/comment-offcanvas/comment-offcanvas.component";
 
 // Priority-related interfaces
 interface PriorityData {
@@ -99,12 +100,15 @@ interface ShippingOrder {
     NgbDropdownModule,
     GridSettingsComponent,
     GridFiltersComponent,
+    CommentOffcanvasComponent,
   ],
   selector: "app-shipping",
   templateUrl: "./shipping.component.html",
   styleUrls: ["./shipping.component.scss"],
 })
 export class ShippingComponent implements OnInit, OnDestroy {
+  private static readonly COMMENT_VIEW_MODE_STORAGE_KEY = "shipping.commentViewMode";
+
   // Owner dropdown configuration - loaded dynamically from database setting
   ownerDropdownEnabled = false;
 
@@ -225,6 +229,9 @@ export class ShippingComponent implements OnInit, OnDestroy {
 
     // Initialize user ID
     this.userSsoId = this.authenticationService.currentUserValue?.ssoId || 'unknown';
+
+    // Restore preferred comment experience (offcanvas or modal)
+    this.restoreCommentViewModePreference();
 
     // Load owner dropdown setting from database
     this.loadOwnerDropdownSetting();
@@ -488,54 +495,141 @@ export class ShippingComponent implements OnInit, OnDestroy {
     );
   }
   isModalOpen = false;
+  isCommentPanelOpen = false;
+  commentViewMode: "offcanvas" | "modal" = "offcanvas";
+  commentPanelWidth = 420;
+  selectedCommentOrderNum: string | null = null;
+  selectedCommentRowId: string | null = null;
+
+  get commentPanelPushWidth(): number {
+    if (!this.isCommentPanelOpen || window.innerWidth <= 991.98) {
+      return 0;
+    }
+    return this.commentPanelWidth;
+  }
 
   viewComment = (salesOrderLineNumber: any, id: string, so?) => {
+    const orderNum = String(salesOrderLineNumber || "").trim();
+    if (!orderNum) {
+      return;
+    }
 
-    if (this.isModalOpen) return;
+    this.selectedCommentOrderNum = orderNum;
+    this.selectedCommentRowId = id || this.findRowIdBySalesOrderLine(orderNum);
 
-    this.isModalOpen = true;
+    if (this.commentViewMode === "modal") {
+      this.openCommentModal(orderNum);
+      return;
+    }
 
-    let modalRef = this.commentsModalService.open(
-      salesOrderLineNumber,
-      "Sales Order"
+    this.isCommentPanelOpen = true;
+  };
+
+  setCommentViewMode = (mode: "offcanvas" | "modal") => {
+    if (this.commentViewMode === mode) {
+      return;
+    }
+
+    this.commentViewMode = mode;
+    localStorage.setItem(ShippingComponent.COMMENT_VIEW_MODE_STORAGE_KEY, mode);
+
+    if (mode === "modal" && this.isCommentPanelOpen && this.selectedCommentOrderNum) {
+      const activeOrderNum = this.selectedCommentOrderNum;
+      this.closeCommentPanel();
+      this.openCommentModal(activeOrderNum);
+    }
+  };
+
+  closeCommentPanel = () => {
+    this.isCommentPanelOpen = false;
+    this.selectedCommentOrderNum = null;
+    this.selectedCommentRowId = null;
+    this.router.navigate([`.`], {
+      relativeTo: this.activatedRoute,
+      queryParamsHandling: "merge",
+      queryParams: {
+        comment: null,
+      },
+    });
+  };
+
+  onCommentPanelWidthChange = (width: number) => {
+    if (!Number.isFinite(width)) {
+      return;
+    }
+    this.commentPanelWidth = Math.round(width);
+  };
+
+  onCommentSaved = (result: any) => {
+    if (!this.selectedCommentRowId || !this.gridApi) {
+      return;
+    }
+
+    const rowNode = this.gridApi.getRowNode(this.selectedCommentRowId);
+    if (!rowNode?.data) {
+      return;
+    }
+
+    rowNode.data.recent_comments = result;
+    this.gridApi.redrawRows({ rowNodes: [rowNode] });
+
+    this.shippingWebsocketService.publish(ShippingMessageType.SHIPPING, {
+      actions: {
+        time: moment().format("h:mm A"),
+        icon: "feather icon-message-square",
+        link: `/master-scheduling/shipping?comment=${rowNode.data.SALES_ORDER_LINE_NUMBER}`,
+        info: `Comment added by ${this.authenticationService.currentUserValue.full_name} on SO#: ${rowNode.data.SALES_ORDER_LINE_NUMBER} Comment: ${rowNode.data.recent_comments.comments_html}`,
+      },
+      message: rowNode.data,
+    });
+  };
+
+  private findRowIdBySalesOrderLine(salesOrderLineNumber: string): string | null {
+    let resolvedId: string | null = null;
+    this.gridApi?.forEachNode((node) => {
+      if (!resolvedId && String(node.data?.SALES_ORDER_LINE_NUMBER) === String(salesOrderLineNumber)) {
+        resolvedId = String(node.data?.id || node.id || "");
+      }
+    });
+    return resolvedId;
+  }
+
+  private openCommentModal(orderNum: string): void {
+    const modalRef = this.commentsModalService.open(
+      orderNum,
+      "Sales Order",
+      "Shipping Comments",
+      this.authenticationService.currentUserValue?.id,
+      this.authenticationService.currentUserValue?.full_name
     );
+
+    modalRef.componentInstance.showCommentViewActions = true;
+    modalRef.componentInstance.commentViewMode = this.commentViewMode;
+
     modalRef.result.then(
       (result: any) => {
-        this.isModalOpen = false;
+        if (result?.__commentViewMode === "offcanvas" || result?.__commentViewMode === "modal") {
+          this.setCommentViewMode(result.__commentViewMode);
+          if (result.__commentViewMode === "offcanvas" && this.selectedCommentOrderNum) {
+            this.isCommentPanelOpen = true;
+          }
+          return;
+        }
 
-        let rowNode = this.gridApi.getRowNode(id);
-        rowNode.data.recent_comments = result;
-        this.gridApi.redrawRows({ rowNodes: [rowNode] });
-
-        this.shippingWebsocketService.publish(ShippingMessageType.SHIPPING, {
-          actions: {
-            time: moment().format("h:mm A"),
-            icon: "feather icon-message-square",
-            link: `/master-scheduling/shipping?comment=${rowNode.data.SALES_ORDER_LINE_NUMBER}`,
-            info: `Comment added by ${this.authenticationService.currentUserValue.full_name} on SO#: ${rowNode.data.SALES_ORDER_LINE_NUMBER} Comment: ${rowNode.data.recent_comments.comments_html}`,
-          },
-          message: rowNode.data,
-        });
-        this.router.navigate([`.`], {
-          relativeTo: this.activatedRoute,
-          queryParamsHandling: "merge",
-          queryParams: {
-            comment: null,
-          },
-        });
+        if (result) {
+          this.onCommentSaved(result);
+        }
       },
-      () => {
-        this.isModalOpen = false;
-        this.router.navigate([`.`], {
-          relativeTo: this.activatedRoute,
-          queryParamsHandling: "merge",
-          queryParams: {
-            comment: null,
-          },
-        });
-      }
+      () => {}
     );
-  };
+  }
+
+  private restoreCommentViewModePreference(): void {
+    const mode = localStorage.getItem(ShippingComponent.COMMENT_VIEW_MODE_STORAGE_KEY);
+    if (mode === "offcanvas" || mode === "modal") {
+      this.commentViewMode = mode;
+    }
+  }
 
   viewPartsOrder = (so_number_and_line) => {
     let modalRef = this.partsOrderModalService.open(so_number_and_line);
