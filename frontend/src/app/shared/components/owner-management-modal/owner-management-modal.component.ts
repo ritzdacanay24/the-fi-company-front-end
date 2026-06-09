@@ -225,7 +225,7 @@ import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-
           </div>
 
           <div *ngIf="!loading && filteredOwners.length > 0" class="table-responsive">
-            <table class="table table-hover mb-0">
+            <table class="table table-hover align-middle text-nowrap mb-0">
               <thead class="table-light owner-table-head">
                 <tr>
                   <th style="width: 50px;">
@@ -359,7 +359,7 @@ import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-
             </div>
 
             <div *ngIf="!loadingAssignments && userAssignments.length > 0" class="table-responsive">
-              <table class="table table-sm table-hover mb-0">
+              <table class="table table-sm table-hover align-middle text-nowrap mb-0">
                 <thead class="table-light">
                   <tr>
                     <th>Owner Name</th>
@@ -419,7 +419,7 @@ import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-
 <!--SO133370 - 2-->
             <div *ngIf="!loadingAssignments && allOwnersForAssignment.length > 0">
               <div #ownersAssignmentScroll class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-                <table class="table table-hover mb-0">
+                <table class="table table-hover align-middle text-nowrap mb-0">
                   <thead class="table-light sticky-top owner-table-head">
                     <tr>
                       <th style="width: 60px;">
@@ -544,7 +544,7 @@ import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-
             </div>
 
             <div *ngIf="!loadingAdmins && adminUsers.length > 0" class="table-responsive">
-              <table class="table table-hover mb-0">
+              <table class="table table-hover align-middle text-nowrap mb-0">
                 <thead class="table-light">
                   <tr>
                     <th>User Name</th>
@@ -658,324 +658,7 @@ import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-
     </div>
     </div>
   `,
-  styles: [`
-    .owner-modal-shell {
-      --owner-border: #d9e1ea;
-      --owner-border-strong: #c9d2dc;
-      --owner-surface: #ffffff;
-      --owner-surface-muted: #f6f8fb;
-      --owner-surface-soft: #fafbfd;
-      --owner-text: #1f2937;
-      --owner-text-muted: #667085;
-      --owner-accent: #244a73;
-      --owner-accent-soft: #e9eff6;
-      --owner-success-bg: #edf7f1;
-      --owner-success-text: #296244;
-      --owner-neutral-bg: #eef2f6;
-      --owner-neutral-text: #526273;
-      --owner-warning-bg: #f8f1e7;
-      --owner-warning-text: #8a5b1c;
-      color: var(--owner-text);
-      background: linear-gradient(180deg, #fbfcfe 0%, #f5f7fa 100%);
-    }
-
-    .owner-modal-header {
-      align-items: flex-start;
-      padding: 1.25rem 1.5rem 1rem;
-      border-bottom: 1px solid var(--owner-border);
-      background: var(--owner-surface);
-    }
-
-    .owner-modal-eyebrow {
-      margin-bottom: 0.2rem;
-      font-size: 0.72rem;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--owner-text-muted);
-    }
-
-    .owner-modal-title {
-      margin: 0;
-      font-size: 1.25rem;
-      font-weight: 700;
-      color: var(--owner-text);
-    }
-
-    .owner-modal-body {
-      padding: 1.25rem 1.5rem 1.5rem;
-      background: transparent;
-    }
-
-    .owner-modal-footer {
-      padding: 1rem 1.5rem 1.25rem;
-      border-top: 1px solid var(--owner-border);
-      background: var(--owner-surface);
-    }
-
-    .owner-modal-tabs {
-      gap: 0.5rem;
-      border-bottom: 1px solid var(--owner-border);
-    }
-
-    .owner-modal-tab {
-      margin-bottom: -1px;
-      padding: 0.7rem 0.95rem;
-      border: 1px solid transparent;
-      border-radius: 0.65rem 0.65rem 0 0;
-      color: var(--owner-text-muted);
-      font-weight: 600;
-    }
-
-    .owner-modal-tab:hover {
-      color: var(--owner-text);
-      background: var(--owner-surface-soft);
-      border-color: var(--owner-border);
-    }
-
-    .owner-modal-tab.active {
-      color: var(--owner-accent);
-      background: var(--owner-surface);
-      border-color: var(--owner-border) var(--owner-border) var(--owner-surface);
-    }
-
-    .owner-card {
-      border: 1px solid var(--owner-border);
-      border-radius: 0.9rem;
-      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
-      background: var(--owner-surface);
-      overflow: hidden;
-    }
-
-    .owner-card-soft {
-      background: var(--owner-surface-soft);
-    }
-
-    .owner-card-header {
-      padding: 0.95rem 1.1rem;
-      border-bottom: 1px solid var(--owner-border);
-      background: var(--owner-surface-muted);
-    }
-
-    .owner-card-header h5,
-    .owner-card-header h6 {
-      font-weight: 700;
-      color: var(--owner-text);
-    }
-
-    .owner-table-head {
-      background: #f7f9fc;
-    }
-
-    .table-hover tbody tr:hover {
-      cursor: default;
-      background: #f8fafc;
-    }
-
-    .table > :not(caption) > * > * {
-      padding-top: 0.8rem;
-      padding-bottom: 0.8rem;
-      border-color: var(--owner-border);
-      vertical-align: middle;
-    }
-
-    .table thead th {
-      font-size: 0.76rem;
-      font-weight: 700;
-      letter-spacing: 0.03em;
-      text-transform: uppercase;
-      color: var(--owner-text-muted);
-    }
-
-    .form-label {
-      margin-bottom: 0.4rem;
-      font-size: 0.84rem;
-      font-weight: 600;
-      color: var(--owner-text);
-    }
-
-    .form-control,
-    .form-select,
-    .input-group-text {
-      border-color: var(--owner-border-strong);
-      background: #fff;
-    }
-
-    .form-control,
-    .form-select {
-      min-height: 2.7rem;
-      border-radius: 0.65rem;
-      box-shadow: none;
-    }
-
-    .input-group-text {
-      border-radius: 0.65rem 0 0 0.65rem;
-      color: var(--owner-text-muted);
-    }
-
-    .input-group .form-control {
-      border-left: 0;
-      border-radius: 0 0.65rem 0.65rem 0;
-    }
-
-    .form-control:focus,
-    .form-select:focus,
-    .form-check-input:focus {
-      border-color: #9eb4ca;
-      box-shadow: 0 0 0 0.2rem rgba(36, 74, 115, 0.12);
-    }
-
-    .btn {
-      border-radius: 0.65rem;
-      font-weight: 600;
-    }
-
-    .btn-primary,
-    .owner-btn-primary {
-      border-color: #244a73;
-      background: #244a73;
-    }
-
-    .btn-primary:hover,
-    .owner-btn-primary:hover {
-      border-color: #1c3958;
-      background: #1c3958;
-    }
-
-    .btn-outline-primary,
-    .btn-outline-secondary,
-    .owner-btn-secondary {
-      border-color: var(--owner-border-strong);
-      color: var(--owner-text);
-    }
-
-    .btn-outline-primary:hover,
-    .btn-outline-secondary:hover,
-    .owner-btn-secondary:hover {
-      border-color: var(--owner-border-strong);
-      background: var(--owner-surface-muted);
-      color: var(--owner-text);
-    }
-
-    .btn-outline-danger {
-      border-color: #d7dde5;
-      color: #8a4851;
-    }
-
-    .btn-outline-danger:hover {
-      border-color: #c8d0da;
-      background: #f7f1f2;
-      color: #7a3942;
-    }
-    
-    .btn-group-sm .btn {
-      padding: 0.25rem 0.5rem;
-    }
-    
-    .badge {
-      font-size: 0.75rem;
-      padding: 0.35rem 0.55rem;
-      border-radius: 999px;
-      font-weight: 600;
-    }
-
-    .badge.bg-success,
-    .badge.text-bg-success {
-      background: var(--owner-success-bg) !important;
-      color: var(--owner-success-text) !important;
-    }
-
-    .badge.bg-secondary,
-    .badge.text-bg-secondary,
-    .badge.bg-info {
-      background: var(--owner-neutral-bg) !important;
-      color: var(--owner-neutral-text) !important;
-    }
-
-    .badge.bg-warning {
-      background: var(--owner-warning-bg) !important;
-      color: var(--owner-warning-text) !important;
-    }
-
-    .alert.owner-alert {
-      border: 1px solid var(--owner-border);
-      border-radius: 0.8rem;
-      color: var(--owner-text);
-    }
-
-    .alert.owner-alert-info {
-      background: #f4f7fb;
-    }
-
-    .alert.owner-alert-warning {
-      background: #fbf7f1;
-    }
-
-    .table-secondary,
-    .table-warning,
-    .table-success {
-      --bs-table-bg: transparent;
-    }
-
-    tr.table-secondary {
-      background: #f8fafc;
-      color: #7a8696;
-    }
-
-    tr.table-warning {
-      background: #fff9ef;
-    }
-
-    tr.table-success {
-      background: #f4f9f6;
-    }
-
-    /* Drag and drop styles */
-    .cdk-drag-preview {
-      opacity: 0.8;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-    }
-
-    .cdk-drag-placeholder {
-      opacity: 0.4;
-      background: #f0f0f0;
-    }
-
-    .cdk-drag-animating {
-      transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
-    }
-
-    tbody.cdk-drop-list-dragging tr:not(.cdk-drag-placeholder) {
-      transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
-    }
-
-    [cdkDragHandle] {
-      cursor: move;
-      color: #94a3b8;
-    }
-
-    tr[cdkDrag]:hover {
-      background-color: #f8fafc;
-    }
-
-    @media (max-width: 767.98px) {
-      .owner-modal-body,
-      .owner-modal-header,
-      .owner-modal-footer {
-        padding-left: 1rem;
-        padding-right: 1rem;
-      }
-
-      .owner-modal-tabs {
-        gap: 0.25rem;
-      }
-
-      .owner-modal-tab {
-        padding: 0.55rem 0.7rem;
-        font-size: 0.9rem;
-      }
-    }
-  `]
+  styles: []
 })
 export class OwnerManagementModalComponent implements OnInit, OnDestroy {
   @ViewChild('ownersAssignmentScroll') ownersAssignmentScroll?: ElementRef<HTMLDivElement>;
