@@ -177,3 +177,13 @@
 	background-color: rgba(220, 53, 69, 0.12) !important;
 }
 
+/* Clean highlight without layout shift */
+:host ::ng-deep .ag-theme-quartz .ag-row.due-date-match-row {
+	background-color: rgba(185, 28, 28, 0.08) !important;
+	box-shadow: inset 3px 0 0 #b91c1c;
+}
+
+:host ::ng-deep .ag-theme-quartz .ag-row.due-date-match-row .ag-cell {
+	background-color: transparent !important;
+}
+

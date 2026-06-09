@@ -2907,7 +2907,7 @@ export class ShippingComponent implements OnInit, OnDestroy {
 
       let classes = [];
       if (params.data && params.data.SOD_DUE_DATE == params.data.SO_ORD_DATE) {
-        classes.push("border-2 border border-danger border-start")
+        classes.push("due-date-match-row");
       } else if (params.data?.SALES_ORDER_LINE_NUMBER === this.comment) {
         classes.push("bg-primary-subtle")
       } else if (params.data.misc?.hot_order) {
