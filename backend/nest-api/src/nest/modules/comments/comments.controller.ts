@@ -1,12 +1,16 @@
-import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Query, UseGuards } from '@nestjs/common';
 import { CurrentUserId } from '@/nest/decorators/current-user-id.decorator';
 import { Permissions, RolePermissionGuard } from '../access-control';
 import { CommentsService } from './comments.service';
+import { CommentRemindersService } from './comment-reminders.service';
 
 @Controller('comments')
 @UseGuards(RolePermissionGuard)
 export class CommentsController {
-  constructor(private readonly service: CommentsService) {}
+  constructor(
+    private readonly service: CommentsService,
+    private readonly remindersService: CommentRemindersService,
+  ) {}
 
   @Get('find')
   async find(
@@ -44,5 +48,42 @@ export class CommentsController {
     @Body() payload: { id?: number | string; active?: number | string },
   ) {
     return this.service.delete(payload, currentUserId);
+  }
+
+  // ── Reminders ──────────────────────────────────────────────────────────
+
+  @Post('reminders/set')
+  @Permissions('write')
+  async setReminder(
+    @CurrentUserId() currentUserId: number,
+    @Body() payload: { commentId: number; remindAt: string; note?: string },
+  ) {
+    return this.remindersService.setReminder({
+      commentId: Number(payload.commentId),
+      userId: currentUserId,
+      remindAt: String(payload.remindAt),
+      note: payload.note ?? null,
+    });
+  }
+
+  @Delete('reminders/:commentId')
+  @Permissions('write')
+  async cancelReminder(
+    @CurrentUserId() currentUserId: number,
+    @Param('commentId', ParseIntPipe) commentId: number,
+  ) {
+    return this.remindersService.cancelReminder(commentId, currentUserId);
+  }
+
+  @Get('reminders/active')
+  async getActiveReminders(
+    @CurrentUserId() currentUserId: number,
+    @Query('commentIds') commentIds?: string,
+  ) {
+    const ids = (commentIds || '')
+      .split(',')
+      .map(Number)
+      .filter((n) => Number.isFinite(n) && n > 0);
+    return this.remindersService.getActiveRemindersForComments(ids, currentUserId);
   }
 }

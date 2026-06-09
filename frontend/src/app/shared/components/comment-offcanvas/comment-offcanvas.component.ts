@@ -11,6 +11,23 @@ import { firstValueFrom } from "rxjs";
 import "quill-mention";
 import { stripHtml } from "src/assets/js/util";
 
+function buildNestedComments(flat: any[]): any[] {
+  const map: Record<string, any> = {};
+  const roots: any[] = [];
+  for (const row of flat) {
+    map[row.id] = { ...row, childs: [] };
+  }
+  for (const row of flat) {
+    const pid = row.pid;
+    if (pid && map[pid]) {
+      map[pid].childs.push(map[row.id]);
+    } else {
+      roots.push(map[row.id]);
+    }
+  }
+  return roots;
+}
+
 // Additional imports for drag-to-scroll functionality
 @Component({
   selector: "app-comment-offcanvas",
@@ -71,7 +88,8 @@ import { stripHtml } from "src/assets/js/util";
           <div *ngIf="!loading && comments.length === 0" class="text-muted small">No comments yet.</div>
 
           <div class="comment-list" *ngIf="!loading && comments.length > 0" (click)="onCommentMediaClick($event)">
-            <div class="comment-item" *ngFor="let c of comments">
+            <div class="comment-item" *ngFor="let c of comments" [attr.data-comment-id]="c.id">
+              <!-- Comment header -->
               <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
                 <div class="d-flex align-items-center gap-2 flex-grow-1 min-w-0">
                   <img
@@ -84,7 +102,7 @@ import { stripHtml } from "src/assets/js/util";
                 </div>
                 <div class="d-flex align-items-center gap-2">
                   <span class="badge private-badge" *ngIf="isPrivateCommentRow(c)">Private</span>
-                  <small class="text-muted">{{ c.createdDate | date:'short' }}</small>
+                      <small class="text-muted" [title]="c.createdDate | date:'medium'">{{ formatRelativeTime(c.createdDate) }}</small>
                   <button
                     *ngIf="currentUserId && +c.userId === currentUserId"
                     type="button"
@@ -96,12 +114,134 @@ import { stripHtml } from "src/assets/js/util";
                   </button>
                 </div>
               </div>
+
+              <!-- Comment body -->
               <div class="comment-text" [innerHTML]="c.comments"></div>
+
+              <div class="comment-actions-row">
+                <button
+                  type="button"
+                  class="btn btn-link btn-sm p-0 text-decoration-none"
+                  (click)="c._showReply = !c._showReply"
+                  *ngIf="!c._showReply"
+                >
+                  <i class="mdi mdi-reply me-1"></i>Reply
+                  <span *ngIf="c.childs?.length" class="ms-1 text-muted">({{ c.childs.length }})</span>
+                </button>
+
+                <button
+                  type="button"
+                  class="btn btn-link btn-sm p-0 text-decoration-none reminder-toggle-btn"
+                  [class.has-reminder]="c._reminder"
+                  (click)="c._showReminderPicker = !c._showReminderPicker"
+                  [title]="c._reminder ? 'Reminder set: ' + (c._reminder.remind_at | date:'short') : 'Set a reminder'"
+                >
+                  <i class="mdi" [class.mdi-bell]="!c._reminder" [class.mdi-bell-ring]="c._reminder"></i>
+                  <span *ngIf="c._reminder" class="reminder-label">{{ c._reminder.remind_at | date:'MMM d, h:mm a' }}</span>
+                </button>
+              </div>
+
+              <div class="reminder-picker" *ngIf="c._showReminderPicker">
+                <input
+                  type="datetime-local"
+                  class="form-control form-control-sm"
+                  [(ngModel)]="c._reminderDate"
+                  [min]="reminderMinDate"
+                />
+                <input
+                  type="text"
+                  class="form-control form-control-sm"
+                  [(ngModel)]="c._reminderNote"
+                  placeholder="Note (optional)"
+                />
+                <div class="d-flex gap-2 mt-1">
+                  <button
+                    type="button"
+                    class="btn btn-warning btn-sm"
+                    [disabled]="!c._reminderDate"
+                    (click)="saveReminder(c)"
+                  >Save reminder</button>
+                  <button
+                    type="button"
+                    class="btn btn-outline-danger btn-sm"
+                    *ngIf="c._reminder"
+                    (click)="cancelReminder(c)"
+                  >Cancel reminder</button>
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary btn-sm"
+                    (click)="c._showReminderPicker = false"
+                  >Close</button>
+                </div>
+              </div>
+
+              <!-- Nested replies -->
+              <div class="comment-replies" *ngIf="c.childs?.length">
+                <div class="comment-reply-item" *ngFor="let r of c.childs" [attr.data-comment-id]="r.id">
+                  <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
+                    <div class="d-flex align-items-center gap-2 flex-grow-1 min-w-0">
+                      <img
+                        class="comment-avatar"
+                        [src]="getCommentUserImage(r)"
+                        alt="User avatar"
+                        (error)="onCommentAvatarError($event)"
+                      />
+                      <strong class="comment-author">{{ r.userName || r.created_by_name || 'User' }}</strong>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                      <small class="text-muted" [title]="r.createdDate | date:'medium'">{{ formatRelativeTime(r.createdDate) }}</small>
+                      <button
+                        *ngIf="currentUserId && +r.userId === currentUserId"
+                        type="button"
+                        class="btn-delete-comment"
+                        title="Delete reply"
+                        (click)="deleteComment(r, $event)"
+                      >
+                        <i class="mdi mdi-trash-can-outline"></i>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="comment-text" [innerHTML]="r.comments"></div>
+                </div>
+              </div>
+
+              <!-- Inline reply editor -->
+              <div class="comment-reply-editor" *ngIf="c._showReply">
+                <quill-editor
+                  [(ngModel)]="c._replyText"
+                  [modules]="quillConfig"
+                  placeholder="Write a reply..."
+                  class="comment-editor comment-reply-quill"
+                ></quill-editor>
+                <div class="d-flex gap-2 mt-2">
+                  <button
+                    type="button"
+                    class="btn btn-primary btn-sm"
+                    [disabled]="isReplyEmpty(c._replyText) || c._replySaving"
+                    (click)="saveReply(c)"
+                  >
+                    {{ c._replySaving ? 'Sending...' : 'Send' }}
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary btn-sm"
+                    (click)="c._showReply = false; c._replyText = ''"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        <div class="comment-composer">
+        <div
+          class="composer-resize-handle"
+          (pointerdown)="onComposerResizeHandlePointerDown($event)"
+          aria-hidden="true"
+        ></div>
+
+        <div class="comment-composer" [style.height.px]="composerHeight" [class.resizing]="isComposerResizing">
           <div class="draft-inline-banner" *ngIf="showDiscardDraftAction">
             <div class="d-flex align-items-center gap-2 flex-wrap">
               <span class="badge draft-badge" [ngClass]="draftBadgeClass || 'badge-restored'">
@@ -130,22 +270,24 @@ import { stripHtml } from "src/assets/js/util";
             (onEditorCreated)="onComposerEditorCreated($event)"
           ></quill-editor>
 
-          <div class="form-check mb-2">
-            <input
-              id="offcanvas-private-comment"
-              type="checkbox"
-              class="form-check-input"
-              [(ngModel)]="isPrivateComment"
-            />
-            <label class="form-check-label" for="offcanvas-private-comment">
-              Private message (only you can see this)
-            </label>
-          </div>
+          <div class="comment-composer-footer">
+            <div class="form-check mb-2">
+              <input
+                id="offcanvas-private-comment"
+                type="checkbox"
+                class="form-check-input"
+                [(ngModel)]="isPrivateComment"
+              />
+              <label class="form-check-label" for="offcanvas-private-comment">
+                Private message (only you can see this)
+              </label>
+            </div>
 
-          <div class="d-flex justify-content-end">
-            <button class="btn btn-primary btn-sm" [disabled]="saving || isEditorContentEmpty()" (click)="save()">
-              {{ saving ? 'Saving...' : 'Save Comment' }}
-            </button>
+            <div class="d-flex justify-content-end">
+              <button class="btn btn-primary btn-sm" [disabled]="saving || isEditorContentEmpty()" (click)="save()">
+                {{ saving ? 'Saving...' : 'Save Comment' }}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -252,17 +394,20 @@ import { stripHtml } from "src/assets/js/util";
       content: "";
       position: absolute;
       left: 50%;
-      top: 0;
-      width: 2px;
-      height: 100%;
+      top: 50%;
+      width: 3px;
+      height: 56px;
+      border-radius: 999px;
       transform: translateX(-50%);
-      background: transparent;
-      transition: background-color 0.2s ease;
+      background: var(--comment-panel-border);
+      opacity: 0.65;
+      transition: opacity 0.2s ease, background-color 0.2s ease;
     }
 
     .comment-offcanvas:hover .offcanvas-resize-handle::before,
     .comment-offcanvas.resizing .offcanvas-resize-handle::before {
-      background: var(--bs-border-color, #dee2e6);
+      background: var(--bs-primary, #0d6efd);
+      opacity: 1;
     }
 
     .comment-offcanvas-header {
@@ -349,11 +494,46 @@ import { stripHtml } from "src/assets/js/util";
     }
 
     .comment-composer {
-      position: sticky;
-      bottom: 0;
       border-top: 1px solid var(--comment-panel-border);
       background: var(--comment-panel-bg);
       padding: 0.85rem 1rem 1rem;
+      overflow-y: auto;
+      flex: 0 0 auto;
+    }
+
+    .comment-composer-footer {
+      position: sticky;
+      bottom: -1rem;
+      background: var(--comment-panel-bg);
+      border-top: 1px solid var(--comment-panel-border);
+      padding-top: 0.55rem;
+      padding-bottom: 0.5rem;
+      margin-top: 0.2rem;
+    }
+
+    .comment-composer.resizing {
+      user-select: none;
+    }
+
+    .composer-resize-handle {
+      flex: 0 0 auto;
+      height: 12px;
+      cursor: ns-resize;
+      position: relative;
+      background: var(--comment-panel-bg);
+      touch-action: none;
+    }
+
+    .composer-resize-handle::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 5px;
+      transform: translateX(-50%);
+      width: 56px;
+      height: 2px;
+      border-radius: 999px;
+      background: var(--comment-panel-border);
     }
 
     .draft-inline-banner {
@@ -466,6 +646,18 @@ import { stripHtml } from "src/assets/js/util";
       position: relative;
     }
 
+    .comment-item.comment-focused,
+    .comment-reply-item.comment-focused {
+      border-color: var(--bs-warning, #ffc107);
+      box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.25);
+      animation: comment-focus-pulse 1.4s ease;
+    }
+
+    @keyframes comment-focus-pulse {
+      0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.55); }
+      100% { box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.25); }
+    }
+
     .btn-delete-comment {
       display: none;
       align-items: center;
@@ -502,6 +694,93 @@ import { stripHtml } from "src/assets/js/util";
 
     .comment-author {
       min-width: 0;
+      word-break: break-word;
+    }
+
+    .comment-replies {
+      margin-top: 0.4rem;
+      padding-left: 0.75rem;
+      border-left: 2px solid var(--comment-panel-border);
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .comment-reply-item {
+      padding: 0.4rem 0.5rem;
+      background: var(--comment-panel-bg);
+      border-radius: 0.35rem;
+      border: 1px solid var(--comment-panel-border);
+    }
+
+    .comment-actions-row {
+      margin-top: 0.35rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      min-height: 1.1rem;
+    }
+
+    .reminder-toggle-btn {
+      font-size: 0.72rem;
+      color: var(--comment-panel-muted);
+      gap: 0.22rem;
+      display: inline-flex;
+      align-items: center;
+      border: none;
+      background: none;
+      padding: 0;
+      cursor: pointer;
+    }
+
+    .reminder-toggle-btn.has-reminder {
+      color: #d97706;
+    }
+
+    .reminder-toggle-btn .reminder-label {
+      font-size: 0.68rem;
+    }
+
+    .reminder-picker {
+      margin-top: 0.4rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      padding: 0.5rem;
+      border: 1px solid var(--comment-panel-border);
+      border-radius: 0.4rem;
+      background: var(--comment-card-bg);
+    }
+
+    .comment-actions-row .btn-link {
+      font-size: 0.78rem;
+      color: var(--comment-panel-muted);
+    }
+
+    .comment-actions-row .btn-link:hover {
+      color: var(--bs-primary, #0d6efd);
+    }
+
+    .comment-reply-editor {
+      margin-top: 0.5rem;
+      padding-top: 0.5rem;
+      border-top: 1px dashed var(--comment-panel-border);
+    }
+
+    :host ::ng-deep .comment-reply-quill .ql-container {
+      min-height: 70px;
+      height: 90px;
+      max-height: 140px;
+      overflow: hidden;
+    }
+
+    :host ::ng-deep .comment-reply-quill .ql-editor {
+      height: 100%;
+      max-height: 100%;
+      overflow-y: auto;
+      box-sizing: border-box;
+      white-space: pre-wrap;
       word-break: break-word;
     }
 
@@ -633,11 +912,13 @@ import { stripHtml } from "src/assets/js/util";
 })
 export class CommentOffcanvasComponent implements OnChanges, OnDestroy {
   private static readonly PANEL_WIDTH_STORAGE_KEY = "shipping.commentOffcanvas.width";
+  private static readonly COMPOSER_HEIGHT_STORAGE_KEY = "shipping.commentOffcanvas.composerHeight";
   private static readonly COMMENT_DRAFT_ACTIVE_VALUE = 2;
   private static readonly COMMENT_PRIVATE_ACTIVE_VALUE = 3;
 
   @Input() isOpen = false;
   @Input() orderNum: string | null = null;
+  @Input() focusCommentId: number | null = null;
   @Input() type = "Sales Order";
   @Input() title = "Comments";
   @Input() commentViewMode: "offcanvas" | "modal" = "offcanvas";
@@ -669,12 +950,113 @@ export class CommentOffcanvasComponent implements OnChanges, OnDestroy {
   private draftToastTimer: ReturnType<typeof setTimeout> | null = null;
   private toolbarCleanup: Array<() => void> = [];
   private resizeCleanup: Array<() => void> = [];
+  private composerResizeCleanup: Array<() => void> = [];
   private currentOrderContext: string | null = null;
   private skipPersistDraftForOrder: string | null = null;
   private previousBodyOverflow: string | null = null;
   private bodyScrollLocked = false;
+  private focusedCommentTimer: ReturnType<typeof setTimeout> | null = null;
   panelWidth = 420;
   isResizing = false;
+  composerHeight = 260;
+  isComposerResizing = false;
+
+  isReplyEmpty = (text: string): boolean => {
+    return !stripHtml(text || "").replace(/\s|&nbsp;/g, "");
+  };
+
+  formatRelativeTime(value: string | Date | null | undefined): string {
+    if (!value) {
+      return "";
+    }
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return "";
+    }
+
+    const seconds = Math.max(0, Math.floor((Date.now() - date.getTime()) / 1000));
+
+    if (seconds < 30) return "just now";
+    if (seconds < 60) return `${seconds}s ago`;
+
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes} min${minutes === 1 ? "" : "s"} ago`;
+
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} hr${hours === 1 ? "" : "s"} ago`;
+
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days} day${days === 1 ? "" : "s"} ago`;
+
+    const weeks = Math.floor(days / 7);
+    if (weeks < 5) return `${weeks} wk${weeks === 1 ? "" : "s"} ago`;
+
+    const months = Math.floor(days / 30);
+    if (months < 12) return `${months} mo${months === 1 ? "" : "s"} ago`;
+
+    const years = Math.floor(days / 365);
+    return `${years} yr${years === 1 ? "" : "s"} ago`;
+  }
+
+  saveReminder = async (c: any): Promise<void> => {
+    if (!c._reminderDate || !c.id) return;
+    const remindAtIso = new Date(c._reminderDate).toISOString();
+    await this.commentsService.setReminder(Number(c.id), remindAtIso, c._reminderNote || undefined);
+    c._reminder = { remind_at: c._reminderDate };
+    c._showReminderPicker = false;
+  };
+
+  cancelReminder = async (c: any): Promise<void> => {
+    if (!c.id) return;
+    await firstValueFrom(this.commentsService.cancelReminder(Number(c.id)));
+    c._reminder = null;
+    c._reminderDate = '';
+    c._reminderNote = '';
+    c._showReminderPicker = false;
+  };
+
+  get reminderMinDate(): string {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() + 1);
+    return now.toISOString().slice(0, 16);
+  }
+
+  saveReply = async (parent: any): Promise<void> => {
+    const text = String(parent._replyText || "").trim();
+    if (this.isReplyEmpty(text) || !this.orderNum) {
+      return;
+    }
+
+    const userInfo = this.authenticationService.currentUserValue;
+    parent._replySaving = true;
+
+    try {
+      await this.commentsService.createComment({
+        insert: 1,
+        locationPath: window.location.href.split("?")[0],
+        pageName: location.pathname,
+        comments: text,
+        emailToSendFromMention: [],
+        emailCallBackUrl: `${window.location.href.split("?")[0]}?comment=${this.orderNum}`,
+        created_by_name: userInfo?.full_name,
+        createdDate: new Date(),
+        comments_html: stripHtml(text),
+        type: this.type,
+        orderNum: this.orderNum,
+        userId: userInfo?.id,
+        userName: userInfo?.full_name,
+        pid: parent.id,
+        active: 1,
+      });
+
+      parent._replyText = "";
+      parent._showReply = false;
+      await this.loadComments();
+    } finally {
+      parent._replySaving = false;
+    }
+  };
 
   discardDraft = async (): Promise<void> => {
     const orderNum = String(this.orderNum || this.currentOrderContext || "").trim();
@@ -704,6 +1086,7 @@ export class CommentOffcanvasComponent implements OnChanges, OnDestroy {
     private lightbox: Lightbox
   ) {
     this.restorePanelWidth();
+    this.restoreComposerHeight();
 
     this.quillConfig = {
       toolbar: {
@@ -767,7 +1150,11 @@ export class CommentOffcanvasComponent implements OnChanges, OnDestroy {
       this.skipPersistDraftForOrder = null;
       this.isPrivateComment = false;
       this.ensureUsersLoaded();
-      this.loadComments({ forceScrollToBottom: true });
+      this.loadComments({ forceScrollToBottom: !this.focusCommentId });
+    }
+
+    if (this.isOpen && this.orderNum && changes["focusCommentId"] && this.focusCommentId) {
+      this.queueScrollToComment(this.focusCommentId);
     }
   }
 
@@ -814,10 +1201,29 @@ export class CommentOffcanvasComponent implements OnChanges, OnDestroy {
         type: this.type,
         active: 1,
       });
-      this.comments = Array.isArray(results) ? results : [];
+      const flat = Array.isArray(results) ? results : [];
+      this.comments = buildNestedComments(flat);
 
       if (this.orderNum) {
         await this.restoreDraftForOrder(this.orderNum);
+      }
+
+      // Attach active reminders to comment rows
+      if (this.currentUserId && flat.length) {
+        try {
+          const ids = flat.map((r: any) => Number(r.id)).filter(Boolean);
+          const reminders: any[] = await this.commentsService.getActiveReminders(ids) ?? [];
+          const reminderMap = new Map(reminders.map((r: any) => [Number(r.comment_id), r]));
+          const attachReminders = (rows: any[]): void => {
+            for (const row of rows) {
+              row._reminder = reminderMap.get(Number(row.id)) ?? null;
+              if (row.childs?.length) attachReminders(row.childs);
+            }
+          };
+          attachReminders(this.comments);
+        } catch {
+          // non-critical — reminders are best-effort
+        }
       }
     } catch {
       this.comments = [];
@@ -825,7 +1231,9 @@ export class CommentOffcanvasComponent implements OnChanges, OnDestroy {
     } finally {
       this.loading = false;
       this.updateDiscardDraftActionState();
-      if (forceScrollToBottom || shouldKeepBottom) {
+      if (this.focusCommentId) {
+        this.queueScrollToComment(this.focusCommentId);
+      } else if (forceScrollToBottom || shouldKeepBottom) {
         this.queueScrollToBottom();
       }
     }
@@ -994,6 +1402,38 @@ export class CommentOffcanvasComponent implements OnChanges, OnDestroy {
     setTimeout(() => this.scrollThreadToBottom(), 0);
   }
 
+  private queueScrollToComment(commentId: number): void {
+    this.clearFocusedCommentTimer();
+    this.focusedCommentTimer = setTimeout(() => {
+      this.focusedCommentTimer = null;
+      this.scrollToComment(commentId);
+    }, 0);
+  }
+
+  private scrollToComment(commentId: number): void {
+    const thread = this.commentThread?.nativeElement;
+    if (!thread || !commentId) {
+      return;
+    }
+
+    const element = thread.querySelector(`[data-comment-id="${commentId}"]`) as HTMLElement | null;
+    if (!element) {
+      return;
+    }
+
+    element.scrollIntoView({ behavior: "smooth", block: "center" });
+    element.classList.add("comment-focused");
+    setTimeout(() => element.classList.remove("comment-focused"), 2200);
+  }
+
+  private clearFocusedCommentTimer(): void {
+    if (!this.focusedCommentTimer) {
+      return;
+    }
+    clearTimeout(this.focusedCommentTimer);
+    this.focusedCommentTimer = null;
+  }
+
   onThreadScroll(): void {
     // Intentionally no-op for now; near-bottom is measured just before refresh.
   }
@@ -1070,8 +1510,10 @@ export class CommentOffcanvasComponent implements OnChanges, OnDestroy {
   ngOnDestroy(): void {
     this.cleanupToolbarHandlers();
     this.cleanupResizeHandlers();
+    this.cleanupComposerResizeHandlers();
     this.hideDraftToast();
     this.unlockBodyScroll();
+    this.clearFocusedCommentTimer();
   }
 
   onComposerEditorCreated(editor: any): void {
@@ -1114,6 +1556,38 @@ export class CommentOffcanvasComponent implements OnChanges, OnDestroy {
     this.resizeCleanup.push(() => window.removeEventListener("pointermove", onPointerMove));
     this.resizeCleanup.push(() => window.removeEventListener("pointerup", stopResize));
     this.resizeCleanup.push(() => window.removeEventListener("pointercancel", stopResize));
+  }
+
+  onComposerResizeHandlePointerDown(event: PointerEvent): void {
+    if (!this.isOpen || event.button !== 0 || window.innerWidth <= 991) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const startY = event.clientY;
+    const startHeight = this.composerHeight;
+    this.isComposerResizing = true;
+
+    const onPointerMove = (moveEvent: PointerEvent): void => {
+      const deltaY = startY - moveEvent.clientY;
+      const targetHeight = startHeight + deltaY;
+      this.composerHeight = this.clampComposerHeight(targetHeight);
+      this.persistComposerHeight(this.composerHeight);
+    };
+
+    const stopResize = (): void => {
+      this.isComposerResizing = false;
+      this.cleanupComposerResizeHandlers();
+    };
+
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", stopResize, { once: true });
+    window.addEventListener("pointercancel", stopResize, { once: true });
+
+    this.composerResizeCleanup.push(() => window.removeEventListener("pointermove", onPointerMove));
+    this.composerResizeCleanup.push(() => window.removeEventListener("pointerup", stopResize));
+    this.composerResizeCleanup.push(() => window.removeEventListener("pointercancel", stopResize));
   }
 
   private enableToolbarDragScroll(toolbar: HTMLElement): void {
@@ -1207,6 +1681,12 @@ export class CommentOffcanvasComponent implements OnChanges, OnDestroy {
     return Math.min(maxWidth, Math.max(minWidth, Math.round(value)));
   }
 
+  private clampComposerHeight(value: number): number {
+    const minHeight = 220;
+    const maxHeight = Math.max(minHeight, Math.min(560, window.innerHeight - 180));
+    return Math.min(maxHeight, Math.max(minHeight, Math.round(value)));
+  }
+
   private restorePanelWidth(): void {
     if (typeof window === "undefined") {
       return;
@@ -1225,6 +1705,24 @@ export class CommentOffcanvasComponent implements OnChanges, OnDestroy {
     this.panelWidth = this.clampPanelWidth(parsed);
   }
 
+  private restoreComposerHeight(): void {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const raw = window.localStorage.getItem(CommentOffcanvasComponent.COMPOSER_HEIGHT_STORAGE_KEY);
+    if (!raw) {
+      return;
+    }
+
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed)) {
+      return;
+    }
+
+    this.composerHeight = this.clampComposerHeight(parsed);
+  }
+
   private persistPanelWidth(width: number): void {
     if (typeof window === "undefined") {
       return;
@@ -1233,11 +1731,26 @@ export class CommentOffcanvasComponent implements OnChanges, OnDestroy {
     window.localStorage.setItem(CommentOffcanvasComponent.PANEL_WIDTH_STORAGE_KEY, String(Math.round(width)));
   }
 
+  private persistComposerHeight(height: number): void {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.setItem(CommentOffcanvasComponent.COMPOSER_HEIGHT_STORAGE_KEY, String(Math.round(height)));
+  }
+
   private cleanupResizeHandlers(): void {
     for (const dispose of this.resizeCleanup) {
       dispose();
     }
     this.resizeCleanup = [];
+  }
+
+  private cleanupComposerResizeHandlers(): void {
+    for (const dispose of this.composerResizeCleanup) {
+      dispose();
+    }
+    this.composerResizeCleanup = [];
   }
 
   private getCurrentUserId(): number | null {

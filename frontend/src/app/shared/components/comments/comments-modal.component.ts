@@ -115,6 +115,17 @@ export class DateAgoPipe implements PipeTransform {
       .resize-handle-right {
         right: 0;
       }
+
+      [data-modal-comment-id].comment-focused {
+        border-color: var(--bs-warning, #ffc107) !important;
+        box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.25);
+        animation: modal-comment-focus-pulse 1.4s ease;
+      }
+
+      @keyframes modal-comment-focus-pulse {
+        0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.55); }
+        100% { box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.25); }
+      }
     `,
   ],
 })
@@ -278,6 +289,9 @@ export class CommentsModalComponent implements OnInit {
   @Input() public userName: string;
   @Input() public showCommentViewActions = false;
   @Input() public commentViewMode: "offcanvas" | "modal" = "modal";
+  @Input() public focusCommentId: number | null = null;
+
+  private focusedCommentTimer: ReturnType<typeof setTimeout> | null = null;
 
   userInfo;
 
@@ -392,12 +406,47 @@ export class CommentsModalComponent implements OnInit {
       this.sortComments(results);
       //this.results1 = results
       this.isLoading = false;
+      if (this.focusCommentId) {
+        this.queueFocusComment(this.focusCommentId);
+      }
     } catch (err) {
       this.isLoading = false;
     }
   };
 
+  private queueFocusComment(commentId: number): void {
+    this.clearFocusCommentTimer();
+    this.focusedCommentTimer = setTimeout(() => {
+      this.focusedCommentTimer = null;
+      this.focusComment(commentId);
+    }, 0);
+  }
+
+  private focusComment(commentId: number): void {
+    if (!commentId) {
+      return;
+    }
+
+    const target = document.querySelector(`[data-modal-comment-id="${commentId}"]`) as HTMLElement | null;
+    if (!target) {
+      return;
+    }
+
+    target.scrollIntoView({ behavior: "smooth", block: "center" });
+    target.classList.add("comment-focused");
+    setTimeout(() => target.classList.remove("comment-focused"), 2200);
+  }
+
+  private clearFocusCommentTimer(): void {
+    if (!this.focusedCommentTimer) {
+      return;
+    }
+    clearTimeout(this.focusedCommentTimer);
+    this.focusedCommentTimer = null;
+  }
+
   dismiss() {
+    this.clearFocusCommentTimer();
     this.ngbActiveModal.dismiss();
   }
 
@@ -410,6 +459,7 @@ export class CommentsModalComponent implements OnInit {
   }
 
   close() {
+    this.clearFocusCommentTimer();
     this.ngbActiveModal.close();
   }
 

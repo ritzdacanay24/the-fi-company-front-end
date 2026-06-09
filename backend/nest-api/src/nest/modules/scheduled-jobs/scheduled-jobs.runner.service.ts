@@ -2,10 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { SCHEDULED_JOBS_TIMEZONE } from './scheduled-jobs.definitions';
 import { ScheduledJobsService } from './scheduled-jobs.service';
+import { CommentRemindersService } from '../comments/comment-reminders.service';
 
 @Injectable()
 export class ScheduledJobsRunnerService {
-  constructor(private readonly scheduledJobsService: ScheduledJobsService) {}
+  constructor(
+    private readonly scheduledJobsService: ScheduledJobsService,
+    private readonly commentRemindersService: CommentRemindersService,
+  ) {}
 
   @Cron('0 */30 * * * 1-5', { name: 'scheduled-jobs.dropin-workorder-emails', timeZone: SCHEDULED_JOBS_TIMEZONE })
   async runDropInWorkOrderEmails(): Promise<void> {
@@ -87,5 +91,10 @@ export class ScheduledJobsRunnerService {
   @Cron('0 0 * * * *', { name: 'scheduled-jobs.material-request-shortage-backfill', timeZone: SCHEDULED_JOBS_TIMEZONE })
   async runMaterialRequestShortageBackfill(): Promise<void> {
     await this.scheduledJobsService.runJobIfEnabled('material-request-shortage-backfill');
+  }
+
+  @Cron('* * * * *', { name: 'scheduled-jobs.comment-reminders', timeZone: SCHEDULED_JOBS_TIMEZONE })
+  async runCommentReminders(): Promise<void> {
+    await this.commentRemindersService.processDueReminders();
   }
 }

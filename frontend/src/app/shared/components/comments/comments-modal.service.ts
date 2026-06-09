@@ -13,7 +13,8 @@ export class CommentsModalService {
     type?: any,
     title?: string,
     userId?: number,
-    userName?: string
+    userName?: string,
+    focusCommentId?: number | null,
   ) {
     let modalRef = this.modalService.open(CommentsModalComponent, {
       backdrop:false,
@@ -31,6 +32,10 @@ export class CommentsModalService {
     modalRef.componentInstance.title = title || "Comments";
     modalRef.componentInstance.userId = userId;
     modalRef.componentInstance.userName = userName;
+    modalRef.componentInstance.focusCommentId =
+      Number.isFinite(Number(focusCommentId)) && Number(focusCommentId) > 0
+        ? Number(focusCommentId)
+        : null;
     return modalRef;
   }
 }

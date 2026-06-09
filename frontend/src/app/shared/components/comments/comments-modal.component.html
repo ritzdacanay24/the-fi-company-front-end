@@ -68,7 +68,7 @@
 
   </div>
 
-  <div class="card" *ngFor="let row of results1;let i = index">
+  <div class="card" *ngFor="let row of results1;let i = index" [attr.data-modal-comment-id]="row.id">
     <div class="card-header py-2">
       <div class="d-flex align-items-center">
         <div>
@@ -92,7 +92,7 @@
       </blockquote>
 
       <ul style="list-style: none;">
-        <li *ngFor="let row1 of row.childs" style="padding-top:3px;padding-bottom:3px" class="border-bottom-grey">
+        <li *ngFor="let row1 of row.childs" style="padding-top:3px;padding-bottom:3px" class="border-bottom-grey" [attr.data-modal-comment-id]="row1.id">
           <span class="feather icon-message-square mr-2 text-success"></span>
           <blockquote class="blockquote">
             <span class="mb-3 tx-14 pl-3" [innerHTML]="row1.comments | safeHtml"></span>

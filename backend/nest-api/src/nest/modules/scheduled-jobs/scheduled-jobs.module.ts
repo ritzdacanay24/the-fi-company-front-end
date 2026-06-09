@@ -6,6 +6,7 @@ import { MenuBadgeModule } from '../menu-badge/menu-badge.module';
 import { PhotoChecklistModule } from '../photo-checklist/photo-checklist.module';
 import { ReportsModule } from '../reports/reports.module';
 import { SerialAvailabilityModule } from '../serial-availability/serial-availability.module';
+import { CommentsModule } from '../comments/comments.module';
 import { ScheduledJobsController } from './scheduled-jobs.controller';
 import { ScheduledJobRecipientsRepository } from './scheduled-job-recipients.repository';
 import { ScheduledJobRecipientsService } from './scheduled-job-recipients.service';
@@ -48,6 +49,7 @@ import {
     MenuBadgeModule,
     SerialAvailabilityModule,
     PhotoChecklistModule,
+    CommentsModule,
   ],
   controllers: [ScheduledJobsController],
   providers: [

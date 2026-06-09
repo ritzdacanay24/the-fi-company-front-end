@@ -226,6 +226,12 @@ export class ShippingComponent implements OnInit, OnDestroy {
       this.gridFilterId = params["gridFilterId"];
       this.gridViewId = params["gridViewId"];
       this.comment = params["comment"];
+      const commentId = Number(params["commentId"]);
+      this.focusedCommentId = Number.isFinite(commentId) && commentId > 0 ? commentId : null;
+      const requestedCommentViewMode = String(params["commentViewMode"] || "").toLowerCase();
+      if (requestedCommentViewMode === "offcanvas" || requestedCommentViewMode === "modal") {
+        this.commentViewMode = requestedCommentViewMode;
+      }
     });
 
     // Initialize user ID
@@ -252,7 +258,7 @@ export class ShippingComponent implements OnInit, OnDestroy {
     this.getData();
 
     if (this.comment) {
-      this.viewComment(this.comment, null);
+      this.viewComment(this.comment, null, null, this.focusedCommentId);
     }
   }
 
@@ -501,6 +507,7 @@ export class ShippingComponent implements OnInit, OnDestroy {
   commentPanelWidth = 420;
   selectedCommentOrderNum: string | null = null;
   selectedCommentRowId: string | null = null;
+  focusedCommentId: number | null = null;
 
   get commentPanelPushWidth(): number {
     if (!this.isCommentPanelOpen || window.innerWidth <= 991.98) {
@@ -509,11 +516,25 @@ export class ShippingComponent implements OnInit, OnDestroy {
     return this.commentPanelWidth;
   }
 
-  viewComment = (salesOrderLineNumber: any, id: string, so?) => {
+  viewComment = (salesOrderLineNumber: any, id: string, so?, focusCommentId?: number | null) => {
     const orderNum = String(salesOrderLineNumber || "").trim();
     if (!orderNum) {
       return;
     }
+
+    const parsedFocusId = Number(focusCommentId);
+    this.focusedCommentId = Number.isFinite(parsedFocusId) && parsedFocusId > 0 ? parsedFocusId : null;
+
+    this.router.navigate([`.`], {
+      relativeTo: this.activatedRoute,
+      queryParamsHandling: "merge",
+      queryParams: {
+        comment: orderNum,
+        commentId: this.focusedCommentId,
+        type: "Sales Order",
+        commentViewMode: this.commentViewMode,
+      },
+    });
 
     // Open panel immediately; do not block on any fallback lookups.
     this.selectedCommentOrderNum = orderNum;
@@ -554,11 +575,13 @@ export class ShippingComponent implements OnInit, OnDestroy {
     this.isCommentPanelOpen = false;
     this.selectedCommentOrderNum = null;
     this.selectedCommentRowId = null;
+    this.focusedCommentId = null;
     this.router.navigate([`.`], {
       relativeTo: this.activatedRoute,
       queryParamsHandling: "merge",
       queryParams: {
         comment: null,
+        commentId: null,
       },
     });
   };
@@ -616,7 +639,8 @@ export class ShippingComponent implements OnInit, OnDestroy {
       "Sales Order",
       "Shipping Comments",
       this.authenticationService.currentUserValue?.id,
-      this.authenticationService.currentUserValue?.full_name
+      this.authenticationService.currentUserValue?.full_name,
+      this.focusedCommentId,
     );
 
     modalRef.componentInstance.showCommentViewActions = true;
@@ -635,8 +659,12 @@ export class ShippingComponent implements OnInit, OnDestroy {
         if (result) {
           this.onCommentSaved(result);
         }
+
+        this.closeCommentPanel();
       },
-      () => {}
+      () => {
+        this.closeCommentPanel();
+      }
     );
   }
 
@@ -2245,7 +2273,8 @@ export class ShippingComponent implements OnInit, OnDestroy {
             this.viewComment(
               params.rowData.sales_order_line_number || params.rowData.SALES_ORDER_LINE_NUMBER,
               params.rowData.id,
-              params.rowData.SOD_NBR
+              params.rowData.SOD_NBR,
+              params.rowData?.recent_comments?.id,
             );
           });
         },

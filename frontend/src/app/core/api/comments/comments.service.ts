@@ -32,4 +32,17 @@ export class CommentsService extends DataService<any> {
     return this.http.post(`apiv2/comments/delete`, comment)
   }
 
+  setReminder(commentId: number, remindAt: string, note?: string): Promise<any> {
+    return this.http.post(`apiv2/comments/reminders/set`, { commentId, remindAt, note }).toPromise();
+  }
+
+  cancelReminder(commentId: number): Observable<any> {
+    return this.http.delete(`apiv2/comments/reminders/${commentId}`);
+  }
+
+  getActiveReminders(commentIds: number[]): Promise<any[]> {
+    if (!commentIds.length) return Promise.resolve([]);
+    return this.http.get<any[]>(`apiv2/comments/reminders/active?commentIds=${commentIds.join(',')}`).toPromise();
+  }
+
 }
