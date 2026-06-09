@@ -75,6 +75,11 @@
                         Print Bulk Tags
                     </button>
 
+                    <a class="btn btn-outline-primary me-3" style="padding-bottom:11px"
+                        [routerLink]="['/physical-inventory-display']" target="_blank" rel="noopener">
+                        Open Count Display
+                    </a>
+
                     <div title="{{completedFirstCounts}} / {{totalCount}}"
                         class="ms-auto text-center bg-light px-3 rounded"
                         [ngClass]="{'bg-danger-subtle text-danger border-danger-subtle border ': completedFirstCounts < totalCount,'bg-success-subtle text-success border-success-subtle border ': completedFirstCounts >= totalCount}">

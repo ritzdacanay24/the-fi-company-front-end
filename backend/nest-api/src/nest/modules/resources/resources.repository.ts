@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { ResultSetHeader } from 'mysql2/promise';
+import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { MysqlService } from '@/shared/database/mysql.service';
 
-export type ResourceRow = {
+export type ResourceRow = RowDataPacket & {
   id: number;
   category: string;
   title: string;

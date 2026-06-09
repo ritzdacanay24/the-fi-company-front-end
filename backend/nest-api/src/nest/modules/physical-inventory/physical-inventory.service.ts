@@ -1,6 +1,33 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { RowDataPacket } from 'mysql2/promise';
 import { QadOdbcService, QadOdbcTarget } from '@/shared/database/qad-odbc.service';
 import { MysqlService } from '@/shared/database/mysql.service';
+
+export type PhysicalInventorySummary = {
+  stats: {
+    totalTags: number;
+    completedFirstCounts: number;
+    completedSecondCounts: number;
+    completedThirdCounts: number;
+    firstCountVariance: number;
+    secondCountVariance: number;
+    outstandingFirstCounts: number;
+    outstandingSecondCounts: number;
+    postedTags: number;
+    unpostedTags: number;
+    bulkTagsWithQty: number;
+    totalValue: number;
+    varianceValue: number;
+  };
+  progress: {
+    firstCount: number;
+    secondCount: number;
+    thirdCount: number;
+    posted: number;
+  };
+  lastUpdated: string;
+  target: string;
+};
 
 @Injectable()
 export class PhysicalInventoryService {
@@ -112,7 +139,7 @@ export class PhysicalInventoryService {
 
     const [qadRows, printRows] = await Promise.all([
       this.qadOdbcService.query<Array<Record<string, unknown>>>(mainSql, { target }),
-      this.mysqlService.query<Array<Record<string, unknown>>>(`
+      this.mysqlService.query<RowDataPacket[]>(`
         SELECT type, max(created_date) created_date, tag_nbr
         FROM eyefidb.physical_inventory
         GROUP BY tag_nbr, type
@@ -196,6 +223,93 @@ export class PhysicalInventoryService {
     return {
       message: 'Saved',
       inserted: tags.length,
+      target: target || 'default',
+    };
+  }
+
+  async getInventorySummary(target?: QadOdbcTarget): Promise<PhysicalInventorySummary> {
+    const data = await this.getInventoryTags(target);
+
+    const stats = {
+      totalTags: data.length,
+      completedFirstCounts: 0,
+      completedSecondCounts: 0,
+      completedThirdCounts: 0,
+      firstCountVariance: 0,
+      secondCountVariance: 0,
+      outstandingFirstCounts: 0,
+      outstandingSecondCounts: 0,
+      postedTags: 0,
+      unpostedTags: 0,
+      bulkTagsWithQty: 0,
+      totalValue: 0,
+      varianceValue: 0,
+    };
+
+    for (const tag of data) {
+      const hasFirstCount = Boolean(tag.tag_cnt_dt);
+      const hasSecondCount = Boolean(tag.tag_rcnt_dt);
+      const hasThirdCount = Boolean(tag.thirdCountPrintTag);
+      const qtyOnHand = Number(tag.LD_QTY_OH ?? 0);
+      const firstQty = Number(tag.TAG_CNT_QTY ?? 0);
+      const secondQty = Number(tag.TAG_RCNT_QTY ?? 0);
+
+      if (hasFirstCount) {
+        stats.completedFirstCounts += 1;
+        if (firstQty !== qtyOnHand) {
+          stats.firstCountVariance += 1;
+        }
+      } else {
+        stats.outstandingFirstCounts += 1;
+      }
+
+      if (hasSecondCount) {
+        stats.completedSecondCounts += 1;
+        if (secondQty !== qtyOnHand) {
+          stats.secondCountVariance += 1;
+        }
+      }
+
+      if (hasThirdCount) {
+        stats.completedThirdCounts += 1;
+      }
+
+      if (String(tag.tag_posted ?? '0') === '1') {
+        stats.postedTags += 1;
+      } else {
+        stats.unpostedTags += 1;
+      }
+
+      if (String(tag.tag_type ?? '') === 'B' && qtyOnHand > 0) {
+        stats.bulkTagsWithQty += 1;
+      }
+
+      const unitCost = Number(tag.UNIT_COST ?? 0);
+      stats.totalValue += unitCost * qtyOnHand;
+      stats.varianceValue += Number(tag.COV ?? 0);
+    }
+
+    const statsFirstCountVariance = stats.firstCountVariance;
+    const statsSecondCountVariance = stats.secondCountVariance;
+    stats.outstandingSecondCounts = Math.max(statsFirstCountVariance - stats.completedSecondCounts, 0);
+
+    const progress = {
+      firstCount: stats.totalTags > 0 ? Math.round((stats.completedFirstCounts / stats.totalTags) * 100) : 0,
+      secondCount:
+        statsFirstCountVariance > 0
+          ? Math.round((stats.completedSecondCounts / statsFirstCountVariance) * 100)
+          : 100,
+      thirdCount:
+        statsSecondCountVariance > 0
+          ? Math.round((stats.completedThirdCounts / statsSecondCountVariance) * 100)
+          : 100,
+      posted: stats.totalTags > 0 ? Math.round((stats.postedTags / stats.totalTags) * 100) : 0,
+    };
+
+    return {
+      stats,
+      progress,
+      lastUpdated: new Date().toISOString(),
       target: target || 'default',
     };
   }

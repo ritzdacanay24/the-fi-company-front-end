@@ -45,6 +45,14 @@ export class PhysicalInventoryController {
     return this.service.getLastTag(this.resolveTarget(queryTarget, headerTarget));
   }
 
+  @Get('summary')
+  async getSummary(
+    @Query('target') queryTarget?: string,
+    @Headers('x-qad-target') headerTarget?: string,
+  ) {
+    return this.service.getInventorySummary(this.resolveTarget(queryTarget, headerTarget));
+  }
+
   @Post('save')
   @Permissions('write')
   async save(

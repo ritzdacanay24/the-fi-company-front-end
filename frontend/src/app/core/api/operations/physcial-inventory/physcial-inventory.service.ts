@@ -44,6 +44,13 @@ export class PhyscialInventoryService extends DataService<any> {
       }),
     );
 
+  getSummary = async (target?: PhysicalInventoryTarget) =>
+    await firstValueFrom(
+      this.http.get<any>(`${physicalInventoryV2Url}/summary`, {
+        params: this.buildTargetParams(target),
+      }),
+    );
+
 
   save(params, target?: PhysicalInventoryTarget): Observable<any> {
     return this.http.post(`${physicalInventoryV2Url}/save`, params, {
