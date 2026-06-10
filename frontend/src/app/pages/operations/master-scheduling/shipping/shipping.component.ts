@@ -566,7 +566,7 @@ export class ShippingComponent implements OnInit, OnDestroy {
 
     if (mode === "modal" && this.isCommentPanelOpen && this.selectedCommentOrderNum) {
       const activeOrderNum = this.selectedCommentOrderNum;
-      this.closeCommentPanel();
+      this.isCommentPanelOpen = false;
       this.openCommentModal(activeOrderNum);
     }
   };
@@ -649,9 +649,17 @@ export class ShippingComponent implements OnInit, OnDestroy {
     modalRef.result.then(
       (result: any) => {
         if (result?.__commentViewMode === "offcanvas" || result?.__commentViewMode === "modal") {
-          this.setCommentViewMode(result.__commentViewMode);
-          if (result.__commentViewMode === "offcanvas" && this.selectedCommentOrderNum) {
-            this.isCommentPanelOpen = true;
+          const requestedMode = result.__commentViewMode;
+          const reopenOrderNum = this.selectedCommentOrderNum || orderNum;
+          this.setCommentViewMode(requestedMode);
+          if (requestedMode === "offcanvas" && reopenOrderNum) {
+            setTimeout(() => {
+              this.selectedCommentOrderNum = reopenOrderNum;
+              if (!this.selectedCommentRowId) {
+                this.selectedCommentRowId = this.findRowIdBySalesOrderLine(reopenOrderNum);
+              }
+              this.isCommentPanelOpen = true;
+            }, 0);
           }
           return;
         }

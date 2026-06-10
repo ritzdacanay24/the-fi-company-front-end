@@ -181,6 +181,47 @@
 	transition: margin-right 0.25s ease;
 }
 
+.shipping-toolbar-scroll {
+	box-sizing: border-box;
+	height: 72px;
+	min-height: 72px;
+	max-height: 72px;
+	padding-top: 0.75rem;
+	padding-bottom: 0.75rem;
+	flex-wrap: nowrap;
+	overflow-x: scroll;
+	overflow-y: hidden;
+	gap: 0.35rem;
+	scrollbar-gutter: stable;
+	scrollbar-width: thin;
+	scrollbar-color: transparent transparent;
+}
+
+.shipping-toolbar-scroll:hover {
+	scrollbar-color: rgba(120, 130, 145, 0.8) transparent;
+}
+
+.shipping-toolbar-scroll::-webkit-scrollbar {
+	height: 8px;
+}
+
+.shipping-toolbar-scroll::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+.shipping-toolbar-scroll::-webkit-scrollbar-thumb {
+	background: transparent;
+	border-radius: 999px;
+}
+
+.shipping-toolbar-scroll:hover::-webkit-scrollbar-thumb {
+	background: rgba(120, 130, 145, 0.8);
+}
+
+.shipping-toolbar-scroll > * {
+	flex: 0 0 auto;
+}
+
 /* Clean highlight without layout shift */
 :host ::ng-deep .ag-theme-quartz .ag-row.due-date-match-row {
 	background-color: rgba(185, 28, 28, 0.08) !important;

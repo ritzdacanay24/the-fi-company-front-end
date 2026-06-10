@@ -734,8 +734,11 @@ function buildNestedComments(flat: any[]): any[] {
       cursor: pointer;
     }
 
-    .reminder-toggle-btn.has-reminder {
-      color: #d97706;
+    .reminder-toggle-btn.has-reminder,
+    .reminder-toggle-btn.has-reminder .mdi,
+    .reminder-toggle-btn.has-reminder .reminder-label {
+      color: #ffc107 !important;
+      font-weight: 600;
     }
 
     .reminder-toggle-btn .reminder-label {
@@ -953,8 +956,6 @@ export class CommentOffcanvasComponent implements OnChanges, OnDestroy {
   private composerResizeCleanup: Array<() => void> = [];
   private currentOrderContext: string | null = null;
   private skipPersistDraftForOrder: string | null = null;
-  private previousBodyOverflow: string | null = null;
-  private bodyScrollLocked = false;
   private focusedCommentTimer: ReturnType<typeof setTimeout> | null = null;
   panelWidth = 420;
   isResizing = false;
@@ -1122,12 +1123,6 @@ export class CommentOffcanvasComponent implements OnChanges, OnDestroy {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (this.isOpen) {
-      this.lockBodyScroll();
-    } else {
-      this.unlockBodyScroll();
-    }
-
     const becameOpen = !!changes["isOpen"]?.currentValue;
     const orderChanged = !!changes["orderNum"];
 
@@ -1512,7 +1507,6 @@ export class CommentOffcanvasComponent implements OnChanges, OnDestroy {
     this.cleanupResizeHandlers();
     this.cleanupComposerResizeHandlers();
     this.hideDraftToast();
-    this.unlockBodyScroll();
     this.clearFocusedCommentTimer();
   }
 
@@ -1965,26 +1959,6 @@ export class CommentOffcanvasComponent implements OnChanges, OnDestroy {
     }
     target.onerror = null;
     target.src = "assets/images/default-user.png";
-  }
-
-  private lockBodyScroll(): void {
-    if (typeof document === "undefined" || this.bodyScrollLocked) {
-      return;
-    }
-
-    this.previousBodyOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    this.bodyScrollLocked = true;
-  }
-
-  private unlockBodyScroll(): void {
-    if (typeof document === "undefined" || !this.bodyScrollLocked) {
-      return;
-    }
-
-    document.body.style.overflow = this.previousBodyOverflow || "";
-    this.previousBodyOverflow = null;
-    this.bodyScrollLocked = false;
   }
 
   isEditorContentEmpty(): boolean {
