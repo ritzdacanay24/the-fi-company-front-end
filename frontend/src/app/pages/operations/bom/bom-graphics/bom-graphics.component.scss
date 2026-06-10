@@ -18,12 +18,71 @@
   color: var(--bs-body-color, #495057);
 }
 
-:host ::ng-deep .ag-theme-quartz .ag-cell.wo-number-cell {
-  background-color: rgba(13, 110, 253, 0.08);
+:host ::ng-deep .ag-theme-quartz .ag-cell.qty-flow-needed {
+  background-color: rgba(100, 116, 139, 0.1);
+}
+
+:host ::ng-deep .ag-theme-quartz .ag-cell.qty-flow-onhand-full {
+  background-color: rgba(22, 163, 74, 0.16);
+}
+
+:host ::ng-deep .ag-theme-quartz .ag-cell.qty-flow-onhand-partial {
+  background-color: rgba(34, 197, 94, 0.1);
+}
+
+:host ::ng-deep .ag-theme-quartz .ag-cell.qty-flow-wo-available {
+  background-color: rgba(14, 116, 144, 0.14);
+}
+
+:host ::ng-deep .ag-theme-quartz .ag-cell.qty-flow-wo-empty {
+  background-color: rgba(100, 116, 139, 0.08);
+}
+
+:host ::ng-deep .ag-theme-quartz .ag-cell.qty-flow-short-low {
+  background-color: rgba(245, 158, 11, 0.14);
+}
+
+:host ::ng-deep .ag-theme-quartz .ag-cell.qty-flow-short-medium {
+  background-color: rgba(245, 158, 11, 0.22);
+}
+
+:host ::ng-deep .ag-theme-quartz .ag-cell.qty-flow-short-high {
+  background-color: rgba(220, 38, 38, 0.14);
 }
 
 :host ::ng-deep .ag-theme-quartz .comment-action-btn {
   color: var(--bs-primary, #0d6efd) !important;
+}
+
+:host ::ng-deep .ag-theme-quartz .urgency-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 999px;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+:host ::ng-deep .ag-theme-quartz .urgency-icon-critical {
+  color: #dc3545;
+  background: rgba(220, 53, 69, 0.14);
+}
+
+:host ::ng-deep .ag-theme-quartz .urgency-icon-warning {
+  color: #d97706;
+  background: rgba(245, 158, 11, 0.16);
+}
+
+:host ::ng-deep .ag-theme-quartz .urgency-icon-ok {
+  color: #198754;
+  background: rgba(25, 135, 84, 0.14);
+}
+
+:host ::ng-deep .ag-theme-quartz .group-shortage-text {
+  font-weight: 600;
+  color: #b42318;
 }
 
 :host-context([data-bs-theme="dark"]) .demand-v1-loading-overlay,
@@ -31,7 +90,65 @@
   background: rgba(12, 18, 28, 0.72);
 }
 
-:host-context([data-bs-theme="dark"]) ::ng-deep .ag-theme-quartz .ag-cell.wo-number-cell,
-:host-context(.theme-dark) ::ng-deep .ag-theme-quartz .ag-cell.wo-number-cell {
-  background-color: rgba(88, 166, 255, 0.14);
+:host-context([data-bs-theme="dark"]) ::ng-deep .ag-theme-quartz .ag-cell.qty-flow-needed,
+:host-context(.theme-dark) ::ng-deep .ag-theme-quartz .ag-cell.qty-flow-needed {
+  background-color: rgba(148, 163, 184, 0.16);
+}
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .ag-theme-quartz .ag-cell.qty-flow-onhand-full,
+:host-context(.theme-dark) ::ng-deep .ag-theme-quartz .ag-cell.qty-flow-onhand-full {
+  background-color: rgba(34, 197, 94, 0.24);
+}
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .ag-theme-quartz .ag-cell.qty-flow-onhand-partial,
+:host-context(.theme-dark) ::ng-deep .ag-theme-quartz .ag-cell.qty-flow-onhand-partial {
+  background-color: rgba(74, 222, 128, 0.18);
+}
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .ag-theme-quartz .ag-cell.qty-flow-wo-available,
+:host-context(.theme-dark) ::ng-deep .ag-theme-quartz .ag-cell.qty-flow-wo-available {
+  background-color: rgba(56, 189, 248, 0.2);
+}
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .ag-theme-quartz .ag-cell.qty-flow-wo-empty,
+:host-context(.theme-dark) ::ng-deep .ag-theme-quartz .ag-cell.qty-flow-wo-empty {
+  background-color: rgba(148, 163, 184, 0.12);
+}
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .ag-theme-quartz .ag-cell.qty-flow-short-low,
+:host-context(.theme-dark) ::ng-deep .ag-theme-quartz .ag-cell.qty-flow-short-low {
+  background-color: rgba(251, 191, 36, 0.24);
+}
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .ag-theme-quartz .ag-cell.qty-flow-short-medium,
+:host-context(.theme-dark) ::ng-deep .ag-theme-quartz .ag-cell.qty-flow-short-medium {
+  background-color: rgba(251, 191, 36, 0.34);
+}
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .ag-theme-quartz .ag-cell.qty-flow-short-high,
+:host-context(.theme-dark) ::ng-deep .ag-theme-quartz .ag-cell.qty-flow-short-high {
+  background-color: rgba(248, 113, 113, 0.22);
+}
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .ag-theme-quartz .urgency-icon-critical,
+:host-context(.theme-dark) ::ng-deep .ag-theme-quartz .urgency-icon-critical {
+  color: #ff7b8a;
+  background: rgba(255, 123, 138, 0.16);
+}
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .ag-theme-quartz .urgency-icon-warning,
+:host-context(.theme-dark) ::ng-deep .ag-theme-quartz .urgency-icon-warning {
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.18);
+}
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .ag-theme-quartz .urgency-icon-ok,
+:host-context(.theme-dark) ::ng-deep .ag-theme-quartz .urgency-icon-ok {
+  color: #4ade80;
+  background: rgba(74, 222, 128, 0.16);
+}
+
+:host-context([data-bs-theme="dark"]) ::ng-deep .ag-theme-quartz .group-shortage-text,
+:host-context(.theme-dark) ::ng-deep .ag-theme-quartz .group-shortage-text {
+  color: #ffb4ab;
 }

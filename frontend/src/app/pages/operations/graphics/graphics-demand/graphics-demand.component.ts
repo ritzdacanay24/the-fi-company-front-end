@@ -67,6 +67,10 @@ export class GraphicsDemandComponent implements OnInit {
 
   title = "Graphics Demand";
 
+  goToDemandV1(): void {
+    this.router.navigateByUrl("/operations/graphics/demand-v1");
+  }
+
   async openGraphicsBom(row) {
     const modalRef = this.graphicsBomModalService.open(row);
     modalRef.result.then(

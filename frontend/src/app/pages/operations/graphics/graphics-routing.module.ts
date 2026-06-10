@@ -5,6 +5,7 @@ import { GraphicsComponent } from "./graphics.component";
 import { GraphicsProductionComponent } from "./graphics-production/graphics-production.component";
 import { GraphicsListComponent } from "./graphics-list/graphics-list.component";
 import { GraphicsEditComponent } from "./graphics-edit/graphics-edit.component";
+import { BomGraphicsComponent } from "@app/pages/operations/bom/bom-graphics/bom-graphics.component";
 
 const routes: Routes = [
   {
@@ -36,6 +37,10 @@ const routes: Routes = [
   {
     path: "demand",
     component: GraphicsDemandComponent,
+  },
+  {
+    path: "demand-v1",
+    component: BomGraphicsComponent,
   },
   {
     path: "production",

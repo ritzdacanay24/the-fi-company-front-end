@@ -114,17 +114,22 @@ export class BomGraphicsComponent implements OnInit {
     // Priority/Urgency indicator
     {
       field: "urgency",
-      headerName: "🚨",
-      width: 50,
+      headerName: "Urg",
+      headerTooltip: "Urgency based on due date",
+      width: 58,
       cellRenderer: (params) => {
         const dueDate = params?.data?.due_date || params?.data?.details?.bom_start_date;
         if (!dueDate) {
           return '';
         }
         const daysUntilDue = this.calculateDaysUntilDue(dueDate);
-        if (daysUntilDue <= 7) return '<span class="text-danger fs-5">🔴</span>';
-        if (daysUntilDue <= 14) return '<span class="text-warning fs-5">🟡</span>';
-        return '<span class="text-success fs-5">🟢</span>';
+        if (daysUntilDue <= 7) {
+          return '<span class="urgency-icon urgency-icon-critical" title="Due within 7 days"><i class="mdi mdi-alert-circle"></i></span>';
+        }
+        if (daysUntilDue <= 14) {
+          return '<span class="urgency-icon urgency-icon-warning" title="Due within 14 days"><i class="mdi mdi-timer-sand"></i></span>';
+        }
+        return '<span class="urgency-icon urgency-icon-ok" title="Due later than 14 days"><i class="mdi mdi-check-circle"></i></span>';
       },
       cellStyle: { textAlign: 'center' },
       pinned: 'left'
@@ -163,6 +168,9 @@ export class BomGraphicsComponent implements OnInit {
       filter: "agNumberColumnFilter",
       width: 120,
       aggFunc: 'sum', // Built-in aggregation
+      cellClassRules: {
+        'qty-flow-needed': (params) => this.shouldApplyQtyFlowClass(params),
+      },
       cellRenderer: (params) => {
         if (params?.node?.group) {
           const qty = this.toNumber(params?.node?.aggData?.qty_needed ?? params?.value);
@@ -201,14 +209,19 @@ export class BomGraphicsComponent implements OnInit {
       filter: "agNumberColumnFilter",
       width: 165,
       aggFunc: 'min',
+      cellClassRules: {
+        'qty-flow-onhand-full': (params) => this.shouldApplyQtyFlowClass(params) && this.isFullyCoveredByOnHand(params),
+        'qty-flow-onhand-partial': (params) => this.shouldApplyQtyFlowClass(params) && this.hasPositiveQty(params?.value) && !this.isFullyCoveredByOnHand(params),
+      },
       cellRenderer: (params) => {
+        if (params?.node?.footer) {
+          const qty = this.getGroupEndingValue(params?.node, 'groupEndingOnHand');
+          return qty.toFixed(2);
+        }
         if (params?.node?.group) {
           const firstLeaf = params?.node?.allLeafChildren?.[0]?.data;
           const qty = this.toNumber(firstLeaf?.masterOnHandQty);
           return qty.toFixed(2);
-        }
-        if (params?.node?.footer && (params.value === undefined || params.value === null)) {
-          return '';
         }
         if (params?.data?.ignoredFromPlanning) {
           return '-';
@@ -224,14 +237,19 @@ export class BomGraphicsComponent implements OnInit {
       filter: "agNumberColumnFilter",
       width: 145,
       aggFunc: 'max',
+      cellClassRules: {
+        'qty-flow-wo-available': (params) => this.shouldApplyQtyFlowClass(params) && this.hasPositiveQty(params?.value),
+        'qty-flow-wo-empty': (params) => this.shouldApplyQtyFlowClass(params) && !this.hasPositiveQty(params?.value),
+      },
       cellRenderer: (params) => {
+        if (params?.node?.footer) {
+          const qty = this.getGroupEndingValue(params?.node, 'groupEndingOpenWo');
+          return qty.toFixed(2);
+        }
         if (params?.node?.group) {
           const firstLeaf = params?.node?.allLeafChildren?.[0]?.data;
           const qty = this.toNumber(firstLeaf?.openWoQtyMaster);
           return qty.toFixed(2);
-        }
-        if (params?.node?.footer && (params.value === undefined || params.value === null)) {
-          return '';
         }
         if (params?.data?.ignoredFromPlanning) {
           return '-';
@@ -247,11 +265,19 @@ export class BomGraphicsComponent implements OnInit {
       filter: "agNumberColumnFilter",
       width: 120,
       aggFunc: 'sum',
+      cellClassRules: {
+        'qty-flow-short-low': (params) => this.shouldApplyQtyFlowClass(params) && this.hasShortage(params, 0.01, 5),
+        'qty-flow-short-medium': (params) => this.shouldApplyQtyFlowClass(params) && this.hasShortage(params, 5, 20),
+        'qty-flow-short-high': (params) => this.shouldApplyQtyFlowClass(params) && this.hasShortage(params, 20, Number.POSITIVE_INFINITY),
+      },
       cellRenderer: (params) => {
         if (params?.node?.group) {
           const qty = this.toNumber(params?.node?.aggData?.shortageQty ?? params?.value);
           const firstLeaf = params?.node?.allLeafChildren?.[0]?.data;
           const uom = firstLeaf?.details?.pt_um || 'EA';
+          if (!params?.node?.expanded && qty > 0) {
+            return `<span class="group-shortage-text">${qty.toFixed(2)} ${uom}</span>`;
+          }
           return `${qty.toFixed(2)} ${uom}`;
         }
         if (!params?.data && !params?.node?.footer) {
@@ -422,17 +448,6 @@ export class BomGraphicsComponent implements OnInit {
     },
 
     {
-      field: "woNumber",
-      headerName: "WO Number",
-      editable: true,
-      filter: "agTextColumnFilter",
-      width: 120,
-      cellEditor: "agTextCellEditor",
-      onCellValueChanged: (params) => this.onWoNumberChanged(params),
-      cellClass: "wo-number-cell"
-    },
-
-    {
       field: "commentAction",
       headerName: "Comments",
       width: 110,
@@ -464,6 +479,9 @@ export class BomGraphicsComponent implements OnInit {
     onGridReady: (params) => {
       this.gridApi = params.api;
     },
+    onRowGroupOpened: (params) => {
+      this.refreshGroupAggregateVisuals(params?.node);
+    },
     // Built-in grouping configuration
     autoGroupColumnDef: {
       headerName: "Part Number",
@@ -476,6 +494,10 @@ export class BomGraphicsComponent implements OnInit {
           return `${label} Ending Balance`;
         },
         innerRenderer: (params: any) => {
+          if (params?.node?.footer) {
+            const label = params?.value ? String(params.value) : 'Group';
+            return `${label} Ending Balance`;
+          }
           if (params.data) {
             // Leaf node - show sales order info
             const so = params.data.sales_order || params.data.so_part || '';
@@ -637,13 +659,58 @@ export class BomGraphicsComponent implements OnInit {
         row.shortageQty = remainingDemand;
         row.coverageStatus = this.computeCoverageStatus(row.projectedAvailableAtLine, needed);
       }
+
+      const endingOnHand = remaining;
+      const endingOpenWo = remainingWorkOrders.reduce(
+        (sum, workOrder) => sum + this.toNumber(workOrder?.remainingQty),
+        0
+      );
+
+      for (const row of sortedRows) {
+        row.groupEndingOnHand = endingOnHand;
+        row.groupEndingOpenWo = endingOpenWo;
+      }
     }
+  }
+
+  private getGroupEndingValue(node: any, field: 'groupEndingOnHand' | 'groupEndingOpenWo'): number {
+    const leaves = node?.allLeafChildren || [];
+    const leafWithValue = leaves.find((leaf: any) => leaf?.data && leaf?.data?.[field] !== undefined);
+    return this.toNumber(leafWithValue?.data?.[field]);
   }
 
   private computeShortageQty(availableAtLine: number, qtyNeeded: number): number {
     const available = this.toNumber(availableAtLine);
     const needed = Math.max(0, this.toNumber(qtyNeeded));
     return Math.max(0, needed - available);
+  }
+
+  private shouldApplyQtyFlowClass(params: any): boolean {
+    if (!params?.data) {
+      return false;
+    }
+    if (params?.node?.group || params?.node?.footer) {
+      return false;
+    }
+    if (params?.data?.ignoredFromPlanning) {
+      return false;
+    }
+    return true;
+  }
+
+  private hasPositiveQty(value: any): boolean {
+    return this.toNumber(value) > 0;
+  }
+
+  private isFullyCoveredByOnHand(params: any): boolean {
+    const needed = this.toNumber(params?.data?.qty_needed);
+    const availableNow = this.toNumber(params?.value);
+    return needed > 0 && availableNow >= needed;
+  }
+
+  private hasShortage(params: any, minInclusive: number, maxExclusive: number): boolean {
+    const shortage = this.toNumber(params?.value);
+    return shortage >= minInclusive && shortage < maxExclusive;
   }
 
   private computeCoverageStatus(availableAtLine: number, qtyNeeded: number): "Covered" | "Partial" | "Short" {
@@ -1024,6 +1091,19 @@ export class BomGraphicsComponent implements OnInit {
     }
 
     this.groupsExpanded = !this.groupsExpanded;
+    this.refreshGroupAggregateVisuals();
+  }
+
+  private refreshGroupAggregateVisuals(node?: any): void {
+    if (!this.gridApi) {
+      return;
+    }
+
+    this.gridApi.refreshCells({
+      rowNodes: node ? [node] : undefined,
+      columns: ['shortageQty'],
+      force: true,
+    });
   }
 
   private calculateDaysUntilDue(dueDate: string): number {
