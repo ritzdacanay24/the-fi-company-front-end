@@ -5,6 +5,8 @@ import { QadOdbcService } from '@/shared/database/qad-odbc.service';
 
 @Injectable()
 export class GraphicsDemandService {
+  private ignoreColumnReady?: Promise<void>;
+
   constructor(
     @Inject(MysqlService) private readonly mysqlService: MysqlService,
     @Inject(QadOdbcService) private readonly qadOdbcService: QadOdbcService,
@@ -15,9 +17,12 @@ export class GraphicsDemandService {
   }
 
   async createOrUpdate(payload: Record<string, unknown>): Promise<unknown> {
+    await this.ensureIgnoredFromPlanningColumn();
+
     const data = {
       ...payload,
       active: Number(payload?.active ?? 1),
+      ignoredFromPlanning: Number(payload?.ignoredFromPlanning ?? 0) === 1 ? 1 : 0,
       createdBy: Number(payload?.createdBy ?? 0),
       lastModBy: Number(payload?.lastModBy ?? payload?.createdBy ?? 0),
       lastModDate: this.nowDateTime(),
@@ -37,7 +42,10 @@ export class GraphicsDemandService {
     const existing = id ? await this.getById(id) : null;
     const idLast = existing ? await this.updateById(data, id) : await this.insert(data);
 
-    const response: Record<string, unknown> = { idLast };
+    const response: Record<string, unknown> = {
+      idLast,
+      ignoredFromPlanning: data.ignoredFromPlanning,
+    };
 
     if (data.woNumber) {
       const graphicsInfo = await this.getMaxStatusFromGraphicsScheduleByWorkOrderNumber(data.woNumber);
@@ -62,6 +70,8 @@ export class GraphicsDemandService {
   }
 
   private async getGraphicsDemandReport(toDate = 300): Promise<Array<Record<string, unknown>>> {
+    await this.ensureIgnoredFromPlanningColumn();
+
     const dateTo = this.addDays(this.todayDate(), toDate);
 
     const [commentInfo, statusInfo, result] = await Promise.all([
@@ -111,6 +121,7 @@ export class GraphicsDemandService {
         , a.uniqueId
         , a.poNumber
         , a.active
+        , IFNULL(a.ignoredFromPlanning, 0) ignoredFromPlanning
         , CASE WHEN a.woNumber != '' THEN c.graphicsWorkOrder ELSE b.graphicsWorkOrder END graphicsWorkOrderNumber
         , b.graphicsSalesOrder
         , CASE WHEN a.woNumber != '' THEN c.status ELSE b.status END graphicsStatus
@@ -349,6 +360,7 @@ export class GraphicsDemandService {
     const sql = `
       UPDATE eyefidb.graphicsDemand
       SET active = ?
+        , ignoredFromPlanning = ?
         , poNumber = ?
         , graphicsWorkOrderNumber = ?
         , graphicsSalesOrder = ?
@@ -360,6 +372,7 @@ export class GraphicsDemandService {
 
     await this.mysqlService.execute<ResultSetHeader>(sql, [
       Number(data.active || 1),
+      Number(data.ignoredFromPlanning || 0),
       String(data.poNumber || ''),
       String(data.graphicsWorkOrderNumber || ''),
       String(data.graphicsSalesOrder || ''),
@@ -381,9 +394,10 @@ export class GraphicsDemandService {
         , uniqueId
         , part
         , createdBy
+        , ignoredFromPlanning
         , poNumber
         , woNumber
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const result = await this.mysqlService.execute<ResultSetHeader>(sql, [
@@ -393,6 +407,7 @@ export class GraphicsDemandService {
       String(data.uniqueId || ''),
       String(data.part || ''),
       Number(data.createdBy || 0),
+      Number(data.ignoredFromPlanning || 0),
       String(data.poNumber || ''),
       String(data.woNumber || ''),
     ]);
@@ -588,6 +603,7 @@ export class GraphicsDemandService {
       if (status) {
         r.checked = Number(status.active || 0) === 1 ? 'Ordered' : 'Not Ordered';
         r.checkedId = status.id;
+        r.ignoredFromPlanning = Number(status.ignoredFromPlanning || 0) === 1;
         r.poNumber = status.poNumber;
         r.poEnteredBy = status.createdBy;
         r.woNumber = status.woNumber;
@@ -1242,5 +1258,33 @@ export class GraphicsDemandService {
     ).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(
       now.getMinutes(),
     ).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+  }
+
+  private async ensureIgnoredFromPlanningColumn(): Promise<void> {
+    if (!this.ignoreColumnReady) {
+      this.ignoreColumnReady = this.ensureIgnoredFromPlanningColumnInternal();
+    }
+
+    return this.ignoreColumnReady;
+  }
+
+  private async ensureIgnoredFromPlanningColumnInternal(): Promise<void> {
+    const existing = await this.mysqlService.query<RowDataPacket[]>(`
+      SELECT 1
+      FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = 'eyefidb'
+        AND TABLE_NAME = 'graphicsDemand'
+        AND COLUMN_NAME = 'ignoredFromPlanning'
+      LIMIT 1
+    `);
+
+    if (existing.length) {
+      return;
+    }
+
+    await this.mysqlService.execute<ResultSetHeader>(`
+      ALTER TABLE eyefidb.graphicsDemand
+      ADD COLUMN ignoredFromPlanning TINYINT(1) NOT NULL DEFAULT 0
+    `);
   }
 }

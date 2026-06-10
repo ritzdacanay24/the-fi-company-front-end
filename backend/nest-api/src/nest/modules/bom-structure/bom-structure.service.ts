@@ -5,6 +5,8 @@ import { QadOdbcService } from '@/shared/database/qad-odbc.service';
 
 @Injectable()
 export class BomStructureService {
+  private ignoreColumnReady?: Promise<void>;
+
   constructor(
     @Inject(MysqlService) private readonly mysqlService: MysqlService,
     @Inject(QadOdbcService) private readonly qadOdbcService: QadOdbcService,
@@ -12,7 +14,12 @@ export class BomStructureService {
 
   async getBomStructure(query: Record<string, unknown>): Promise<unknown> {
     const daysOut = Number(query['days'] ?? 300) || 300;
-    const maxBomLevels = Number(query['max_levels'] ?? 5) || 5;
+    const rawMaxLevels = String(query['max_levels'] ?? '').trim().toLowerCase();
+    const maxBomLevels = rawMaxLevels === ''
+      ? 5
+      : rawMaxLevels === '0' || rawMaxLevels === 'all'
+        ? null
+        : Math.max(1, Number(rawMaxLevels) || 5);
     const showOnlyLevelRaw = String(query['level'] ?? '').trim();
     const showOnlyLevel = showOnlyLevelRaw === '' ? null : Number(showOnlyLevelRaw);
     const salesOrderNumber = String(query['so'] ?? '').trim().toUpperCase() || null;
@@ -43,7 +50,7 @@ export class BomStructureService {
 
   private async getLegacyBomStructureReport(
     daysOut: number,
-    maxBomLevels: number,
+    maxBomLevels: number | null,
     showOnlyLevel: number | null,
     salesOrderNumber: string | null,
     showOnlyGraphics: boolean,
@@ -59,12 +66,19 @@ export class BomStructureService {
       new Set(salesOrderParts.map((row) => String(row['part_number'] || '')).filter(Boolean)),
     );
     const routingInfo = await this.getBomPartRoutingInfo(allSoPartNumbers);
+    const bomRootCandidates = Array.from(
+      new Set(
+        allSoPartNumbers
+          .map((part) => String((routingInfo[part] || {})['bom_code'] || ''))
+          .filter((bomCode) => Boolean(bomCode)),
+      ),
+    );
 
     const allBomData: Array<Record<string, unknown>> = [];
     const processedParts = new Set<string>();
-    let currentLevelParts = [...allSoPartNumbers];
+    let currentLevelParts = Array.from(new Set([...allSoPartNumbers, ...bomRootCandidates]));
 
-    for (let level = 1; level <= maxBomLevels; level += 1) {
+    for (let level = 1; maxBomLevels === null || level <= maxBomLevels; level += 1) {
       const pendingParts = currentLevelParts.filter((part) => !processedParts.has(part));
       if (!pendingParts.length) {
         break;
@@ -85,10 +99,12 @@ export class BomStructureService {
     const allParts = Array.from(
       new Set([
         ...allSoPartNumbers,
+        ...bomRootCandidates,
         ...allBomData.map((row) => String(row['component_part'] || '')).filter(Boolean),
       ]),
     );
     const allPartsLookup = await this.getAllPartsLookup(allParts);
+    const bomComponentCache = new Map<string, Array<Record<string, unknown>>>();
 
     const result: Array<Record<string, unknown>> = [];
 
@@ -134,22 +150,25 @@ export class BomStructureService {
         });
       }
 
-      const bomStartParts = [soPartNumber];
       const bomCode = String((routingInfo[soPartNumber] || {})['bom_code'] || '');
-      if (bomCode && bomCode !== soPartNumber) {
-        bomStartParts.push(bomCode);
-      }
+      const bomStartParts = bomCode && bomCode !== soPartNumber
+        ? [bomCode, soPartNumber]
+        : [soPartNumber];
 
       let allBomComponents: Array<Record<string, unknown>> = [];
       for (const bomStartPart of bomStartParts) {
-        const bomComponents = this.getBomComponentsForPart(
-          bomStartPart,
-          allBomData,
-          maxBomLevels,
-          1,
-          1,
-          [],
-        );
+        let bomComponents = bomComponentCache.get(bomStartPart);
+        if (!bomComponents) {
+          bomComponents = this.getBomComponentsForPart(
+            bomStartPart,
+            allBomData,
+            maxBomLevels ?? Number.MAX_SAFE_INTEGER,
+            1,
+            1,
+            [],
+          );
+          bomComponentCache.set(bomStartPart, bomComponents);
+        }
         if (bomComponents.length) {
           allBomComponents = bomComponents;
           break;
@@ -226,7 +245,7 @@ export class BomStructureService {
 
   private async getBomAndPartInfoByPart(
     partNumber: string,
-    maxBomLevels: number,
+    maxBomLevels: number | null,
     showOnlyGraphics: boolean,
   ): Promise<Array<Record<string, unknown>>> {
     const partRoutingInfo = await this.getBomPartRoutingInfo([partNumber]);
@@ -237,7 +256,7 @@ export class BomStructureService {
     const processedParts = new Set<string>();
     let currentLevelParts = [bomStartPart];
 
-    for (let level = 1; level <= maxBomLevels; level += 1) {
+    for (let level = 1; maxBomLevels === null || level <= maxBomLevels; level += 1) {
       const pendingParts = currentLevelParts.filter((part) => !processedParts.has(part));
       if (!pendingParts.length) {
         break;
@@ -299,7 +318,7 @@ export class BomStructureService {
     const allBomComponents = this.getBomComponentsForPart(
       bomStartPart,
       allBomData,
-      maxBomLevels,
+      maxBomLevels ?? Number.MAX_SAFE_INTEGER,
       1,
       1,
       [],
@@ -360,6 +379,8 @@ export class BomStructureService {
       return rows;
     }
 
+    await this.ensureIgnoredFromPlanningColumn();
+
     const ids = rows.map((row) => String(row['unique_id_legacy'] || '')).filter(Boolean);
     if (!ids.length) {
       return rows;
@@ -384,6 +405,7 @@ export class BomStructureService {
         ...row,
         misc,
         checked: 'Not Ordered',
+        ignoredFromPlanning: false,
         graphicsStatus: '',
         graphicsWorkOrderNumber: '',
         graphicsSalesOrder: '',
@@ -394,6 +416,7 @@ export class BomStructureService {
       if (status) {
         nextRow['checked'] = Number(status.active || 0) === 1 ? 'Ordered' : 'Not Ordered';
         nextRow['checkedId'] = status.id;
+        nextRow['ignoredFromPlanning'] = Number(status.ignoredFromPlanning || 0) === 1;
         nextRow['poNumber'] = status.poNumber;
         nextRow['poEnteredBy'] = status.createdBy;
         nextRow['woNumber'] = status.woNumber || '';
@@ -411,6 +434,7 @@ export class BomStructureService {
         graphicsSalesOrder: nextRow['graphicsSalesOrder'],
         poEnteredBy: nextRow['poEnteredBy'],
         woNumber: nextRow['woNumber'],
+        ignoredFromPlanning: nextRow['ignoredFromPlanning'],
       };
       nextRow['details'] = details;
 
@@ -427,6 +451,7 @@ export class BomStructureService {
         , a.uniqueId
         , a.poNumber
         , a.active
+        , IFNULL(a.ignoredFromPlanning, 0) ignoredFromPlanning
         , CASE WHEN a.woNumber != '' THEN c.graphicsWorkOrder ELSE b.graphicsWorkOrder END graphicsWorkOrderNumber
         , b.graphicsSalesOrder
         , CASE WHEN a.woNumber != '' THEN c.status ELSE b.status END graphicsStatus
@@ -554,7 +579,32 @@ export class BomStructureService {
   private async getBomPartRoutingInfo(
     partNumbers: string[],
   ): Promise<Record<string, Record<string, unknown>>> {
-    const rows = await this.getAllPartsInfo(partNumbers);
+    if (!partNumbers.length) {
+      return {};
+    }
+
+    const placeholders = partNumbers.map(() => '?').join(', ');
+    const sql = `
+      SELECT
+        pt_part AS part_number,
+        pt_bom_code AS bom_code,
+        pt_routing AS routing,
+        pt_pm_code AS pm_code,
+        pt_prod_line AS product_line,
+        pt_part_type AS part_type,
+        pt_status AS status,
+        pt_buyer AS buyer,
+        pt_rev AS revision
+      FROM pt_mstr
+      WHERE pt_domain = 'EYE'
+        AND pt_part IN (${placeholders})
+      WITH (NOLOCK)
+    `;
+
+    const rows = await this.qadOdbcService.queryWithParams<Array<Record<string, unknown>>>(sql, partNumbers, {
+      keyCase: 'lower',
+    });
+
     const lookup: Record<string, Record<string, unknown>> = {};
     rows.forEach((row) => {
       lookup[String(row['part_number'] || '')] = row;
@@ -598,12 +648,82 @@ export class BomStructureService {
         pt_price,
         pt_routing,
         pt_bom_code,
+        IFNULL(inv.ld_qty_oh, 0) AS ld_qty_oh,
         pt_rev AS revision,
         pt_userid AS last_user,
         pt_mod_date AS date_modified
       FROM pt_mstr
+      LEFT JOIN (
+        SELECT
+          ld_part,
+          SUM(ld_qty_oh) AS ld_qty_oh
+        FROM ld_det
+        WHERE ld_domain = 'EYE' AND ld_status = 'ACT'
+        GROUP BY ld_part
+      ) inv ON inv.ld_part = pt_part
       WHERE pt_domain = 'EYE'
         AND pt_part IN (${placeholders})
+      WITH (NOLOCK)
+    `;
+
+    const rows = await this.qadOdbcService.queryWithParams<Array<Record<string, unknown>>>(sql, partNumbers, {
+      keyCase: 'lower',
+    });
+
+    const openWorkOrders = await this.getOpenWorkOrderSupply(partNumbers);
+    const workOrderMap = new Map<string, Array<Record<string, unknown>>>();
+
+    for (const workOrder of openWorkOrders) {
+      const key = String(workOrder['part_number'] || '').trim();
+      if (!key) {
+        continue;
+      }
+
+      const bucket = workOrderMap.get(key) || [];
+      bucket.push(workOrder);
+      workOrderMap.set(key, bucket);
+    }
+
+    return rows.map((row) => {
+      const key = String(row['part_number'] || '').trim();
+      const partWorkOrders = workOrderMap.get(key) || [];
+      const totalOpenQty = partWorkOrders.reduce(
+        (sum, workOrder) => sum + Number(workOrder['open_qty'] || 0),
+        0,
+      );
+
+      return {
+        ...row,
+        open_wo_qty: totalOpenQty,
+        open_work_orders: partWorkOrders,
+      };
+    });
+  }
+
+  private async getOpenWorkOrderSupply(
+    partNumbers: string[],
+  ): Promise<Array<Record<string, unknown>>> {
+    if (!partNumbers.length) {
+      return [];
+    }
+
+    const placeholders = partNumbers.map(() => '?').join(', ');
+    const sql = `
+      SELECT
+        wo_part AS part_number,
+        wo_nbr AS wo_number,
+        wo_due_date AS due_date,
+        wo_rel_date AS rel_date,
+        wo_status AS wo_status,
+        wo_qty_ord AS qty_ordered,
+        wo_qty_comp AS qty_completed,
+        wo_qty_ord - wo_qty_comp AS open_qty
+      FROM wo_mstr
+      WHERE wo_domain = 'EYE'
+        AND wo_part IN (${placeholders})
+        AND wo_status NOT IN ('C', 'P', 'A')
+        AND (wo_qty_ord - wo_qty_comp) > 0
+      ORDER BY wo_part, wo_due_date, wo_nbr
       WITH (NOLOCK)
     `;
 
@@ -684,6 +804,34 @@ export class BomStructureService {
     allBomData: Array<Record<string, unknown>>,
   ): boolean {
     return allBomData.some((row) => String(row['parent_part'] || '') === componentPart);
+  }
+
+  private async ensureIgnoredFromPlanningColumn(): Promise<void> {
+    if (!this.ignoreColumnReady) {
+      this.ignoreColumnReady = this.ensureIgnoredFromPlanningColumnInternal();
+    }
+
+    return this.ignoreColumnReady;
+  }
+
+  private async ensureIgnoredFromPlanningColumnInternal(): Promise<void> {
+    const existing = await this.mysqlService.query<RowDataPacket[]>(`
+      SELECT 1
+      FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = 'eyefidb'
+        AND TABLE_NAME = 'graphicsDemand'
+        AND COLUMN_NAME = 'ignoredFromPlanning'
+      LIMIT 1
+    `);
+
+    if (existing.length) {
+      return;
+    }
+
+    await this.mysqlService.execute(`
+      ALTER TABLE eyefidb.graphicsDemand
+      ADD COLUMN ignoredFromPlanning TINYINT(1) NOT NULL DEFAULT 0
+    `);
   }
 
   private buildBomTree(flatRows: Array<Record<string, unknown>>): Array<Record<string, unknown>> {
