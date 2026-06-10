@@ -37,7 +37,7 @@
 
   <app-loading [isLoading]="isLoading" [showBorder]="false"></app-loading>
 
-  <div class="form-check mt-2 mb-2">
+  <div class="form-check mt-2 mb-2 d-flex align-items-center gap-1">
     <input
       class="form-check-input"
       type="checkbox"
@@ -45,8 +45,16 @@
       [(ngModel)]="isPrivateComment"
     >
     <label class="form-check-label" for="modalPrivateComment">
-      Private message (only you can see this)
+      Private note
     </label>
+    <button
+      type="button"
+      class="btn btn-link btn-sm p-0 text-muted text-decoration-none"
+      title="Only you can see this note."
+      aria-label="Private note details"
+    >
+      <i class="mdi mdi-information-outline"></i>
+    </button>
   </div>
 
   <!-- <div class="form-check">

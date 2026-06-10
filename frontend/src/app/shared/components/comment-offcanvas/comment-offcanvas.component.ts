@@ -235,13 +235,7 @@ function buildNestedComments(flat: any[]): any[] {
           </div>
         </div>
 
-        <div
-          class="composer-resize-handle"
-          (pointerdown)="onComposerResizeHandlePointerDown($event)"
-          aria-hidden="true"
-        ></div>
-
-        <div class="comment-composer" [style.height.px]="composerHeight" [class.resizing]="isComposerResizing">
+        <div class="comment-composer">
           <div class="draft-inline-banner" *ngIf="showDiscardDraftAction">
             <div class="d-flex align-items-center gap-2 flex-wrap">
               <span class="badge draft-badge" [ngClass]="draftBadgeClass || 'badge-restored'">
@@ -270,8 +264,8 @@ function buildNestedComments(flat: any[]): any[] {
             (onEditorCreated)="onComposerEditorCreated($event)"
           ></quill-editor>
 
-          <div class="comment-composer-footer">
-            <div class="form-check mb-2">
+          <div class="comment-composer-footer d-flex align-items-center justify-content-between gap-2 flex-wrap">
+            <div class="form-check mb-0 d-flex align-items-center gap-1">
               <input
                 id="offcanvas-private-comment"
                 type="checkbox"
@@ -279,15 +273,21 @@ function buildNestedComments(flat: any[]): any[] {
                 [(ngModel)]="isPrivateComment"
               />
               <label class="form-check-label" for="offcanvas-private-comment">
-                Private message (only you can see this)
+                Private note
               </label>
-            </div>
-
-            <div class="d-flex justify-content-end">
-              <button class="btn btn-primary btn-sm" [disabled]="saving || isEditorContentEmpty()" (click)="save()">
-                {{ saving ? 'Saving...' : 'Save Comment' }}
+              <button
+                type="button"
+                class="private-note-info-btn"
+                title="Only you can see this note."
+                aria-label="Private note details"
+              >
+                <i class="mdi mdi-information-outline"></i>
               </button>
             </div>
+
+            <button class="btn btn-primary btn-sm" [disabled]="saving || isEditorContentEmpty()" (click)="save()">
+              {{ saving ? 'Saving...' : 'Save Comment' }}
+            </button>
           </div>
         </div>
       </div>
@@ -511,29 +511,20 @@ function buildNestedComments(flat: any[]): any[] {
       margin-top: 0.2rem;
     }
 
-    .comment-composer.resizing {
-      user-select: none;
+    .private-note-info-btn {
+      border: 0;
+      background: transparent;
+      color: var(--comment-panel-muted);
+      line-height: 1;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: help;
     }
 
-    .composer-resize-handle {
-      flex: 0 0 auto;
-      height: 12px;
-      cursor: ns-resize;
-      position: relative;
-      background: var(--comment-panel-bg);
-      touch-action: none;
-    }
-
-    .composer-resize-handle::before {
-      content: "";
-      position: absolute;
-      left: 50%;
-      top: 5px;
-      transform: translateX(-50%);
-      width: 56px;
-      height: 2px;
-      border-radius: 999px;
-      background: var(--comment-panel-border);
+    .private-note-info-btn:hover {
+      color: var(--comment-panel-text);
     }
 
     .draft-inline-banner {
@@ -915,7 +906,6 @@ function buildNestedComments(flat: any[]): any[] {
 })
 export class CommentOffcanvasComponent implements OnChanges, OnDestroy {
   private static readonly PANEL_WIDTH_STORAGE_KEY = "shipping.commentOffcanvas.width";
-  private static readonly COMPOSER_HEIGHT_STORAGE_KEY = "shipping.commentOffcanvas.composerHeight";
   private static readonly COMMENT_DRAFT_ACTIVE_VALUE = 2;
   private static readonly COMMENT_PRIVATE_ACTIVE_VALUE = 3;
 
@@ -953,14 +943,11 @@ export class CommentOffcanvasComponent implements OnChanges, OnDestroy {
   private draftToastTimer: ReturnType<typeof setTimeout> | null = null;
   private toolbarCleanup: Array<() => void> = [];
   private resizeCleanup: Array<() => void> = [];
-  private composerResizeCleanup: Array<() => void> = [];
   private currentOrderContext: string | null = null;
   private skipPersistDraftForOrder: string | null = null;
   private focusedCommentTimer: ReturnType<typeof setTimeout> | null = null;
   panelWidth = 420;
   isResizing = false;
-  composerHeight = 260;
-  isComposerResizing = false;
 
   isReplyEmpty = (text: string): boolean => {
     return !stripHtml(text || "").replace(/\s|&nbsp;/g, "");
@@ -1087,7 +1074,6 @@ export class CommentOffcanvasComponent implements OnChanges, OnDestroy {
     private lightbox: Lightbox
   ) {
     this.restorePanelWidth();
-    this.restoreComposerHeight();
 
     this.quillConfig = {
       toolbar: {
@@ -1505,7 +1491,6 @@ export class CommentOffcanvasComponent implements OnChanges, OnDestroy {
   ngOnDestroy(): void {
     this.cleanupToolbarHandlers();
     this.cleanupResizeHandlers();
-    this.cleanupComposerResizeHandlers();
     this.hideDraftToast();
     this.clearFocusedCommentTimer();
   }
@@ -1550,38 +1535,6 @@ export class CommentOffcanvasComponent implements OnChanges, OnDestroy {
     this.resizeCleanup.push(() => window.removeEventListener("pointermove", onPointerMove));
     this.resizeCleanup.push(() => window.removeEventListener("pointerup", stopResize));
     this.resizeCleanup.push(() => window.removeEventListener("pointercancel", stopResize));
-  }
-
-  onComposerResizeHandlePointerDown(event: PointerEvent): void {
-    if (!this.isOpen || event.button !== 0 || window.innerWidth <= 991) {
-      return;
-    }
-
-    event.preventDefault();
-
-    const startY = event.clientY;
-    const startHeight = this.composerHeight;
-    this.isComposerResizing = true;
-
-    const onPointerMove = (moveEvent: PointerEvent): void => {
-      const deltaY = startY - moveEvent.clientY;
-      const targetHeight = startHeight + deltaY;
-      this.composerHeight = this.clampComposerHeight(targetHeight);
-      this.persistComposerHeight(this.composerHeight);
-    };
-
-    const stopResize = (): void => {
-      this.isComposerResizing = false;
-      this.cleanupComposerResizeHandlers();
-    };
-
-    window.addEventListener("pointermove", onPointerMove);
-    window.addEventListener("pointerup", stopResize, { once: true });
-    window.addEventListener("pointercancel", stopResize, { once: true });
-
-    this.composerResizeCleanup.push(() => window.removeEventListener("pointermove", onPointerMove));
-    this.composerResizeCleanup.push(() => window.removeEventListener("pointerup", stopResize));
-    this.composerResizeCleanup.push(() => window.removeEventListener("pointercancel", stopResize));
   }
 
   private enableToolbarDragScroll(toolbar: HTMLElement): void {
@@ -1675,12 +1628,6 @@ export class CommentOffcanvasComponent implements OnChanges, OnDestroy {
     return Math.min(maxWidth, Math.max(minWidth, Math.round(value)));
   }
 
-  private clampComposerHeight(value: number): number {
-    const minHeight = 220;
-    const maxHeight = Math.max(minHeight, Math.min(560, window.innerHeight - 180));
-    return Math.min(maxHeight, Math.max(minHeight, Math.round(value)));
-  }
-
   private restorePanelWidth(): void {
     if (typeof window === "undefined") {
       return;
@@ -1699,24 +1646,6 @@ export class CommentOffcanvasComponent implements OnChanges, OnDestroy {
     this.panelWidth = this.clampPanelWidth(parsed);
   }
 
-  private restoreComposerHeight(): void {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const raw = window.localStorage.getItem(CommentOffcanvasComponent.COMPOSER_HEIGHT_STORAGE_KEY);
-    if (!raw) {
-      return;
-    }
-
-    const parsed = Number(raw);
-    if (!Number.isFinite(parsed)) {
-      return;
-    }
-
-    this.composerHeight = this.clampComposerHeight(parsed);
-  }
-
   private persistPanelWidth(width: number): void {
     if (typeof window === "undefined") {
       return;
@@ -1725,26 +1654,11 @@ export class CommentOffcanvasComponent implements OnChanges, OnDestroy {
     window.localStorage.setItem(CommentOffcanvasComponent.PANEL_WIDTH_STORAGE_KEY, String(Math.round(width)));
   }
 
-  private persistComposerHeight(height: number): void {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    window.localStorage.setItem(CommentOffcanvasComponent.COMPOSER_HEIGHT_STORAGE_KEY, String(Math.round(height)));
-  }
-
   private cleanupResizeHandlers(): void {
     for (const dispose of this.resizeCleanup) {
       dispose();
     }
     this.resizeCleanup = [];
-  }
-
-  private cleanupComposerResizeHandlers(): void {
-    for (const dispose of this.composerResizeCleanup) {
-      dispose();
-    }
-    this.composerResizeCleanup = [];
   }
 
   private getCurrentUserId(): number | null {
