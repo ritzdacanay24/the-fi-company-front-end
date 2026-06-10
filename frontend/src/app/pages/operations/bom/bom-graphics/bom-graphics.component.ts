@@ -479,6 +479,9 @@ export class BomGraphicsComponent implements OnInit {
     onGridReady: (params) => {
       this.gridApi = params.api;
     },
+    rowClassRules: {
+      'row-coverage-breakpoint': (params) => Boolean(params?.data?.isCoverageBreakpoint),
+    },
     onRowGroupOpened: (params) => {
       this.refreshGroupAggregateVisuals(params?.node);
     },
@@ -596,6 +599,7 @@ export class BomGraphicsComponent implements OnInit {
       const openWorkOrders = this.extractOpenWorkOrders(sortedRows[0]);
       const totalOpenWo = openWorkOrders.reduce((sum, workOrder) => sum + this.toNumber(workOrder?.open_qty), 0);
       let remaining = master;
+      let coverageBreakAssigned = false;
       const remainingWorkOrders = openWorkOrders.map((workOrder) => ({
         ...workOrder,
         remainingQty: this.toNumber(workOrder?.open_qty),
@@ -604,6 +608,7 @@ export class BomGraphicsComponent implements OnInit {
       for (const row of sortedRows) {
         const needed = this.toNumber(row?.qty_needed);
         const ignoredFromPlanning = Boolean(row?.ignoredFromPlanning);
+        row.isCoverageBreakpoint = false;
         const lineDueTs = this.parseDateToTs(row?.due_date || row?.details?.bom_start_date);
         const remainingOpenWoTotal = remainingWorkOrders.reduce(
           (sum, workOrder) => sum + this.toNumber(workOrder?.remainingQty),
@@ -658,6 +663,11 @@ export class BomGraphicsComponent implements OnInit {
 
         row.shortageQty = remainingDemand;
         row.coverageStatus = this.computeCoverageStatus(row.projectedAvailableAtLine, needed);
+
+        if (!coverageBreakAssigned && row.coverageStatus !== "Covered") {
+          row.isCoverageBreakpoint = true;
+          coverageBreakAssigned = true;
+        }
       }
 
       const endingOnHand = remaining;
