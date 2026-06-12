@@ -50,7 +50,7 @@ export class EquipmentPrintersAlertsRunnerService {
         ? Number(settings.cooldown_minutes)
         : this.getNumberConfig('PRINTER_ALERT_COOLDOWN_MINUTES', 120);
 
-      if (settings && !(settings.is_enabled === true || settings.is_enabled === 1)) {
+      if (settings && !Boolean(settings.is_enabled)) {
         this.logger.debug('Printer alert monitor is disabled by DB settings.');
         return;
       }
