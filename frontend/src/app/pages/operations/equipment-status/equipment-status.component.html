@@ -1,0 +1,373 @@
+<div class="container-fluid px-4 py-3">
+
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 class="mb-0 fw-semibold">Equipment Status</h4>
+      <small class="text-muted" *ngIf="lastRefresh">Last updated {{ lastRefresh | date:'shortTime' }}</small>
+    </div>
+    <div class="d-flex gap-2">
+      <button class="btn btn-sm btn-outline-secondary" (click)="openAlertSettingsModal(alertSettingsModal)">
+        <i class="las la-bell me-1"></i> Alert Settings
+      </button>
+      <button class="btn btn-sm btn-outline-primary" (click)="refresh()" [disabled]="loading">
+        <i class="las la-sync me-1"></i> Refresh
+      </button>
+    </div>
+  </div>
+
+  <ng-template #alertSettingsModal let-modal>
+    <div class="modal-header">
+      <h5 class="modal-title">Printer Alert Settings</h5>
+      <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
+    </div>
+    <div class="modal-body">
+      <div class="alert alert-danger py-2" *ngIf="alertSettingsError">{{ alertSettingsError }}</div>
+
+      <div class="row g-3">
+        <div class="col-12 col-md-6">
+          <label class="form-label fw-semibold">Warning Threshold (%)</label>
+          <input
+            type="number"
+            min="0"
+            max="100"
+            class="form-control"
+            [(ngModel)]="alertSettingsForm.warning_threshold_percent"
+          />
+          <small class="text-muted">Levels at or below this are warning.</small>
+        </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label fw-semibold">Critical Threshold (%)</label>
+          <input
+            type="number"
+            min="0"
+            max="100"
+            class="form-control"
+            [(ngModel)]="alertSettingsForm.critical_threshold_percent"
+          />
+          <small class="text-muted">Levels at or below this are critical.</small>
+        </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label fw-semibold">Cooldown (minutes)</label>
+          <input
+            type="number"
+            min="5"
+            max="1440"
+            class="form-control"
+            [(ngModel)]="alertSettingsForm.cooldown_minutes"
+          />
+          <small class="text-muted">Minimum time before repeat notifications.</small>
+        </div>
+        <div class="col-12 col-md-6 d-flex align-items-end">
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" id="alertsEnabled" [(ngModel)]="alertSettingsForm.is_enabled" />
+            <label class="form-check-label fw-semibold" for="alertsEnabled">Enable Scheduled Alerts</label>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-outline-secondary" (click)="modal.dismiss()">Cancel</button>
+      <button type="button" class="btn btn-primary" (click)="saveAlertSettings(modal)" [disabled]="alertSettingsSaving">
+        <span *ngIf="!alertSettingsSaving">Save Settings</span>
+        <span *ngIf="alertSettingsSaving" class="spinner-border spinner-border-sm"></span>
+      </button>
+    </div>
+  </ng-template>
+
+  <!-- Printer Management -->
+  <div class="card border-0 mb-4">
+    <div class="card-header border-0 bg-light d-flex justify-content-between align-items-center py-3">
+      <div>
+        <div class="fw-semibold">Printer Configuration</div>
+        <small class="text-muted">Add and maintain monitored printers</small>
+      </div>
+      <button class="btn btn-sm btn-outline-secondary" (click)="toggleManagePanel()">
+        {{ isManageOpen ? 'Hide' : 'Show' }}
+      </button>
+    </div>
+
+    <div class="card-body" *ngIf="isManageOpen">
+      <div class="alert alert-danger py-2 mb-3" *ngIf="configError">{{ configError }}</div>
+      <div class="alert alert-success py-2 mb-3" *ngIf="configSuccess">{{ configSuccess }}</div>
+
+      <div class="border rounded p-3 mb-3 bg-body-tertiary">
+        <div class="fw-semibold mb-2">Add Printer</div>
+        <div class="row g-2">
+          <div class="col-12 col-md-3">
+            <input
+              class="form-control form-control-sm"
+              placeholder="IP Address"
+              [(ngModel)]="createForm.ip_address"
+            />
+          </div>
+          <div class="col-12 col-md-3">
+            <input
+              class="form-control form-control-sm"
+              placeholder="Model"
+              [(ngModel)]="createForm.model"
+            />
+          </div>
+          <div class="col-12 col-md-2">
+            <input
+              class="form-control form-control-sm"
+              placeholder="Location"
+              [(ngModel)]="createForm.location"
+            />
+          </div>
+          <div class="col-12 col-md-2">
+            <input
+              class="form-control form-control-sm"
+              placeholder="Device ID (optional)"
+              [(ngModel)]="createForm.device_id"
+            />
+          </div>
+          <div class="col-6 col-md-1">
+            <select class="form-select form-select-sm" [(ngModel)]="createForm.api_type">
+              <option value="json">JSON</option>
+              <option value="xml">XML</option>
+            </select>
+          </div>
+          <div class="col-6 col-md-1 d-flex align-items-center">
+            <div class="form-check mb-0">
+              <input class="form-check-input" type="checkbox" [(ngModel)]="createForm.active" id="createActive" />
+              <label class="form-check-label small" for="createActive">Active</label>
+            </div>
+          </div>
+          <div class="col-6 col-md-1 d-flex align-items-center">
+            <div class="form-check mb-0">
+              <input class="form-check-input" type="checkbox" [(ngModel)]="createForm.visible_in_ui" id="createVisibleInUi" />
+              <label class="form-check-label small" for="createVisibleInUi">Visible</label>
+            </div>
+          </div>
+        </div>
+        <div class="mt-3">
+          <button class="btn btn-sm btn-primary" (click)="createPrinter()" [disabled]="creatingPrinter">
+            <span *ngIf="!creatingPrinter">Add Printer</span>
+            <span *ngIf="creatingPrinter" class="spinner-border spinner-border-sm"></span>
+          </button>
+        </div>
+      </div>
+
+      <div class="table-responsive border rounded">
+        <table class="table table-sm align-middle mb-0 printer-config-table">
+          <thead class="table-light">
+            <tr>
+              <th>ID</th>
+              <th>IP Address</th>
+              <th>Model</th>
+              <th>Location</th>
+              <th>Device ID</th>
+              <th>API</th>
+              <th>Active</th>
+              <th>Visible</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngIf="loadingConfigs">
+              <td colspan="9" class="text-center py-3">
+                <span class="spinner-border spinner-border-sm"></span>
+              </td>
+            </tr>
+            <tr *ngFor="let item of printerConfigs">
+              <td>{{ item.id }}</td>
+              <td *ngIf="editingPrinterId !== item.id">{{ item.ip_address }}</td>
+              <td *ngIf="editingPrinterId === item.id"><input class="form-control form-control-sm" [(ngModel)]="editForm.ip_address" /></td>
+
+              <td *ngIf="editingPrinterId !== item.id">{{ item.model }}</td>
+              <td *ngIf="editingPrinterId === item.id"><input class="form-control form-control-sm" [(ngModel)]="editForm.model" /></td>
+
+              <td *ngIf="editingPrinterId !== item.id">{{ item.location || '—' }}</td>
+              <td *ngIf="editingPrinterId === item.id"><input class="form-control form-control-sm" [(ngModel)]="editForm.location" /></td>
+
+              <td *ngIf="editingPrinterId !== item.id">{{ item.device_id || '—' }}</td>
+              <td *ngIf="editingPrinterId === item.id"><input class="form-control form-control-sm" [(ngModel)]="editForm.device_id" /></td>
+
+              <td *ngIf="editingPrinterId !== item.id">
+                <span class="badge text-bg-secondary text-uppercase">{{ item.api_type || 'json' }}</span>
+              </td>
+              <td *ngIf="editingPrinterId === item.id">
+                <select class="form-select form-select-sm" [(ngModel)]="editForm.api_type">
+                  <option value="json">JSON</option>
+                  <option value="xml">XML</option>
+                </select>
+              </td>
+
+              <td *ngIf="editingPrinterId !== item.id">
+                <span class="badge" [class.text-bg-success]="isPrinterActive(item)" [class.text-bg-secondary]="!isPrinterActive(item)">
+                  {{ isPrinterActive(item) ? 'Yes' : 'No' }}
+                </span>
+              </td>
+              <td *ngIf="editingPrinterId === item.id">
+                <input class="form-check-input" type="checkbox" [(ngModel)]="editForm.active" />
+              </td>
+
+              <td *ngIf="editingPrinterId !== item.id">
+                <span class="badge" [class.text-bg-success]="isPrinterVisible(item)" [class.text-bg-secondary]="!isPrinterVisible(item)">
+                  {{ isPrinterVisible(item) ? 'Yes' : 'No' }}
+                </span>
+              </td>
+              <td *ngIf="editingPrinterId === item.id">
+                <input class="form-check-input" type="checkbox" [(ngModel)]="editForm.visible_in_ui" />
+              </td>
+
+              <td class="text-end">
+                <ng-container *ngIf="editingPrinterId !== item.id">
+                  <button class="btn btn-sm btn-outline-primary" (click)="startEdit(item)">Edit</button>
+                </ng-container>
+                <ng-container *ngIf="editingPrinterId === item.id">
+                  <button class="btn btn-sm btn-primary me-2" (click)="saveEdit(item.id)" [disabled]="updatingPrinterId === item.id">
+                    <span *ngIf="updatingPrinterId !== item.id">Save</span>
+                    <span *ngIf="updatingPrinterId === item.id" class="spinner-border spinner-border-sm"></span>
+                  </button>
+                  <button class="btn btn-sm btn-outline-secondary" (click)="cancelEdit()">Cancel</button>
+                </ng-container>
+              </td>
+            </tr>
+            <tr *ngIf="!loadingConfigs && printerConfigs.length === 0">
+              <td colspan="9" class="text-center text-muted py-3">No printer configuration found.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="text-center py-5" *ngIf="loading">
+    <div class="spinner-border text-primary"></div>
+  </div>
+
+  <!-- Error -->
+  <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
+
+  <!-- Printer Cards -->
+  <div class="row g-4" *ngIf="!loading && printers.length > 0">
+    <div class="col-12 col-xl-6" *ngFor="let printer of printers">
+      <div class="card border-0 h-100">
+
+        <!-- Card Header -->
+        <div class="card-header border-0 d-flex align-items-center justify-content-between py-3 px-4"
+          [class.bg-success-subtle]="printer.status === 'online'"
+          [class.bg-danger-subtle]="printer.status === 'offline'">
+          <div>
+            <div class="fw-semibold fs-6">{{ printer.model }}</div>
+            <small class="text-muted">{{ printer.location }} &nbsp;·&nbsp; {{ printer.ipAddress }}</small>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge rounded-pill"
+              [class.bg-success]="printer.status === 'online'"
+              [class.bg-danger]="printer.status === 'offline'">
+              {{ printer.status === 'online' ? 'Online' : 'Offline' }}
+            </span>
+            <a [href]="getPrinterUiUrl(printer.ipAddress)" target="_blank" rel="noopener noreferrer"
+              class="btn btn-sm btn-light border">
+              <i class="las la-external-link-alt"></i> Open
+            </a>
+          </div>
+        </div>
+
+        <div class="card-body px-4 py-3">
+
+          <!-- Offline state -->
+          <div *ngIf="printer.status !== 'online'" class="text-center text-muted py-4">
+            <i class="las la-exclamation-circle fs-1 d-block mb-2 text-danger"></i>
+            <div class="fw-semibold">{{ printer.error || 'Unable to reach printer' }}</div>
+            <small>Check network or printer power</small>
+          </div>
+
+          <!-- Online state -->
+          <div *ngIf="printer.status === 'online'">
+
+            <!-- Summary chips -->
+            <div class="d-flex gap-2 mb-4">
+              <span class="badge rounded-pill bg-danger-subtle text-danger border border-danger-subtle px-3 py-2"
+                *ngIf="getCriticalCount(printer) > 0">
+                {{ getCriticalCount(printer) }} Critical
+              </span>
+              <span class="badge rounded-pill bg-warning-subtle text-warning border border-warning-subtle px-3 py-2"
+                *ngIf="getWarningCount(printer) > 0">
+                {{ getWarningCount(printer) }} Warning
+              </span>
+              <span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle px-3 py-2"
+                *ngIf="getCriticalCount(printer) === 0 && getWarningCount(printer) === 0">
+                All Good
+              </span>
+            </div>
+
+            <!-- Toner section -->
+            <ng-container *ngIf="printer.consumables && printer.consumables.length > 0">
+              <div class="fw-semibold text-muted small text-uppercase mb-2">Consumables</div>
+              <div class="mb-4">
+                <ng-container *ngFor="let c of printer.consumables">
+                  <div class="mb-3" *ngIf="c.type === 'Toner'">
+                    <div class="d-flex justify-content-between mb-1">
+                      <span class="small fw-medium">{{ c.name }}</span>
+                      <span class="small"
+                        [class.text-danger]="c.levelState === 'Empty' || (c.levelPer ?? 101) <= 10"
+                        [class.text-warning]="c.levelState === 'NearEmpty' && (c.levelPer ?? 101) > 10"
+                        [class.text-muted]="c.levelState !== 'Empty' && c.levelState !== 'NearEmpty'">
+                        {{ c.levelPer !== undefined ? c.levelPer + '%' : c.levelState }}
+                      </span>
+                    </div>
+                    <div class="progress" style="height: 8px; border-radius: 4px; background: #e9ecef;">
+                      <div class="progress-bar"
+                        [style.width.%]="getConsumableLevelPercentage(c.levelPer)"
+                        [style.background-color]="getTonerBarColor(c.color)"
+                        [style.opacity]="(c.levelPer ?? 0) <= 15 ? '1' : '0.85'"
+                        style="border-radius: 4px; transition: width 0.4s ease;">
+                      </div>
+                    </div>
+                  </div>
+                </ng-container>
+
+                <!-- Non-toner consumables: only show non-ready -->
+                <ng-container *ngFor="let c of printer.consumables">
+                  <div class="d-flex justify-content-between align-items-center py-2 border-top small"
+                    *ngIf="c.type !== 'Toner' && c.levelState !== 'Ready'">
+                    <span class="text-muted">{{ c.name }}</span>
+                    <span class="badge"
+                      [class.bg-danger]="c.levelState === 'Empty' || c.levelState === 'Full'"
+                      [class.bg-warning]="c.levelState === 'NearEmpty'">
+                      {{ c.levelState }}
+                    </span>
+                  </div>
+                </ng-container>
+              </div>
+            </ng-container>
+
+            <!-- Paper trays -->
+            <ng-container *ngIf="printer.paperTrays && printer.paperTrays.length > 0">
+              <div class="fw-semibold text-muted small text-uppercase mb-2">Paper Trays</div>
+              <div class="d-flex flex-wrap gap-2">
+                <div class="border rounded px-3 py-2 small" *ngFor="let tray of printer.paperTrays"
+                  [class.border-danger]="tray.levelState === 'Empty'"
+                  [class.border-warning]="tray.levelState === 'NearEmpty'"
+                  [class.border-success]="tray.levelState === 'Ready'">
+                  <div class="fw-medium">{{ tray.name }}</div>
+                  <div [class.text-danger]="tray.levelState === 'Empty'"
+                       [class.text-warning]="tray.levelState === 'NearEmpty'"
+                       [class.text-success]="tray.levelState === 'Ready'"
+                       [class.text-muted]="tray.levelState !== 'Empty' && tray.levelState !== 'NearEmpty' && tray.levelState !== 'Ready'">
+                    {{ tray.levelState }}
+                  </div>
+                </div>
+              </div>
+            </ng-container>
+
+          </div>
+        </div>
+
+        <div class="card-footer border-0 bg-transparent text-muted small px-4 pb-3" *ngIf="printer.lastSyncAt">
+          Synced {{ printer.lastSyncAt | date:'shortTime' }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="text-center text-muted py-5" *ngIf="!loading && printers.length === 0">
+    No printers configured.
+  </div>
+
+</div>

@@ -11,6 +11,7 @@ import { LocationLookupComponent } from "./location-lookup/location-lookup.compo
 import { UniversalLookupComponent } from "@app/shared/components/universal-lookup/universal-lookup.component";
 import { AllocationManagementComponent } from "./allocation-management/allocation-management.component";
 import { ResourcesComponent } from "./resources/resources.component";
+import { EquipmentStatusComponent } from "./equipment-status/equipment-status.component";
 
 const routes: Routes = [
   {
@@ -237,6 +238,12 @@ const routes: Routes = [
     title: "Resources",
     path: "resources",
     component: ResourcesComponent,
+    runGuardsAndResolvers: "always",
+  },
+  {
+    title: "Equipment Status",
+    path: "equipment-status",
+    component: EquipmentStatusComponent,
     runGuardsAndResolvers: "always",
   },
 ];

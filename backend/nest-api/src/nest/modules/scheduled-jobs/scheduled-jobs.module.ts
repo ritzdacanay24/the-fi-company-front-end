@@ -7,6 +7,7 @@ import { PhotoChecklistModule } from '../photo-checklist/photo-checklist.module'
 import { ReportsModule } from '../reports/reports.module';
 import { SerialAvailabilityModule } from '../serial-availability/serial-availability.module';
 import { CommentsModule } from '../comments/comments.module';
+import { EquipmentPrintersModule } from '../equipment-printers/equipment-printers.module';
 import { ScheduledJobsController } from './scheduled-jobs.controller';
 import { ScheduledJobRecipientsRepository } from './scheduled-job-recipients.repository';
 import { ScheduledJobRecipientsService } from './scheduled-job-recipients.service';
@@ -39,6 +40,7 @@ import {
   OpenChecklistInstancesLast3DaysHandler,
   MaterialRequestShortageBackfillHandler,
   OnTimeDeliverySyncHandler,
+  EquipmentPrintersAlertMonitorHandler,
 } from './handlers';
 
 @Module({
@@ -51,6 +53,7 @@ import {
     SerialAvailabilityModule,
     PhotoChecklistModule,
     CommentsModule,
+    EquipmentPrintersModule,
   ],
   controllers: [ScheduledJobsController],
   providers: [
@@ -84,6 +87,7 @@ import {
     OpenChecklistInstancesLast3DaysHandler,
     MaterialRequestShortageBackfillHandler,
     OnTimeDeliverySyncHandler,
+    EquipmentPrintersAlertMonitorHandler,
   ],
 })
 export class ScheduledJobsModule {}

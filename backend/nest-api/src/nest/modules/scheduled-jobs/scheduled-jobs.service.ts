@@ -32,6 +32,7 @@ import {
   OpenChecklistInstancesLast3DaysHandler,
   MaterialRequestShortageBackfillHandler,
   OnTimeDeliverySyncHandler,
+  EquipmentPrintersAlertMonitorHandler,
 } from './handlers';
 
 export type ScheduledJobRunStatus = 'success' | 'failure';
@@ -111,6 +112,7 @@ export class ScheduledJobsService {
     private readonly openChecklistInstancesLast3DaysHandler: OpenChecklistInstancesLast3DaysHandler,
     private readonly materialRequestShortageBackfillHandler: MaterialRequestShortageBackfillHandler,
     private readonly onTimeDeliverySyncHandler: OnTimeDeliverySyncHandler,
+    private readonly equipmentPrintersAlertMonitorHandler: EquipmentPrintersAlertMonitorHandler,
   ) {
     this.handlerMap = new Map();
     this.isDevelopment = String(process.env.NODE_ENV ?? '').toLowerCase() === 'development';
@@ -145,6 +147,7 @@ export class ScheduledJobsService {
     this.handlerMap.set('open-checklist-instances-last-3-days', this.openChecklistInstancesLast3DaysHandler);
     this.handlerMap.set('material-request-shortage-backfill', this.materialRequestShortageBackfillHandler);
     this.handlerMap.set('on-time-delivery-sync', this.onTimeDeliverySyncHandler);
+    this.handlerMap.set('equipment-printers-alert-monitor', this.equipmentPrintersAlertMonitorHandler);
   }
 
   isRunnerEnabled(): boolean {

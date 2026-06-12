@@ -39,7 +39,8 @@
     "sharp": "^0.34.5",
     "web-push": "^3.6.7",
     "ws": "^8.18.0",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "xml2js": "^0.6.2"
   },
   "devDependencies": {
     "@swc/core": "^1.15.33",
@@ -51,6 +52,7 @@
     "@types/pdfkit": "^0.13.8",
     "@types/web-push": "^3.6.4",
     "@types/ws": "^8.5.16",
+    "@types/xml2js": "^0.4.14",
     "cross-env": "^10.1.0",
     "nodemon": "^3.1.10",
     "ts-node": "^10.9.2",

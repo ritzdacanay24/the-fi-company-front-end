@@ -26,3 +26,4 @@ export { InspectionChecklistReportGeneratorHandler } from './inspection-checklis
 export { OpenChecklistInstancesLast3DaysHandler } from './open-checklist-instances-last-3-days.handler';
 export { MaterialRequestShortageBackfillHandler } from './material-request-shortage-backfill.handler';
 export { OnTimeDeliverySyncHandler } from './on-time-delivery-sync.handler';
+export { EquipmentPrintersAlertMonitorHandler } from './equipment-printers-alert-monitor.handler';

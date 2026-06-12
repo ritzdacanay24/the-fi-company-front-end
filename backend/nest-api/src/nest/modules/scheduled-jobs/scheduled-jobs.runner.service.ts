@@ -98,6 +98,11 @@ export class ScheduledJobsRunnerService {
     await this.scheduledJobsService.runJobIfEnabled('on-time-delivery-sync');
   }
 
+  @Cron('0 */15 * * * *', { name: 'scheduled-jobs.equipment-printers-alert-monitor', timeZone: SCHEDULED_JOBS_TIMEZONE })
+  async runEquipmentPrintersAlertMonitor(): Promise<void> {
+    await this.scheduledJobsService.runJobIfEnabled('equipment-printers-alert-monitor');
+  }
+
   @Cron('* * * * *', { name: 'scheduled-jobs.comment-reminders', timeZone: SCHEDULED_JOBS_TIMEZONE })
   async runCommentReminders(): Promise<void> {
     await this.commentRemindersService.processDueReminders();

@@ -253,6 +253,15 @@ export const MENU_DATA: MenuItem[] = [
         accessRequired: false,
     },
     {
+        id: 23.5,
+        label: "Equipment Status",
+        link: "/operations/equipment-status",
+        description: "Printer Consumable Levels & Status",
+        icon: "las la-print",
+        hideCheckBox: true,
+        accessRequired: false,
+    },
+    {
         id: 24,
         label: "Operations & Production",
         isTitle: true,

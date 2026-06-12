@@ -125,6 +125,7 @@ import { TripExpenseTransactionsModule } from './modules/trip-expense-transactio
 import { FsQirModule } from './modules/fs-qir/fs-qir.module';
 import { WebsocketModule } from './modules/websocket/websocket.module';
 import { FileStorageModule } from './modules/file-storage/file-storage.module';
+import { EquipmentPrintersModule } from './modules/equipment-printers/equipment-printers.module';
 import { MysqlModule } from '../shared/database/mysql.module';
 import { EmailModule } from '../shared/email/email.module';
 import { UrlModule } from '../shared/url/url.module';
@@ -153,6 +154,7 @@ import { UrlModule } from '../shared/url/url.module';
     AddressSearchModule,
     ShipToAddressModule,
     FileStorageModule,
+    EquipmentPrintersModule,
     AttachmentsModule,
     BomStructureModule,
     AgsSerialModule,

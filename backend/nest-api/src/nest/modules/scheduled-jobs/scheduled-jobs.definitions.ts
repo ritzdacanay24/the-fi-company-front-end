@@ -219,4 +219,13 @@ export const SCHEDULED_JOB_DEFINITIONS: ScheduledJobDefinition[] = [
     note: 'System job. Pulls same-day OTD rows from QAD and upserts on_time_delivery snapshot rows in eyefidb. No email subscription is used for this job.',
     supportsRecipients: false,
   },
+  {
+    id: 'equipment-printers-alert-monitor',
+    name: 'Equipment Printers Alert Monitor',
+    cron: '*/15 * * * *',
+    url: 'nest://equipment-printers/alert-monitor',
+    active: true,
+    note: 'Evaluates printer offline/supply conditions and sends alert emails based on configured printer alert settings. Recipients are managed from Scheduled Jobs.',
+    supportsRecipients: true,
+  },
 ];
