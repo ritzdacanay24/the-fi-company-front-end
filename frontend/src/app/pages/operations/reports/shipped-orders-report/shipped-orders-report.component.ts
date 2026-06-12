@@ -17,6 +17,10 @@ import { ItemInfoModalService } from "@app/shared/components/item-info-modal/ite
 import { SalesOrderInfoModalService } from "@app/shared/components/sales-order-info-modal/sales-order-info-modal.component";
 import { ShippedOrdersChartComponent } from "./shipped-orders-chart/shipped-orders-chart.component";
 import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
+import { CommentOffcanvasComponent } from "../../../../shared/components/comment-offcanvas/comment-offcanvas.component";
+import { CommentsRendererV2Component } from "@app/shared/ag-grid/comments-renderer-v2/comments-renderer-v2.component";
+import { CommentsModalService } from "@app/shared/components/comments/comments-modal.service";
+import { AuthenticationService } from "@app/core/services/auth.service";
 
 @Component({
   standalone: true,
@@ -27,6 +31,7 @@ import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link
     GridSettingsComponent,
     GridFiltersComponent,
     ShippedOrdersChartComponent,
+    CommentOffcanvasComponent,
   ],
   selector: "app-shipped-orders-report",
   templateUrl: "./shipped-orders-report.component.html",
@@ -38,8 +43,24 @@ export class ShippedOrdersReportComponent implements OnInit {
     public router: Router,
     public reportService: ReportService,
     private itemInfoModalService: ItemInfoModalService,
-    private salesOrderInfoModalService: SalesOrderInfoModalService
+    private salesOrderInfoModalService: SalesOrderInfoModalService,
+    private commentsModalService: CommentsModalService,
+    private authenticationService: AuthenticationService,
   ) { }
+
+  isCommentPanelOpen = false;
+  commentViewMode: "offcanvas" | "modal" = "offcanvas";
+  commentPanelWidth = 420;
+  selectedCommentOrderNum: string | null = null;
+  selectedCommentRowId: string | null = null;
+  focusedCommentId: number | null = null;
+
+  get commentPanelPushWidth(): number {
+    if (!this.isCommentPanelOpen || window.innerWidth <= 991.98) {
+      return 0;
+    }
+    return this.commentPanelWidth;
+  }
 
   ngOnInit(): void {
     this.activatedRoute.queryParams.subscribe((params) => {
@@ -142,7 +163,17 @@ export class ShippedOrdersReportComponent implements OnInit {
     },
     {
       field: "sod_qty_ship",
-      headerName: "Qty Shipped",
+      headerName: "Qty Shipped (MSTR)",
+      filter: "agMultiColumnFilter",
+    },
+    {
+      field: "qtyopen",
+      headerName: "Qty Open",
+      filter: "agMultiColumnFilter",
+    },
+    {
+      field: "ld_qty_oh",
+      headerName: "Qty OH",
       filter: "agMultiColumnFilter",
     },
     {
@@ -177,8 +208,59 @@ export class ShippedOrdersReportComponent implements OnInit {
       filter: "agMultiColumnFilter",
     },
     {
+      field: "so_shipvia",
+      headerName: "Ship Via",
+      filter: "agMultiColumnFilter",
+    },
+    {
+      field: "pt_routing",
+      headerName: "Routing",
+      filter: "agSetColumnFilter",
+    },
+    {
+      field: "wo_nbr",
+      headerName: "WO #",
+      filter: "agMultiColumnFilter",
+    },
+    {
+      field: "add_comments",
+      headerName: "Comments",
+      filter: "agSetColumnFilter",
+      width: 110,
+      cellRenderer: CommentsRendererV2Component,
+      cellRendererParams: {
+        onClick: (params: any) => this.openCommentPanel(params.rowData),
+      },
+      valueGetter: (params) => {
+        const bgClassName = params.data?.recent_comments?.bg_class_name;
+        if (bgClassName === "bg-info") {
+          return "Has Comments";
+        }
+        if (bgClassName === "bg-success") {
+          return "New Comments";
+        }
+        return "No Comments";
+      },
+    },
+    {
+      field: "recent_comment",
+      headerName: "Recent Comment",
+      filter: "agTextColumnFilter",
+      maxWidth: 300,
+    },
+    {
+      field: "owner",
+      headerName: "Owner",
+      filter: "agSetColumnFilter",
+    },
+    {
       field: "abs_shp_date",
       headerName: "Shipped On",
+      filter: "agMultiColumnFilter",
+    },
+    {
+      field: "transactiontime",
+      headerName: "Transaction Time",
       filter: "agMultiColumnFilter",
     },
     {
@@ -213,7 +295,7 @@ export class ShippedOrdersReportComponent implements OnInit {
     },
     {
       field: "sod_list_pr",
-      headerName: "List Price",
+      headerName: "SOD List Price",
       filter: "agMultiColumnFilter",
       valueFormatter: currencyFormatter,
     },
@@ -230,11 +312,31 @@ export class ShippedOrdersReportComponent implements OnInit {
       valueFormatter: currencyFormatter,
     },
     {
+      field: "shipviaaccount",
+      headerName: "Ship Via Account",
+      filter: "agSetColumnFilter",
+    },
+    {
+      field: "arrivaldate",
+      headerName: "Arrival Date",
+      filter: "agMultiColumnFilter",
+    },
+    {
       field: "sod_acct",
       headerName: "SOD Account",
       filter: "agSetColumnFilter",
     },
     { field: "sod_type", headerName: "Type", filter: "agMultiColumnFilter" },
+    {
+      field: "view_parts_order_request",
+      headerName: "View Parts Order Request",
+      filter: "agMultiColumnFilter",
+    },
+    {
+      field: "tj_po_number",
+      headerName: "TJ PO #",
+      filter: "agMultiColumnFilter",
+    },
     { field: "so_rmks", headerName: "Remarks", filter: "agMultiColumnFilter" },
   ];
 
@@ -379,5 +481,107 @@ export class ShippedOrdersReportComponent implements OnInit {
         },
       },
     };
+  }
+
+  openCommentPanel(rowData: any): void {
+    const orderNum = String(
+      rowData?.sales_order_line_number || `${rowData?.sod_nbr || ""}-${rowData?.sod_line || ""}`
+    ).trim();
+
+    if (!orderNum) {
+      return;
+    }
+
+    const parsedFocusId = Number(rowData?.recent_comments?.id);
+    this.focusedCommentId = Number.isFinite(parsedFocusId) && parsedFocusId > 0 ? parsedFocusId : null;
+    this.selectedCommentOrderNum = orderNum;
+    this.selectedCommentRowId = rowData?.id ? String(rowData.id) : null;
+
+    if (this.commentViewMode === "modal") {
+      this.openCommentModal(orderNum);
+      return;
+    }
+
+    this.isCommentPanelOpen = true;
+  }
+
+  closeCommentPanel(): void {
+    this.isCommentPanelOpen = false;
+    this.selectedCommentOrderNum = null;
+    this.selectedCommentRowId = null;
+    this.focusedCommentId = null;
+  }
+
+  setCommentViewMode(mode: "offcanvas" | "modal"): void {
+    if (this.commentViewMode === mode) {
+      return;
+    }
+
+    this.commentViewMode = mode;
+
+    if (mode === "modal" && this.isCommentPanelOpen && this.selectedCommentOrderNum) {
+      const activeOrderNum = this.selectedCommentOrderNum;
+      this.isCommentPanelOpen = false;
+      this.openCommentModal(activeOrderNum);
+    }
+  }
+
+  onCommentPanelWidthChange(width: number): void {
+    if (!Number.isFinite(width)) {
+      return;
+    }
+    this.commentPanelWidth = Math.round(width);
+  }
+
+  onCommentSaved(result: any): void {
+    if (!this.selectedCommentRowId || !this.gridApi || result?.isPrivate) {
+      return;
+    }
+
+    const rowNode = this.gridApi.getRowNode(this.selectedCommentRowId);
+    if (!rowNode?.data) {
+      return;
+    }
+
+    rowNode.data.recent_comments = result;
+    rowNode.data.recent_comment = String(result?.comments_html || result?.comments || "").trim() || null;
+    rowNode.data.add_comments = "Has Comments";
+    this.gridApi.redrawRows({ rowNodes: [rowNode] });
+  }
+
+  private openCommentModal(orderNum: string): void {
+    const modalRef = this.commentsModalService.open(
+      orderNum,
+      "Sales Order",
+      "Shipping Comments",
+      this.authenticationService.currentUserValue?.id,
+      this.authenticationService.currentUserValue?.full_name,
+      this.focusedCommentId,
+    );
+
+    modalRef.componentInstance.showCommentViewActions = true;
+    modalRef.componentInstance.commentViewMode = this.commentViewMode;
+
+    modalRef.result.then(
+      (result: any) => {
+        if (result?.__commentViewMode === "offcanvas" || result?.__commentViewMode === "modal") {
+          const requestedMode = result.__commentViewMode;
+          this.setCommentViewMode(requestedMode);
+          if (requestedMode === "offcanvas") {
+            this.isCommentPanelOpen = true;
+          }
+          return;
+        }
+
+        if (result) {
+          this.onCommentSaved(result);
+        }
+
+        this.closeCommentPanel();
+      },
+      () => {
+        this.closeCommentPanel();
+      }
+    );
   }
 }

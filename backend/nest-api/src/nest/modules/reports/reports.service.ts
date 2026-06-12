@@ -22,6 +22,8 @@ import {
 import { toJsonSafe } from '@/shared/utils/json-safe.util';
 import { parseDateInput } from '@/shared/utils/date.util';
 import { DailyReportService } from './daily-report.service';
+import { CommentsService } from '../comments/comments.service';
+import { WorkOrderOwnerService } from '../work-order-owner/work-order-owner.service';
 
 type ReportView = 'Weekly' | 'Monthly' | 'Annually' | 'Daily' | 'Quarterly';
 type ChartRow = Pick<TicketEventChartRow, 'value' | 'label' | 'request_date' | 'background_color'>;
@@ -34,6 +36,8 @@ export class ReportsService {
   constructor(
     private readonly repository: ReportsRepository,
     private readonly dailyReportService: DailyReportService,
+    private readonly commentsService: CommentsService,
+    private readonly workOrderOwnerService: WorkOrderOwnerService,
   ) {}
 
   async getCustomerReport(dateFrom?: string, dateTo?: string): Promise<CustomerReportRow[]> {
@@ -776,21 +780,47 @@ export class ReportsService {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    const ids = rows
+      .map((row) => `${String(row['sod_nbr'] ?? '').trim()}-${String(row['sod_line'] ?? '').trim()}`)
+      .filter(Boolean);
+
+    const [comments, miscRows] = await Promise.all([
+      this.commentsService.getForShippingByOrderNumbers(ids),
+      this.workOrderOwnerService.getBySoArray(ids),
+    ]);
+
+    const commentMap = new Map(comments.map((row) => [String(row.orderNum), row]));
+    const miscMap = new Map(miscRows.map((row) => [String(row.so), row]));
+
     const orderInfo: Record<string, unknown>[] = rows.map((row): Record<string, unknown> => {
       const sodNbr = String(row['sod_nbr'] ?? '');
       const sodLine = String(row['sod_line'] ?? '');
       const absParId = String(row['abs_par_id'] ?? '');
+      const soKey = `${sodNbr}-${sodLine}`;
 
       const sodContrId = String(row['sod_contr_id'] ?? '').replace(/[^a-zA-Z0-9_-]/g, '');
       const qadComment = String(row['cmt_cmmt'] ?? '').replace(/[^a-zA-Z0-9_-]/g, ' ');
+      const misc = (miscMap.get(soKey) || {}) as Record<string, unknown>;
+      const recentComment = commentMap.get(soKey) || {};
+      const qtyOrdered = Number(row['sod_qty_ord'] ?? 0);
+      const qtyShipped = Number(row['sod_qty_ship'] ?? 0);
 
       return {
         ...row,
         sod_contr_id: sodContrId,
         cmt_cmmt: qadComment,
+        qtyopen: qtyOrdered - qtyShipped,
+        owner: String(misc['userName'] ?? '').trim() || null,
+        add_comments: recentComment ? 'Has Comments' : 'No Comments',
+        recent_comment: String((recentComment as Record<string, unknown>)['comments_html'] ?? (recentComment as Record<string, unknown>)['comments'] ?? '').trim() || null,
+        transactiontime: row['so_ord_date'] ?? null,
+        shipviaaccount: misc['shipViaAccount'] ?? null,
+        arrivaldate: misc['arrivalDate'] ?? null,
+        view_parts_order_request: sodNbr || null,
+        tj_po_number: misc['tj_po_number'] ?? null,
         id: `${sodNbr}-${sodLine}-${absParId}`,
         ida: `${sodNbr}-${sodLine}`,
-        recent_comments: row['recent_comments'] ?? {},
+        recent_comments: recentComment || {},
       };
     });
 

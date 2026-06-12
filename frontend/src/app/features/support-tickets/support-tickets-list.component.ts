@@ -271,7 +271,12 @@ export class SupportTicketsListComponent implements OnInit {
     const search = queryParams.get('search');
     const focusTicketId = queryParams.get('focusTicketId');
 
-    if (status) this.selectedStatus.set(status);
+    if (status) {
+      this.selectedStatus.set(status);
+    } else if (!this.userId) {
+      // In admin/all-tickets view, default to showing all statuses.
+      this.selectedStatus.set('all');
+    }
     if (type) this.selectedType.set(type);
     if (priority) this.selectedPriority.set(priority);
     if (search) this.searchTerm.set(search);

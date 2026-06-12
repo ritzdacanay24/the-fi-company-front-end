@@ -6,9 +6,11 @@ import { ReportsService } from './reports.service';
 import { ReportsRepository } from './reports.repository';
 import { DailyReportService } from './daily-report.service';
 import { DailyReportRepository } from './daily-report.repository';
+import { CommentsModule } from '../comments/comments.module';
+import { WorkOrderOwnerModule } from '../work-order-owner/work-order-owner.module';
 
 @Module({
-  imports: [MysqlModule],
+  imports: [MysqlModule, CommentsModule, WorkOrderOwnerModule],
   controllers: [ReportsController, OperationsLogisticsController],
   providers: [ReportsService, ReportsRepository, DailyReportService, DailyReportRepository],
   exports: [ReportsService, DailyReportService],

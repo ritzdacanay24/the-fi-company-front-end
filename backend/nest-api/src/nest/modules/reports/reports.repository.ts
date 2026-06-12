@@ -895,6 +895,7 @@ export class ReportsRepository extends BaseRepository<RowDataPacket> {
              a.sod_line,
              c.so_ord_date,
              c.so_ship,
+               c.so_shipvia,
              CASE WHEN a.sod_due_date > f.abs_shp_date THEN 'Shipped before due date'
                   WHEN a.sod_due_date = f.abs_shp_date THEN 'Shipped on due date'
                   WHEN a.sod_due_date < f.abs_shp_date THEN 'Shipped after due date'
@@ -905,6 +906,7 @@ export class ReportsRepository extends BaseRepository<RowDataPacket> {
              END AS status_class,
              a.sod_order_category,
              a.sod_custpart AS cp_cust_part,
+             IFNULL(e.ld_qty_oh, 0) AS ld_qty_oh,
              c.so_bol,
              f.abs_shp_date,
              f.abs_item,
@@ -916,6 +918,8 @@ export class ReportsRepository extends BaseRepository<RowDataPacket> {
              a.sod_list_pr,
              IFNULL(f.abs_ship_qty * a.sod_list_pr, 0) AS ext,
              g.cmt_cmmt,
+             b.pt_routing,
+             wo.wo_nbr,
              a.sod_acct,
              a.sod_type,
              c.so_rmks
@@ -927,10 +931,27 @@ export class ReportsRepository extends BaseRepository<RowDataPacket> {
         GROUP BY pt_part
       ) b ON b.pt_part = a.sod_part
       LEFT JOIN (
-        SELECT so_nbr, so_cust, so_ord_date, so_ship, so_bol, so_rmks
+        SELECT so_nbr, so_cust, so_ord_date, so_ship, so_shipvia, so_bol, so_rmks
         FROM so_mstr
         WHERE so_domain = 'EYE'
       ) c ON c.so_nbr = a.sod_nbr
+      LEFT JOIN (
+        SELECT wo_so_job, MAX(wo_nbr) AS wo_nbr
+        FROM wo_mstr
+        WHERE wo_domain = 'EYE'
+        GROUP BY wo_so_job
+      ) wo ON wo.wo_so_job = a.sod_nbr
+      LEFT JOIN (
+        SELECT a.ld_part,
+               SUM(a.ld_qty_oh) AS ld_qty_oh
+        FROM ld_det a
+        JOIN loc_mstr b ON b.loc_loc = a.ld_loc
+          AND b.loc_type = 'FG'
+          AND b.loc_domain = 'EYE'
+        WHERE a.ld_domain = 'EYE'
+          AND a.ld_status != 'UA'
+        GROUP BY a.ld_part
+      ) e ON e.ld_part = a.sod_part
       LEFT JOIN (
         SELECT a.abs_shipto, a.abs_shp_date, a.abs_item, a.abs_line,
                SUM(a.abs_ship_qty) AS abs_ship_qty,
