@@ -1,4 +1,4 @@
-import { Component, OnInit } from "@angular/core";
+import { Component, ElementRef, OnInit } from "@angular/core";
 import { FormBuilder, Validators } from "@angular/forms";
 import { ActivatedRoute, Router } from "@angular/router";
 import { TripDetailService } from "@app/core/api/field-service/trip-detail/trip-detail.service";
@@ -60,7 +60,8 @@ export class TripItineraryWorkflowComponent implements OnInit {
     private readonly fb: FormBuilder,
     private readonly toastr: ToastrService,
     private readonly route: ActivatedRoute,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly host: ElementRef<HTMLElement>
   ) {}
 
   readonly states = states;
@@ -329,6 +330,7 @@ export class TripItineraryWorkflowComponent implements OnInit {
     this.selectedGroupId = groupId;
     this.setCreateMode(groupId);
     this.syncSelectedGroupNameDraft();
+    this.scrollActiveSelectionIntoView();
   }
 
   changeGroup(): void {
@@ -366,6 +368,7 @@ export class TripItineraryWorkflowComponent implements OnInit {
 
     this.syncQueryParams();
     this.syncSelectedGroupNameDraft();
+    this.scrollActiveSelectionIntoView();
   }
 
   getStatus(trip: TripRecord): "Confirmed" | "Booked" | "Pending" {
@@ -606,6 +609,7 @@ export class TripItineraryWorkflowComponent implements OnInit {
 
     this.setCreateMode(this.selectedGroupId);
     this.syncSelectedGroupNameDraft();
+    this.scrollActiveSelectionIntoView();
   }
 
   private syncQueryParams(): void {
@@ -646,5 +650,21 @@ export class TripItineraryWorkflowComponent implements OnInit {
 
     const current = this.groups.find((group) => group.id === this.selectedGroupId);
     this.selectedGroupNameDraft = current?.name || "";
+  }
+
+  private scrollActiveSelectionIntoView(): void {
+    setTimeout(() => {
+      const root = this.host.nativeElement;
+      const activeTrip = root.querySelector<HTMLElement>(".group-list-scroll .trip-tile.active");
+      if (activeTrip) {
+        activeTrip.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        return;
+      }
+
+      const activeGroup = root.querySelector<HTMLElement>(".group-list-scroll .group-chip.active");
+      if (activeGroup) {
+        activeGroup.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      }
+    }, 0);
   }
 }

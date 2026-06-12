@@ -347,6 +347,18 @@ export class OtdReportComponent implements OnInit {
     onSortChanged: (params) => this.updateUrl(params),
   };
 
+  onInsightsTabChange(tabId: number): void {
+    if (tabId !== 2) {
+      return;
+    }
+
+    // Grid is initialized while hidden under ngbNav; defer resize until tab content is visible.
+    setTimeout(() => {
+      this.gridApi1?.sizeColumnsToFit();
+      this.gridApi1?.redrawRows();
+    }, 0);
+  }
+
   updateUrl = (params) => {
     let gridParams = _compressToEncodedURIComponent(params.api);
     this.router.navigate([`.`], {

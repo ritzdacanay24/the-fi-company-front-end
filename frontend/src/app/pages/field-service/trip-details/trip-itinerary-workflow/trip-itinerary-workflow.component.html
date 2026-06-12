@@ -126,23 +126,27 @@
           <div class="group-list d-flex flex-column gap-2" *ngIf="!isLoading && !hasSelectedGroup && groups.length">
             <button
               type="button"
-              class="btn text-start group-chip"
-              [class.active]="group.id === selectedGroupId"
+              class="btn text-start w-100 workflow-list-btn"
+              [ngClass]="group.id === selectedGroupId ? 'btn-primary active' : 'btn-outline-secondary'"
+              [attr.aria-current]="group.id === selectedGroupId ? 'true' : null"
               *ngFor="let group of groups"
               (click)="selectGroup(group.id)"
             >
               <div class="d-flex justify-content-between align-items-center">
                 <span class="fw-semibold">{{ group.name }}</span>
-                <span class="badge text-bg-light border">{{ group.trips.length }}</span>
+                <span class="badge text-bg-secondary">{{ group.trips.length }}</span>
               </div>
-              <div class="small text-muted mt-1">ID {{ group.id }} • {{ group.trips[0]?.city || 'No city' }}</div>
+              <div class="small mt-1" [ngClass]="group.id === selectedGroupId ? 'text-white-50' : 'text-body-secondary'">
+                ID {{ group.id }} • {{ group.trips[0]?.city || 'No city' }}
+              </div>
             </button>
           </div>
 
           <div class="group-list d-flex flex-column gap-2" *ngIf="!isLoading && hasSelectedGroup">
             <button
-              class="btn trip-tile text-start w-100"
-              [class.active]="trip.id === selectedTripId"
+              class="btn text-start w-100 workflow-list-btn"
+              [ngClass]="trip.id === selectedTripId ? 'btn-primary active' : 'btn-outline-secondary'"
+              [attr.aria-current]="trip.id === selectedTripId ? 'true' : null"
               (click)="selectTrip(trip)"
               *ngFor="let trip of selectedGroupTrips"
             >
@@ -150,8 +154,12 @@
                 <span class="fw-semibold text-capitalize">{{ trip.type_of_travel?.replace('_', ' ') }}</span>
                 <span [class]="getStatusClass(trip)">{{ getStatus(trip) }}</span>
               </div>
-              <div class="small text-muted">{{ trip.location_name || trip.address_name || 'No location name' }}</div>
-              <div class="small">{{ trip.start_datetime | date: 'MMM d, y h:mm a' }}</div>
+              <div class="small" [ngClass]="trip.id === selectedTripId ? 'text-white-50' : 'text-body-secondary'">
+                {{ trip.location_name || trip.address_name || 'No location name' }}
+              </div>
+              <div class="small" [ngClass]="trip.id === selectedTripId ? 'text-white' : 'text-body-emphasis'">
+                {{ trip.start_datetime | date: 'MMM d, y h:mm a' }}
+              </div>
             </button>
 
             <div class="text-center py-3 text-muted small" *ngIf="!selectedGroupTrips.length">

@@ -807,13 +807,13 @@ export class SerialAssignmentsRepository extends BaseRepository<RowDataPacket> {
       );
 
       await conn.execute(
-        `UPDATE eyefi_serial_numbers SET status = 'available' WHERE id = ?`,
+        `UPDATE eyefi_serial_numbers SET status = 'available', is_consumed = 0, consumed_at = null, consumed_by = null WHERE id = ?`,
         [assignment['eyefi_serial_id']],
       );
 
       if (assignment['ul_label_id']) {
         await conn.execute(
-          `UPDATE ul_labels SET status = 'available', is_consumed = 0 WHERE id = ?`,
+          `UPDATE ul_labels SET status = 'active', is_consumed = 0 WHERE id = ?`,
           [assignment['ul_label_id']],
         );
       }
@@ -855,13 +855,13 @@ export class SerialAssignmentsRepository extends BaseRepository<RowDataPacket> {
       }
 
       await conn.execute(
-        `UPDATE eyefi_serial_numbers SET status = 'available' WHERE id = ?`,
+        `UPDATE eyefi_serial_numbers SET status = 'available', is_consumed = 0, consumed_at = null, consumed_by = null WHERE id = ?`,
         [assignment['eyefi_serial_id']],
       );
 
       if (assignment['ul_label_id']) {
         await conn.execute(
-          `UPDATE ul_labels SET status = 'available', is_consumed = 0 WHERE id = ?`,
+          `UPDATE ul_labels SET status = 'active', is_consumed = 0 WHERE id = ?`,
           [assignment['ul_label_id']],
         );
       }

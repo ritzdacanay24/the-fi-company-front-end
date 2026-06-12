@@ -210,4 +210,13 @@ export const SCHEDULED_JOB_DEFINITIONS: ScheduledJobDefinition[] = [
     active: true,
     note: 'Sends a daily report of open checklist instances older than 3 days. Subscribers receive the report email.',
   },
+  {
+    id: 'on-time-delivery-sync',
+    name: 'On-Time Delivery Sync',
+    cron: '0 0 18 * * 1-5',
+    url: 'nest://scheduled-jobs/on-time-delivery-sync',
+    active: false,
+    note: 'System job. Pulls same-day OTD rows from QAD and upserts on_time_delivery snapshot rows in eyefidb. No email subscription is used for this job.',
+    supportsRecipients: false,
+  },
 ];

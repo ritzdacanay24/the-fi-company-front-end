@@ -23,6 +23,7 @@ export const SCHEDULED_JOB_IDS = {
   INSPECTION_CHECKLIST_REPORT_GENERATOR: 'inspection-checklist-report-generator',
   OPEN_CHECKLIST_INSTANCES_LAST_3_DAYS: 'open-checklist-instances-last-3-days',
   MATERIAL_REQUEST_SHORTAGE_BACKFILL: 'material-request-shortage-backfill',
+  ON_TIME_DELIVERY_SYNC: 'on-time-delivery-sync',
 } as const;
 
 export type ScheduledJobId = (typeof SCHEDULED_JOB_IDS)[keyof typeof SCHEDULED_JOB_IDS];

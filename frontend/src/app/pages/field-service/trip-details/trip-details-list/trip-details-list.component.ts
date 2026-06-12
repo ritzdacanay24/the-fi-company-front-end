@@ -69,23 +69,25 @@ export class TripDetailsListComponent implements OnInit {
     this.getData();
   }
 
-  viewTripDetailById(group_id) {
+  viewTripDetailById(groupId: number) {
     let gridParams = _compressToEncodedURIComponent(this.gridApi);
-    this.router.navigate([NAVIGATION_ROUTE.SUMMARY_EDIT], {
+    this.router.navigate([NAVIGATION_ROUTE.WORKFLOW], {
       queryParamsHandling: "merge",
       queryParams: {
-        group_id: group_id,
+        group_id: groupId,
+        trip_id: null,
         gridParams,
       },
     });
   }
 
-  editById(id) {
+  editById(id: number, groupId: number) {
     let gridParams = _compressToEncodedURIComponent(this.gridApi);
-    this.router.navigate([NAVIGATION_ROUTE.EDIT], {
+    this.router.navigate([NAVIGATION_ROUTE.WORKFLOW], {
       queryParamsHandling: "merge",
       queryParams: {
-        id: id,
+        group_id: groupId,
+        trip_id: id,
         gridParams,
       },
     });
@@ -119,7 +121,7 @@ export class TripDetailsListComponent implements OnInit {
       cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
         onClick: (e) => {
-          this.editById(e.rowData.id);
+          this.editById(e.rowData.id, e.rowData.fs_travel_header_id);
         },
         value: "Edit",
       },

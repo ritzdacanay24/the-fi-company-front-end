@@ -25,3 +25,4 @@ export { OverdueSafetyIncidentHandler } from './overdue-safety-incident.handler'
 export { InspectionChecklistReportGeneratorHandler } from './inspection-checklist-report-generator.handler';
 export { OpenChecklistInstancesLast3DaysHandler } from './open-checklist-instances-last-3-days.handler';
 export { MaterialRequestShortageBackfillHandler } from './material-request-shortage-backfill.handler';
+export { OnTimeDeliverySyncHandler } from './on-time-delivery-sync.handler';

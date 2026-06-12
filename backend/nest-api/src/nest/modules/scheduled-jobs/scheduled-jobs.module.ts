@@ -38,6 +38,7 @@ import {
   InspectionChecklistReportGeneratorHandler,
   OpenChecklistInstancesLast3DaysHandler,
   MaterialRequestShortageBackfillHandler,
+  OnTimeDeliverySyncHandler,
 } from './handlers';
 
 @Module({
@@ -82,6 +83,7 @@ import {
     InspectionChecklistReportGeneratorHandler,
     OpenChecklistInstancesLast3DaysHandler,
     MaterialRequestShortageBackfillHandler,
+    OnTimeDeliverySyncHandler,
   ],
 })
 export class ScheduledJobsModule {}

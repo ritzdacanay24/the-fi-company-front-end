@@ -171,8 +171,8 @@ export class ReportsComponent implements OnInit {
       keywords: ['shipped', 'orders', 'fulfillment', 'delivery']
     },
     {
-      title: 'OTD Report',
-      description: 'On-time delivery performance and analysis',
+      title: 'On-Time Delivery Performance',
+      description: 'Real-time operational performance metrics and delivery analytics',
       path: 'otd-report',
       icon: 'mdi mdi-clock-check',
       category: 'shipping',
@@ -224,13 +224,18 @@ export class ReportsComponent implements OnInit {
   }
 
   updateDashboardVisibility(): void {
-    const currentUrl = this.router.url;
-    // Show dashboard only when at the root reports path
-    this.showDashboard = currentUrl === '/operations/reports' || currentUrl === '/operations/reports/';
-    
-    // Extract current report path for favorite functionality
+    const normalizedUrl = this.router.url.split('?')[0].split('#')[0];
+    const reportsBasePaths = ['/operations/reports', '/operations/report'];
+
+    this.showDashboard = reportsBasePaths.includes(normalizedUrl) || reportsBasePaths.includes(normalizedUrl.replace(/\/$/, ''));
+
     if (!this.showDashboard) {
-      this.currentReportPath = currentUrl.replace('/operations/reports/', '');
+      const matchedBase = reportsBasePaths.find(base => normalizedUrl.startsWith(base + '/'));
+      this.currentReportPath = matchedBase
+        ? normalizedUrl.slice((matchedBase + '/').length).split('/')[0]
+        : '';
+    } else {
+      this.currentReportPath = '';
     }
   }
 
@@ -253,6 +258,11 @@ export class ReportsComponent implements OnInit {
   getCurrentReportTitle(): string {
     const currentReport = this.reports.find(r => r.path === this.currentReportPath);
     return currentReport ? currentReport.title : 'Report';
+  }
+
+  getCurrentReportDescription(): string {
+    const currentReport = this.reports.find(r => r.path === this.currentReportPath);
+    return currentReport ? currentReport.description : 'Comprehensive data analysis and insights';
   }
 
   backToDashboard(): void {

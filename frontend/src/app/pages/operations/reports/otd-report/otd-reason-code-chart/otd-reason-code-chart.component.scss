@@ -55,10 +55,18 @@
     .apexcharts-datalabel-label,
     .apexcharts-datalabel-value {
       font-weight: 700;
-      fill: white;
+      fill: #ffffff !important;
       text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);
       font-family: inherit;
       font-size: 11px;
+    }
+
+    .apexcharts-data-labels text,
+    .apexcharts-data-labels tspan,
+    .apexcharts-pie-label,
+    .apexcharts-text {
+      fill: #ffffff !important;
+      color: #ffffff !important;
     }
     
     .apexcharts-datalabel-label {

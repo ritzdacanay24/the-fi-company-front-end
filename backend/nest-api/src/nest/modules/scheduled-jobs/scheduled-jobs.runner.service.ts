@@ -93,6 +93,11 @@ export class ScheduledJobsRunnerService {
     await this.scheduledJobsService.runJobIfEnabled('material-request-shortage-backfill');
   }
 
+  @Cron('0 0 18 * * 1-5', { name: 'scheduled-jobs.on-time-delivery-sync', timeZone: SCHEDULED_JOBS_TIMEZONE })
+  async runOnTimeDeliverySync(): Promise<void> {
+    await this.scheduledJobsService.runJobIfEnabled('on-time-delivery-sync');
+  }
+
   @Cron('* * * * *', { name: 'scheduled-jobs.comment-reminders', timeZone: SCHEDULED_JOBS_TIMEZONE })
   async runCommentReminders(): Promise<void> {
     await this.commentRemindersService.processDueReminders();
