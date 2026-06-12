@@ -1,13 +1,14 @@
-import { Component, Input, OnInit, SimpleChanges, TemplateRef } from '@angular/core'
+import { Component, Input, OnInit, SimpleChanges } from '@angular/core'
 import { ReactiveFormsModule } from '@angular/forms'
 import { AttachmentService } from '@app/core/api/field-service/attachment.service'
-import { NgbOffcanvas } from '@ng-bootstrap/ng-bootstrap'
 import moment from 'moment'
 import imageCompression from 'browser-image-compression';
 import { LazyLoadImageModule } from 'ng-lazyload-image'
 import { AuthenticationService } from '@app/core/services/auth.service'
 import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service'
 import { SharedModule } from '@app/shared/shared.module'
+import { NgbModal } from '@ng-bootstrap/ng-bootstrap'
+import { FileViewerModalComponent } from '@app/shared/components/file-viewer-modal/file-viewer-modal.component'
 
 @Component({
   standalone: true,
@@ -34,7 +35,7 @@ export class AttachmentComponent implements OnInit {
 
   constructor(
     public api: AttachmentService,
-    private offcanvasService: NgbOffcanvas,
+    private modalService: NgbModal,
     private authenticationService: AuthenticationService
   ) {
   }
@@ -54,14 +55,37 @@ export class AttachmentComponent implements OnInit {
     }
   }
 
-  closeResult = "";
-  openBottom(content: TemplateRef<any>) {
-    this.offcanvasService.open(content, { ariaLabelledBy: 'offcanvas-basic-title', position: 'end' }).result.then(
-      (result) => {
-        this.getData()
-      },
-      (reason) => { },
+  openMedia(row: any): void {
+    const currentLink = String(row?.link || '').trim();
+    if (!currentLink) {
+      return;
+    }
+
+    const viewerItems = (this.data || [])
+      .filter((item: any) => String(item?.link || '').trim())
+      .map((item: any) => ({
+        id: item?.id,
+        url: String(item?.link || '').trim(),
+        fileName: String(item?.fileName || 'Attachment').trim(),
+      }));
+
+    const initialIndex = Math.max(
+      0,
+      viewerItems.findIndex((item: any) => String(item.url || '').trim() === currentLink),
     );
+
+    const modalRef = this.modalService.open(FileViewerModalComponent, {
+      size: 'xl',
+      centered: true,
+      backdrop: true,
+      keyboard: true,
+    });
+
+    modalRef.componentInstance.items = viewerItems;
+    modalRef.componentInstance.initialIndex = initialIndex;
+    modalRef.componentInstance.enableNavigation = true;
+    modalRef.componentInstance.url = viewerItems[initialIndex]?.url || currentLink;
+    modalRef.componentInstance.fileName = viewerItems[initialIndex]?.fileName || 'Attachment';
   }
 
   async onChange(event) {
@@ -120,7 +144,6 @@ export class AttachmentComponent implements OnInit {
       SweetAlert.loading('Deleting. Please wait.')
       await this.api.deleteById(row.id)
       await this.getData();
-      this.offcanvasService?.dismiss();
       SweetAlert.close()
     } catch (err) {
       SweetAlert.close(0)

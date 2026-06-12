@@ -366,7 +366,7 @@ export class FileStorageService {
 
     const field = typeof row?.field === 'string' ? row.field.toLowerCase() : '';
     if (field.includes('field service')) {
-      return 'general';
+      return 'fieldService';
     }
 
     if (field.includes('vehicle inspection')) {
