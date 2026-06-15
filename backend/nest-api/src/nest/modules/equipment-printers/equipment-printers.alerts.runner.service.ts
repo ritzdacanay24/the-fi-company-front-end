@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EmailService } from '@/shared/email/email.service';
+import { EmailTemplateService } from '@/shared/email/email-template.service';
 import { EquipmentPrintersRepository, EquipmentPrinterAlertState } from './equipment-printers.repository';
 import { EquipmentPrintersService, PrinterData } from './equipment-printers.service';
 
@@ -26,6 +27,7 @@ export class EquipmentPrintersAlertsRunnerService {
     private readonly equipmentPrintersService: EquipmentPrintersService,
     private readonly equipmentPrintersRepository: EquipmentPrintersRepository,
     private readonly emailService: EmailService,
+    private readonly emailTemplateService: EmailTemplateService,
     private readonly configService: ConfigService,
   ) {}
 
@@ -216,38 +218,23 @@ export class EquipmentPrintersAlertsRunnerService {
     const warningCount = issues.filter((issue) => issue.severity === 'warning').length;
     const subject = `[Printer Alerts] ${criticalCount} critical, ${warningCount} warning`;
 
-    const rows = issues
-      .map(
-        (issue) => `
-          <tr>
-            <td style="padding:8px;border-bottom:1px solid #e5e7eb;">${issue.model}</td>
-            <td style="padding:8px;border-bottom:1px solid #e5e7eb;">${issue.location || '-'}</td>
-            <td style="padding:8px;border-bottom:1px solid #e5e7eb;">${issue.ipAddress}</td>
-            <td style="padding:8px;border-bottom:1px solid #e5e7eb;font-weight:600;color:${issue.severity === 'critical' ? '#b91c1c' : '#92400e'};text-transform:uppercase;">${issue.severity}</td>
-            <td style="padding:8px;border-bottom:1px solid #e5e7eb;">${issue.message}</td>
-          </tr>
-        `,
-      )
-      .join('');
-
-    const html = `
-      <div style="font-family:Arial,Helvetica,sans-serif;color:#111827;">
-        <h2 style="margin:0 0 12px;">Printer Supply/Status Alert</h2>
-        <p style="margin:0 0 16px;">Detected ${issues.length} printer issue(s): ${criticalCount} critical, ${warningCount} warning.</p>
-        <table style="width:100%;border-collapse:collapse;font-size:13px;">
-          <thead>
-            <tr>
-              <th style="text-align:left;padding:8px;border-bottom:2px solid #d1d5db;">Model</th>
-              <th style="text-align:left;padding:8px;border-bottom:2px solid #d1d5db;">Location</th>
-              <th style="text-align:left;padding:8px;border-bottom:2px solid #d1d5db;">IP</th>
-              <th style="text-align:left;padding:8px;border-bottom:2px solid #d1d5db;">Severity</th>
-              <th style="text-align:left;padding:8px;border-bottom:2px solid #d1d5db;">Issue</th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </div>
-    `;
+    const html = this.emailTemplateService.render('equipment-printer-alert', {
+      totalCount: issues.length,
+      criticalCount,
+      warningCount,
+      issues: issues.map((issue) => ({
+        alertType: issue.alertType,
+        model: issue.model,
+        location: issue.location || '-',
+        ipAddress: issue.ipAddress,
+        severity: issue.severity,
+        isCritical: issue.severity === 'critical',
+        message: issue.message,
+        hasLevelPercent: this.toPercent(issue.lastValue) !== null,
+        levelPercent: this.toPercent(issue.lastValue),
+        levelBarColor: issue.severity === 'critical' ? '#b91c1c' : '#92400e',
+      })),
+    });
 
     await this.emailService.sendMail({
       to: recipients,
@@ -260,6 +247,20 @@ export class EquipmentPrintersAlertsRunnerService {
     const raw = this.configService.get<string>(key);
     const parsed = Number(raw);
     return Number.isFinite(parsed) ? parsed : fallback;
+  }
+
+  private toPercent(rawValue: string | undefined): number | null {
+    if (rawValue === undefined || rawValue === null) {
+      return null;
+    }
+
+    const parsed = Number(rawValue);
+    if (!Number.isFinite(parsed)) {
+      return null;
+    }
+
+    const clamped = Math.max(0, Math.min(100, parsed));
+    return Math.round(clamped);
   }
 
   private toCompositeKey(printerId: number, alertKey: string): string {

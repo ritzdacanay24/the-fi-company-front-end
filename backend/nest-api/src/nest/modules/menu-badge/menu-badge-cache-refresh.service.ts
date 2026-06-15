@@ -53,7 +53,9 @@ export class MenuBadgeCacheRefreshService implements OnModuleInit {
 
   async onModuleInit(): Promise<void> {
     // Prime cache once at startup so first badge read does not wait for the cron window.
-    await this.refreshCachedBadgeCounts();
+    void this.refreshCachedBadgeCounts().catch((error) => {
+      this.logger.error('Startup cache warmup failed; continuing without blocking app boot', error as Error);
+    });
   }
 
   @Cron('0 0 * * * *', {
