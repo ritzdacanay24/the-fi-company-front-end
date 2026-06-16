@@ -709,13 +709,19 @@ export class PhotoChecklistService {
     const photoRows = await this.repository.getPhotoSubmissionsByInstanceId(id);
 
     // Group by item_id and build per-item photo arrays
-    const photosByItemId = new Map<number, { file_url: string; file_type: string; capture_source: string | null; created_at: string | null; uploader_user_id: number | null }[]>();
+    const photosByItemId = new Map<number, { id: number; file_url: string; file_type: string; capture_source: string | null; created_at: string | null; uploader_user_id: number | null }[]>();
     for (const row of photoRows) {
       const itemId = Number(row.item_id);
       if (!photosByItemId.has(itemId)) photosByItemId.set(itemId, []);
       const meta = this.safeParseJson<Record<string, unknown>>(row.photo_metadata, {});
+      const resolvedFileUrl = await this.resolveChecklistMediaReadUrl(
+        String(row.file_url || ''),
+        meta,
+        'inspectionCheckList',
+      );
       photosByItemId.get(itemId)!.push({
-        file_url: this.normalizeChecklistMediaUrl(String(row.file_url || ''), { subFolder: 'inspectionCheckList' }),
+        id: Number(row.submission_id || 0),
+        file_url: resolvedFileUrl,
         file_type: String(row.file_type || 'image'),
         capture_source: (meta?.capture_source as string | null) ?? null,
         created_at: row.created_at ? String(row.created_at) : null,
@@ -724,7 +730,7 @@ export class PhotoChecklistService {
     }
 
     // Convert map to items array for frontend consumption
-    type InstanceMediaItem = { file_url: string; file_type: string; capture_source: string | null; created_at: string | null; uploader_user_id: number | null };
+    type InstanceMediaItem = { id: number; file_url: string; file_type: string; capture_source: string | null; created_at: string | null; uploader_user_id: number | null };
     type InstanceItem = { item_id: number; photos: InstanceMediaItem[]; videos: InstanceMediaItem[] };
     const items: InstanceItem[] = [];
     for (const [itemId, media] of photosByItemId.entries()) {
@@ -987,47 +993,148 @@ export class PhotoChecklistService {
   ) {
     await this.assertIsLockOwner(instanceId, options?.callerId ?? null);
     const subFolder = 'inspectionCheckList';
-    const fileName = await this.fileStorageService.storeUploadedFile(file, subFolder);
-    const baseLink = this.fileStorageService.resolveLink(fileName, subFolder)
-      || `/uploads/${subFolder}/${encodeURIComponent(fileName)}`;
-    const fileUrl = this.normalizeChecklistMediaUrl(baseLink, { fileName, subFolder });
     const fileType = String(file?.mimetype || '').toLowerCase().includes('video') ? 'video' : 'image';
     const captureSource = this.normalizeCaptureSource(options?.captureSource);
+    const useBucketStorage = this.shouldUploadChecklistMediaToBucket();
+
+    let fileName = '';
+    let storedFileUrl = '';
+    let responseFileUrl = '';
+    let storageMetadata: Record<string, unknown> | null = null;
+    const inspectionId = this.resolveInspectionIdForInstance(instanceId);
+
+    if (useBucketStorage) {
+      const storageUpload = await this.fileStorageService.storeUploadedFileInBucket(file, {
+        bucket: this.resolveChecklistMediaBucket(),
+        keyPrefix: this.buildChecklistBucketKeyPrefix(instanceId),
+      });
+
+      fileName = storageUpload.fileName;
+      storedFileUrl = this.buildStoredChecklistBucketPath(storageUpload.key);
+      responseFileUrl = this.normalizeChecklistMediaUrl(storageUpload.url, { fileName, subFolder });
+      storageMetadata = {
+        provider: 's3',
+        context_type: 'instance',
+        inspection_id: inspectionId,
+        instance_id: Number(instanceId || 0),
+        item_id: Number(itemId || 0),
+        bucket: storageUpload.bucket,
+        key: storageUpload.key,
+        url: storageUpload.url,
+      };
+    } else {
+      fileName = await this.fileStorageService.storeUploadedFile(file, subFolder);
+      const baseLink = this.fileStorageService.resolveLink(fileName, subFolder)
+        || `/uploads/${subFolder}/${encodeURIComponent(fileName)}`;
+      storedFileUrl = this.normalizeChecklistMediaUrl(baseLink, { fileName, subFolder });
+      responseFileUrl = storedFileUrl;
+    }
+
+    const photoMetadata: Record<string, unknown> = {
+      capture_source: captureSource,
+      uploader_user_id: Number(options?.userId || 0) || null,
+    };
+    if (storageMetadata) {
+      photoMetadata.storage = storageMetadata;
+    }
 
     const uploadPayload = {
       instance_id: instanceId,
       item_id: itemId,
       file_name: fileName,
-      file_path: fileUrl,
-      file_url: fileUrl,
+      file_path: storedFileUrl,
+      file_url: storedFileUrl,
       file_type: fileType,
       file_size: Number(file?.size || 0),
       mime_type: file?.mimetype || '',
-      photo_metadata: JSON.stringify({
-        capture_source: captureSource,
-        uploader_user_id: Number(options?.userId || 0) || null,
-      }),
+      photo_metadata: JSON.stringify(photoMetadata),
     };
 
     const insertId = await this.repository.createPhotoSubmission(uploadPayload);
     const resolvedId = insertId > 0
       ? insertId
-      : await this.repository.findPhotoSubmissionIdByLocator(instanceId, itemId, [fileUrl]);
+      : await this.repository.findPhotoSubmissionIdByLocator(instanceId, itemId, [storedFileUrl]);
     const media = resolvedId ? await this.repository.getPhotoSubmissionById(resolvedId) : null;
+    const mediaMeta = this.safeParseJson<Record<string, unknown>>(media?.photo_metadata, {});
+    const mediaDisplayUrl = await this.resolveChecklistMediaReadUrl(
+      String(media?.file_url || storedFileUrl),
+      mediaMeta,
+      subFolder,
+    );
 
     return {
       success: true,
-      file_url: fileUrl,
+      file_url: responseFileUrl || mediaDisplayUrl,
       media: {
         id: Number(media?.id || resolvedId || insertId || 0),
         item_id: Number(media?.item_id || itemId),
-        file_url: this.normalizeChecklistMediaUrl(String(media?.file_url || fileUrl), { fileName, subFolder }),
+        file_url: mediaDisplayUrl,
         file_type: (String(media?.file_type || fileType) === 'video' ? 'video' : 'image') as 'video' | 'image',
         file_name: String(media?.file_name || fileName),
         created_at: (media?.created_at as string | null) ?? null,
       },
       user_id: options?.userId || null,
     };
+  }
+
+  private buildStoredChecklistBucketPath(key: string): string {
+    const normalizedKey = String(key || '').trim().replace(/^\/+/, '');
+    if (!normalizedKey) {
+      return '/attachments';
+    }
+
+    return `/${['attachments', ...normalizedKey.split('/').filter(Boolean)].join('/')}`;
+  }
+
+  private shouldUploadChecklistMediaToBucket(): boolean {
+    const mediaStorageMode = this.resolveMediaStorageMode();
+    if (mediaStorageMode === 'local') {
+      return false;
+    }
+
+    const configuredBucket = String(process.env.MEDIA_STORAGE_BUCKET || '').trim();
+    if (configuredBucket) {
+      return true;
+    }
+
+    throw new InternalServerErrorException(
+      'Missing checklist storage configuration. Set MEDIA_STORAGE_BUCKET for checklist uploads, or set MEDIA_STORAGE_MODE="local" for local checklist storage.',
+    );
+  }
+
+  private resolveMediaStorageMode(): 'local' | 's3' | 'bucket' | null {
+    const mode = String(process.env.MEDIA_STORAGE_MODE || '').trim().toLowerCase();
+    if (mode !== 'local' && mode !== 's3' && mode !== 'bucket') {
+      const configuredBucket = String(process.env.MEDIA_STORAGE_BUCKET || '').trim();
+      if (configuredBucket) {
+        return 'bucket';
+      }
+
+      return null;
+    }
+
+    return mode as 'local' | 's3' | 'bucket';
+  }
+
+  private resolveChecklistMediaBucket(): string {
+    const bucket = String(process.env.MEDIA_STORAGE_BUCKET || '').trim();
+    if (!bucket) {
+      throw new InternalServerErrorException(
+        'Missing MEDIA_STORAGE_BUCKET. Configure MEDIA_STORAGE_BUCKET for checklist bucket uploads.',
+      );
+    }
+
+    return bucket;
+  }
+
+  private resolveInspectionIdForInstance(instanceId: number): number {
+    // Current model uses checklist instance as the inspection root.
+    return Number(instanceId || 0);
+  }
+
+  private buildChecklistBucketKeyPrefix(instanceId: number): string {
+    const safeInstanceId = Number(instanceId || 0);
+    return `checklist/instance/${safeInstanceId}`;
   }
 
   async deleteMediaById(id: number) {
@@ -1072,11 +1179,7 @@ export class PhotoChecklistService {
       });
     }
 
-    const mediaId = await this.repository.findPhotoSubmissionIdByLocator(
-      normalizedInstanceId,
-      normalizedItemId,
-      candidates,
-    );
+    const mediaId = await this.resolveMediaIdByLocator(normalizedInstanceId, normalizedItemId, fileUrl);
 
     if (!mediaId) {
       throw new NotFoundException({
@@ -1088,36 +1191,42 @@ export class PhotoChecklistService {
     return this.deleteMediaById(mediaId);
   }
 
-  async deleteOwnMedia(instanceId: number, itemId: number, fileUrl: string, requestingUserId: number) {
+  async deleteOwnMedia(instanceId: number, itemId: number, fileUrl: string, requestingUserId: number, mediaId?: number) {
     const normalizedInstanceId = Number(instanceId || 0);
     const normalizedItemId = Number(itemId || 0);
+    const normalizedMediaId = Number(mediaId || 0);
     const candidates = this.normalizeMediaLocatorCandidates(fileUrl);
 
-    if (normalizedInstanceId <= 0 || normalizedItemId <= 0 || candidates.length === 0) {
+    if (normalizedInstanceId <= 0 || normalizedItemId <= 0 || (normalizedMediaId <= 0 && candidates.length === 0)) {
       throw new NotFoundException({
         code: 'RC_CHECKLIST_MEDIA_LOCATOR_INVALID',
         message: 'Missing required locator fields',
       });
     }
 
-    const mediaId = await this.repository.findPhotoSubmissionIdByLocator(
-      normalizedInstanceId,
-      normalizedItemId,
-      candidates,
-    );
+    const resolvedMediaId = normalizedMediaId > 0
+      ? normalizedMediaId
+      : await this.resolveMediaIdByLocator(normalizedInstanceId, normalizedItemId, fileUrl);
 
-    if (!mediaId) {
+    if (!resolvedMediaId) {
       throw new NotFoundException({
         code: 'RC_CHECKLIST_MEDIA_NOT_FOUND',
         message: 'Media not found for provided locator',
       });
     }
 
-    const media = await this.repository.getPhotoSubmissionById(mediaId);
+    const media = await this.repository.getPhotoSubmissionById(resolvedMediaId);
     if (!media) {
       throw new NotFoundException({
         code: 'RC_CHECKLIST_MEDIA_NOT_FOUND',
         message: 'Media not found',
+      });
+    }
+
+    if (Number(media.instance_id || 0) !== normalizedInstanceId) {
+      throw new NotFoundException({
+        code: 'RC_CHECKLIST_MEDIA_NOT_FOUND',
+        message: 'Media not found for provided locator',
       });
     }
 
@@ -1131,7 +1240,7 @@ export class PhotoChecklistService {
       });
     }
 
-    return this.deleteMediaById(mediaId);
+    return this.deleteMediaById(resolvedMediaId);
   }
 
   async archiveInstance(id: number) {
@@ -1427,11 +1536,68 @@ export class PhotoChecklistService {
     path = `/${path.replace(/^\/+/, '')}`;
     const trimmed = path.replace(/^\//, '');
 
-    const candidates = [raw, rawNoQuery, path, trimmed, `/${trimmed}`]
+    const baseCandidates = [raw, rawNoQuery, path, trimmed, `/${trimmed}`];
+
+    // Bucket-backed checklist media may be stored as /attachments/<key>
+    // while the UI can send signed S3 URLs whose pathname is just /<key>.
+    const attachmentCandidates: string[] = [];
+    if (trimmed && !trimmed.startsWith('attachments/')) {
+      attachmentCandidates.push(`attachments/${trimmed}`);
+      attachmentCandidates.push(`/attachments/${trimmed}`);
+    }
+
+    const candidates = [...baseCandidates, ...attachmentCandidates]
       .map((value) => String(value || '').trim())
       .filter(Boolean);
 
     return Array.from(new Set(candidates));
+  }
+
+  private extractMediaLocatorFileNameCandidates(fileUrl: string): string[] {
+    const normalizedCandidates = this.normalizeMediaLocatorCandidates(fileUrl);
+    const fileNameCandidates = normalizedCandidates
+      .map((candidate) => {
+        const normalized = String(candidate || '').trim().replace(/\\/g, '/').replace(/\/+$|\?[^]*$/g, '');
+        const lastSlash = normalized.lastIndexOf('/');
+        return lastSlash >= 0 ? normalized.slice(lastSlash + 1) : normalized;
+      })
+      .map((value) => String(value || '').trim())
+      .filter(Boolean);
+
+    return Array.from(new Set(fileNameCandidates));
+  }
+
+  private async resolveMediaIdByLocator(instanceId: number, itemId: number, fileUrl: string): Promise<number | null> {
+    const locatorCandidates = this.normalizeMediaLocatorCandidates(fileUrl);
+    const byLocator = await this.repository.findPhotoSubmissionIdByLocator(instanceId, itemId, locatorCandidates);
+    if (byLocator) {
+      return byLocator;
+    }
+
+    const byInstanceLocator = await this.repository.findPhotoSubmissionIdByInstanceLocator(instanceId, locatorCandidates);
+    if (byInstanceLocator) {
+      return byInstanceLocator;
+    }
+
+    const fileNameCandidates = this.extractMediaLocatorFileNameCandidates(fileUrl);
+    if (!fileNameCandidates.length) {
+      return null;
+    }
+
+    const byFileName = await this.repository.findPhotoSubmissionIdByFileName(instanceId, itemId, fileNameCandidates);
+    if (byFileName) {
+      return byFileName;
+    }
+
+    const byInstanceFileName = await this.repository.findPhotoSubmissionIdByInstanceFileName(
+      instanceId,
+      fileNameCandidates,
+    );
+    if (byInstanceFileName) {
+      return byInstanceFileName;
+    }
+
+    return this.repository.findOnlyPhotoSubmissionIdByInstanceItem(instanceId, itemId);
   }
 
   private normalizeCaptureSource(rawSource?: string): 'in-app' | 'library' | 'system' | null {
@@ -1453,6 +1619,29 @@ export class PhotoChecklistService {
     }
 
     return null;
+  }
+
+  private async resolveChecklistMediaReadUrl(
+    rawUrl: string,
+    metadata: Record<string, unknown>,
+    subFolder = 'inspectionCheckList',
+  ): Promise<string> {
+    const storage = metadata?.storage as Record<string, unknown> | undefined;
+    const bucket = String(storage?.bucket || '').trim();
+    const key = String(storage?.key || '').trim();
+
+    if (bucket && key) {
+      try {
+        const signedUrl = await this.fileStorageService.resolveBucketObjectUrl(bucket, key);
+        if (signedUrl) {
+          return this.normalizeChecklistMediaUrl(signedUrl, { subFolder });
+        }
+      } catch {
+        // Fall back to stored URL if signed URL generation fails.
+      }
+    }
+
+    return this.normalizeChecklistMediaUrl(rawUrl, { subFolder });
   }
 
   private resolveChecklistMediaPublicOrigin(): string {

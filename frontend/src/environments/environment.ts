@@ -32,7 +32,7 @@ export const environment = {
   wipApiBaseUrl: 'http://localhost:3002',
   vehicleApiBaseUrl: 'http://localhost:3002',
   apiV2BaseUrl: 'http://localhost:3002',
-  apiV2UploadBaseUrl: 'https://dashboard.eye-fi.com/server/ApiV2',
+  apiV2UploadBaseUrl: 'http://localhost:3002/apiV2',
   nestApiBaseUrl: 'http://localhost:3002',
 };
 

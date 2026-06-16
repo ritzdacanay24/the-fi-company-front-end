@@ -158,7 +158,7 @@ export interface ChecklistInstance {
   required_items?: number;
   completed_required?: number;
   items?: ChecklistItem[]; // Template items (used by photos view, progress calc)
-  media_by_item?: Array<{ item_id: number; photos: Array<{ file_url: string; file_type: string; capture_source?: string | null; created_at?: string | null }>; videos: Array<{ file_url: string; file_type: string; capture_source?: string | null; created_at?: string | null }> }>; // Photo submissions per item from DB
+  media_by_item?: Array<{ item_id: number; photos: Array<{ id?: number; file_url: string; file_type: string; capture_source?: string | null; created_at?: string | null }>; videos: Array<{ id?: number; file_url: string; file_type: string; capture_source?: string | null; created_at?: string | null }> }>; // Photo submissions per item from DB
   started_at?: string;
   completed_at?: string;
   submitted_at?: string;
@@ -654,10 +654,15 @@ export class PhotoChecklistConfigService {
     );
   }
 
-  deleteOwnMedia(instanceId: number, itemId: number, fileUrl: string, userId: number): Observable<{success: boolean}> {
+  deleteOwnMedia(instanceId: number, itemId: number, fileUrl: string, userId: number, mediaId?: number): Observable<{success: boolean}> {
     return this.http.post<{success: boolean}>(
       `${this.mediaApiBaseUrl}/media/delete-own`,
-      { instance_id: instanceId, item_id: itemId, file_url: fileUrl },
+      {
+        instance_id: instanceId,
+        item_id: itemId,
+        file_url: fileUrl,
+        ...(mediaId && mediaId > 0 ? { media_id: mediaId } : {}),
+      },
       { headers: { 'x-user-id': String(userId) } }
     );
   }

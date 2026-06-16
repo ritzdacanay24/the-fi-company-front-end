@@ -44,7 +44,8 @@ export class PhotoOperationsService {
     photoUrl: string, 
     itemId: number | string, 
     instanceId: number,
-    userId?: number | null
+    userId?: number | null,
+    mediaId?: number | null
   ): Observable<any> | null {
     const progress = this.stateService.findItemProgress(itemId);
     if (!progress) {
@@ -72,7 +73,7 @@ export class PhotoOperationsService {
 
     // Delete from server using stable locator fields.
     const deleteCall = userId && userId > 0
-      ? this.photoChecklistService.deleteOwnMedia(instanceId, baseItemId, photoUrl, userId)
+      ? this.photoChecklistService.deleteOwnMedia(instanceId, baseItemId, photoUrl, userId, Number(mediaId || 0) || undefined)
       : this.photoChecklistService.deleteMediaByLocator(instanceId, baseItemId, photoUrl);
 
     return deleteCall.pipe(

@@ -14,9 +14,26 @@ export class FileStorageController {
   async upload(
     @Body('folder') folder?: string,
     @Body('subFolder') subFolder?: string,
-    @UploadedFile() file?: { originalname?: string; buffer?: Buffer },
+    @UploadedFile() file?: { originalname?: string; mimetype?: string; buffer?: Buffer },
   ) {
     const targetFolder = folder || subFolder || 'general';
+
+    if (this.shouldUseBucketStorage()) {
+      const keyPrefix = this.normalizeFolder(targetFolder);
+      const stored = await this.service.storeUploadedFileInBucket(file, {
+        keyPrefix,
+      });
+
+      return {
+        success: true,
+        fileName: stored.fileName,
+        subFolder: targetFolder,
+        url: stored.url,
+        bucket: stored.bucket,
+        key: stored.key,
+      };
+    }
+
     const fileName = await this.service.storeUploadedFile(file, targetFolder);
     const url = this.service.resolveLink(fileName, targetFolder);
 
@@ -37,6 +54,17 @@ export class FileStorageController {
     @Body('folder') folder?: string,
     @Body('subFolder') subFolder?: string,
   ) {
+    const bucketTarget = this.resolveBucketDeleteTarget(imageUrl || url, fileName, folder || subFolder);
+    if (bucketTarget) {
+      await this.service.deleteStoredFileInBucket(bucketTarget.key, bucketTarget.bucket);
+
+      return {
+        success: true,
+        fileName: bucketTarget.fileName,
+        subFolder: bucketTarget.subFolder,
+      };
+    }
+
     const resolved = this.resolveDeleteTarget(imageUrl || url, fileName, folder || subFolder);
     if (!resolved) {
       throw new BadRequestException('Missing or invalid delete target');
@@ -89,6 +117,102 @@ export class FileStorageController {
       fileName: simpleFileName,
       subFolder: fallbackFolder,
     };
+  }
+
+  private resolveBucketDeleteTarget(
+    imageUrl?: string,
+    explicitFileName?: string,
+    explicitSubFolder?: string,
+  ): { bucket: string; key: string; fileName: string; subFolder: string } | null {
+    if (!this.shouldUseBucketStorage()) {
+      return null;
+    }
+
+    const configuredBucket = String(process.env.MEDIA_STORAGE_BUCKET || '').trim();
+    if (!configuredBucket) {
+      return null;
+    }
+
+    const normalizedFileName = this.normalizeFileName(explicitFileName || '');
+    const normalizedSubFolder = this.normalizeFolder(explicitSubFolder || 'general');
+    if (normalizedFileName) {
+      const key = `${normalizedSubFolder}/${normalizedFileName}`.replace(/^\/+/, '');
+      return {
+        bucket: configuredBucket,
+        key,
+        fileName: normalizedFileName,
+        subFolder: normalizedSubFolder,
+      };
+    }
+
+    if (!imageUrl || !imageUrl.trim()) {
+      return null;
+    }
+
+    const rawPath = this.extractPathname(imageUrl.trim());
+    const attachmentsPrefix = '/attachments/';
+    const attachmentsIndex = rawPath.indexOf(attachmentsPrefix);
+    if (attachmentsIndex >= 0) {
+      const keyFromAttachments = rawPath.slice(attachmentsIndex + attachmentsPrefix.length).replace(/^\/+/, '');
+      const segments = keyFromAttachments.split('/').filter(Boolean);
+      const derivedFileName = this.normalizeFileName(segments[segments.length - 1] || '');
+      if (!derivedFileName || segments.length < 2) {
+        return null;
+      }
+
+      return {
+        bucket: configuredBucket,
+        key: keyFromAttachments,
+        fileName: derivedFileName,
+        subFolder: this.normalizeFolder(segments.slice(0, -1).join('/')),
+      };
+    }
+
+    try {
+      const parsed = new URL(imageUrl);
+      const pathSegments = decodeURIComponent(parsed.pathname || '')
+        .split('/')
+        .filter(Boolean);
+      if (!pathSegments.length) {
+        return null;
+      }
+
+      let bucket = configuredBucket;
+      let keySegments = pathSegments;
+      if (pathSegments[0] === configuredBucket) {
+        keySegments = pathSegments.slice(1);
+      }
+
+      if (!keySegments.length) {
+        return null;
+      }
+
+      const key = keySegments.join('/');
+      const derivedFileName = this.normalizeFileName(keySegments[keySegments.length - 1] || '');
+      if (!derivedFileName) {
+        return null;
+      }
+
+      return {
+        bucket,
+        key,
+        fileName: derivedFileName,
+        subFolder: this.normalizeFolder(keySegments.slice(0, -1).join('/')),
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  private shouldUseBucketStorage(): boolean {
+    const mode = String(process.env.MEDIA_STORAGE_MODE || '').trim().toLowerCase();
+    const bucket = String(process.env.MEDIA_STORAGE_BUCKET || '').trim();
+
+    if (mode === 'local') {
+      return false;
+    }
+
+    return mode === 'bucket' || mode === 's3' || !!bucket;
   }
 
   private extractPathname(value: string): string {

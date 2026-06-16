@@ -1,15 +1,20 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { mkdir, stat, unlink, writeFile } from 'node:fs/promises';
 import { basename, dirname, join } from 'node:path';
 
 @Injectable()
 export class FileStorageService {
+  private readonly logger = new Logger(FileStorageService.name);
   private readonly explicitUploadDirs = this.resolveExplicitUploadDirs();
   private readonly uploadRootDirs = this.resolveUploadRootDirs();
   private readonly explicitPublicBaseUrl = this.resolveExplicitPublicBaseUrl();
   private readonly publicRootBaseUrl = this.resolvePublicRootBaseUrl();
   private readonly remoteBaseUrl = this.resolveRemoteBaseUrl();
+  private readonly bucketProvider = this.resolveBucketProvider();
+  private readonly s3Client = this.createS3Client();
 
   async storeUploadedFile(
     file?: { originalname?: string; buffer?: Buffer },
@@ -27,7 +32,7 @@ export class FileStorageService {
   }
 
   async storeUploadedFileInBucket(
-    file?: { originalname?: string; buffer?: Buffer },
+    file?: { originalname?: string; buffer?: Buffer; mimetype?: string },
     options?: { bucket?: string; keyPrefix?: string },
   ): Promise<{ bucket: string; key: string; fileName: string; url: string }> {
     if (!file?.buffer || !file?.originalname) {
@@ -38,6 +43,23 @@ export class FileStorageService {
     const keyPrefix = this.sanitizeKeyPrefix(options?.keyPrefix || '');
     const fileName = this.buildStoredFileName(file.originalname);
     const key = keyPrefix ? `${keyPrefix}/${fileName}` : fileName;
+
+    const bucketProvider = this.resolveBucketProviderRequired();
+    if (bucketProvider === 's3' && this.s3Client) {
+      await this.s3Client.send(new PutObjectCommand({
+        Bucket: bucket,
+        Key: key,
+        Body: file.buffer,
+        ContentType: file.mimetype,
+      }));
+
+      return {
+        bucket,
+        key,
+        fileName,
+        url: await this.buildS3ObjectUrl(bucket, key),
+      };
+    }
 
     const bucketRootDir = this.resolveBucketRootDir();
     const absoluteFilePath = join(bucketRootDir, bucket, key);
@@ -95,6 +117,20 @@ export class FileStorageService {
     }
 
     const bucketName = this.resolveBucketName(bucket);
+
+    const bucketProvider = this.resolveBucketProviderRequired();
+    if (bucketProvider === 's3' && this.s3Client) {
+      try {
+        await this.s3Client.send(new DeleteObjectCommand({
+          Bucket: bucketName,
+          Key: safeKey,
+        }));
+      } catch {
+        // Best-effort cleanup.
+      }
+      return;
+    }
+
     const absolutePath = join(this.resolveBucketRootDir(), bucketName, safeKey);
 
     try {
@@ -102,6 +138,23 @@ export class FileStorageService {
     } catch {
       // Best-effort cleanup.
     }
+  }
+
+  async resolveBucketObjectUrl(bucket: string, key: string): Promise<string> {
+    const bucketName = this.resolveBucketName(bucket);
+    const safeKey = this.sanitizeKeyPrefix(key);
+    if (!safeKey) {
+      throw new BadRequestException('Bucket object key is required');
+    }
+
+    const bucketProvider = this.resolveBucketProviderRequired();
+    if (bucketProvider === 's3') {
+      return this.buildS3ObjectUrl(bucketName, safeKey);
+    }
+
+    const publicBase = this.resolveBucketPublicBaseUrl();
+    const encodedKey = safeKey.split('/').map((segment) => encodeURIComponent(segment)).join('/');
+    return `${publicBase}/${bucketName}/${encodedKey}`;
   }
 
   resolveLink(fileName: unknown, subFolder = 'general'): string | null {
@@ -126,6 +179,14 @@ export class FileStorageService {
     const localLink = this.resolveLink(fileName, subFolder);
     const fileExistsLocally = await this.fileExistsInUploadTargets(fileName, subFolder);
     const storageSource = this.resolveStorageSource(row, fileExistsLocally);
+
+    if (storageSource === 'bucket') {
+      return {
+        ...row,
+        link: existingLink || null,
+        storage_source: 'bucket',
+      };
+    }
 
     if (storageSource === 'local' && localLink) {
       return {
@@ -225,6 +286,126 @@ export class FileStorageService {
     return this.uploadRootDirs[0] || join(process.cwd(), 'uploads');
   }
 
+  private resolveBucketProvider(): 'local' | 's3' | null {
+    const configured = String(process.env.MEDIA_STORAGE_MODE || '').trim().toLowerCase();
+    if (configured === 's3' || configured === 'bucket') {
+      return 's3';
+    }
+
+    if (configured === 'local') {
+      return 'local';
+    }
+
+    // Allow explicit bucket configuration to drive provider selection for bucket-only flows.
+    const configuredBucket = String(process.env.MEDIA_STORAGE_BUCKET || '').trim();
+    if (configuredBucket) {
+      return 's3';
+    }
+
+    return null;
+  }
+
+  private resolveBucketProviderRequired(): 'local' | 's3' {
+    const provider = this.resolveBucketProvider();
+    if (!provider) {
+      throw new BadRequestException('Missing MEDIA_STORAGE_MODE. Configure MEDIA_STORAGE_MODE as "local", "s3", or "bucket".');
+    }
+
+    if (provider === 's3' || provider === 'local') {
+      return provider;
+    }
+
+    throw new BadRequestException('Invalid MEDIA_STORAGE_MODE. Expected "local", "s3", or "bucket".');
+  }
+
+  private createS3Client(): S3Client | null {
+    if (this.bucketProvider !== 's3') {
+      return null;
+    }
+
+    const region = this.resolveS3Region();
+    const endpoint = this.resolveS3Endpoint();
+    const forcePathStyle = this.resolveS3ForcePathStyle();
+    const accessKeyId = String(process.env.AWS_ACCESS_KEY_ID || '').trim();
+    const secretAccessKey = String(process.env.AWS_SECRET_ACCESS_KEY || '').trim();
+    const sessionToken = String(process.env.AWS_SESSION_TOKEN || '').trim();
+    const hasStaticCredentials = !!accessKeyId && !!secretAccessKey;
+
+    this.logger.log(`Bucket storage provider: s3 (region=${region}, endpoint=${endpoint || 'aws-default'})`);
+
+    return new S3Client({
+      region,
+      endpoint: endpoint || undefined,
+      forcePathStyle,
+      credentials: hasStaticCredentials
+        ? {
+            accessKeyId,
+            secretAccessKey,
+            sessionToken: sessionToken || undefined,
+          }
+        : undefined,
+    });
+  }
+
+  private resolveS3Region(): string {
+    return String(process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || 'us-east-1').trim();
+  }
+
+  private resolveS3Endpoint(): string {
+    return String(process.env.AWS_S3_ENDPOINT || process.env.S3_ENDPOINT || '').trim().replace(/\/+$/, '');
+  }
+
+  private resolveS3ForcePathStyle(): boolean {
+    const raw = String(process.env.AWS_S3_FORCE_PATH_STYLE || '').trim().toLowerCase();
+    return raw === '1' || raw === 'true' || raw === 'yes';
+  }
+
+  private resolveS3PublicBaseUrl(): string {
+    return String(process.env.FILE_STORAGE_S3_PUBLIC_BASE_URL || '').trim().replace(/\/+$/, '');
+  }
+
+  private async buildS3ObjectUrl(bucket: string, key: string): Promise<string> {
+    const encodedKey = key.split('/').map((segment) => encodeURIComponent(segment)).join('/');
+    const publicBaseUrl = this.resolveS3PublicBaseUrl();
+    if (publicBaseUrl) {
+      return `${publicBaseUrl}/${bucket}/${encodedKey}`;
+    }
+
+    if (this.s3Client) {
+      try {
+        return await getSignedUrl(
+          this.s3Client,
+          new GetObjectCommand({
+            Bucket: bucket,
+            Key: key,
+          }),
+          {
+            expiresIn: this.resolveS3SignedUrlExpiresInSeconds(),
+          },
+        );
+      } catch {
+        this.logger.warn('Failed to generate signed S3 URL. Falling back to unsigned object URL.');
+      }
+    }
+
+    const endpoint = this.resolveS3Endpoint();
+    if (endpoint) {
+      return `${endpoint}/${bucket}/${encodedKey}`;
+    }
+
+    const region = this.resolveS3Region();
+    return `https://${bucket}.s3.${region}.amazonaws.com/${encodedKey}`;
+  }
+
+  private resolveS3SignedUrlExpiresInSeconds(): number {
+    const raw = Number(process.env.FILE_STORAGE_S3_SIGNED_URL_EXPIRES_IN || 3600);
+    if (!Number.isFinite(raw) || raw <= 0) {
+      return 3600;
+    }
+
+    return Math.floor(raw);
+  }
+
   private resolveBucketPublicBaseUrl(): string {
     const configured = process.env.FILE_STORAGE_BUCKET_PUBLIC_BASE_URL?.trim();
     if (configured) {
@@ -235,8 +416,11 @@ export class FileStorageService {
   }
 
   private resolveBucketName(bucket?: string): string {
-    const fallback = process.env.FILE_STORAGE_DEFAULT_BUCKET?.trim() || 'general';
-    const raw = bucket && bucket.trim() ? bucket.trim() : fallback;
+    const raw = bucket?.trim() || String(process.env.MEDIA_STORAGE_BUCKET || '').trim();
+    if (!raw) {
+      throw new BadRequestException('Missing MEDIA_STORAGE_BUCKET. Configure MEDIA_STORAGE_BUCKET for bucket-backed storage operations.');
+    }
+
     return this.sanitizeBucketName(raw);
   }
 
@@ -434,7 +618,7 @@ export class FileStorageService {
   private resolveStorageSource(
     row: Record<string, unknown>,
     fileExistsLocally: boolean,
-  ): 'local' | 'legacy' | null {
+  ): 'local' | 'legacy' | 'bucket' | null {
     const fromRow = this.parseStorageSource(row?.storage_source ?? row?.storageSource);
     if (fromRow) {
       return fromRow;
@@ -447,13 +631,13 @@ export class FileStorageService {
     return null;
   }
 
-  private parseStorageSource(value: unknown): 'local' | 'legacy' | null {
+  private parseStorageSource(value: unknown): 'local' | 'legacy' | 'bucket' | null {
     if (typeof value !== 'string') {
       return null;
     }
 
     const normalized = value.trim().toLowerCase();
-    if (normalized === 'local' || normalized === 'legacy') {
+    if (normalized === 'local' || normalized === 'legacy' || normalized === 'bucket') {
       return normalized;
     }
 

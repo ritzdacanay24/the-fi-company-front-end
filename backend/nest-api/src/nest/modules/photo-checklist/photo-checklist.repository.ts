@@ -1063,6 +1063,95 @@ export class PhotoChecklistRepository {
     return rowId > 0 ? rowId : null;
   }
 
+  async findPhotoSubmissionIdByFileName(
+    instanceId: number,
+    itemId: number,
+    fileNameCandidates: string[],
+  ): Promise<number | null> {
+    if (!fileNameCandidates.length) {
+      return null;
+    }
+
+    const placeholders = fileNameCandidates.map(() => '?').join(',');
+    const rows = await this.mysqlService.query<RowDataPacket[]>(
+      `SELECT id
+       FROM photo_submissions
+       WHERE instance_id = ?
+         AND item_id = ?
+         AND file_name IN (${placeholders})
+       ORDER BY id DESC
+       LIMIT 1`,
+      [instanceId, itemId, ...fileNameCandidates],
+    );
+
+    const rowId = Number(rows[0]?.id || 0);
+    return rowId > 0 ? rowId : null;
+  }
+
+  async findPhotoSubmissionIdByInstanceLocator(
+    instanceId: number,
+    fileUrlCandidates: string[],
+  ): Promise<number | null> {
+    if (!fileUrlCandidates.length) {
+      return null;
+    }
+
+    const placeholders = fileUrlCandidates.map(() => '?').join(',');
+    const rows = await this.mysqlService.query<RowDataPacket[]>(
+      `SELECT id
+       FROM photo_submissions
+       WHERE instance_id = ?
+         AND file_url IN (${placeholders})
+       ORDER BY id DESC
+       LIMIT 1`,
+      [instanceId, ...fileUrlCandidates],
+    );
+
+    const rowId = Number(rows[0]?.id || 0);
+    return rowId > 0 ? rowId : null;
+  }
+
+  async findPhotoSubmissionIdByInstanceFileName(
+    instanceId: number,
+    fileNameCandidates: string[],
+  ): Promise<number | null> {
+    if (!fileNameCandidates.length) {
+      return null;
+    }
+
+    const placeholders = fileNameCandidates.map(() => '?').join(',');
+    const rows = await this.mysqlService.query<RowDataPacket[]>(
+      `SELECT id
+       FROM photo_submissions
+       WHERE instance_id = ?
+         AND file_name IN (${placeholders})
+       ORDER BY id DESC
+       LIMIT 1`,
+      [instanceId, ...fileNameCandidates],
+    );
+
+    const rowId = Number(rows[0]?.id || 0);
+    return rowId > 0 ? rowId : null;
+  }
+
+  async findOnlyPhotoSubmissionIdByInstanceItem(instanceId: number, itemId: number): Promise<number | null> {
+    const rows = await this.mysqlService.query<RowDataPacket[]>(
+      `SELECT COUNT(*) AS total, MAX(id) AS id
+       FROM photo_submissions
+       WHERE instance_id = ?
+         AND item_id = ?`,
+      [instanceId, itemId],
+    );
+
+    const total = Number(rows[0]?.total || 0);
+    const rowId = Number(rows[0]?.id || 0);
+    if (total !== 1 || rowId <= 0) {
+      return null;
+    }
+
+    return rowId;
+  }
+
   async deletePhotoSubmissionById(id: number): Promise<number> {
     const result = await this.mysqlService.execute<ResultSetHeader>(
       'DELETE FROM photo_submissions WHERE id = ?',

@@ -31,8 +31,8 @@ export class PhotoChecklistUploadService {
   private readonly uploadApiBaseUrl = environment.apiV2UploadBaseUrl.replace(/\/+$/, '');
   private readonly fileStorageUploadUrl = `${this.uploadApiBaseUrl}/file-storage/upload`;
   private readonly fileStorageDeleteUrl = `${this.uploadApiBaseUrl}/file-storage/delete`;
-  private readonly sampleImagesFolder = 'photoChecklist';
-  private readonly tempImagesFolder = 'photoChecklist/temp';
+  private readonly checklistManageFolder = 'checklist/manage';
+  private readonly checklistManageTempFolder = 'checklist/manage/temp';
 
   /**
    * Upload a sample image for a checklist item
@@ -41,7 +41,10 @@ export class PhotoChecklistUploadService {
    */
   async uploadSampleImage(request: ChecklistImageUploadRequest): Promise<ChecklistImageUploadResponse> {
     try {
-      const response = await this.uploadToFolder(request.file, this.sampleImagesFolder);
+      const response = await this.uploadToFolder(
+        request.file,
+        this.buildChecklistSampleFolder(request.template_id, request.item_id),
+      );
       return {
         ...response,
         template_id: request.template_id,
@@ -65,7 +68,7 @@ export class PhotoChecklistUploadService {
    */
   async uploadTemporaryImage(file: File, tempIdentifier: string): Promise<ChecklistImageUploadResponse> {
     try {
-      const folder = tempIdentifier ? this.tempImagesFolder : this.sampleImagesFolder;
+      const folder = tempIdentifier ? this.checklistManageTempFolder : this.checklistManageFolder;
       return this.uploadToFolder(file, folder);
     } catch (error: any) {
       const errorResponse: ChecklistImageUploadResponse = {
@@ -120,6 +123,17 @@ export class PhotoChecklistUploadService {
       message: response?.success ? 'Image uploaded successfully' : 'Upload failed',
       error: response?.success ? undefined : 'Upload failed',
     };
+  }
+
+  private buildChecklistSampleFolder(templateId: number, itemId: number): string {
+    const safeTemplateId = Number(templateId || 0);
+    const safeItemId = Number(itemId || 0);
+
+    if (safeTemplateId > 0 && safeItemId > 0) {
+      return `checklist/manage/templates/${safeTemplateId}/items/${safeItemId}`;
+    }
+
+    return this.checklistManageFolder;
   }
 
   /**

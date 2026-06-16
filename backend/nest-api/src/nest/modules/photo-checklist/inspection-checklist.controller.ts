@@ -325,9 +325,9 @@ export class InspectionChecklistController {
   @Post('media/delete-own')
   async deleteOwnMedia(
     @CurrentUserId() userId: number,
-    @Body() payload: { instance_id: number; item_id: number; file_url: string },
+    @Body() payload: { instance_id: number; item_id: number; file_url: string; media_id?: number },
   ) {
-    return this.service.deleteOwnMedia(payload.instance_id, payload.item_id, payload.file_url, userId);
+    return this.service.deleteOwnMedia(payload.instance_id, payload.item_id, payload.file_url, userId, payload.media_id);
   }
 
   @Get('instances/:id/export')

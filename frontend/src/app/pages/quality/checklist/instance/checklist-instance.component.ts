@@ -1619,7 +1619,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     return this.toSourceLabel(source);
   }
 
-  getPhotoMeta(progress: ChecklistItemProgress, photoUrl: string): { uploadedBy?: string; uploadedAt?: string; uploadedByUserId?: number } {
+  getPhotoMeta(progress: ChecklistItemProgress, photoUrl: string): { uploadedBy?: string; uploadedAt?: string; uploadedByUserId?: number; mediaId?: number } {
     return progress?.photoMeta?.[photoUrl] || {};
   }
 
@@ -1629,7 +1629,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     return this.toSourceLabel(source);
   }
 
-  getVideoMeta(progress: ChecklistItemProgress, videoUrl: string): { uploadedBy?: string; uploadedAt?: string; uploadedByUserId?: number } {
+  getVideoMeta(progress: ChecklistItemProgress, videoUrl: string): { uploadedBy?: string; uploadedAt?: string; uploadedByUserId?: number; mediaId?: number } {
     return progress?.videoMeta?.[videoUrl] || {};
   }
 
@@ -2818,19 +2818,21 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   private extractMediaSourceMeta(
     urls: string[],
     serverMediaRows: any[]
-  ): Record<string, { source?: 'in-app' | 'system' | 'library'; uploadedByUserId?: number }> {
-    const metaByUrl: Record<string, { source?: 'in-app' | 'system' | 'library'; uploadedByUserId?: number }> = {};
-    const byNormalizedUrl = new Map<string, { source?: 'in-app' | 'system' | 'library'; uploadedByUserId?: number }>();
+  ): Record<string, { source?: 'in-app' | 'system' | 'library'; uploadedByUserId?: number; mediaId?: number }> {
+    const metaByUrl: Record<string, { source?: 'in-app' | 'system' | 'library'; uploadedByUserId?: number; mediaId?: number }> = {};
+    const byNormalizedUrl = new Map<string, { source?: 'in-app' | 'system' | 'library'; uploadedByUserId?: number; mediaId?: number }>();
 
     for (const row of (serverMediaRows || [])) {
       const url = String(row?.file_url || row?.url || '').trim();
       if (!url) continue;
       const source = this.normalizeSourceValue(row?.capture_source);
       const uploadedByUserId = Number(row?.uploader_user_id || 0) || undefined;
-      if (!source && !uploadedByUserId) continue;
+      const mediaId = Number(row?.id || row?.submission_id || 0) || undefined;
+      if (!source && !uploadedByUserId && !mediaId) continue;
       byNormalizedUrl.set(this.normalizeMediaPathForMerge(url), {
         ...(source ? { source } : {}),
         ...(uploadedByUserId ? { uploadedByUserId } : {}),
+        ...(mediaId ? { mediaId } : {}),
       });
     }
 
@@ -2847,29 +2849,33 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
 
   private mergeMediaSourceMeta(
     urls: string[],
-    existingMeta?: Record<string, { source?: 'in-app' | 'system' | 'library'; uploadedByUserId?: number }>,
-    fallbackMeta?: Record<string, { source?: 'in-app' | 'system' | 'library'; uploadedByUserId?: number }>
-  ): Record<string, { source?: 'in-app' | 'system' | 'library'; uploadedByUserId?: number }> | undefined {
-    const merged: Record<string, { source?: 'in-app' | 'system' | 'library'; uploadedByUserId?: number }> = {};
-    const fallbackByNormalized = new Map<string, { source?: 'in-app' | 'system' | 'library'; uploadedByUserId?: number }>();
+    existingMeta?: Record<string, { source?: 'in-app' | 'system' | 'library'; uploadedByUserId?: number; mediaId?: number }>,
+    fallbackMeta?: Record<string, { source?: 'in-app' | 'system' | 'library'; uploadedByUserId?: number; mediaId?: number }>
+  ): Record<string, { source?: 'in-app' | 'system' | 'library'; uploadedByUserId?: number; mediaId?: number }> | undefined {
+    const merged: Record<string, { source?: 'in-app' | 'system' | 'library'; uploadedByUserId?: number; mediaId?: number }> = {};
+    const fallbackByNormalized = new Map<string, { source?: 'in-app' | 'system' | 'library'; uploadedByUserId?: number; mediaId?: number }>();
 
     for (const [url, meta] of Object.entries(fallbackMeta || {})) {
       const source = this.normalizeSourceValue(meta?.source);
       const uploadedByUserId = Number(meta?.uploadedByUserId || 0) || undefined;
-      if (!source && !uploadedByUserId) continue;
+      const mediaId = Number(meta?.mediaId || 0) || undefined;
+      if (!source && !uploadedByUserId && !mediaId) continue;
       fallbackByNormalized.set(this.normalizeMediaPathForMerge(url), {
         ...(source ? { source } : {}),
         ...(uploadedByUserId ? { uploadedByUserId } : {}),
+        ...(mediaId ? { mediaId } : {}),
       });
     }
 
     for (const url of (urls || [])) {
       const explicit = this.normalizeSourceValue(existingMeta?.[url]?.source);
       const explicitUploadedByUserId = Number(existingMeta?.[url]?.uploadedByUserId || 0) || undefined;
-      if (explicit || explicitUploadedByUserId) {
+      const explicitMediaId = Number(existingMeta?.[url]?.mediaId || 0) || undefined;
+      if (explicit || explicitUploadedByUserId || explicitMediaId) {
         merged[url] = {
           ...(explicit ? { source: explicit } : {}),
           ...(explicitUploadedByUserId ? { uploadedByUserId: explicitUploadedByUserId } : {}),
+          ...(explicitMediaId ? { mediaId: explicitMediaId } : {}),
         };
         continue;
       }
@@ -3897,7 +3903,8 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
 
       this.showLoadingAlert('Deleting media...', 'Please wait while we remove your media.');
 
-      const result = this.photoOps.deletePhotoByUrl(photoUrl, itemId, this.instanceId, this.currentUserId);
+      const mediaId = Number(progress.photoMeta?.[photoUrl]?.mediaId || progress.videoMeta?.[photoUrl]?.mediaId || 0) || undefined;
+      const result = this.photoOps.deletePhotoByUrl(photoUrl, itemId, this.instanceId, this.currentUserId, mediaId);
       if (!result) {
         this.closeAlert(300);
         this.showErrorAlert('Error deleting media. Missing required delete context.');
@@ -4497,6 +4504,18 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
 
   getPhotoUrl(photo: string | any): string {
     const url = this.photoOps.getPhotoUrl(photo);
+
+    // Signed URLs must remain byte-for-byte unchanged; adding params invalidates the signature.
+    const lowerUrl = url.toLowerCase();
+    const isSignedUrl =
+      lowerUrl.includes('x-amz-signature=')
+      || lowerUrl.includes('x-amz-algorithm=')
+      || lowerUrl.includes('x-amz-credential=')
+      || lowerUrl.includes('signature=');
+    if (isSignedUrl) {
+      return url;
+    }
+
     // Add cache-busting query parameter to prevent Service Worker/browser cache issues
     const separator = url.includes('?') ? '&' : '?';
     return `${url}${separator}v=${this.cacheBuster}`;
