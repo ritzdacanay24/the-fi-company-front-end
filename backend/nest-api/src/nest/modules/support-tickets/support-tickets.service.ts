@@ -241,7 +241,14 @@ export class SupportTicketsService {
 
   async getAttachments(ticketId: number, user: RequestUser): Promise<SupportTicketAttachment[]> {
     await this.findOne(ticketId, user);
-    return this.repository.getAttachments(ticketId);
+    const attachments = await this.repository.getAttachments(ticketId);
+
+    return Promise.all(
+      attachments.map(async (attachment) => ({
+        ...attachment,
+        file_url: await this.resolveSupportTicketAttachmentReadUrl(attachment.file_url),
+      })),
+    );
   }
 
   async addAttachment(
@@ -275,8 +282,21 @@ export class SupportTicketsService {
     await this.findOne(ticketId, user);
 
     const subFolder = 'support-tickets';
-    const storedFileName = await this.fileStorageService.storeUploadedFile(file, subFolder);
-    const fileUrl = this.fileStorageService.resolveLink(storedFileName, subFolder);
+    let storedFileName = '';
+    let fileUrl = '';
+
+    if (this.shouldUseBucketStorage()) {
+      const stored = await this.fileStorageService.storeUploadedFileInBucket(file, {
+        keyPrefix: `${subFolder}/${ticketId}`,
+      });
+
+      storedFileName = stored.fileName;
+      fileUrl = this.buildStoredBucketPath(stored.key);
+    } else {
+      storedFileName = await this.fileStorageService.storeUploadedFile(file, subFolder);
+      fileUrl = this.fileStorageService.resolveLink(storedFileName, subFolder) || '';
+    }
+
     if (!fileUrl) {
       throw new InternalServerErrorException('Failed to resolve uploaded file URL');
     }
@@ -296,6 +316,8 @@ export class SupportTicketsService {
       throw new NotFoundException('Attachment not found after upload');
     }
 
+    created.file_url = await this.resolveSupportTicketAttachmentReadUrl(created.file_url);
+
     return created;
   }
 
@@ -313,7 +335,113 @@ export class SupportTicketsService {
       throw new ForbiddenException('You do not have permission to delete this attachment');
     }
 
+    await this.deleteAttachmentFileBestEffort(attachment.file_url, attachment.file_name);
+
     await this.repository.deleteAttachment(attachmentId);
+  }
+
+  private shouldUseBucketStorage(): boolean {
+    const mode = String(process.env.MEDIA_STORAGE_MODE || '').trim().toLowerCase();
+    const bucket = String(process.env.MEDIA_STORAGE_BUCKET || '').trim();
+
+    if (mode === 'local') {
+      return false;
+    }
+
+    return mode === 'bucket' || mode === 's3' || !!bucket;
+  }
+
+  private buildStoredBucketPath(key: string): string {
+    const normalizedKey = String(key || '').trim().replace(/^\/+/, '');
+    const encodedKey = normalizedKey
+      .split('/')
+      .filter(Boolean)
+      .map((segment) => encodeURIComponent(segment))
+      .join('/');
+
+    return `/attachments/${encodedKey}`;
+  }
+
+  private parseBucketKeyFromUrl(rawUrl: string | null | undefined): string | null {
+    if (!rawUrl || typeof rawUrl !== 'string') {
+      return null;
+    }
+
+    const trimmed = rawUrl.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    const noQuery = trimmed.split('?')[0].split('#')[0] || trimmed;
+    const marker = '/attachments/';
+    const markerIndex = noQuery.indexOf(marker);
+    if (markerIndex < 0) {
+      return null;
+    }
+
+    const keyWithOptionalBucket = decodeURIComponent(noQuery.slice(markerIndex + marker.length)).replace(/^\/+/, '');
+    if (!keyWithOptionalBucket) {
+      return null;
+    }
+
+    const configuredBucket = String(process.env.MEDIA_STORAGE_BUCKET || '').trim();
+    const parts = keyWithOptionalBucket.split('/').filter(Boolean);
+    if (!parts.length) {
+      return null;
+    }
+
+    if (configuredBucket && parts[0] === configuredBucket && parts.length > 1) {
+      return parts.slice(1).join('/');
+    }
+
+    return keyWithOptionalBucket;
+  }
+
+  private async resolveSupportTicketAttachmentReadUrl(rawUrl: string | null | undefined): Promise<string> {
+    const trimmed = String(rawUrl || '').trim();
+    if (!trimmed) {
+      return '';
+    }
+
+    if (!this.shouldUseBucketStorage()) {
+      return trimmed;
+    }
+
+    const key = this.parseBucketKeyFromUrl(trimmed);
+    if (!key) {
+      return trimmed;
+    }
+
+    const bucket = String(process.env.MEDIA_STORAGE_BUCKET || '').trim();
+    if (!bucket) {
+      return trimmed;
+    }
+
+    try {
+      return await this.fileStorageService.resolveBucketObjectUrl(bucket, key);
+    } catch {
+      return trimmed;
+    }
+  }
+
+  private async deleteAttachmentFileBestEffort(rawUrl: string | null | undefined, fileName: string | null | undefined): Promise<void> {
+    const trimmed = String(rawUrl || '').trim();
+
+    if (this.shouldUseBucketStorage()) {
+      const bucketKey = this.parseBucketKeyFromUrl(trimmed);
+      const bucket = String(process.env.MEDIA_STORAGE_BUCKET || '').trim();
+
+      if (bucketKey && bucket) {
+        await this.fileStorageService.deleteStoredFileInBucket(bucketKey, bucket);
+      }
+
+      return;
+    }
+
+    const safeFileName = String(fileName || '').trim();
+    if (safeFileName) {
+      await this.fileStorageService.deleteStoredFile(safeFileName, 'support-tickets');
+    }
   }
 
   private async requireUserContext(userId: number) {
