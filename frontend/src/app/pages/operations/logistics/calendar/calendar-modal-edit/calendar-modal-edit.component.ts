@@ -9,6 +9,7 @@ import { SharedModule } from "@app/shared/shared.module";
 import { ToastrService } from "ngx-toastr";
 import { CalendarFormComponent } from "../calendar-form/calendar-form.component";
 import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErrors";
+import { environment } from "src/environments/environment";
 
 @Injectable({
   providedIn: "root",
@@ -38,11 +39,36 @@ export class CalendarModalEditComponent implements OnInit {
   currentUserInfo: any;
 
   view(row) {
-    window.open(
-      `https://dashboard.eye-fi.com/attachments/receiving/${row.fileName}`,
-      "",
-      "width=600,height=400,left=200,top=200"
-    );
+    const url = this.resolveAttachmentUrl(row);
+    if (!url) {
+      this.toastrService.warning("Attachment URL not available");
+      return;
+    }
+
+    window.open(url, "", "width=600,height=400,left=200,top=200");
+  }
+
+  private resolveAttachmentUrl(row: any): string {
+    const rawLink = String(row?.link || "").trim();
+    if (rawLink) {
+      if (/^https?:\/\//i.test(rawLink)) {
+        return rawLink;
+      }
+
+      if (rawLink.startsWith("/")) {
+        const apiBaseUrl = String(environment.apiV2BaseUrl || "").replace(/\/+$/, "");
+        return `${apiBaseUrl}${rawLink}`;
+      }
+
+      return rawLink;
+    }
+
+    const fileName = String(row?.fileName || "").trim();
+    if (!fileName) {
+      return "";
+    }
+
+    return `https://dashboard.eye-fi.com/attachments/receiving/${encodeURIComponent(fileName)}`;
   }
 
   setFormEmitter($event) {

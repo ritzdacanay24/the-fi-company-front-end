@@ -77,6 +77,9 @@ export class AttachmentsService {
     if (field.includes('capa')) {
       return 'capa';
     }
+    if (field.includes('logistics_calendar') || field.includes('logistics calendar')) {
+      return 'receiving';
+    }
 
     return 'general';
   }
@@ -108,17 +111,17 @@ export class AttachmentsService {
 
   async getByWorkOrderId(workOrderId: number) {
     const rows = await this.metadataService.getByWorkOrderId(workOrderId);
-    return Promise.all(rows.map((row) => this.storageService.withResolvedLink(row)));
+    return Promise.all(rows.map((row) => this.resolveAttachmentForResponse(row)));
   }
 
   async find(filters: Record<string, string>) {
     const rows = await this.metadataService.find(filters);
-    return Promise.all(rows.map((row) => this.storageService.withResolvedLink(row)));
+    return Promise.all(rows.map((row) => this.resolveAttachmentForResponse(row)));
   }
 
   async getAllRelatedAttachments(id: number) {
     const rows = await this.metadataService.getAllRelatedAttachments(id);
-    return Promise.all(rows.map((row) => this.storageService.withResolvedLink(row)));
+    return Promise.all(rows.map((row) => this.resolveAttachmentForResponse(row)));
   }
 
   async getViewById(id: number) {
@@ -187,7 +190,7 @@ export class AttachmentsService {
   }
 
   private shouldUseBucketStorageForPayload(payload: Record<string, unknown>): boolean {
-    if (!this.isVehicleAttachment(payload)) {
+    if (!this.isBucketEligibleAttachment(payload)) {
       return false;
     }
 
@@ -201,22 +204,68 @@ export class AttachmentsService {
     return mode === 'bucket' || mode === 's3' || !!bucket;
   }
 
-  private isVehicleAttachment(payload: Record<string, unknown>): boolean {
+  private isBucketEligibleAttachment(payload: Record<string, unknown>): boolean {
+    const subFolder = this.resolveSubFolder(payload).toLowerCase();
     const field = String(payload?.field || '')
       .trim()
       .toLowerCase();
 
-    return field.includes('vehicle information') || field.includes('vehicle inspection');
+    return (
+      field.includes('vehicle information')
+      || field.includes('vehicle inspection')
+      || field.includes('shippingrequest')
+      || field.includes('shipping request')
+      || field.includes('logistics_calendar')
+      || field.includes('logistics calendar')
+      || subFolder === 'shippingrequest'
+      || subFolder === 'receiving'
+    );
   }
 
   private resolveBucketKeyPrefix(payload: Record<string, unknown>): string {
+    const field = String(payload?.field || '')
+      .trim()
+      .toLowerCase();
+    const subFolder = this.resolveSubFolder(payload).toLowerCase();
     const uniqueId = String(payload?.uniqueId ?? payload?.uniqueData ?? '')
       .trim()
       .replace(/[^a-zA-Z0-9_-]/g, '');
 
-    // Keep vehicle uploads under the existing legacy-compatible S3 folder.
-    const base = 'vehicleInformation';
+    let base = 'general';
+    if (field.includes('vehicle information') || field.includes('vehicle inspection')) {
+      // Keep vehicle uploads under the existing legacy-compatible S3 folder.
+      base = 'vehicleInformation';
+    } else if (field.includes('shippingrequest') || field.includes('shipping request') || subFolder === 'shippingrequest') {
+      base = 'shippingRequest';
+    } else if (field.includes('logistics_calendar') || field.includes('logistics calendar') || subFolder === 'receiving') {
+      base = 'receiving';
+    }
+
     return uniqueId ? `${base}/${uniqueId}` : base;
+  }
+
+  private async resolveAttachmentForResponse<T extends Record<string, unknown>>(row: T): Promise<T> {
+    const storageSource = this.normalizeStorageSource(row?.storage_source);
+    if (storageSource !== 'bucket') {
+      return this.storageService.withResolvedLink(row);
+    }
+
+    const key = this.resolveBucketKeyFromRow(row);
+    const bucket = String(process.env.MEDIA_STORAGE_BUCKET || '').trim();
+    if (!key || !bucket) {
+      return this.storageService.withResolvedLink(row);
+    }
+
+    try {
+      const signedUrl = await this.storageService.resolveBucketObjectUrl(bucket, key);
+      return {
+        ...row,
+        link: signedUrl,
+        storage_source: 'bucket',
+      };
+    } catch {
+      return this.storageService.withResolvedLink(row);
+    }
   }
 
   private resolveBucketKeyFromRow(row: Record<string, unknown>): string | null {

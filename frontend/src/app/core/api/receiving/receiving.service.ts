@@ -32,9 +32,13 @@ export class ReceivingService {
   }
 
   uploadfile(id, file: File) {
-    let formParams = new FormData();
-    formParams.append('file', file)
-    return this.http.post(`/Receiving/uploadFile?id=${id}`, formParams).toPromise();
+    const formParams = new FormData();
+    formParams.append('file', file);
+    formParams.append('field', 'LOGISTICS_CALENDAR');
+    formParams.append('uniqueData', String(id));
+    formParams.append('folderName', 'receiving');
+    formParams.append('subFolder', 'receiving');
+    return this.http.post('apiV2/attachments', formParams).toPromise();
   }
 
 
