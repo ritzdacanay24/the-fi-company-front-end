@@ -139,7 +139,18 @@ import { AttachmentsService } from "@app/core/api/attachments/attachments.servic
   `,
 })
 export class UploadedAttachmentsListComponent implements OnChanges {
-  @Input() attachments: any[] = [];
+  @Input() set attachments(value: any[]) {
+    this._attachments = value;
+    // Resolve URLs immediately when attachments are set
+    if (this._resolvePreviewUrls && value?.length > 0) {
+      this.resolveAttachmentUrls();
+    }
+  }
+  get attachments(): any[] {
+    return this._attachments;
+  }
+  private _attachments: any[] = [];
+
   @Input() viewMode: "card" | "table" = "card";
   @Input() isLoading = false;
   @Input() loadingText = "Loading attachments...";
@@ -150,13 +161,22 @@ export class UploadedAttachmentsListComponent implements OnChanges {
   @Input() maxHeight = "300px";
   @Input() showHelperText = true;
   @Input() helperText = "Click on filenames to preview, or use direct download links if preview fails.";
-  @Input() resolvePreviewUrls = false;
+  @Input() set resolvePreviewUrls(value: boolean) {
+    this._resolvePreviewUrls = value;
+    if (value && this._attachments?.length > 0) {
+      // Clear resolved IDs when flag is set so we re-fetch
+      this.resolvedIds.clear();
+      this.resolveAttachmentUrls();
+    }
+  }
 
   @Output() openRequested = new EventEmitter<any>();
   @Output() downloadRequested = new EventEmitter<any>();
   @Output() deleteRequested = new EventEmitter<{ id: any; index: number; row: any }>();
 
   private readonly attachmentsService = inject(AttachmentsService);
+  private _resolvePreviewUrls = false;
+  private resolvedIds = new Set<number>();
 
   getUploaderLabel(row: any): string {
     const explicitName = row?.createdByName || row?.uploadedByName || row?.uploaderName || row?.user_name;
@@ -176,7 +196,9 @@ export class UploadedAttachmentsListComponent implements OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['attachments'] && this.resolvePreviewUrls) {
+    // Fallback handler in case attachments change through other means
+    if (changes['attachments'] && this._resolvePreviewUrls) {
+      this.resolvedIds.clear();
       this.resolveAttachmentUrls();
     }
   }
@@ -186,14 +208,20 @@ export class UploadedAttachmentsListComponent implements OnChanges {
       return;
     }
 
-    this.attachments.forEach((attachment) => {
-      if (attachment && attachment.id && !attachment.previewUrl) {
+    this.attachments.forEach((attachment, index) => {
+      if (attachment && attachment.id && !this.resolvedIds.has(attachment.id)) {
+        this.resolvedIds.add(attachment.id);
+        
         this.attachmentsService
           .getViewById(attachment.id)
           .then((response: any) => {
             const signedUrl = response?.url || response?.previewUrl;
             if (signedUrl) {
-              attachment.previewUrl = signedUrl;
+              // Create a new reference to trigger change detection
+              this.attachments[index] = {
+                ...attachment,
+                previewUrl: signedUrl,
+              };
             }
           })
           .catch((err) => {
