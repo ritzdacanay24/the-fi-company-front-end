@@ -1,4 +1,4 @@
-import { Component, Input } from "@angular/core";
+import { Component, Input, ViewChild } from "@angular/core";
 import { SharedModule } from "@app/shared/shared.module";
 import { Router } from "@angular/router";
 import { ToastrService } from "ngx-toastr";
@@ -10,10 +10,17 @@ import { ForkliftInspectionFormComponent } from "../forklift-inspection-form/for
 import { AuthenticationService } from "@app/core/services/auth.service";
 import { resetVehicleInspectionFormValues } from "../forklift-inspection-form/formData";
 import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
+import { UploadAttachmentsModalComponent } from "@app/shared/components/attachments/upload-attachments-modal/upload-attachments-modal.component";
+import { PendingUploadsListComponent } from "@app/shared/components/attachments/pending-uploads-list/pending-uploads-list.component";
 
 @Component({
   standalone: true,
-  imports: [SharedModule, ForkliftInspectionFormComponent],
+  imports: [
+    SharedModule,
+    ForkliftInspectionFormComponent,
+    UploadAttachmentsModalComponent,
+    PendingUploadsListComponent,
+  ],
   selector: "app-forklift-inspection-create",
   templateUrl: "./forklift-inspection-create.component.html",
 })
@@ -37,6 +44,9 @@ export class ForkliftInspectionCreateComponent {
   isLoading = false;
 
   submitted = false;
+
+  @ViewChild(UploadAttachmentsModalComponent)
+  uploadModal: UploadAttachmentsModalComponent | null = null;
 
   @Input() goBack: Function = () => {
     this.router.navigate([NAVIGATION_ROUTE.LIST], {
@@ -79,12 +89,19 @@ export class ForkliftInspectionCreateComponent {
     this.toastrService.info("Create the inspection first before deleting.");
   }
 
-  myFiles: string[] | any = [];
-  onFileChange(event: any) {
-    this.myFiles = [];
-    for (var i = 0; i < event.target.files.length; i++) {
-      this.myFiles.push(event.target.files[i]);
+  selectedFiles: File[] = [];
+  uploadTriggerMode: "manual" | "on-add" | "parent-submit" = "parent-submit";
+
+  onAttachmentFilesAdded(files: File[]) {
+    if (!files?.length) {
+      return;
     }
+
+    this.selectedFiles = [...this.selectedFiles, ...files];
+  }
+
+  removeFile(index: number) {
+    this.selectedFiles.splice(index, 1);
   }
 
   async onSubmit() {
@@ -96,15 +113,17 @@ export class ForkliftInspectionCreateComponent {
       let { insertId } = await this.api._create(this.form.value);
       const uniqueData = String(insertId ?? "");
 
-      for (var i = 0; i < this.myFiles.length; i++) {
+      for (const file of this.selectedFiles) {
         const formData = new FormData();
-        formData.append("file", this.myFiles[i]);
+        formData.append("file", file);
         formData.append("field", "Vehicle Inspection");
         formData.append("uniqueData", uniqueData);
         formData.append("subFolder", "inspections/forklift");
 
         await this.attachmentsService.uploadfile(formData);
       }
+
+      this.selectedFiles = [];
 
       this.isLoading = false;
       this.toastrService.success("Successfully Created");

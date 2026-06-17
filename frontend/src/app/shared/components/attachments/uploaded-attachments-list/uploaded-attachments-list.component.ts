@@ -1,5 +1,6 @@
 import { CommonModule } from "@angular/common";
-import { Component, EventEmitter, Input, Output } from "@angular/core";
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject } from "@angular/core";
+import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
 
 @Component({
   selector: "app-uploaded-attachments-list",
@@ -68,7 +69,7 @@ import { Component, EventEmitter, Input, Output } from "@angular/core";
             <tr *ngFor="let row of attachments; let i = index">
               <td *ngIf="showThumbnails">
                 <button
-                  *ngIf="isImageAttachment(row); else fileTypeIcon"
+                  *ngIf="isImageAttachment(row) && !row?.__thumbnailError && resolveThumbnailUrl(row); else fileTypeIcon"
                   type="button"
                   class="btn p-0 border-0 bg-transparent"
                   title="Preview image"
@@ -76,7 +77,8 @@ import { Component, EventEmitter, Input, Output } from "@angular/core";
                   (click)="onOpenFromButton(row)">
                   <img
                     [src]="resolveThumbnailUrl(row)"
-                    [alt]="row?.fileName || 'Attachment image'"
+                    alt=""
+                    (error)="onThumbnailError(row)"
                     class="rounded-2 border border-secondary-subtle bg-body-tertiary object-fit-cover"
                     style="width: 40px; height: 40px;" />
                 </button>
@@ -136,7 +138,7 @@ import { Component, EventEmitter, Input, Output } from "@angular/core";
     </div>
   `,
 })
-export class UploadedAttachmentsListComponent {
+export class UploadedAttachmentsListComponent implements OnChanges {
   @Input() attachments: any[] = [];
   @Input() viewMode: "card" | "table" = "card";
   @Input() isLoading = false;
@@ -148,10 +150,13 @@ export class UploadedAttachmentsListComponent {
   @Input() maxHeight = "300px";
   @Input() showHelperText = true;
   @Input() helperText = "Click on filenames to preview, or use direct download links if preview fails.";
+  @Input() resolvePreviewUrls = false;
 
   @Output() openRequested = new EventEmitter<any>();
   @Output() downloadRequested = new EventEmitter<any>();
   @Output() deleteRequested = new EventEmitter<{ id: any; index: number; row: any }>();
+
+  private readonly attachmentsService = inject(AttachmentsService);
 
   getUploaderLabel(row: any): string {
     const explicitName = row?.createdByName || row?.uploadedByName || row?.uploaderName || row?.user_name;
@@ -168,6 +173,34 @@ export class UploadedAttachmentsListComponent {
     }
 
     return "Unknown";
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['attachments'] && this.resolvePreviewUrls) {
+      this.resolveAttachmentUrls();
+    }
+  }
+
+  private resolveAttachmentUrls(): void {
+    if (!this.attachments || this.attachments.length === 0) {
+      return;
+    }
+
+    this.attachments.forEach((attachment) => {
+      if (attachment && attachment.id && !attachment.previewUrl) {
+        this.attachmentsService
+          .getViewById(attachment.id)
+          .then((response: any) => {
+            const signedUrl = response?.url || response?.previewUrl;
+            if (signedUrl) {
+              attachment.previewUrl = signedUrl;
+            }
+          })
+          .catch((err) => {
+            console.warn(`Failed to resolve preview URL for attachment ${attachment.id}:`, err);
+          });
+      }
+    });
   }
 
   onOpen(row: any, event: Event): void {
@@ -199,6 +232,10 @@ export class UploadedAttachmentsListComponent {
 
   resolveThumbnailUrl(row: any): string {
     return String(row?.previewUrl || row?.link || '');
+  }
+
+  onThumbnailError(row: any): void {
+    row.__thumbnailError = true;
   }
 
   private getExtension(row: any): string {

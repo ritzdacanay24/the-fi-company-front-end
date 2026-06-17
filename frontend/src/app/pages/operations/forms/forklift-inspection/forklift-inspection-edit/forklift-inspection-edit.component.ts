@@ -1,4 +1,4 @@
-import { Component, Input } from "@angular/core";
+import { Component, Input, ViewChild } from "@angular/core";
 import { SharedModule } from "@app/shared/shared.module";
 import { ActivatedRoute, Router } from "@angular/router";
 import { HttpErrorResponse } from "@angular/common/http";
@@ -12,6 +12,10 @@ import { environment } from "src/environments/environment";
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { FileViewerModalComponent } from "@app/shared/components/file-viewer-modal/file-viewer-modal.component";
 import { AuthenticationService } from "@app/core/services/auth.service";
+import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
+import { UploadAttachmentsModalComponent } from "@app/shared/components/attachments/upload-attachments-modal/upload-attachments-modal.component";
+import { PendingUploadsListComponent } from "@app/shared/components/attachments/pending-uploads-list/pending-uploads-list.component";
+import { UploadedAttachmentsListComponent } from "@app/shared/components/attachments/uploaded-attachments-list/uploaded-attachments-list.component";
 
 interface ForkliftIssueItem {
   id: number;
@@ -28,7 +32,13 @@ interface ForkliftIssueItem {
 
 @Component({
   standalone: true,
-  imports: [SharedModule, ForkliftInspectionFormComponent],
+  imports: [
+    SharedModule,
+    ForkliftInspectionFormComponent,
+    UploadAttachmentsModalComponent,
+    PendingUploadsListComponent,
+    UploadedAttachmentsListComponent,
+  ],
   selector: "app-forklift-inspection-edit",
   templateUrl: "./forklift-inspection-edit.component.html",
 })
@@ -40,6 +50,7 @@ export class ForkliftInspectionEditComponent {
     private activatedRoute: ActivatedRoute,
     private modalService: NgbModal,
     private authenticationService: AuthenticationService,
+    private attachmentsService: AttachmentsService,
   ) {}
 
   ngOnInit(): void {
@@ -65,6 +76,9 @@ export class ForkliftInspectionEditComponent {
       queryParamsHandling: "merge",
     });
   };
+
+  @ViewChild(UploadAttachmentsModalComponent)
+  uploadModal: UploadAttachmentsModalComponent | null = null;
 
   data;
   issueNote = "";
@@ -92,6 +106,20 @@ export class ForkliftInspectionEditComponent {
   }
 
   getAttachmentUrl(attachment: any): string {
+    if (attachment?.previewUrl) {
+      const resolvedPreview = String(attachment.previewUrl).trim();
+      if (resolvedPreview) {
+        return resolvedPreview;
+      }
+    }
+
+    if (attachment?.url) {
+      const resolvedUrl = String(attachment.url).trim();
+      if (resolvedUrl) {
+        return resolvedUrl;
+      }
+    }
+
     if (attachment?.link) {
       const rawLink = String(attachment.link).trim();
       if (!rawLink) {
@@ -135,6 +163,21 @@ export class ForkliftInspectionEditComponent {
   formValues;
 
   attachments = [];
+  selectedFiles: File[] = [];
+  uploadTriggerMode: "manual" | "on-add" | "parent-submit" = "manual";
+
+  onAttachmentFilesAdded(files: File[]) {
+    if (!files?.length) {
+      return;
+    }
+
+    this.selectedFiles = [...this.selectedFiles, ...files];
+  }
+
+  removeFile(index: number) {
+    this.selectedFiles.splice(index, 1);
+  }
+
   async getData() {
     try {
       this.isLoading = true;
@@ -164,7 +207,10 @@ export class ForkliftInspectionEditComponent {
         };
       });
 
-      this.attachments = data?.attachments;
+      this.attachments = (data?.attachments || []).map((attachment: any) => ({
+        ...attachment,
+        previewUrl: this.getAttachmentUrl(attachment),
+      }));
       this.data = data;
       this.form.patchValue({
         ...data.main,
@@ -181,6 +227,52 @@ export class ForkliftInspectionEditComponent {
       this.form.disable();
       this.isLoading = false;
     } catch (err) {
+      this.isLoading = false;
+    }
+  }
+
+  downloadAttachment(row: any, event?: Event): void {
+    event?.preventDefault();
+
+    const url = this.getAttachmentUrl(row);
+    if (!url) {
+      this.toastrService.warning("Attachment URL not available");
+      return;
+    }
+
+    window.open(url, "_blank");
+  }
+
+  async onUploadAttachments(): Promise<void> {
+    if (!this.id || this.isLoading || this.selectedFiles.length === 0) {
+      return;
+    }
+
+    const filesToUpload = [...this.selectedFiles];
+    this.selectedFiles = [];
+    let uploadedCount = 0;
+
+    this.isLoading = true;
+    try {
+      for (const file of filesToUpload) {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("field", "Vehicle Inspection");
+        formData.append("uniqueData", String(this.id));
+        formData.append("subFolder", "inspections/forklift");
+
+        await this.attachmentsService.uploadfile(formData);
+        uploadedCount++;
+      }
+
+      await this.getData();
+      this.uploadModal?.closeModal();
+      this.toastrService.success(
+        `${uploadedCount} attachment${uploadedCount > 1 ? "s" : ""} uploaded.`,
+      );
+    } catch (error) {
+      this.toastrService.error("Failed to upload one or more attachments.");
+    } finally {
       this.isLoading = false;
     }
   }
