@@ -8,6 +8,8 @@ import { AgGridModule } from "ag-grid-angular";
 import { ColDef, GridOptions } from "ag-grid-community";
 import { PermitTicketActionsRendererComponent } from "./permit-ticket-actions-renderer.component";
 import { PermitChecklistSummaryComponent } from "./permit-checklist-summary.component";
+import { UploadedAttachmentsListComponent } from "@app/shared/components/attachments/uploaded-attachments-list/uploaded-attachments-list.component";
+import { UploadAttachmentsModalComponent } from "@app/shared/components/attachments/upload-attachments-modal/upload-attachments-modal.component";
 import { AuthenticationService } from "@app/core/services/auth.service";
 import { THE_FI_COMPANY_CURRENT_USER } from "@app/core/guards/admin.guard";
 import { PermitChecklistsService } from "@app/core/api/quality/permit-checklists.service";
@@ -183,7 +185,17 @@ interface StoredChecklistData {
 @Component({
   standalone: true,
   selector: "app-permit-checklists",
-  imports: [CommonModule, FormsModule, AgGridModule, NgbDropdownModule, NgbModalModule, PermitChecklistSummaryComponent, TextFieldModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    AgGridModule,
+    NgbDropdownModule,
+    NgbModalModule,
+    PermitChecklistSummaryComponent,
+    UploadedAttachmentsListComponent,
+    UploadAttachmentsModalComponent,
+    TextFieldModule,
+  ],
   templateUrl: "./permit-checklists.component.html",
   styleUrls: ["./permit-checklists.component.scss"],
 })
@@ -352,6 +364,9 @@ export class PermitChecklistsComponent implements OnInit {
   previewAttachmentKind: "image" | "pdf" | "docx" | "other" | "none" = "none";
   previewDocxHtml = "";
   isAttachmentDragOver = false;
+  pendingTicketAttachmentFiles: File[] = [];
+  isTicketAttachmentUploading = false;
+  ticketAttachmentUploadSuccessToken = 0;
   isProcessNoteModalOpen = false;
   processNoteFieldKey = "";
   processNoteFieldLabel = "";
@@ -2202,6 +2217,44 @@ export class PermitChecklistsComponent implements OnInit {
     input.value = "";
   }
 
+  onPendingTicketAttachmentFilesAdded(files: File[]): void {
+    if (!files?.length || !this.canEditActiveTicket) {
+      return;
+    }
+
+    this.pendingTicketAttachmentFiles = [...this.pendingTicketAttachmentFiles, ...files];
+  }
+
+  removePendingTicketAttachment(index: number): void {
+    if (index < 0 || index >= this.pendingTicketAttachmentFiles.length) {
+      return;
+    }
+
+    this.pendingTicketAttachmentFiles = this.pendingTicketAttachmentFiles.filter((_, i) => i !== index);
+  }
+
+  async uploadPendingTicketAttachments(): Promise<void> {
+    if (!this.canEditActiveTicket || this.isTicketAttachmentUploading) {
+      return;
+    }
+
+    if (this.pendingTicketAttachmentFiles.length === 0) {
+      this.statusMessage = "No files selected for upload.";
+      return;
+    }
+
+    this.isTicketAttachmentUploading = true;
+    try {
+      const { uploaded } = await this.uploadAttachmentFiles(this.pendingTicketAttachmentFiles);
+      if (uploaded > 0) {
+        this.pendingTicketAttachmentFiles = [];
+        this.ticketAttachmentUploadSuccessToken += 1;
+      }
+    } finally {
+      this.isTicketAttachmentUploading = false;
+    }
+  }
+
   onAttachmentDragOver(event: DragEvent): void {
     event.preventDefault();
     if (!this.canEditActiveTicket) {
@@ -2222,14 +2275,14 @@ export class PermitChecklistsComponent implements OnInit {
     await this.uploadAttachmentFiles(files);
   }
 
-  private async uploadAttachmentFiles(files: File[]): Promise<void> {
+  private async uploadAttachmentFiles(files: File[]): Promise<{ uploaded: number; failed: number }> {
     const ticket = this.activeTicket;
     if (!ticket || !this.canEditActiveTicket) {
-      return;
+      return { uploaded: 0, failed: files.length };
     }
 
     if (!files.length) {
-      return;
+      return { uploaded: 0, failed: 0 };
     }
 
     const newAttachments: PermitChecklistAttachment[] = [];
@@ -2277,7 +2330,7 @@ export class PermitChecklistsComponent implements OnInit {
 
     if (!newAttachments.length) {
       this.statusMessage = "No files were uploaded.";
-      return;
+      return { uploaded: 0, failed: failedUploads.length };
     }
 
     ticket.attachments = [...(ticket.attachments || []), ...newAttachments];
@@ -2289,6 +2342,7 @@ export class PermitChecklistsComponent implements OnInit {
     this.refreshRecentTickets();
     this.persistLocalData();
     this.statusMessage = `${newAttachments.length} attachment(s) uploaded.`;
+    return { uploaded: newAttachments.length, failed: failedUploads.length };
   }
 
   async removeAttachment(attachmentId: string): Promise<void> {
@@ -2395,13 +2449,28 @@ export class PermitChecklistsComponent implements OnInit {
       return;
     }
 
+    this.triggerAttachmentDownload(url, attachment.fileName || "attachment");
+  }
+
+  downloadAttachment(attachment: PermitChecklistAttachment): void {
+    const url = this.getAttachmentDownloadUrl(attachment);
+    if (!url) {
+      this.statusMessage = "Attachment source is unavailable for download.";
+      return;
+    }
+
+    this.triggerAttachmentDownload(url, attachment.fileName || "attachment");
+  }
+
+  private triggerAttachmentDownload(url: string, fileName: string): void {
+
     const anchor = document.createElement("a");
     anchor.href = url;
     anchor.target = "_blank";
     anchor.rel = "noopener";
 
     if (url.startsWith("blob:") || url.startsWith("data:")) {
-      anchor.download = attachment.fileName || "attachment";
+      anchor.download = fileName;
     }
 
     anchor.click();

@@ -121,6 +121,61 @@ import { AttachmentsService } from "@app/core/api/attachments/attachments.servic
       </div>
     </div>
 
+    <div class="mb-3" *ngIf="!isLoading && attachments?.length > 0 && viewMode === 'detailed-list'">
+      <div class="border rounded" [style.max-height]="maxHeight" style="overflow-y: auto;">
+        <div class="p-2 border-bottom" *ngFor="let row of attachments; let i = index; let isLast = last" [class.border-bottom-0]="isLast">
+          <div class="d-flex align-items-start justify-content-between gap-2">
+            <div class="flex-grow-1" style="min-width: 0;">
+              <button
+                class="btn btn-link p-0 text-start text-decoration-none fw-medium"
+                type="button"
+                [title]="row?.fileName || ''"
+                (click)="onOpenFromButton(row)">
+                <span class="text-truncate d-block">{{ row?.fileName }}</span>
+              </button>
+
+              <div class="small text-warning-emphasis mt-1" *ngIf="showMissingSourceWarning && !hasPreviewSource(row)">
+                <i class="mdi mdi-alert-circle-outline me-1"></i>
+                {{ missingSourceText }}
+              </div>
+
+              <div class="small text-muted mt-1">
+                Uploaded by {{ getUploaderLabel(row) }}
+              </div>
+              <div class="small text-muted">
+                {{ formatFileSize(row?.fileSize) }} | {{ getUploadedDate(row) | date:'MMM d, y h:mm a' }}
+              </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+              <button
+                class="btn btn-sm btn-outline-primary"
+                type="button"
+                title="Download attachment"
+                aria-label="Download attachment"
+                (click)="onDownload(row, $event)">
+                <i class="mdi mdi-download"></i>
+              </button>
+              <button
+                *ngIf="showDelete"
+                class="btn btn-sm btn-outline-danger"
+                [disabled]="disableDelete"
+                [title]="deleteTitle"
+                aria-label="Delete attachment"
+                type="button"
+                (click)="onDelete(row, i)">
+                <i class="mdi mdi-delete"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="form-text mt-2" *ngIf="showHelperText">
+        <i class="mdi mdi-information-outline me-1"></i>
+        {{ helperText }}
+      </div>
+    </div>
+
     <div class="mb-3" *ngIf="!isLoading && attachments?.length > 0 && viewMode === 'table'">
       <div class="table-responsive border rounded" [style.max-height]="maxHeight" style="overflow-y: auto;">
         <table class="table table-sm align-middle mb-0">
@@ -221,7 +276,7 @@ export class UploadedAttachmentsListComponent implements OnChanges {
   }
   private _attachments: any[] = [];
 
-  @Input() viewMode: "card" | "table" | "media-grid" = "card";
+  @Input() viewMode: "card" | "table" | "media-grid" | "detailed-list" = "card";
   @Input() isLoading = false;
   @Input() loadingText = "Loading attachments...";
   @Input() showThumbnails = false;
@@ -233,6 +288,8 @@ export class UploadedAttachmentsListComponent implements OnChanges {
   @Input() helperText = "Click on filenames to preview, or use direct download links if preview fails.";
   @Input() showMediaBadge = false;
   @Input() resolvePreviewUrls = false;
+  @Input() showMissingSourceWarning = false;
+  @Input() missingSourceText = "Missing file source. Reupload required for preview/download.";
 
   @Output() openRequested = new EventEmitter<any>();
   @Output() downloadRequested = new EventEmitter<any>();
@@ -242,7 +299,7 @@ export class UploadedAttachmentsListComponent implements OnChanges {
   private resolvedIds = new Set<number>();
 
   getUploaderLabel(row: any): string {
-    const explicitName = row?.createdByName || row?.uploadedByName || row?.uploaderName || row?.user_name;
+    const explicitName = row?.createdByName || row?.uploadedByName || row?.uploadedBy || row?.uploaderName || row?.user_name || row?.createdBy;
     if (explicitName) {
       return String(explicitName);
     }
@@ -380,5 +437,50 @@ export class UploadedAttachmentsListComponent implements OnChanges {
       .replace(/\s+View$/i, '')
       .replace(/\s+Photo\s*\d*$/i, '')
       .trim() || 'Attachment';
+  }
+
+  hasPreviewSource(row: any): boolean {
+    return !!(
+      row?.previewUrl ||
+      row?.dataUrl ||
+      row?.url ||
+      row?.link ||
+      row?.path ||
+      row?.filePath ||
+      row?.storageKey ||
+      row?.storage_key ||
+      row?.s3Key ||
+      row?.s3_key ||
+      row?.objectKey ||
+      row?.storedFileName
+    );
+  }
+
+  getUploadedDate(row: any): any {
+    return row?.createdDate || row?.uploadedAt || row?.created_at || row?.createdAt || null;
+  }
+
+  formatFileSize(size: any): string {
+    const parsed = Number(size);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      return "Unknown size";
+    }
+
+    if (parsed < 1024) {
+      return `${parsed} B`;
+    }
+
+    const kb = parsed / 1024;
+    if (kb < 1024) {
+      return `${kb.toFixed(1)} KB`;
+    }
+
+    const mb = kb / 1024;
+    if (mb < 1024) {
+      return `${mb.toFixed(1)} MB`;
+    }
+
+    const gb = mb / 1024;
+    return `${gb.toFixed(2)} GB`;
   }
 }

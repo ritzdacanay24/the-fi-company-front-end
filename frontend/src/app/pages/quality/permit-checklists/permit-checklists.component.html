@@ -566,43 +566,28 @@
                 Drag and drop files anywhere in this box, or click to browse.
               </p>
 
-              <div class="attachments-dropzone mb-3" [class.is-drag-over]="isAttachmentDragOver"
-                [class.is-disabled]="!canEditActiveTicket" (click)="canEditActiveTicket && ticketAttachmentInput.click()"
-                (dragover)="onAttachmentDragOver($event)" (dragleave)="onAttachmentDragLeave($event)"
-                (drop)="onAttachmentDrop($event)">
-                <input #ticketAttachmentInput class="d-none" type="file" multiple [disabled]="!canEditActiveTicket"
-                  (change)="uploadAttachment($event)" />
-                <div class="dropzone-content">
-                  <i class="mdi mdi-cloud-upload-outline dropzone-icon"></i>
-                  <div class="dropzone-title">Drop files here or click to upload</div>
-                  <div class="dropzone-subtitle">Attachments are stored at ticket level.</div>
-                </div>
+              <div class="mb-3">
+                <button
+                  type="button"
+                  class="btn btn-outline-primary btn-sm"
+                  [disabled]="!canEditActiveTicket"
+                  (click)="ticketAttachmentsModal.openModal()">
+                  <i class="mdi mdi-upload me-1"></i>Add Attachments
+                </button>
               </div>
 
-              <div class="attachments-list" *ngIf="activeTicketAttachments.length; else noAttachmentsYet">
-                <div class="attachment-item" *ngFor="let attachment of activeTicketAttachments">
-                  <div class="attachment-main">
-                    <button class="attachment-name btn p-0" type="button"
-                      (click)="openAttachmentPreview(attachment)">
-                      {{ attachment.fileName }}
-                    </button>
-                    <div class="small text-warning-emphasis" *ngIf="!hasAttachmentPreviewSource(attachment)">
-                      <i class="mdi mdi-alert-circle-outline me-1"></i>
-                      Missing file source. Reupload required for preview/download.
-                    </div>
-                    <div class="attachment-uploader">
-                      Uploaded by {{ attachment.uploadedBy || 'Unknown User' }}
-                    </div>
-                    <div class="attachment-meta">
-                      {{ formatFileSize(attachment.fileSize) }} | {{ formatDateTime(attachment.uploadedAt) }}
-                    </div>
-                  </div>
-                  <button class="btn  btn-outline-danger" type="button" [disabled]="!canEditActiveTicket"
-                    (click)="removeAttachment(attachment.id)">
-                    Remove
-                  </button>
-                </div>
-              </div>
+              <app-uploaded-attachments-list
+                *ngIf="activeTicketAttachments.length; else noAttachmentsYet"
+                [attachments]="activeTicketAttachments"
+                [viewMode]="'detailed-list'"
+                [maxHeight]="'340px'"
+                [showDelete]="canEditActiveTicket"
+                [showHelperText]="false"
+                [showMissingSourceWarning]="true"
+                (openRequested)="openAttachmentPreview($event)"
+                (downloadRequested)="downloadAttachment($event)"
+                (deleteRequested)="removeAttachment($event.id)">
+              </app-uploaded-attachments-list>
 
               <ng-template #noAttachmentsYet>
                 <div class="text-muted small">No attachments uploaded for this ticket yet.</div>
@@ -1054,3 +1039,29 @@
     </div>
   </ng-template>
 </div>
+
+<app-upload-attachments-modal
+  #ticketAttachmentsModal
+  [modalTitle]="'Upload Ticket Attachments'"
+  [files]="pendingTicketAttachmentFiles"
+  [disabled]="!canEditActiveTicket || isTicketAttachmentUploading"
+  [isUploading]="isTicketAttachmentUploading"
+  [uploadInProgressText]="'Uploading ticket attachments...'"
+  [accept]="'*/*'"
+  [multiple]="true"
+  [allowPaste]="true"
+  [openPickerOnContainerClick]="false"
+  [chooseLabel]="'Choose files'"
+  [dropLabel]="'or drag them here.'"
+  [pasteHint]="'Copy and paste one or more files into this area.'"
+  [showPasteHint]="true"
+  [uploadTriggerMode]="'manual'"
+  [closeOnUploadSuccess]="true"
+  [uploadSuccessToken]="ticketAttachmentUploadSuccessToken"
+  [manualFlowText]="'Files upload when you click Upload.'"
+  [autoFlowText]="'Files upload automatically after you add them.'"
+  [parentSubmitFlowText]="'Files are queued and upload when you submit the ticket.'"
+  (filesAdded)="onPendingTicketAttachmentFilesAdded($event)"
+  (removeRequested)="removePendingTicketAttachment($event)"
+  (uploadRequested)="uploadPendingTicketAttachments()">
+</app-upload-attachments-modal>

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, TemplateRef, ViewChild } from "@angular/core";
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, TemplateRef, ViewChild } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { NgbModal, NgbModalRef } from "@ng-bootstrap/ng-bootstrap";
 import { UploadNewAttachmentsComponent } from "@app/shared/components/attachments/upload-new-attachments/upload-new-attachments.component";
@@ -71,7 +71,7 @@ import { UploadNewAttachmentsComponent } from "@app/shared/components/attachment
     </ng-template>
   `,
 })
-export class UploadAttachmentsModalComponent {
+export class UploadAttachmentsModalComponent implements OnChanges {
   @ViewChild("uploadModal") uploadModal: TemplateRef<unknown> | null = null;
   private modalRef: NgbModalRef | null = null;
 
@@ -94,6 +94,8 @@ export class UploadAttachmentsModalComponent {
   @Input() manualFlowText = "Files upload when you click Upload.";
   @Input() autoFlowText = "Files upload automatically after you add them.";
   @Input() parentSubmitFlowText = "Files are queued here and upload when you submit the form.";
+  @Input() closeOnUploadSuccess = true;
+  @Input() uploadSuccessToken = 0;
 
   @Output() filesAdded = new EventEmitter<File[]>();
   @Output() removeRequested = new EventEmitter<number>();
@@ -101,6 +103,17 @@ export class UploadAttachmentsModalComponent {
   @Output() modalClosed = new EventEmitter<void>();
 
   constructor(private modalService: NgbModal) {}
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (!this.closeOnUploadSuccess || !this.modalRef) {
+      return;
+    }
+
+    const tokenChange = changes["uploadSuccessToken"];
+    if (tokenChange && !tokenChange.firstChange && tokenChange.currentValue !== tokenChange.previousValue) {
+      this.closeModal();
+    }
+  }
 
   openModal(): void {
     if (!this.uploadModal) return;
