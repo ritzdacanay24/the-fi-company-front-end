@@ -1,4 +1,4 @@
-import { Component, Input } from "@angular/core";
+import { Component, Input, ViewChild } from "@angular/core";
 import { FormGroup } from "@angular/forms";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ToastrService } from "ngx-toastr";
@@ -6,20 +6,33 @@ import { RmaFormComponent } from "../rma-form/rma-form.component";
 import { RmaService } from "@app/core/api/quality/rma.service";
 import { NAVIGATION_ROUTE } from "../rma-constant";
 import { SharedModule } from "@app/shared/shared.module";
+import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
+import { UploadAttachmentsModalComponent } from "@app/shared/components/attachments/upload-attachments-modal/upload-attachments-modal.component";
+import { PendingUploadsListComponent } from "@app/shared/components/attachments/pending-uploads-list/pending-uploads-list.component";
+import { UploadedAttachmentsListComponent } from "@app/shared/components/attachments/uploaded-attachments-list/uploaded-attachments-list.component";
 
 @Component({
   standalone: true,
-  imports: [SharedModule, RmaFormComponent],
+  imports: [
+    SharedModule,
+    RmaFormComponent,
+    UploadAttachmentsModalComponent,
+    PendingUploadsListComponent,
+    UploadedAttachmentsListComponent,
+  ],
   selector: "app-rma-edit",
   templateUrl: "./rma-edit.component.html",
   styleUrls: ["./rma-edit.component.scss"],
 })
 export class RmaEditComponent {
+  @ViewChild(UploadAttachmentsModalComponent) uploadModal: UploadAttachmentsModalComponent | null = null;
+
   constructor(
     private router: Router,
     private activatedRoute: ActivatedRoute,
     private api: RmaService,
-    private toastrService: ToastrService
+    private toastrService: ToastrService,
+    private attachmentsService: AttachmentsService
   ) { }
 
   ngOnInit(): void {
@@ -54,6 +67,18 @@ export class RmaEditComponent {
   }
 
   data: any;
+  attachments: any[] = [];
+  selectedFiles: File[] = [];
+  uploadTriggerMode: "manual" | "on-add" = "manual";
+
+  async getAttachments() {
+    if (!this.id) {
+      this.attachments = [];
+      return;
+    }
+
+    this.attachments = await this.attachmentsService.find({ field: "RMA", uniqueId: this.id });
+  }
 
   async getData() {
     try {
@@ -66,6 +91,8 @@ export class RmaEditComponent {
       } else {
         this.form.enable();
       }
+
+      await this.getAttachments();
     } catch (err) { }
   }
 
@@ -91,6 +118,57 @@ export class RmaEditComponent {
 
   onPrintPage() {
     window.print();
+  }
+
+  onAttachmentFilesAdded(files: File[]) {
+    if (!files?.length) {
+      return;
+    }
+
+    this.selectedFiles = [...this.selectedFiles, ...files];
+  }
+
+  removeFile(index: number) {
+    this.selectedFiles = this.selectedFiles.filter((_, i) => i !== index);
+  }
+
+  async onUploadAttachments() {
+    if (this.selectedFiles.length === 0 || !this.id || this.isRmaClosed) {
+      return;
+    }
+
+    this.isLoading = true;
+    let totalUploaded = 0;
+
+    for (const file of this.selectedFiles) {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("field", "RMA");
+      formData.append("uniqueData", `${this.id}`);
+      formData.append("subFolder", "quality/rma");
+
+      try {
+        await this.attachmentsService.uploadfile(formData);
+        totalUploaded++;
+      } catch (err) {}
+    }
+
+    this.isLoading = false;
+
+    if (totalUploaded > 0) {
+      this.selectedFiles = [];
+      await this.getAttachments();
+      this.toastrService.success(`${totalUploaded} attachment${totalUploaded > 1 ? "s" : ""} uploaded`);
+    }
+  }
+
+  async deleteAttachment(id: number): Promise<void> {
+    if (!confirm("Are you sure you want to remove attachment?")) {
+      return;
+    }
+
+    await this.attachmentsService.delete(id);
+    await this.getAttachments();
   }
 
   async onArchive() {

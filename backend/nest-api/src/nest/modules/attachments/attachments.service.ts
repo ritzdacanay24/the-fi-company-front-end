@@ -10,6 +10,8 @@ interface CreateAttachmentPayload extends Record<string, unknown> {
   uniqueData?: number | string;
   ext?: string;
   link?: string;
+  fileSize?: number | string;
+  fileSizeConv?: string;
   storage_source?: string;
   subFolder?: string;
   folderName?: string;
@@ -25,7 +27,7 @@ export class AttachmentsService {
   async create(
     payload: CreateAttachmentPayload,
     currentUserId: number,
-    file?: { originalname?: string; buffer?: Buffer },
+    file?: { originalname?: string; buffer?: Buffer; size?: number; mimetype?: string },
   ) {
     const subFolder = this.resolveRequestedSubFolder(payload);
     if (!subFolder) {
@@ -47,6 +49,7 @@ export class AttachmentsService {
       currentUserId,
       file?.originalname,
       stored ? { key: stored.key, bucket: stored.bucket } : undefined,
+      file?.size,
     );
 
     try {
@@ -368,12 +371,15 @@ export class AttachmentsService {
     currentUserId: number,
     originalName?: string,
     bucketMeta?: { key: string; bucket: string },
+    uploadedFileSize?: number,
   ): Record<string, unknown> {
     const createdDate = this.normalizeCreatedDate(payload.createdDate);
     const uniqueId = payload.uniqueId ?? payload.uniqueData;
     const ext = this.normalizeExtension(payload.ext, originalName);
     const subFolder = this.resolveSubFolder(payload);
     const createdBy = this.normalizeCreatedBy(payload.createdBy, currentUserId);
+    const fileSize = this.normalizeFileSize(payload.fileSize, uploadedFileSize);
+    const fileSizeConv = this.normalizeFileSizeConv(payload.fileSizeConv, fileSize);
     const link = bucketMeta?.key
       ? this.normalizeBucketLink(bucketMeta.key)
       : this.normalizeLink(payload.link, storedFileName, subFolder);
@@ -384,6 +390,8 @@ export class AttachmentsService {
       createdBy,
       createdDate,
       uniqueId,
+      fileSize,
+      fileSizeConv,
       link,
       ext,
       storage_source: bucketMeta?.key
@@ -463,5 +471,46 @@ export class AttachmentsService {
     }
 
     return this.storageService.resolveLink(fileName, subFolder) || undefined;
+  }
+
+  private normalizeFileSize(payloadValue: unknown, uploadedFileSize?: number): number | undefined {
+    const parsedPayloadSize = Number(payloadValue);
+    if (Number.isFinite(parsedPayloadSize) && parsedPayloadSize > 0) {
+      return Math.round(parsedPayloadSize);
+    }
+
+    const parsedUploadedSize = Number(uploadedFileSize);
+    if (Number.isFinite(parsedUploadedSize) && parsedUploadedSize > 0) {
+      return Math.round(parsedUploadedSize);
+    }
+
+    return undefined;
+  }
+
+  private normalizeFileSizeConv(payloadValue: unknown, fileSize?: number): string | undefined {
+    if (typeof payloadValue === 'string' && payloadValue.trim()) {
+      return payloadValue.trim();
+    }
+
+    if (!fileSize || fileSize <= 0) {
+      return undefined;
+    }
+
+    if (fileSize < 1024) {
+      return `${fileSize} B`;
+    }
+
+    const kb = fileSize / 1024;
+    if (kb < 1024) {
+      return `${kb.toFixed(1)} KB`;
+    }
+
+    const mb = kb / 1024;
+    if (mb < 1024) {
+      return `${mb.toFixed(1)} MB`;
+    }
+
+    const gb = mb / 1024;
+    return `${gb.toFixed(2)} GB`;
   }
 }

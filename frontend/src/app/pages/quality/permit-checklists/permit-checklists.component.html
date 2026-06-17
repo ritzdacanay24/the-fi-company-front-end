@@ -584,8 +584,9 @@
                 [showDelete]="canEditActiveTicket"
                 [showHelperText]="false"
                 [showMissingSourceWarning]="true"
-                (openRequested)="openAttachmentPreview($event)"
-                (downloadRequested)="downloadAttachment($event)"
+                [useSharedViewer]="true"
+                [enableViewerNavigation]="true"
+                [resolveById]="resolvePermitAttachmentById"
                 (deleteRequested)="removeAttachment($event.id)">
               </app-uploaded-attachments-list>
 

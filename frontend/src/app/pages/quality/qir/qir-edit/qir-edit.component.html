@@ -151,8 +151,9 @@
                 [maxHeight]="'300px'"
                 [showHelperText]="true"
                 [helperText]="'Click on filenames to preview, or use direct download links if preview fails.'"
-                (openRequested)="openAttachment($event)"
-                (downloadRequested)="downloadAttachment($event)"
+                [useSharedViewer]="true"
+                [enableViewerNavigation]="true"
+                [resolveById]="resolveQirAttachmentById"
                 (deleteRequested)="deleteAttachment($event.id, $event.index)">
               </app-uploaded-attachments-list>
 

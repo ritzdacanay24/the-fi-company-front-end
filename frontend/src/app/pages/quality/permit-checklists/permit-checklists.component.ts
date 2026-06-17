@@ -1059,6 +1059,25 @@ export class PermitChecklistsComponent implements OnInit {
     return [...this.activeTicket.attachments].sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt));
   }
 
+  readonly resolvePermitAttachmentById = async (
+    id: string | number,
+  ): Promise<{ url: string; fileName?: string } | null> => {
+    const attachment = this.activeTicketAttachments.find((row) => String(row?.id) === String(id));
+    if (!attachment) {
+      return null;
+    }
+
+    const resolvedUrl = this.resolveAttachmentUrl(attachment);
+    if (!resolvedUrl) {
+      return null;
+    }
+
+    return {
+      url: resolvedUrl,
+      fileName: attachment.fileName || "Attachment",
+    };
+  };
+
   get referenceNotesDisplay(): string[] {
     return [
       ...this.getReferenceNotesFromFees(this.activeFinancials.customerBillingBreakdown, "Customer Billing"),

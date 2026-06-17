@@ -433,6 +433,25 @@ export class QirEditComponent {
     }
   }
 
+  readonly resolveQirAttachmentById = async (
+    id: string | number,
+  ): Promise<{ url: string; fileName?: string } | null> => {
+    const row = this.attachments?.find((attachment: any) => String(attachment?.id) === String(id));
+    if (!row) {
+      return null;
+    }
+
+    const resolvedUrl = await this.resolveAttachmentUrl(row, false);
+    if (!resolvedUrl) {
+      return null;
+    }
+
+    return {
+      url: resolvedUrl,
+      fileName: row?.fileName || "Attachment",
+    };
+  };
+
   private openFileViewerModal(url: string, fileName: string, row?: any): void {
     const currentIndex = row?.id ? this.attachments?.findIndex((att: any) => att?.id === row?.id) ?? 0 : 0;
 

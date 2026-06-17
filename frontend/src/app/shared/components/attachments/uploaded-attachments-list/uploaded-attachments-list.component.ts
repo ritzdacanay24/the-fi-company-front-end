@@ -1,6 +1,8 @@
 import { CommonModule } from "@angular/common";
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject } from "@angular/core";
 import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
+import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
+import { FileViewerModalComponent } from "@app/shared/components/file-viewer-modal/file-viewer-modal.component";
 
 @Component({
   selector: "app-uploaded-attachments-list",
@@ -143,7 +145,7 @@ import { AttachmentsService } from "@app/core/api/attachments/attachments.servic
                 Uploaded by {{ getUploaderLabel(row) }}
               </div>
               <div class="small text-muted">
-                {{ formatFileSize(row?.fileSize) }} | {{ getUploadedDate(row) | date:'MMM d, y h:mm a' }}
+                {{ formatFileSize(getFileSize(row)) }} | {{ getUploadedDate(row) | date:'MMM d, y h:mm a' }}
               </div>
             </div>
 
@@ -290,12 +292,16 @@ export class UploadedAttachmentsListComponent implements OnChanges {
   @Input() resolvePreviewUrls = false;
   @Input() showMissingSourceWarning = false;
   @Input() missingSourceText = "Missing file source. Reupload required for preview/download.";
+  @Input() useSharedViewer = false;
+  @Input() enableViewerNavigation = true;
+  @Input() resolveById?: (id: string | number) => Promise<{ url: string; fileName?: string } | null>;
 
   @Output() openRequested = new EventEmitter<any>();
   @Output() downloadRequested = new EventEmitter<any>();
   @Output() deleteRequested = new EventEmitter<{ id: any; index: number; row: any }>();
 
   private readonly attachmentsService = inject(AttachmentsService);
+  private readonly modalService = inject(NgbModal);
   private resolvedIds = new Set<number>();
 
   getUploaderLabel(row: any): string {
@@ -353,11 +359,23 @@ export class UploadedAttachmentsListComponent implements OnChanges {
 
   onOpen(row: any, event: Event): void {
     event.preventDefault();
+
+    if (this.useSharedViewer) {
+      this.openInSharedViewer(row);
+      return;
+    }
+
     this.openRequested.emit(row);
   }
 
   onDownload(row: any, event: Event): void {
     event.preventDefault();
+
+    if (this.useSharedViewer) {
+      this.downloadFromSharedViewer(row);
+      return;
+    }
+
     this.downloadRequested.emit(row);
   }
 
@@ -366,7 +384,98 @@ export class UploadedAttachmentsListComponent implements OnChanges {
   }
 
   onOpenFromButton(row: any): void {
+    if (this.useSharedViewer) {
+      this.openInSharedViewer(row);
+      return;
+    }
+
     this.openRequested.emit(row);
+  }
+
+  private openInSharedViewer(row: any): void {
+    const items = (this.attachments || []).map((attachment) => ({
+      id: attachment?.id,
+      url: this.normalizeAttachmentUrl(String(attachment?.previewUrl || attachment?.link || attachment?.url || "").trim()),
+      fileName: attachment?.fileName || "Attachment",
+    }));
+
+    const activeId = row?.id;
+    const index = items.findIndex((item) => item.id === activeId);
+    const initialIndex = index >= 0 ? index : 0;
+    const initialItem = items[initialIndex];
+
+    if (!initialItem?.url && !initialItem?.id) {
+      return;
+    }
+
+    const modalRef = this.modalService.open(FileViewerModalComponent, {
+      size: "xl",
+      centered: true,
+      scrollable: true,
+    });
+
+    modalRef.componentInstance.url = initialItem?.url || "";
+    modalRef.componentInstance.fileName = initialItem?.fileName || "Attachment";
+    modalRef.componentInstance.items = items;
+    modalRef.componentInstance.initialIndex = initialIndex;
+    modalRef.componentInstance.enableNavigation = this.enableViewerNavigation;
+    modalRef.componentInstance.resolveById = async (id: string | number) => {
+      if (this.resolveById) {
+        return this.resolveById(id);
+      }
+
+      try {
+        const resolved = await this.attachmentsService.getViewById(Number(id));
+        return {
+          url: this.normalizeAttachmentUrl(String(resolved?.url || "").trim()),
+          fileName: resolved?.fileName,
+        };
+      } catch {
+        return null;
+      }
+    };
+  }
+
+  private async downloadFromSharedViewer(row: any): Promise<void> {
+    const id = Number(row?.id);
+    if (!Number.isFinite(id)) {
+      const fallbackUrl = this.normalizeAttachmentUrl(String(row?.previewUrl || row?.link || row?.url || "").trim());
+      if (fallbackUrl) {
+        window.open(fallbackUrl, "_blank", "noopener");
+      }
+      return;
+    }
+
+    try {
+      const resolved = this.resolveById
+        ? await this.resolveById(id)
+        : await this.attachmentsService.getViewById(id);
+      const resolvedUrl = this.normalizeAttachmentUrl(String(resolved?.url || "").trim());
+      if (resolvedUrl) {
+        window.open(resolvedUrl, "_blank", "noopener");
+      }
+    } catch {
+    }
+  }
+
+  private normalizeAttachmentUrl(rawUrl: string): string {
+    if (!rawUrl) {
+      return "";
+    }
+
+    if (/^https?:\/\//i.test(rawUrl)) {
+      return rawUrl;
+    }
+
+    if (rawUrl.startsWith("/attachments/")) {
+      return `https://dashboard.eye-fi.com${rawUrl}`;
+    }
+
+    if (rawUrl.startsWith("/")) {
+      return `${window.location.origin}${rawUrl}`;
+    }
+
+    return rawUrl;
   }
 
   isImageAttachment(row: any): boolean {
@@ -482,5 +591,9 @@ export class UploadedAttachmentsListComponent implements OnChanges {
 
     const gb = mb / 1024;
     return `${gb.toFixed(2)} GB`;
+  }
+
+  getFileSize(row: any): any {
+    return row?.fileSize ?? row?.size ?? row?.file_size ?? row?.bytes ?? row?.contentLength ?? null;
   }
 }
