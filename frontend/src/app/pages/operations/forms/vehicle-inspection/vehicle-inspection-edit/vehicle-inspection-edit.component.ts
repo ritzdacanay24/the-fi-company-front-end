@@ -11,10 +11,11 @@ import { environment } from "src/environments/environment";
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { FileViewerModalComponent } from "@app/shared/components/file-viewer-modal/file-viewer-modal.component";
 import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
+import { UploadedAttachmentsListComponent } from "@app/shared/components/attachments/uploaded-attachments-list/uploaded-attachments-list.component";
 
 @Component({
   standalone: true,
-  imports: [SharedModule, VehicleInspectionFormComponent],
+  imports: [SharedModule, VehicleInspectionFormComponent, UploadedAttachmentsListComponent],
   selector: "app-vehicle-inspection-edit",
   templateUrl: "./vehicle-inspection-edit.component.html",
 })
@@ -142,6 +143,28 @@ export class VehicleInspectionEditComponent {
     } catch (error) {
       console.error('Failed to open attachment:', error);
       this.toastrService.error('Unable to open attachment');
+    }
+  }
+
+  async downloadAttachment(attachment: any) {
+    try {
+      let url = this.getImageUrl(attachment);
+      if (attachment?.id) {
+        const resolved = await this.attachmentsService.getViewById(attachment.id);
+        if (resolved?.url) {
+          url = resolved.url;
+        }
+      }
+
+      if (!url) {
+        this.toastrService.warning('Attachment URL not available');
+        return;
+      }
+
+      window.open(url, '_blank');
+    } catch (error) {
+      console.error('Failed to download attachment:', error);
+      this.toastrService.error('Unable to download attachment');
     }
   }
 

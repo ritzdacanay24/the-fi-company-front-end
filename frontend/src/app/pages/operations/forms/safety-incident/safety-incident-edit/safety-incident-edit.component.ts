@@ -10,10 +10,23 @@ import { SafetyIncidentFormComponent } from "../safety-incident-form/safety-inci
 import { FILE, NAVIGATION_ROUTE } from "../safety-incident-constant";
 import { NgbDropdown, NgbDropdownItem, NgbDropdownMenu, NgbDropdownToggle, NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { FileViewerModalComponent } from "@app/shared/components/file-viewer-modal/file-viewer-modal.component";
+import { UploadAttachmentsModalComponent } from "@app/shared/components/attachments/upload-attachments-modal/upload-attachments-modal.component";
+import { PendingUploadsListComponent } from "@app/shared/components/attachments/pending-uploads-list/pending-uploads-list.component";
+import { UploadedAttachmentsListComponent } from "@app/shared/components/attachments/uploaded-attachments-list/uploaded-attachments-list.component";
 
 @Component({
   standalone: true,
-  imports: [SharedModule, SafetyIncidentFormComponent, NgbDropdown, NgbDropdownToggle, NgbDropdownMenu, NgbDropdownItem],
+  imports: [
+    SharedModule,
+    SafetyIncidentFormComponent,
+    NgbDropdown,
+    NgbDropdownToggle,
+    NgbDropdownMenu,
+    NgbDropdownItem,
+    UploadAttachmentsModalComponent,
+    PendingUploadsListComponent,
+    UploadedAttachmentsListComponent,
+  ],
   selector: "app-safety-incident-edit",
   templateUrl: "./safety-incident-edit.component.html",
 })
@@ -112,7 +125,11 @@ export class SafetyIncidentEditComponent {
     // - comments (administrative notes can be added)
   }
 
-  private openFileViewerModal(url: string, fileName: string): void {
+  private openFileViewerModal(url: string, fileName: string, attachment?: any): void {
+    const currentIndex = attachment?.id
+      ? this.attachments?.findIndex((row: any) => row?.id === attachment?.id) ?? 0
+      : 0;
+
     const modalRef = this.modalService.open(FileViewerModalComponent, {
       size: 'xl',
       centered: true,
@@ -122,6 +139,17 @@ export class SafetyIncidentEditComponent {
 
     modalRef.componentInstance.url = url;
     modalRef.componentInstance.fileName = fileName;
+    modalRef.componentInstance.items = this.attachments || [];
+    modalRef.componentInstance.initialIndex = currentIndex;
+    modalRef.componentInstance.enableNavigation = true;
+    modalRef.componentInstance.resolveById = (id: string | number) =>
+      this.attachmentsService
+        .getViewById(Number(id))
+        .then((resolved: any) => ({
+          url: resolved?.url || resolved?.previewUrl || '',
+          fileName: resolved?.fileName,
+        }))
+        .catch(() => null);
   }
 
   async openAttachment(attachment: any): Promise<void> {
@@ -133,10 +161,26 @@ export class SafetyIncidentEditComponent {
         return;
       }
 
-      this.openFileViewerModal(resolvedUrl, attachment?.fileName || resolved?.fileName || 'Attachment');
+      this.openFileViewerModal(resolvedUrl, attachment?.fileName || resolved?.fileName || 'Attachment', attachment);
     } catch (error) {
       console.error('Failed to resolve attachment URL:', error);
       this.toastrService.error('Unable to open attachment');
+    }
+  }
+
+  async downloadAttachment(attachment: any): Promise<void> {
+    try {
+      const resolved = await this.attachmentsService.getViewById(attachment?.id);
+      const resolvedUrl = resolved?.url || attachment?.link;
+      if (!resolvedUrl) {
+        this.toastrService.warning('Attachment URL not available');
+        return;
+      }
+
+      window.open(resolvedUrl, '_blank');
+    } catch (error) {
+      console.error('Failed to resolve attachment URL:', error);
+      this.toastrService.error('Unable to download attachment');
     }
   }
 
@@ -193,13 +237,8 @@ export class SafetyIncidentEditComponent {
         }
       }
       
-      // Clear the file selection and reset input
+      // Clear the pending list after upload
       this.myFiles = [];
-      this.clearSelectedImagePreviews();
-      const fileInput = document.getElementById('file') as HTMLInputElement;
-      if (fileInput) {
-        fileInput.value = '';
-      }
       
       // Refresh attachments list
       await this.getAttachments();
@@ -244,57 +283,21 @@ export class SafetyIncidentEditComponent {
   }
 
   attachments: any = [];
-  selectedImagePreviews: Array<{ name: string; url: string }> = [];
-  private readonly imageExtensions = ["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg", "avif"];
-
-  private isImageAttachment(fileName: string): boolean {
-    if (!fileName) return false;
-    const extension = fileName.split(".").pop()?.toLowerCase();
-    return !!extension && this.imageExtensions.includes(extension);
-  }
-
-  get imageAttachments() {
-    return this.attachments.filter((row) => row?.isImage && row?.previewUrl && !row?.previewFailed);
-  }
-
-  onPreviewError(attachment: any) {
-    attachment.previewFailed = true;
-  }
-
-  private clearSelectedImagePreviews() {
-    for (const row of this.selectedImagePreviews) {
-      URL.revokeObjectURL(row.url);
-    }
-    this.selectedImagePreviews = [];
-  }
-
-  private async resolveAttachmentPreviewUrl(attachment: any): Promise<string | null> {
-    try {
-      const resolved = await this.attachmentsService.getViewById(attachment?.id);
-      return resolved?.url || attachment?.link || null;
-    } catch {
-      return attachment?.link || null;
-    }
-  }
+  attachmentsLoading = false;
+  uploadTriggerMode: "manual" | "on-add" | "parent-submit" = "manual";
 
   async getAttachments() {
-    const rows = await this.attachmentsService.find({
-      field: FILE.FIELD,
-      uniqueId: this.id,
-    });
+    this.attachmentsLoading = true;
+    try {
+      const rows = await this.attachmentsService.find({
+        field: FILE.FIELD,
+        uniqueId: this.id,
+      });
 
-    this.attachments = await Promise.all(
-      (rows || []).map(async (row) => {
-        const isImage = this.isImageAttachment(row?.fileName);
-        const previewUrl = isImage ? await this.resolveAttachmentPreviewUrl(row) : null;
-        return {
-          ...row,
-          isImage,
-          previewUrl,
-          previewFailed: false,
-        };
-      })
-    );
+      this.attachments = rows || [];
+    } finally {
+      this.attachmentsLoading = false;
+    }
   }
 
   async deleteAttachment(id, index) {
@@ -307,19 +310,16 @@ export class SafetyIncidentEditComponent {
 
   myFiles: File[] = [];
 
-  onFileChange(event: any) {
-    this.clearSelectedImagePreviews();
-    this.myFiles = [];
-    for (var i = 0; i < event.target.files.length; i++) {
-      const file = event.target.files[i] as File;
-      this.myFiles.push(file);
-      if (this.isImageAttachment(file?.name)) {
-        this.selectedImagePreviews.push({
-          name: file.name,
-          url: URL.createObjectURL(file),
-        });
-      }
+  onAttachmentFilesAdded(files: File[]) {
+    if (!files?.length) {
+      return;
     }
+
+    this.myFiles = [...this.myFiles, ...files];
+  }
+
+  removeFile(index: number) {
+    this.myFiles.splice(index, 1);
   }
 
   async onUploadAttachments() {

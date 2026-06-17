@@ -128,106 +128,19 @@
               <p class="text-muted mb-0">Photos captured during inspection</p>
             </div>
 
-            <div class="row g-3" *ngIf="hasGroupedVehiclePhotos()">
-              <div class="col-6 col-md-4 col-lg-3" *ngFor="let attachment of getVehiclePhotosBySide('front')">
-                <div class="card h-100">
-                  <div class="card-body text-center">
-                    <div class="mb-2">
-                      <span class="badge bg-primary">{{ getVehiclePhotoBadgeLabel(attachment, 'Front') }}</span>
-                    </div>
-                    <img [src]="getImageUrl(attachment)" class="img-thumbnail mb-2"
-                         style="max-height: 200px; width: 100%; object-fit: cover; cursor: pointer;"
-                         (click)="viewImage(attachment)">
-                    <div class="small text-muted">
-                      <i class="mdi mdi-file-image me-1"></i>{{attachment.fileSizeConv}}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="col-6 col-md-4 col-lg-3" *ngFor="let attachment of getVehiclePhotosBySide('rear')">
-                <div class="card h-100">
-                  <div class="card-body text-center">
-                    <div class="mb-2">
-                      <span class="badge bg-primary">{{ getVehiclePhotoBadgeLabel(attachment, 'Rear') }}</span>
-                    </div>
-                    <img [src]="getImageUrl(attachment)" class="img-thumbnail mb-2"
-                         style="max-height: 200px; width: 100%; object-fit: cover; cursor: pointer;"
-                         (click)="viewImage(attachment)">
-                    <div class="small text-muted">
-                      <i class="mdi mdi-file-image me-1"></i>{{attachment.fileSizeConv}}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="col-6 col-md-4 col-lg-3" *ngFor="let attachment of getVehiclePhotosBySide('left')">
-                <div class="card h-100">
-                  <div class="card-body text-center">
-                    <div class="mb-2">
-                      <span class="badge bg-primary">{{ getVehiclePhotoBadgeLabel(attachment, 'Left Side') }}</span>
-                    </div>
-                    <img [src]="getImageUrl(attachment)" class="img-thumbnail mb-2"
-                         style="max-height: 200px; width: 100%; object-fit: cover; cursor: pointer;"
-                         (click)="viewImage(attachment)">
-                    <div class="small text-muted">
-                      <i class="mdi mdi-file-image me-1"></i>{{attachment.fileSizeConv}}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="col-6 col-md-4 col-lg-3" *ngFor="let attachment of getVehiclePhotosBySide('right')">
-                <div class="card h-100">
-                  <div class="card-body text-center">
-                    <div class="mb-2">
-                      <span class="badge bg-primary">{{ getVehiclePhotoBadgeLabel(attachment, 'Right Side') }}</span>
-                    </div>
-                    <img [src]="getImageUrl(attachment)" class="img-thumbnail mb-2"
-                         style="max-height: 200px; width: 100%; object-fit: cover; cursor: pointer;"
-                         (click)="viewImage(attachment)">
-                    <div class="small text-muted">
-                      <i class="mdi mdi-file-image me-1"></i>{{attachment.fileSizeConv}}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="col-6 col-md-4 col-lg-3" *ngFor="let attachment of getAdditionalVehiclePhotos()">
-                <div class="card h-100">
-                  <div class="card-body text-center">
-                    <div class="mb-2">
-                      <span class="badge bg-primary">{{ getVehiclePhotoBadgeLabel(attachment, 'Additional') }}</span>
-                    </div>
-                    <img [src]="getImageUrl(attachment)" class="img-thumbnail mb-2"
-                         style="max-height: 200px; width: 100%; object-fit: cover; cursor: pointer;"
-                         (click)="viewImage(attachment)">
-                    <div class="small text-muted">
-                      <i class="mdi mdi-file-image me-1"></i>{{attachment.fileSizeConv}}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="row g-3" *ngIf="!hasGroupedVehiclePhotos()">
-              <div class="col-md-6 col-lg-3" *ngFor="let attachment of attachments">
-                <div class="card h-100">
-                  <div class="card-body text-center">
-                    <div class="mb-2">
-                      <span class="badge bg-primary">{{attachment.title || 'Vehicle Photo'}}</span>
-                    </div>
-                    <img [src]="getImageUrl(attachment)" 
-                         class="img-thumbnail mb-2" 
-                         style="max-height: 200px; width: 100%; object-fit: cover; cursor: pointer;"
-                         (click)="viewImage(attachment)">
-                    <div class="small text-muted">
-                      <i class="mdi mdi-file-image me-1"></i>{{attachment.fileSizeConv}}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <app-uploaded-attachments-list
+              [attachments]="attachments"
+              [viewMode]="'media-grid'"
+              [showMediaBadge]="true"
+              [resolvePreviewUrls]="true"
+              [showDelete]="false"
+              [isLoading]="isLoading"
+              [showHelperText]="true"
+              [helperText]="'Click on a tile to preview. URLs are signed only when you open or download.'"
+              [maxHeight]="'520px'"
+              (openRequested)="viewImage($event)"
+              (downloadRequested)="downloadAttachment($event)">
+            </app-uploaded-attachments-list>
           </div>
         </div>
         

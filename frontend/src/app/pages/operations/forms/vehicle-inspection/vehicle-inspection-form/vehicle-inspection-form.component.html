@@ -23,7 +23,7 @@
     </div>
 
     <!-- Vehicle Details Section -->
-    <div class="mb-4 pb-4 border-bottom">
+    <div class="">
       <div class="mb-3">
         <h3 class="h5 mb-1">Vehicle Details</h3>
         <p class="text-muted mb-0">
@@ -94,7 +94,7 @@
     </div>
 
     <!-- Failure Alert Section -->
-    <div class="mb-4 pb-4 border-bottom" *ngIf="failureMessage">
+    <div class="mb-4 mt-4" *ngIf="failureMessage">
       <div class="alert d-flex align-items-start" role="alert" [ngClass]="failureClass">
         <i class="mdi me-3 fs-4"
            [ngClass]="failureErrors?.length > 0 ? 'mdi-alert-circle-outline' : 'mdi-check-circle-outline'"></i>

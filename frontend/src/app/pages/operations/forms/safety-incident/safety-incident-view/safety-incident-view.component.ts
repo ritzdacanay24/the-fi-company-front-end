@@ -7,10 +7,11 @@ import { AttachmentsService } from "@app/core/api/attachments/attachments.servic
 import { NAVIGATION_ROUTE, FILE } from "../safety-incident-constant";
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { FileViewerModalComponent } from "@app/shared/components/file-viewer-modal/file-viewer-modal.component";
+import { UploadedAttachmentsListComponent } from "@app/shared/components/attachments/uploaded-attachments-list/uploaded-attachments-list.component";
 
 @Component({
     standalone: true,
-    imports: [SharedModule],
+    imports: [SharedModule, UploadedAttachmentsListComponent],
     selector: "app-safety-incident-view",
     templateUrl: "./safety-incident-view.component.html",
 })
@@ -37,6 +38,7 @@ export class SafetyIncidentViewComponent {
     data: any = {};
     isLoading = false;
     attachments: any = [];
+    attachmentsLoading = false;
     selectedAction = "";
 
     goBack = () => {
@@ -71,6 +73,7 @@ export class SafetyIncidentViewComponent {
     }
 
     async getAttachments() {
+        this.attachmentsLoading = true;
         try {
             this.attachments = await this.attachmentsService.find({
                 field: FILE.FIELD,
@@ -78,10 +81,16 @@ export class SafetyIncidentViewComponent {
             });
         } catch (err) {
             console.error("Error loading attachments:", err);
+        } finally {
+            this.attachmentsLoading = false;
         }
     }
 
-    private openFileViewerModal(url: string, fileName: string): void {
+    private openFileViewerModal(url: string, fileName: string, attachment?: any): void {
+        const currentIndex = attachment?.id
+            ? this.attachments?.findIndex((row: any) => row?.id === attachment?.id) ?? 0
+            : 0;
+
         const modalRef = this.modalService.open(FileViewerModalComponent, {
             size: 'xl',
             centered: true,
@@ -91,6 +100,17 @@ export class SafetyIncidentViewComponent {
 
         modalRef.componentInstance.url = url;
         modalRef.componentInstance.fileName = fileName;
+        modalRef.componentInstance.items = this.attachments || [];
+        modalRef.componentInstance.initialIndex = currentIndex;
+        modalRef.componentInstance.enableNavigation = true;
+        modalRef.componentInstance.resolveById = (id: string | number) =>
+            this.attachmentsService
+                .getViewById(Number(id))
+                .then((resolved: any) => ({
+                    url: resolved?.url || resolved?.previewUrl || '',
+                    fileName: resolved?.fileName,
+                }))
+                .catch(() => null);
     }
 
     async openAttachment(attachment: any): Promise<void> {
@@ -102,10 +122,26 @@ export class SafetyIncidentViewComponent {
                 return;
             }
 
-            this.openFileViewerModal(resolvedUrl, attachment?.fileName || resolved?.fileName || 'Attachment');
+            this.openFileViewerModal(resolvedUrl, attachment?.fileName || resolved?.fileName || 'Attachment', attachment);
         } catch (error) {
             console.error('Failed to resolve attachment URL:', error);
             this.toastrService.error('Unable to open attachment');
+        }
+    }
+
+    async downloadAttachment(attachment: any): Promise<void> {
+        try {
+            const resolved = await this.attachmentsService.getViewById(attachment?.id);
+            const resolvedUrl = resolved?.url || attachment?.link;
+            if (!resolvedUrl) {
+                this.toastrService.warning('Attachment URL not available');
+                return;
+            }
+
+            window.open(resolvedUrl, '_blank');
+        } catch (error) {
+            console.error('Failed to resolve attachment URL:', error);
+            this.toastrService.error('Unable to download attachment');
         }
     }
 

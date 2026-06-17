@@ -10,10 +10,17 @@ import { VehicleInspectionFormComponent } from "../vehicle-inspection-form/vehic
 import { AuthenticationService } from "@app/core/services/auth.service";
 import { resetVehicleInspectionFormValues } from "../vehicle-inspection-form/formData";
 import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
+import { UploadAttachmentsModalComponent } from "@app/shared/components/attachments/upload-attachments-modal/upload-attachments-modal.component";
+import { PendingUploadsListComponent } from "@app/shared/components/attachments/pending-uploads-list/pending-uploads-list.component";
 
 @Component({
   standalone: true,
-  imports: [SharedModule, VehicleInspectionFormComponent],
+  imports: [
+    SharedModule,
+    VehicleInspectionFormComponent,
+    UploadAttachmentsModalComponent,
+    PendingUploadsListComponent,
+  ],
   selector: "app-vehicle-inspection-create",
   templateUrl: "./vehicle-inspection-create.component.html",
 })
@@ -155,7 +162,7 @@ export class VehicleInspectionCreateComponent {
   };
 
   additionalVehiclePhotos: File[] = [];
-  additionalVehiclePhotoPreviews: string[] = [];
+  uploadTriggerMode: "manual" | "on-add" | "parent-submit" = "parent-submit";
 
   onVehiclePhotoChange(
     event: any,
@@ -197,25 +204,16 @@ export class VehicleInspectionCreateComponent {
     this.cdr.detectChanges();
   }
 
-  onAdditionalVehiclePhotosChange(event: any) {
-    const files: File[] = Array.from(event?.target?.files || []);
-    if (!files.length) return;
+  onAdditionalVehiclePhotosChange(files: File[]) {
+    if (!files?.length) {
+      return;
+    }
 
-    files.forEach((file) => {
-      this.additionalVehiclePhotos.push(file);
-      const reader = new FileReader();
-      reader.onload = (e: any) => {
-        this.additionalVehiclePhotoPreviews.push(e.target.result);
-      };
-      reader.readAsDataURL(file);
-    });
-
-    event.target.value = '';
+    this.additionalVehiclePhotos = [...this.additionalVehiclePhotos, ...files];
   }
 
   removeAdditionalVehiclePhoto(index: number) {
     this.additionalVehiclePhotos.splice(index, 1);
-    this.additionalVehiclePhotoPreviews.splice(index, 1);
   }
 
   areAllVehiclePhotosUploaded(): boolean {

@@ -53,6 +53,74 @@ import { AttachmentsService } from "@app/core/api/attachments/attachments.servic
       </div>
     </div>
 
+    <div class="mb-3" *ngIf="!isLoading && attachments?.length > 0 && viewMode === 'media-grid'">
+      <div class="row g-3" [style.max-height]="maxHeight" style="overflow-y: auto;">
+        <div class="col-6 col-md-4 col-lg-3" *ngFor="let row of attachments; let i = index">
+          <div class="card h-100 border shadow-sm">
+            <div class="card-body text-center">
+              <div class="mb-2" *ngIf="showMediaBadge">
+                <span class="badge bg-primary">{{ getMediaBadgeLabel(row) }}</span>
+              </div>
+
+              <button
+                *ngIf="isImageAttachment(row) && !row?.__thumbnailError && resolveThumbnailUrl(row); else mediaPlaceholder"
+                type="button"
+                class="btn p-0 border-0 bg-transparent"
+                title="Preview image"
+                aria-label="Preview image"
+                (click)="onOpenFromButton(row)">
+                <img
+                  [src]="resolveThumbnailUrl(row)"
+                  alt=""
+                  (error)="onThumbnailError(row)"
+                  class="img-thumbnail mb-2"
+                  style="max-height: 200px; width: 100%; object-fit: cover;" />
+              </button>
+
+              <ng-template #mediaPlaceholder>
+                <button
+                  type="button"
+                  class="btn w-100 d-flex flex-column align-items-center justify-content-center border rounded bg-body-tertiary mb-2"
+                  style="height: 150px;"
+                  title="Open attachment"
+                  aria-label="Open attachment"
+                  (click)="onOpenFromButton(row)">
+                  <i [ngClass]="getFileTypeIconClass(row)" style="font-size: 2rem;"></i>
+                  <small class="text-muted mt-2">Click to view</small>
+                </button>
+              </ng-template>
+
+              <p class="small text-muted mb-2 text-truncate" [title]="row?.fileName || ''">{{ row?.fileName }}</p>
+              <div class="d-flex justify-content-center gap-2">
+                <button
+                  class="btn btn-sm btn-outline-primary"
+                  type="button"
+                  title="Download attachment"
+                  aria-label="Download attachment"
+                  (click)="onDownload(row, $event)">
+                  <i class="mdi mdi-download"></i>
+                </button>
+                <button
+                  *ngIf="showDelete"
+                  class="btn btn-sm btn-outline-danger"
+                  [disabled]="disableDelete"
+                  [title]="deleteTitle"
+                  aria-label="Delete attachment"
+                  type="button"
+                  (click)="onDelete(row, i)">
+                  <i class="mdi mdi-delete"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="form-text mt-2" *ngIf="showHelperText">
+        <i class="mdi mdi-information-outline me-1"></i>
+        {{ helperText }}
+      </div>
+    </div>
+
     <div class="mb-3" *ngIf="!isLoading && attachments?.length > 0 && viewMode === 'table'">
       <div class="table-responsive border rounded" [style.max-height]="maxHeight" style="overflow-y: auto;">
         <table class="table table-sm align-middle mb-0">
@@ -141,13 +209,19 @@ import { AttachmentsService } from "@app/core/api/attachments/attachments.servic
 export class UploadedAttachmentsListComponent implements OnChanges {
   @Input() set attachments(value: any[]) {
     this._attachments = value;
+
+    // When eager preview resolution is enabled, resolve signed URLs as rows arrive.
+    if (this.resolvePreviewUrls && this._attachments?.length > 0) {
+      this.resolvedIds.clear();
+      this.resolveAttachmentUrls();
+    }
   }
   get attachments(): any[] {
     return this._attachments;
   }
   private _attachments: any[] = [];
 
-  @Input() viewMode: "card" | "table" = "card";
+  @Input() viewMode: "card" | "table" | "media-grid" = "card";
   @Input() isLoading = false;
   @Input() loadingText = "Loading attachments...";
   @Input() showThumbnails = false;
@@ -157,6 +231,7 @@ export class UploadedAttachmentsListComponent implements OnChanges {
   @Input() maxHeight = "300px";
   @Input() showHelperText = true;
   @Input() helperText = "Click on filenames to preview, or use direct download links if preview fails.";
+  @Input() showMediaBadge = false;
   @Input() resolvePreviewUrls = false;
 
   @Output() openRequested = new EventEmitter<any>();
@@ -184,7 +259,7 @@ export class UploadedAttachmentsListComponent implements OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    // If resolvePreviewUrls flag is explicitly set to true, resolve URLs on demand
+    // If resolvePreviewUrls flag is explicitly set to true, resolve URLs for current rows.
     if (changes['resolvePreviewUrls'] && this.resolvePreviewUrls && this._attachments?.length > 0) {
       this.resolvedIds.clear();
       this.resolveAttachmentUrls();
@@ -292,5 +367,18 @@ export class UploadedAttachmentsListComponent implements OnChanges {
     if (['msg', 'eml'].includes(ext)) return 'Email message';
 
     return `${ext.toUpperCase()} file`;
+  }
+
+  getMediaBadgeLabel(row: any): string {
+    const title = String(row?.title || '').trim();
+    if (!title) {
+      return 'Attachment';
+    }
+
+    return title
+      .replace(/^Vehicle\s+/i, '')
+      .replace(/\s+View$/i, '')
+      .replace(/\s+Photo\s*\d*$/i, '')
+      .trim() || 'Attachment';
   }
 }

@@ -87,106 +87,44 @@
               </h3>
             </div>
 
-            <!-- Existing Attachments Display -->
-            <div class="mb-4" *ngIf="attachments && attachments.length > 0">
-              <h6 class="mb-2">Current Attachments:</h6>
-              <div *ngFor="let attachment of attachments; let i = index" class="d-flex align-items-center p-3 border rounded mb-2 bg-light">
-                <i class="mdi mdi-file-document me-2 text-warning"></i>
-                <div class="flex-grow-1" style="overflow:hidden; text-overflow: ellipsis;">
-                  <p class="mb-0 small fw-medium">{{attachment.fileName}}</p>
-                  <small class="text-muted">{{attachment.fileSizeConv}}</small>
-                </div>
-                <div class="btn-group">
-                  <button type="button"
-                     class="btn btn-sm btn-outline-info"
-                     (click)="openAttachment(attachment)"
-                     title="View attachment">
-                    <i class="mdi mdi-download"></i>
-                  </button>
-                  <button type="button" 
-                          class="btn btn-sm btn-outline-danger"
-                          (click)="deleteAttachment(attachment.id, i)"
-                          title="Delete attachment">
-                    <i class="mdi mdi-delete"></i>
-                  </button>
-                </div>
-              </div>
+            <app-uploaded-attachments-list
+              [attachments]="attachments"
+              [viewMode]="'table'"
+              [showThumbnails]="true"
+              [showDelete]="true"
+              [disableDelete]="isLoading"
+              [isLoading]="attachmentsLoading || isLoading"
+              [showHelperText]="true"
+              [helperText]="'Click on filenames to preview, or use direct download links if preview fails.'"
+              (openRequested)="openAttachment($event)"
+              (downloadRequested)="downloadAttachment($event)"
+              (deleteRequested)="deleteAttachment($event.id, $event.index)">
+            </app-uploaded-attachments-list>
+
+            <div class="mb-3">
+              <button
+                type="button"
+                class="btn btn-primary btn-sm"
+                (click)="uploadModal?.openModal()"
+                [disabled]="isLoading">
+                <i class="mdi mdi-upload me-1"></i>Add Attachments
+              </button>
+              <p class="text-muted small mt-2 mb-0">Files upload when you click Upload in this modal.</p>
             </div>
 
-            <div class="mb-4" *ngIf="imageAttachments.length > 0">
-              <h6 class="mb-2">Image Attachments</h6>
-              <div class="row g-3">
-                <div class="col-6 col-md-4 col-lg-3" *ngFor="let attachment of imageAttachments">
-                  <div class="card h-100 border-0 shadow-sm">
-                    <img
-                      [src]="attachment.previewUrl"
-                      [alt]="attachment.fileName"
-                      class="card-img-top"
-                      style="height: 140px; object-fit: cover; cursor: pointer;"
-                      (click)="openAttachment(attachment)"
-                      (error)="onPreviewError(attachment)"
-                    />
-                    <div class="card-body py-2 px-2">
-                      <p class="small text-muted mb-0 text-truncate" [title]="attachment.fileName">{{ attachment.fileName }}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Upload New Files -->
-            <div class="mt-3">
-              <label for="file" class="form-label">Upload Additional Documents</label>
-              <input id="file" type="file" multiple class="form-control" (change)="onFileChange($event)">
-              <div class="form-text">
-                <i class="mdi mdi-information-outline me-1"></i>
-                Accepted file types: images, PDFs, documents. Maximum 10MB per file.
-              </div>
-
-              <div class="mt-3" *ngIf="selectedImagePreviews.length > 0">
-                <h6 class="mb-2">Selected Image Preview</h6>
-                <div class="row g-3">
-                  <div class="col-6 col-md-4 col-lg-3" *ngFor="let item of selectedImagePreviews">
-                    <div class="card h-100 border-0 shadow-sm">
-                      <img [src]="item.url" [alt]="item.name" class="card-img-top" style="height: 140px; object-fit: cover;">
-                      <div class="card-body py-2 px-2">
-                        <p class="small text-muted mb-0 text-truncate" [title]="item.name">{{ item.name }}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <!-- Upload Button and Pending Files Notice -->
-              <div class="mt-2" *ngIf="myFiles && myFiles.length > 0">
-                <div class="alert alert-info d-flex align-items-center mb-2" role="alert">
-                  <i class="mdi mdi-clock-outline me-2"></i>
-                  <div class="flex-grow-1">
-                    <strong>{{myFiles.length}} file(s) selected</strong>
-                    <br>
-                    <small>Files will be uploaded when you save the form, or click "Upload Now" below.</small>
-                  </div>
-                </div>
-                
-                <button type="button" 
-                        class="btn btn-outline-primary" 
-                        [disabled]="isLoading" 
-                        (click)="onUploadAttachments()">
-                  @if (isLoading) {
-                  <span class="spinner-border spinner-border-sm me-2" role="status"></span>
-                  Uploading...
-                  } @else {
-                  <i class="mdi mdi-upload me-1"></i>Upload Now ({{myFiles.length}} files)
-                  }
-                </button>
-              </div>
+            <div *ngIf="myFiles.length > 0" class="mt-3">
+              <app-pending-uploads-list
+                [files]="myFiles"
+                [disabled]="isLoading"
+                (removeRequested)="removeFile($event)">
+              </app-pending-uploads-list>
             </div>
 
             <!-- No Attachments Message -->
             <div class="text-center py-4" *ngIf="!attachments?.length">
               <i class="mdi mdi-file-outline text-muted" style="font-size: 3rem;"></i>
               <p class="text-muted mb-0">No attachments found</p>
-              <small class="text-muted">Upload supporting documents using the file input above.</small>
+              <small class="text-muted">Upload supporting documents using the Add Attachments button above.</small>
             </div>
           </div>
         </div>
@@ -210,3 +148,24 @@
 
 
 </div>
+
+<app-upload-attachments-modal
+  #uploadModal
+  [files]="myFiles"
+  [disabled]="isLoading"
+  [isUploading]="isLoading"
+  [accept]="'*/*'"
+  [multiple]="true"
+  [allowPaste]="true"
+  [openPickerOnContainerClick]="false"
+  [chooseLabel]="'Choose files'"
+  [dropLabel]="'or drag them here.'"
+  [pasteHint]="'Copy and paste one or more files into this area.'"
+  [showPasteHint]="true"
+  [uploadTriggerMode]="uploadTriggerMode"
+  [manualFlowText]="'Files upload when you click Upload in this modal.'"
+  [autoFlowText]="'Files upload automatically after you add them.'"
+  (filesAdded)="onAttachmentFilesAdded($event)"
+  (removeRequested)="removeFile($event)"
+  (uploadRequested)="onUploadAttachments()">
+</app-upload-attachments-modal>

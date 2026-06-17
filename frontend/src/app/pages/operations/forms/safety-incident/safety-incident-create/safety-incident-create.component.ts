@@ -1,9 +1,7 @@
 import {
   Component,
-  ElementRef,
   HostListener,
   Input,
-  ViewChild,
 } from "@angular/core";
 import { SharedModule } from "@app/shared/shared.module";
 import { Router } from "@angular/router";
@@ -16,10 +14,17 @@ import { SafetyIncidentFormComponent } from "../safety-incident-form/safety-inci
 import { FILE, NAVIGATION_ROUTE } from "../safety-incident-constant";
 import { SafetyIncidentService } from "@app/core/api/operations/safety-incident/safety-incident.service";
 import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
+import { UploadAttachmentsModalComponent } from "@app/shared/components/attachments/upload-attachments-modal/upload-attachments-modal.component";
+import { PendingUploadsListComponent } from "@app/shared/components/attachments/pending-uploads-list/pending-uploads-list.component";
 
 @Component({
   standalone: true,
-  imports: [SharedModule, SafetyIncidentFormComponent],
+  imports: [
+    SharedModule,
+    SafetyIncidentFormComponent,
+    UploadAttachmentsModalComponent,
+    PendingUploadsListComponent,
+  ],
   selector: "app-safety-incident-create",
   templateUrl: "./safety-incident-create.component.html",
 })
@@ -69,6 +74,9 @@ export class SafetyIncidentCreateComponent {
 
   onPrint;
 
+  selectedFiles: File[] = [];
+  uploadTriggerMode: "manual" | "on-add" | "parent-submit" = "parent-submit";
+
   @HostListener("window:beforeunload")
   canDeactivate() {
     if (this.form?.dirty) {
@@ -88,9 +96,9 @@ export class SafetyIncidentCreateComponent {
       this.isLoading = true;
       let { insertId } = await this.api.create(this.form.value);
 
-      for (var i = 0; i < this.myFiles.length; i++) {
+      for (const file of this.selectedFiles) {
         const formData = new FormData();
-        formData.append("file", this.myFiles[i]);
+        formData.append("file", file);
         formData.append("field", FILE.FIELD);
         formData.append("uniqueData", insertId.toString());
         formData.append("subFolder", FILE.FOLDER);
@@ -120,46 +128,22 @@ export class SafetyIncidentCreateComponent {
       },
       { emitEvent: false }
     );
-    this.clearImagePreviews();
-    this.myInputVariable.nativeElement.value = "";
+    this.selectedFiles = [];
   }
 
   onCancel() {
     this.goBack();
   }
 
-  myFiles: string[] | any = [];
-  imagePreviews: Array<{ name: string; url: string }> = [];
-
-  private isImageFile(file: File): boolean {
-    if (!file?.name) return false;
-    const imageExtensions = ["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg", "avif"];
-    const extension = file.name.split(".").pop()?.toLowerCase();
-    return !!extension && imageExtensions.includes(extension);
-  }
-
-  private clearImagePreviews() {
-    for (const row of this.imagePreviews) {
-      URL.revokeObjectURL(row.url);
+  onAttachmentFilesAdded(files: File[]) {
+    if (!files?.length) {
+      return;
     }
-    this.imagePreviews = [];
+
+    this.selectedFiles = [...this.selectedFiles, ...files];
   }
 
-  onFileChange(event: any) {
-    this.clearImagePreviews();
-    this.myFiles = [];
-    for (var i = 0; i < event.target.files.length; i++) {
-      const file = event.target.files[i] as File;
-      this.myFiles.push(file);
-      if (this.isImageFile(file)) {
-        this.imagePreviews.push({
-          name: file.name,
-          url: URL.createObjectURL(file),
-        });
-      }
-    }
+  removeFile(index: number) {
+    this.selectedFiles.splice(index, 1);
   }
-
-  @ViewChild("myInput")
-  myInputVariable: ElementRef;
 }

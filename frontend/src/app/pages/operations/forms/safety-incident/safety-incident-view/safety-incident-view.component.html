@@ -149,16 +149,17 @@
             <!-- Supporting Documentation -->
             <div class="col-md-12" *ngIf="attachments && attachments.length > 0">
               <h6 class="mb-2">Supporting Documentation:</h6>
-              <div *ngFor="let attachment of attachments" class="d-flex align-items-center p-2 border rounded mb-2">
-                <i class="mdi mdi-file-document me-2 text-warning"></i>
-                <div class="flex-grow-1" style="overflow:hidden; text-overflow: ellipsis;">
-                  <p class="mb-0 small fw-medium">{{attachment.fileName}}</p>
-                  <small class="text-muted">{{attachment.fileSizeConv}}</small>
-                </div>
-                <button type="button" class="btn btn-sm btn-outline-warning" (click)="openAttachment(attachment)">
-                  <i class="mdi mdi-download"></i>
-                </button>
-              </div>
+              <app-uploaded-attachments-list
+                [attachments]="attachments"
+                [viewMode]="'table'"
+                [showThumbnails]="true"
+                [showDelete]="false"
+                [isLoading]="attachmentsLoading || isLoading"
+                [showHelperText]="true"
+                [helperText]="'Click on filenames to preview, or use direct download links if preview fails.'"
+                (openRequested)="openAttachment($event)"
+                (downloadRequested)="downloadAttachment($event)">
+              </app-uploaded-attachments-list>
             </div>
 
           </div>
