@@ -68,8 +68,11 @@ export class AttachmentsRepository extends BaseRepository<RowDataPacket> {
     const params: unknown[] = [];
 
     let sql = `
-      SELECT *
-      FROM attachments
+      SELECT
+        a.*,
+        NULLIF(TRIM(CONCAT(COALESCE(u.first, ''), ' ', COALESCE(u.last, ''))), '') AS createdByName
+      FROM attachments a
+      LEFT JOIN db.users u ON u.id = a.createdBy
       WHERE 1 = 1
     `;
 
@@ -78,11 +81,11 @@ export class AttachmentsRepository extends BaseRepository<RowDataPacket> {
         continue;
       }
 
-      sql += ` AND \`${key}\` = ?`;
+      sql += ` AND a.\`${key}\` = ?`;
       params.push(value);
     }
 
-    sql += ` ORDER BY CASE WHEN date_of_service IS NOT NULL THEN date_of_service ELSE id END DESC`;
+    sql += ` ORDER BY CASE WHEN a.date_of_service IS NOT NULL THEN a.date_of_service ELSE a.id END DESC`;
 
     return this.rawQuery<RowDataPacket>(sql, params);
   }

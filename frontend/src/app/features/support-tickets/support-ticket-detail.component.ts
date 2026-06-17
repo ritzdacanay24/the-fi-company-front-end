@@ -8,7 +8,7 @@ import { SupportTicketsService } from '@app/core/api/support-tickets/support-tic
 import { NotificationService } from '@app/core/services/notification.service';
 import { BreadcrumbComponent } from '@app/shared/components/breadcrumb/breadcrumb.component';
 import { FileViewerModalComponent } from '@app/shared/components/file-viewer-modal/file-viewer-modal.component';
-import { InlineAttachmentDropzoneComponent } from '@app/shared/components/inline-attachment-dropzone/inline-attachment-dropzone.component';
+import { InlineAttachmentDropzoneComponent } from '@app/shared/components/attachments/inline-attachment-dropzone/inline-attachment-dropzone.component';
 import {
   SUPPORT_TICKET_PRIORITY_LABELS,
   SUPPORT_TICKET_STATUS_LABELS,

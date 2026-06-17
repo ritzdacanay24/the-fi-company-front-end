@@ -26,7 +26,7 @@ import { WordParserService } from './services/word-parser.service';
 import { RevisionDescriptionDialogComponent } from './components/revision-description-dialog.component';
 import { FileViewerModalComponent } from '@app/shared/components/file-viewer-modal/file-viewer-modal.component';
 import { TransferOwnershipModalComponent } from '@app/shared/components/transfer-ownership-modal/transfer-ownership-modal.component';
-import { InlineAttachmentDropzoneComponent } from '@app/shared/components/inline-attachment-dropzone/inline-attachment-dropzone.component';
+import { InlineAttachmentDropzoneComponent } from '@app/shared/components/attachments/inline-attachment-dropzone/inline-attachment-dropzone.component';
 
 interface SampleImage {
   id?: string;

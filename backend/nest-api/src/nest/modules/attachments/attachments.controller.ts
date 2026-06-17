@@ -2,6 +2,7 @@ import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query, U
 import { Permissions, RolePermissionGuard } from '../access-control';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AttachmentsService } from './attachments.service';
+import { CurrentUserId } from '@/nest/decorators/current-user-id.decorator';
 
 @Controller('attachments')
 @UseGuards(RolePermissionGuard)
@@ -24,9 +25,10 @@ export class AttachmentsController {
   @UseInterceptors(FileInterceptor('file'))
   async create(
     @Body() payload: Record<string, unknown>,
+    @CurrentUserId() currentUserId: number,
     @UploadedFile() file?: { originalname?: string; buffer?: Buffer },
   ) {
-    return this.service.create(payload, file);
+    return this.service.create(payload, currentUserId, file);
   }
 
   @Get('getByWorkOrderId')

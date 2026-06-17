@@ -162,7 +162,7 @@ export class ShortagesEditComponent {
 
   attachments: any = []
   async getAttachments() {
-    this.attachments = await this.attachmentsService.find({ field: 'Vehicle Information', uniqueId: this.id })
+    this.attachments = await this.attachmentsService.find({ field: 'Shortages', uniqueId: this.id })
   }
 
   async deleteAttachment(id, index) {
@@ -189,9 +189,9 @@ export class ShortagesEditComponent {
       const formData = new FormData();
       for (var i = 0; i < this.myFiles.length; i++) {
         formData.append("file", this.myFiles[i]);
-        formData.append("field", "Vehicle Information");
+        formData.append("field", "Shortages");
         formData.append("uniqueData", `${this.id}`);
-        formData.append("subFolder", 'vehicleInformation');
+        formData.append("subFolder", 'operations/shortages');
         try {
           await this.attachmentsService.uploadfile(formData);
           totalAttachments++

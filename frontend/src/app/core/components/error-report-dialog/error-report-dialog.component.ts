@@ -17,7 +17,7 @@ import { QuillModule } from 'ngx-quill';
 import { SupportTicketDraft, SupportTicketDraftService } from '@app/core/services/support-ticket-draft.service';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import { FileViewerModalComponent } from '@app/shared/components/file-viewer-modal/file-viewer-modal.component';
-import { InlineAttachmentDropzoneComponent } from '@app/shared/components/inline-attachment-dropzone/inline-attachment-dropzone.component';
+import { InlineAttachmentDropzoneComponent } from '@app/shared/components/attachments/inline-attachment-dropzone/inline-attachment-dropzone.component';
 
 /**
  * Submit Ticket Dialog

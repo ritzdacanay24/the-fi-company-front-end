@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, SimpleChanges } from "@angular/core";
+import { Component, Input, OnInit, SimpleChanges, ViewChild } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
 import { SharedModule } from "@app/shared/shared.module";
 import { NgbNavModule } from "@ng-bootstrap/ng-bootstrap";
@@ -14,6 +14,7 @@ import { ColDef, GridOptions } from "ag-grid-community";
 import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { FileViewerModalComponent } from "@app/shared/components/file-viewer-modal/file-viewer-modal.component";
+import { UploadAttachmentsModalComponent } from "@app/shared/components/attachments/upload-attachments-modal/upload-attachments-modal.component";
 
 @Component({
   standalone: true,
@@ -21,6 +22,7 @@ import { FileViewerModalComponent } from "@app/shared/components/file-viewer-mod
     SharedModule,
     NgbNavModule,
     AgGridModule,
+    UploadAttachmentsModalComponent,
   ],
   selector: "app-ncr-attachments-list",
   templateUrl: "./ncr-attachments-list.component.html",
@@ -38,6 +40,8 @@ export class NcrAttachmentsListComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {}
+
+  @ViewChild(UploadAttachmentsModalComponent) uploadModal: UploadAttachmentsModalComponent | null = null;
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes["id"]) {
@@ -190,34 +194,55 @@ export class NcrAttachmentsListComponent implements OnInit {
     },
   };
 
-  file: File = null;
+  selectedFiles: File[] = [];
+  uploadTriggerMode: "manual" | "on-add" = "manual";
 
-  myFiles: string[] = [];
+  openUploadModal() {
+    this.uploadModal?.openModal();
+  }
 
-  onFilechange(event: any) {
-    this.myFiles = [];
-    for (var i = 0; i < event.target.files.length; i++) {
-      this.myFiles.push(event.target.files[i]);
-    }
+  onAttachmentFilesAdded(files: File[]) {
+    this.selectedFiles = [...this.selectedFiles, ...files];
+  }
+
+  removeFile(index: number) {
+    this.selectedFiles = this.selectedFiles.filter((_, i) => i !== index);
   }
 
   async onUploadAttachments() {
-    if (this.myFiles) {
-      let totalAttachments = 0;
-      this.isLoading = true;
+    if (this.isLoading || this.selectedFiles.length === 0) return;
+
+    const filesToUpload = [...this.selectedFiles];
+    this.selectedFiles = [];
+
+    let totalAttachments = 0;
+    this.isLoading = true;
+
+    for (const file of filesToUpload) {
       const formData = new FormData();
-      for (var i = 0; i < this.myFiles.length; i++) {
-        formData.append("file", this.myFiles[i]);
-        formData.append("field", "NCR");
-        formData.append("uniqueData", `${this.id}`);
-        formData.append("subFolder", "quality/ncr");
-        try {
-          await this.attachmentsService.uploadfile(formData);
-          totalAttachments++;
-        } catch (err) {}
-      }
-      this.isLoading = false;
+      formData.append("file", file);
+      formData.append("field", "NCR");
+      formData.append("uniqueData", `${this.id}`);
+      formData.append("subFolder", "quality/ncr");
+
+      try {
+        await this.attachmentsService.uploadfile(formData);
+        totalAttachments++;
+      } catch (err) {}
+    }
+
+    this.isLoading = false;
+
+    if (totalAttachments > 0) {
       await this.getData();
+      this.toastrService.success(`${totalAttachments} attachment${totalAttachments > 1 ? "s" : ""} uploaded`);
+      if (this.uploadTriggerMode === "manual") {
+        this.uploadModal?.closeModal();
+      }
+    }
+
+    if (this.uploadTriggerMode === "on-add" && this.selectedFiles.length > 0) {
+      await this.onUploadAttachments();
     }
   }
 }

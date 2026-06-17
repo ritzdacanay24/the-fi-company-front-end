@@ -1,6 +1,5 @@
 import {
   Component,
-  ElementRef,
   HostListener,
   Input,
   ViewChild,
@@ -22,10 +21,21 @@ import { QirResponseService } from "@app/core/api/quality/qir-response.service";
 import { QirResponseFormComponent } from "../qir-response/qir-response-form/qir-response-form.component";
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { FileViewerModalComponent } from "@app/shared/components/file-viewer-modal/file-viewer-modal.component";
+import { UploadAttachmentsModalComponent } from "@app/shared/components/attachments/upload-attachments-modal/upload-attachments-modal.component";
+import { PendingUploadsListComponent } from "@app/shared/components/attachments/pending-uploads-list/pending-uploads-list.component";
+import { UploadedAttachmentsListComponent } from "@app/shared/components/attachments/uploaded-attachments-list/uploaded-attachments-list.component";
+import Swal from "sweetalert2";
 
 @Component({
   standalone: true,
-  imports: [SharedModule, QirFormComponent, QirResponseFormComponent],
+  imports: [
+    SharedModule,
+    QirFormComponent,
+    QirResponseFormComponent,
+    UploadAttachmentsModalComponent,
+    PendingUploadsListComponent,
+    UploadedAttachmentsListComponent,
+  ],
   selector: "app-qir-edit",
   templateUrl: "./qir-edit.component.html",
   styleUrls: ["./qir-edit.component.scss"],
@@ -54,8 +64,6 @@ export class QirEditComponent {
     private modalService: NgbModal
   ) {}
 
-  @ViewChild("fileInput") fileInput?: ElementRef<HTMLInputElement>;
-
   ngOnInit(): void {
     this.activatedRoute.queryParams.subscribe((params) => {
       this.id = params["id"];
@@ -64,6 +72,8 @@ export class QirEditComponent {
     if (this.id) this.getData();
   }
 
+  @ViewChild(UploadAttachmentsModalComponent) uploadModal: UploadAttachmentsModalComponent | null = null;
+
   title = "Edit Quality Incident Report";
 
   form: MyFormGroup<IQirForm>;
@@ -71,7 +81,6 @@ export class QirEditComponent {
   id = null;
 
   isLoading = false;
-  isDragOver = false;
 
   submitted = false;
 
@@ -220,7 +229,7 @@ export class QirEditComponent {
         this.form.get("email").disable();
       }
 
-      this.getAttachments();
+      await this.getAttachments();
     } catch (err) {}
   }
 
@@ -349,6 +358,7 @@ export class QirEditComponent {
   }
 
   attachments: any = [];
+  attachmentsLoading = false;
 
   get imageAttachments() {
     return this.attachments.filter(
@@ -357,26 +367,31 @@ export class QirEditComponent {
   }
 
   async getAttachments() {
-    const attachments = await this.attachmentsService.find({
-      field: "Capa Request",
-      uniqueId: this.id,
-    });
+    this.attachmentsLoading = true;
+    try {
+      const attachments = await this.attachmentsService.find({
+        field: "Capa Request",
+        uniqueId: this.id,
+      });
 
-    this.attachments = await Promise.all(
-      attachments.map(async (attachment) => {
-        const isImage = this.isImageAttachment(attachment?.fileName);
-        const previewUrl = isImage
-          ? await this.resolveAttachmentUrl(attachment, false)
-          : null;
+      this.attachments = await Promise.all(
+        attachments.map(async (attachment) => {
+          const isImage = this.isImageAttachment(attachment?.fileName);
+          const previewUrl = isImage
+            ? await this.resolveAttachmentUrl(attachment, false)
+            : null;
 
-        return {
-          ...attachment,
-          isImage,
-          previewUrl,
-          previewFailed: !previewUrl && isImage,
-        };
-      })
-    );
+          return {
+            ...attachment,
+            isImage,
+            previewUrl,
+            previewFailed: !previewUrl && isImage,
+          };
+        })
+      );
+    } finally {
+      this.attachmentsLoading = false;
+    }
   }
 
   private getLegacyAttachmentUrl(fileName: string): string {
@@ -461,54 +476,32 @@ export class QirEditComponent {
   }
 
   async deleteAttachment(id, index) {
-    if (!confirm("Are you sure you want to remove attachment?")) return;
+    const result = await Swal.fire({
+      title: "Remove attachment?",
+      text: "This will permanently remove the attachment from this QIR.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, remove",
+      cancelButtonText: "Cancel",
+      confirmButtonColor: "#d33",
+    });
+
+    if (!result.isConfirmed) return;
+
     await this.attachmentsService.delete(id);
     this.attachments.splice(index, 1);
   }
 
   file: File = null;
-  myFiles: File[] = [];
   selectedFiles: File[] = [];
+  uploadTriggerMode: "manual" | "on-add" = "manual";
 
-  openFilePicker() {
-    if (this.isQirClosed) return;
-    this.fileInput?.nativeElement.click();
-  }
-
-  onFilechange(event: Event) {
-    const input = event.target as HTMLInputElement;
-    const files = input.files ? Array.from(input.files) : [];
-    this.addFiles(files);
-    this.resetFileInput();
-  }
-
-  onDragOver(event: DragEvent) {
-    event.preventDefault();
-    event.stopPropagation();
-    if (this.isQirClosed) return;
-    this.isDragOver = true;
-  }
-
-  onDragLeave(event: DragEvent) {
-    event.preventDefault();
-    event.stopPropagation();
-    this.isDragOver = false;
-  }
-
-  onDrop(event: DragEvent) {
-    event.preventDefault();
-    event.stopPropagation();
-    if (this.isQirClosed) return;
-
-    this.isDragOver = false;
-    const files = event.dataTransfer?.files ? Array.from(event.dataTransfer.files) : [];
+  onAttachmentFilesAdded(files: File[]) {
     this.addFiles(files);
   }
 
   removeFile(index: number) {
     this.selectedFiles.splice(index, 1);
-    this.myFiles = [...this.selectedFiles];
-    this.resetFileInput();
   }
 
   private addFiles(files: File[]) {
@@ -523,26 +516,19 @@ export class QirEditComponent {
     });
 
     this.selectedFiles = Array.from(dedupedFiles.values());
-    this.myFiles = [...this.selectedFiles];
   }
 
   private getFileKey(file: File) {
     return `${file.name}-${file.size}-${file.lastModified}`;
   }
 
-  private resetFileInput() {
-    if (this.fileInput) {
-      this.fileInput.nativeElement.value = "";
-    }
-  }
-
   async onUploadAttachments() {
-    if (this.myFiles.length === 0) {
+    if (this.selectedFiles.length === 0) {
       return;
     }
 
     this.isLoading = true;
-    for (const file of this.myFiles) {
+    for (const file of this.selectedFiles) {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("field", "Capa Request");
@@ -553,13 +539,11 @@ export class QirEditComponent {
       } catch (err) {}
     }
 
-    this.resetFileInput();
-
     this.isLoading = false;
     try {
       this.getAttachments();
-      this.myFiles = [];
       this.selectedFiles = [];
+      this.uploadModal?.closeModal();
     } catch (err) {}
   }
 

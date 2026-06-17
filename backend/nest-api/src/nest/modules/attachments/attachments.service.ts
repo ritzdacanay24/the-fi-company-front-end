@@ -3,6 +3,18 @@ import { extname } from 'node:path';
 import { AttachmentsMetadataService } from './attachments-metadata.service';
 import { FileStorageService } from '@/nest/modules/file-storage/file-storage.service';
 
+interface CreateAttachmentPayload extends Record<string, unknown> {
+  createdBy?: number | string;
+  createdDate?: string;
+  uniqueId?: number | string;
+  uniqueData?: number | string;
+  ext?: string;
+  link?: string;
+  storage_source?: string;
+  subFolder?: string;
+  folderName?: string;
+}
+
 @Injectable()
 export class AttachmentsService {
   constructor(
@@ -11,7 +23,8 @@ export class AttachmentsService {
   ) {}
 
   async create(
-    payload: Record<string, unknown>,
+    payload: CreateAttachmentPayload,
+    currentUserId: number,
     file?: { originalname?: string; buffer?: Buffer },
   ) {
     const subFolder = this.resolveRequestedSubFolder(payload);
@@ -31,6 +44,7 @@ export class AttachmentsService {
     const normalizedPayload = this.normalizeCreatePayload(
       payload,
       storedFileName,
+      currentUserId,
       file?.originalname,
       stored ? { key: stored.key, bucket: stored.bucket } : undefined,
     );
@@ -352,8 +366,9 @@ export class AttachmentsService {
   }
 
   private normalizeCreatePayload(
-    payload: Record<string, unknown>,
+    payload: CreateAttachmentPayload,
     storedFileName: string,
+    currentUserId: number,
     originalName?: string,
     bucketMeta?: { key: string; bucket: string },
   ): Record<string, unknown> {
@@ -361,6 +376,7 @@ export class AttachmentsService {
     const uniqueId = payload.uniqueId ?? payload.uniqueData;
     const ext = this.normalizeExtension(payload.ext, originalName);
     const subFolder = this.resolveSubFolder(payload);
+    const createdBy = this.normalizeCreatedBy(payload.createdBy, currentUserId);
     const link = bucketMeta?.key
       ? this.normalizeBucketLink(bucketMeta.key)
       : this.normalizeLink(payload.link, storedFileName, subFolder);
@@ -368,6 +384,7 @@ export class AttachmentsService {
     return {
       ...payload,
       fileName: storedFileName,
+      createdBy,
       createdDate,
       uniqueId,
       link,
@@ -378,6 +395,19 @@ export class AttachmentsService {
       storage_bucket: bucketMeta?.bucket || undefined,
       storage_key: bucketMeta?.key || undefined,
     };
+  }
+
+  private normalizeCreatedBy(payloadCreatedBy: unknown, currentUserId: number): number {
+    const fromPayload = Number(payloadCreatedBy);
+    if (Number.isInteger(fromPayload) && fromPayload > 0) {
+      return fromPayload;
+    }
+
+    if (Number.isInteger(currentUserId) && currentUserId > 0) {
+      return currentUserId;
+    }
+
+    throw new BadRequestException('createdBy could not be resolved from authenticated user context');
   }
 
   private normalizeStorageSource(value: unknown): 'local' | 'legacy' | 'bucket' | undefined {
