@@ -9,8 +9,7 @@ import { ForkliftInspectionService } from "@app/core/api/operations/forklift-ins
 import { ForkliftInspectionFormComponent } from "../forklift-inspection-form/forklift-inspection-form.component";
 import { AuthenticationService } from "@app/core/services/auth.service";
 import { resetVehicleInspectionFormValues } from "../forklift-inspection-form/formData";
-import { UploadService } from "@app/core/api/upload/upload.service";
-import { firstValueFrom } from "rxjs";
+import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
 
 @Component({
   standalone: true,
@@ -24,7 +23,7 @@ export class ForkliftInspectionCreateComponent {
     private api: ForkliftInspectionService,
     private toastrService: ToastrService,
     private authenticationService: AuthenticationService,
-    private uploadService: UploadService
+    private attachmentsService: AttachmentsService
   ) {}
 
   ngOnInit(): void {}
@@ -102,10 +101,9 @@ export class ForkliftInspectionCreateComponent {
         formData.append("file", this.myFiles[i]);
         formData.append("field", "Vehicle Inspection");
         formData.append("uniqueData", uniqueData);
-        formData.append("folderName", "vehicleInformation");
-        formData.append("subFolder", "vehicleInformation");
+        formData.append("subFolder", "inspections/forklift");
 
-        await firstValueFrom(this.uploadService.uploadAttachmentV2(formData));
+        await this.attachmentsService.uploadfile(formData);
       }
 
       this.isLoading = false;

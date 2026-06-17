@@ -993,8 +993,8 @@ export class ChecklistExecutionComponent implements OnInit, OnDestroy {
     }
 
     const clean = raw.startsWith('/') ? raw : `/${raw}`;
-    if (clean.startsWith('/uploads/')) {
-      return `https://dashboard.eye-fi.com${clean}`;
+    if (clean.startsWith('/')) {
+      return `${window.location.origin}${clean}`;
     }
 
     return clean;

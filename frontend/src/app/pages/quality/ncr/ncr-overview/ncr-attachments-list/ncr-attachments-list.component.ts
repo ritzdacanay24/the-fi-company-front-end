@@ -77,10 +77,6 @@ export class NcrAttachmentsListComponent implements OnInit {
     });
   }
 
-  private getLegacyNcrAttachmentUrl(fileName: string): string {
-    return `https://dashboard.eye-fi.com/attachments/ncr/${encodeURIComponent(fileName)}`;
-  }
-
   private openFileViewerModal(url: string, fileName: string): void {
     const modalRef = this.modalService.open(FileViewerModalComponent, {
       size: "xl",
@@ -94,8 +90,12 @@ export class NcrAttachmentsListComponent implements OnInit {
   }
 
   async onDelete(data) {
-    if (this.authenticationService.currentUserValue.id != data.createdBy) {
-      alert("Access denied. ");
+    const currentUserId = String(this.authenticationService.currentUserValue?.id ?? "").trim();
+    const createdBy = String(data?.createdBy ?? "").trim();
+
+    // Only enforce ownership when createdBy is present and comparable.
+    if (createdBy && currentUserId && createdBy !== currentUserId) {
+      this.toastrService.error("Access denied.");
       return;
     }
 
@@ -103,15 +103,17 @@ export class NcrAttachmentsListComponent implements OnInit {
 
     try {
       await this.attachmentsService.delete(data.id);
-      this.getData();
-    } catch (err) {}
+      await this.getData();
+      this.toastrService.success("Attachment deleted");
+    } catch (err) {
+      this.toastrService.error("Unable to delete attachment");
+    }
   }
 
   async onEdit(row: any) {
     try {
       const resolved = await this.attachmentsService.getViewById(row?.id);
-      const resolvedUrl =
-        resolved?.url || row?.link || this.getLegacyNcrAttachmentUrl(String(row?.fileName || ""));
+      const resolvedUrl = resolved?.url || row?.link || '';
 
       if (!resolvedUrl) {
         this.toastrService.warning("Attachment URL not available");
@@ -208,7 +210,7 @@ export class NcrAttachmentsListComponent implements OnInit {
         formData.append("file", this.myFiles[i]);
         formData.append("field", "NCR");
         formData.append("uniqueData", `${this.id}`);
-        formData.append("folderName", "ncr");
+        formData.append("subFolder", "quality/ncr");
         try {
           await this.attachmentsService.uploadfile(formData);
           totalAttachments++;

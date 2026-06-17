@@ -539,7 +539,7 @@ export class QirEditComponent {
       formData.append("file", file);
       formData.append("field", "Capa Request");
       formData.append("uniqueData", `${this.id}`);
-      formData.append("folderName", "capa");
+      formData.append("subFolder", "capa");
       try {
         await this.attachmentsService.uploadfile(formData);
       } catch (err) {}

@@ -15,7 +15,6 @@ import Swal from 'sweetalert2';
 import { PhotoChecklistConfigService, ChecklistTemplate, ChecklistItem } from '@app/core/api/photo-checklist-config/photo-checklist-config.service';
 import { PhotoChecklistV2Service } from '@app/core/api/photo-checklist-config/photo-checklist-v2.service';
 import { AttachmentsService } from '@app/core/api/attachments/attachments.service';
-import { UploadService } from '@app/core/api/upload/upload.service';
 import { PhotoChecklistUploadService } from '@app/core/api/photo-checklist/photo-checklist-upload.service';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import { NotificationService } from '@app/core/services/notification.service';
@@ -260,7 +259,6 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     private authenticationService: AuthenticationService,
     private modalService: NgbModal,
     private attachmentsService: AttachmentsService,
-    private uploadService: UploadService,
     private photoUploadService: PhotoChecklistUploadService,
     private cdr: ChangeDetectorRef,
     private ngZone: NgZone,
@@ -3350,9 +3348,10 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     }
   }
 
-  removePrimarySampleImage(itemIndex: number): void {
+  async removePrimarySampleImage(itemIndex: number): Promise<void> {
     let images: SampleImage | SampleImage[] | null = this.sampleImages[itemIndex];
     let imageArray: SampleImage[] = [];
+    const imageToDelete = this.getPrimarySampleImage(itemIndex);
 
     if (!images) {
       this.sampleImages[itemIndex] = null;
@@ -3374,6 +3373,20 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       sample_image_url: '',
       sample_images: remainingImages
     });
+
+    item.markAsDirty();
+    this.templateForm.markAsDirty();
+
+    if (imageToDelete?.url) {
+      try {
+        const deletion = await this.photoUploadService.deleteImage(imageToDelete.url);
+        if (!deletion?.success) {
+          console.warn('Failed to delete primary sample image from storage:', deletion?.error || imageToDelete.url);
+        }
+      } catch (error) {
+        console.warn('Failed to delete primary sample image from storage:', error);
+      }
+    }
   }
 
   // ============================================
@@ -5322,7 +5335,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     }
   }
 
-  removeReferenceImage(itemIndex: number, refImageIndex: number): void {
+  async removeReferenceImage(itemIndex: number, refImageIndex: number): Promise<void> {
     let images: SampleImage | SampleImage[] | null = this.sampleImages[itemIndex];
     if (!Array.isArray(images)) return;
 
@@ -5343,6 +5356,17 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     // Mark form as dirty to detect changes
     item.markAsDirty();
     this.templateForm.markAsDirty();
+
+    if (imageToRemove?.url) {
+      try {
+        const deletion = await this.photoUploadService.deleteImage(imageToRemove.url);
+        if (!deletion?.success) {
+          console.warn('Failed to delete reference image from storage:', deletion?.error || imageToRemove.url);
+        }
+      } catch (error) {
+        console.warn('Failed to delete reference image from storage:', error);
+      }
+    }
   }
 
   previewReferenceImage(itemIndex: number, refImageIndex: number): void {

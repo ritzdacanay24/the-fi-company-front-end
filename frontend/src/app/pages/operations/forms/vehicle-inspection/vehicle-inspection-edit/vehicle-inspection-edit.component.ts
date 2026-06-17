@@ -73,69 +73,39 @@ export class VehicleInspectionEditComponent {
 
   data;
 
-  private getUploadsBaseUrl(): string {
+  private getAttachmentBaseUrl(): string {
     const apiBase = String(environment.apiV2BaseUrl || '').trim();
 
-    // Dev uses absolute api base (http://localhost:3002); use it for upload links.
     if (apiBase.startsWith('http://') || apiBase.startsWith('https://')) {
       const withoutTrailingSlash = apiBase.replace(/\/+$/, '');
       return withoutTrailingSlash.replace(/\/apiV2$/, '');
     }
 
-    // Relative api base means same-origin deployment.
     return window.location.origin;
   }
 
-  private normalizeUploadPath(path: string): string {
-    const base = this.getUploadsBaseUrl();
-    return `${base}${path}`;
-  }
-
-  private getLegacyVehicleImageUrl(fileName: string): string {
-    return `https://dashboard.eye-fi.com/attachments/vehicleInformation/${encodeURIComponent(fileName)}`;
+  private resolveRelativeAttachmentLink(path: string): string {
+    const base = this.getAttachmentBaseUrl();
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+    return `${base}${normalizedPath}`;
   }
 
   getImageUrl(attachment): string {
     if (!attachment) return '';
 
     const fileName = String(attachment?.fileName || '').trim();
-    const storageSource = String(attachment?.storage_source || '').toLowerCase();
-    const isLocalStorage = storageSource === 'local';
 
-    // Null/legacy sources should always use legacy public attachment path.
-    if (!isLocalStorage && fileName) {
-      return this.getLegacyVehicleImageUrl(fileName);
-    }
-
-    // Prefer persisted link (supports local uploads).
     if (attachment.link) {
-      const rawLink = String(attachment.link);
-
-      if (rawLink.startsWith('/uploads/')) {
-        return this.normalizeUploadPath(rawLink);
+      const rawLink = String(attachment.link).trim();
+      if (!rawLink) {
+        return '';
       }
 
-      // Vehicle inspection uploads now live locally; normalize legacy dashboard links.
-      if (rawLink.includes('dashboard.eye-fi.com/attachments') && attachment.fileName) {
-        return this.normalizeUploadPath(`/uploads/vehicleInformation/${attachment.fileName}`);
+      if (rawLink.startsWith('/')) {
+        return this.resolveRelativeAttachmentLink(rawLink);
       }
 
       return rawLink;
-    }
-
-    // Fallback for legacy rows that only have directory + fileName.
-    if (attachment.directory && attachment.fileName) {
-      const directory = String(attachment.directory);
-      if (directory.includes('dashboard.eye-fi.com/attachments')) {
-        return this.normalizeUploadPath(`/uploads/vehicleInformation/${attachment.fileName}`);
-      }
-
-      return `${attachment.directory}/${attachment.fileName}`;
-    }
-
-    // Last fallback for rows with only filename.
-    if (attachment.fileName) {
-      return this.normalizeUploadPath(`/uploads/vehicleInformation/${attachment.fileName}`);
     }
 
     return '';

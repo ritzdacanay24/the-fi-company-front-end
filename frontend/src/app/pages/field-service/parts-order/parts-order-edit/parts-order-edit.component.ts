@@ -335,7 +335,7 @@ export class PartsOrderEditComponent {
         formData.append("file", this.myFiles[i]);
         formData.append("field", "FS Parts Order");
         formData.append("uniqueData", `${this.id}`);
-        formData.append("folderName", 'fieldService');
+        formData.append("subFolder", 'partsRequest');
         try {
           await this.attachmentsService.uploadfile(formData);
           totalAttachments++

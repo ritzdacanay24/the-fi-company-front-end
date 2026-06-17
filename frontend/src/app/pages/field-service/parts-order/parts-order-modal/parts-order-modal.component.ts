@@ -109,7 +109,7 @@ export class PartsOrderModalComponent implements OnInit {
                 formData.append("file", this.myFiles[i]);
                 formData.append("field", "FS Parts Order");
                 formData.append("uniqueData", `${this.request_id}`);
-                formData.append("folderName", 'fieldService');
+                formData.append("subFolder", 'partsRequest');
                 try {
                     await this.attachmentsService.uploadfile(formData);
                     totalAttachments++

@@ -12,8 +12,6 @@ import { AttachmentsService } from "@app/core/api/attachments/attachments.servic
 import { ColDef, GridOptions } from "ag-grid-community";
 import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
 import { AgGridModule } from "ag-grid-angular";
-import { UploadService } from "@app/core/api/upload/upload.service";
-import { firstValueFrom } from "rxjs";
 import { environment } from "src/environments/environment";
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { FileViewerModalComponent } from "@app/shared/components/file-viewer-modal/file-viewer-modal.component";
@@ -32,7 +30,6 @@ export class VehicleEditComponent {
     private toastrService: ToastrService,
     private attachmentsService: AttachmentsService,
     private ref: ChangeDetectorRef,
-    private uploadService: UploadService,
     private modalService: NgbModal
   ) { }
 
@@ -81,7 +78,7 @@ export class VehicleEditComponent {
       }
 
       const payload = await this.attachmentsService.getViewById(attachmentId);
-      const url = this.normalizeAttachmentViewUrl(String(payload?.url || "").trim(), payload?.storage_source ?? null);
+      const url = this.normalizeAttachmentViewUrl(String(payload?.url || "").trim());
       if (!url) {
         this.toastrService.warning("Attachment URL not available");
         return;
@@ -99,7 +96,7 @@ export class VehicleEditComponent {
     }
   }
 
-  private normalizeAttachmentViewUrl(url: string, storageSource: string | null): string {
+  private normalizeAttachmentViewUrl(url: string): string {
     if (!url) {
       return "";
     }
@@ -110,10 +107,6 @@ export class VehicleEditComponent {
 
     const apiBaseUrl = String(environment.apiV2BaseUrl || "").replace(/\/+$/, "");
     const normalizedPath = url.startsWith("/") ? url : `/${url}`;
-
-    if (storageSource === "local" || normalizedPath.startsWith("/uploads/")) {
-      return `${apiBaseUrl}${normalizedPath}`;
-    }
 
     return `${apiBaseUrl}${normalizedPath}`;
   }
@@ -138,7 +131,8 @@ export class VehicleEditComponent {
       return "";
     }
 
-    return `https://dashboard.eye-fi.com/attachments/vehicleInformation/${fileName}`;
+    const apiBaseUrl = String(environment.apiV2BaseUrl || "").replace(/\/+$/, "");
+    return `${apiBaseUrl}/attachments/vehicleInformation/${encodeURIComponent(fileName)}`;
 
   }
 
@@ -293,10 +287,9 @@ export class VehicleEditComponent {
         formData.append("file", this.myFiles[i]);
         formData.append("field", "Vehicle Information");
         formData.append("uniqueData", `${this.id}`);
-        formData.append("folderName", "vehicleInformation");
         formData.append("subFolder", "vehicleInformation");
         try {
-          await firstValueFrom(this.uploadService.uploadAttachmentV2(formData));
+          await this.attachmentsService.uploadfile(formData);
           totalAttachments++;
         } catch (err) { }
       }

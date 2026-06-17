@@ -5,7 +5,6 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { firstValueFrom, Subscription } from 'rxjs';
 import { AttachmentsService } from '@app/core/api/attachments/attachments.service';
-import { UploadService } from '@app/core/api/upload/upload.service';
 import { SalesOrderInfoService } from '@app/core/api/sales-order/sales-order-info.service';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import { FileViewerModalComponent } from '@app/shared/components/file-viewer-modal/file-viewer-modal.component';
@@ -75,7 +74,6 @@ export class ShippingChecklistComponent implements OnInit {
     private readonly service: ShippingChecklistsService,
     private readonly route: ActivatedRoute,
     private readonly router: Router,
-    private readonly uploadService: UploadService,
     private readonly salesOrderInfoService: SalesOrderInfoService,
     private readonly attachmentsService: AttachmentsService,
     private readonly authService: AuthenticationService,
@@ -1516,10 +1514,8 @@ export class ShippingChecklistComponent implements OnInit {
         formData.append('file', file);
         formData.append('field', 'shippingChecklistItem');
         formData.append('uniqueData', key);
-        formData.append('folderName', 'shippingChecklist');
         formData.append('subFolder', 'shippingChecklist');
-        formData.append('storage_source', 'legacy');
-        await firstValueFrom(this.uploadService.uploadAttachmentV2(formData));
+        await this.attachmentsService.uploadfile(formData);
       }
 
       await this.refreshQuestionAttachments(questionCode);

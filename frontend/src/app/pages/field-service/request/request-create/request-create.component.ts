@@ -83,7 +83,7 @@ export class RequestCreateComponent {
           formData.append("file", this.myFiles[i]);
           formData.append("field", FIELD_SERVICE.UPLOAD_FIELD_NAME);
           formData.append("uniqueData", `${data.id}`);
-          formData.append("folderName", FIELD_SERVICE.UPLOAD_FOLDER_NAME);
+          formData.append("subFolder", FIELD_SERVICE.UPLOAD_FOLDER_NAME);
           try {
             await this.attachmentsService.uploadfile(formData)
           } catch (err) { }

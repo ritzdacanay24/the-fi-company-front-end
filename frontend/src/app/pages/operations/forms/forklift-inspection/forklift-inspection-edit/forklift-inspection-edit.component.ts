@@ -120,7 +120,7 @@ export class ForkliftInspectionEditComponent {
       return `${normalizedDirectory}/${fileName}`;
     }
 
-    return `https://dashboard.eye-fi.com/attachments/vehicleInformation/${fileName}`;
+    return "";
   }
 
   compare(a, b) {

@@ -94,6 +94,10 @@ interface PermitChecklistAttachment {
   url?: string;
   link?: string;
   path?: string;
+  storageSource?: string;
+  storageBucket?: string;
+  storageKey?: string;
+  storedFileName?: string;
 }
 
 interface PermitChecklistTransaction {
@@ -2249,6 +2253,11 @@ export class PermitChecklistsComponent implements OnInit {
           mimeType: String(payload.mimeType || file.type || "application/octet-stream"),
           uploadedAt: String(payload.uploadedAt || new Date().toISOString()),
           url: String(payload.url || ""),
+          link: String(payload.link || payload.url || ""),
+          storageSource: String(payload.storageSource || ""),
+          storageBucket: String(payload.storageBucket || ""),
+          storageKey: String(payload.storageKey || ""),
+          storedFileName: String(payload.storedFileName || ""),
         });
 
         this.appendTransaction(ticket.ticketId, "attachment_upload", {
@@ -2299,7 +2308,7 @@ export class PermitChecklistsComponent implements OnInit {
     }
 
     try {
-      await this.permitChecklistsService.removeAttachment(ticket.ticketId, attachmentId);
+      await this.permitChecklistsService.removeAttachment(ticket.ticketId, attachmentId, target);
     } catch (err: any) {
       const status = err?.status ?? err?.error?.statusCode;
       if (status === 403) {
@@ -3537,8 +3546,7 @@ export class PermitChecklistsComponent implements OnInit {
     const normalizedPath = value.startsWith("/") ? value : `/${value}`;
     const backendOrigin = this.resolveBackendOrigin();
 
-    // Uploaded files are served by Nest under /uploads; use backend origin for local preview links.
-    if (backendOrigin && normalizedPath.toLowerCase().startsWith("/uploads/")) {
+    if (backendOrigin && normalizedPath.startsWith('/')) {
       return `${backendOrigin}${normalizedPath}`;
     }
 

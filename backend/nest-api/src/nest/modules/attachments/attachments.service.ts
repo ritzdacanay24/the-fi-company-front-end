@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { extname } from 'node:path';
 import { AttachmentsMetadataService } from './attachments-metadata.service';
 import { FileStorageService } from '@/nest/modules/file-storage/file-storage.service';
@@ -14,7 +14,11 @@ export class AttachmentsService {
     payload: Record<string, unknown>,
     file?: { originalname?: string; buffer?: Buffer },
   ) {
-    const subFolder = this.resolveSubFolder(payload);
+    const subFolder = this.resolveRequestedSubFolder(payload);
+    if (!subFolder) {
+      throw new BadRequestException('subFolder (or folderName) is required for attachment uploads');
+    }
+
     const shouldUseBucket = this.shouldUseBucketStorageForPayload(payload);
 
     const stored = shouldUseBucket
@@ -28,7 +32,7 @@ export class AttachmentsService {
       payload,
       storedFileName,
       file?.originalname,
-      stored ? { key: stored.key } : undefined,
+      stored ? { key: stored.key, bucket: stored.bucket } : undefined,
     );
 
     try {
@@ -62,26 +66,24 @@ export class AttachmentsService {
   }
 
   private resolveSubFolder(payload: Record<string, unknown>): string {
-    const explicitSubFolder = typeof payload?.subFolder === 'string' ? payload.subFolder.trim() : '';
+    const explicitSubFolder = this.resolveRequestedSubFolder(payload);
     if (explicitSubFolder) {
       return explicitSubFolder;
     }
 
-    const field = typeof payload?.field === 'string' ? payload.field.toLowerCase() : '';
-    if (field.includes('field service')) {
-      return 'fieldService';
-    }
-    if (field.includes('shipping checklist') || field.includes('shippingchecklist')) {
-      return 'shippingChecklist';
-    }
-    if (field.includes('capa')) {
-      return 'capa';
-    }
-    if (field.includes('logistics_calendar') || field.includes('logistics calendar')) {
-      return 'receiving';
+    return 'general';
+  }
+
+  private resolveRequestedSubFolder(payload: Record<string, unknown>): string {
+    const subFolder = typeof payload?.subFolder === 'string' ? payload.subFolder.trim() : '';
+    const folderName = typeof payload?.folderName === 'string' ? payload.folderName.trim() : '';
+    const requested = subFolder || folderName;
+
+    if (!requested) {
+      return '';
     }
 
-    return 'general';
+    return this.resolveGenericSubFolder(requested);
   }
 
   private resolveGenericSubFolder(folder?: string): string {
@@ -139,7 +141,7 @@ export class AttachmentsService {
 
       const bucketKey: string = resolvedBucketKey;
 
-      const bucket: string = String(process.env.MEDIA_STORAGE_BUCKET || '').trim();
+      const bucket = this.resolveBucketNameFromRow(row as Record<string, unknown>);
       const url = await this.storageService.resolveBucketObjectUrl(bucket, bucketKey);
 
       return {
@@ -177,7 +179,7 @@ export class AttachmentsService {
         const resolvedBucketKey = this.resolveBucketKeyFromRow(row as Record<string, unknown>);
         if (resolvedBucketKey) {
           const bucketKey: string = resolvedBucketKey;
-          const bucket: string = String(process.env.MEDIA_STORAGE_BUCKET || '').trim();
+          const bucket = this.resolveBucketNameFromRow(row as Record<string, unknown>);
           await this.storageService.deleteStoredFileInBucket(bucketKey, bucket);
         }
       } else {
@@ -190,7 +192,8 @@ export class AttachmentsService {
   }
 
   private shouldUseBucketStorageForPayload(payload: Record<string, unknown>): boolean {
-    if (!this.isBucketEligibleAttachment(payload)) {
+    const requestedSubFolder = this.resolveRequestedSubFolder(payload);
+    if (!requestedSubFolder || requestedSubFolder === 'general') {
       return false;
     }
 
@@ -204,44 +207,18 @@ export class AttachmentsService {
     return mode === 'bucket' || mode === 's3' || !!bucket;
   }
 
-  private isBucketEligibleAttachment(payload: Record<string, unknown>): boolean {
-    const subFolder = this.resolveSubFolder(payload).toLowerCase();
-    const field = String(payload?.field || '')
-      .trim()
-      .toLowerCase();
-
-    return (
-      field.includes('vehicle information')
-      || field.includes('vehicle inspection')
-      || field.includes('shippingrequest')
-      || field.includes('shipping request')
-      || field.includes('logistics_calendar')
-      || field.includes('logistics calendar')
-      || subFolder === 'shippingrequest'
-      || subFolder === 'receiving'
-    );
-  }
-
   private resolveBucketKeyPrefix(payload: Record<string, unknown>): string {
-    const field = String(payload?.field || '')
-      .trim()
-      .toLowerCase();
-    const subFolder = this.resolveSubFolder(payload).toLowerCase();
+    const requestedSubFolder = this.resolveRequestedSubFolder(payload);
+    if (!requestedSubFolder) {
+      throw new BadRequestException('subFolder (or folderName) is required for bucket uploads');
+    }
+
+    const subFolder = requestedSubFolder;
     const uniqueId = String(payload?.uniqueId ?? payload?.uniqueData ?? '')
       .trim()
       .replace(/[^a-zA-Z0-9_-]/g, '');
 
-    let base = 'general';
-    if (field.includes('vehicle information') || field.includes('vehicle inspection')) {
-      // Keep vehicle uploads under the existing legacy-compatible S3 folder.
-      base = 'vehicleInformation';
-    } else if (field.includes('shippingrequest') || field.includes('shipping request') || subFolder === 'shippingrequest') {
-      base = 'shippingRequest';
-    } else if (field.includes('logistics_calendar') || field.includes('logistics calendar') || subFolder === 'receiving') {
-      base = 'receiving';
-    }
-
-    return uniqueId ? `${base}/${uniqueId}` : base;
+    return uniqueId ? `${subFolder}/${uniqueId}` : subFolder;
   }
 
   private async resolveAttachmentForResponse<T extends Record<string, unknown>>(row: T): Promise<T> {
@@ -251,7 +228,7 @@ export class AttachmentsService {
     }
 
     const key = this.resolveBucketKeyFromRow(row);
-    const bucket = String(process.env.MEDIA_STORAGE_BUCKET || '').trim();
+    const bucket = this.resolveBucketNameFromRow(row);
     if (!key || !bucket) {
       return this.storageService.withResolvedLink(row);
     }
@@ -262,6 +239,8 @@ export class AttachmentsService {
         ...row,
         link: signedUrl,
         storage_source: 'bucket',
+        storage_bucket: bucket,
+        storage_key: key,
       };
     } catch {
       return this.storageService.withResolvedLink(row);
@@ -269,6 +248,11 @@ export class AttachmentsService {
   }
 
   private resolveBucketKeyFromRow(row: Record<string, unknown>): string | null {
+    const explicitKey = typeof row?.storage_key === 'string' ? row.storage_key.trim() : '';
+    if (explicitKey) {
+      return explicitKey;
+    }
+
     const link = String(row?.link || '').trim();
     if (!link) {
       return null;
@@ -299,6 +283,16 @@ export class AttachmentsService {
     return keyWithOptionalBucket;
   }
 
+  private resolveBucketNameFromRow(row: Record<string, unknown>): string {
+    const explicitBucket = typeof row?.storage_bucket === 'string' ? row.storage_bucket.trim() : '';
+    if (explicitBucket) {
+      return explicitBucket;
+    }
+
+    const link = typeof row?.link === 'string' ? row.link.trim() : '';
+    return this.resolveBucketNameFromLink(link);
+  }
+
   private resolveBucketNameFromLink(link: string): string {
     const configuredBucket = String(process.env.MEDIA_STORAGE_BUCKET || '').trim();
     if (!link) {
@@ -320,6 +314,13 @@ export class AttachmentsService {
 
     if (configuredBucket && parts[0] === configuredBucket) {
       return configuredBucket;
+    }
+
+    if (parts[0]) {
+      const bucketLikePrefix = parts[0].trim();
+      if (bucketLikePrefix && bucketLikePrefix.includes('bucket')) {
+        return bucketLikePrefix;
+      }
     }
 
     return configuredBucket;
@@ -354,7 +355,7 @@ export class AttachmentsService {
     payload: Record<string, unknown>,
     storedFileName: string,
     originalName?: string,
-    bucketMeta?: { key: string },
+    bucketMeta?: { key: string; bucket: string },
   ): Record<string, unknown> {
     const createdDate = this.normalizeCreatedDate(payload.createdDate);
     const uniqueId = payload.uniqueId ?? payload.uniqueData;
@@ -374,6 +375,8 @@ export class AttachmentsService {
       storage_source: bucketMeta?.key
         ? 'bucket'
         : this.normalizeStorageSource(payload.storage_source) || 'local',
+      storage_bucket: bucketMeta?.bucket || undefined,
+      storage_key: bucketMeta?.key || undefined,
     };
   }
 
@@ -383,6 +386,10 @@ export class AttachmentsService {
     }
 
     const normalized = value.trim().toLowerCase();
+    if (normalized === 's3') {
+      return 'bucket';
+    }
+
     if (normalized === 'local' || normalized === 'legacy' || normalized === 'bucket') {
       return normalized;
     }

@@ -11,8 +11,6 @@ import { MyFormGroup } from "src/assets/js/util/_formGroup";
 import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
 import moment from "moment";
 import { AuthenticationService } from "@app/core/services/auth.service";
-import { UploadService } from "@app/core/api/upload/upload.service";
-import { firstValueFrom } from "rxjs";
 import { environment } from "src/environments/environment";
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { FileViewerModalComponent } from "@app/shared/components/file-viewer-modal/file-viewer-modal.component";
@@ -31,7 +29,6 @@ export class ShippingRequestEditComponent {
     private toastrService: ToastrService,
     private attachmentsService: AttachmentsService,
     private authenticationService: AuthenticationService,
-    private uploadService: UploadService,
     private modalService: NgbModal
   ) {}
 
@@ -230,10 +227,9 @@ export class ShippingRequestEditComponent {
         formData.append("file", this.myFiles[i]);
         formData.append("field", "shippingRequest");
         formData.append("uniqueData", `${this.id}`);
-        formData.append("folderName", "shippingRequest");
         formData.append("subFolder", "shippingRequest");
         try {
-          await firstValueFrom(this.uploadService.uploadAttachmentV2(formData));
+          await this.attachmentsService.uploadfile(formData);
           totalAttachments++;
         } catch (err) {}
       }

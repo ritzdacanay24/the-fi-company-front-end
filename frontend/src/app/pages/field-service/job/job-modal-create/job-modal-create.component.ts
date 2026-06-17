@@ -151,7 +151,7 @@ export class JobModalCreateComponent implements OnInit {
         formData.append("file", this.myFiles[i]);
         formData.append("field", "Field Service Scheduler");
         formData.append("uniqueData", `${id}`);
-        formData.append("folderName", "fieldService");
+        formData.append("subFolder", "fieldService");
         try {
           await this.publicAttachment.uploadfile(formData);
           totalAttachments++;

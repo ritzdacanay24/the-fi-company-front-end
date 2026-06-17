@@ -8,8 +8,6 @@ import { AttachmentsService } from "@app/core/api/attachments/attachments.servic
 import { SafetyIncidentService } from "@app/core/api/operations/safety-incident/safety-incident.service";
 import { SafetyIncidentFormComponent } from "../safety-incident-form/safety-incident-form.component";
 import { FILE, NAVIGATION_ROUTE } from "../safety-incident-constant";
-import { UploadService } from "@app/core/api/upload/upload.service";
-import { firstValueFrom } from "rxjs";
 import { NgbDropdown, NgbDropdownItem, NgbDropdownMenu, NgbDropdownToggle, NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { FileViewerModalComponent } from "@app/shared/components/file-viewer-modal/file-viewer-modal.component";
 
@@ -26,7 +24,6 @@ export class SafetyIncidentEditComponent {
     private api: SafetyIncidentService,
     private toastrService: ToastrService,
     private attachmentsService: AttachmentsService,
-    private uploadService: UploadService,
     private modalService: NgbModal
   ) {}
 
@@ -185,11 +182,10 @@ export class SafetyIncidentEditComponent {
         formData.append("file", this.myFiles[i]);
         formData.append("field", FILE.FIELD);
         formData.append("uniqueData", `${this.id}`);
-        formData.append("folderName", FILE.FOLDER);
         formData.append("subFolder", FILE.FOLDER);
         
         try {
-          await firstValueFrom(this.uploadService.uploadAttachmentV2(formData));
+          await this.attachmentsService.uploadfile(formData);
           totalAttachments++;
         } catch (err) {
           failedAttachments++;

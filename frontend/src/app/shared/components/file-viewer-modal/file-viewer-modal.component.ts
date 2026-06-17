@@ -17,7 +17,7 @@ interface FileViewerItem {
     <div class="modal-header">
       <h5 class="modal-title d-flex align-items-center gap-2">
         <i class="mdi mdi-file-eye"></i>
-        <span [title]="fileName">{{ fileName || "Attachment" }}</span>
+        <span class="file-name" [title]="fileName">{{ displayFileName }}</span>
         @if (showNavigation()) {
           <span class="badge bg-secondary">{{ currentIndex + 1 }} / {{ items.length }}</span>
         }
@@ -179,8 +179,29 @@ interface FileViewerItem {
         gap: 0.75rem;
       }
 
+      .modal-title {
+        min-width: 0;
+        flex: 1 1 auto;
+      }
+
+      .file-name {
+        display: inline-block;
+        max-width: min(60vw, 760px);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        vertical-align: bottom;
+      }
+
       .header-actions {
         margin-left: auto;
+        flex: 0 0 auto;
+      }
+
+      @media (max-width: 991.98px) {
+        .file-name {
+          max-width: 45vw;
+        }
       }
     `,
   ],
@@ -199,6 +220,11 @@ export class FileViewerModalComponent {
   imageLoadError = false;
   currentIndex = 0;
   resolvingItem = false;
+
+  get displayFileName(): string {
+    const name = String(this.fileName || '').trim() || 'Attachment';
+    return this.shortenFileName(name, 90);
+  }
 
   constructor(public activeModal: NgbActiveModal, private sanitizer: DomSanitizer) {}
 
@@ -374,5 +400,31 @@ export class FileViewerModalComponent {
 
   resetZoom(): void {
     this.zoomLevel = 1;
+  }
+
+  private shortenFileName(fileName: string, maxLength: number): string {
+    if (!fileName || fileName.length <= maxLength) {
+      return fileName;
+    }
+
+    const dotIndex = fileName.lastIndexOf('.');
+    const hasExt = dotIndex > 0 && dotIndex < fileName.length - 1;
+    const extension = hasExt ? fileName.slice(dotIndex) : '';
+    const extensionBudget = extension.length <= 12 ? extension.length : 0;
+
+    const available = maxLength - extensionBudget - 3;
+    if (available <= 10) {
+      return `${fileName.slice(0, maxLength - 3)}...`;
+    }
+
+    const front = Math.ceil(available * 0.65);
+    const back = Math.floor(available * 0.35);
+    const base = hasExt ? fileName.slice(0, dotIndex) : fileName;
+
+    if (base.length <= available) {
+      return `${base}${extension}`;
+    }
+
+    return `${base.slice(0, front)}...${base.slice(-back)}${extension}`;
   }
 }

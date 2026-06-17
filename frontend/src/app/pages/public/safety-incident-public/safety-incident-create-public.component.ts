@@ -14,8 +14,7 @@ import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErr
 import { MyFormGroup } from "src/assets/js/util/_formGroup";
 import { SafetyIncidentFormPublicComponent } from "./safety-incident-form-public.component";
 import { SafetyIncidentService } from "@app/core/api/operations/safety-incident/safety-incident.service";
-import { UploadService } from "@app/core/api/upload/upload.service";
-import { firstValueFrom } from "rxjs";
+import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
 
 const FILE = {
   FIELD: "attachment",
@@ -33,7 +32,7 @@ export class SafetyIncidentCreatePublicComponent implements OnInit {
     private router: Router,
     private api: SafetyIncidentService,
     private toastrService: ToastrService,
-    private uploadService: UploadService
+    private attachmentsService: AttachmentsService
   ) {}
 
   ngOnInit(): void {}
@@ -99,10 +98,9 @@ export class SafetyIncidentCreatePublicComponent implements OnInit {
         formData.append("file", this.myFiles[i]);
         formData.append("field", FILE.FIELD);
         formData.append("uniqueData", insertId.toString());
-        formData.append("folderName", FILE.FOLDER);
         formData.append("subFolder", FILE.FOLDER);
 
-        await firstValueFrom(this.uploadService.uploadAttachmentV2(formData));
+        await this.attachmentsService.uploadfile(formData);
       }
 
       this.toastrService.success(

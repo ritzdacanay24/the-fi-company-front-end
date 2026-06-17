@@ -33,8 +33,8 @@ export class PermitChecklistsController {
 
   @Post('remove-attachment')
   @Permissions('delete')
-  async removeAttachment(@Body() payload: { ticketId?: string; attachmentId?: string }) {
-    return this.service.removeAttachment(payload?.ticketId, payload?.attachmentId);
+  async removeAttachment(@Body() payload: { ticketId?: string; attachmentId?: string; attachment?: Record<string, unknown> }) {
+    return this.service.removeAttachment(payload?.ticketId, payload?.attachmentId, payload?.attachment);
   }
 
   @Post('upload-attachment')

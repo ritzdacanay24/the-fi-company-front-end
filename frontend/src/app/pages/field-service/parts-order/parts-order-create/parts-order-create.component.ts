@@ -54,7 +54,7 @@ export class PartsOrderCreateComponent implements OnInit {
           formData.append("file", this.myFiles[i]);
           formData.append("field", "FS Parts Order");
           formData.append("uniqueData", `${insertId}`);
-          formData.append("folderName", "fieldService");
+          formData.append("subFolder", "partsRequest");
           await this.attachmentsService.uploadfile(formData);
         }
       }

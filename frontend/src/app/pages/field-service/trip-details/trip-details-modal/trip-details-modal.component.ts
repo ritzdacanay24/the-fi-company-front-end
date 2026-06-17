@@ -10,8 +10,6 @@ import { TripDetailsFormComponent } from "../trip-details-form/trip-details-form
 import { TripDetailService } from "@app/core/api/field-service/trip-detail/trip-detail.service";
 import { ToastrService } from "ngx-toastr";
 import { TripDetailHeaderService } from "@app/core/api/field-service/trip-detail-header/trip-detail-header.service";
-import { UploadService } from "@app/core/api/upload/upload.service";
-import { first } from "rxjs";
 import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
 
 @Injectable({
@@ -54,7 +52,6 @@ export class TripDetailsModalComponent implements OnInit {
     private api: TripDetailService,
     private tripDetailHeaderService: TripDetailHeaderService,
     private toastrService: ToastrService,
-    private uploadService: UploadService,
     private attachmentsService: AttachmentsService
   ) {}
 
@@ -202,17 +199,14 @@ export class TripDetailsModalComponent implements OnInit {
 
   async uploadAttachments(insertId) {
     if (this.myAttachmentFiles) {
-      const formData = new FormData();
       for (var i = 0; i < this.myAttachmentFiles.length; i++) {
+        const formData = new FormData();
         formData.append("file", this.myAttachmentFiles[i]);
         formData.append("field", "Field Service Trip Details");
         formData.append("uniqueData", this.fs_travel_header_id);
         formData.append("mainId", insertId);
-        formData.append("folderName", "fieldService");
-        this.uploadService
-          .upload(formData)
-          .pipe(first())
-          .subscribe((data) => {});
+        formData.append("subFolder", "fieldService");
+        await this.attachmentsService.uploadfile(formData);
       }
       this.myAttachmentFiles = [];
     }

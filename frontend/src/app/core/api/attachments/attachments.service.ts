@@ -66,12 +66,10 @@ export class AttachmentsService extends DataService<any> {
       return file as FormData;
     }
 
-    const hasSubFolder = !!file.get('subFolder');
-    if (!hasSubFolder) {
-      const folderName = file.get('folderName');
-      if (typeof folderName === 'string' && folderName.trim()) {
-        file.append('subFolder', folderName.trim());
-      }
+    const subFolder = String(file.get('subFolder') || '').trim();
+
+    if (!subFolder) {
+      throw new Error('Attachment upload requires subFolder.');
     }
 
     return file;

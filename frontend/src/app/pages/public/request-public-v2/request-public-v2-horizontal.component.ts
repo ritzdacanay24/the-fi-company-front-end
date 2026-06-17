@@ -401,7 +401,7 @@ export class RequestPublicV2HorizontalComponent {
       formData.append("file", file);
       formData.append("field", FIELD_SERVICE.UPLOAD_FIELD_NAME);
       formData.append("uniqueData", `${requestId}`);
-      formData.append("folderName", FIELD_SERVICE.UPLOAD_FOLDER_NAME);
+      formData.append("subFolder", FIELD_SERVICE.UPLOAD_FOLDER_NAME);
 
       try {
         await this.attachmentsService.uploadfilePublic(formData);

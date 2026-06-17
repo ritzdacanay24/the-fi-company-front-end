@@ -51,8 +51,8 @@ export class PermitChecklistsService extends DataService<any> {
       })
     );
 
-  removeAttachment = async (ticketId: string, attachmentId: string): Promise<any> =>
-    await firstValueFrom(this.http.post(`${url}/remove-attachment`, { ticketId, attachmentId }));
+  removeAttachment = async (ticketId: string, attachmentId: string, attachment?: any): Promise<any> =>
+    await firstValueFrom(this.http.post(`${url}/remove-attachment`, { ticketId, attachmentId, attachment }));
 
   uploadAttachmentFile = async (ticketId: string, file: File, uploadedBy: string): Promise<any> => {
     const formData = new FormData();

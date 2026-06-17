@@ -10,8 +10,7 @@ import { ShippingRequestService } from "@app/core/api/operations/shippging-reque
 import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErrors";
 import { MyFormGroup } from "src/assets/js/util/_formGroup";
 import { IShippingRequestForm } from "../shipping-request-form/shipping-request-form.type";
-import { UploadService } from "@app/core/api/upload/upload.service";
-import { firstValueFrom } from "rxjs";
+import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
 
 @Component({
   standalone: true,
@@ -26,7 +25,7 @@ export class ShippingRequestCreateComponent {
     private api: ShippingRequestService,
     private toastrService: ToastrService,
     private authenticationService: AuthenticationService,
-    private uploadService: UploadService
+    private attachmentsService: AttachmentsService
   ) {}
 
   ngOnInit(): void {}
@@ -83,9 +82,8 @@ export class ShippingRequestCreateComponent {
           formData.append("file", this.myFiles[i]);
           formData.append("field", "shippingRequest");
           formData.append("uniqueData", `${insertId}`);
-          formData.append("folderName", "shippingRequest");
           formData.append("subFolder", "shippingRequest");
-          await firstValueFrom(this.uploadService.uploadAttachmentV2(formData));
+          await this.attachmentsService.uploadfile(formData);
         }
       }
 

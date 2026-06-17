@@ -191,7 +191,7 @@ export class ShortagesEditComponent {
         formData.append("file", this.myFiles[i]);
         formData.append("field", "Vehicle Information");
         formData.append("uniqueData", `${this.id}`);
-        formData.append("folderName", 'vehicleInformation');
+        formData.append("subFolder", 'vehicleInformation');
         try {
           await this.attachmentsService.uploadfile(formData);
           totalAttachments++

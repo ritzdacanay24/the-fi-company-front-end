@@ -15,8 +15,7 @@ import { MyFormGroup } from "src/assets/js/util/_formGroup";
 import { SafetyIncidentFormComponent } from "../safety-incident-form/safety-incident-form.component";
 import { FILE, NAVIGATION_ROUTE } from "../safety-incident-constant";
 import { SafetyIncidentService } from "@app/core/api/operations/safety-incident/safety-incident.service";
-import { UploadService } from "@app/core/api/upload/upload.service";
-import { firstValueFrom } from "rxjs";
+import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
 
 @Component({
   standalone: true,
@@ -30,7 +29,7 @@ export class SafetyIncidentCreateComponent {
     private api: SafetyIncidentService,
     private toastrService: ToastrService,
     private authenticationService: AuthenticationService,
-    private uploadService: UploadService
+    private attachmentsService: AttachmentsService
   ) {}
 
   printFormLanguage = "en";
@@ -94,10 +93,9 @@ export class SafetyIncidentCreateComponent {
         formData.append("file", this.myFiles[i]);
         formData.append("field", FILE.FIELD);
         formData.append("uniqueData", insertId.toString());
-        formData.append("folderName", FILE.FOLDER);
         formData.append("subFolder", FILE.FOLDER);
 
-        await firstValueFrom(this.uploadService.uploadAttachmentV2(formData));
+        await this.attachmentsService.uploadfile(formData);
       }
 
       this.isLoading = false;

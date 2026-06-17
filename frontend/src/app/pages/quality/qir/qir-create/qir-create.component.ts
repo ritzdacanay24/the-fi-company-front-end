@@ -119,7 +119,7 @@ export class QirCreateComponent {
           formData.append("file", this.myFiles[i]);
           formData.append("field", "Capa Request");
           formData.append("uniqueData", `${insertId}`);
-          formData.append("folderName", "capa");
+          formData.append("subFolder", "capa");
           await this.attachmentsService.uploadfile(formData);
         }
       }

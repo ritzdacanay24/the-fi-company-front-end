@@ -240,9 +240,7 @@ export class ShippingChecklistSettingsComponent implements OnInit {
       formData.append('file', file);
       formData.append('field', 'customerMasterLogo');
       formData.append('uniqueData', uniqueKey);
-      formData.append('folderName', 'customerMaster');
       formData.append('subFolder', 'customerMaster');
-      formData.append('storage_source', 'legacy');
 
       await this.attachmentsService.uploadfile(formData);
 

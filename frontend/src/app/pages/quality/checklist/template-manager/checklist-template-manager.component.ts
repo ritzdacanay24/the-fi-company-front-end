@@ -10,7 +10,6 @@ import { Subscription } from 'rxjs';
 
 import { PhotoChecklistConfigService, ChecklistTemplate, ChecklistItem } from '@app/core/api/photo-checklist-config/photo-checklist-config.service';
 import { AttachmentsService } from '@app/core/api/attachments/attachments.service';
-import { UploadService } from '@app/core/api/upload/upload.service';
 import { PhotoChecklistUploadService } from '@app/core/api/photo-checklist/photo-checklist-upload.service';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import { QualityDocumentSelectorComponent, QualityDocumentSelection } from '@app/shared/components/quality-document-selector/quality-document-selector.component';
@@ -2484,7 +2483,6 @@ export class ChecklistTemplateManagerComponent implements OnInit, OnDestroy {
     private modalService: NgbModal,
     private fb: FormBuilder,
     private attachmentsService: AttachmentsService,
-    private uploadService: UploadService,
     private photoUploadService: PhotoChecklistUploadService,
     private authenticationService: AuthenticationService,
     private router: Router,

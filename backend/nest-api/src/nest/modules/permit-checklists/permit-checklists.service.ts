@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { promises as fs } from 'fs';
-import { basename, extname, join } from 'path';
+import { basename } from 'path';
 import PDFDocument from 'pdfkit';
 import { PermitChecklistsRepository } from './permit-checklists.repository';
+import { FileStorageService } from '../file-storage/file-storage.service';
 
 type TicketStatus = 'draft' | 'saved' | 'submitted' | 'finalized' | 'archived';
 
@@ -15,13 +15,12 @@ export interface PermitChecklistUploadFile {
 
 @Injectable()
 export class PermitChecklistsService {
-  private readonly uploadsRootDir = this.resolveAttachmentsRootDir();
-  private readonly uploadsDir = join(this.uploadsRootDir, 'permit-checklists');
-  private readonly uploadsPublicBase = this.resolveAttachmentsPublicBaseUrl();
-  private readonly uploadsUrlPrefix = `${this.uploadsPublicBase}/permit-checklists`;
-  private readonly uploadsPathPrefix = `${this.resolvePathPrefix(this.uploadsPublicBase)}/permit-checklists`;
+  private readonly permitChecklistSubFolder = 'permitChecklists';
 
-  constructor(private readonly repository: PermitChecklistsRepository) {}
+  constructor(
+    private readonly repository: PermitChecklistsRepository,
+    private readonly storageService: FileStorageService,
+  ) {}
 
   async getTicketPdf(ticketIdInput: string | undefined): Promise<{ buffer: Buffer; fileName: string }> {
     const ticketId = String(ticketIdInput || '').trim();
@@ -65,14 +64,19 @@ export class PermitChecklistsService {
       return { success: false, error: 'file is required' };
     }
 
-    await fs.mkdir(this.uploadsDir, { recursive: true });
-
     const originalName = String(file.originalname || 'attachment').trim() || 'attachment';
-    const extension = extname(originalName).toLowerCase();
-    const baseName = this.sanitizeFileBase(originalName.slice(0, originalName.length - extension.length));
-    const storedName = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${baseName}${extension}`;
+    const shouldUseBucket = this.shouldUseBucketStorage();
 
-    await fs.writeFile(join(this.uploadsDir, storedName), file.buffer);
+    const stored = shouldUseBucket
+      ? await this.storageService.storeUploadedFileInBucket(file, {
+          keyPrefix: `${this.permitChecklistSubFolder}/${this.sanitizePathSegment(ticketId)}`,
+        })
+      : null;
+
+    const storedFileName = stored?.fileName || (await this.storageService.storeUploadedFile(file, this.permitChecklistSubFolder));
+    const link = stored?.key
+      ? this.normalizeBucketLink(stored.key)
+      : this.storageService.resolveLink(storedFileName, this.permitChecklistSubFolder) || '';
 
     return {
       success: true,
@@ -85,7 +89,12 @@ export class PermitChecklistsService {
         uploadedBy: this.truncate(String(uploadedByInput || 'Unknown User'), 255),
         fieldKey: 'general',
         fieldLabel: 'General Attachment',
-        url: `${this.uploadsUrlPrefix}/${storedName}`,
+        url: link,
+        link,
+        storageSource: stored?.key ? 'bucket' : 'local',
+        storageBucket: stored?.bucket || null,
+        storageKey: stored?.key || null,
+        storedFileName,
       },
     };
   }
@@ -99,20 +108,22 @@ export class PermitChecklistsService {
       this.repository.getBillingDefaults(),
     ]);
 
-    const tickets = ticketRows.map((row) => ({
-      ticketId: String(row.ticket_id),
-      formType: String(row.form_type),
-      createdBy: String(row.created_by),
-      createdAt: this.toIso(row.created_at),
-      updatedAt: this.toIso(row.updated_at),
-      finalizedAt: row.finalized_at ? this.toIso(row.finalized_at) : null,
-      status: String(row.status),
-      values: this.decodeJsonObject(row.values_json),
-      fieldUpdatedAt: this.decodeJsonObject(row.field_updated_at_json),
-      processNoteRecords: this.decodeJsonArray(row.process_notes_json),
-      financials: this.decodeJsonObject(row.financials_json),
-      attachments: this.decodeJsonArray(row.attachments_json),
-    }));
+    const tickets = await Promise.all(
+      ticketRows.map(async (row) => ({
+        ticketId: String(row.ticket_id),
+        formType: String(row.form_type),
+        createdBy: String(row.created_by),
+        createdAt: this.toIso(row.created_at),
+        updatedAt: this.toIso(row.updated_at),
+        finalizedAt: row.finalized_at ? this.toIso(row.finalized_at) : null,
+        status: String(row.status),
+        values: this.decodeJsonObject(row.values_json),
+        fieldUpdatedAt: this.decodeJsonObject(row.field_updated_at_json),
+        processNoteRecords: this.decodeJsonArray(row.process_notes_json),
+        financials: this.decodeJsonObject(row.financials_json),
+        attachments: await this.resolveAttachmentsForResponse(this.decodeJsonArray(row.attachments_json)),
+      })),
+    );
 
     const transactions = txRows.map((row) => ({
       id: String(row.id),
@@ -193,7 +204,11 @@ export class PermitChecklistsService {
     return { success: true, ticketId };
   }
 
-  async removeAttachment(ticketIdInput: string | undefined, attachmentIdInput: string | undefined) {
+  async removeAttachment(
+    ticketIdInput: string | undefined,
+    attachmentIdInput: string | undefined,
+    attachmentInput?: Record<string, unknown>,
+  ) {
     const ticketId = String(ticketIdInput || '').trim();
     const attachmentId = String(attachmentIdInput || '').trim();
 
@@ -213,16 +228,63 @@ export class PermitChecklistsService {
       attachments = [];
     }
 
-    const filtered = attachments.filter((a) => String(a['id'] || '') !== attachmentId);
-    const removedAttachment = attachments.find((a) => String(a['id'] || '') === attachmentId);
+    const fallbackAttachment = this.normalizeAttachmentInput(attachmentInput);
+    let removedAttachment = attachments.find((a) => String(a['id'] || '') === attachmentId);
 
-    if (removedAttachment) {
-      await this.deleteAttachmentFile(removedAttachment);
+    if (!removedAttachment && fallbackAttachment?.storageKey) {
+      removedAttachment = attachments.find((a) => {
+        const key = String(a['storageKey'] || a['storage_key'] || '').trim();
+        return key && key === fallbackAttachment.storageKey;
+      });
+    }
+
+    const filtered = attachments.filter((a) => {
+      if (removedAttachment && a === removedAttachment) {
+        return false;
+      }
+
+      return String(a['id'] || '') !== attachmentId;
+    });
+
+    if (removedAttachment || fallbackAttachment) {
+      await this.deleteAttachmentFile(removedAttachment || fallbackAttachment || {});
     }
 
     const updatedAt = this.toDbDateTime(new Date().toISOString());
     await this.repository.setAttachmentsJson(ticketId, JSON.stringify(filtered), updatedAt);
     return { success: true, ticketId, attachmentId };
+  }
+
+  private normalizeAttachmentInput(
+    input?: Record<string, unknown>,
+  ):
+    | {
+        id: string;
+        fileName: string;
+        url: string;
+        link: string;
+        path: string;
+        storageSource: string;
+        storageBucket: string;
+        storageKey: string;
+        storedFileName: string;
+      }
+    | null {
+    if (!input || typeof input !== 'object') {
+      return null;
+    }
+
+    return {
+      id: String(input['id'] || '').trim(),
+      fileName: String(input['fileName'] || '').trim(),
+      url: String(input['url'] || '').trim(),
+      link: String(input['link'] || '').trim(),
+      path: String(input['path'] || '').trim(),
+      storageSource: String(input['storageSource'] || input['storage_source'] || '').trim(),
+      storageBucket: String(input['storageBucket'] || input['storage_bucket'] || '').trim(),
+      storageKey: String(input['storageKey'] || input['storage_key'] || '').trim(),
+      storedFileName: String(input['storedFileName'] || '').trim(),
+    };
   }
 
   async deleteTicket(ticketIdInput: string | undefined) {
@@ -467,84 +529,194 @@ export class PermitChecklistsService {
   }
 
   private async deleteAttachmentFile(attachment: Record<string, unknown>): Promise<void> {
+    const explicitStorageSource = String(attachment['storageSource'] || attachment['storage_source'] || '')
+      .trim()
+      .toLowerCase();
+    const explicitStorageKey = String(attachment['storageKey'] || attachment['storage_key'] || '').trim();
+    const explicitStorageBucket = String(attachment['storageBucket'] || attachment['storage_bucket'] || '').trim();
+
+    if (explicitStorageSource === 'bucket' && explicitStorageKey) {
+      await this.storageService.deleteStoredFileInBucket(explicitStorageKey, explicitStorageBucket || undefined);
+      return;
+    }
+
     const rawUrl = String(attachment['url'] || attachment['link'] || attachment['path'] || '').trim();
-    if (!rawUrl) {
+    const parsedBucketObject = this.resolveBucketObjectFromUrl(rawUrl);
+    if (parsedBucketObject?.key) {
+      await this.storageService.deleteStoredFileInBucket(parsedBucketObject.key, parsedBucketObject.bucket || undefined);
       return;
     }
 
-    const normalizedPath = this.resolveAttachmentPath(rawUrl);
-    if (!normalizedPath || !normalizedPath.startsWith(`${this.uploadsPathPrefix}/`)) {
-      return;
-    }
-
-    const storedName = basename(normalizedPath);
+    const explicitStoredFileName = String(attachment['storedFileName'] || '').trim();
+    const localPath = String(attachment['path'] || rawUrl || '').trim();
+    const storedName = explicitStoredFileName || basename(localPath);
     if (!storedName) {
       return;
     }
 
+    await this.storageService.deleteStoredFile(storedName, this.permitChecklistSubFolder);
+    await this.storageService.deleteStoredFile(storedName, 'permit-checklists');
+  }
+
+  private shouldUseBucketStorage(): boolean {
+    const mode = String(process.env.MEDIA_STORAGE_MODE || '').trim().toLowerCase();
+    const bucket = String(process.env.MEDIA_STORAGE_BUCKET || '').trim();
+
+    if (mode === 'local') {
+      return false;
+    }
+
+    return mode === 'bucket' || mode === 's3' || !!bucket;
+  }
+
+  private sanitizePathSegment(value: string): string {
+    const sanitized = String(value || '')
+      .trim()
+      .replace(/[^a-zA-Z0-9_-]/g, '');
+    return sanitized || 'ticket';
+  }
+
+  private normalizeBucketLink(key: string): string {
+    const normalizedKey = key
+      .trim()
+      .replace(/^\/+/, '')
+      .split('/')
+      .filter(Boolean)
+      .map((segment) => encodeURIComponent(segment))
+      .join('/');
+
+    return `/attachments/${normalizedKey}`;
+  }
+
+  private async resolveAttachmentsForResponse(
+    attachments: Array<Record<string, unknown>>,
+  ): Promise<Array<Record<string, unknown>>> {
+    return Promise.all((attachments || []).map((attachment) => this.resolveAttachmentForResponse(attachment)));
+  }
+
+  private async resolveAttachmentForResponse(attachment: Record<string, unknown>): Promise<Record<string, unknown>> {
+    const storageSource = this.normalizeStorageSource(attachment['storageSource'] || attachment['storage_source']);
+    if (storageSource !== 'bucket') {
+      return attachment;
+    }
+
+    const explicitBucket = String(attachment['storageBucket'] || attachment['storage_bucket'] || '').trim();
+    const explicitKey = String(attachment['storageKey'] || attachment['storage_key'] || '').trim();
+
+    const fromLink = this.resolveBucketObjectFromUrl(String(attachment['url'] || attachment['link'] || ''));
+    const bucket = explicitBucket || fromLink?.bucket || String(process.env.MEDIA_STORAGE_BUCKET || '').trim();
+    const key = explicitKey || fromLink?.key || '';
+
+    if (!bucket || !key) {
+      return attachment;
+    }
+
     try {
-      await fs.unlink(join(this.uploadsDir, storedName));
+      const signedUrl = await this.storageService.resolveBucketObjectUrl(bucket, key);
+      return {
+        ...attachment,
+        url: signedUrl,
+        link: signedUrl,
+      };
     } catch {
-      // Ignore missing files and continue JSON cleanup.
+      return attachment;
     }
   }
 
-  private resolveAttachmentsRootDir(): string {
-    const configuredRoots = String(process.env.ATTACHMENTS_UPLOAD_ROOT_DIRS || '')
-      .split(',')
-      .map((dir) => dir.trim())
-      .filter(Boolean);
-
-    if (configuredRoots.length > 0) {
-      return configuredRoots[0];
+  private normalizeStorageSource(value: unknown): 'local' | 'bucket' | 'legacy' | undefined {
+    if (typeof value !== 'string') {
+      return undefined;
     }
 
-    return join(process.cwd(), 'attachments');
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 's3') {
+      return 'bucket';
+    }
+
+    if (normalized === 'local' || normalized === 'bucket' || normalized === 'legacy') {
+      return normalized;
+    }
+
+    return undefined;
   }
 
-  private resolveAttachmentsPublicBaseUrl(): string {
-    const configured = String(process.env.ATTACHMENTS_PUBLIC_BASE_URL || '').trim();
-    if (!configured) {
-      return '/attachments';
-    }
-
-    return configured.replace(/\/+$/, '');
-  }
-
-  private resolvePathPrefix(baseUrl: string): string {
-    const raw = String(baseUrl || '').trim();
-    if (!raw) {
-      return '/attachments';
-    }
-
-    if (raw.startsWith('http://') || raw.startsWith('https://')) {
-      try {
-        const pathname = new URL(raw).pathname || '/';
-        return pathname.replace(/\/+$/, '') || '/';
-      } catch {
-        return '/attachments';
-      }
-    }
-
-    const normalized = raw.startsWith('/') ? raw : `/${raw}`;
-    return normalized.replace(/\/+$/, '') || '/';
-  }
-
-  private resolveAttachmentPath(rawUrl: string): string {
+  private resolveBucketObjectFromUrl(rawUrl: string): { key: string; bucket: string } | null {
     const value = String(rawUrl || '').trim();
     if (!value) {
-      return '';
+      return null;
     }
 
-    if (value.startsWith('http://') || value.startsWith('https://')) {
+    const configuredBucket = String(process.env.MEDIA_STORAGE_BUCKET || '').trim();
+    const withoutQuery = value.split('?')[0].split('#')[0] || value;
+    const marker = '/attachments/';
+    const markerIndex = withoutQuery.indexOf(marker);
+    if (markerIndex < 0) {
+      return null;
+    }
+
+    const tail = withoutQuery.slice(markerIndex + marker.length).replace(/^\/+/, '');
+    if (!tail) {
+      return null;
+    }
+
+    const parts = tail.split('/').filter(Boolean);
+    if (!parts.length) {
+      return null;
+    }
+
+    if (configuredBucket && parts[0] === configuredBucket && parts.length > 1) {
+      return { key: parts.slice(1).join('/'), bucket: configuredBucket };
+    }
+
+    if (/^https?:\/\//i.test(value)) {
       try {
-        return new URL(value).pathname || '';
+        const parsed = new URL(value);
+        const pathParts = decodeURIComponent(parsed.pathname || '')
+          .split('/')
+          .filter(Boolean);
+
+        const host = parsed.hostname.toLowerCase();
+        const virtualHostedMatch = host.match(/^([a-z0-9._-]+)\.s3[.-][a-z0-9.-]+\.amazonaws\.com$/i);
+        if (virtualHostedMatch && pathParts.length > 0) {
+          return {
+            bucket: virtualHostedMatch[1],
+            key: pathParts.join('/'),
+          };
+        }
+
+        const endpointStyleMatch = host.match(/^s3[.-][a-z0-9.-]+\.amazonaws\.com$/i);
+        if (endpointStyleMatch && pathParts.length > 1) {
+          return {
+            bucket: pathParts[0],
+            key: pathParts.slice(1).join('/'),
+          };
+        }
+
+        const localOrCustomBucket = configuredBucket;
+        if (localOrCustomBucket) {
+          if (pathParts[0] === localOrCustomBucket && pathParts.length > 1) {
+            return {
+              bucket: localOrCustomBucket,
+              key: pathParts.slice(1).join('/'),
+            };
+          }
+
+          if (pathParts.length > 0) {
+            return {
+              bucket: localOrCustomBucket,
+              key: pathParts.join('/'),
+            };
+          }
+        }
       } catch {
-        return '';
+        // Fall through to existing parsing.
       }
     }
 
-    return value.startsWith('/') ? value : `/${value}`;
+    return {
+      key: tail,
+      bucket: configuredBucket,
+    };
   }
 
   private async generateTicketPdfBuffer(payload: {

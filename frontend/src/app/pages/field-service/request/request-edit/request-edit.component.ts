@@ -194,7 +194,7 @@ export class RequestEditComponent {
         formData.append("file", this.myFiles[i]);
         formData.append("field", FIELD_SERVICE.UPLOAD_FIELD_NAME);
         formData.append("uniqueData", `${this.id}`);
-        formData.append("folderName", FIELD_SERVICE.UPLOAD_FOLDER_NAME);
+        formData.append("subFolder", FIELD_SERVICE.UPLOAD_FOLDER_NAME);
         try {
           await this.attachmentsService.uploadfile(formData);
           totalAttachments++;

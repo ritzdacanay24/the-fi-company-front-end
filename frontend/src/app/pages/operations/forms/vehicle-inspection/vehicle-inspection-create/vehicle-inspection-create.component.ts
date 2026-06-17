@@ -9,8 +9,7 @@ import { VehicleInspectionService } from "@app/core/api/operations/vehicle-inspe
 import { VehicleInspectionFormComponent } from "../vehicle-inspection-form/vehicle-inspection-form.component";
 import { AuthenticationService } from "@app/core/services/auth.service";
 import { resetVehicleInspectionFormValues } from "../vehicle-inspection-form/formData";
-import { UploadService } from "@app/core/api/upload/upload.service";
-import { first } from "rxjs";
+import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
 
 @Component({
   standalone: true,
@@ -25,7 +24,7 @@ export class VehicleInspectionCreateComponent {
     private api: VehicleInspectionService,
     private toastrService: ToastrService,
     private authenticationService: AuthenticationService,
-    private uploadService: UploadService,
+    private attachmentsService: AttachmentsService,
     private cdr: ChangeDetectorRef
   ) {
 
@@ -279,29 +278,21 @@ export class VehicleInspectionCreateComponent {
           const resolvedTitle = titleMap[position] || `Vehicle ${position} View`;
           formData.append("title", resolvedTitle);
           formData.append("uniqueData", uniqueData);
-          formData.append("folderName", "vehicleInformation");
-          formData.append("subFolder", "vehicleInformation");
-          this.uploadService
-            .uploadAttachmentV2(formData)
-            .pipe(first())
-            .subscribe((data) => { });
+          formData.append("subFolder", "inspections/vehicle");
+          await this.attachmentsService.uploadfile(formData);
         }
       }
 
       if (this.additionalVehiclePhotos.length > 0) {
-        this.additionalVehiclePhotos.forEach((file, index) => {
+        for (const [index, file] of this.additionalVehiclePhotos.entries()) {
           const formData = new FormData();
           formData.append("file", file);
           formData.append("field", "Vehicle Inspection");
           formData.append("title", `Vehicle Additional Photo ${index + 1}`);
           formData.append("uniqueData", uniqueData);
-          formData.append("folderName", "vehicleInformation");
-          formData.append("subFolder", "vehicleInformation");
-          this.uploadService
-            .uploadAttachmentV2(formData)
-            .pipe(first())
-            .subscribe((data) => { });
-        });
+          formData.append("subFolder", "inspections/vehicle");
+          await this.attachmentsService.uploadfile(formData);
+        }
       }
 
       this.isLoading = false;

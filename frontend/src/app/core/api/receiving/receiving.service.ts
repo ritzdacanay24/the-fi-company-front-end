@@ -36,7 +36,6 @@ export class ReceivingService {
     formParams.append('file', file);
     formParams.append('field', 'LOGISTICS_CALENDAR');
     formParams.append('uniqueData', String(id));
-    formParams.append('folderName', 'receiving');
     formParams.append('subFolder', 'receiving');
     return this.http.post('apiV2/attachments', formParams).toPromise();
   }

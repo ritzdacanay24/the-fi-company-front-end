@@ -10,8 +10,7 @@ import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErr
 import { MyFormGroup } from "src/assets/js/util/_formGroup";
 import { IVehicleForm } from "../vehicle-form/vehicle-form.type";
 import { VehicleService } from "@app/core/api/operations/vehicle/vehicle.service";
-import { UploadService } from "@app/core/api/upload/upload.service";
-import { firstValueFrom } from "rxjs";
+import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
 
 @Component({
   standalone: true,
@@ -25,7 +24,7 @@ export class VehicleCreateComponent {
     private api: VehicleService,
     private toastrService: ToastrService,
     private authenticationService: AuthenticationService,
-    private uploadService: UploadService
+    private attachmentsService: AttachmentsService
   ) {}
 
   @HostListener("window:beforeunload")
@@ -83,9 +82,8 @@ export class VehicleCreateComponent {
           formData.append("file", this.myFiles[i]);
           formData.append("field", "Vehicle Information");
           formData.append("uniqueData", `${insertId}`);
-          formData.append("folderName", "vehicleInformation");
           formData.append("subFolder", "vehicleInformation");
-          await firstValueFrom(this.uploadService.uploadAttachmentV2(formData));
+          await this.attachmentsService.uploadfile(formData);
         }
       }
 
