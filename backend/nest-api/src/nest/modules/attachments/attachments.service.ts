@@ -247,18 +247,15 @@ export class AttachmentsService {
       return this.storageService.withResolvedLink(row);
     }
 
-    try {
-      const signedUrl = await this.storageService.resolveBucketObjectUrl(bucket, key);
-      return {
-        ...row,
-        link: signedUrl,
-        storage_source: 'bucket',
-        storage_bucket: bucket,
-        storage_key: key,
-      };
-    } catch {
-      return this.storageService.withResolvedLink(row);
-    }
+    // Click-only signing policy: do not return signed URL in list responses.
+    // Signed URLs are generated only through getViewById when user opens/downloads.
+    return {
+      ...row,
+      link: '',
+      storage_source: 'bucket',
+      storage_bucket: bucket,
+      storage_key: key,
+    };
   }
 
   private resolveBucketKeyFromRow(row: Record<string, unknown>): string | null {
