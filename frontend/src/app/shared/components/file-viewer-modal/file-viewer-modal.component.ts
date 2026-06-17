@@ -298,6 +298,55 @@ export class FileViewerModalComponent {
     this.url = item.url || this.url;
     this.fileName = item.fileName || this.fileName;
     this.refreshPreviewUrls();
+
+    // Pre-fetch next and previous items' URLs in background for smooth navigation
+    this.preFetchAdjacentItems();
+  }
+
+  private preFetchAdjacentItems(): void {
+    if (!this.resolveById || !Array.isArray(this.items)) {
+      return;
+    }
+
+    // Pre-fetch next item's URL
+    if (this.canNext()) {
+      const nextIndex = this.currentIndex + 1;
+      const nextItem = this.items[nextIndex];
+      if (nextItem && !nextItem.url && nextItem.id !== undefined) {
+        this.resolveById(nextItem.id)
+          .then((resolved) => {
+            if (resolved?.url) {
+              nextItem.url = resolved.url;
+              if (resolved.fileName) {
+                nextItem.fileName = resolved.fileName;
+              }
+            }
+          })
+          .catch(() => {
+            // Silently fail - will fetch again if user navigates to it
+          });
+      }
+    }
+
+    // Pre-fetch previous item's URL
+    if (this.canPrevious()) {
+      const prevIndex = this.currentIndex - 1;
+      const prevItem = this.items[prevIndex];
+      if (prevItem && !prevItem.url && prevItem.id !== undefined) {
+        this.resolveById(prevItem.id)
+          .then((resolved) => {
+            if (resolved?.url) {
+              prevItem.url = resolved.url;
+              if (resolved.fileName) {
+                prevItem.fileName = resolved.fileName;
+              }
+            }
+          })
+          .catch(() => {
+            // Silently fail - will fetch again if user navigates to it
+          });
+      }
+    }
   }
 
   private refreshPreviewUrls(): void {
