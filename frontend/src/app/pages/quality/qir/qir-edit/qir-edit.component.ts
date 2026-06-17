@@ -433,7 +433,9 @@ export class QirEditComponent {
     }
   }
 
-  private openFileViewerModal(url: string, fileName: string): void {
+  private openFileViewerModal(url: string, fileName: string, row?: any): void {
+    const currentIndex = row?.id ? this.attachments?.findIndex((att: any) => att?.id === row?.id) ?? 0 : 0;
+
     const modalRef = this.modalService.open(FileViewerModalComponent, {
       size: "xl",
       centered: true,
@@ -443,6 +445,18 @@ export class QirEditComponent {
 
     modalRef.componentInstance.url = url;
     modalRef.componentInstance.fileName = fileName;
+    
+    // Enable gallery navigation
+    modalRef.componentInstance.items = this.attachments || [];
+    modalRef.componentInstance.initialIndex = currentIndex;
+    modalRef.componentInstance.enableNavigation = true;
+    modalRef.componentInstance.resolveById = (id: string | number) => 
+      this.resolveAttachmentUrl({ id }, false)
+        .then((resolvedUrl) => ({
+          url: resolvedUrl || '',
+          fileName: this.attachments?.find((att: any) => att?.id === id)?.fileName || 'Attachment'
+        }))
+        .catch(() => null);
   }
 
   async openAttachment(row: any, event?: Event): Promise<void> {
@@ -455,7 +469,7 @@ export class QirEditComponent {
       return;
     }
 
-    this.openFileViewerModal(resolvedUrl, row?.fileName || "Attachment");
+    this.openFileViewerModal(resolvedUrl, row?.fileName || "Attachment", row);
   }
 
   async downloadAttachment(row: any, event?: Event): Promise<void> {

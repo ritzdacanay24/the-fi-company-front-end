@@ -90,36 +90,39 @@ export class ForkliftInspectionEditComponent {
   viewImage(row: any, event?: Event) {
     event?.preventDefault();
 
+    // Find current index in attachments array
+    const currentIndex = this.attachments?.findIndex((att: any) => att?.id === row?.id) ?? 0;
+
     // Try to fetch signed URL first if this is a private S3 object
     if (row?.id) {
       this.attachmentsService.getViewById(row.id).then((resolved: any) => {
         const signedUrl = resolved?.url || resolved?.previewUrl;
         if (signedUrl) {
-          this.openImageModal(signedUrl, row);
+          this.openImageModal(signedUrl, row, currentIndex);
           return;
         }
         // Fall back to stored URL if signed URL fetch fails
-        this.fallbackOpenImage(row);
+        this.fallbackOpenImage(row, currentIndex);
       }).catch(() => {
         // Fall back to stored URL if signed URL fetch fails
-        this.fallbackOpenImage(row);
+        this.fallbackOpenImage(row, currentIndex);
       });
     } else {
       // No ID, use fallback
-      this.fallbackOpenImage(row);
+      this.fallbackOpenImage(row, currentIndex);
     }
   }
 
-  private fallbackOpenImage(row: any): void {
+  private fallbackOpenImage(row: any, currentIndex: number): void {
     const url = this.getAttachmentUrl(row);
     if (!url) {
       this.toastrService.warning("Attachment URL not available");
       return;
     }
-    this.openImageModal(url, row);
+    this.openImageModal(url, row, currentIndex);
   }
 
-  private openImageModal(url: string, row: any): void {
+  private openImageModal(url: string, row: any, currentIndex: number): void {
     const modalRef = this.modalService.open(FileViewerModalComponent, {
       size: "xl",
       centered: true,
@@ -127,6 +130,18 @@ export class ForkliftInspectionEditComponent {
     });
     modalRef.componentInstance.url = url;
     modalRef.componentInstance.fileName = row?.fileName || row?.filename || row?.name || "Attachment";
+    
+    // Enable gallery navigation
+    modalRef.componentInstance.items = this.attachments || [];
+    modalRef.componentInstance.initialIndex = currentIndex;
+    modalRef.componentInstance.enableNavigation = true;
+    modalRef.componentInstance.resolveById = (id: string | number) => 
+      this.attachmentsService.getViewById(Number(id))
+        .then((resolved: any) => ({
+          url: resolved?.url || resolved?.previewUrl || '',
+          fileName: resolved?.fileName
+        }))
+        .catch(() => null);
   }
 
   getAttachmentUrl(attachment: any): string {
