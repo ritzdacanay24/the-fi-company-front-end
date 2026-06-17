@@ -380,6 +380,13 @@ export class QirEditComponent {
   }
 
   private getLegacyAttachmentUrl(fileName: string): string {
+    const encodedFileName = encodeURIComponent(fileName);
+
+    // Prefer the new folder convention, but keep legacy path compatibility.
+    return `https://dashboard.eye-fi.com/attachments/quality/capa/${encodedFileName}`;
+  }
+
+  private getLegacyAttachmentFallbackUrl(fileName: string): string {
     return `https://dashboard.eye-fi.com/attachments/capa/${encodeURIComponent(fileName)}`;
   }
 
@@ -398,7 +405,8 @@ export class QirEditComponent {
         resolved?.url ||
         row?.previewUrl ||
         row?.link ||
-        this.getLegacyAttachmentUrl(row?.fileName || "")
+        this.getLegacyAttachmentUrl(row?.fileName || "") ||
+        this.getLegacyAttachmentFallbackUrl(row?.fileName || "")
       );
     } catch (error) {
       if (showError) {
@@ -539,7 +547,7 @@ export class QirEditComponent {
       formData.append("file", file);
       formData.append("field", "Capa Request");
       formData.append("uniqueData", `${this.id}`);
-      formData.append("subFolder", "capa");
+      formData.append("subFolder", "quality/capa");
       try {
         await this.attachmentsService.uploadfile(formData);
       } catch (err) {}
