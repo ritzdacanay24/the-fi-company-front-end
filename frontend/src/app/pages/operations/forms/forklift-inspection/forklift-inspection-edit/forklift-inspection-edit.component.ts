@@ -90,12 +90,36 @@ export class ForkliftInspectionEditComponent {
   viewImage(row: any, event?: Event) {
     event?.preventDefault();
 
+    // Try to fetch signed URL first if this is a private S3 object
+    if (row?.id) {
+      this.attachmentsService.getViewById(row.id).then((resolved: any) => {
+        const signedUrl = resolved?.url || resolved?.previewUrl;
+        if (signedUrl) {
+          this.openImageModal(signedUrl, row);
+          return;
+        }
+        // Fall back to stored URL if signed URL fetch fails
+        this.fallbackOpenImage(row);
+      }).catch(() => {
+        // Fall back to stored URL if signed URL fetch fails
+        this.fallbackOpenImage(row);
+      });
+    } else {
+      // No ID, use fallback
+      this.fallbackOpenImage(row);
+    }
+  }
+
+  private fallbackOpenImage(row: any): void {
     const url = this.getAttachmentUrl(row);
     if (!url) {
       this.toastrService.warning("Attachment URL not available");
       return;
     }
+    this.openImageModal(url, row);
+  }
 
+  private openImageModal(url: string, row: any): void {
     const modalRef = this.modalService.open(FileViewerModalComponent, {
       size: "xl",
       centered: true,
@@ -209,7 +233,6 @@ export class ForkliftInspectionEditComponent {
 
       this.attachments = (data?.attachments || []).map((attachment: any) => ({
         ...attachment,
-        previewUrl: this.getAttachmentUrl(attachment),
       }));
       this.data = data;
       this.form.patchValue({
@@ -234,12 +257,32 @@ export class ForkliftInspectionEditComponent {
   downloadAttachment(row: any, event?: Event): void {
     event?.preventDefault();
 
+    // Try to fetch signed URL first if this is a private S3 object
+    if (row?.id) {
+      this.attachmentsService.getViewById(row.id).then((resolved: any) => {
+        const signedUrl = resolved?.url || resolved?.previewUrl;
+        if (signedUrl) {
+          window.open(signedUrl, "_blank");
+          return;
+        }
+        // Fall back to stored URL if signed URL fetch fails
+        this.fallbackDownload(row);
+      }).catch(() => {
+        // Fall back to stored URL if signed URL fetch fails
+        this.fallbackDownload(row);
+      });
+    } else {
+      // No ID, use fallback
+      this.fallbackDownload(row);
+    }
+  }
+
+  private fallbackDownload(row: any): void {
     const url = this.getAttachmentUrl(row);
     if (!url) {
       this.toastrService.warning("Attachment URL not available");
       return;
     }
-
     window.open(url, "_blank");
   }
 

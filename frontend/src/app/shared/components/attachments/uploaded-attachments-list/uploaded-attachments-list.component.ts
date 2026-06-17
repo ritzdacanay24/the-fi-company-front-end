@@ -141,10 +141,6 @@ import { AttachmentsService } from "@app/core/api/attachments/attachments.servic
 export class UploadedAttachmentsListComponent implements OnChanges {
   @Input() set attachments(value: any[]) {
     this._attachments = value;
-    // Resolve URLs immediately when attachments are set
-    if (this._resolvePreviewUrls && value?.length > 0) {
-      this.resolveAttachmentUrls();
-    }
   }
   get attachments(): any[] {
     return this._attachments;
@@ -161,21 +157,13 @@ export class UploadedAttachmentsListComponent implements OnChanges {
   @Input() maxHeight = "300px";
   @Input() showHelperText = true;
   @Input() helperText = "Click on filenames to preview, or use direct download links if preview fails.";
-  @Input() set resolvePreviewUrls(value: boolean) {
-    this._resolvePreviewUrls = value;
-    if (value && this._attachments?.length > 0) {
-      // Clear resolved IDs when flag is set so we re-fetch
-      this.resolvedIds.clear();
-      this.resolveAttachmentUrls();
-    }
-  }
+  @Input() resolvePreviewUrls = false;
 
   @Output() openRequested = new EventEmitter<any>();
   @Output() downloadRequested = new EventEmitter<any>();
   @Output() deleteRequested = new EventEmitter<{ id: any; index: number; row: any }>();
 
   private readonly attachmentsService = inject(AttachmentsService);
-  private _resolvePreviewUrls = false;
   private resolvedIds = new Set<number>();
 
   getUploaderLabel(row: any): string {
@@ -196,8 +184,8 @@ export class UploadedAttachmentsListComponent implements OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    // Fallback handler in case attachments change through other means
-    if (changes['attachments'] && this._resolvePreviewUrls) {
+    // If resolvePreviewUrls flag is explicitly set to true, resolve URLs on demand
+    if (changes['resolvePreviewUrls'] && this.resolvePreviewUrls && this._attachments?.length > 0) {
       this.resolvedIds.clear();
       this.resolveAttachmentUrls();
     }
