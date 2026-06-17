@@ -96,10 +96,14 @@ export class TripDetailRepository extends BaseRepository<RowDataPacket> {
     );
 
     const attachments = await this.mysqlService.query<RowDataPacket[]>(
-      `SELECT *, CONCAT('https://dashboard.eye-fi.com/attachments/fieldService/', fileName) AS url
-       FROM eyefidb.attachments
-       WHERE uniqueId = ?
-         AND FIELD = 'Field Service Trip Details'`,
+      `SELECT 
+        a.*,
+        CONCAT('https://dashboard.eye-fi.com/attachments/fieldService/', a.fileName) AS url,
+        NULLIF(TRIM(CONCAT(COALESCE(u.first, ''), ' ', COALESCE(u.last, ''))), '') AS createdByName
+       FROM eyefidb.attachments a
+       LEFT JOIN db.users u ON u.id = a.createdBy
+       WHERE a.uniqueId = ?
+         AND a.FIELD = 'Field Service Trip Details'`,
       [id],
     );
 

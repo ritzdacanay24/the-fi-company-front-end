@@ -77,10 +77,13 @@ export class VehicleInspectionRepository {
 
   async getAttachmentsByInspectionId(id: number): Promise<RowDataPacket[]> {
     const sql = `
-      SELECT *
-      FROM eyefidb.attachments
-      WHERE field = 'Vehicle Inspection'
-        AND uniqueId = ?
+      SELECT 
+        a.*,
+        NULLIF(TRIM(CONCAT(COALESCE(u.first, ''), ' ', COALESCE(u.last, ''))), '') AS createdByName
+      FROM eyefidb.attachments a
+      LEFT JOIN db.users u ON u.id = a.createdBy
+      WHERE a.field = 'Vehicle Inspection'
+        AND a.uniqueId = ?
     `;
 
     return this.mysqlService.query<RowDataPacket[]>(sql, [id]);
