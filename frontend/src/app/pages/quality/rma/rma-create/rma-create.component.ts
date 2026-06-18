@@ -1,4 +1,4 @@
-import { Component, Input, ViewChild } from "@angular/core";
+import { Component, Input } from "@angular/core";
 import { FormGroup } from "@angular/forms";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ToastrService } from "ngx-toastr";
@@ -10,12 +10,12 @@ import { SharedModule } from "@app/shared/shared.module";
 import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErrors";
 import { RmaService } from "@app/core/api/quality/rma.service";
 import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
-import { UploadAttachmentsModalComponent } from "@app/shared/components/attachments/upload-attachments-modal/upload-attachments-modal.component";
-import { PendingUploadsListComponent } from "@app/shared/components/attachments/pending-uploads-list/pending-uploads-list.component";
+import { UploadNewAttachmentsComponent } from "@app/shared/components/attachments/upload-new-attachments/upload-new-attachments.component";
+import { UploadTriggerMode } from "@app/shared/components/attachments/attachment-upload.types";
 
 @Component({
   standalone: true,
-  imports: [SharedModule, RmaFormComponent, UploadAttachmentsModalComponent, PendingUploadsListComponent],
+  imports: [SharedModule, RmaFormComponent, UploadNewAttachmentsComponent],
   selector: "app-rma-create",
   templateUrl: "./rma-create.component.html",
   styleUrls: ["./rma-create.component.scss"],
@@ -38,8 +38,6 @@ export class RmaCreateComponent {
     if (this.id) this.getData();
   }
 
-  @ViewChild(UploadAttachmentsModalComponent) uploadModal: UploadAttachmentsModalComponent | null = null;
-
   title = "Create RMA";
 
   form: FormGroup;
@@ -58,7 +56,7 @@ export class RmaCreateComponent {
 
   data: any;
   selectedFiles: File[] = [];
-  uploadTriggerMode: "manual" | "on-add" | "parent-submit" = "parent-submit";
+  uploadTriggerMode: UploadTriggerMode = "parent-submit";
 
   async getData() {
     try {

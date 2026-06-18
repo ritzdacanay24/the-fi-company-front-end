@@ -1,4 +1,4 @@
-import { Component, Input, ViewChild } from "@angular/core";
+import { Component, Input } from "@angular/core";
 import { FormGroup } from "@angular/forms";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ToastrService } from "ngx-toastr";
@@ -7,26 +7,24 @@ import { RmaService } from "@app/core/api/quality/rma.service";
 import { NAVIGATION_ROUTE } from "../rma-constant";
 import { SharedModule } from "@app/shared/shared.module";
 import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
-import { UploadAttachmentsModalComponent } from "@app/shared/components/attachments/upload-attachments-modal/upload-attachments-modal.component";
-import { PendingUploadsListComponent } from "@app/shared/components/attachments/pending-uploads-list/pending-uploads-list.component";
 import { UploadedAttachmentsListComponent } from "@app/shared/components/attachments/uploaded-attachments-list/uploaded-attachments-list.component";
+import { UploadNewAttachmentsComponent } from "@app/shared/components/attachments/upload-new-attachments/upload-new-attachments.component";
+import { UploadTriggerMode } from "@app/shared/components/attachments/attachment-upload.types";
+import { SweetAlert } from "@app/shared/sweet-alert/sweet-alert.service";
 
 @Component({
   standalone: true,
   imports: [
     SharedModule,
     RmaFormComponent,
-    UploadAttachmentsModalComponent,
-    PendingUploadsListComponent,
     UploadedAttachmentsListComponent,
+    UploadNewAttachmentsComponent,
   ],
   selector: "app-rma-edit",
   templateUrl: "./rma-edit.component.html",
   styleUrls: ["./rma-edit.component.scss"],
 })
 export class RmaEditComponent {
-  @ViewChild(UploadAttachmentsModalComponent) uploadModal: UploadAttachmentsModalComponent | null = null;
-
   constructor(
     private router: Router,
     private activatedRoute: ActivatedRoute,
@@ -69,7 +67,7 @@ export class RmaEditComponent {
   data: any;
   attachments: any[] = [];
   selectedFiles: File[] = [];
-  uploadTriggerMode: "manual" | "on-add" = "manual";
+  uploadTriggerMode: UploadTriggerMode = "on-add";
 
   async getAttachments() {
     if (!this.id) {
@@ -163,9 +161,15 @@ export class RmaEditComponent {
   }
 
   async deleteAttachment(id: number): Promise<void> {
-    if (!confirm("Are you sure you want to remove attachment?")) {
-      return;
-    }
+    const result = await SweetAlert.confirm({
+      title: "Remove attachment?",
+      text: "This will permanently remove the attachment from this RMA.",
+      icon: "warning",
+      confirmButtonText: "Yes, remove",
+      cancelButtonText: "Cancel",
+    });
+
+    if (!result.isConfirmed) return;
 
     await this.attachmentsService.delete(id);
     await this.getAttachments();
@@ -173,7 +177,16 @@ export class RmaEditComponent {
 
   async onArchive() {
     if (!this.id || !this.form) return;
-    if (!confirm(`Archive RMA #${this.id}?`)) return;
+
+    const result = await SweetAlert.confirm({
+      title: `Archive RMA #${this.id}?`,
+      text: "Archived records are removed from active lists.",
+      icon: "warning",
+      confirmButtonText: "Yes, archive",
+      cancelButtonText: "Cancel",
+    });
+
+    if (!result.isConfirmed) return;
 
     try {
       this.isLoading = true;
@@ -193,7 +206,16 @@ export class RmaEditComponent {
 
   async onDelete() {
     if (!this.id) return;
-    if (!confirm(`Delete RMA #${this.id}? This cannot be undone.`)) return;
+
+    const result = await SweetAlert.confirm({
+      title: `Delete RMA #${this.id}?`,
+      text: "This action cannot be undone.",
+      icon: "warning",
+      confirmButtonText: "Yes, delete",
+      cancelButtonText: "Cancel",
+    });
+
+    if (!result.isConfirmed) return;
 
     try {
       this.isLoading = true;
