@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { basename } from 'path';
 import PDFDocument from 'pdfkit';
 import { PermitChecklistsRepository } from './permit-checklists.repository';
@@ -259,7 +259,7 @@ export class PermitChecklistsService {
   async removeAttachment(
     ticketIdInput: string | undefined,
     attachmentIdInput: string | undefined,
-    attachmentInput?: Record<string, unknown>,
+    _attachmentInput?: Record<string, unknown>,
   ) {
     const ticketId = String(ticketIdInput || '').trim();
     const attachmentId = String(attachmentIdInput || '').trim();
@@ -271,90 +271,28 @@ export class PermitChecklistsService {
       return { success: false, error: 'attachmentId is required' };
     }
 
-    // Try to delete from shared attachments table first
+    // Shared/AWS attachments are deleted by shared table numeric id.
     const numericId = Number(attachmentId);
-    if (Number.isInteger(numericId) && numericId > 0) {
-      try {
-        // Fetch before delete so we can remove the S3/local file
-        const rows = await this.attachmentsRepository.find({ id: String(numericId) });
-        const row = rows[0];
-        if (row) {
-          await this.deleteAttachmentFile({
-            storageSource: row['storage_source'],
-            storageBucket: row['storage_bucket'],
-            storageKey: row['storage_key'],
-            link: row['link'],
-            storedFileName: row['fileName'],
-          });
-          await this.attachmentsRepository.deleteById(numericId);
-        }
-      } catch {
-        // Not found in attachments table — fall through to legacy JSON cleanup
-      }
+    if (!Number.isInteger(numericId) || numericId <= 0) {
+      throw new BadRequestException('Legacy attachments are read-only and cannot be deleted by this endpoint');
     }
 
-    // Legacy: also clean from attachments_json if it exists there
-    const raw = await this.repository.getAttachmentsJson(ticketId);
-    let attachments: Array<Record<string, unknown>> = [];
-    try {
-      const parsed = JSON.parse(raw || '[]');
-      attachments = Array.isArray(parsed) ? parsed : [];
-    } catch {
-      attachments = [];
+    // Fetch before delete so we can remove the S3/local file.
+    const rows = await this.attachmentsRepository.find({ id: String(numericId) });
+    const row = rows[0];
+    if (!row) {
+      throw new NotFoundException(`Shared attachment ${attachmentId} not found`);
     }
 
-    const fallbackAttachment = this.normalizeAttachmentInput(attachmentInput);
-    let removedAttachment = attachments.find((a) => String(a['id'] || '') === attachmentId);
-
-    if (!removedAttachment && fallbackAttachment?.storageKey) {
-      removedAttachment = attachments.find((a) => {
-        const key = String(a['storageKey'] || a['storage_key'] || '').trim();
-        return key && key === fallbackAttachment.storageKey;
-      });
-    }
-
-    const filtered = attachments.filter((a) => {
-      if (removedAttachment && a === removedAttachment) {
-        return false;
-      }
-      return String(a['id'] || '') !== attachmentId;
+    await this.deleteAttachmentFile({
+      storageSource: row['storage_source'],
+      storageBucket: row['storage_bucket'],
+      storageKey: row['storage_key'],
+      link: row['link'],
+      storedFileName: row['fileName'],
     });
-
-    const updatedAt = this.toDbDateTime(new Date().toISOString());
-    await this.repository.setAttachmentsJson(ticketId, JSON.stringify(filtered), updatedAt);
+    await this.attachmentsRepository.deleteById(numericId);
     return { success: true, ticketId, attachmentId };
-  }
-
-  private normalizeAttachmentInput(
-    input?: Record<string, unknown>,
-  ):
-    | {
-        id: string;
-        fileName: string;
-        url: string;
-        link: string;
-        path: string;
-        storageSource: string;
-        storageBucket: string;
-        storageKey: string;
-        storedFileName: string;
-      }
-    | null {
-    if (!input || typeof input !== 'object') {
-      return null;
-    }
-
-    return {
-      id: String(input['id'] || '').trim(),
-      fileName: String(input['fileName'] || '').trim(),
-      url: String(input['url'] || '').trim(),
-      link: String(input['link'] || '').trim(),
-      path: String(input['path'] || '').trim(),
-      storageSource: String(input['storageSource'] || input['storage_source'] || '').trim(),
-      storageBucket: String(input['storageBucket'] || input['storage_bucket'] || '').trim(),
-      storageKey: String(input['storageKey'] || input['storage_key'] || '').trim(),
-      storedFileName: String(input['storedFileName'] || '').trim(),
-    };
   }
 
   async deleteTicket(ticketIdInput: string | undefined) {

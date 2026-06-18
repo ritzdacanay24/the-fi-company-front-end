@@ -2376,6 +2376,12 @@ export class PermitChecklistsComponent implements OnInit {
       return;
     }
 
+    const numericId = Number(attachmentId);
+    if (!Number.isInteger(numericId) || numericId <= 0) {
+      this.statusMessage = "Legacy attachments are read-only. Only shared/AWS attachments can be deleted.";
+      return;
+    }
+
     const target = (ticket.attachments || []).find((item) => item.id === attachmentId);
     if (!target) {
       return;
@@ -2398,6 +2404,8 @@ export class PermitChecklistsComponent implements OnInit {
       const status = err?.status ?? err?.error?.statusCode;
       if (status === 403) {
         this.statusMessage = "You do not have permission to delete attachments.";
+      } else if (status === 400) {
+        this.statusMessage = "Legacy attachments are read-only and cannot be deleted from this view.";
       } else {
         this.statusMessage = "Failed to remove attachment. Please try again.";
       }
