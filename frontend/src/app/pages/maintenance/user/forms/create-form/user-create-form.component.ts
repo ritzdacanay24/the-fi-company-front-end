@@ -12,10 +12,9 @@ import { DepartmentService } from "@app/pages/operations/org-chart/services/depa
 })
 export class UserCreateFormComponent {
   @ViewChild('badgeInput') badgeInput?: ElementRef<HTMLInputElement>;
+  @ViewChild('profileImageInput') profileImageInput?: ElementRef<HTMLInputElement>;
 
-  constructor(private fb: FormBuilder, private departmentService: DepartmentService) {
-    this.form.get('lastLoggedIn').disable();
-  }
+  constructor(private fb: FormBuilder, private departmentService: DepartmentService) {}
 
   ngOnInit(): void {
     this.loadDepartments();
@@ -29,6 +28,8 @@ export class UserCreateFormComponent {
   @Input() submitted = false;
 
   departments: string[] = [];
+  selectedProfileImageFile: File | null = null;
+  profileImagePreviewUrl: string | null = null;
 
   get f() {
     return this.form.controls;
@@ -98,6 +99,31 @@ export class UserCreateFormComponent {
   onBadgeEnter(event: KeyboardEvent) {
     event.preventDefault();
     this.onBadgeInput(event as unknown as Event);
+  }
+
+  onProfileImageChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] || null;
+    this.selectedProfileImageFile = file;
+
+    if (!file) {
+      this.profileImagePreviewUrl = null;
+      return;
+    }
+
+    this.profileImagePreviewUrl = URL.createObjectURL(file);
+  }
+
+  clearProfileImage(): void {
+    this.selectedProfileImageFile = null;
+    this.profileImagePreviewUrl = null;
+    if (this.profileImageInput?.nativeElement) {
+      this.profileImageInput.nativeElement.value = '';
+    }
+  }
+
+  getSelectedProfileImageFile(): File | null {
+    return this.selectedProfileImageFile;
   }
 
   private normalizeCardNumber(value: string): string {

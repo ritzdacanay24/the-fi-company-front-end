@@ -19,6 +19,7 @@ export class UserEditFormComponent {
   title = "User Info";
   isLoading = false;
   @ViewChild('badgeInput') badgeInput?: ElementRef<HTMLInputElement>;
+  @ViewChild('profileImageInput') profileImageInput?: ElementRef<HTMLInputElement>;
 
   @Output() setFormEmitter: EventEmitter<any> = new EventEmitter();
   @Output() imageUploadSuccess: EventEmitter<any> = new EventEmitter();
@@ -60,6 +61,8 @@ export class UserEditFormComponent {
   // Image upload properties
   selectedFile: File | null = null;
   isUploadingImage = false;
+  imageRemoved = false;
+  imagePreviewUrl: string | null = null;
 
   get f() {
     return this.form.controls;
@@ -158,8 +161,29 @@ export class UserEditFormComponent {
     this.form.get('active').patchValue(currentValue ? 0 : 1);
   }
 
-  removeImage() {
+  async removeImage() {
+    this.selectedFile = null;
+    this.imagePreviewUrl = null;
+
+    if (this.profileImageInput?.nativeElement) {
+      this.profileImageInput.nativeElement.value = '';
+    }
+
+    // For existing users, remove from storage immediately when requested.
+    if (this.id && this.form.get('image')?.value) {
+      try {
+        this.isUploadingImage = true;
+        await this.userService.removePhoto(this.id);
+      } catch (error) {
+        alert('Failed to remove image. Please try again.');
+        this.isUploadingImage = false;
+        return;
+      }
+    }
+
+    this.imageRemoved = false;
     this.form.get("image").patchValue(null);
+    this.isUploadingImage = false;
   }
 
   clearAttempts() {
@@ -167,17 +191,17 @@ export class UserEditFormComponent {
   }
 
   onImageSelected(event: Event) {
-    console.log('onImageSelected called');
     const target = event.target as HTMLInputElement;
     if (target.files && target.files.length > 0) {
       this.selectedFile = target.files[0];
-      console.log('File selected:', this.selectedFile.name, this.selectedFile.type, this.selectedFile.size);
+      this.imageRemoved = false;
       
       // Validate file type
       const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
       if (!allowedTypes.includes(this.selectedFile.type)) {
         alert('Please select a valid image file (JPG, PNG, or GIF).');
         this.selectedFile = null;
+        this.imagePreviewUrl = null;
         target.value = '';
         return;
       }
@@ -187,15 +211,32 @@ export class UserEditFormComponent {
       if (this.selectedFile.size > maxSize) {
         alert('Image file size must be less than 5MB.');
         this.selectedFile = null;
+        this.imagePreviewUrl = null;
         target.value = '';
         return;
       }
-      
-      console.log('File validation passed, ready to upload');
+
+      this.imagePreviewUrl = URL.createObjectURL(this.selectedFile);
     } else {
       this.selectedFile = null;
-      console.log('No file selected');
+      this.imagePreviewUrl = null;
     }
+  }
+
+  getDisplayImageUrl(): string | null {
+    return this.imagePreviewUrl || this.form.get('image')?.value || null;
+  }
+
+  hasSelectedImageFile(): boolean {
+    return !!this.selectedFile;
+  }
+
+  getSelectedImageFile(): File | null {
+    return this.selectedFile;
+  }
+
+  shouldRemoveImage(): boolean {
+    return this.imageRemoved && !this.selectedFile;
   }
 
   async uploadImage() {

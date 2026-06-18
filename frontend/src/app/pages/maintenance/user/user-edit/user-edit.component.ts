@@ -1,4 +1,4 @@
-import { Component, Input } from "@angular/core";
+import { Component, Input, ViewChild } from "@angular/core";
 import { FormGroup } from "@angular/forms";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ToastrService } from "ngx-toastr";
@@ -33,6 +33,7 @@ export class UserEditComponent {
   title = "Edit User";
 
   form: FormGroup;
+  @ViewChild(UserEditFormComponent) editFormComponent?: UserEditFormComponent;
 
   id = null;
 
@@ -68,6 +69,18 @@ export class UserEditComponent {
     try {
       this.isLoading = true;
       await this.api.update(this.id, this.form.value);
+
+      const shouldRemoveImage = this.editFormComponent?.shouldRemoveImage() ?? false;
+      const selectedImageFile = this.editFormComponent?.getSelectedImageFile() || null;
+
+      if (shouldRemoveImage) {
+        await this.api.removePhoto(this.id);
+      } else if (selectedImageFile) {
+        const formData = new FormData();
+        formData.append('file', selectedImageFile);
+        await this.api.uploadfile(this.id, formData);
+      }
+
       this.isLoading = false;
       this.toastrService.success("Successfully Updated");
       this.goBack();

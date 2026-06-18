@@ -1,11 +1,10 @@
-import { Component, Input } from "@angular/core";
+import { Component, Input, ViewChild } from "@angular/core";
 import { FormGroup } from "@angular/forms";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ToastrService } from "ngx-toastr";
 import { NAVIGATION_ROUTE } from "../user-constant";
 import { SharedModule } from "@app/shared/shared.module";
 import { NgbDropdownModule, NgbNavModule } from "@ng-bootstrap/ng-bootstrap";
-import { UserEditComponent } from "../user-edit/user-edit.component";
 import { UserPasswordComponent } from "../user-password/user-password.component";
 import { UserPermissionsComponent } from "../user-permissions/user-permissions.component";
 import { UserRbacComponent } from "../user-rbac/user-rbac.component";
@@ -20,7 +19,6 @@ import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErr
     UserEditFormComponent,
     NgbDropdownModule,
     NgbNavModule,
-    UserEditComponent,
     UserPasswordComponent,
     UserPermissionsComponent,
     UserRbacComponent,
@@ -68,6 +66,7 @@ export class UserOverviewComponent {
   title = "Edit User";
 
   form: FormGroup;
+  @ViewChild(UserEditFormComponent) editFormComponent?: UserEditFormComponent;
 
   id = null;
 
@@ -112,6 +111,18 @@ export class UserOverviewComponent {
         ...this.form.value,
         workArea: this.form.value.workArea?.toString(),
       });
+
+      const shouldRemoveImage = this.editFormComponent?.shouldRemoveImage() ?? false;
+      const selectedImageFile = this.editFormComponent?.getSelectedImageFile() || null;
+
+      if (shouldRemoveImage) {
+        await this.api.removePhoto(this.id);
+      } else if (selectedImageFile) {
+        const formData = new FormData();
+        formData.append("file", selectedImageFile);
+        await this.api.uploadfile(this.id, formData);
+      }
+
       this.isLoading = false;
       this.toastrService.success("Successfully Updated");
       this.goBack();
@@ -122,27 +133,5 @@ export class UserOverviewComponent {
 
   onCancel() {
     this.goBack();
-  }
-
-  file: File = null;
-
-  myFiles: any;
-
-  onFilechange(event: any) {
-    this.myFiles = event.target.files;
-  }
-
-  async onUploadAttachments() {
-    if (this.myFiles) {
-      this.isLoading = true;
-      const formData = new FormData();
-      formData.append("file", this.myFiles[0]);
-      try {
-        await this.api.uploadfile(this.id, formData);
-      } catch (err) {}
-
-      this.isLoading = false;
-      await this.getData();
-    }
   }
 }

@@ -1,4 +1,4 @@
-import { Component, Input } from "@angular/core";
+import { Component, Input, ViewChild } from "@angular/core";
 import { Router } from "@angular/router";
 import { SharedModule } from "@app/shared/shared.module";
 import { ToastrService } from "ngx-toastr";
@@ -39,6 +39,7 @@ export class UserCreateComponent {
   };
 
   form: any;
+  @ViewChild(UserCreateFormComponent) createFormComponent?: UserCreateFormComponent;
 
   async onSubmit() {
     this.submitted = true;
@@ -67,6 +68,11 @@ export class UserCreateComponent {
     try {
       this.isLoading = true;
       let data: any = await this.api.create(this.form.value);
+      const createdId = this.extractCreatedId(data);
+
+      if (createdId) {
+        await this.uploadCreatedUserImage(createdId);
+      }
 
       if (data?.error) {
         this.toastrService.error(data?.message);
@@ -75,7 +81,7 @@ export class UserCreateComponent {
 
         this.router.navigate([NAVIGATION_ROUTE.EDIT], {
           queryParamsHandling: "merge",
-          queryParams: { id: data.insertId },
+          queryParams: { id: createdId },
         });
 
         //this.goBack(data.insertId);
@@ -85,6 +91,23 @@ export class UserCreateComponent {
     } catch (err) {
       this.isLoading = false;
     }
+  }
+
+  private extractCreatedId(data: any): number | null {
+    const candidate = data?.insertId ?? data?.id ?? data?.data?.insertId ?? data?.data?.id ?? null;
+    const parsed = Number(candidate);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  }
+
+  private async uploadCreatedUserImage(createdId: number): Promise<void> {
+    const file = this.createFormComponent?.getSelectedProfileImageFile?.();
+    if (!file) {
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+    await this.api.uploadfile(createdId, formData);
   }
 
   onCancel() {

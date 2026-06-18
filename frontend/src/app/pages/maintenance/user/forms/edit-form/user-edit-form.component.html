@@ -6,6 +6,34 @@
         <p class="text-muted mb-0">Basic personal details and contact information for the user account.</p>
       </div>
 
+        <div class="row align-items-start mb-3">
+          <label class="col-md-3 col-form-label">Profile Image</label>
+          <div class="col-md-9">
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+              <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center" style="width: 72px; height: 72px; overflow: hidden;">
+                <img *ngIf="getDisplayImageUrl(); else defaultEditAvatar" [src]="getDisplayImageUrl()!" alt="Profile image" style="width: 72px; height: 72px; object-fit: cover;" />
+                <ng-template #defaultEditAvatar>
+                  <i class="mdi mdi-account text-muted" style="font-size: 1.75rem;"></i>
+                </ng-template>
+              </div>
+
+              <div class="d-flex gap-2">
+                <input #profileImageInput type="file" class="d-none" accept="image/*" (change)="onImageSelected($event)" />
+                <button type="button" class="btn btn-outline-primary btn-sm" (click)="profileImageInput.click()">
+                  <i class="mdi mdi-camera-outline me-1"></i>Choose Image
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" (click)="removeImage()" [disabled]="!getDisplayImageUrl() && !hasSelectedImageFile()">
+                  Remove
+                </button>
+              </div>
+            </div>
+            <div class="form-text">
+              <i class="mdi mdi-information-outline me-1"></i>
+              Save changes to apply upload or removal.
+            </div>
+          </div>
+        </div>
+
       <div class="row align-items-start mb-3">
         <label class="col-md-3 col-form-label required">First Name</label>
         <div class="col-md-9">
