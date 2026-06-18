@@ -124,50 +124,6 @@ export class VehicleInspectionEditComponent {
     modalRef.componentInstance.fileName = fileName;
   }
 
-  async viewImage(attachment: any) {
-    try {
-      let url = this.getImageUrl(attachment);
-      if (attachment?.id) {
-        const resolved = await this.attachmentsService.getViewById(attachment.id);
-        if (resolved?.url) {
-          url = resolved.url;
-        }
-      }
-
-      if (!url) {
-        this.toastrService.warning('Attachment URL not available');
-        return;
-      }
-
-      this.openFileViewerModal(url, attachment?.fileName || 'Attachment');
-    } catch (error) {
-      console.error('Failed to open attachment:', error);
-      this.toastrService.error('Unable to open attachment');
-    }
-  }
-
-  async downloadAttachment(attachment: any) {
-    try {
-      let url = this.getImageUrl(attachment);
-      if (attachment?.id) {
-        const resolved = await this.attachmentsService.getViewById(attachment.id);
-        if (resolved?.url) {
-          url = resolved.url;
-        }
-      }
-
-      if (!url) {
-        this.toastrService.warning('Attachment URL not available');
-        return;
-      }
-
-      window.open(url, '_blank');
-    } catch (error) {
-      console.error('Failed to download attachment:', error);
-      this.toastrService.error('Unable to download attachment');
-    }
-  }
-
   setFormErrorsEmitter($event){
   }
 

@@ -10,16 +10,17 @@ import { VehicleInspectionFormComponent } from "../vehicle-inspection-form/vehic
 import { AuthenticationService } from "@app/core/services/auth.service";
 import { resetVehicleInspectionFormValues } from "../vehicle-inspection-form/formData";
 import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
-import { UploadAttachmentsModalComponent } from "@app/shared/components/attachments/upload-attachments-modal/upload-attachments-modal.component";
-import { PendingUploadsListComponent } from "@app/shared/components/attachments/pending-uploads-list/pending-uploads-list.component";
+import { UploadedAttachmentsListComponent } from "@app/shared/components/attachments/uploaded-attachments-list/uploaded-attachments-list.component";
+import { UploadNewAttachmentsComponent } from "@app/shared/components/attachments/upload-new-attachments/upload-new-attachments.component";
+import { UploadTriggerMode } from "@app/shared/components/attachments/attachment-upload.types";
 
 @Component({
   standalone: true,
   imports: [
     SharedModule,
     VehicleInspectionFormComponent,
-    UploadAttachmentsModalComponent,
-    PendingUploadsListComponent,
+    UploadedAttachmentsListComponent,
+    UploadNewAttachmentsComponent,
   ],
   selector: "app-vehicle-inspection-create",
   templateUrl: "./vehicle-inspection-create.component.html",
@@ -162,7 +163,8 @@ export class VehicleInspectionCreateComponent {
   };
 
   additionalVehiclePhotos: File[] = [];
-  uploadTriggerMode: "manual" | "on-add" | "parent-submit" = "parent-submit";
+  uploadedAttachments: any[] = [];
+  uploadTriggerMode: UploadTriggerMode = "parent-submit";
 
   onVehiclePhotoChange(
     event: any,

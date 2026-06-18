@@ -33,25 +33,33 @@
 
           <div class="mt-4" *ngIf="form?.value?.truck_license_plate && !form?.value?.not_used">
             <div>
-              <div class="mb-3">
+              <app-uploaded-attachments-list
+                [attachments]="uploadedAttachments"
+                [viewMode]="'table'"
+                [showThumbnails]="true"
+                [showDelete]="true"
+                [disableDelete]="isLoading"
+                [isLoading]="isLoading"
+                [showHelperText]="true"
+                [helperText]="'Click on filenames to preview, or use direct download links if preview fails.'">
+              </app-uploaded-attachments-list>
+
+              <div class="mb-3 mt-4">
                 <h6 class="mb-1"><i class="mdi mdi-image-multiple me-2"></i>Vehicle Photos (Optional)</h6>
                 <p class="text-muted mb-0">Capture extra photos on the spot (damage, decals, interior, etc.).</p>
               </div>
-              <button
-                type="button"
-                class="btn btn-outline-primary btn-sm"
-                (click)="additionalPhotosModal?.openModal()"
-                [disabled]="isLoading">
-                <i class="mdi mdi-upload me-1"></i>Add Optional Photos
-              </button>
 
-              <div class="mt-3" *ngIf="additionalVehiclePhotos.length > 0">
-                <app-pending-uploads-list
-                  [files]="additionalVehiclePhotos"
-                  [disabled]="isLoading"
-                  (removeRequested)="removeAdditionalVehiclePhoto($event)">
-                </app-pending-uploads-list>
-              </div>
+              <app-upload-new-attachments
+                [files]="additionalVehiclePhotos"
+                [uploadTriggerMode]="uploadTriggerMode"
+                [accept]="'image/*'"
+                [multiple]="true"
+                [disabled]="isLoading"
+                [pendingViewMode]="'table'"
+                (filesAdded)="onAdditionalVehiclePhotosChange($event)"
+                (removeRequested)="removeAdditionalVehiclePhoto($event)"
+                (uploadRequested)="onSubmit()">
+              </app-upload-new-attachments>
             </div>
           </div>
           <div class="alert alert-info mt-4" *ngIf="form?.value?.not_used">
@@ -81,23 +89,3 @@
     </div>
   </div>
 </div>
-
-<app-upload-attachments-modal
-  #additionalPhotosModal
-  [files]="additionalVehiclePhotos"
-  [disabled]="isLoading"
-  [isUploading]="isLoading"
-  [accept]="'image/*'"
-  [multiple]="true"
-  [allowPaste]="true"
-  [openPickerOnContainerClick]="false"
-  [chooseLabel]="'Choose photos'"
-  [dropLabel]="'or drag them here.'"
-  [pasteHint]="'Copy and paste one or more photos into this area.'"
-  [showPasteHint]="true"
-  [uploadTriggerMode]="uploadTriggerMode"
-  [manualFlowText]="'Photos upload after you create the inspection.'"
-  [autoFlowText]="'Photos upload after you add them.'"
-  (filesAdded)="onAdditionalVehiclePhotosChange($event)"
-  (removeRequested)="removeAdditionalVehiclePhoto($event)">
-</app-upload-attachments-modal>

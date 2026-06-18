@@ -130,16 +130,12 @@
 
             <app-uploaded-attachments-list
               [attachments]="attachments"
-              [viewMode]="'media-grid'"
-              [showMediaBadge]="true"
-              [resolvePreviewUrls]="true"
+              [viewMode]="'table'"
+              [showThumbnails]="true"
               [showDelete]="false"
               [isLoading]="isLoading"
               [showHelperText]="true"
-              [helperText]="'Click on a tile to preview. URLs are signed only when you open or download.'"
-              [maxHeight]="'520px'"
-              (openRequested)="viewImage($event)"
-              (downloadRequested)="downloadAttachment($event)">
+              [helperText]="'Click on filenames to preview, or use direct download links if preview fails.'">
             </app-uploaded-attachments-list>
           </div>
         </div>
