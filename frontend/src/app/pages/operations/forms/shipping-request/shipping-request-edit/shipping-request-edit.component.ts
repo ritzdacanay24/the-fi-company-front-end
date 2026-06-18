@@ -11,14 +11,19 @@ import { MyFormGroup } from "src/assets/js/util/_formGroup";
 import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
 import moment from "moment";
 import { AuthenticationService } from "@app/core/services/auth.service";
-import { environment } from "src/environments/environment";
-import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
-import { FileViewerModalComponent } from "@app/shared/components/file-viewer-modal/file-viewer-modal.component";
+import { UploadedAttachmentsListComponent } from "@app/shared/components/attachments/uploaded-attachments-list/uploaded-attachments-list.component";
+import { UploadNewAttachmentsComponent } from "@app/shared/components/attachments/upload-new-attachments/upload-new-attachments.component";
+import { UploadTriggerMode } from "@app/shared/components/attachments/attachment-upload.types";
 import { SweetAlert } from "@app/shared/sweet-alert/sweet-alert.service";
 
 @Component({
   standalone: true,
-  imports: [SharedModule, ShippingRequestFormComponent],
+  imports: [
+    SharedModule,
+    ShippingRequestFormComponent,
+    UploadedAttachmentsListComponent,
+    UploadNewAttachmentsComponent,
+  ],
   selector: "app-shipping-request-edit",
   templateUrl: "./shipping-request-edit.component.html",
 })
@@ -29,13 +34,16 @@ export class ShippingRequestEditComponent {
     private api: ShippingRequestService,
     private toastrService: ToastrService,
     private attachmentsService: AttachmentsService,
-    private authenticationService: AuthenticationService,
-    private modalService: NgbModal
+    private authenticationService: AuthenticationService
   ) {}
 
   ngOnInit(): void {
+    this.id = this.activatedRoute.snapshot.queryParamMap.get("id");
+    this.formDisabled = !!this.id;
+
     this.activatedRoute.queryParams.subscribe((params) => {
       this.id = params["id"];
+      this.formDisabled = !!this.id;
     });
 
     if (this.id) this.getData();
@@ -87,8 +95,6 @@ export class ShippingRequestEditComponent {
     this.form = f;
     // If data already loaded, apply it to the form
     if (this.data) this.form.patchValue(this.data);
-    // If this is an edit, instruct child to disable the form (child handles keeping tracking editable)
-    this.formDisabled = !!this.id;
   }
 
   async onSubmit() {
@@ -211,6 +217,7 @@ export class ShippingRequestEditComponent {
   }
 
   attachments: any = [];
+  uploadTriggerMode: UploadTriggerMode = "on-add";
   async getAttachments() {
     this.attachments = await this.attachmentsService.find({
       field: "shippingRequest",
@@ -233,24 +240,27 @@ export class ShippingRequestEditComponent {
     this.attachments.splice(index, 1);
   }
 
-  file: File = null;
+  selectedFiles: File[] = [];
 
-  myFiles: string[] = [];
-
-  onFilechange(event: any) {
-    this.myFiles = [];
-    for (var i = 0; i < event.target.files.length; i++) {
-      this.myFiles.push(event.target.files[i]);
+  onAttachmentFilesAdded(files: File[]) {
+    if (!files?.length) {
+      return;
     }
+
+    this.selectedFiles = [...this.selectedFiles, ...files];
+  }
+
+  removeFile(index: number) {
+    this.selectedFiles.splice(index, 1);
   }
 
   async onUploadAttachments() {
-    if (this.myFiles) {
+    if (this.selectedFiles.length > 0) {
       let totalAttachments = 0;
       this.isLoading = true;
-      for (var i = 0; i < this.myFiles.length; i++) {
+      for (const file of this.selectedFiles) {
         const formData = new FormData();
-        formData.append("file", this.myFiles[i]);
+        formData.append("file", file);
         formData.append("field", "shippingRequest");
         formData.append("uniqueData", `${this.id}`);
         formData.append("subFolder", "shippingRequest");
@@ -259,50 +269,10 @@ export class ShippingRequestEditComponent {
           totalAttachments++;
         } catch (err) {}
       }
+      this.selectedFiles = [];
       this.isLoading = false;
       await this.getAttachments();
     }
-  }
-
-  getAttachmentUrl(attachment: any): string {
-    const rawLink = String(attachment?.link || "").trim();
-    if (rawLink) {
-      if (/^https?:\/\//i.test(rawLink)) {
-        return rawLink;
-      }
-
-      if (rawLink.startsWith("/")) {
-        const apiBaseUrl = String(environment.apiV2BaseUrl || "").replace(/\/+$/, "");
-        return `${apiBaseUrl}${rawLink}`;
-      }
-
-      return rawLink;
-    }
-
-    const fileName = attachment?.fileName || "";
-    if (!fileName) {
-      return "";
-    }
-
-    return `https://dashboard.eye-fi.com/attachments/shippingRequest/${fileName}`;
-  }
-
-  openAttachment(attachment: any, event?: Event): void {
-    event?.preventDefault();
-
-    const url = this.getAttachmentUrl(attachment);
-    if (!url) {
-      this.toastrService.warning("Attachment URL not available");
-      return;
-    }
-
-    const modalRef = this.modalService.open(FileViewerModalComponent, {
-      size: "xl",
-      centered: true,
-      scrollable: true,
-    });
-    modalRef.componentInstance.url = url;
-    modalRef.componentInstance.fileName = attachment?.fileName || "Attachment";
   }
 
   updateTracking = async () => {

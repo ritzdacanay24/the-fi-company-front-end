@@ -38,10 +38,23 @@
 
           <div class="mt-3">
             <h5 class="mb-2">Attachments</h5>
-            <div class="mb-3">
-              <input (change)="this.onFilechange($event)" class="form-control" type="file" id="file" multiple name="file">
-              <button (click)="this.upload()" type="button" class="btn btn-primary mt-2" *ngIf="id">Upload</button>
-            </div>
+            <app-upload-new-attachments
+              [files]="selectedFiles"
+              [disabled]="isLoading"
+              [uploadTriggerMode]="uploadTriggerMode"
+              [pendingViewMode]="'table'"
+              [helperText]="'Files upload when you click Submit.'"
+              [accept]="'*/*'"
+              [multiple]="true"
+              [allowPaste]="true"
+              [openPickerOnContainerClick]="false"
+              [chooseLabel]="'Choose files'"
+              [dropLabel]="'or drag them here.'"
+              [pasteHint]="'Copy and paste one or more files into this area.'"
+              [showPasteHint]="true"
+              (filesAdded)="onAttachmentFilesAdded($event)"
+              (removeRequested)="removeFile($event)">
+            </app-upload-new-attachments>
           </div>
         </div>
 

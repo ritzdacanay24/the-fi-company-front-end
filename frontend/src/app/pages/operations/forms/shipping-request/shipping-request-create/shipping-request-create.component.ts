@@ -11,10 +11,12 @@ import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErr
 import { MyFormGroup } from "src/assets/js/util/_formGroup";
 import { IShippingRequestForm } from "../shipping-request-form/shipping-request-form.type";
 import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
+import { UploadNewAttachmentsComponent } from "@app/shared/components/attachments/upload-new-attachments/upload-new-attachments.component";
+import { UploadTriggerMode } from "@app/shared/components/attachments/attachment-upload.types";
 
 @Component({
   standalone: true,
-  imports: [SharedModule, ShippingRequestFormComponent],
+  imports: [SharedModule, ShippingRequestFormComponent, UploadNewAttachmentsComponent],
   selector: "app-shipping-request-create",
   templateUrl: "./shipping-request-create.component.html",
 })
@@ -76,15 +78,17 @@ export class ShippingRequestCreateComponent {
       this.isLoading = true;
       let { insertId } = await this.api.create(this.form.value);
 
-      if (this.myFiles) {
-        for (var i = 0; i < this.myFiles.length; i++) {
+      if (this.selectedFiles.length > 0) {
+        for (const file of this.selectedFiles) {
           const formData = new FormData();
-          formData.append("file", this.myFiles[i]);
+          formData.append("file", file);
           formData.append("field", "shippingRequest");
           formData.append("uniqueData", `${insertId}`);
           formData.append("subFolder", "shippingRequest");
           await this.attachmentsService.uploadfile(formData);
         }
+
+        this.selectedFiles = [];
       }
 
       this.isLoading = false;
@@ -99,16 +103,18 @@ export class ShippingRequestCreateComponent {
     this.goBack();
   }
 
-  upload() {}
+  selectedFiles: File[] = [];
+  uploadTriggerMode: UploadTriggerMode = "parent-submit";
 
-  file: File = null;
-
-  myFiles: string[] = [];
-
-  onFilechange(event: any) {
-    this.myFiles = [];
-    for (var i = 0; i < event.target.files.length; i++) {
-      this.myFiles.push(event.target.files[i]);
+  onAttachmentFilesAdded(files: File[]) {
+    if (!files?.length) {
+      return;
     }
+
+    this.selectedFiles = [...this.selectedFiles, ...files];
+  }
+
+  removeFile(index: number) {
+    this.selectedFiles.splice(index, 1);
   }
 }
