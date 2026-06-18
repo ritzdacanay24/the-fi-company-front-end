@@ -228,7 +228,7 @@ import { FileViewerModalComponent } from "@app/shared/components/file-viewer-mod
                 <small class="text-muted">{{ getUploaderLabel(row) }}</small>
               </td>
               <td>
-                <small class="text-muted">{{ row?.createdDate | date:'MMM d, y h:mm a' }}</small>
+                <small class="text-muted">{{ getUploadedDate(row) | date:'MMM d, y h:mm a' }}</small>
               </td>
               <td>
                 <div class="d-flex align-items-center gap-2">
@@ -335,11 +335,12 @@ export class UploadedAttachmentsListComponent implements OnChanges {
     }
 
     this.attachments.forEach((attachment, index) => {
-      if (attachment && attachment.id && !this.resolvedIds.has(attachment.id)) {
-        this.resolvedIds.add(attachment.id);
+      const numericId = this.toNumericAttachmentId(attachment?.id);
+      if (numericId !== null && !this.resolvedIds.has(numericId)) {
+        this.resolvedIds.add(numericId);
         
         this.attachmentsService
-          .getViewById(attachment.id)
+          .getViewById(numericId)
           .then((response: any) => {
             const signedUrl = response?.url || response?.previewUrl;
             if (signedUrl) {
@@ -394,14 +395,24 @@ export class UploadedAttachmentsListComponent implements OnChanges {
 
   private openInSharedViewer(row: any): void {
     const items = (this.attachments || []).map((attachment) => ({
-      id: attachment?.id,
-      url: attachment?.id
+      id: this.toNumericAttachmentId(attachment?.id),
+      url: this.toNumericAttachmentId(attachment?.id) !== null
         ? ""
-        : this.normalizeAttachmentUrl(String(attachment?.previewUrl || attachment?.link || attachment?.url || "").trim()),
+        : this.normalizeAttachmentUrl(
+            String(
+              attachment?.previewUrl ||
+                attachment?.dataUrl ||
+                attachment?.link ||
+                attachment?.url ||
+                attachment?.path ||
+                attachment?.filePath ||
+                "",
+            ).trim(),
+          ),
       fileName: attachment?.fileName || "Attachment",
     }));
 
-    const activeId = row?.id;
+    const activeId = this.toNumericAttachmentId(row?.id);
     const index = items.findIndex((item) => item.id === activeId);
     const initialIndex = index >= 0 ? index : 0;
     const initialItem = items[initialIndex];
@@ -426,8 +437,13 @@ export class UploadedAttachmentsListComponent implements OnChanges {
         return this.resolveById(id);
       }
 
+      const numericId = this.toNumericAttachmentId(id);
+      if (numericId === null) {
+        return null;
+      }
+
       try {
-        const resolved = await this.attachmentsService.getViewById(Number(id));
+        const resolved = await this.attachmentsService.getViewById(numericId);
         return {
           url: this.normalizeAttachmentUrl(String(resolved?.url || "").trim()),
           fileName: resolved?.fileName,
@@ -441,7 +457,9 @@ export class UploadedAttachmentsListComponent implements OnChanges {
   private async downloadFromSharedViewer(row: any): Promise<void> {
     const id = Number(row?.id);
     if (!Number.isFinite(id)) {
-      const fallbackUrl = this.normalizeAttachmentUrl(String(row?.previewUrl || row?.link || row?.url || "").trim());
+      const fallbackUrl = this.normalizeAttachmentUrl(
+        String(row?.previewUrl || row?.dataUrl || row?.link || row?.url || row?.path || row?.filePath || "").trim(),
+      );
       if (fallbackUrl) {
         window.open(fallbackUrl, "_blank", "noopener");
       }
@@ -480,6 +498,15 @@ export class UploadedAttachmentsListComponent implements OnChanges {
     return rawUrl;
   }
 
+  private toNumericAttachmentId(value: unknown): number | null {
+    const parsed = Number(value);
+    if (!Number.isInteger(parsed) || parsed <= 0) {
+      return null;
+    }
+
+    return parsed;
+  }
+
   isImageAttachment(row: any): boolean {
     if (row?.isImage) {
       return true;
@@ -490,7 +517,7 @@ export class UploadedAttachmentsListComponent implements OnChanges {
   }
 
   resolveThumbnailUrl(row: any): string {
-    return String(row?.previewUrl || row?.link || '');
+    return String(row?.previewUrl || row?.dataUrl || row?.link || row?.url || '');
   }
 
   onThumbnailError(row: any): void {

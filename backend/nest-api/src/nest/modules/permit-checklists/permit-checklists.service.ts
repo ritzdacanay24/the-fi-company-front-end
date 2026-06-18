@@ -3,6 +3,9 @@ import { basename } from 'path';
 import PDFDocument from 'pdfkit';
 import { PermitChecklistsRepository } from './permit-checklists.repository';
 import { FileStorageService } from '../file-storage/file-storage.service';
+import { AttachmentsRepository } from '../attachments/attachments.repository';
+
+const PERMIT_ATTACHMENT_FIELD = 'permit-checklist';
 
 type TicketStatus = 'draft' | 'saved' | 'submitted' | 'finalized' | 'archived';
 
@@ -20,6 +23,7 @@ export class PermitChecklistsService {
   constructor(
     private readonly repository: PermitChecklistsRepository,
     private readonly storageService: FileStorageService,
+    private readonly attachmentsRepository: AttachmentsRepository,
   ) {}
 
   async getTicketPdf(ticketIdInput: string | undefined): Promise<{ buffer: Buffer; fileName: string }> {
@@ -78,9 +82,29 @@ export class PermitChecklistsService {
       ? this.normalizeBucketLink(stored.key)
       : this.storageService.resolveLink(storedFileName, this.permitChecklistSubFolder) || '';
 
+    const ext = originalName.includes('.') ? originalName.split('.').pop()?.toLowerCase() || '' : '';
+    const now = this.formatDateTime(new Date());
+
+    // Write metadata to shared attachments table
+    const insertId = await this.attachmentsRepository.createAttachment({
+      fileName: originalName,
+      link,
+      createdBy: this.truncate(String(uploadedByInput || 'Unknown User'), 255),
+      createdDate: now,
+      field: PERMIT_ATTACHMENT_FIELD,
+      uniqueId: ticketId,
+      fileSize: Number(file.size || 0),
+      ext,
+      active: 1,
+      storage_source: stored?.key ? 'bucket' : 'local',
+      storage_bucket: stored?.bucket || '',
+      storage_key: stored?.key || '',
+    });
+
     return {
       success: true,
       data: {
+        id: String(insertId),
         ticketId,
         fileName: originalName,
         fileSize: Number(file.size || 0),
@@ -89,11 +113,10 @@ export class PermitChecklistsService {
         uploadedBy: this.truncate(String(uploadedByInput || 'Unknown User'), 255),
         fieldKey: 'general',
         fieldLabel: 'General Attachment',
-        url: link,
         link,
-        storageSource: stored?.key ? 'bucket' : 'local',
-        storageBucket: stored?.bucket || null,
-        storageKey: stored?.key || null,
+        storage_source: stored?.key ? 'bucket' : 'local',
+        storage_bucket: stored?.bucket || null,
+        storage_key: stored?.key || null,
         storedFileName,
       },
     };
@@ -109,20 +132,50 @@ export class PermitChecklistsService {
     ]);
 
     const tickets = await Promise.all(
-      ticketRows.map(async (row) => ({
-        ticketId: String(row.ticket_id),
-        formType: String(row.form_type),
-        createdBy: String(row.created_by),
-        createdAt: this.toIso(row.created_at),
-        updatedAt: this.toIso(row.updated_at),
-        finalizedAt: row.finalized_at ? this.toIso(row.finalized_at) : null,
-        status: String(row.status),
-        values: this.decodeJsonObject(row.values_json),
-        fieldUpdatedAt: this.decodeJsonObject(row.field_updated_at_json),
-        processNoteRecords: this.decodeJsonArray(row.process_notes_json),
-        financials: this.decodeJsonObject(row.financials_json),
-        attachments: await this.resolveAttachmentsForResponse(this.decodeJsonArray(row.attachments_json)),
-      })),
+      ticketRows.map(async (row) => {
+        const ticketId = String(row.ticket_id);
+
+        // Merge shared attachments with legacy JSON attachments so older files stay visible during migration.
+        const sharedAttachments = await this.attachmentsRepository.find({
+          field: PERMIT_ATTACHMENT_FIELD,
+          uniqueId: ticketId,
+        });
+
+        const legacyAttachments = await this.resolveAttachmentsForResponse(this.decodeJsonArray(row.attachments_json));
+
+        const mappedSharedAttachments = sharedAttachments.map((a: any) => ({
+          id: String(a.id),
+          fileName: String(a.fileName || ''),
+          link: String(a.link || ''),
+          uploadedBy: String(a.createdByName || a.createdBy || 'Unknown'),
+          uploadedAt: String(a.createdDate || ''),
+          fileSize: Number(a.fileSize || 0),
+          mimeType: '',
+          storage_source: String(a.storage_source || ''),
+          storage_bucket: String(a.storage_bucket || ''),
+          storage_key: String(a.storage_key || ''),
+        }));
+
+        const attachments = this.dedupeAttachmentList([
+          ...mappedSharedAttachments,
+          ...legacyAttachments,
+        ]);
+
+        return {
+          ticketId,
+          formType: String(row.form_type),
+          createdBy: String(row.created_by),
+          createdAt: this.toIso(row.created_at),
+          updatedAt: this.toIso(row.updated_at),
+          finalizedAt: row.finalized_at ? this.toIso(row.finalized_at) : null,
+          status: String(row.status),
+          values: this.decodeJsonObject(row.values_json),
+          fieldUpdatedAt: this.decodeJsonObject(row.field_updated_at_json),
+          processNoteRecords: this.decodeJsonArray(row.process_notes_json),
+          financials: this.decodeJsonObject(row.financials_json),
+          attachments,
+        };
+      }),
     );
 
     const transactions = txRows.map((row) => ({
@@ -198,7 +251,6 @@ export class PermitChecklistsService {
       fieldUpdatedAtJson: this.encodeJsonSafe(ticketInput.fieldUpdatedAt || {}),
       processNotesJson: this.encodeJsonSafe(ticketInput.processNoteRecords || []),
       financialsJson: this.encodeJsonSafe(ticketInput.financials || {}),
-      attachmentsJson: this.encodeJsonSafe(ticketInput.attachments || []),
     });
 
     return { success: true, ticketId };
@@ -219,6 +271,29 @@ export class PermitChecklistsService {
       return { success: false, error: 'attachmentId is required' };
     }
 
+    // Try to delete from shared attachments table first
+    const numericId = Number(attachmentId);
+    if (Number.isInteger(numericId) && numericId > 0) {
+      try {
+        // Fetch before delete so we can remove the S3/local file
+        const rows = await this.attachmentsRepository.find({ id: String(numericId) });
+        const row = rows[0];
+        if (row) {
+          await this.deleteAttachmentFile({
+            storageSource: row['storage_source'],
+            storageBucket: row['storage_bucket'],
+            storageKey: row['storage_key'],
+            link: row['link'],
+            storedFileName: row['fileName'],
+          });
+          await this.attachmentsRepository.deleteById(numericId);
+        }
+      } catch {
+        // Not found in attachments table — fall through to legacy JSON cleanup
+      }
+    }
+
+    // Legacy: also clean from attachments_json if it exists there
     const raw = await this.repository.getAttachmentsJson(ticketId);
     let attachments: Array<Record<string, unknown>> = [];
     try {
@@ -242,13 +317,8 @@ export class PermitChecklistsService {
       if (removedAttachment && a === removedAttachment) {
         return false;
       }
-
       return String(a['id'] || '') !== attachmentId;
     });
-
-    if (removedAttachment || fallbackAttachment) {
-      await this.deleteAttachmentFile(removedAttachment || fallbackAttachment || {});
-    }
 
     const updatedAt = this.toDbDateTime(new Date().toISOString());
     await this.repository.setAttachmentsJson(ticketId, JSON.stringify(filtered), updatedAt);
@@ -592,6 +662,37 @@ export class PermitChecklistsService {
     attachments: Array<Record<string, unknown>>,
   ): Promise<Array<Record<string, unknown>>> {
     return Promise.all((attachments || []).map((attachment) => this.resolveAttachmentForResponse(attachment)));
+  }
+
+  private dedupeAttachmentList(attachments: Array<Record<string, unknown>>): Array<Record<string, unknown>> {
+    const seen = new Set<string>();
+    const deduped: Array<Record<string, unknown>> = [];
+
+    for (const attachment of attachments || []) {
+      const id = String(attachment['id'] || '').trim();
+      const storageKey = String(attachment['storageKey'] || attachment['storage_key'] || '').trim();
+      const rawLink = String(attachment['link'] || attachment['url'] || '').trim();
+      const normalizedLink = rawLink.split('?')[0].split('#')[0];
+      const fileName = String(attachment['fileName'] || '').trim().toLowerCase();
+      const uploadedAt = String(attachment['uploadedAt'] || attachment['createdDate'] || '').trim();
+
+      const dedupeKey = id
+        ? `id:${id}`
+        : storageKey
+          ? `storage:${storageKey}`
+          : normalizedLink
+            ? `link:${normalizedLink}`
+            : `${fileName}|${uploadedAt}`;
+
+      if (seen.has(dedupeKey)) {
+        continue;
+      }
+
+      seen.add(dedupeKey);
+      deduped.push(attachment);
+    }
+
+    return deduped;
   }
 
   private async resolveAttachmentForResponse(attachment: Record<string, unknown>): Promise<Record<string, unknown>> {

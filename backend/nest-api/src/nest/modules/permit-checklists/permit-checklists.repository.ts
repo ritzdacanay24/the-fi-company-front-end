@@ -102,7 +102,6 @@ export class PermitChecklistsRepository {
     fieldUpdatedAtJson: string;
     processNotesJson: string;
     financialsJson: string;
-    attachmentsJson: string;
   }): Promise<void> {
     const sql = `
       INSERT INTO quality_permit_checklist_tickets (
@@ -120,7 +119,7 @@ export class PermitChecklistsRepository {
         attachments_json
       ) VALUES (
         ?, ?, ?, ?, ?, ?, ?,
-        CAST(? AS JSON), CAST(? AS JSON), CAST(? AS JSON), CAST(? AS JSON), CAST(? AS JSON)
+        CAST(? AS JSON), CAST(? AS JSON), CAST(? AS JSON), CAST(? AS JSON), JSON_ARRAY()
       )
       ON DUPLICATE KEY UPDATE
         form_type = VALUES(form_type),
@@ -132,8 +131,7 @@ export class PermitChecklistsRepository {
         values_json = VALUES(values_json),
         field_updated_at_json = VALUES(field_updated_at_json),
         process_notes_json = VALUES(process_notes_json),
-        financials_json = VALUES(financials_json),
-        attachments_json = VALUES(attachments_json)
+        financials_json = VALUES(financials_json)
     `;
 
     await this.mysqlService.execute<ResultSetHeader>(sql, [
@@ -148,7 +146,6 @@ export class PermitChecklistsRepository {
       params.fieldUpdatedAtJson,
       params.processNotesJson,
       params.financialsJson,
-      params.attachmentsJson,
     ]);
   }
 

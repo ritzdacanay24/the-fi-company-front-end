@@ -9,8 +9,9 @@ import { ColDef, GridOptions } from "ag-grid-community";
 import { PermitTicketActionsRendererComponent } from "./permit-ticket-actions-renderer.component";
 import { PermitChecklistSummaryComponent } from "./permit-checklist-summary.component";
 import { UploadedAttachmentsListComponent } from "@app/shared/components/attachments/uploaded-attachments-list/uploaded-attachments-list.component";
-import { UploadAttachmentsModalComponent } from "@app/shared/components/attachments/upload-attachments-modal/upload-attachments-modal.component";
+import { UploadNewAttachmentsComponent } from "@app/shared/components/attachments/upload-new-attachments/upload-new-attachments.component";
 import { AuthenticationService } from "@app/core/services/auth.service";
+import { SweetAlert } from "@app/shared/sweet-alert/sweet-alert.service";
 import { THE_FI_COMPANY_CURRENT_USER } from "@app/core/guards/admin.guard";
 import { PermitChecklistsService } from "@app/core/api/quality/permit-checklists.service";
 import { NgbDropdownModule, NgbModal, NgbModalModule, NgbModalRef } from "@ng-bootstrap/ng-bootstrap";
@@ -193,7 +194,7 @@ interface StoredChecklistData {
     NgbModalModule,
     PermitChecklistSummaryComponent,
     UploadedAttachmentsListComponent,
-    UploadAttachmentsModalComponent,
+    UploadNewAttachmentsComponent,
     TextFieldModule,
   ],
   templateUrl: "./permit-checklists.component.html",
@@ -2242,6 +2243,7 @@ export class PermitChecklistsComponent implements OnInit {
     }
 
     this.pendingTicketAttachmentFiles = [...this.pendingTicketAttachmentFiles, ...files];
+    this.uploadPendingTicketAttachments();
   }
 
   removePendingTicketAttachment(index: number): void {
@@ -2379,8 +2381,14 @@ export class PermitChecklistsComponent implements OnInit {
       return;
     }
 
-    const confirmed = window.confirm(`Remove attachment "${target.fileName}"? This cannot be undone.`);
-    if (!confirmed) {
+    const confirmed = await SweetAlert.confirm({
+      title: `Remove attachment?`,
+      text: `"${target.fileName}" will be permanently deleted.`,
+      icon: 'warning',
+      confirmButtonText: 'Yes, remove',
+      cancelButtonText: 'Cancel',
+    });
+    if (!confirmed.isConfirmed) {
       return;
     }
 
