@@ -1,4 +1,4 @@
-import { Component, Input, ViewChild } from "@angular/core";
+import { Component, Input } from "@angular/core";
 import { SharedModule } from "@app/shared/shared.module";
 import { Router } from "@angular/router";
 import { ToastrService } from "ngx-toastr";
@@ -10,16 +10,15 @@ import { ForkliftInspectionFormComponent } from "../forklift-inspection-form/for
 import { AuthenticationService } from "@app/core/services/auth.service";
 import { resetVehicleInspectionFormValues } from "../forklift-inspection-form/formData";
 import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
-import { UploadAttachmentsModalComponent } from "@app/shared/components/attachments/upload-attachments-modal/upload-attachments-modal.component";
-import { PendingUploadsListComponent } from "@app/shared/components/attachments/pending-uploads-list/pending-uploads-list.component";
+import { UploadNewAttachmentsComponent } from "@app/shared/components/attachments/upload-new-attachments/upload-new-attachments.component";
+import { UploadTriggerMode } from "@app/shared/components/attachments/attachment-upload.types";
 
 @Component({
   standalone: true,
   imports: [
     SharedModule,
     ForkliftInspectionFormComponent,
-    UploadAttachmentsModalComponent,
-    PendingUploadsListComponent,
+    UploadNewAttachmentsComponent,
   ],
   selector: "app-forklift-inspection-create",
   templateUrl: "./forklift-inspection-create.component.html",
@@ -44,9 +43,6 @@ export class ForkliftInspectionCreateComponent {
   isLoading = false;
 
   submitted = false;
-
-  @ViewChild(UploadAttachmentsModalComponent)
-  uploadModal: UploadAttachmentsModalComponent | null = null;
 
   @Input() goBack: Function = () => {
     this.router.navigate([NAVIGATION_ROUTE.LIST], {
@@ -90,7 +86,7 @@ export class ForkliftInspectionCreateComponent {
   }
 
   selectedFiles: File[] = [];
-  uploadTriggerMode: "manual" | "on-add" | "parent-submit" = "parent-submit";
+  uploadTriggerMode: UploadTriggerMode = "parent-submit";
 
   onAttachmentFilesAdded(files: File[]) {
     if (!files?.length) {

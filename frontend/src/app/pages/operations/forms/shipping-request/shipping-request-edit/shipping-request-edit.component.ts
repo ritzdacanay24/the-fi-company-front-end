@@ -14,6 +14,7 @@ import { AuthenticationService } from "@app/core/services/auth.service";
 import { environment } from "src/environments/environment";
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { FileViewerModalComponent } from "@app/shared/components/file-viewer-modal/file-viewer-modal.component";
+import { SweetAlert } from "@app/shared/sweet-alert/sweet-alert.service";
 
 @Component({
   standalone: true,
@@ -158,7 +159,15 @@ export class ShippingRequestEditComponent {
 
   async onArchive() {
     if (!this.id || !this.form) return;
-    if (!confirm(`Archive shipping request #${this.id}?`)) return;
+    const result = await SweetAlert.confirm({
+      title: `Archive Shipping Request #${this.id}?`,
+      text: "Archived records are removed from active lists.",
+      icon: "warning",
+      confirmButtonText: "Yes, archive",
+      cancelButtonText: "Cancel",
+    });
+
+    if (!result.isConfirmed) return;
 
     try {
       this.isLoading = true;
@@ -179,7 +188,15 @@ export class ShippingRequestEditComponent {
 
   async onDelete() {
     if (!this.id) return;
-    if (!confirm(`Delete shipping request #${this.id}? This cannot be undone.`)) return;
+    const result = await SweetAlert.confirm({
+      title: `Delete Shipping Request #${this.id}?`,
+      text: "This action cannot be undone.",
+      icon: "warning",
+      confirmButtonText: "Yes, delete",
+      cancelButtonText: "Cancel",
+    });
+
+    if (!result.isConfirmed) return;
 
     try {
       this.isLoading = true;
@@ -202,7 +219,16 @@ export class ShippingRequestEditComponent {
   }
 
   async deleteAttachment(id, index) {
-    if (!confirm("Are you sure you want to remove attachment?")) return;
+    const result = await SweetAlert.confirm({
+      title: "Remove attachment?",
+      text: "This will permanently remove the attachment from this shipping request.",
+      icon: "warning",
+      confirmButtonText: "Yes, remove",
+      cancelButtonText: "Cancel",
+    });
+
+    if (!result.isConfirmed) return;
+
     await this.attachmentsService.delete(id);
     this.attachments.splice(index, 1);
   }

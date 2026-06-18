@@ -14,16 +14,15 @@ import { SafetyIncidentFormComponent } from "../safety-incident-form/safety-inci
 import { FILE, NAVIGATION_ROUTE } from "../safety-incident-constant";
 import { SafetyIncidentService } from "@app/core/api/operations/safety-incident/safety-incident.service";
 import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
-import { UploadAttachmentsModalComponent } from "@app/shared/components/attachments/upload-attachments-modal/upload-attachments-modal.component";
-import { PendingUploadsListComponent } from "@app/shared/components/attachments/pending-uploads-list/pending-uploads-list.component";
+import { UploadNewAttachmentsComponent } from "@app/shared/components/attachments/upload-new-attachments/upload-new-attachments.component";
+import { UploadTriggerMode } from "@app/shared/components/attachments/attachment-upload.types";
 
 @Component({
   standalone: true,
   imports: [
     SharedModule,
     SafetyIncidentFormComponent,
-    UploadAttachmentsModalComponent,
-    PendingUploadsListComponent,
+    UploadNewAttachmentsComponent,
   ],
   selector: "app-safety-incident-create",
   templateUrl: "./safety-incident-create.component.html",
@@ -75,7 +74,7 @@ export class SafetyIncidentCreateComponent {
   onPrint;
 
   selectedFiles: File[] = [];
-  uploadTriggerMode: "manual" | "on-add" | "parent-submit" = "parent-submit";
+  uploadTriggerMode: UploadTriggerMode = "parent-submit";
 
   @HostListener("window:beforeunload")
   canDeactivate() {

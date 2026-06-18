@@ -158,19 +158,16 @@
               </app-uploaded-attachments-list>
 
               <div class="mb-3" *ngIf="!isQirClosed; else closedAttachmentNotice">
-                <button type="button" class="btn btn-primary btn-sm"
-                  (click)="uploadModal?.openModal()"
-                  [disabled]="isLoading">
-                  <i class="mdi mdi-upload me-1"></i>Add Attachments
-                </button>
-
-                <div *ngIf="selectedFiles.length > 0" class="mt-3">
-                  <app-pending-uploads-list
-                    [files]="selectedFiles"
-                    [disabled]="isLoading"
-                    (removeRequested)="removeFile($event)">
-                  </app-pending-uploads-list>
-                </div>
+                <app-upload-new-attachments
+                  [files]="selectedFiles"
+                  [disabled]="isLoading"
+                  [uploadTriggerMode]="uploadTriggerMode"
+                  [pendingViewMode]="'table'"
+                  [helperText]="'Files upload automatically after you add them.'"
+                  (filesAdded)="onAttachmentFilesAdded($event)"
+                  (uploadRequested)="onUploadAttachments()"
+                  (removeRequested)="removeFile($event)">
+                </app-upload-new-attachments>
               </div>
 
               <ng-template #closedAttachmentNotice>
@@ -249,17 +246,6 @@
 
   </div>
 </div>
-
-<!-- Upload Modal -->
-<app-upload-attachments-modal
-  [files]="selectedFiles"
-  [isUploading]="isLoading"
-  [uploadTriggerMode]="uploadTriggerMode"
-  [manualFlowText]="'Files upload when you click Upload in this modal.'"
-  (filesAdded)="onAttachmentFilesAdded($event)"
-  (removeRequested)="removeFile($event)"
-  (uploadRequested)="onUploadAttachments()">
-</app-upload-attachments-modal>
 
 <!--Print-->
 

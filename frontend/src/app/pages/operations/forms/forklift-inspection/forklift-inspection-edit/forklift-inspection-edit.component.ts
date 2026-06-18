@@ -1,4 +1,4 @@
-import { Component, Input, ViewChild } from "@angular/core";
+import { Component, Input } from "@angular/core";
 import { SharedModule } from "@app/shared/shared.module";
 import { ActivatedRoute, Router } from "@angular/router";
 import { HttpErrorResponse } from "@angular/common/http";
@@ -13,9 +13,10 @@ import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { FileViewerModalComponent } from "@app/shared/components/file-viewer-modal/file-viewer-modal.component";
 import { AuthenticationService } from "@app/core/services/auth.service";
 import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
-import { UploadAttachmentsModalComponent } from "@app/shared/components/attachments/upload-attachments-modal/upload-attachments-modal.component";
-import { PendingUploadsListComponent } from "@app/shared/components/attachments/pending-uploads-list/pending-uploads-list.component";
+import { SweetAlert } from "@app/shared/sweet-alert/sweet-alert.service";
 import { UploadedAttachmentsListComponent } from "@app/shared/components/attachments/uploaded-attachments-list/uploaded-attachments-list.component";
+import { UploadNewAttachmentsComponent } from "@app/shared/components/attachments/upload-new-attachments/upload-new-attachments.component";
+import { UploadTriggerMode } from "@app/shared/components/attachments/attachment-upload.types";
 
 interface ForkliftIssueItem {
   id: number;
@@ -35,9 +36,8 @@ interface ForkliftIssueItem {
   imports: [
     SharedModule,
     ForkliftInspectionFormComponent,
-    UploadAttachmentsModalComponent,
-    PendingUploadsListComponent,
     UploadedAttachmentsListComponent,
+    UploadNewAttachmentsComponent,
   ],
   selector: "app-forklift-inspection-edit",
   templateUrl: "./forklift-inspection-edit.component.html",
@@ -76,9 +76,6 @@ export class ForkliftInspectionEditComponent {
       queryParamsHandling: "merge",
     });
   };
-
-  @ViewChild(UploadAttachmentsModalComponent)
-  uploadModal: UploadAttachmentsModalComponent | null = null;
 
   data;
   issueNote = "";
@@ -203,7 +200,7 @@ export class ForkliftInspectionEditComponent {
 
   attachments = [];
   selectedFiles: File[] = [];
-  uploadTriggerMode: "manual" | "on-add" | "parent-submit" = "manual";
+  uploadTriggerMode: UploadTriggerMode = "on-add";
 
   onAttachmentFilesAdded(files: File[]) {
     if (!files?.length) {
@@ -324,7 +321,6 @@ export class ForkliftInspectionEditComponent {
       }
 
       await this.getData();
-      this.uploadModal?.closeModal();
       this.toastrService.success(
         `${uploadedCount} attachment${uploadedCount > 1 ? "s" : ""} uploaded.`,
       );
@@ -349,8 +345,15 @@ export class ForkliftInspectionEditComponent {
       return;
     }
 
-    const confirmed = window.confirm("Archive this inspection item?");
-    if (!confirmed) {
+    const result = await SweetAlert.confirm({
+      title: "Archive Inspection?",
+      text: "Archived records are removed from active lists.",
+      icon: "warning",
+      confirmButtonText: "Yes, archive",
+      cancelButtonText: "Cancel",
+    });
+
+    if (!result.isConfirmed) {
       return;
     }
 
@@ -378,8 +381,15 @@ export class ForkliftInspectionEditComponent {
       return;
     }
 
-    const confirmed = window.confirm("Delete this inspection item? This cannot be undone.");
-    if (!confirmed) {
+    const result = await SweetAlert.confirm({
+      title: "Delete Inspection?",
+      text: "This action cannot be undone.",
+      icon: "warning",
+      confirmButtonText: "Yes, delete",
+      cancelButtonText: "Cancel",
+    });
+
+    if (!result.isConfirmed) {
       return;
     }
 

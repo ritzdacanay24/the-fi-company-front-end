@@ -2,6 +2,7 @@ import { CommonModule } from "@angular/common";
 import { Component, EventEmitter, Input, Output } from "@angular/core";
 import { InlineAttachmentDropzoneComponent } from "@app/shared/components/attachments/inline-attachment-dropzone/inline-attachment-dropzone.component";
 import { PendingUploadsListComponent } from "@app/shared/components/attachments/pending-uploads-list/pending-uploads-list.component";
+import { UploadTriggerMode } from "@app/shared/components/attachments/attachment-upload.types";
 
 @Component({
   selector: "app-upload-new-attachments",
@@ -24,7 +25,7 @@ import { PendingUploadsListComponent } from "@app/shared/components/attachments/
       <div class="form-text">{{ resolvedFlowText }}</div>
     </div>
 
-    <div class="mt-3" *ngIf="files.length > 0">
+    <div class="mt-3" *ngIf="uploadTriggerMode !== 'on-add' && files.length > 0">
       <app-pending-uploads-list
         [viewMode]="pendingViewMode"
         [files]="files"
@@ -49,7 +50,7 @@ export class UploadNewAttachmentsComponent {
   @Input() helperText = "";
   @Input() pendingViewMode: "list" | "table" = "list";
 
-  @Input() uploadTriggerMode: "manual" | "on-add" | "parent-submit" = "manual";
+  @Input() uploadTriggerMode: UploadTriggerMode = "manual";
   @Input() manualFlowText = "Files upload when you click Upload.";
   @Input() autoFlowText = "Files upload automatically after you add them.";
   @Input() parentSubmitFlowText = "Files are queued here and upload when you submit the form.";

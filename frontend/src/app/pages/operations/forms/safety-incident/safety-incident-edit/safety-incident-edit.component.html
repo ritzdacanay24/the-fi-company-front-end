@@ -96,36 +96,21 @@
               [isLoading]="attachmentsLoading || isLoading"
               [showHelperText]="true"
               [helperText]="'Click on filenames to preview, or use direct download links if preview fails.'"
-              (openRequested)="openAttachment($event)"
-              (downloadRequested)="downloadAttachment($event)"
               (deleteRequested)="deleteAttachment($event.id, $event.index)">
             </app-uploaded-attachments-list>
 
-            <div class="mb-3">
-              <button
-                type="button"
-                class="btn btn-primary btn-sm"
-                (click)="uploadModal?.openModal()"
-                [disabled]="isLoading">
-                <i class="mdi mdi-upload me-1"></i>Add Attachments
-              </button>
-              <p class="text-muted small mt-2 mb-0">Files upload when you click Upload in this modal.</p>
-            </div>
+            <app-upload-new-attachments
+              [files]="myFiles"
+              [uploadTriggerMode]="uploadTriggerMode"
+              [accept]="'*/*'"
+              [multiple]="true"
+              [disabled]="isLoading"
+              [pendingViewMode]="'table'"
+              (filesAdded)="onAttachmentFilesAdded($event)"
+              (removeRequested)="removeFile($event)"
+              (uploadRequested)="onUploadAttachments()">
+            </app-upload-new-attachments>
 
-            <div *ngIf="myFiles.length > 0" class="mt-3">
-              <app-pending-uploads-list
-                [files]="myFiles"
-                [disabled]="isLoading"
-                (removeRequested)="removeFile($event)">
-              </app-pending-uploads-list>
-            </div>
-
-            <!-- No Attachments Message -->
-            <div class="text-center py-4" *ngIf="!attachments?.length">
-              <i class="mdi mdi-file-outline text-muted" style="font-size: 3rem;"></i>
-              <p class="text-muted mb-0">No attachments found</p>
-              <small class="text-muted">Upload supporting documents using the Add Attachments button above.</small>
-            </div>
           </div>
         </div>
 
@@ -148,24 +133,3 @@
 
 
 </div>
-
-<app-upload-attachments-modal
-  #uploadModal
-  [files]="myFiles"
-  [disabled]="isLoading"
-  [isUploading]="isLoading"
-  [accept]="'*/*'"
-  [multiple]="true"
-  [allowPaste]="true"
-  [openPickerOnContainerClick]="false"
-  [chooseLabel]="'Choose files'"
-  [dropLabel]="'or drag them here.'"
-  [pasteHint]="'Copy and paste one or more files into this area.'"
-  [showPasteHint]="true"
-  [uploadTriggerMode]="uploadTriggerMode"
-  [manualFlowText]="'Files upload when you click Upload in this modal.'"
-  [autoFlowText]="'Files upload automatically after you add them.'"
-  (filesAdded)="onAttachmentFilesAdded($event)"
-  (removeRequested)="removeFile($event)"
-  (uploadRequested)="onUploadAttachments()">
-</app-upload-attachments-modal>

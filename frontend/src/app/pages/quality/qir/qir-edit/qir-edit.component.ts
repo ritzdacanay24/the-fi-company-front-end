@@ -2,7 +2,6 @@ import {
   Component,
   HostListener,
   Input,
-  ViewChild,
 } from "@angular/core";
 import { SharedModule } from "@app/shared/shared.module";
 import { ActivatedRoute, Router } from "@angular/router";
@@ -21,10 +20,10 @@ import { QirResponseService } from "@app/core/api/quality/qir-response.service";
 import { QirResponseFormComponent } from "../qir-response/qir-response-form/qir-response-form.component";
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { FileViewerModalComponent } from "@app/shared/components/file-viewer-modal/file-viewer-modal.component";
-import { UploadAttachmentsModalComponent } from "@app/shared/components/attachments/upload-attachments-modal/upload-attachments-modal.component";
-import { PendingUploadsListComponent } from "@app/shared/components/attachments/pending-uploads-list/pending-uploads-list.component";
 import { UploadedAttachmentsListComponent } from "@app/shared/components/attachments/uploaded-attachments-list/uploaded-attachments-list.component";
-import Swal from "sweetalert2";
+import { UploadNewAttachmentsComponent } from "@app/shared/components/attachments/upload-new-attachments/upload-new-attachments.component";
+import { UploadTriggerMode } from "@app/shared/components/attachments/attachment-upload.types";
+import { SweetAlert } from "@app/shared/sweet-alert/sweet-alert.service";
 
 @Component({
   standalone: true,
@@ -32,9 +31,8 @@ import Swal from "sweetalert2";
     SharedModule,
     QirFormComponent,
     QirResponseFormComponent,
-    UploadAttachmentsModalComponent,
-    PendingUploadsListComponent,
     UploadedAttachmentsListComponent,
+    UploadNewAttachmentsComponent,
   ],
   selector: "app-qir-edit",
   templateUrl: "./qir-edit.component.html",
@@ -71,8 +69,6 @@ export class QirEditComponent {
 
     if (this.id) this.getData();
   }
-
-  @ViewChild(UploadAttachmentsModalComponent) uploadModal: UploadAttachmentsModalComponent | null = null;
 
   title = "Edit Quality Incident Report";
 
@@ -252,7 +248,6 @@ export class QirEditComponent {
     try {
       this.isLoading = true;
       await this.api.update(this.id, this.form.getRawValue());
-      await this.onUploadAttachments();
       this.isLoading = false;
       this.toastrService.success("Successfully Updated");
       this.form.markAsPristine();
@@ -333,11 +328,15 @@ export class QirEditComponent {
       return;
     }
 
-    const confirmed = window.confirm(
-      `Delete QIR #${this.id}? This action cannot be undone.`,
-    );
+    const result = await SweetAlert.confirm({
+      title: `Delete QIR #${this.id}?`,
+      text: "This action cannot be undone.",
+      icon: "warning",
+      confirmButtonText: "Yes, delete",
+      cancelButtonText: "Cancel",
+    });
 
-    if (!confirmed) {
+    if (!result.isConfirmed) {
       return;
     }
 
@@ -429,7 +428,13 @@ export class QirEditComponent {
         this.toastrService.error("Unable to open attachment");
       }
 
-      return row?.link || null;
+      const fallbackFileName = row?.fileName || "";
+      return (
+        row?.link ||
+        this.getLegacyAttachmentUrl(fallbackFileName) ||
+        this.getLegacyAttachmentFallbackUrl(fallbackFileName) ||
+        null
+      );
     }
   }
 
@@ -469,13 +474,7 @@ export class QirEditComponent {
     modalRef.componentInstance.items = this.attachments || [];
     modalRef.componentInstance.initialIndex = currentIndex;
     modalRef.componentInstance.enableNavigation = true;
-    modalRef.componentInstance.resolveById = (id: string | number) => 
-      this.resolveAttachmentUrl({ id }, false)
-        .then((resolvedUrl) => ({
-          url: resolvedUrl || '',
-          fileName: this.attachments?.find((att: any) => att?.id === id)?.fileName || 'Attachment'
-        }))
-        .catch(() => null);
+    modalRef.componentInstance.resolveById = (id: string | number) => this.resolveQirAttachmentById(id);
   }
 
   async openAttachment(row: any, event?: Event): Promise<void> {
@@ -509,14 +508,12 @@ export class QirEditComponent {
   }
 
   async deleteAttachment(id, index) {
-    const result = await Swal.fire({
+    const result = await SweetAlert.confirm({
       title: "Remove attachment?",
       text: "This will permanently remove the attachment from this QIR.",
       icon: "warning",
-      showCancelButton: true,
       confirmButtonText: "Yes, remove",
       cancelButtonText: "Cancel",
-      confirmButtonColor: "#d33",
     });
 
     if (!result.isConfirmed) return;
@@ -527,7 +524,7 @@ export class QirEditComponent {
 
   file: File = null;
   selectedFiles: File[] = [];
-  uploadTriggerMode: "manual" | "on-add" = "manual";
+  uploadTriggerMode: UploadTriggerMode = "on-add";
 
   onAttachmentFilesAdded(files: File[]) {
     this.addFiles(files);
@@ -576,7 +573,6 @@ export class QirEditComponent {
     try {
       this.getAttachments();
       this.selectedFiles = [];
-      this.uploadModal?.closeModal();
     } catch (err) {}
   }
 

@@ -1,8 +1,8 @@
-import { ChangeDetectorRef, Component, ElementRef, Input, ViewChild } from "@angular/core";
+import { ChangeDetectorRef, Component, Input } from "@angular/core";
 import { SharedModule } from "@app/shared/shared.module";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ToastrService } from "ngx-toastr";
-import { NAVIGATION_ROUTE } from "../vehicle-constant";
+import { NAVIGATION_ROUTE, VEHICLE_ATTACHMENT } from "../vehicle-constant";
 import { VehicleFormComponent } from "../vehicle-form/vehicle-form.component";
 import { VehicleService } from "@app/core/api/operations/vehicle/vehicle.service";
 import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErrors";
@@ -11,14 +11,16 @@ import { MyFormGroup } from "src/assets/js/util/_formGroup";
 import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
 import { ColDef, GridOptions } from "ag-grid-community";
 import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
-import { AgGridModule } from "ag-grid-angular";
 import { environment } from "src/environments/environment";
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { FileViewerModalComponent } from "@app/shared/components/file-viewer-modal/file-viewer-modal.component";
+import { UploadNewAttachmentsComponent } from "@app/shared/components/attachments/upload-new-attachments/upload-new-attachments.component";
+import { UploadedAttachmentsListComponent } from "@app/shared/components/attachments/uploaded-attachments-list/uploaded-attachments-list.component";
+import { SweetAlert } from "@app/shared/sweet-alert/sweet-alert.service";
 
 @Component({
   standalone: true,
-  imports: [SharedModule, VehicleFormComponent, AgGridModule],
+  imports: [SharedModule, VehicleFormComponent, UploadNewAttachmentsComponent, UploadedAttachmentsListComponent],
   selector: "app-vehicle-edit",
   templateUrl: "./vehicle-edit.component.html",
 })
@@ -50,6 +52,8 @@ export class VehicleEditComponent {
   isLoading = false;
 
   submitted = false;
+
+  uploadTriggerMode: "manual" | "on-add" | "parent-submit" = "on-add";
 
   async saveAttachmentInfo(id, key, value) {
     try {
@@ -237,6 +241,33 @@ export class VehicleEditComponent {
     }
   }
 
+  async onDelete(): Promise<void> {
+    const vehicleId = Number(this.id);
+    if (!Number.isFinite(vehicleId)) {
+      this.toastrService.warning("Vehicle ID not available");
+      return;
+    }
+
+    const result = await SweetAlert.confirm({
+      title: "Delete Vehicle",
+      text: "Are you sure you want to permanently delete this vehicle? This cannot be undone.",
+      confirmButtonText: "Delete",
+      confirmButtonColor: "#dc3545",
+    });
+    if (!result.value) return;
+
+    try {
+      this.isLoading = true;
+      await this.api.delete(vehicleId);
+      this.toastrService.success("Vehicle deleted");
+      this.goBack();
+    } catch {
+      this.toastrService.error("Failed to delete vehicle");
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
   onCancel() {
     this.goBack();
   }
@@ -244,7 +275,7 @@ export class VehicleEditComponent {
   attachments: any = [];
   async getAttachments() {
     this.attachments = await this.attachmentsService.find({
-      field: "Vehicle Information",
+      field: VEHICLE_ATTACHMENT.FIELD,
       uniqueId: this.id,
     });
     this.gridApi?.setGridOption("rowData", this.attachments || []);
@@ -252,7 +283,14 @@ export class VehicleEditComponent {
   }
 
   async deleteAttachment(id) {
-    if (!confirm("Are you sure you want to remove attachment?")) return;
+    const result = await SweetAlert.confirm({
+      title: "Remove Attachment",
+      text: "Are you sure you want to remove this attachment?",
+      confirmButtonText: "Remove",
+      confirmButtonColor: "#dc3545",
+    });
+    if (!result.value) return;
+
     await this.attachmentsService.delete(id);
     await this.getAttachments();
     this.toastrService.success("Attachment deleted");
@@ -262,43 +300,43 @@ export class VehicleEditComponent {
 
   myFiles: File[] = [];
 
-  onFilechange(event: any) {
-    this.myFiles = [];
-    for (var i = 0; i < event.target.files.length; i++) {
-      this.myFiles.push(event.target.files[i]);
+  onAttachmentFilesAdded(files: File[]) {
+    if (!files?.length) {
+      return;
     }
-    this.ref.markForCheck();
 
+    this.myFiles = [...this.myFiles, ...files];
+    this.ref.markForCheck();
   }
 
-  @ViewChild("userPhoto") userPhoto!: ElementRef;
-  clearFile() {
-    this.file = null;
-    this.myFiles = [];
-    this.userPhoto.nativeElement.value = null;
+  removeFile(index: number) {
+    this.myFiles.splice(index, 1);
   }
 
   async onUploadAttachments() {
-    if (this.myFiles?.length) {
-      let totalAttachments = 0;
-      this.isLoading = true;
-      for (var i = 0; i < this.myFiles.length; i++) {
-        const formData = new FormData();
-        formData.append("file", this.myFiles[i]);
-        formData.append("field", "Vehicle Information");
-        formData.append("uniqueData", `${this.id}`);
-        formData.append("subFolder", "vehicleInformation");
-        try {
-          await this.attachmentsService.uploadfile(formData);
-          totalAttachments++;
-        } catch (err) { }
-      }
-      this.isLoading = false;
-      this.clearFile();
-      await this.getAttachments();
-      if (totalAttachments > 0) {
-        this.toastrService.success(`Uploaded ${totalAttachments} attachment${totalAttachments > 1 ? "s" : ""}`);
+    if (this.isLoading || !this.myFiles?.length) {
+      return;
+    }
+
+    const queuedFiles = [...this.myFiles];
+    const failedFiles: File[] = [];
+
+    this.isLoading = true;
+    for (let i = 0; i < queuedFiles.length; i++) {
+      const formData = new FormData();
+      formData.append("file", queuedFiles[i]);
+      formData.append("field", VEHICLE_ATTACHMENT.FIELD);
+      formData.append("uniqueData", `${this.id}`);
+      formData.append("subFolder", VEHICLE_ATTACHMENT.SUB_FOLDER);
+      try {
+        await this.attachmentsService.uploadfile(formData);
+      } catch (err) {
+        failedFiles.push(queuedFiles[i]);
       }
     }
+
+    this.myFiles = failedFiles;
+    this.isLoading = false;
+    await this.getAttachments();
   }
 }

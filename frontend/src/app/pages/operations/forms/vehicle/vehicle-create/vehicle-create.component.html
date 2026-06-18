@@ -28,23 +28,28 @@
           <app-vehicle-form (setFormEmitter)="setFormEmitter($event)" [submitted]="submitted"></app-vehicle-form>
 
           <!-- File Upload Section -->
-          <div class="mb-3 mt-4 pt-4 border-top" *ngIf="id">
+          <div class="mb-3 mt-4">
             <div class="mb-3">
               <h3 class="h5 mb-1">Vehicle Documents</h3>
               <p class="text-muted mb-0">
                 Upload vehicle-related documents, registration, or maintenance records.
               </p>
             </div>
-            <div class="form-group">
-              <input (change)="this.onFilechange($event)" class="form-control" type="file" id="file" multiple name="file">
-              <div class="form-text">
-                <i class="mdi mdi-information-outline me-1"></i>
-                Select multiple files to upload vehicle documentation.
-              </div>
-              <button (click)="this.upload()" type="button" class="btn btn-outline-dark mt-2" *ngIf="id">
-                <i class="mdi mdi-upload me-1"></i>Upload Documents
-              </button>
-            </div>
+            <app-upload-new-attachments
+              [files]="myFiles"
+              [disabled]="isLoading"
+              [pendingViewMode]="'table'"
+              [accept]="'*/*'"
+              [multiple]="true"
+              [allowPaste]="true"
+              [openPickerOnContainerClick]="true"
+              [chooseLabel]="'Choose files'"
+              [dropLabel]="'or drag them here.'"
+              [uploadTriggerMode]="uploadTriggerMode"
+              [parentSubmitFlowText]="'Files are queued here and upload when you submit the form.'"
+              (filesAdded)="onAttachmentFilesAdded($event)"
+              (removeRequested)="removeFile($event)">
+            </app-upload-new-attachments>
           </div>
         </div>
         

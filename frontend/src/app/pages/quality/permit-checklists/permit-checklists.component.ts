@@ -2359,7 +2359,11 @@ export class PermitChecklistsComponent implements OnInit {
     }
 
     this.refreshRecentTickets();
-    this.persistLocalData();
+    await this.persistTicketToApi(ticket);
+    if (this.dirtyTransactionTicketIds.has(ticket.ticketId)) {
+      await this.flushTransactionsToApi(ticket.ticketId);
+    }
+    await this.hydrateFromApi();
     this.statusMessage = `${newAttachments.length} attachment(s) uploaded.`;
     return { uploaded: newAttachments.length, failed: failedUploads.length };
   }

@@ -9,10 +9,10 @@ import { SafetyIncidentService } from "@app/core/api/operations/safety-incident/
 import { SafetyIncidentFormComponent } from "../safety-incident-form/safety-incident-form.component";
 import { FILE, NAVIGATION_ROUTE } from "../safety-incident-constant";
 import { NgbDropdown, NgbDropdownItem, NgbDropdownMenu, NgbDropdownToggle, NgbModal } from "@ng-bootstrap/ng-bootstrap";
-import { FileViewerModalComponent } from "@app/shared/components/file-viewer-modal/file-viewer-modal.component";
-import { UploadAttachmentsModalComponent } from "@app/shared/components/attachments/upload-attachments-modal/upload-attachments-modal.component";
-import { PendingUploadsListComponent } from "@app/shared/components/attachments/pending-uploads-list/pending-uploads-list.component";
 import { UploadedAttachmentsListComponent } from "@app/shared/components/attachments/uploaded-attachments-list/uploaded-attachments-list.component";
+import { UploadNewAttachmentsComponent } from "@app/shared/components/attachments/upload-new-attachments/upload-new-attachments.component";
+import { UploadTriggerMode } from "@app/shared/components/attachments/attachment-upload.types";
+import { SweetAlert } from "@app/shared/sweet-alert/sweet-alert.service";
 
 @Component({
   standalone: true,
@@ -23,9 +23,8 @@ import { UploadedAttachmentsListComponent } from "@app/shared/components/attachm
     NgbDropdownToggle,
     NgbDropdownMenu,
     NgbDropdownItem,
-    UploadAttachmentsModalComponent,
-    PendingUploadsListComponent,
     UploadedAttachmentsListComponent,
+    UploadNewAttachmentsComponent,
   ],
   selector: "app-safety-incident-edit",
   templateUrl: "./safety-incident-edit.component.html",
@@ -125,64 +124,7 @@ export class SafetyIncidentEditComponent {
     // - comments (administrative notes can be added)
   }
 
-  private openFileViewerModal(url: string, fileName: string, attachment?: any): void {
-    const currentIndex = attachment?.id
-      ? this.attachments?.findIndex((row: any) => row?.id === attachment?.id) ?? 0
-      : 0;
 
-    const modalRef = this.modalService.open(FileViewerModalComponent, {
-      size: 'xl',
-      centered: true,
-      backdrop: true,
-      keyboard: true,
-    });
-
-    modalRef.componentInstance.url = url;
-    modalRef.componentInstance.fileName = fileName;
-    modalRef.componentInstance.items = this.attachments || [];
-    modalRef.componentInstance.initialIndex = currentIndex;
-    modalRef.componentInstance.enableNavigation = true;
-    modalRef.componentInstance.resolveById = (id: string | number) =>
-      this.attachmentsService
-        .getViewById(Number(id))
-        .then((resolved: any) => ({
-          url: resolved?.url || resolved?.previewUrl || '',
-          fileName: resolved?.fileName,
-        }))
-        .catch(() => null);
-  }
-
-  async openAttachment(attachment: any): Promise<void> {
-    try {
-      const resolved = await this.attachmentsService.getViewById(attachment?.id);
-      const resolvedUrl = resolved?.url || attachment?.link;
-      if (!resolvedUrl) {
-        this.toastrService.warning('Attachment URL not available');
-        return;
-      }
-
-      this.openFileViewerModal(resolvedUrl, attachment?.fileName || resolved?.fileName || 'Attachment', attachment);
-    } catch (error) {
-      console.error('Failed to resolve attachment URL:', error);
-      this.toastrService.error('Unable to open attachment');
-    }
-  }
-
-  async downloadAttachment(attachment: any): Promise<void> {
-    try {
-      const resolved = await this.attachmentsService.getViewById(attachment?.id);
-      const resolvedUrl = resolved?.url || attachment?.link;
-      if (!resolvedUrl) {
-        this.toastrService.warning('Attachment URL not available');
-        return;
-      }
-
-      window.open(resolvedUrl, '_blank');
-    } catch (error) {
-      console.error('Failed to resolve attachment URL:', error);
-      this.toastrService.error('Unable to download attachment');
-    }
-  }
 
   async onSubmit() {
     this.submitted = true;
@@ -194,11 +136,6 @@ export class SafetyIncidentEditComponent {
 
     try {
       this.isLoading = true;
-      
-      // Upload any pending attachments first
-      if (this.myFiles && this.myFiles.length > 0) {
-        await this.uploadPendingAttachments();
-      }
       
       // Get form data including disabled fields for submission
       const formData = this.form.getRawValue();
@@ -213,10 +150,103 @@ export class SafetyIncidentEditComponent {
     }
   }
 
-  /**
-   * Upload attachments that are selected but not yet uploaded
-   */
-  private async uploadPendingAttachments() {
+  async onArchive() {
+    const result = await SweetAlert.confirm({
+      title: "Archive Safety Incident?",
+      text: "Archived records are removed from active lists but remain on record.",
+      icon: "warning",
+      confirmButtonText: "Yes, archive",
+      cancelButtonText: "Cancel",
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      this.isLoading = true;
+      await this.api.archive(this.id);
+      this.toastrService.success('Safety incident archived successfully');
+      this.form.markAsPristine();
+      this.goBack();
+    } catch (err) {
+      this.isLoading = false;
+      this.toastrService.error('Failed to archive safety incident');
+    }
+  }
+
+  async onDelete() {
+    const result = await SweetAlert.confirm({
+      title: "Delete Safety Incident?",
+      text: "This action cannot be undone.",
+      icon: "warning",
+      confirmButtonText: "Yes, delete",
+      cancelButtonText: "Cancel",
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      this.isLoading = true;
+      await this.api.delete(this.id);
+      this.toastrService.success('Safety incident deleted successfully');
+      this.form.markAsPristine();
+      this.goBack();
+    } catch (err) {
+      this.isLoading = false;
+      this.toastrService.error('Failed to delete safety incident');
+    }
+  }
+
+  onCancel() {
+    this.goBack();
+  }
+
+  attachments: any = [];
+  attachmentsLoading = false;
+  uploadTriggerMode: UploadTriggerMode = "on-add";
+  myFiles: File[] = [];
+
+  async getAttachments() {
+    this.attachmentsLoading = true;
+    try {
+      const rows = await this.attachmentsService.find({
+        field: FILE.FIELD,
+        uniqueId: this.id,
+      });
+
+      this.attachments = rows || [];
+    } finally {
+      this.attachmentsLoading = false;
+    }
+  }
+
+  async deleteAttachment(id, index) {
+    const result = await SweetAlert.confirm({
+      title: "Remove attachment?",
+      text: "This will permanently remove the attachment from this safety incident.",
+      icon: "warning",
+      confirmButtonText: "Yes, remove",
+      cancelButtonText: "Cancel",
+    });
+
+    if (!result.isConfirmed) return;
+
+    await this.attachmentsService.delete(id);
+    this.attachments.splice(index, 1);
+  }
+
+  onAttachmentFilesAdded(files: File[]) {
+    if (!files?.length) {
+      return;
+    }
+
+    this.myFiles = [...this.myFiles, ...files];
+  }
+
+  removeFile(index: number) {
+    this.myFiles.splice(index, 1);
+  }
+
+  async onUploadAttachments() {
     if (this.myFiles && this.myFiles.length > 0) {
       let totalAttachments = 0;
       let failedAttachments = 0;
@@ -243,97 +273,9 @@ export class SafetyIncidentEditComponent {
       // Refresh attachments list
       await this.getAttachments();
       
-      // Show upload results
+      // Show upload results if any failed
       if (failedAttachments > 0) {
         this.toastrService.warning(`${totalAttachments} file(s) uploaded, ${failedAttachments} failed`);
-      }
-    }
-  }
-
-  async onArchive() {
-    if (!confirm(`Archive Safety Incident #${this.id}? It will be hidden from the active list but remain on record.`)) return;
-    try {
-      this.isLoading = true;
-      await this.api.archive(this.id);
-      this.toastrService.success('Safety incident archived successfully');
-      this.form.markAsPristine();
-      this.goBack();
-    } catch (err) {
-      this.isLoading = false;
-      this.toastrService.error('Failed to archive safety incident');
-    }
-  }
-
-  async onDelete() {
-    if (!confirm(`Are you sure you want to delete Safety Incident #${this.id}? This action cannot be undone.`)) return;
-    try {
-      this.isLoading = true;
-      await this.api.delete(this.id);
-      this.toastrService.success('Safety incident deleted successfully');
-      this.form.markAsPristine();
-      this.goBack();
-    } catch (err) {
-      this.isLoading = false;
-      this.toastrService.error('Failed to delete safety incident');
-    }
-  }
-
-  onCancel() {
-    this.goBack();
-  }
-
-  attachments: any = [];
-  attachmentsLoading = false;
-  uploadTriggerMode: "manual" | "on-add" | "parent-submit" = "manual";
-
-  async getAttachments() {
-    this.attachmentsLoading = true;
-    try {
-      const rows = await this.attachmentsService.find({
-        field: FILE.FIELD,
-        uniqueId: this.id,
-      });
-
-      this.attachments = rows || [];
-    } finally {
-      this.attachmentsLoading = false;
-    }
-  }
-
-  async deleteAttachment(id, index) {
-    if (!confirm("Are you sure you want to remove attachment?")) return;
-    await this.attachmentsService.delete(id);
-    this.attachments.splice(index, 1);
-  }
-
-  file: File = null;
-
-  myFiles: File[] = [];
-
-  onAttachmentFilesAdded(files: File[]) {
-    if (!files?.length) {
-      return;
-    }
-
-    this.myFiles = [...this.myFiles, ...files];
-  }
-
-  removeFile(index: number) {
-    this.myFiles.splice(index, 1);
-  }
-
-  async onUploadAttachments() {
-    if (this.myFiles && this.myFiles.length > 0) {
-      this.isLoading = true;
-      const fileCount = this.myFiles.length;
-      
-      try {
-        await this.uploadPendingAttachments();
-        this.toastrService.success(`${fileCount} file(s) uploaded successfully`);
-      } catch (err) {
-        this.toastrService.error('Failed to upload some files');
-      } finally {
-        this.isLoading = false;
       }
     }
   }

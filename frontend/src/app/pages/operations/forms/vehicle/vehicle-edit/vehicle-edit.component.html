@@ -42,7 +42,8 @@
       
       <!-- Page Header with Context -->
       <div class="mb-4">
-        <div class="d-flex align-items-center mb-3">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div class="d-flex align-items-center">
           <button 
             type="button" 
             class="btn btn-outline-secondary me-3"
@@ -57,6 +58,19 @@
           <div>
             <h2 class="mb-1 text-dark">{{title}}</h2>
             <p class="text-muted mb-0">Update vehicle information, maintenance records, and manage documentation</p>
+          </div>
+          </div>
+
+          <div ngbDropdown placement="bottom-end" container="body" *ngIf="data && id">
+            <button type="button" class="btn btn-light border btn-sm d-inline-flex align-items-center" ngbDropdownToggle [disabled]="isLoading">
+              <i class="mdi mdi-tune-vertical me-2"></i>
+              <span class="lh-1">Actions</span>
+            </button>
+            <div ngbDropdownMenu>
+              <button ngbDropdownItem class="text-danger" (click)="onDelete()" [disabled]="isLoading">
+                <i class="mdi mdi-delete-outline me-2"></i>Delete Vehicle
+              </button>
+            </div>
           </div>
         </div>
         
@@ -97,41 +111,36 @@
               </p>
             </div>
 
-            <!-- Attachments Grid -->
-            <div class="mb-3">
-              <ag-grid-angular class="ag-theme-quartz no-border" 
-                [rowData]="attachments" 
-                [columnDefs]="columnDefs"
-                [gridOptions]="gridOptions" 
-                style="width: 100%;height: calc(100vh - 320px);">
-              </ag-grid-angular>
-            </div>
+            <app-uploaded-attachments-list
+              [attachments]="attachments"
+              [viewMode]="'table'"
+              [showThumbnails]="true"
+              [showDelete]="true"
+              [disableDelete]="isLoading"
+              [showHelperText]="true"
+              [helperText]="'Click on filenames to preview, or use direct download links if preview fails.'"
+              [useSharedViewer]="true"
+              (deleteRequested)="deleteAttachment($event.id)">
+            </app-uploaded-attachments-list>
 
-            <!-- File Upload -->
-            <div class="row g-2 align-items-start">
-              <div class="col-md-8">
-                <input (change)="this.onFilechange($event)" 
-                  class="form-control" 
-                  type="file" 
-                  id="file" 
-                  multiple 
-                  name="file"
-                  #userPhoto>
-              </div>
-              <div class="col-md-4 d-flex align-items-start">
-                <button (click)="this.onUploadAttachments()" 
-                  type="button" 
-                  class="btn btn-outline-dark w-100"
-                  [disabled]="myFiles?.length == 0">
-                  <i class="mdi mdi-upload me-1"></i>Upload Documents
-                </button>
-              </div>
-              <div class="col-12">
-                <div class="form-text mt-1">
-                  <i class="mdi mdi-information-outline me-1"></i>
-                  Select multiple files to upload vehicle documentation.
-                </div>
-              </div>
+            <label class="form-label">Upload Documents</label>
+            <div class="mb-3">
+              <app-upload-new-attachments
+                [files]="myFiles"
+                [disabled]="isLoading"
+                [pendingViewMode]="'table'"
+                [accept]="'*/*'"
+                [multiple]="true"
+                [allowPaste]="true"
+                [openPickerOnContainerClick]="true"
+                [chooseLabel]="'Choose files'"
+                [dropLabel]="'or drag them here.'"
+                [uploadTriggerMode]="uploadTriggerMode"
+                [helperText]="'Files upload automatically after you add them.'"
+                (filesAdded)="onAttachmentFilesAdded($event)"
+                (removeRequested)="removeFile($event)"
+                (uploadRequested)="onUploadAttachments()">
+              </app-upload-new-attachments>
             </div>
           </div>
         </div>

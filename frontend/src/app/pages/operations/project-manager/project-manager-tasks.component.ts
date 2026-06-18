@@ -1,4 +1,5 @@
-import { Component, OnInit, ViewChild, TemplateRef } from '@angular/core';
+import { Component, OnInit, ViewChild, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
@@ -62,6 +63,7 @@ interface PmTreeRow {
   styleUrls: ['./project-manager-tasks.component.scss']
 })
 export class ProjectManagerTasksComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   private readonly projectManagerBaseRoute = '/project-manager';
   private readonly operationsBaseRoute = '/operations/project-manager';
   private gridApi?: GridApi<PmTreeRow>;
@@ -636,7 +638,9 @@ export class ProjectManagerTasksComponent implements OnInit {
     this.allProjects = this.projectsService.getProjects();
     this.applyProjectContext((this.route.snapshot.queryParamMap.get('projectId') || '').trim());
 
-    this.tasksDataService.saveFallback$.subscribe((projectId) => {
+    this.tasksDataService.saveFallback$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((projectId) => {
       if (projectId !== this.activeProjectId) {
         return;
       }
@@ -644,13 +648,17 @@ export class ProjectManagerTasksComponent implements OnInit {
       this.actionMessage = 'Save to DB failed. Changes are cached locally for now.';
     });
 
-    this.projectsService.getProjects$().subscribe(projects => {
+    this.projectsService.getProjects$()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(projects => {
       this.allProjects = projects;
       const projectIdFromQuery = (this.route.snapshot.queryParamMap.get('projectId') || '').trim();
       this.applyProjectContext(projectIdFromQuery);
     });
 
-    this.route.queryParamMap.subscribe(params => {
+    this.route.queryParamMap
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(params => {
       const gateContext = (params.get('gateContext') || '').trim();
       const gate = Number(params.get('gate') || 0);
       const projectId = (params.get('projectId') || '').trim();
@@ -1445,7 +1453,9 @@ export class ProjectManagerTasksComponent implements OnInit {
       return;
     }
 
-    this.tasksDataService.loadState$(normalizedProjectId).subscribe(state => {
+    this.tasksDataService.loadState$(normalizedProjectId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(state => {
       if (this.activeProjectId !== normalizedProjectId) {
         return;
       }

@@ -395,7 +395,9 @@ export class UploadedAttachmentsListComponent implements OnChanges {
   private openInSharedViewer(row: any): void {
     const items = (this.attachments || []).map((attachment) => ({
       id: attachment?.id,
-      url: this.normalizeAttachmentUrl(String(attachment?.previewUrl || attachment?.link || attachment?.url || "").trim()),
+      url: attachment?.id
+        ? ""
+        : this.normalizeAttachmentUrl(String(attachment?.previewUrl || attachment?.link || attachment?.url || "").trim()),
       fileName: attachment?.fileName || "Attachment",
     }));
 
