@@ -28,5 +28,11 @@ export class NewUserService extends DataService<any> {
       .toPromise();
   }
 
+  removePhoto(id: number | string) {
+    return this.http
+      .delete(`${usersV2Url}/${id}/photo`)
+      .toPromise();
+  }
+
   addPhoto;
 }

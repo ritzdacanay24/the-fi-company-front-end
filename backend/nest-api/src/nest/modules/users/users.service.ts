@@ -100,8 +100,23 @@ export class UsersService {
     await this.getById(id);
 
     const subFolder = 'users';
-    const storedFileName = await this.fileStorageService.storeUploadedFile(file, subFolder);
-    const url = this.fileStorageService.resolveLink(storedFileName, subFolder);
+
+    let storedFileName: string;
+    let url: string | null;
+
+    if (this.shouldUseBucketStorage()) {
+      const stored = await this.fileStorageService.storeUploadedFileInBucket(file, {
+        keyPrefix: `${subFolder}/${id}`,
+        fixedFileName: 'photo.jpg',
+        preferUnsignedUrl: true,
+      });
+
+      storedFileName = stored.fileName;
+      url = stored.url;
+    } else {
+      storedFileName = await this.fileStorageService.storeUploadedFile(file, subFolder);
+      url = this.fileStorageService.resolveLink(storedFileName, subFolder);
+    }
 
     await this.usersRepository.updateById(id, {
       image: url,
@@ -115,5 +130,74 @@ export class UsersService {
       url,
       fileName: storedFileName,
     };
+  }
+
+  async deletePhoto(id: number) {
+    const user = await this.getById(id);
+    const subFolder = 'users';
+
+    if (this.shouldUseBucketStorage()) {
+      const bucket = String(process.env.MEDIA_STORAGE_BUCKET || '').trim() || undefined;
+      const key = this.resolveUserPhotoBucketKey(id, user);
+      await this.fileStorageService.deleteStoredFileInBucket(key, bucket);
+    } else if (user.fileName) {
+      await this.fileStorageService.deleteStoredFile(String(user.fileName), subFolder);
+    }
+
+    await this.usersRepository.updateById(id, {
+      image: null,
+      fileName: null,
+      showImage: 0,
+    });
+
+    return {
+      success: true,
+      message: 'Photo removed successfully',
+    };
+  }
+
+  private shouldUseBucketStorage(): boolean {
+    const mode = String(process.env.MEDIA_STORAGE_MODE || '').trim().toLowerCase();
+    const bucket = String(process.env.MEDIA_STORAGE_BUCKET || '').trim();
+
+    if (mode === 'local') {
+      return false;
+    }
+
+    return mode === 'bucket' || mode === 's3' || !!bucket;
+  }
+
+  private resolveUserPhotoBucketKey(id: number, user: UserRecord): string {
+    const fallbackFileName = String(user.fileName || 'photo.jpg').trim() || 'photo.jpg';
+    const fallbackKey = `users/${id}/${fallbackFileName}`;
+    const image = String(user.image || '').trim();
+    if (!image) {
+      return fallbackKey;
+    }
+
+    let pathname = image;
+
+    // Strip query string when legacy signed URLs were previously stored.
+    const queryIndex = pathname.indexOf('?');
+    if (queryIndex >= 0) {
+      pathname = pathname.slice(0, queryIndex);
+    }
+
+    // Parse absolute URLs safely.
+    if (/^https?:\/\//i.test(pathname)) {
+      try {
+        pathname = new URL(pathname).pathname;
+      } catch {
+        return fallbackKey;
+      }
+    }
+
+    pathname = pathname.replace(/^\/+/, '');
+    const usersIndex = pathname.indexOf('users/');
+    if (usersIndex < 0) {
+      return fallbackKey;
+    }
+
+    return pathname.slice(usersIndex);
   }
 }

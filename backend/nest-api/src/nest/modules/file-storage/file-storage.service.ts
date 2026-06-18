@@ -33,7 +33,7 @@ export class FileStorageService {
 
   async storeUploadedFileInBucket(
     file?: { originalname?: string; buffer?: Buffer; mimetype?: string },
-    options?: { bucket?: string; keyPrefix?: string },
+    options?: { bucket?: string; keyPrefix?: string; fixedFileName?: string; preferUnsignedUrl?: boolean },
   ): Promise<{ bucket: string; key: string; fileName: string; url: string }> {
     if (!file?.buffer || !file?.originalname) {
       throw new BadRequestException('File is required');
@@ -41,7 +41,7 @@ export class FileStorageService {
 
     const bucket = this.resolveBucketName(options?.bucket);
     const keyPrefix = this.sanitizeKeyPrefix(options?.keyPrefix || '');
-    const fileName = this.buildStoredFileName(file.originalname);
+    const fileName = options?.fixedFileName || this.buildStoredFileName(file.originalname);
     const key = keyPrefix ? `${keyPrefix}/${fileName}` : fileName;
 
     const bucketProvider = this.resolveBucketProviderRequired();
@@ -57,7 +57,9 @@ export class FileStorageService {
         bucket,
         key,
         fileName,
-        url: await this.buildS3ObjectUrl(bucket, key),
+        url: await this.buildS3ObjectUrl(bucket, key, {
+          preferUnsignedUrl: !!options?.preferUnsignedUrl,
+        }),
       };
     }
 
@@ -364,11 +366,25 @@ export class FileStorageService {
     return String(process.env.FILE_STORAGE_S3_PUBLIC_BASE_URL || '').trim().replace(/\/+$/, '');
   }
 
-  private async buildS3ObjectUrl(bucket: string, key: string): Promise<string> {
+  private async buildS3ObjectUrl(
+    bucket: string,
+    key: string,
+    options?: { preferUnsignedUrl?: boolean },
+  ): Promise<string> {
     const encodedKey = key.split('/').map((segment) => encodeURIComponent(segment)).join('/');
     const publicBaseUrl = this.resolveS3PublicBaseUrl();
     if (publicBaseUrl) {
       return `${publicBaseUrl}/${bucket}/${encodedKey}`;
+    }
+
+    if (options?.preferUnsignedUrl) {
+      const endpoint = this.resolveS3Endpoint();
+      if (endpoint) {
+        return `${endpoint}/${bucket}/${encodedKey}`;
+      }
+
+      const region = this.resolveS3Region();
+      return `https://${bucket}.s3.${region}.amazonaws.com/${encodedKey}`;
     }
 
     if (this.s3Client) {

@@ -43,6 +43,7 @@ export class OrgChartUserModalComponent {
   form: FormGroup;
   myFiles: FileList | null = null;
   imagePreview: string | null = null;
+  imageRemoved = false;
   availableRoles: AccessControlRole[] = [];
   availableDomains: string[] = [];
   userGrants: AccessControlUserGrant[] = [];
@@ -226,12 +227,14 @@ export class OrgChartUserModalComponent {
     }
 
     this.imagePreview = URL.createObjectURL(file);
+    this.imageRemoved = false;
     this.form.patchValue({ image: this.imagePreview });
   }
 
   removeImage(): void {
     this.imagePreview = null;
     this.myFiles = null;
+    this.imageRemoved = !!this.data?.image;
     this.form.patchValue({ image: "" });
   }
 
@@ -282,9 +285,22 @@ export class OrgChartUserModalComponent {
         await this.accessControlApi.replaceUserScopes(Number(this.id), this.selectedScopes);
       }
 
+      const hasNewFile = !!this.myFiles?.[0];
+      if (this.imageRemoved && !hasNewFile) {
+        await this.api.removePhoto(this.id);
+        payload.image = "";
+        payload.fileName = null;
+        payload.showImage = 0;
+        this.imageUpdated.emit({
+          userId: String(this.id),
+          imageUrl: "",
+        });
+      }
+
       const uploadedImageUrl = await this.uploadSelectedImage();
       if (uploadedImageUrl) {
         payload.image = uploadedImageUrl;
+        payload.showImage = 1;
       }
 
       const result = { ...this.data, ...payload, id: this.id };
