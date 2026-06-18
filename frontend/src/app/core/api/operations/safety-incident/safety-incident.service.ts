@@ -95,6 +95,10 @@ export class SafetyIncidentService extends DataService<any> {
     return await firstValueFrom(this.http.patch<any>(`${url}/unarchiveById/${id}`, {}, { headers: this.userIdHeader }));
   };
 
+  reopen = async (id: number): Promise<any> => {
+    return await firstValueFrom(this.http.patch<any>(`${url}/reopenById/${id}`, {}, { headers: this.userIdHeader }));
+  };
+
   getArchived = async (): Promise<any[]> => {
     return await firstValueFrom(this.http.get<any[]>(`${url}/getArchived`));
   };

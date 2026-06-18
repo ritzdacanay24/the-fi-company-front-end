@@ -219,6 +219,11 @@ export class SafetyIncidentService {
       sanitizedUpdate,
     );
 
+    // If status is being set to Closed, stamp closed_at
+    if (this.normalizeStatus(sanitizedUpdate.status) === 'closed') {
+      await this.safetyIncidentRepository.closeIncidentById(id);
+    }
+
     if (affectedRows === 0) {
       throw new BadRequestException({
         code: 'RC_SAFETY_INCIDENT_EMPTY_UPDATE',
@@ -297,6 +302,50 @@ export class SafetyIncidentService {
 
   async getArchived(): Promise<SafetyIncidentRecord[]> {
     return this.safetyIncidentRepository.getArchived();
+  }
+
+  async reopenById(id: number, userId: number): Promise<SafetyIncidentRecord> {
+    const canManage = await this.userCanManageAnyIncident(userId);
+    if (!canManage) {
+      throw new ForbiddenException({
+        code: 'RC_SAFETY_INCIDENT_FORBIDDEN',
+        message: 'Only supervisors, managers, or admins can reopen safety incidents',
+      });
+    }
+
+    const existing = await this.safetyIncidentRepository.getById(id);
+    if (!existing) {
+      throw new NotFoundException({
+        code: 'RC_SAFETY_INCIDENT_NOT_FOUND',
+        message: `Safety incident with id ${id} not found`,
+      });
+    }
+
+    if (this.normalizeStatus(existing.status) !== 'closed') {
+      throw new BadRequestException({
+        code: 'RC_SAFETY_INCIDENT_NOT_CLOSED',
+        message: 'This safety incident is not closed',
+      });
+    }
+
+    const closedAt = existing.closed_at ? new Date(existing.closed_at as string) : null;
+    if (!closedAt) {
+      throw new BadRequestException({
+        code: 'RC_SAFETY_INCIDENT_CLOSED_AT_MISSING',
+        message: 'Cannot determine when this incident was closed',
+      });
+    }
+
+    const hoursSinceClosed = (Date.now() - closedAt.getTime()) / (1000 * 60 * 60);
+    if (hoursSinceClosed > 48) {
+      throw new ForbiddenException({
+        code: 'RC_SAFETY_INCIDENT_REOPEN_WINDOW_EXPIRED',
+        message: 'This incident cannot be reopened. The 48-hour reopen window has expired.',
+      });
+    }
+
+    await this.safetyIncidentRepository.reopenIncidentById(id);
+    return this.getById(id);
   }
 
   private async assertCanUpdateIncident(

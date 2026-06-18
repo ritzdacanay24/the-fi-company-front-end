@@ -39,6 +39,7 @@ export class SafetyIncidentRepository extends BaseRepository<SafetyIncidentRecor
     'details_of_any_damage_or_personal_injury',
     'archived_at',
     'archived_by',
+    'closed_at',
   ]);
 
   private sanitizePayload(payload: Record<string, unknown>): Record<string, unknown> {
@@ -129,6 +130,22 @@ export class SafetyIncidentRepository extends BaseRepository<SafetyIncidentRecor
   async unarchiveIncidentById(id: number): Promise<number> {
     const result = await this.mysqlService.execute<ResultSetHeader>(
       'UPDATE safety_incident SET archived_at = NULL, archived_by = NULL WHERE id = ?',
+      [id],
+    );
+    return result.affectedRows;
+  }
+
+  async closeIncidentById(id: number): Promise<number> {
+    const result = await this.mysqlService.execute<ResultSetHeader>(
+      "UPDATE safety_incident SET status = 'Closed', closed_at = NOW() WHERE id = ?",
+      [id],
+    );
+    return result.affectedRows;
+  }
+
+  async reopenIncidentById(id: number): Promise<number> {
+    const result = await this.mysqlService.execute<ResultSetHeader>(
+      "UPDATE safety_incident SET status = 'Open', closed_at = NULL WHERE id = ?",
       [id],
     );
     return result.affectedRows;

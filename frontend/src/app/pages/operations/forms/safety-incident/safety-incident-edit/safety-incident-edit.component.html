@@ -64,6 +64,10 @@
             </button>
             <div ngbDropdownMenu>
               <h6 class="dropdown-header">Incident Actions</h6>
+              <button ngbDropdownItem (click)="onReopen()" *ngIf="isClosed">
+                <i class="mdi mdi-lock-open-outline me-2 text-success"></i>Reopen Incident
+              </button>
+              <div class="dropdown-divider" *ngIf="isClosed"></div>
               <button ngbDropdownItem (click)="onArchive()">
                 <i class="mdi mdi-archive-outline me-2 text-warning"></i>Archive Incident
               </button>
@@ -91,8 +95,8 @@
               [attachments]="attachments"
               [viewMode]="'table'"
               [showThumbnails]="true"
-              [showDelete]="true"
-              [disableDelete]="isLoading"
+              [showDelete]="!isClosed"
+              [disableDelete]="isLoading || isClosed"
               [isLoading]="attachmentsLoading || isLoading"
               [showHelperText]="true"
               [helperText]="'Click on filenames to preview, or use direct download links if preview fails.'"
@@ -104,7 +108,7 @@
               [uploadTriggerMode]="uploadTriggerMode"
               [accept]="'*/*'"
               [multiple]="true"
-              [disabled]="isLoading"
+              [disabled]="isLoading || isClosed"
               [pendingViewMode]="'table'"
               (filesAdded)="onAttachmentFilesAdded($event)"
               (removeRequested)="removeFile($event)"

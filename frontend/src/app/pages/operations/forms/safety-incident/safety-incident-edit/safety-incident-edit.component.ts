@@ -71,6 +71,10 @@ export class SafetyIncidentEditComponent {
     return this.form?.disabled || false;
   }
 
+  get isClosed(): boolean {
+    return this.data?.status === 'Closed';
+  }
+
   data: any;
 
   @HostListener("window:beforeunload")
@@ -89,6 +93,11 @@ export class SafetyIncidentEditComponent {
       
       // Lock critical fields to maintain data integrity and compliance
       this.lockCriticalFields();
+
+      // Lock all fields if closed
+      if (this.isClosed) {
+        this.form.disable();
+      }
       
       await this.getAttachments();
       this.isLoading = false;
@@ -193,6 +202,27 @@ export class SafetyIncidentEditComponent {
     } catch (err) {
       this.isLoading = false;
       this.toastrService.error('Failed to delete safety incident');
+    }
+  }
+
+  async onReopen() {
+    const result = await SweetAlert.confirm({
+      title: "Reopen Safety Incident?",
+      text: "This will set the status back to Open and allow editing.",
+      icon: "question",
+      confirmButtonText: "Yes, reopen",
+      cancelButtonText: "Cancel",
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      this.isLoading = true;
+      await this.api.reopen(this.id);
+      this.toastrService.success('Safety incident reopened successfully');
+      await this.getData();
+    } catch (err: any) {
+      this.isLoading = false;
     }
   }
 

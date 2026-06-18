@@ -105,6 +105,12 @@ export class SafetyIncidentController {
     return this.safetyIncidentService.unarchiveById(id, this.getRequiredUserId(request));
   }
 
+  @Patch('reopenById/:id')
+  @Permissions('write')
+  async reopenById(@Param('id', ParseIntPipe) id: number, @Req() request: Request) {
+    return this.safetyIncidentService.reopenById(id, this.getRequiredUserId(request));
+  }
+
   private getRequiredUserId(request: Request | undefined): number {
     const req = request as Request & {
       user?: { id?: number | string };
