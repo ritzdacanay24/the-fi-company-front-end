@@ -26,6 +26,7 @@ import { PendingUploadsListComponent } from "@app/shared/components/attachments/
 
     <div class="mt-3" *ngIf="files.length > 0">
       <app-pending-uploads-list
+        [viewMode]="pendingViewMode"
         [files]="files"
         [disabled]="disabled"
         (removeRequested)="removeRequested.emit($event)">
@@ -46,6 +47,7 @@ export class UploadNewAttachmentsComponent {
   @Input() pasteHint = "Copy and paste one or more files into this area.";
   @Input() showPasteHint = true;
   @Input() helperText = "";
+  @Input() pendingViewMode: "list" | "table" = "list";
 
   @Input() uploadTriggerMode: "manual" | "on-add" | "parent-submit" = "manual";
   @Input() manualFlowText = "Files upload when you click Upload.";

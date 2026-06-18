@@ -61,25 +61,39 @@
 
           <div class="mt-4 pt-4 border-top">
             <h5 class="mb-3">Attachments</h5>
-            <ul class="list-group mb-3">
-              <li class="list-group-item d-flex justify-content-between pointer"
-                *ngFor="let row of attachments; let i = index">
-                <div>
-                  <a (click)="open(i)">{{row.fileName}} - {{row.createdDate}}</a> <br />
-                  <p>
-                    Can't open/view file? Click
-                    <a href="" (click)="openAttachmentInNewTab(row, $event)"
-                      class="link-primary"> <u>here</u>
-                    </a>
-                  </p>
-                </div>
-                <span class="text-danger pointer" (click)="deleteAttachment(row.id, i)">X</span>
-              </li>
-            </ul>
+            <app-uploaded-attachments-list
+              [attachments]="attachments"
+              [viewMode]="'table'"
+              [showThumbnails]="true"
+              [showDelete]="true"
+              [disableDelete]="isLoading"
+              [showHelperText]="true"
+              [helperText]="'Click on filenames to preview, or use direct download links if preview fails.'"
+              [useSharedViewer]="true"
+              (deleteRequested)="deleteAttachment($event.id, $event.index)">
+            </app-uploaded-attachments-list>
 
             <label class="form-label">Upload Documents</label>
-            <div class="d-flex gap-2 align-items-center">
-              <input (change)="this.onFilechange($event)" class="form-control" type="file" id="file" multiple name="file">
+            <div class="mb-3">
+              <app-upload-new-attachments
+                [files]="myFiles"
+                [disabled]="isLoading"
+                [pendingViewMode]="'table'"
+                [accept]="'*/*'"
+                [multiple]="true"
+                [allowPaste]="true"
+                [openPickerOnContainerClick]="true"
+                [chooseLabel]="'Choose files'"
+                [dropLabel]="'or drag them here.'"
+                [uploadTriggerMode]="uploadTriggerMode"
+                [helperText]="'Files upload automatically after you add them.'"
+                (filesAdded)="onAttachmentFilesAdded($event)"
+                (removeRequested)="removeFile($event)"
+                (uploadRequested)="onUploadAttachments()">
+              </app-upload-new-attachments>
+            </div>
+
+            <div class="d-flex justify-content-end" *ngIf="uploadTriggerMode === 'manual'">
               <button (click)="this.onUploadAttachments()" type="button" class="btn btn-primary text-nowrap"
                 [disabled]="isLoading || myFiles?.length == 0">
                 <i class="feather icon-upload me-1"></i>Upload

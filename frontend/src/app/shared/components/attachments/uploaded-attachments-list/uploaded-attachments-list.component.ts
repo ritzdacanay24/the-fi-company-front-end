@@ -292,7 +292,7 @@ export class UploadedAttachmentsListComponent implements OnChanges {
   @Input() resolvePreviewUrls = false;
   @Input() showMissingSourceWarning = false;
   @Input() missingSourceText = "Missing file source. Reupload required for preview/download.";
-  @Input() useSharedViewer = false;
+  @Input() useSharedViewer = true;
   @Input() enableViewerNavigation = true;
   @Input() resolveById?: (id: string | number) => Promise<{ url: string; fileName?: string } | null>;
 

@@ -26,8 +26,22 @@
           <app-parts-order-form (setFormEmitter)="form = $event" [submitted]="submitted"></app-parts-order-form>
 
           <div class="mt-4 pt-4 border-top">
-            <label class="form-label">Upload Documents</label>
-            <input (change)="this.onFilechange($event)" class="form-control" type="file" id="file" multiple name="file">
+            <h5 class="mb-3">Attachments</h5>
+            <app-upload-new-attachments
+              [files]="myFiles"
+              [disabled]="isLoading"
+              [pendingViewMode]="'table'"
+              [accept]="'*/*'"
+              [multiple]="true"
+              [allowPaste]="true"
+              [openPickerOnContainerClick]="true"
+              [chooseLabel]="'Choose files'"
+              [dropLabel]="'or drag them here.'"
+              [uploadTriggerMode]="uploadTriggerMode"
+              [parentSubmitFlowText]="'Files are queued here and upload when you submit the form.'"
+              (filesAdded)="onAttachmentFilesAdded($event)"
+              (removeRequested)="removeFile($event)">
+            </app-upload-new-attachments>
           </div>
         </div>
 

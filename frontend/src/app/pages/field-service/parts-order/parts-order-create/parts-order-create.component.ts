@@ -6,12 +6,13 @@ import { FormGroup } from "@angular/forms";
 import { PartsOrderService } from "@app/core/api/field-service/parts-order/parts-order.service";
 import moment from "moment";
 import { AuthenticationService } from "@app/core/services/auth.service";
-import { NAVIGATION_ROUTE } from "../parts-order-constant";
+import { NAVIGATION_ROUTE, PARTS_ORDER_ATTACHMENT } from "../parts-order-constant";
 import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
+import { UploadNewAttachmentsComponent } from "@app/shared/components/attachments/upload-new-attachments/upload-new-attachments.component";
 
 @Component({
   standalone: true,
-  imports: [SharedModule, PartsOrderFormComponent],
+  imports: [SharedModule, PartsOrderFormComponent, UploadNewAttachmentsComponent],
   selector: "app-parts-order-create",
   templateUrl: "./parts-order-create.component.html",
   styleUrls: [],
@@ -52,9 +53,9 @@ export class PartsOrderCreateComponent implements OnInit {
         for (var i = 0; i < this.myFiles.length; i++) {
           const formData = new FormData();
           formData.append("file", this.myFiles[i]);
-          formData.append("field", "FS Parts Order");
+          formData.append("field", PARTS_ORDER_ATTACHMENT.FIELD);
           formData.append("uniqueData", `${insertId}`);
-          formData.append("subFolder", "partsRequest");
+          formData.append("subFolder", PARTS_ORDER_ATTACHMENT.SUB_FOLDER);
           await this.attachmentsService.uploadfile(formData);
         }
       }
@@ -80,14 +81,21 @@ export class PartsOrderCreateComponent implements OnInit {
 
   isLoading = false;
 
+  uploadTriggerMode: "manual" | "on-add" | "parent-submit" = "parent-submit";
+
   file: File = null;
 
   myFiles: File[] = [];
 
-  onFilechange(event: any) {
-    this.myFiles = [];
-    for (var i = 0; i < event.target.files.length; i++) {
-      this.myFiles.push(event.target.files[i]);
+  onAttachmentFilesAdded(files: File[]) {
+    if (!files?.length) {
+      return;
     }
+
+    this.myFiles = [...this.myFiles, ...files];
+  }
+
+  removeFile(index: number) {
+    this.myFiles.splice(index, 1);
   }
 }

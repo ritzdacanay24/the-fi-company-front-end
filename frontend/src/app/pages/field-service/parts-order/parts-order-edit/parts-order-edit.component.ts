@@ -5,16 +5,16 @@ import { ToastrService } from 'ngx-toastr';
 import { SharedModule } from '@app/shared/shared.module';
 import { PartsOrderFormComponent } from '../parts-order-form/parts-order-form-component';
 import { PartsOrderService } from '@app/core/api/field-service/parts-order/parts-order.service';
-import { NAVIGATION_ROUTE } from '../parts-order-constant';
+import { NAVIGATION_ROUTE, PARTS_ORDER_ATTACHMENT } from '../parts-order-constant';
 import { AttachmentsService } from '@app/core/api/attachments/attachments.service';
-import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
-import { FileViewerModalComponent } from '@app/shared/components/file-viewer-modal/file-viewer-modal.component';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
+import { UploadNewAttachmentsComponent } from '@app/shared/components/attachments/upload-new-attachments/upload-new-attachments.component';
+import { UploadedAttachmentsListComponent } from '@app/shared/components/attachments/uploaded-attachments-list/uploaded-attachments-list.component';
 
 @Component({
   standalone: true,
-  imports: [SharedModule, PartsOrderFormComponent],
+  imports: [SharedModule, PartsOrderFormComponent, UploadNewAttachmentsComponent, UploadedAttachmentsListComponent],
   selector: 'app-parts-order-edit',
   templateUrl: './parts-order-edit.component.html',
 })
@@ -25,7 +25,6 @@ export class PartsOrderEditComponent {
     private api: PartsOrderService,
     private toastrService: ToastrService,
     private attachmentsService: AttachmentsService,
-    private modalService: NgbModal,
     private fb: FormBuilder,
     private authenticationService: AuthenticationService,
   ) { }
@@ -49,6 +48,8 @@ export class PartsOrderEditComponent {
   isLoading = false;
 
   submitted = false;
+
+  uploadTriggerMode: 'manual' | 'on-add' | 'parent-submit' = 'on-add';
 
   @Input() goBack: Function = () => {
     this.router.navigate([NAVIGATION_ROUTE.LIST], { queryParamsHandling: 'merge' });
@@ -188,163 +189,92 @@ export class PartsOrderEditComponent {
   }
 
 
-  images
   attachments: any = []
   async getAttachments() {
-    this.images = []
-    this.attachments = await this.attachmentsService.find({ field: 'FS Parts Order', uniqueId: this.id })
-
-    for (let i = 0; i < this.attachments.length; i++) {
-      let row = this.attachments[i]
-      const src = this.getAttachmentUrl(row);
-      const caption = 'Image ' + i + '- ' + row.createdDate;
-      const thumb = src;
-      const item = {
-        src: src,
-        caption: caption,
-        thumb: thumb
-      };
-      this.images.push(item);
-    }
-
+    this.attachments = await this.attachmentsService.find({ field: PARTS_ORDER_ATTACHMENT.FIELD, uniqueId: this.id })
+    this.attachments = this.attachments || [];
   }
 
-
-  open(index: number): void {
-    const items = (this.attachments || []).map((attachment) => ({
-      id: attachment?.id,
-      url: this.getAttachmentUrl(attachment),
-      fileName: attachment?.fileName || 'Attachment',
-    }));
-
-    if (!items[index]?.url && !items[index]?.id) {
-      this.toastrService.warning('Attachment URL not available');
-      return;
-    }
-
-    const modalRef = this.modalService.open(FileViewerModalComponent, {
-      size: 'xl',
-      centered: true,
-      scrollable: true,
+  async deleteAttachment(id, index) {
+    const result = await SweetAlert.confirm({
+      title: 'Remove Attachment',
+      text: 'Are you sure you want to remove this attachment?',
+      confirmButtonText: 'Remove',
+      confirmButtonColor: '#dc3545',
     });
+    if (!result.value) return;
 
-    modalRef.componentInstance.url = items[index].url;
-    modalRef.componentInstance.fileName = items[index].fileName;
-    modalRef.componentInstance.items = items;
-    modalRef.componentInstance.initialIndex = index;
-    modalRef.componentInstance.enableNavigation = true;
-    modalRef.componentInstance.resolveById = async (id: string | number) => {
-      try {
-        const resolved = await this.attachmentsService.getViewById(Number(id));
-        return {
-          url: this.normalizeAttachmentUrl(resolved?.url || ''),
-          fileName: resolved?.fileName,
-        };
-      } catch (error) {
-        return null;
-      }
-    };
+    await this.attachmentsService.delete(id);
+    this.attachments.splice(index, 1)
+  }
+
+  async openAttachment(attachment: any): Promise<void> {
+    await this.openAttachmentInNewTab(attachment);
+  }
+
+  async downloadAttachment(attachment: any): Promise<void> {
+    await this.openAttachmentInNewTab(attachment);
   }
 
   async openAttachmentInNewTab(attachment: any, event?: Event): Promise<void> {
     event?.preventDefault();
 
-    const resolvedUrl = await this.resolveAttachmentUrl(attachment);
-    if (!resolvedUrl) {
-      this.toastrService.warning('Attachment URL not available');
-      return;
-    }
-
-    window.open(resolvedUrl, '_blank');
-  }
-
-  private getAttachmentUrl(attachment: any): string {
-    const link = this.normalizeAttachmentUrl(String(attachment?.link || '').trim());
-    if (link) {
-      return link;
-    }
-
-    const fileName = attachment?.fileName || '';
-    if (!fileName) {
-      return '';
-    }
-
-    return this.getLegacyAttachmentUrl(fileName);
-  }
-
-  private getLegacyAttachmentUrl(fileName: string): string {
-    return `https://dashboard.eye-fi.com/attachments/fieldService/${encodeURIComponent(fileName)}`;
-  }
-
-  private normalizeAttachmentUrl(rawUrl: string): string {
-    if (!rawUrl) {
-      return '';
-    }
-
-    if (/^https?:\/\//i.test(rawUrl)) {
-      return rawUrl;
-    }
-
-    if (rawUrl.startsWith('/attachments/')) {
-      return `https://dashboard.eye-fi.com${rawUrl}`;
-    }
-
-    if (rawUrl.startsWith('/')) {
-      return `${window.location.origin}${rawUrl}`;
-    }
-
-    return rawUrl;
-  }
-
-  private async resolveAttachmentUrl(attachment: any): Promise<string> {
     try {
       const resolved = await this.attachmentsService.getViewById(attachment?.id);
-      const resolvedUrl = this.normalizeAttachmentUrl(resolved?.url || '');
-      if (resolvedUrl) {
-        return resolvedUrl;
+      const resolvedUrl = resolved?.url || attachment?.link;
+      if (!resolvedUrl) {
+        this.toastrService.warning('Attachment URL not available');
+        return;
       }
-    } catch (error) {
+
+      window.open(resolvedUrl, '_blank');
+    } catch {
+      this.toastrService.warning('Attachment URL not available');
     }
-
-    return this.getAttachmentUrl(attachment);
-  }
-
-  async deleteAttachment(id, index) {
-    if (!confirm('Are you sure you want to remove attachment?')) return
-    await this.attachmentsService.delete(id);
-    this.attachments.splice(index, 1)
   }
 
   file: File = null;
 
   myFiles: File[] = [];
 
-  onFilechange(event: any) {
-    this.myFiles = [];
-    for (var i = 0; i < event.target.files.length; i++) {
-      this.myFiles.push(event.target.files[i]);
+  onAttachmentFilesAdded(files: File[]) {
+    if (!files?.length) {
+      return;
     }
+
+    this.myFiles = [...this.myFiles, ...files];
+  }
+
+  removeFile(index: number) {
+    this.myFiles.splice(index, 1);
   }
 
   async onUploadAttachments() {
-    if (this.myFiles?.length) {
-      let totalAttachments = 0;
-      this.isLoading = true;
-      for (var i = 0; i < this.myFiles.length; i++) {
-        const formData = new FormData();
-        formData.append("file", this.myFiles[i]);
-        formData.append("field", "FS Parts Order");
-        formData.append("uniqueData", `${this.id}`);
-        formData.append("subFolder", 'partsRequest');
-        try {
-          await this.attachmentsService.uploadfile(formData);
-          totalAttachments++
-        } catch (err) {
-        }
-      }
-      this.isLoading = false;
-      await this.getAttachments()
+    if (this.isLoading || !this.myFiles?.length) {
+      return;
     }
+
+    const queuedFiles = [...this.myFiles];
+    const failedFiles: File[] = [];
+
+    this.isLoading = true;
+    for (let i = 0; i < queuedFiles.length; i++) {
+      const formData = new FormData();
+      formData.append("file", queuedFiles[i]);
+      formData.append("field", PARTS_ORDER_ATTACHMENT.FIELD);
+      formData.append("uniqueData", `${this.id}`);
+      formData.append("subFolder", PARTS_ORDER_ATTACHMENT.SUB_FOLDER);
+
+      try {
+        await this.attachmentsService.uploadfile(formData);
+      } catch (err) {
+        failedFiles.push(queuedFiles[i]);
+      }
+    }
+
+    this.myFiles = failedFiles;
+    this.isLoading = false;
+    await this.getAttachments();
   }
 
 
