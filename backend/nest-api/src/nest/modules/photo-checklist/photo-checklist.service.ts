@@ -696,13 +696,43 @@ export class PhotoChecklistService {
     return this.repository.searchInstances(criteria);
   }
 
-  async getInstanceById(id: number) {
+  async getInstanceById(id: number, options?: { includeMediaByItem?: boolean; includeTemplateItems?: boolean; navOnly?: boolean }) {
     const instance = await this.repository.getInstanceById(id);
     if (!instance) {
       throw new NotFoundException({
         code: 'RC_CHECKLIST_INSTANCE_NOT_FOUND',
         message: `Checklist instance with id ${id} not found`,
       });
+    }
+
+    const { item_completion: _itemCompletion, ...instanceView } = instance as Record<string, unknown>;
+
+    const includeMediaByItem = options?.includeMediaByItem !== false;
+    const includeTemplateItems = options?.includeTemplateItems !== false;
+    const navOnly = options?.navOnly === true;
+
+    const normalizedCompletion = this.normalizeInstanceItemCompletionMediaUrls(instance.item_completion);
+    const executionCompletion = this.stripCompletionMediaMeta(normalizedCompletion);
+
+    let templatePayload: Record<string, unknown> | undefined;
+    if (includeTemplateItems) {
+      const templateItems = await this.repository.getTemplateItems(Number(instance.template_id || 0));
+      const nestedTemplateItems = this.buildNestedItems(templateItems);
+      const completionByItemId = this.buildCompletionByItemIdMap(executionCompletion);
+      templatePayload = {
+        id: Number(instance.template_id || 0),
+        name: String(instance.template_name || '').trim(),
+        version: String(instance.template_version || '').trim(),
+        part_number: String(instance.part_number || '').trim(),
+        items: this.buildExecutionTemplateItems(nestedTemplateItems, completionByItemId, navOnly),
+      };
+    }
+
+    if (!includeMediaByItem) {
+      return {
+        ...instanceView,
+        ...(templatePayload ? { template: templatePayload } : {}),
+      };
     }
 
     // Load photos from photo_submissions (source of truth for media)
@@ -742,9 +772,64 @@ export class PhotoChecklistService {
     }
 
     return {
-      ...instance,
-      item_completion: this.normalizeInstanceItemCompletionMediaUrls(instance.item_completion),
+      ...instanceView,
       media_by_item: items,
+      ...(templatePayload ? { template: templatePayload } : {}),
+    };
+  }
+
+  async getInstanceItemMedia(instanceId: number, itemId: number) {
+    const normalizedInstanceId = Number(instanceId || 0);
+    const normalizedItemId = Number(itemId || 0);
+    if (normalizedInstanceId <= 0 || normalizedItemId <= 0) {
+      throw new NotFoundException({
+        code: 'RC_CHECKLIST_MEDIA_LOCATOR_INVALID',
+        message: 'Missing required locator fields',
+      });
+    }
+
+    const mediaRows = await this.repository.getPhotoSubmissionsByInstanceItemId(normalizedInstanceId, normalizedItemId);
+    const mediaItems: Array<{ id: number; file_url: string; file_type: string; capture_source: string | null; created_at: string | null; uploader_user_id: number | null }> = [];
+
+    for (const row of mediaRows) {
+      const meta = this.safeParseJson<Record<string, unknown>>(row.photo_metadata, {});
+      const resolvedFileUrl = await this.resolveChecklistMediaReadUrl(
+        String(row.file_url || ''),
+        meta,
+        'inspectionCheckList',
+      );
+
+      mediaItems.push({
+        id: Number(row.submission_id || 0),
+        file_url: resolvedFileUrl,
+        file_type: String(row.file_type || 'image'),
+        capture_source: (meta?.capture_source as string | null) ?? null,
+        created_at: row.created_at ? String(row.created_at) : null,
+        uploader_user_id: Number(meta?.uploader_user_id || 0) || null,
+      });
+    }
+
+    const templateSampleRow = await this.repository.getTemplateSampleMediaByInstanceItemId(
+      normalizedInstanceId,
+      normalizedItemId,
+    );
+    const signedSampleImages = await this.resolveSignedSampleMediaArray(
+      this.safeParseJson<unknown[]>(templateSampleRow?.sample_images, []),
+      'inspectionCheckList',
+    );
+    const signedSampleVideos = await this.resolveSignedSampleMediaArray(
+      this.safeParseJson<unknown[]>(templateSampleRow?.sample_videos, []),
+      'inspectionCheckList',
+    );
+
+    return {
+      success: true,
+      instance_id: normalizedInstanceId,
+      item_id: normalizedItemId,
+      photos: mediaItems.filter((media) => media.file_type !== 'video'),
+      videos: mediaItems.filter((media) => media.file_type === 'video'),
+      sample_images: signedSampleImages,
+      sample_videos: signedSampleVideos,
     };
   }
 
@@ -1033,6 +1118,7 @@ export class PhotoChecklistService {
     const photoMetadata: Record<string, unknown> = {
       capture_source: captureSource,
       uploader_user_id: Number(options?.userId || 0) || null,
+      storage_location: useBucketStorage ? 'aws' : 'legacy',
     };
     if (storageMetadata) {
       photoMetadata.storage = storageMetadata;
@@ -1064,7 +1150,7 @@ export class PhotoChecklistService {
 
     return {
       success: true,
-      file_url: responseFileUrl || mediaDisplayUrl,
+      file_url: mediaDisplayUrl,
       media: {
         id: Number(media?.id || resolvedId || insertId || 0),
         item_id: Number(media?.item_id || itemId),
@@ -1146,14 +1232,24 @@ export class PhotoChecklistService {
       });
     }
 
+    const mediaMeta = this.safeParseJson<Record<string, unknown>>(media?.photo_metadata, {});
+    const storageLocation = String(mediaMeta?.storage_location || mediaMeta?.storage_type || '').trim().toLowerCase();
     const storageInfo = this.extractStorageInfo(media?.photo_metadata, String(media?.file_name || ''));
-    if (storageInfo?.bucket && storageInfo?.key) {
-      await this.fileStorageService.deleteStoredFileInBucket(storageInfo.key, storageInfo.bucket);
-    } else {
-      const fileName = String(media.file_name || '').trim();
+    const fileName = String(media.file_name || '').trim();
+
+    if (storageLocation === 'aws') {
+      if (storageInfo?.bucket && storageInfo?.key) {
+        await this.fileStorageService.deleteStoredFileInBucket(storageInfo.key, storageInfo.bucket);
+      }
+    } else if (storageLocation === 'legacy') {
       if (fileName) {
         await this.fileStorageService.deleteStoredFile(fileName, 'inspectionCheckList');
       }
+    } else if (storageInfo?.bucket && storageInfo?.key) {
+      // Backward compatibility for older metadata rows without explicit storage_location.
+      await this.fileStorageService.deleteStoredFileInBucket(storageInfo.key, storageInfo.bucket);
+    } else if (fileName) {
+      await this.fileStorageService.deleteStoredFile(fileName, 'inspectionCheckList');
     }
 
     const affectedRows = await this.repository.deletePhotoSubmissionById(id);
@@ -1626,9 +1722,14 @@ export class PhotoChecklistService {
     metadata: Record<string, unknown>,
     subFolder = 'inspectionCheckList',
   ): Promise<string> {
+    const storageLocation = String(metadata?.storage_location || metadata?.storage_type || '').trim().toLowerCase();
     const storage = metadata?.storage as Record<string, unknown> | undefined;
     const bucket = String(storage?.bucket || '').trim();
     const key = String(storage?.key || '').trim();
+
+    if (storageLocation === 'legacy') {
+      return this.normalizeChecklistMediaUrl(rawUrl, { subFolder });
+    }
 
     if (bucket && key) {
       try {
@@ -1642,6 +1743,42 @@ export class PhotoChecklistService {
     }
 
     return this.normalizeChecklistMediaUrl(rawUrl, { subFolder });
+  }
+
+  private async resolveSignedSampleMediaArray(
+    value: unknown[],
+    subFolder = 'inspectionCheckList',
+  ): Promise<Array<Record<string, unknown>>> {
+    if (!Array.isArray(value) || value.length === 0) {
+      return [];
+    }
+
+    const resolved: Array<Record<string, unknown>> = [];
+    for (const entry of value) {
+      if (!entry || typeof entry !== 'object') {
+        continue;
+      }
+
+      const record = { ...(entry as Record<string, unknown>) };
+      const rawUrl = String(record.url || record.file_url || '').trim();
+      if (!rawUrl) {
+        resolved.push(record);
+        continue;
+      }
+
+      const metadata: Record<string, unknown> = {
+        ...(record as Record<string, unknown>),
+      };
+      const storage = record.storage;
+      if (storage && typeof storage === 'object') {
+        metadata.storage = storage as Record<string, unknown>;
+      }
+
+      record.url = await this.resolveChecklistMediaReadUrl(rawUrl, metadata, subFolder);
+      resolved.push(record);
+    }
+
+    return resolved;
   }
 
   private resolveChecklistMediaPublicOrigin(): string {
@@ -1797,7 +1934,10 @@ export class PhotoChecklistService {
       return rawCompletion;
     }
 
-    const normalizedEntries = parsed.map((entry) => this.normalizeCompletionEntryMediaUrls(entry));
+    // Compact sparse/legacy arrays so API responses do not contain long runs of nulls.
+    const normalizedEntries = parsed
+      .filter((entry) => !!entry && typeof entry === 'object')
+      .map((entry) => this.normalizeCompletionEntryMediaUrls(entry));
     return isStringPayload ? JSON.stringify(normalizedEntries) : normalizedEntries;
   }
 
@@ -1858,6 +1998,113 @@ export class PhotoChecklistService {
     }
 
     return normalized;
+  }
+
+  private stripCompletionMediaMeta(rawCompletion: unknown): unknown {
+    if (rawCompletion == null || rawCompletion === '') {
+      return rawCompletion;
+    }
+
+    const isStringPayload = typeof rawCompletion === 'string';
+    const parsed = this.safeParseJson<unknown>(rawCompletion, rawCompletion);
+    if (!Array.isArray(parsed)) {
+      return rawCompletion;
+    }
+
+    const sanitized = parsed
+      .filter((entry) => !!entry && typeof entry === 'object')
+      .map((entry) => {
+        const data = { ...(entry as Record<string, unknown>) };
+        delete data.photoMeta;
+        delete data.videoMeta;
+        return data;
+      });
+
+    return isStringPayload ? JSON.stringify(sanitized) : sanitized;
+  }
+
+  private buildCompletionByItemIdMap(rawCompletion: unknown): Map<number, Record<string, unknown>> {
+    const parsed = this.safeParseJson<unknown>(rawCompletion, rawCompletion);
+    if (!Array.isArray(parsed)) {
+      return new Map<number, Record<string, unknown>>();
+    }
+
+    const map = new Map<number, Record<string, unknown>>();
+    for (const entry of parsed) {
+      if (!entry || typeof entry !== 'object') {
+        continue;
+      }
+
+      const record = entry as Record<string, unknown>;
+      const itemId = this.extractBaseItemId(record.itemId);
+      if (itemId > 0) {
+        map.set(itemId, record);
+      }
+    }
+
+    return map;
+  }
+
+  private buildExecutionTemplateItems(
+    items: ChecklistItemNode[],
+    completionByItemId: Map<number, Record<string, unknown>>,
+    navOnly = false,
+  ): Array<Record<string, unknown>> {
+    return items.map((item) => {
+      const itemId = Number(item.id || 0);
+      const completion = completionByItemId.get(itemId);
+      const children = Array.isArray(item.children) ? item.children : [];
+
+      const lightweight: Record<string, unknown> = {
+        id: itemId,
+        order_index: item.order_index,
+        title: item.title,
+        submission_type: item.submission_type,
+        is_required: item.is_required,
+        level: item.level ?? 0,
+        parent_id: item.parent_id ?? null,
+        picture_required: !!this.projectPhotoRequirements(item.photo_requirements).picture_required,
+        min_photos: Number(this.projectPhotoRequirements(item.photo_requirements).min_photos || 0) || 0,
+        max_photos: Number(this.projectPhotoRequirements(item.photo_requirements).max_photos || 0) || 0,
+        angle: String(this.projectPhotoRequirements(item.photo_requirements).angle || ''),
+        focus: String(this.projectPhotoRequirements(item.photo_requirements).focus || ''),
+        distance: String(this.projectPhotoRequirements(item.photo_requirements).distance || ''),
+        lighting: String(this.projectPhotoRequirements(item.photo_requirements).lighting || ''),
+        max_video_duration_seconds: Number(this.projectPhotoRequirements(item.photo_requirements).max_video_duration_seconds || 0) || 0,
+        completion: {
+          completed: !!completion?.completed,
+          notes: String(completion?.notes || ''),
+          completedAt: completion?.completedAt || null,
+          completedByUserId: completion?.completedByUserId || null,
+          completedByName: completion?.completedByName || null,
+        },
+      };
+
+      if (!navOnly) {
+        lightweight.description = item.description;
+        lightweight.links = Array.isArray(item.links) ? item.links : [];
+        lightweight.needs_media_upload = !!item.needs_media_upload;
+      }
+
+      if (children.length > 0) {
+        lightweight.children = this.buildExecutionTemplateItems(children, completionByItemId, navOnly);
+      }
+
+      return lightweight;
+    });
+  }
+
+  private projectPhotoRequirements(value: unknown): Record<string, unknown> {
+    const source = value && typeof value === 'object'
+      ? (value as Record<string, unknown>)
+      : {};
+
+    return {
+      picture_required: !!source.picture_required,
+      min_photos: Number(source.min_photos || 0) || 0,
+      max_photos: Number(source.max_photos || 0) || 0,
+      max_video_duration_seconds: Number(source.max_video_duration_seconds || 0) || 0,
+    };
   }
 
   private flattenTemplateItems(

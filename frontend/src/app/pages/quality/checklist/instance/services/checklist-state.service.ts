@@ -123,7 +123,7 @@ export class ChecklistStateService {
     
     // Check if item should be marked as completed
     // For photo items, if min_photos requirement is met
-    const minPhotos = item.item.photo_requirements?.min_photos || 1;
+    const minPhotos = item.item.min_photos || 1;
     const shouldComplete = newPhotos.length >= minPhotos;
 
     const photoMeta: Record<string, { source?: 'in-app' | 'system' | 'library'; uploadedAt?: string; uploadedBy?: string; uploadedByUserId?: number; mediaId?: number }> = { ...(item.photoMeta || {}) };
@@ -229,7 +229,7 @@ export class ChecklistStateService {
     photos.splice(photoIndex, 1);
     
     // Check if item should still be marked as completed
-    const minPhotos = item.item.photo_requirements?.min_photos || 1;
+    const minPhotos = item.item.min_photos || 1;
     const shouldComplete = photos.length >= minPhotos;
     
     const photoMeta: Record<string, { source?: 'in-app' | 'system' | 'library' }> = { ...(item.photoMeta || {}) };
@@ -263,7 +263,7 @@ export class ChecklistStateService {
     }
     
     // Check if item should still be marked as completed
-    const minPhotos = item.item.photo_requirements?.min_photos || 1;
+    const minPhotos = item.item.min_photos || 1;
     const shouldComplete = photos.length >= minPhotos;
     
     this.updateItemProgress(itemId, { 

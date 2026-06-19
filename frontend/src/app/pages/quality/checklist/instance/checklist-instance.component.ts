@@ -440,10 +440,6 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     this.showShareModal = false;
   }
 
-  // Full checklist overview modal
-  @ViewChild('fullChecklistModal') fullChecklistModalRef?: TemplateRef<any>;
-  private fullChecklistModal?: NgbModalRef;
-
   @ViewChild('templatePickerModal') templatePickerModalRef?: TemplateRef<any>;
   private templatePickerModal?: NgbModalRef;
 
@@ -595,6 +591,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   // Cached nav items to avoid recreating arrays on every CD cycle
   executionNavItems: ChecklistNavItem[] = [];
   private itemProgressSubscription?: Subscription;
+  private readonly itemMediaSigningRequests = new Set<number>();
 
   // Expose state service property for template
   get itemProgress(): ChecklistItemProgress[] {
@@ -698,8 +695,12 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         if (!instance) return;
         this.instance = instance;
 
-        // Keep current template; just rebuild progress against the updated instance
-        if (this.template) {
+        const inlineTemplate = this.buildTemplateFromInstance(instance);
+        if (inlineTemplate) {
+          this.template = inlineTemplate;
+          this.initializeProgress();
+        } else if (this.template) {
+          // Keep current template; just rebuild progress against the updated instance
           this.initializeProgress();
         } else if (instance.template_id) {
           this.loadTemplate();
@@ -729,6 +730,15 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         }
 
         this.instance = instance;
+
+        const inlineTemplate = this.buildTemplateFromInstance(instance);
+        if (inlineTemplate) {
+          this.template = inlineTemplate;
+          this.refreshingInstance = false;
+          this.initializeProgress();
+          this.cdr.detectChanges();
+          return;
+        }
 
         if (!instance.template_id) {
           this.refreshingInstance = false;
@@ -2259,6 +2269,15 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         }
         
         this.instance = instance;
+        const inlineTemplate = this.buildTemplateFromInstance(instance);
+        if (inlineTemplate) {
+          this.template = inlineTemplate;
+          this.initializeProgress();
+          this.loading = false;
+          this.isLoadingInstance = false;
+          return;
+        }
+
         this.loadTemplate();
       },
       error: (error) => {
@@ -2449,6 +2468,27 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     });
   }
 
+  private buildTemplateFromInstance(instance: ChecklistInstance | null): ChecklistTemplate | null {
+    if (!instance || !(instance as any).template || !Array.isArray((instance as any).template?.items)) {
+      return null;
+    }
+
+    const inlineTemplate = (instance as any).template as Partial<ChecklistTemplate>;
+    return {
+      id: Number(inlineTemplate.id || instance.template_id || 0),
+      name: String(inlineTemplate.name || instance.template_name || 'Checklist').trim(),
+      description: String(inlineTemplate.description || instance.template_description || '').trim(),
+      part_number: String(inlineTemplate.part_number || instance.part_number || '').trim(),
+      product_type: String((inlineTemplate as any).product_type || ''),
+      category: ((inlineTemplate as any).category || instance.template_category || 'inspection') as any,
+      version: String(inlineTemplate.version || instance.template_version || '1.0').trim(),
+      is_active: true,
+      items: Array.isArray(inlineTemplate.items) ? inlineTemplate.items : [],
+      created_at: String((inlineTemplate as any).created_at || instance.created_at || new Date().toISOString()),
+      updated_at: String((inlineTemplate as any).updated_at || instance.updated_at || new Date().toISOString()),
+    } as ChecklistTemplate;
+  }
+
   /**
    * Flatten hierarchical items structure (with nested children) into a flat array
    * OR sort flat array with sub-items placed after their parents
@@ -2510,22 +2550,6 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       }
     });
 
-    // Load completion status from DB (authoritative for collaboration)
-    const dbCompletionMap = new Map<string, any>();
-    try {
-      const raw = (this.instance as any)?.item_completion;
-      const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
-      if (Array.isArray(parsed)) {
-        parsed.forEach((entry: any) => {
-          if (entry && entry.itemId !== undefined && entry.itemId !== null) {
-            dbCompletionMap.set(String(entry.itemId), entry);
-          }
-        });
-      }
-    } catch (e) {
-      // ignore bad JSON
-    }
-    
     // Flatten items to include sub-items from children arrays
     const flattenedItems = this.flattenItems(this.template.items);
     const instanceItems = Array.isArray(this.instance?.media_by_item) ? this.instance!.media_by_item : [];
@@ -2566,10 +2590,12 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       
       // Get completion status from instance item
       const { isCompleted, completedAt } = this.instanceMatcher.getCompletionStatus(instanceItem);
+
+      const templateCompletion = (item as any).completion || {};
       
       // Use localStorage data as fallback
       const localData = completionMap.get(String(itemId));
-      const dbData = dbCompletionMap.get(String(itemId));
+      const dbData = templateCompletion;
       let completed = isCompleted;
       let completionDate = completedAt;
       let notes = '';
@@ -2587,14 +2613,12 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         notes = dbData.notes || notes;
         completedByUserId = dbData.completedByUserId;
         completedByName = dbData.completedByName;
-        photoMeta = dbData.photoMeta;
-        videoMeta = dbData.videoMeta;
 
         if (completedByName && String(completedByName).trim() === 'Unknown User') {
           completedByName = undefined;
         }
       }
-      
+
       if (localData && !isCompleted && !dbData) {
         completed = localData.completed;
         if (localData.completedAt) {
@@ -2627,8 +2651,6 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         (localData as any)._hydratedLastModifiedByName = lastModifiedByName;
       }
 
-      // Backfill media URLs from completion payload metadata keys when explicit
-      // photo/video arrays are absent (common in item_completion snapshots).
       const completionPhotoUrls = [
         ...this.extractMediaUrlsFromMeta(photoMeta),
         ...((Array.isArray((dbData as any)?.photoUrls) ? (dbData as any).photoUrls : []) as string[]),
@@ -2697,6 +2719,22 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       // Navigate to first incomplete item if no step param was provided
       this.navigateToFirstIncompleteItem();
     }
+
+    this.signMediaForActiveItem();
+  }
+
+  private signMediaForActiveItem(): void {
+    const activeIndex = this.getActiveNavIndex();
+    if (activeIndex < 0) {
+      return;
+    }
+
+    const activeProgress = this.itemProgress[activeIndex];
+    if (!activeProgress) {
+      return;
+    }
+
+    this.signMediaForItem(activeProgress);
   }
 
   private resolveInstanceItemForTemplate(
@@ -2912,8 +2950,8 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       }
 
       const submissionType = String((p.item as any)?.submission_type || '').toLowerCase();
-      const pictureRequired = !!p.item?.photo_requirements?.picture_required;
-      const hasMinPhotos = Number(p.item?.photo_requirements?.min_photos || 0) > 0;
+      const pictureRequired = !!p.item?.picture_required;
+      const hasMinPhotos = Number(p.item?.min_photos || 0) > 0;
 
       // Treat concrete media/check tasks as actionable; avoid jumping to folder/group rows.
       if (submissionType === 'photo' || submissionType === 'video' || submissionType === 'audio' || submissionType === 'either') {
@@ -3336,7 +3374,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       status: progress === 100 ? 'completed' as ChecklistInstance['status'] : 'in_progress' as ChecklistInstance['status'],
       progress_percentage: progress,
       updated_at: new Date().toISOString(),
-      item_completion: completionData
+      completion_items: completionData
     };
 
     this.photoChecklistService.updateInstance(this.instanceId, updatedData).subscribe({
@@ -4309,6 +4347,10 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     this.selectedItemIndex = null;
     this.currentStep = itemNumber;
     this.updateUrlWithCurrentStep();
+    const activeIndex = this.getActiveNavIndex();
+    if (activeIndex >= 0 && this.itemProgress[activeIndex]) {
+      this.signMediaForItem(this.itemProgress[activeIndex]);
+    }
   }
 
   nextItem(): void {
@@ -4337,6 +4379,10 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     setTimeout(() => this.updateInstructionsOverflowHints(), 0);
     setTimeout(() => this.updateInstructionsOverflowHints(), 250);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    const nextProgress = this.itemProgress[nextIndex];
+    if (nextProgress) {
+      this.signMediaForItem(nextProgress);
+    }
   }
 
   previousItem(): void {
@@ -4365,6 +4411,10 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     setTimeout(() => this.updateInstructionsOverflowHints(), 0);
     setTimeout(() => this.updateInstructionsOverflowHints(), 250);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    const prevProgress = this.itemProgress[prevIndex];
+    if (prevProgress) {
+      this.signMediaForItem(prevProgress);
+    }
   }
 
   // Missing helper methods for the template
@@ -4581,7 +4631,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     const completionData = this.stateService.getCompletionDataForApi();
     const progressPct = this.stateService.getCompletionPercentage();
     this.photoChecklistService.updateInstance(this.instanceId, {
-      item_completion: completionData,
+      completion_items: completionData,
       progress_percentage: progressPct
     } as any).subscribe({
       next: () => {
@@ -4944,7 +4994,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       status: progress === 100 ? 'completed' as ChecklistInstance['status'] : 'in_progress' as ChecklistInstance['status'],
       progress_percentage: progress,
       updated_at: new Date().toISOString(),
-      item_completion: itemCompletionData
+      completion_items: itemCompletionData
     };
 
     // Silent save - no loading states or notifications
@@ -5031,28 +5081,6 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         .findIndex(i => i.id === item.id);
       return `${parentIndex + 1}.${siblingIndex + 1}`;
     }
-  }
-
-  /**
-   * Full checklist modal methods
-   */
-  openFullChecklistModal(): void {
-    if (this.fullChecklistModalRef) {
-      this.fullChecklistModal = this.modalService.open(this.fullChecklistModalRef, {
-        size: 'fullscreen',
-        scrollable: true,
-      });
-    }
-  }
-
-  closeFullChecklistModal(): void {
-    this.fullChecklistModal?.close();
-    this.fullChecklistModal = undefined;
-  }
-
-  navigateToItemFromModal(index: number): void {
-    this.closeFullChecklistModal();
-    this.navigateToPhotoMode(index);
   }
 
   /**
@@ -5576,9 +5604,6 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         case 'workOrderInfo':
           this.openWorkOrderInfo(content);
           break;
-        case 'fullView':
-          this.openFullChecklistModal();
-          break;
         case 'settings':
           this.openSettings(content);
           break;
@@ -5684,7 +5709,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         orderIndex: index,
         submissionType: (item as any).submission_type ?? 'photo',
         isRequired: !!(item as any).is_required,
-        requiresPhoto: item.photo_requirements?.picture_required ?? false,
+        requiresPhoto: item.picture_required ?? false,
         hasPrimarySampleImage: !!item.sample_image_url || sampleImages.some(img => img.is_primary),
         hasSampleVideo: sampleVideos.length > 0,
         primaryImageUrl: item.sample_image_url || primaryImage?.url || null,
@@ -5774,6 +5799,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         setTimeout(() => this.updateInstructionsOverflowHints(), 0);
         setTimeout(() => this.updateInstructionsOverflowHints(), 250);
         window.scrollTo({ top: 0, behavior: 'smooth' });
+        this.signMediaForItem(progress);
       }
       return;
     }
@@ -5784,6 +5810,86 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     setTimeout(() => this.updateInstructionsOverflowHints(), 0);
     setTimeout(() => this.updateInstructionsOverflowHints(), 250);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    this.signMediaForItem(progress);
+  }
+
+  private signMediaForItem(progress: ChecklistItemProgress): void {
+    if (!this.instanceId || !progress?.item) {
+      return;
+    }
+
+    const baseItemId = this.idExtractor.extractBaseItemId(
+      progress.item.id,
+      (progress.item as any).baseItemId,
+    );
+    if (!baseItemId || baseItemId <= 0) {
+      return;
+    }
+
+    if (this.itemMediaSigningRequests.has(baseItemId)) {
+      return;
+    }
+    this.itemMediaSigningRequests.add(baseItemId);
+
+    this.photoChecklistService.getInstanceItemMedia(this.instanceId, baseItemId).subscribe({
+      next: (response) => {
+        const currentProgress = this.stateService.findItemProgress(progress.item.id);
+        if (!currentProgress) {
+          return;
+        }
+
+        const photos = Array.isArray(response?.photos) ? response.photos : [];
+        const videos = Array.isArray(response?.videos) ? response.videos : [];
+        const sampleImages = Array.isArray(response?.sample_images) ? response.sample_images : [];
+        const sampleVideos = Array.isArray(response?.sample_videos) ? response.sample_videos : [];
+
+        const nextPhotos = photos.map((photo) => String(photo.file_url || '').trim()).filter(Boolean);
+        const nextVideos = videos.map((video) => String(video.file_url || '').trim()).filter(Boolean);
+
+        const nextPhotoMeta = { ...(currentProgress.photoMeta || {}) } as Record<string, { source?: 'in-app' | 'system' | 'library'; uploadedAt?: string; uploadedByUserId?: number; mediaId?: number }>;
+        nextPhotos.forEach((url, index) => {
+          const row = photos[index];
+          nextPhotoMeta[url] = {
+            ...(nextPhotoMeta[url] || {}),
+            source: (row?.capture_source as 'in-app' | 'system' | 'library' | null) || nextPhotoMeta[url]?.source,
+            uploadedAt: row?.created_at || nextPhotoMeta[url]?.uploadedAt,
+            uploadedByUserId: row?.uploader_user_id || nextPhotoMeta[url]?.uploadedByUserId,
+            mediaId: row?.id || nextPhotoMeta[url]?.mediaId,
+          };
+        });
+
+        const nextVideoMeta = { ...(currentProgress.videoMeta || {}) } as Record<string, { source?: 'in-app' | 'system' | 'library'; uploadedAt?: string; uploadedByUserId?: number; mediaId?: number }>;
+        nextVideos.forEach((url, index) => {
+          const row = videos[index];
+          nextVideoMeta[url] = {
+            ...(nextVideoMeta[url] || {}),
+            source: (row?.capture_source as 'in-app' | 'system' | 'library' | null) || nextVideoMeta[url]?.source,
+            uploadedAt: row?.created_at || nextVideoMeta[url]?.uploadedAt,
+            uploadedByUserId: row?.uploader_user_id || nextVideoMeta[url]?.uploadedByUserId,
+            mediaId: row?.id || nextVideoMeta[url]?.mediaId,
+          };
+        });
+
+        this.stateService.updateItemProgress(progress.item.id, {
+          item: {
+            ...(currentProgress.item as any),
+            sample_images: sampleImages,
+            sample_videos: sampleVideos,
+            sample_image_url: String(sampleImages?.[0]?.url || sampleImages?.[0]?.file_url || (currentProgress.item as any)?.sample_image_url || '').trim(),
+          },
+          photos: nextPhotos,
+          videos: nextVideos,
+          photoMeta: nextPhotoMeta,
+          videoMeta: nextVideoMeta,
+        });
+      },
+      error: (error) => {
+        console.warn('Failed to sign item media on demand:', { instanceId: this.instanceId, itemId: baseItemId, error });
+      },
+      complete: () => {
+        this.itemMediaSigningRequests.delete(baseItemId);
+      },
+    });
   }
 
   private findRootParentIndex(startIndex: number): number {

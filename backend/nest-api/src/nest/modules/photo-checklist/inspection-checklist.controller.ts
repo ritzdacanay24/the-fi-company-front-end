@@ -220,8 +220,31 @@ export class InspectionChecklistController {
   }
 
   @Get('instances/:id')
-  async getInstanceById(@Param('id', ParseIntPipe) id: number) {
-    return this.service.getInstanceById(id);
+    async getInstanceById(
+      @Param('id', ParseIntPipe) id: number,
+      @Query('include_media_by_item') includeMediaByItemRaw?: string,
+      @Query('include_template_items') includeTemplateItemsRaw?: string,
+      @Query('nav_only') navOnlyRaw?: string,
+    ) {
+      const includeMediaByItem = includeMediaByItemRaw == null
+        ? true
+        : !['0', 'false', 'no'].includes(String(includeMediaByItemRaw).trim().toLowerCase());
+      const includeTemplateItems = includeTemplateItemsRaw == null
+        ? true
+        : !['0', 'false', 'no'].includes(String(includeTemplateItemsRaw).trim().toLowerCase());
+      const navOnly = navOnlyRaw == null
+        ? false
+        : ['1', 'true', 'yes'].includes(String(navOnlyRaw).trim().toLowerCase());
+
+        return this.service.getInstanceById(id, { includeMediaByItem, includeTemplateItems, navOnly });
+  }
+
+  @Get('instances/:id/items/:itemId/media')
+  async getInstanceItemMedia(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('itemId', ParseIntPipe) itemId: number,
+  ) {
+    return this.service.getInstanceItemMedia(id, itemId);
   }
 
   @Post('instances')

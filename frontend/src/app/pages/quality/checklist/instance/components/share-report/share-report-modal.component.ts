@@ -587,31 +587,13 @@ export class ShareReportModalComponent implements OnInit, OnChanges, AfterViewIn
 
   private buildItemsFromInstanceData(): any[] {
     const instanceItems = Array.isArray(this.instance?.items) ? this.instance.items : [];
-    const completionRaw = this.instance?.item_completion;
 
-    let completionEntries: any[] = [];
-    if (Array.isArray(completionRaw)) {
-      completionEntries = completionRaw;
-    } else if (typeof completionRaw === 'string' && completionRaw.trim()) {
-      try {
-        const parsed = JSON.parse(completionRaw);
-        if (Array.isArray(parsed)) {
-          completionEntries = parsed;
-        } else if (parsed && typeof parsed === 'object') {
-          completionEntries = Object.values(parsed);
-        }
-      } catch {
-        completionEntries = [];
-      }
-    } else if (completionRaw && typeof completionRaw === 'object') {
-      completionEntries = Object.values(completionRaw);
-    }
-
-    const completionByBaseId = new Map<number, any>();
-    completionEntries.forEach((entry: any) => {
-      const baseId = this.extractBaseItemId(entry?.itemId ?? entry?.item_id ?? entry?.id);
+    const templateItems = Array.isArray(this.instance?.template?.items) ? this.instance.template.items : [];
+    const templateItemsByBaseId = new Map<number, any>();
+    templateItems.forEach((item: any) => {
+      const baseId = this.extractBaseItemId(item?.baseItemId ?? item?.id);
       if (baseId > 0) {
-        completionByBaseId.set(baseId, entry);
+        templateItemsByBaseId.set(baseId, item);
       }
     });
 
@@ -625,13 +607,13 @@ export class ShareReportModalComponent implements OnInit, OnChanges, AfterViewIn
 
     const baseIds = new Set<number>([
       ...Array.from(instanceItemsByBaseId.keys()),
-      ...Array.from(completionByBaseId.keys())
+      ...Array.from(templateItemsByBaseId.keys())
     ]);
 
     const rows = Array.from(baseIds)
       .sort((a, b) => a - b)
       .map((baseId) => {
-        const completion = completionByBaseId.get(baseId) || {};
+        const completion = templateItemsByBaseId.get(baseId)?.completion || {};
         const item = instanceItemsByBaseId.get(baseId) || {};
 
         const completionPhotos = this.collectUrlsFromAny(
@@ -662,10 +644,11 @@ export class ShareReportModalComponent implements OnInit, OnChanges, AfterViewIn
         return {
           item: {
             ...item,
+            ...templateItemsByBaseId.get(baseId),
             id: itemId,
             baseItemId: baseId,
-            title: item?.title || `Item ${baseId}`,
-            description: item?.description || item?.details || '',
+            title: item?.title || templateItemsByBaseId.get(baseId)?.title || `Item ${baseId}`,
+            description: item?.description || templateItemsByBaseId.get(baseId)?.description || item?.details || '',
             level
           },
           completed: !!completion?.completed,

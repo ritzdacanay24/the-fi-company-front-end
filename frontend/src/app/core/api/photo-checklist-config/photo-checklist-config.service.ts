@@ -90,6 +90,12 @@ export interface ChecklistItem {
   photo_created_at?: string;
   is_approved?: boolean;
   review_notes?: string;
+  picture_required?: boolean;
+  angle?: string;
+  distance?: string;
+  lighting?: string;
+  focus?: string;
+  max_video_duration_seconds?: number;
   created_at: string;
   updated_at: string;
 }
@@ -153,12 +159,13 @@ export interface ChecklistInstance {
   lock_expires_at?: string | null;
   status: 'draft' | 'in_progress' | 'review' | 'completed' | 'submitted';
   progress_percentage: number;
-  item_completion?: any; // Persisted per-item completion/notes (JSON)
+  completion_items?: any[]; // Persisted per-item completion/notes (JSON)
   photo_count?: number;
   required_items?: number;
   completed_required?: number;
   items?: ChecklistItem[]; // Template items (used by photos view, progress calc)
   media_by_item?: Array<{ item_id: number; photos: Array<{ id?: number; file_url: string; file_type: string; capture_source?: string | null; created_at?: string | null }>; videos: Array<{ id?: number; file_url: string; file_type: string; capture_source?: string | null; created_at?: string | null }> }>; // Photo submissions per item from DB
+  template?: Partial<ChecklistTemplate> & { items?: ChecklistItem[] };
   started_at?: string;
   completed_at?: string;
   submitted_at?: string;
@@ -494,7 +501,30 @@ export class PhotoChecklistConfigService {
   }
 
   getInstance(id: number): Observable<ChecklistInstance> {
-    return this.http.get<ChecklistInstance>(`${this.nestPhotoChecklistBaseUrl}/instances/${id}`);
+    return this.http.get<ChecklistInstance>(`${this.nestPhotoChecklistBaseUrl}/instances/${id}?include_media_by_item=0&include_template_items=1`);
+  }
+
+  getInstanceItemMedia(
+    instanceId: number,
+    itemId: number,
+  ): Observable<{
+    success: boolean;
+    instance_id: number;
+    item_id: number;
+    photos: Array<{ id: number; file_url: string; file_type: string; capture_source: string | null; created_at: string | null; uploader_user_id: number | null }>;
+    videos: Array<{ id: number; file_url: string; file_type: string; capture_source: string | null; created_at: string | null; uploader_user_id: number | null }>;
+    sample_images: Array<{ url?: string; file_url?: string; [key: string]: any }>;
+    sample_videos: Array<{ url?: string; file_url?: string; [key: string]: any }>;
+  }> {
+    return this.http.get<{
+      success: boolean;
+      instance_id: number;
+      item_id: number;
+      photos: Array<{ id: number; file_url: string; file_type: string; capture_source: string | null; created_at: string | null; uploader_user_id: number | null }>;
+      videos: Array<{ id: number; file_url: string; file_type: string; capture_source: string | null; created_at: string | null; uploader_user_id: number | null }>;
+      sample_images: Array<{ url?: string; file_url?: string; [key: string]: any }>;
+      sample_videos: Array<{ url?: string; file_url?: string; [key: string]: any }>;
+    }>(`${this.nestPhotoChecklistBaseUrl}/instances/${instanceId}/items/${itemId}/media`);
   }
 
   createInstance(instance: Partial<ChecklistInstance>): Observable<{success: boolean, instance_id: number}> {

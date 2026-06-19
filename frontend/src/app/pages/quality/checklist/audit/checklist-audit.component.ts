@@ -227,61 +227,7 @@ export class ChecklistAuditComponent implements OnInit {
       });
     }
 
-    if (photos.length > 0) {
-      return photos;
-    }
-
-    return this.extractPhotosFromItemCompletion(instance);
-  }
-
-  private extractPhotosFromItemCompletion(instance: any): AuditPhoto[] {
-    const completionRaw = instance?.item_completion;
-    const completionEntries: any[] = Array.isArray(completionRaw)
-      ? completionRaw
-      : (completionRaw && typeof completionRaw === 'object' ? Object.values(completionRaw) : []);
-
-    if (!completionEntries.length) {
-      return [];
-    }
-
-    const parsedPhotos = completionEntries
-      .map((entry: any, index: number): AuditPhoto | null => {
-        const photoMeta = entry?.photoMeta || entry?.photo_meta || {};
-        const photoMetaUrls = photoMeta && typeof photoMeta === 'object'
-          ? Object.keys(photoMeta).filter((url) => !!url)
-          : [];
-
-        const explicitPhotoUrls = Array.isArray(entry?.photoUrls)
-          ? entry.photoUrls.filter((url: string) => !!url)
-          : [];
-
-        const photoUrls = [...photoMetaUrls, ...explicitPhotoUrls].filter((url, idx, arr) => arr.indexOf(url) === idx);
-
-        if (!photoUrls.length) {
-          return null;
-        }
-
-        const rawItemId = String(entry?.itemId || entry?.item_id || '');
-        const idSegments = rawItemId.split('_');
-        const trailingSegment = idSegments[idSegments.length - 1];
-        const numericItemId = Number(trailingSegment);
-
-        return {
-          itemId: Number.isFinite(numericItemId) ? numericItemId : index + 1,
-          itemTitle: rawItemId ? `Item ${trailingSegment}` : `Item ${index + 1}`,
-          itemDescription: '',
-          photoUrls,
-          sampleImageUrl: '',
-          sampleImages: [],
-          notes: entry?.notes || '',
-          completedAt: entry?.completedAt || entry?.lastModifiedAt || '',
-          photoRequirements: {},
-          isRequired: false
-        };
-      })
-      .filter((entry): entry is AuditPhoto => !!entry);
-
-    return parsedPhotos;
+    return photos;
   }
 
   // ==============================================

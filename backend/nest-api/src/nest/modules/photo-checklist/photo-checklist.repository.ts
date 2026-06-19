@@ -978,6 +978,29 @@ export class PhotoChecklistRepository {
     );
   }
 
+  async getPhotoSubmissionsByInstanceItemId(instanceId: number, itemId: number): Promise<RowDataPacket[]> {
+    return this.mysqlService.query<RowDataPacket[]>(
+      `SELECT item_id, file_url, file_type, created_at, id AS submission_id, photo_metadata
+       FROM photo_submissions
+       WHERE instance_id = ? AND item_id = ?
+       ORDER BY created_at ASC`,
+      [instanceId, itemId],
+    );
+  }
+
+  async getTemplateSampleMediaByInstanceItemId(instanceId: number, itemId: number): Promise<RowDataPacket | null> {
+    const rows = await this.mysqlService.query<RowDataPacket[]>(
+      `SELECT ci.id, ci.sample_images, ci.sample_videos
+       FROM checklist_instances instance
+       INNER JOIN checklist_items ci ON ci.template_id = instance.template_id
+       WHERE instance.id = ? AND ci.id = ?
+       LIMIT 1`,
+      [instanceId, itemId],
+    );
+
+    return rows[0] || null;
+  }
+
   async createPhotoSubmission(payload: {
     instance_id: number;
     item_id: number;
@@ -1168,6 +1191,7 @@ export class PhotoChecklistRepository {
       'progress_percentage',
       'completed_at',
       'submitted_at',
+      'completion_items',
       'item_completion',
       'photo_count',
       'required_items',
@@ -1179,9 +1203,10 @@ export class PhotoChecklistRepository {
 
     for (const key of allowedFields) {
       if (Object.prototype.hasOwnProperty.call(payload, key)) {
-        updates.push(`${key} = ?`);
-        const value = key === 'item_completion' && payload[key] != null
-          ? JSON.stringify(payload[key])
+        const columnName = key === 'completion_items' ? 'item_completion' : key;
+        updates.push(`${columnName} = ?`);
+        const value = (key === 'item_completion' || key === 'completion_items') && payload[key] != null
+          ? JSON.stringify(this.normalizeItemCompletionForStorage(payload[key]))
           : payload[key];
         params.push(value);
       }
@@ -1337,12 +1362,20 @@ export class PhotoChecklistRepository {
     await this.mysqlService.execute(
       'UPDATE checklist_instances SET item_completion = ?, progress_percentage = COALESCE(?, progress_percentage), status = COALESCE(?, status) WHERE id = ?',
       [
-        JSON.stringify(completion),
+        JSON.stringify(this.normalizeItemCompletionForStorage(completion)),
         payload?.progress_percentage ?? null,
         payload?.status ?? null,
         instanceId,
       ],
     );
+  }
+
+  private normalizeItemCompletionForStorage(value: unknown): unknown {
+    if (Array.isArray(value)) {
+      return value.filter((entry) => !!entry && typeof entry === 'object');
+    }
+
+    return value;
   }
 
   async archiveInstance(id: number): Promise<{ success: boolean; error?: string }> {

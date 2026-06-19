@@ -116,14 +116,6 @@
               title="Checklist Settings">
               <i class="mdi mdi-cog-outline me-1"></i>Settings
             </button>
-            <button
-              type="button"
-              class="btn btn-outline-primary btn-sm d-none d-xl-inline-flex align-items-center"
-              (click)="openFullChecklistModal()"
-              title="View Full Checklist Table">
-              <i class="mdi mdi-table me-1"></i>Full View
-            </button>
-            
             <button 
               type="button" 
               class="btn btn-outline-secondary btn-sm"
@@ -438,13 +430,6 @@
               title="Checklist Settings">
               <i class="mdi mdi-cog-outline me-2"></i>Settings
             </button>
-            <button
-              type="button"
-              class="btn btn-outline-primary d-none d-xl-inline-flex"
-              (click)="openFullChecklistModal()"
-              title="View Full Checklist Table">
-              <i class="mdi mdi-table me-2"></i>Full View
-            </button>
           </div>
         </div>
 
@@ -580,7 +565,7 @@
               <div class="row g-4 mb-4">
 
                 <!-- Optional Photo Verification (when photos not required) -->
-                <div class="col-12" *ngIf="(progress.item['submission_type'] === 'photo' || !progress.item['submission_type']) && !!progress.item.is_required && progress.item.photo_requirements && progress.item.photo_requirements.picture_required === false && (!progress.photos || progress.photos.length === 0) && !showOptionalPhotoCapture[progress.item.id]">
+                <div class="col-12" *ngIf="(progress.item['submission_type'] === 'photo' || !progress.item['submission_type']) && !!progress.item.is_required && progress.item.picture_required === false && (!progress.photos || progress.photos.length === 0) && !showOptionalPhotoCapture[progress.item.id]">
                   <div class="border rounded p-4 text-center d-flex flex-column align-items-center justify-content-center"
                        style="min-height: 220px;"
                        [ngClass]="progress.completed ? 'border-success bg-success bg-opacity-10' : 'border-secondary bg-light'">
@@ -665,7 +650,7 @@
                 </div>
 
                 <!-- Sample Reference Section - Primary Image Only (Only show for photo submission types) -->
-                <div class="col-md-6" *ngIf="(progress.item['submission_type'] === 'photo' || !progress.item['submission_type']) && (progress.item.photo_requirements?.picture_required || (progress.photos && progress.photos.length > 0))">
+                <div class="col-md-6" *ngIf="(progress.item['submission_type'] === 'photo' || !progress.item['submission_type']) && (progress.item.picture_required || (progress.photos && progress.photos.length > 0))">
                   <div class="h-100">
                     <h6 class="text-primary mb-3">
                       <i class="mdi mdi-image-multiple me-2"></i>Sample Reference
@@ -715,7 +700,7 @@
                 </div>
 
                 <!-- Photo Section - Inline (Only show when required, already has media, or user chooses optional capture) -->
-                <div class="col-md-6" *ngIf="(progress.item['submission_type'] === 'photo' || progress.item['submission_type'] === 'either' || !progress.item['submission_type']) && (progress.item.photo_requirements?.picture_required !== false || (progress.photos && progress.photos.length > 0) || showOptionalPhotoCapture[progress.item.id])">
+                <div class="col-md-6" *ngIf="(progress.item['submission_type'] === 'photo' || progress.item['submission_type'] === 'either' || !progress.item['submission_type']) && (progress.item.picture_required !== false || (progress.photos && progress.photos.length > 0) || showOptionalPhotoCapture[progress.item.id])">
                   <div class="h-100">
                     <h6 class="text-primary mb-3 d-flex align-items-center">
                       <i class="mdi mdi-camera me-2"></i>Take Photo
@@ -727,7 +712,7 @@
                       <span class="badge bg-outline-secondary ms-auto" *ngIf="!isRecentlyUploaded(progress.item.id) && (!progress.photos || progress.photos.length === 0)">No photo</span>
                     </h6>
 
-                    <div class="mb-2 text-end" *ngIf="progress.item.photo_requirements?.picture_required === false && showOptionalPhotoCapture[progress.item.id] && (!progress.photos || progress.photos.length === 0)">
+                    <div class="mb-2 text-end" *ngIf="progress.item.picture_required === false && showOptionalPhotoCapture[progress.item.id] && (!progress.photos || progress.photos.length === 0)">
                       <button class="btn btn-outline-secondary btn-sm"
                               (click)="hideOptionalPhotoFor(progress.item.id)"
                               [disabled]="!canModifyChecklist">
@@ -741,28 +726,28 @@
                          *ngIf="!progress.photos || progress.photos.length === 0">
                       
                       <!-- Photo Requirements -->
-                      <div class="mb-3" *ngIf="progress.item.photo_requirements && progress.item.photo_requirements.picture_required">
+                      <div class="mb-3" *ngIf="progress.item.picture_required">
                         <div class="rounded p-2 bg-info bg-opacity-10">
                           <div class="row g-2 small text-info-emphasis">
-                            <div class="col-auto" *ngIf="progress.item.photo_requirements.min_photos || progress.item.min_photos">
+                            <div class="col-auto" *ngIf="progress.item.min_photos || progress.item.min_photos">
                               <i class="mdi mdi-image-multiple me-1"></i>
-                              <strong>{{progress.item.photo_requirements.min_photos || progress.item.min_photos || 0}}</strong> photo required
+                              <strong>{{progress.item.min_photos || 0}}</strong> photo required
                             </div>
-                            <div class="col-auto" *ngIf="progress.item.photo_requirements.angle">
+                            <div class="col-auto" *ngIf="progress.item.angle">
                               <i class="mdi mdi-angle-acute me-1"></i>
-                              <strong>Angle:</strong> {{progress.item.photo_requirements.angle}}
+                              <strong>Angle:</strong> {{progress.item.angle}}
                             </div>
-                            <div class="col-auto" *ngIf="progress.item.photo_requirements.focus">
+                            <div class="col-auto" *ngIf="progress.item.focus">
                               <i class="mdi mdi-target me-1"></i>
-                              <strong>Focus:</strong> {{progress.item.photo_requirements.focus}}
+                              <strong>Focus:</strong> {{progress.item.focus}}
                             </div>
-                            <div class="col-auto" *ngIf="progress.item.photo_requirements.distance">
+                            <div class="col-auto" *ngIf="progress.item.distance">
                               <i class="mdi mdi-ruler me-1"></i>
-                              <strong>Distance:</strong> {{progress.item.photo_requirements.distance}}
+                              <strong>Distance:</strong> {{progress.item.distance}}
                             </div>
-                            <div class="col-auto" *ngIf="progress.item.photo_requirements.lighting">
+                            <div class="col-auto" *ngIf="progress.item.lighting">
                               <i class="mdi mdi-lightbulb me-1"></i>
-                              <strong>Lighting:</strong> {{progress.item.photo_requirements.lighting}}
+                              <strong>Lighting:</strong> {{progress.item.lighting}}
                             </div>
                             <div class="col-auto">
                               <i class="mdi mdi-file-image me-1"></i>
@@ -1675,181 +1660,6 @@
     }
   </div>
 }
-
-<!-- Full Checklist Overview Modal -->
-<ng-template #fullChecklistModal let-modal>
-      <div class="modal-header">
-        <h5 class="modal-title">
-          <i class="mdi mdi-clipboard-list-outline me-2"></i>
-          Full Checklist Overview - {{ template?.name }}
-        </h5>
-        <button 
-          type="button" 
-          class="btn-close btn-close-white"
-          (click)="closeFullChecklistModal()"
-          aria-label="Close">
-        </button>
-      </div>
-      <div class="modal-body p-4" style="overflow-x: auto;">
-        <div class="table-responsive">
-          <table class="table table-bordered table-hover align-middle">
-            <thead class="table-light sticky-top">
-              <tr>
-                <th style="width: 50px;" class="text-center">#</th>
-                <th style="width: 250px;">Task</th>
-                <th style="width: 200px;">Description</th>
-                <th style="width: 120px;">Sample Media</th>
-                <th style="width: 100px;" class="text-center">Status</th>
-                <th style="width: 150px;">Media Taken</th>
-                <th style="width: 200px;">Notes</th>
-                <th style="width: 80px;" class="text-center">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let progress of itemProgress; let i = index"
-                  [class.bg-light]="progress.item.level === 1"
-                  [class.border-start]="progress.item.level === 1"
-                  [class.border-primary]="progress.item.level === 1"
-                  [class.border-3]="progress.item.level === 1">
-                <td class="text-center">
-                  <div class="d-flex flex-column align-items-center gap-1">
-                    <span class="fw-bold">{{ i + 1 }}</span>
-                    <i class="mdi mdi-check-circle text-success fs-5" *ngIf="progress.completed" title="Completed"></i>
-                    <i class="mdi mdi-eye text-primary fs-5" *ngIf="currentStep === i + 1" title="Currently viewing"></i>
-                  </div>
-                </td>
-                <td [class.ps-4]="progress.item.level === 1">
-                  <div class="fw-semibold">
-                    <i class="mdi mdi-subdirectory-arrow-right me-1 text-secondary" *ngIf="progress.item.level === 1"></i>
-                    {{ progress.item.title }}
-                  </div>
-                  <span class="badge bg-danger badge-sm mt-1" *ngIf="progress.item.is_required">Required</span>
-                  <span class="badge bg-secondary badge-sm mt-1 ms-1" *ngIf="progress.item.level === 1">Sub-item</span>
-                </td>
-                <td>
-                  <div class="small text-muted description-content" style="max-height: 60px; overflow-y: auto;">
-                    <div [innerHTML]="progress.item.description || 'N/A'"></div>
-                  </div>
-                </td>
-                <td>
-                  <!-- Sample Video (when submission_type is 'video') -->
-                  <div *ngIf="progress.item.submission_type === 'video' && progress.item.sample_videos && progress.item.sample_videos.length > 0">
-                    <div class="position-relative" style="width: 80px; height: 80px;">
-                      <video 
-                        [src]="getPhotoUrl(progress.item.sample_videos[0].url)" 
-                        class="img-thumbnail"
-                        style="width: 80px; height: 80px; object-fit: cover;"
-                        [title]="progress.item.sample_videos[0].label || 'Sample video'">
-                      </video>
-                      <span class="badge bg-success position-absolute top-0 start-0 m-1">V</span>
-                      <i class="mdi mdi-play-circle position-absolute top-50 start-50 translate-middle text-white" 
-                         style="font-size: 2rem; text-shadow: 0 0 4px rgba(0,0,0,0.8);"></i>
-                    </div>
-                    <div class="small text-center mt-1" *ngIf="progress.item.sample_videos.length > 1">
-                      <span class="badge bg-info badge-sm">+{{ progress.item.sample_videos.length - 1 }} more</span>
-                    </div>
-                  </div>
-                  
-                  <!-- Sample Photo (when submission_type is 'photo' or 'either' or undefined) -->
-                  <div *ngIf="(progress.item.submission_type === 'photo' || progress.item.submission_type === 'either' || !progress.item.submission_type) && progress.item.sample_images && progress.item.sample_images.length > 0">
-                    <img 
-                      [src]="getPhotoUrl(progress.item.sample_images[0].url)" 
-                      class="img-thumbnail cursor-pointer"
-                      style="width: 80px; height: 80px; object-fit: cover;"
-                      alt="Sample photo"
-                      (click)="previewImage(getPhotoUrl(progress.item.sample_images[0].url))"
-                      (error)="onSampleImageError($event)"
-                      [title]="progress.item.sample_images[0].label || 'Sample reference'">
-                    <div class="small text-center mt-1" *ngIf="progress.item.sample_images.length > 1">
-                      <span class="badge bg-info badge-sm">+{{ progress.item.sample_images.length - 1 }} more</span>
-                    </div>
-                  </div>
-                  
-                  <!-- No sample available -->
-                  <div class="text-center text-muted small" 
-                       *ngIf="(progress.item.submission_type === 'video' && (!progress.item.sample_videos || progress.item.sample_videos.length === 0)) ||
-                              ((progress.item.submission_type === 'photo' || progress.item.submission_type === 'either' || !progress.item.submission_type) && (!progress.item.sample_images || progress.item.sample_images.length === 0))">
-                    <i class="mdi mdi-image-off fs-4"></i>
-                    <div>No sample</div>
-                  </div>
-                </td>
-                <td class="text-center">
-                  <span class="badge" [ngClass]="getStatusBadgeClass(progress)">
-                    {{ getStatusText(progress) }}
-                  </span>
-                  <div class="small text-muted mt-1">
-                    <span *ngIf="progress.photos.length > 0">{{ progress.photos.length }} photo(s)</span>
-                    <span *ngIf="progress.photos.length > 0 && progress.videos && progress.videos.length > 0"> | </span>
-                    <span *ngIf="progress.videos && progress.videos.length > 0">{{ progress.videos.length }} video(s)</span>
-                  </div>
-                </td>
-                <td>
-                  <!-- Photos -->
-                  <div class="d-flex flex-wrap gap-2 mb-2" *ngIf="progress.photos.length > 0">
-                    <div *ngFor="let photo of progress.photos; let photoIdx = index" class="position-relative">
-                      <img 
-                        [src]="getPhotoUrl(photo)" 
-                        class="img-thumbnail cursor-pointer"
-                        style="width: 60px; height: 60px; object-fit: cover;"
-                        alt="Photo"
-                        (error)="onUploadedPhotoError($event, photo)"
-                        (load)="onUploadedPhotoLoad($event)"
-                        (click)="openLightboxForProgress(progress, photoIdx, 'photo')"
-                        [title]="'Photo ' + (photoIdx + 1)">
-                      <span class="position-absolute top-0 start-0 badge bg-primary m-1" style="font-size: 0.6rem;">P</span>
-                    </div>
-                  </div>
-                  
-                  <!-- Videos -->
-                  <div class="d-flex flex-wrap gap-2" *ngIf="progress.videos && progress.videos.length > 0">
-                    <div *ngFor="let video of progress.videos; let videoIdx = index" class="position-relative">
-                      <video 
-                        [src]="getPhotoUrl(video)" 
-                        class="img-thumbnail cursor-pointer"
-                        style="width: 60px; height: 60px; object-fit: cover;"
-                        [title]="'Video ' + (videoIdx + 1)">
-                      </video>
-                      <span class="position-absolute top-0 start-0 badge bg-success m-1" style="font-size: 0.6rem;">V</span>
-                      <i class="mdi mdi-play-circle position-absolute top-50 start-50 translate-middle text-white fs-3" style="text-shadow: 0 0 3px rgba(0,0,0,0.5);"></i>
-                    </div>
-                  </div>
-                  
-                  <span class="text-muted small fst-italic" *ngIf="progress.photos.length === 0 && (!progress.videos || progress.videos.length === 0)">No media uploaded</span>
-                </td>
-                <td>
-                  <div class="small" style="max-height: 60px; overflow-y: auto;" 
-                       [title]="progress.notes || ''">
-                    {{ progress.notes || '-' }}
-                  </div>
-                </td>
-                <td class="text-center">
-                  <button 
-                    type="button" 
-                    class="btn btn-sm btn-outline-primary"
-                    (click)="navigateToItemFromModal(i)"
-                    title="Go to this item">
-                    <i class="mdi mdi-arrow-right"></i>
-                    Go
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <div class="me-auto">
-          <strong>Progress:</strong> {{ getCompletedItemsCount() }} of {{ getTotalItemsCount() }} items completed 
-          ({{ (instance?.progress_percentage || 0) | number:'1.0-0' }}%)
-        </div>
-        <button 
-          type="button" 
-          class="btn btn-secondary"
-          (click)="closeFullChecklistModal()">
-          <i class="mdi mdi-close me-2"></i>Close
-        </button>
-      </div>
-</ng-template>
 
 <!-- Template Picker Modal (Fullscreen) -->
 <ng-template #templatePickerModal let-modal>
