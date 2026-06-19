@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Delete, Post, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Post, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { Permissions, RolePermissionGuard } from '../access-control';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { FileStorageService } from './file-storage.service';
@@ -7,6 +7,41 @@ import { FileStorageService } from './file-storage.service';
 @UseGuards(RolePermissionGuard)
 export class FileStorageController {
   constructor(private readonly service: FileStorageService) {}
+
+  @Get('bucket/list')
+  @Permissions('read')
+  async listBucket(
+    @Query('prefix') prefix?: string,
+    @Query('delimiter') delimiter?: string,
+    @Query('continuationToken') continuationToken?: string,
+    @Query('maxKeys') maxKeys?: string,
+  ) {
+    const parsedMaxKeys = Number(maxKeys || 100);
+    return this.service.listBucketObjects({
+      prefix,
+      delimiter,
+      continuationToken,
+      maxKeys: Number.isFinite(parsedMaxKeys) ? parsedMaxKeys : 100,
+    });
+  }
+
+  @Get('bucket/signed-url')
+  @Permissions('read')
+  async getBucketSignedUrl(@Query('key') key?: string) {
+    const safeKey = String(key || '').trim();
+    if (!safeKey) {
+      throw new BadRequestException('Missing bucket object key');
+    }
+
+    const url = await this.service.resolveBucketObjectUrl(undefined, safeKey);
+    const fileName = decodeURIComponent(safeKey.split('/').filter(Boolean).pop() || 'file');
+
+    return {
+      key: safeKey,
+      fileName,
+      url,
+    };
+  }
 
   @Post('upload')
   @Permissions('write')
@@ -76,6 +111,38 @@ export class FileStorageController {
       success: true,
       fileName: resolved.fileName,
       subFolder: resolved.subFolder,
+    };
+  }
+
+  @Delete('bucket/object')
+  @Permissions('delete')
+  async deleteBucketObject(@Body('key') key?: string) {
+    const safeKey = String(key || '').trim();
+    if (!safeKey) {
+      throw new BadRequestException('Missing bucket object key');
+    }
+
+    await this.service.deleteStoredFileInBucket(safeKey);
+
+    return {
+      success: true,
+      key: safeKey,
+    };
+  }
+
+  @Delete('bucket/prefix')
+  @Permissions('delete')
+  async deleteBucketPrefix(@Body('prefix') prefix?: string) {
+    const safePrefix = String(prefix || '').trim();
+    if (!safePrefix) {
+      throw new BadRequestException('Missing bucket prefix');
+    }
+
+    const deleted = await this.service.deleteBucketPrefixIfEmpty(safePrefix);
+
+    return {
+      success: true,
+      prefix: deleted.prefix,
     };
   }
 

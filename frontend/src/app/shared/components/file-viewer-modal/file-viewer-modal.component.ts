@@ -84,7 +84,7 @@ interface FileViewerItem {
             <i class="mdi mdi-file-document-outline preview-icon"></i>
             <h5>Preview Not Available</h5>
             <p>This file type cannot be previewed in the browser.</p>
-            <div class="d-flex justify-content-center gap-2">
+            <div class="d-flex justify-content-center gap-2 mt-3">
               <a [href]="url" target="_blank" class="btn btn-outline-primary">Open in New Tab</a>
               <a [href]="url" download class="btn btn-primary">Download</a>
             </div>

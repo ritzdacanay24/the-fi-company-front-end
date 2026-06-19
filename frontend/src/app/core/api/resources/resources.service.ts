@@ -70,6 +70,10 @@ export class ResourcesService {
     return firstValueFrom(this.http.put<ResourceDto>(`${this.baseUrl}/${id}`, formData));
   }
 
+  remove(id: number): Promise<{ success: boolean }> {
+    return firstValueFrom(this.http.delete<{ success: boolean }>(`${this.baseUrl}/${id}`));
+  }
+
   getSignedUrl(id: number, mode: 'inline' | 'attachment' = 'inline'): Promise<{ url: string; fileName: string }> {
     return firstValueFrom(this.http.get<{ url: string; fileName: string }>(`${this.baseUrl}/${id}/signed-url?mode=${mode}`));
   }

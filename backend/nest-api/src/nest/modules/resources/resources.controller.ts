@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   NotFoundException,
   Param,
@@ -48,6 +49,14 @@ export class ResourcesController {
       throw new NotFoundException('Resource file not found');
     }
 
+    if (target.url) {
+      return res.redirect(target.url);
+    }
+
+    if (!target.filePath) {
+      throw new NotFoundException('Resource file not found');
+    }
+
     res.setHeader('Content-Type', target.mimeType);
     res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(target.displayName)}"`);
     res.download(target.filePath, target.displayName);
@@ -73,5 +82,12 @@ export class ResourcesController {
     @UploadedFile() file?: { originalname?: string; buffer?: Buffer; mimetype?: string; size?: number },
   ) {
     return this.service.update(id, payload, file);
+  }
+
+  @Delete(':id')
+  @Permissions('write')
+  async remove(@Param('id', ParseIntPipe) id: number) {
+    await this.service.remove(id);
+    return { success: true };
   }
 }

@@ -55,9 +55,26 @@ export class ResourcesService {
       throw new NotFoundException('Resource not found');
     }
 
-    const baseUrl = this.fileStorageService.resolveLink(row.file_name, 'resources');
-    const fallbackUrl = row.link || '';
-    const url = (baseUrl || fallbackUrl || '').trim();
+    if (!row.file_name) {
+      throw new NotFoundException('Resource URL not available');
+    }
+
+    const localFilePath = await this.fileStorageService.resolveLocalFilePath(row.file_name, 'resources');
+    const storedLink = String(row.link || '').trim();
+
+    let url = '';
+    if (localFilePath) {
+      // Legacy/local resource: keep existing behavior intact.
+      url = storedLink || this.fileStorageService.resolveLink(row.file_name, 'resources') || '';
+    } else {
+      // Bucket-backed resource: generate a presigned URL for private-bucket access.
+      try {
+        url = await this.fileStorageService.resolveBucketObjectUrl(undefined, `resources/${row.file_name}`);
+      } catch {
+        // Fallback keeps behavior for non-standard legacy rows with external links.
+        url = storedLink;
+      }
+    }
 
     if (!url) {
       throw new NotFoundException('Resource URL not available');
@@ -71,19 +88,36 @@ export class ResourcesService {
     };
   }
 
-  async resolveDownloadTarget(id: number): Promise<{ filePath: string; displayName: string; mimeType: string } | null> {
+  async resolveDownloadTarget(
+    id: number,
+  ): Promise<{ filePath?: string; url?: string; displayName: string; mimeType: string } | null> {
     const row = await this.repository.findById(id);
     if (!row || !row.active) {
       throw new NotFoundException('Resource not found');
     }
 
-    const filePath = await this.fileStorageService.resolveLocalFilePath(row.file_name, 'resources');
-    if (!filePath) {
+    const localFilePath = await this.fileStorageService.resolveLocalFilePath(row.file_name, 'resources');
+    if (localFilePath) {
+      return {
+        filePath: localFilePath,
+        displayName: row.file_name,
+        mimeType: row.mime_type || 'application/octet-stream',
+      };
+    }
+
+    let url = '';
+    try {
+      url = await this.fileStorageService.resolveBucketObjectUrl(undefined, `resources/${row.file_name}`);
+    } catch {
+      url = String(row.link || '').trim();
+    }
+
+    if (!url) {
       return null;
     }
 
     return {
-      filePath,
+      url,
       displayName: row.file_name,
       mimeType: row.mime_type || 'application/octet-stream',
     };
@@ -124,6 +158,24 @@ export class ResourcesService {
     }
 
     return this.toDto(row);
+  }
+
+  async remove(id: number): Promise<void> {
+    const existing = await this.repository.findById(id);
+    if (!existing) {
+      throw new NotFoundException('Resource not found');
+    }
+
+    if (existing.file_name) {
+      const localFilePath = await this.fileStorageService.resolveLocalFilePath(existing.file_name, 'resources');
+      if (localFilePath) {
+        await this.fileStorageService.deleteStoredFile(existing.file_name, 'resources');
+      } else {
+        await this.fileStorageService.deleteStoredFileInBucket(`resources/${existing.file_name}`);
+      }
+    }
+
+    await this.repository.update(id, { active: 0 });
   }
 
   private async normalizeCreatePayload(
@@ -186,7 +238,7 @@ export class ResourcesService {
       result.link = stored.link;
 
       if (existing.file_name) {
-        await this.fileStorageService.deleteStoredFile(existing.file_name, 'resources');
+        await this.fileStorageService.deleteStoredFileInBucket(`resources/${existing.file_name}`);
       }
     }
 
@@ -203,13 +255,18 @@ export class ResourcesService {
       throw new BadRequestException('Unsupported file type. Allowed: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT, CSV');
     }
 
-    const fileName = await this.fileStorageService.storeUploadedFile(file, 'resources');
+    const mimeType = file.mimetype || this.getMimeTypeFromExtension(ext);
+
+    const stored = await this.fileStorageService.storeUploadedFileInBucket(
+      { ...file, mimetype: mimeType },
+      { keyPrefix: 'resources' },
+    );
 
     return {
-      fileName,
-      mimeType: file.mimetype || this.getMimeTypeFromExtension(ext),
+      fileName: stored.fileName,
+      mimeType,
       sizeBytes: Number(file.size || 0),
-      link: this.fileStorageService.resolveLink(fileName, 'resources') || '',
+      link: stored.url,
     };
   }
 

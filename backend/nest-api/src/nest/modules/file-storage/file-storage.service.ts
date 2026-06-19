@@ -1,4 +1,4 @@
-import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand, GetObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
@@ -131,6 +131,102 @@ export class FileStorageService {
       this.logger.warn('Failed to generate signed S3 URL for object view. Falling back to unsigned URL.');
       return this.buildS3ObjectUrl(bucketName, safeKey);
     }
+  }
+
+  async listBucketObjects(options?: {
+    bucket?: string;
+    prefix?: string;
+    delimiter?: string;
+    continuationToken?: string;
+    maxKeys?: number;
+  }): Promise<{ bucket: string; prefix: string; delimiter: string; nextContinuationToken?: string; prefixes: string[]; items: Array<{ key: string; size: number; lastModified?: string; url: string }> }> {
+    const bucketName = this.resolveBucketName(options?.bucket);
+    const s3Client = this.requireS3Client();
+    const rawPrefix = String(options?.prefix || '')
+      .trim()
+      .replace(/\\/g, '/')
+      .replace(/^\/+/, '');
+    const sanitizedPrefix = this.sanitizeKeyPrefix(rawPrefix);
+    const prefix = sanitizedPrefix
+      ? (rawPrefix.endsWith('/') ? `${sanitizedPrefix}/` : sanitizedPrefix)
+      : '';
+    const delimiterRaw = options?.delimiter;
+    const delimiter = delimiterRaw === undefined ? '/' : String(delimiterRaw).trim();
+    const maxKeysRaw = Number(options?.maxKeys || 100);
+    const maxKeys = Number.isFinite(maxKeysRaw) ? Math.min(Math.max(Math.floor(maxKeysRaw), 1), 500) : 100;
+
+    const response = await s3Client.send(new ListObjectsV2Command({
+      Bucket: bucketName,
+      Prefix: prefix || undefined,
+      Delimiter: delimiter || undefined,
+      ContinuationToken: options?.continuationToken || undefined,
+      MaxKeys: maxKeys,
+    }));
+
+    const prefixes = (response.CommonPrefixes || [])
+      .map((row) => String(row.Prefix || '').trim())
+      .filter(Boolean);
+
+    const items = (response.Contents || [])
+      .filter((row) => !!row.Key)
+      .map((row) => {
+        const key = String(row.Key || '');
+        return {
+          key,
+          size: Number(row.Size || 0),
+          lastModified: row.LastModified ? row.LastModified.toISOString() : undefined,
+          url: this.buildS3ObjectUrl(bucketName, key),
+        };
+      });
+
+    return {
+      bucket: bucketName,
+      prefix,
+      delimiter,
+      nextContinuationToken: response.NextContinuationToken || undefined,
+      prefixes,
+      items,
+    };
+  }
+
+  async deleteBucketPrefixIfEmpty(prefix: string, bucket?: string): Promise<{ bucket: string; prefix: string; deleted: boolean }> {
+    const bucketName = this.resolveBucketName(bucket);
+    const s3Client = this.requireS3Client();
+
+    const rawPrefix = String(prefix || '').trim().replace(/\\/g, '/').replace(/^\/+/, '');
+    const sanitizedPrefix = this.sanitizeKeyPrefix(rawPrefix);
+    if (!sanitizedPrefix) {
+      throw new BadRequestException('Missing bucket prefix');
+    }
+
+    const normalizedPrefix = `${sanitizedPrefix}/`;
+
+    const response = await s3Client.send(new ListObjectsV2Command({
+      Bucket: bucketName,
+      Prefix: normalizedPrefix,
+      MaxKeys: 25,
+    }));
+
+    const hasNonMarkerObjects = (response.Contents || []).some((row) => {
+      const key = String(row.Key || '').trim();
+      return !!key && key !== normalizedPrefix;
+    });
+
+    if (hasNonMarkerObjects) {
+      throw new BadRequestException('Folder is not empty. Delete files first.');
+    }
+
+    // Remove optional S3 folder marker objects if present.
+    await Promise.all([
+      this.deleteStoredFileInBucket(normalizedPrefix, bucketName),
+      this.deleteStoredFileInBucket(sanitizedPrefix, bucketName),
+    ]);
+
+    return {
+      bucket: bucketName,
+      prefix: normalizedPrefix,
+      deleted: true,
+    };
   }
 
   resolveLink(fileName: unknown, subFolder = 'general'): string | null {

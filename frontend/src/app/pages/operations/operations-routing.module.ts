@@ -241,6 +241,15 @@ const routes: Routes = [
     runGuardsAndResolvers: "always",
   },
   {
+    title: "Bucket Browser",
+    path: "bucket-browser",
+    loadComponent: () =>
+      import("./bucket-browser/bucket-browser.component").then(
+        (m) => m.BucketBrowserComponent
+      ),
+    runGuardsAndResolvers: "always",
+  },
+  {
     title: "Equipment Status",
     path: "equipment-status",
     component: EquipmentStatusComponent,

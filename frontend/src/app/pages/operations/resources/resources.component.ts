@@ -6,6 +6,7 @@ import { AuthenticationService } from '@app/core/services/auth.service';
 import { ToastrService } from 'ngx-toastr';
 import { FileViewerModalComponent } from '@app/shared/components/file-viewer-modal/file-viewer-modal.component';
 import { ResourceDto, ResourcesService } from '@app/core/api/resources/resources.service';
+import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
 
 interface ResourceItem {
   id: number;
@@ -44,6 +45,7 @@ export class ResourcesComponent implements OnInit {
   isLoading = false;
   isUploading = false;
   isSavingEdit = false;
+  isDeletingEdit = false;
 
   uploadFile: File | null = null;
   editFile: File | null = null;
@@ -231,6 +233,36 @@ export class ResourcesComponent implements OnInit {
       this.toastr.error('Failed to update resource');
     } finally {
       this.isSavingEdit = false;
+    }
+  }
+
+  async deleteResource(offcanvas: { dismiss: () => void }): Promise<void> {
+    if (!this.editingResource || this.isDeletingEdit) {
+      return;
+    }
+
+    const result = await SweetAlert.confirm({
+      title: `Delete ${this.editingResource.title}?`,
+      text: 'This action cannot be undone.',
+      icon: 'warning',
+      confirmButtonText: 'Yes, delete',
+      cancelButtonText: 'Cancel',
+    });
+
+    if (!result.isConfirmed) {
+      return;
+    }
+
+    this.isDeletingEdit = true;
+    try {
+      await this.resourcesService.remove(this.editingResource.id);
+      this.toastr.success('Resource deleted');
+      offcanvas.dismiss();
+      await this.loadResources();
+    } catch {
+      this.toastr.error('Failed to delete resource');
+    } finally {
+      this.isDeletingEdit = false;
     }
   }
 

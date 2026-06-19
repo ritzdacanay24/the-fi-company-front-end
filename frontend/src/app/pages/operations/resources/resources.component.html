@@ -76,8 +76,14 @@
                 <label class="form-check-label" for="resourceActive">Active</label>
               </div>
             </div>
-            <div class="col-12 d-grid">
-              <button type="button" class="btn btn-primary" [disabled]="editForm.invalid || isSavingEdit"
+            <div class="col-12 d-flex gap-2">
+              <button type="button" class="btn btn-outline-danger"
+                [disabled]="isSavingEdit || isDeletingEdit"
+                (click)="deleteResource(offcanvas)">
+                <span *ngIf="isDeletingEdit" class="spinner-border spinner-border-sm me-2"></span>
+                Delete
+              </button>
+              <button type="button" class="btn btn-primary ms-auto" [disabled]="editForm.invalid || isSavingEdit || isDeletingEdit"
                 (click)="saveEdit(offcanvas)">
                 <span *ngIf="isSavingEdit" class="spinner-border spinner-border-sm me-2"></span>
                 Save Changes
