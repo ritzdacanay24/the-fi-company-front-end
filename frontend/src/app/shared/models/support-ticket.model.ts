@@ -54,6 +54,8 @@ export interface SupportTicketAttachment {
   file_size: number | null;
   uploaded_by: number;
   created_at: string;
+  full_name?: string;
+  email?: string;
 }
 
 export interface CreateSupportTicketDto {

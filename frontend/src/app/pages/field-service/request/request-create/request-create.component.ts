@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, ViewChild } from '@angular/core';
 import { FormGroup } from '@angular/forms';
 import { Router } from '@angular/router';
 import { SharedModule } from '@app/shared/shared.module';
@@ -20,6 +20,8 @@ import { AuthenticationService } from '@app/core/services/auth.service';
   styleUrls: ['./request-create.component.scss']
 })
 export class RequestCreateComponent {
+  @ViewChild('requestFormRef') requestForm: RequestFormComponent;
+
   constructor(
     private router: Router,
     private requestService: RequestService,
@@ -34,6 +36,8 @@ export class RequestCreateComponent {
   title = "Create request";
 
   form: FormGroup;
+  requestToken: string | null = null;
+  requestId: number | null = null;
 
   isLoading = false;
 
@@ -77,16 +81,16 @@ export class RequestCreateComponent {
       this.isLoading = true;
       let data: any = await this.requestService.createFieldServiceRequest(this.form.value, this.sendEmail);
 
-      if (this.myFiles) {
-        const formData = new FormData();
-        for (var i = 0; i < this.myFiles.length; i++) {
-          formData.append("file", this.myFiles[i]);
-          formData.append("field", FIELD_SERVICE.UPLOAD_FIELD_NAME);
-          formData.append("uniqueData", `${data.id}`);
-          formData.append("subFolder", FIELD_SERVICE.UPLOAD_FOLDER_NAME);
-          try {
-            await this.attachmentsService.uploadfile(formData)
-          } catch (err) { }
+      // Capture token and ID from response for public attachment uploads
+      this.requestToken = data?.token || null;
+      this.requestId = data?.id || null;
+
+      // Upload queued attachments if any exist
+      if (this.requestForm && this.requestToken && this.requestId) {
+        try {
+          await this.requestForm.uploadQueuedAttachments();
+        } catch (uploadErr) {
+          console.warn('Attachment upload failed, but request created successfully', uploadErr);
         }
       }
 
@@ -100,17 +104,6 @@ export class RequestCreateComponent {
 
   onCancel() {
     this.goBack()
-  }
-
-  file: File = null;
-
-  myFiles: string[] = [];
-
-  onFilechange(event: any) {
-    this.myFiles = [];
-    for (var i = 0; i < event.target.files.length; i++) {
-      this.myFiles.push(event.target.files[i]);
-    }
   }
 
 }

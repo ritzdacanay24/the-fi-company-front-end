@@ -1,8 +1,10 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, OnChanges, SimpleChanges, HostListener } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SchedulerService } from '@app/core/api/field-service/scheduler.service';
+import { AttachmentsService } from '@app/core/api/attachments/attachments.service';
 import { SharedModule } from '@app/shared/shared.module';
+import { UploadNewAttachmentsComponent } from '@app/shared/components/attachments/upload-new-attachments/upload-new-attachments.component';
 import moment from 'moment';
 import { MbscModule, setOptions } from '@mobiscroll/angular';
 import { NgSelectModule } from '@ng-select/ng-select';
@@ -38,17 +40,19 @@ setOptions({
     MyRecaptchaModule,
     NgSelectModule,
     AddressSearchComponent,
+    UploadNewAttachmentsComponent,
   ],
   selector: 'app-request-form',
   templateUrl: './request-form.component.html',
   styleUrls: ['./request-form.component.scss'],
   providers: [RecaptchaProviders]
 })
-export class RequestFormComponent {
+export class RequestFormComponent implements OnChanges {
 
   constructor(
     private fb: FormBuilder,
     private api: SchedulerService,
+    private attachmentsService: AttachmentsService,
     public router: ActivatedRoute,
     public route: Router,
     private store: Store<RootReducerState>,
@@ -56,8 +60,6 @@ export class RequestFormComponent {
   ) { }
 
   ngOnInit(): void {
-
-
     this.eventService.subscribe('changeMode', (mode) => {
       setOptions({ themeVariant: mode })
     })
@@ -87,6 +89,27 @@ export class RequestFormComponent {
     this.setFormEmitter.emit(this.form)
   }
 
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['requestId'] && changes['requestId'].currentValue && !changes['requestId'].previousValue) {
+      if (this.selectedFiles.length > 0) {
+        // Request ID just became available - auto-upload queued files
+        this.uploadQueuedAttachments().catch(err => {
+          console.error('Auto-upload of attachments failed:', err);
+        });
+      } else {
+        void this.loadUploadedAttachments();
+      }
+    }
+  }
+
+  @HostListener('window:beforeunload', ['$event'])
+  unloadNotification($event: any): void {
+    if (this.selectedFiles.length > 0) {
+      $event.returnValue = 'You have queued files that will be lost if you refresh.';
+      return $event.returnValue;
+    }
+  }
+
   myLabels = [];
   myInvalid = [];
   
@@ -114,10 +137,14 @@ export class RequestFormComponent {
   }
 
   @Output() setFormEmitter: EventEmitter<any> = new EventEmitter();
+  @Output() attachmentsUploaded: EventEmitter<void> = new EventEmitter<void>();
 
   states = states
 
   @Input() submitted = false;
+  @Input() requestToken: string | null = null;
+  @Input() requestId: number | null = null;
+  @Input() authenticatedUserId: number | null = null;
 
 
   notifyParent($event) {
@@ -254,6 +281,11 @@ export class RequestFormComponent {
   dataInput$ = new Subject<string>();
   debounceTime = 500;
 
+  uploading = false;
+  selectedFiles: File[] = [];
+  uploadedAttachments: any[] = [];
+  attachmentsLoading = false;
+
   private loadData() {
 
     this.data$ = concat(
@@ -273,5 +305,69 @@ export class RequestFormComponent {
       )
     );
   }
+
+onAttachmentsAdded(files: File[]): void {
+    this.selectedFiles = [...this.selectedFiles, ...files];
+  }
+
+  removeAttachment(index: number): void {
+    this.selectedFiles.splice(index, 1);
+  }
+
+  async uploadQueuedAttachments(): Promise<void> {
+    if (!this.requestToken || !this.requestId || this.selectedFiles.length === 0) {
+      return;
+    }
+
+    this.uploading = true;
+    try {
+      for (const file of this.selectedFiles) {
+        await this.attachmentsService.uploadRequestAttachmentPublic(
+          this.requestId,
+          this.requestToken,
+          file,
+          this.authenticatedUserId
+        );
+      }
+      this.selectedFiles = [];
+      await this.loadUploadedAttachments();
+      this.attachmentsUploaded.emit();
+    } catch (error) {
+      console.error('Error uploading attachments:', error);
+      throw new Error('Failed to upload attachments');
+    } finally {
+      this.uploading = false;
+    }
+  }
+
+  async loadUploadedAttachments(): Promise<void> {
+    if (!this.requestToken || !this.requestId) {
+      this.uploadedAttachments = [];
+      return;
+    }
+
+    this.attachmentsLoading = true;
+    try {
+      const response = await this.attachmentsService.getAttachmentByRequestId(this.requestId, this.requestToken);
+      this.uploadedAttachments = Array.isArray(response) ? response : [];
+    } catch (error) {
+      console.error('Error loading uploaded attachments:', error);
+      this.uploadedAttachments = [];
+    } finally {
+      this.attachmentsLoading = false;
+    }
+  }
+
+  resolveUploadedAttachmentById = async (id: string | number): Promise<{ url: string; fileName?: string } | null> => {
+    const attachment = this.uploadedAttachments.find((row) => String(row?.id) === String(id));
+    if (!attachment) {
+      return null;
+    }
+
+    return {
+      url: String(attachment?.url || attachment?.link || attachment?.previewUrl || '').trim(),
+      fileName: attachment?.fileName,
+    };
+  };
 
 }

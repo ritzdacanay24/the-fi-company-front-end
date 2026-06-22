@@ -201,17 +201,30 @@ export class PublicFieldServiceService {
     requestId: number,
     token: string | undefined,
     file?: { originalname?: string; size?: number; buffer?: Buffer },
+    body?: Record<string, unknown>,
   ) {
     await this.getTokenBoundRequest(requestId, token);
+
+    // Extract createdBy from body if present; default to 0 for anonymous uploads
+    const payloadCreatedBy = body?.createdBy;
+    let createdBy = 0;
+    if (payloadCreatedBy !== undefined && payloadCreatedBy !== null) {
+      const parsed = Number(payloadCreatedBy);
+      if (Number.isInteger(parsed)) {
+        createdBy = parsed;
+      }
+    }
 
     const result = await this.attachmentsService.create(
       {
         field: 'Field Service Request',
         uniqueId: requestId,
         uniqueData: requestId,
-        subFolder: 'fieldService',
-        createdDate: new Date().toISOString().slice(0, 19).replace('T', ' '),
+        subFolder: 'fieldService/requests',
+        createdDate: new Date().toLocaleString('sv-SE', { timeZone: 'America/Los_Angeles' }),
+        createdBy: createdBy,
       },
+      0,
       file,
     );
 
@@ -243,10 +256,15 @@ export class PublicFieldServiceService {
       createdDate:
         typeof payload['createdDate'] === 'string' && payload['createdDate'].trim()
           ? payload['createdDate']
-          : new Date().toISOString().slice(0, 19).replace('T', ' '),
+          : new Date().toLocaleString('sv-SE', { timeZone: 'America/Los_Angeles' }),
     };
 
-    const result = await this.attachmentsService.create(normalizedPayload, file);
+    // If no createdBy provided (public/anonymous), default to 0; otherwise preserve the authenticated user
+    if (!normalizedPayload.hasOwnProperty('createdBy') || normalizedPayload.createdBy === undefined || normalizedPayload.createdBy === null) {
+      normalizedPayload.createdBy = 0;
+    }
+
+    const result = await this.attachmentsService.create(normalizedPayload, 0, file);
 
     return {
       id: result?.insertId ?? null,
@@ -265,5 +283,21 @@ export class PublicFieldServiceService {
       id: requestId,
       attachments,
     };
+  }
+
+  async getAttachmentView(requestId: number, attachmentId: number, token?: string) {
+    await this.getTokenBoundRequest(requestId, token);
+
+    const attachments = await this.attachmentsService.find({
+      field: 'Field Service Request',
+      uniqueId: String(requestId),
+    });
+    const attachment = attachments.find((row) => Number(row?.id) === attachmentId);
+
+    if (!attachment) {
+      throw new NotFoundException('Attachment not found');
+    }
+
+    return this.attachmentsService.getViewById(attachmentId);
   }
 }

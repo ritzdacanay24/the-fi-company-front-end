@@ -82,11 +82,12 @@ export class PublicFieldServiceController {
   async uploadAttachment(
     @Param('id', ParseIntPipe) requestId: number,
     @UploadedFile() file?: { originalname?: string; size?: number; buffer?: Buffer },
+    @Body() body?: Record<string, unknown>,
     @Headers('authorization') authorization?: string,
     @Query('token') queryToken?: string,
   ) {
     const token = this.resolveToken(authorization, queryToken);
-    return this.service.uploadAttachment(requestId, token, file);
+    return this.service.uploadAttachment(requestId, token, file, body);
   }
 
   @Post('attachments')
@@ -107,5 +108,17 @@ export class PublicFieldServiceController {
   ) {
     const token = this.resolveToken(authorization, queryToken);
     return this.service.listAttachments(requestId, token);
+  }
+
+  @Get('requests/:id/attachments/:attachmentId')
+  @UseGuards(PublicRequestTokenGuard)
+  async viewAttachment(
+    @Param('id', ParseIntPipe) requestId: number,
+    @Param('attachmentId', ParseIntPipe) attachmentId: number,
+    @Headers('authorization') authorization?: string,
+    @Query('token') queryToken?: string,
+  ) {
+    const token = this.resolveToken(authorization, queryToken);
+    return this.service.getAttachmentView(requestId, attachmentId, token);
   }
 }

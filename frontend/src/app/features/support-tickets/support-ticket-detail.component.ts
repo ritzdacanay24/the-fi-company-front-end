@@ -9,6 +9,8 @@ import { NotificationService } from '@app/core/services/notification.service';
 import { BreadcrumbComponent } from '@app/shared/components/breadcrumb/breadcrumb.component';
 import { FileViewerModalComponent } from '@app/shared/components/file-viewer-modal/file-viewer-modal.component';
 import { InlineAttachmentDropzoneComponent } from '@app/shared/components/attachments/inline-attachment-dropzone/inline-attachment-dropzone.component';
+import { UploadedAttachmentsListComponent } from '@app/shared/components/attachments/uploaded-attachments-list/uploaded-attachments-list.component';
+import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
 import {
   SUPPORT_TICKET_PRIORITY_LABELS,
   SUPPORT_TICKET_STATUS_LABELS,
@@ -35,13 +37,15 @@ type TicketMediaItem = {
   fileName: string;
   url: string;
   createdAt?: string | null;
+  createdBy?: number;
+  createdByName?: string;
   source: 'attachment' | 'screenshot';
 };
 
 @Component({
   selector: 'app-support-ticket-detail',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, BreadcrumbComponent, InlineAttachmentDropzoneComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, BreadcrumbComponent, InlineAttachmentDropzoneComponent, UploadedAttachmentsListComponent],
   templateUrl: './support-ticket-detail.component.html',
   styles: [
     `
@@ -205,6 +209,8 @@ export class SupportTicketDetailComponent implements OnInit {
         fileName: attachment.file_name,
         url: attachmentUrl,
         createdAt: attachment.created_at,
+        createdBy: attachment.uploaded_by,
+        createdByName: attachment.full_name || attachment.email || 'Unknown',
         source: 'attachment',
       });
     }
@@ -372,7 +378,13 @@ export class SupportTicketDetailComponent implements OnInit {
   }
 
   deleteTicket(): void {
-    if (!this.ticket()) {
+    const ticket = this.ticket();
+    if (!ticket) {
+      return;
+    }
+
+    if (ticket.status !== 'open') {
+      this.notification.warning('Only open tickets can be deleted.');
       return;
     }
 
@@ -461,6 +473,11 @@ export class SupportTicketDetailComponent implements OnInit {
     modalRef.componentInstance.fileName = item.fileName;
   }
 
+  resolveAttachmentById = (id: string | number): Promise<{ url: string; fileName?: string } | null> => {
+    const item = this.mediaItems().find(m => m.id === id);
+    return Promise.resolve(item ? { url: item.url, fileName: item.fileName } : null);
+  };
+
   isImageUrl(url: string): boolean {
     const normalized = url.toLowerCase();
     return normalized.startsWith('data:image/')
@@ -481,6 +498,56 @@ export class SupportTicketDetailComponent implements OnInit {
     }
 
     void this.uploadMediaFiles(files);
+  }
+
+  async onMediaDeleteRequested(event: { id: unknown; index: number; row: TicketMediaItem }): Promise<void> {
+    const ticket = this.ticket();
+    if (!ticket) {
+      return;
+    }
+
+    if (ticket.status !== 'open') {
+      this.notification.warning('Attachments can only be deleted while the ticket is open.');
+      return;
+    }
+
+    const item = event?.row;
+    if (!item || item.source !== 'attachment') {
+      this.notification.warning('Only uploaded attachments can be deleted.');
+      return;
+    }
+
+    const attachmentId = Number(String(item.id).replace('attachment-', ''));
+    if (!Number.isFinite(attachmentId) || attachmentId <= 0) {
+      this.notification.warning('Unable to delete this attachment.');
+      return;
+    }
+
+    const result = await SweetAlert.confirm({
+      title: 'Remove Attachment',
+      text: `Are you sure you want to remove "${item.fileName}"? This action cannot be undone.`,
+      confirmButtonText: 'Remove',
+      confirmButtonColor: '#dc3545',
+    });
+    if (!result.value) {
+      return;
+    }
+
+    this.isSaving.set(true);
+    this.supportTicketsService.deleteAttachment(this.ticketId, attachmentId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.attachments.update((current) => current.filter((attachment) => attachment.id !== attachmentId));
+          this.isSaving.set(false);
+          this.notification.success('Attachment deleted.');
+        },
+        error: (error) => {
+          console.error('Failed to delete attachment:', error);
+          this.isSaving.set(false);
+          this.notification.error(error, false);
+        },
+      });
   }
 
   async uploadSelectedMedia(): Promise<void> {

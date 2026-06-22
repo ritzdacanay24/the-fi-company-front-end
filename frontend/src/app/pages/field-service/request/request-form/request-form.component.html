@@ -357,6 +357,24 @@
           formControlName="special_instruction"></textarea>
       </div>
 
+      <div class="col-12">
+        <label class="form-label">Upload Supporting Documents</label>
+        <app-upload-new-attachments
+          [files]="selectedFiles"
+          [disabled]="uploading"
+          [uploadTriggerMode]="requestToken ? 'on-add' : 'parent-submit'"
+          [pendingViewMode]="'table'"
+          [chooseLabel]="'Choose files'"
+          [dropLabel]="'or drag them here.'"
+          [pasteHint]="'Copy and paste one or more files into this area.'"
+          [showPasteHint]="true"
+          [helperText]="'Files are queued here and upload when you submit the form.'"
+          (filesAdded)="onAttachmentsAdded($event)"
+          (removeRequested)="removeAttachment($event)"
+          (uploadRequested)="uploadQueuedAttachments()">
+        </app-upload-new-attachments>
+      </div>
+
       <!-- <div class="col-12">
         <div class="form-check form-switch mt-2">
           <input class="form-check-input" type="checkbox" id="active" formControlName="active">

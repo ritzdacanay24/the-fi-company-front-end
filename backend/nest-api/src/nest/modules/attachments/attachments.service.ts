@@ -404,7 +404,7 @@ export class AttachmentsService {
 
   private normalizeCreatedBy(payloadCreatedBy: unknown, currentUserId: number): number {
     const fromPayload = Number(payloadCreatedBy);
-    if (Number.isInteger(fromPayload) && fromPayload > 0) {
+    if (Number.isInteger(fromPayload)) {
       return fromPayload;
     }
 

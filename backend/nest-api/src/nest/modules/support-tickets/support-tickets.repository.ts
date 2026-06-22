@@ -283,10 +283,14 @@ export class SupportTicketsRepository {
   async getAttachments(ticketId: number): Promise<SupportTicketAttachment[]> {
     const rows = await this.mysqlService.query<RowDataPacket[]>(
       `
-        SELECT *
-        FROM eyefidb.support_ticket_attachments
-        WHERE ticket_id = ?
-        ORDER BY created_at DESC
+        SELECT 
+          sta.*,
+          TRIM(CONCAT(COALESCE(u.first, ''), ' ', COALESCE(u.last, ''))) AS full_name,
+          u.email
+        FROM eyefidb.support_ticket_attachments sta
+        LEFT JOIN db.users u ON sta.uploaded_by = u.id
+        WHERE sta.ticket_id = ?
+        ORDER BY sta.created_at DESC
       `,
       [ticketId],
     );

@@ -57,6 +57,18 @@ export class AttachmentsService extends DataService<any> {
     ));
   }
 
+  getPublicRequestAttachmentView(requestId: number | string, attachmentId: number | string, token?: string | null) {
+    const encodedRequestId = encodeURIComponent(String(requestId ?? ''));
+    const encodedAttachmentId = encodeURIComponent(String(attachmentId ?? ''));
+    const normalizedToken = String(token ?? '').trim();
+
+    return firstValueFrom(
+      this.http.get<{ id: number; url: string; fileName?: string; storage_source?: string | null }>(
+        `${publicFieldServiceBaseUrl}/requests/${encodedRequestId}/attachments/${encodedAttachmentId}?token=${encodeURIComponent(normalizedToken)}`,
+      ),
+    );
+  }
+
   getAttachments(start: string): Observable<any> {
     return this.http.get<any>(`/Attachments/index?getAttachments=${start}`);
   }
@@ -87,9 +99,12 @@ export class AttachmentsService extends DataService<any> {
     return firstValueFrom(this.http.post(`${publicFieldServiceAttachmentsUrl}`, payload));
   }
 
-  uploadRequestAttachmentPublic(requestId: number | string, token: string, file: File) {
+  uploadRequestAttachmentPublic(requestId: number | string, token: string, file: File, createdBy?: number) {
     const payload = new FormData();
     payload.append('file', file);
+    if (createdBy !== undefined && createdBy !== null) {
+      payload.append('createdBy', String(createdBy));
+    }
 
     const encodedId = encodeURIComponent(String(requestId));
     const encodedToken = encodeURIComponent(String(token || '').trim());
