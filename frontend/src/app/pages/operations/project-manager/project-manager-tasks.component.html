@@ -137,7 +137,10 @@
           </div>
           <div class="col-12">
             <label class="form-label fw-semibold small">Project ID</label>
-            <input class="form-control" formControlName="project" placeholder="e.g. PRJ-001" />
+            <select class="form-select" formControlName="project">
+              <option value="" disabled>— Select project —</option>
+              <option *ngFor="let p of allProjects" [value]="p.id">{{ p.id }} – {{ p.name }}</option>
+            </select>
           </div>
           <div class="col-6">
             <label class="form-label fw-semibold small">Depends On</label>

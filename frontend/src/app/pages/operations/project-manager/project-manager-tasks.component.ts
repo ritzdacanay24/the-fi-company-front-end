@@ -11,6 +11,8 @@ import { PmTaskComment, PmTaskAttachment, PmTaskRecord, ProjectManagerTasksDataS
 import { ProjectDashboardItem, ProjectManagerProjectsService } from './services/project-manager-projects.service';
 import { PmTaskCommentModalComponent } from './pm-task-comment-modal.component';
 import { PmTaskAttachmentModalComponent } from './pm-task-attachment-modal.component';
+import { AttachmentsService } from '@app/core/api/attachments/attachments.service';
+import { firstValueFrom } from 'rxjs';
 
 type TaskGateFilter = 'All' | TaskGate;
 
@@ -66,6 +68,7 @@ export class ProjectManagerTasksComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly projectManagerBaseRoute = '/project-manager';
   private readonly operationsBaseRoute = '/operations/project-manager';
+  private readonly attachmentField = 'Project Manager Task';
   private gridApi?: GridApi<PmTreeRow>;
   private nextId = 1;
   private activeProjectId = '';
@@ -367,7 +370,22 @@ export class ProjectManagerTasksComponent implements OnInit {
         return `<span style="display:inline-block;padding-left:${indent}px">${value}</span>`;
       }
     },
-    { field: 'project', headerName: 'Project', minWidth: 180, filter: 'agTextColumnFilter', editable: params => params.data?.rowType === 'task' },
+    {
+      field: 'project',
+      headerName: 'Project',
+      minWidth: 180,
+      filter: 'agTextColumnFilter',
+      editable: params => params.data?.rowType === 'task',
+      valueFormatter: (params: any) => this.getProjectDisplayLabel(String(params?.value || '')),
+      cellEditor: 'agRichSelectCellEditor',
+      cellEditorParams: (params: any) => ({
+        values: this.getProjectDropdownValues(String(params?.data?.project || '')),
+        allowTyping: false,
+        filterList: true,
+        searchType: 'matchAny',
+        highlightMatch: true,
+      }),
+    },
     {
       field: 'assignedTo', headerName: 'Assigned To', minWidth: 170, filter: 'agTextColumnFilter',
       editable: params => params.data?.rowType === 'task',
@@ -488,8 +506,11 @@ export class ProjectManagerTasksComponent implements OnInit {
       cellRenderer: (params: any) => {
         if (!params.data || params.data.rowType !== 'task') return '';
         const count = (params.data as PmTreeRow & { _commentCount?: number })._commentCount ?? 0;
-        const label = count > 0 ? `💬 ${count}` : '💬 Add';
-        return `<button class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:11px">${label}</button>`;
+        const label = count > 0 ? String(count) : 'Add';
+        return `<button class="btn btn-sm btn-outline-secondary py-0 px-2 pm-grid-action-btn" title="Comments">
+          <i class="mdi mdi-message-text-outline pm-grid-action-icon" aria-hidden="true"></i>
+          <span class="pm-grid-action-text">${label}</span>
+        </button>`;
       },
       onCellClicked: (params: any) => {
         if (!params.data || params.data.rowType !== 'task' || params.data.taskId === null) return;
@@ -505,8 +526,10 @@ export class ProjectManagerTasksComponent implements OnInit {
       cellRenderer: (params: any) => {
         if (!params.data || params.data.rowType !== 'task') return '';
         const count = (params.data as PmTreeRow & { _attachmentCount?: number })._attachmentCount ?? 0;
-        const label = count > 0 ? `📎 ${count}` : '📎 Add';
-        return `<button class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:11px">${label}</button>`;
+        return `<button class="btn btn-sm btn-outline-secondary py-0 px-2 pm-grid-action-btn" title="Attachments">
+          <i class="mdi mdi-paperclip pm-grid-action-icon" aria-hidden="true"></i>
+          <span class="pm-grid-action-count">${count}</span>
+        </button>`;
       },
       onCellClicked: (params: any) => {
         if (!params.data || params.data.rowType !== 'task' || params.data.taskId === null) return;
@@ -627,7 +650,8 @@ export class ProjectManagerTasksComponent implements OnInit {
     private tasksDataService: ProjectManagerTasksDataService,
     private projectsService: ProjectManagerProjectsService,
     private accessControlApi: AccessControlApiService,
-    private modalService: NgbModal
+    private modalService: NgbModal,
+    private attachmentsService: AttachmentsService
   ) {
     // Initialized from query params to keep URL and local state in sync.
   }
@@ -690,6 +714,35 @@ export class ProjectManagerTasksComponent implements OnInit {
 
   get selectedProjectId(): string {
     return this.activeProjectId || this.currentProjectSummary?.id || '';
+  }
+
+  private getProjectDropdownValues(currentValue = ''): string[] {
+    const fromProjects = (this.allProjects || [])
+      .map((project) => String(project?.id || '').trim())
+      .filter(Boolean);
+
+    const current = String(currentValue || '').trim();
+    return Array.from(new Set([current, ...fromProjects].filter(Boolean)));
+  }
+
+  private getProjectDisplayLabel(projectValue: string): string {
+    const normalized = String(projectValue || '').trim();
+    if (!normalized) {
+      return '';
+    }
+
+    const matched = (this.allProjects || []).find((project) => {
+      const id = String(project?.id || '').trim().toLowerCase();
+      const code = String(project?.code || '').trim().toLowerCase();
+      const key = normalized.toLowerCase();
+      return id === key || code === key;
+    });
+
+    if (!matched) {
+      return normalized;
+    }
+
+    return `${matched.id} - ${matched.name}`;
   }
 
   onProjectSelect(id: string): void {
@@ -774,7 +827,11 @@ export class ProjectManagerTasksComponent implements OnInit {
     this.showManagePanel = false;
     this.showBulkPanel = false;
     const defaultGate: TaskGate | '' = this.activeGateFilter === 'All' ? '' : this.activeGateFilter;
-    this.taskForm.patchValue({ gate: defaultGate, projectTaskName: this.projectTaskBoardName });
+    this.taskForm.patchValue({
+      gate: defaultGate,
+      projectTaskName: this.projectTaskBoardName,
+      project: this.selectedProjectId || this.taskForm.get('project')?.value || '',
+    });
     if (group) {
       this.taskForm.patchValue({ groupName: group, subGroupName: subgroup });
     }
@@ -987,6 +1044,7 @@ export class ProjectManagerTasksComponent implements OnInit {
 
     const ref = this.modalService.open(PmTaskAttachmentModalComponent, { size: 'md' });
     ref.componentInstance.task = task;
+    ref.componentInstance.projectId = this.getActiveProjectId();
     ref.componentInstance.initialAttachments = task.attachments ? [...task.attachments] : [];
 
     ref.result.then((updatedAttachments: PmTaskAttachment[]) => {
@@ -1000,12 +1058,34 @@ export class ProjectManagerTasksComponent implements OnInit {
     const task = this.taskRecords.find(t => t.id === taskId);
     if (!task) return;
 
+    const existingComments = [...(task.comments || [])];
+    const existingIds = new Set(existingComments.map((comment) => Number(comment.id)));
+
     const ref = this.modalService.open(PmTaskCommentModalComponent, { size: 'md' });
     ref.componentInstance.task = task;
-    ref.componentInstance.initialComments = task.comments ? [...task.comments] : [];
+    ref.componentInstance.initialComments = [...existingComments];
 
-    ref.result.then((updatedComments: PmTaskComment[]) => {
-      task.comments = updatedComments;
+    ref.result.then(async (updatedComments: PmTaskComment[]) => {
+      const newComments = (updatedComments || [])
+        .filter((comment) => !existingIds.has(Number(comment.id)))
+        .filter((comment) => String(comment?.text || '').trim().length > 0);
+
+      const inserted = await Promise.all(
+        newComments.map(async (comment) => {
+          const response = await firstValueFrom(this.tasksDataService.addComment$(task.id, {
+            author: String(comment.author || '').trim(),
+            text: String(comment.text || '').trim(),
+          }));
+
+          return {
+            ...comment,
+            id: Number(response?.id || comment.id),
+            taskId: task.id,
+          } as PmTaskComment;
+        }),
+      );
+
+      task.comments = [...existingComments, ...inserted];
       this.persistTaskState();
       this.rebuildTreeRows();
     }).catch(() => { /* dismissed — no save */ });
@@ -1503,7 +1583,50 @@ export class ProjectManagerTasksComponent implements OnInit {
 
       this.seedSubgroupCatalog();
       this.rebuildTreeRows();
+      void this.hydrateTaskAttachments(normalizedProjectId);
     });
+  }
+
+  private async hydrateTaskAttachments(projectId: string): Promise<void> {
+    const tasks = [...this.taskRecords];
+    if (!tasks.length) {
+      return;
+    }
+
+    const attachmentsByTask = await Promise.all(
+      tasks.map(async (task) => {
+        const rows = await this.attachmentsService.find({
+          field: this.attachmentField,
+          mainId: projectId,
+          uniqueId: String(task.id),
+        }).catch(() => []);
+
+        return {
+          taskId: task.id,
+          attachments: (Array.isArray(rows) ? rows : []).map((row) => ({
+            id: Number(row?.id || 0),
+            taskId: task.id,
+            name: String(row?.fileName || row?.originalName || row?.name || ''),
+            type: String(row?.type_of || row?.type || 'Other') as any,
+            sizeLabel: String(row?.fileSizeConv || row?.fileSize || ''),
+            dataUrl: String(row?.link || row?.url || row?.dataUrl || ''),
+            uploadedBy: String(row?.createdByName || row?.uploadedBy || row?.createdBy || ''),
+            uploadedAt: String(row?.createdDate || row?.created_date || row?.uploadedAt || ''),
+          })),
+        };
+      }),
+    );
+
+    if (this.activeProjectId !== projectId) {
+      return;
+    }
+
+    const attachmentMap = new Map(attachmentsByTask.map((entry) => [entry.taskId, entry.attachments]));
+    this.taskRecords = this.taskRecords.map((task) => ({
+      ...task,
+      attachments: attachmentMap.get(task.id) || [],
+    }));
+    this.rebuildTreeRows();
   }
 
   private seedDefaultProjectTasks(): void {
@@ -1744,8 +1867,9 @@ export class ProjectManagerTasksComponent implements OnInit {
         completion: task.completion,
         source: task.source,
         _groupColor: groupColor,
-        _commentCount: task.comments?.length ?? 0
-      } as PmTreeRow & { _commentCount: number });
+        _commentCount: task.comments?.length ?? 0,
+        _attachmentCount: task.attachments?.length ?? 0,
+      } as PmTreeRow & { _commentCount: number; _attachmentCount: number });
     });
 
     const visibleGroups = Array.from(new Set(groupedTasks.map(task => task.groupName).filter(Boolean)));
@@ -1835,8 +1959,9 @@ export class ProjectManagerTasksComponent implements OnInit {
         completion: task.completion,
         source: task.source,
         _groupColor: '#888888',
-        _commentCount: task.comments?.length ?? 0
-      } as PmTreeRow & { _commentCount: number });
+        _commentCount: task.comments?.length ?? 0,
+        _attachmentCount: task.attachments?.length ?? 0,
+      } as PmTreeRow & { _commentCount: number; _attachmentCount: number });
     });
 
     this.rowData = rows;

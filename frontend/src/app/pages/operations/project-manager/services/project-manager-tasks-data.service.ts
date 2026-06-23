@@ -125,6 +125,14 @@ export class ProjectManagerTasksDataService {
     this.saveStateToCache(state, projectId);
   }
 
+  addComment$(taskId: number, payload: { author: string; text: string }): Observable<{ id: number }> {
+    if (!this.isApiMode || !taskId) {
+      return of({ id: Date.now() });
+    }
+
+    return this.http.post<{ id: number }>(`${this.apiUrl}/tasks/${taskId}/comments`, payload);
+  }
+
   private get isApiMode(): boolean {
     return environment.projectManagerDataSource === 'api';
   }

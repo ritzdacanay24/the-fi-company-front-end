@@ -181,7 +181,30 @@ export class PmTasksRepository {
   async replaceTasksForProject(projectId: string, tasks: Omit<PmTaskRow, 'created_at' | 'updated_at'>[]): Promise<void> {
     await this.deleteTasksByProject(projectId);
     for (const task of tasks) {
-      await this.insertTask(projectId, task);
+      await this.mysqlService.execute<ResultSetHeader>(
+        `INSERT INTO eyefidb.pm_tasks
+           (id, project_id, project_task_name, gate, group_name, sub_group_name, task_name, assigned_to,
+            duration_days, start_date, finish_date, depends_on, bucket, status, completion, source)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          task.id,
+          projectId,
+          task.project_task_name,
+          task.gate,
+          task.group_name,
+          task.sub_group_name,
+          task.task_name,
+          task.assigned_to || null,
+          task.duration_days,
+          task.start_date || null,
+          task.finish_date || null,
+          task.depends_on,
+          task.bucket,
+          task.status,
+          task.completion,
+          task.source,
+        ],
+      );
     }
   }
 
@@ -191,15 +214,43 @@ export class PmTasksRepository {
     state: PmTaskStateUpsertInput,
   ): Promise<void> {
     await this.mysqlService.withTransaction(async (connection) => {
-      await connection.query(`DELETE FROM eyefidb.pm_tasks WHERE project_id = ?`, [projectId]);
+      const incomingTasks = (tasks || []).filter((task) => Number(task.id) > 0);
+      const incomingIds = incomingTasks.map((task) => Number(task.id));
 
-      for (const task of tasks) {
+      if (incomingIds.length > 0) {
+        const placeholders = incomingIds.map(() => '?').join(', ');
+        await connection.query(
+          `DELETE FROM eyefidb.pm_tasks WHERE project_id = ? AND id NOT IN (${placeholders})`,
+          [projectId, ...incomingIds],
+        );
+      } else {
+        await connection.query(`DELETE FROM eyefidb.pm_tasks WHERE project_id = ?`, [projectId]);
+      }
+
+      for (const task of incomingTasks) {
         await connection.execute(
           `INSERT INTO eyefidb.pm_tasks
-             (project_id, project_task_name, gate, group_name, sub_group_name, task_name, assigned_to,
+             (id, project_id, project_task_name, gate, group_name, sub_group_name, task_name, assigned_to,
               duration_days, start_date, finish_date, depends_on, bucket, status, completion, source)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)` ,
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+           ON DUPLICATE KEY UPDATE
+             project_id = VALUES(project_id),
+             project_task_name = VALUES(project_task_name),
+             gate = VALUES(gate),
+             group_name = VALUES(group_name),
+             sub_group_name = VALUES(sub_group_name),
+             task_name = VALUES(task_name),
+             assigned_to = VALUES(assigned_to),
+             duration_days = VALUES(duration_days),
+             start_date = VALUES(start_date),
+             finish_date = VALUES(finish_date),
+             depends_on = VALUES(depends_on),
+             bucket = VALUES(bucket),
+             status = VALUES(status),
+             completion = VALUES(completion),
+             source = VALUES(source)`,
           [
+            task.id,
             projectId,
             task.project_task_name,
             task.gate,

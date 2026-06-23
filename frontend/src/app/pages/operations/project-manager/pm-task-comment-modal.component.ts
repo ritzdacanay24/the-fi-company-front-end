@@ -18,14 +18,14 @@ import { AuthenticationService } from 'src/app/core/services/auth.service';
       <button type="button" class="btn-close" (click)="close()"></button>
     </div>
 
-    <div class="modal-body p-0">
+    <div class="modal-body p-0 pm-comment-modal-body">
       <!-- Comment list -->
       <div class="comment-list px-3 pt-3" style="max-height: 360px; overflow-y: auto;">
         <div *ngIf="!comments.length" class="text-muted small py-3 text-center">
           No comments yet. Be the first to add one.
         </div>
-        <div *ngFor="let c of comments" class="comment-item mb-3">
-          <div class="d-flex align-items-center gap-2 mb-1">
+        <div *ngFor="let c of comments; let i = index" class="comment-item" [class.comment-item-continuation]="isContinuation(i)">
+          <div class="d-flex align-items-center gap-2 mb-1" *ngIf="!isContinuation(i)">
             <span class="avatar-circle">{{ initials(c.author) }}</span>
             <strong class="small">{{ c.author }}</strong>
             <span class="text-muted small ms-auto">{{ formatDate(c.createdAt) }}</span>
@@ -40,20 +40,13 @@ import { AuthenticationService } from 'src/app/core/services/auth.service';
           <span class="avatar-circle">{{ initials(currentAuthor) }}</span>
           <div class="flex-grow-1">
             <textarea
-              class="form-control form-control-sm"
+              class="form-control form-control-sm pm-comment-input"
               rows="2"
               placeholder="Write a comment..."
               [formControl]="commentText"
             ></textarea>
             <div class="d-flex gap-2 mt-2 align-items-center">
               <small class="text-muted">Posting as {{ currentAuthor }}</small>
-              <button
-                class="btn btn-primary btn-sm ms-auto"
-                [disabled]="commentText.invalid || !currentAuthor"
-                (click)="addComment()"
-              >
-                Post
-              </button>
             </div>
           </div>
         </div>
@@ -62,7 +55,14 @@ import { AuthenticationService } from 'src/app/core/services/auth.service';
 
     <div class="modal-footer py-2">
       <span class="text-muted small me-auto">{{ comments.length }} comment{{ comments.length !== 1 ? 's' : '' }}</span>
-      <button type="button" class="btn btn-outline-secondary btn-sm" (click)="close()">Close</button>
+      <button
+        type="button"
+        class="btn btn-primary btn-sm"
+        [disabled]="commentText.invalid || !currentAuthor"
+        (click)="addComment()"
+      >
+        Post
+      </button>
     </div>
   `,
   styles: [`
@@ -74,18 +74,55 @@ import { AuthenticationService } from 'src/app/core/services/auth.service';
       height: 30px;
       min-width: 30px;
       border-radius: 50%;
-      background: #0d6efd;
-      color: #fff;
+      background: var(--vz-primary);
+      color: var(--vz-white);
       font-size: 11px;
       font-weight: 600;
     }
     .comment-bubble {
-      background: #f8f9fa;
-      border: 1px solid #e9ecef;
+      background: var(--vz-secondary-bg);
+      border: 1px solid var(--vz-border-color);
+      color: var(--vz-body-color);
       border-radius: 0 8px 8px 8px;
       padding: 8px 12px;
       font-size: 13px;
       white-space: pre-wrap;
+    }
+    .comment-item {
+      margin-bottom: 12px;
+    }
+    .comment-item-continuation {
+      margin-left: 0;
+      margin-top: -6px;
+    }
+    .comment-item-continuation .comment-bubble {
+      border-radius: 8px;
+    }
+    .pm-comment-input {
+      background: var(--vz-secondary-bg);
+      color: var(--vz-body-color);
+      border-color: var(--vz-border-color);
+    }
+    .pm-comment-input::placeholder {
+      color: var(--vz-secondary-color);
+      opacity: 1;
+    }
+    :host-context([data-bs-theme='dark']) .pm-comment-modal-body {
+      background: var(--vz-card-bg);
+    }
+    :host-context([data-bs-theme='dark']) .pm-comment-input {
+      background: var(--vz-secondary-bg);
+      color: var(--vz-body-color);
+      border-color: rgba(255, 255, 255, 0.18);
+    }
+    :host-context([data-bs-theme='dark']) .comment-bubble {
+      background: rgba(255, 255, 255, 0.04);
+      border-color: rgba(255, 255, 255, 0.14);
+      color: var(--vz-body-color);
+    }
+    :host-context([data-bs-theme='dark']) .btn-close {
+      filter: invert(1) grayscale(100%);
+      opacity: 0.85;
     }
   `]
 })
@@ -153,6 +190,16 @@ export class PmTaskCommentModalComponent implements OnInit {
     } catch {
       return iso;
     }
+  }
+
+  isContinuation(index: number): boolean {
+    if (index <= 0) return false;
+
+    const current = this.comments[index];
+    const previous = this.comments[index - 1];
+    if (!current || !previous) return false;
+
+    return String(current.author || '').trim().toLowerCase() === String(previous.author || '').trim().toLowerCase();
   }
 
   private resolveCurrentUserName(): string {
