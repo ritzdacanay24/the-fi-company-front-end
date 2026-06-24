@@ -48,8 +48,7 @@ export class ChecklistChangeDetectionService {
       { key: 'product_type', label: 'Product Type' },
       { key: 'category', label: 'Category' },
       { key: 'is_active', label: 'Active Status' },
-      { key: 'max_upload_size_mb', label: 'Max Upload Size' },
-      { key: 'disable_max_upload_limit', label: 'Disable Upload Limit' }
+      { key: 'max_upload_size_mb', label: 'Max Upload Size' }
     ];
 
     for (const field of fieldsToCheck) {
@@ -206,7 +205,7 @@ export class ChecklistChangeDetectionService {
   // ─── Normalization helpers ───────────────────────────────────────────────
 
   normalizeTemplateFieldValue(key: string, value: any): any {
-    if (key === 'is_active' || key === 'disable_max_upload_limit') return !!value;
+    if (key === 'is_active') return !!value;
     if (key === 'max_upload_size_mb') {
       if (value == null || value === '') return null;
       const n = Number(value);

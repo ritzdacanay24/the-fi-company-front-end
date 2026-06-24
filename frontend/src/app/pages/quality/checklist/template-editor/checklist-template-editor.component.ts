@@ -614,7 +614,6 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
         category: 'inspection',
         description: '',
         max_upload_size_mb: null,
-        disable_max_upload_limit: true,
         is_active: true,
         quality_document_id: null
       });
@@ -1228,8 +1227,6 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       description: this.fb.control('', { updateOn: 'blur' }),
       // Optional override (MB) for maximum upload size when editing this template
       max_upload_size_mb: this.fb.control(null, { updateOn: 'blur' }),
-      // When true, disable max upload size checks for this template (use with caution)
-      disable_max_upload_limit: this.fb.control(true, { updateOn: 'change' }),
       part_number: this.fb.control('', { updateOn: 'blur' }),
       product_type: this.fb.control('', { updateOn: 'blur' }),
       customer_part_number: this.fb.control('', { updateOn: 'blur' }),
@@ -1252,12 +1249,6 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
    * Otherwise use sensible defaults per file type.
    */
   getMaxUploadBytes(fileType: 'image' | 'video'): number {
-    // If the template explicitly disables the upload limit, return a very large value
-    const disabled = !!this.templateForm.get('disable_max_upload_limit')?.value;
-    if (disabled) {
-      return Number.MAX_SAFE_INTEGER; // Effectively disable client-side size checks
-    }
-
     const overrideMb = Number(this.templateForm.get('max_upload_size_mb')?.value || 0);
     if (overrideMb && overrideMb > 0) {
       return overrideMb * 1024 * 1024;
@@ -1445,7 +1436,6 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       category: 'inspection',
       description: template.description,
       max_upload_size_mb: (template as any).max_upload_size_mb || null,
-      disable_max_upload_limit: (template as any).disable_max_upload_limit || false,
       part_number: template.part_number,
       customer_part_number: template.customer_part_number,
       customer_name: (template as any).customer_name ?? '',
