@@ -3355,7 +3355,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     if (!toSign.length) return;
 
     toSign.forEach(({ obj }) => {
-      this.s3Media.signForPreview(obj.url).then(signed => {
+      this.s3Media.getSignedUrl(obj.url).then(signed => {
         obj.url = signed;
         this.cdr.detectChanges();
       }).catch(() => {});
@@ -3447,7 +3447,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
         const storageLocation = this.s3Media.detectStorageLocation(response.url);
 
         // Sign immediately for preview if S3
-        const previewUrl = response.preview_url || (storageLocation === 's3' ? await this.s3Media.signForPreview(response.url) : response.url);
+        const previewUrl = response.preview_url || (storageLocation === 's3' ? await this.s3Media.getSignedUrl(response.url) : response.url);
 
         const newPrimaryImage: SampleImage = {
           url: previewUrl,  // Use signed URL for immediate preview
@@ -5498,7 +5498,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
         const storageLocation = this.s3Media.detectStorageLocation(response.url);
 
         // Sign immediately for preview if S3
-        const previewUrl = response.preview_url || (storageLocation === 's3' ? await this.s3Media.signForPreview(response.url) : response.url);
+        const previewUrl = response.preview_url || (storageLocation === 's3' ? await this.s3Media.getSignedUrl(response.url) : response.url);
 
         const newReferenceImage: SampleImage = {
           url: previewUrl,  // Use signed URL for immediate preview
@@ -5675,7 +5675,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
         const storageLocation = this.s3Media.detectStorageLocation(response.url);
 
         // Sign immediately for preview if S3
-        const previewUrl = response.preview_url || (storageLocation === 's3' ? await this.s3Media.signForPreview(response.url) : response.url);
+        const previewUrl = response.preview_url || (storageLocation === 's3' ? await this.s3Media.getSignedUrl(response.url) : response.url);
 
         const newVideo: SampleVideo = {
           id: `uploaded_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,

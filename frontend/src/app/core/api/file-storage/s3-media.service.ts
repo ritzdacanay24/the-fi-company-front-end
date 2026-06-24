@@ -90,17 +90,6 @@ export class S3MediaService {
   }
 
   /**
-   * Sign URL immediately (for upload preview).
-   * Called right after upload to get signed URL for instant preview.
-   * 
-   * @param s3Url S3 URL from upload response
-   * @returns Signed URL, or original if signing fails
-   */
-  async signForPreview(s3Url: string): Promise<string> {
-    return this.getSignedUrl(s3Url);
-  }
-
-  /**
    * Extract S3 key from full URL.
    * Handles both formats:
    * - Virtual-hosted: https://bucket-name.s3.amazonaws.com/key/path/file.jpg
