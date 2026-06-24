@@ -41,6 +41,78 @@ export class InspectionChecklistController {
     return this.service.updateTemplate(id, payload, currentUserId);
   }
 
+  @Post('templates/:templateId/items')
+  @Permissions('write')
+  async createTemplateItem(
+    @Param('templateId', ParseIntPipe) templateId: number,
+    @Body() body: Record<string, unknown>,
+    @CurrentUserId() currentUserId: number,
+  ) {
+    return this.service.createTemplateItem(templateId, body, currentUserId);
+  }
+
+  @Get('templates/:templateId/items/:itemId')
+  async getTemplateItem(
+    @Param('templateId', ParseIntPipe) templateId: number,
+    @Param('itemId', ParseIntPipe) itemId: number,
+  ) {
+    return this.service.getTemplateItem(templateId, itemId);
+  }
+
+  @Patch('templates/:templateId/items/reorder')
+  @Permissions('write')
+  async reorderTemplateItems(
+    @Param('templateId', ParseIntPipe) templateId: number,
+    @Body() body: { items: { id: number; order_index: number; level: number; parent_id: number | null }[] },
+    @CurrentUserId() currentUserId: number,
+  ) {
+    return this.service.reorderTemplateItems(templateId, body.items || [], currentUserId);
+  }
+
+  @Patch('templates/:templateId/items/:itemId')
+  @Permissions('write')
+  async updateTemplateItem(
+    @Param('templateId', ParseIntPipe) templateId: number,
+    @Param('itemId', ParseIntPipe) itemId: number,
+    @Body() body: Record<string, unknown>,
+    @CurrentUserId() currentUserId: number,
+  ) {
+    return this.service.updateTemplateItem(templateId, itemId, body, currentUserId);
+  }
+
+  @Post('templates/:templateId/items/:itemId/media')
+  @Permissions('write')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadTemplateItemMedia(
+    @Param('templateId', ParseIntPipe) templateId: number,
+    @Param('itemId', ParseIntPipe) itemId: number,
+    @UploadedFile() file?: { originalname?: string; mimetype?: string; buffer?: Buffer },
+    @Body() body?: {
+      media_kind?: 'image' | 'video';
+      image_type?: 'sample' | 'reference' | 'defect_example' | 'diagram';
+      is_primary?: boolean | string;
+      label?: string;
+      description?: string;
+    },
+  ) {
+    return this.service.uploadTemplateItemMedia(templateId, itemId, file, {
+      media_kind: body?.media_kind,
+      image_type: body?.image_type,
+      is_primary: body?.is_primary === true || body?.is_primary === 'true',
+      label: body?.label,
+      description: body?.description,
+    });
+  }
+
+  @Delete('templates/:templateId/items/:itemId')
+  @Permissions('write')
+  async deleteTemplateItem(
+    @Param('templateId', ParseIntPipe) templateId: number,
+    @Param('itemId', ParseIntPipe) itemId: number,
+  ) {
+    return this.service.deleteTemplateItem(templateId, itemId);
+  }
+
   @Delete('templates/:id')
   @Permissions('delete')
   async deleteTemplate(@Param('id', ParseIntPipe) id: number) {

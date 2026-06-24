@@ -48,7 +48,7 @@
                   {{ editingTemplate.is_active ? 'Active' : 'Inactive' }}
                 </span>
                 <span *ngIf="lastSavedAt" class="badge bg-success">
-                  <i class="mdi mdi-check-circle me-1"></i>Saved {{ lastSavedAt | date:'shortTime' }}
+                  <i class="mdi mdi-check-circle me-1"></i>Saved {{ lastSavedAt | date:'h:mm:ss a' }}
                 </span>
               </div>
             </div>
@@ -335,20 +335,31 @@
                   <!-- Save / Publish / Draft actions -->
                   <ng-container *ngIf="!isViewOnly">
                   <div ngbDropdown class="btn-group" container="body" placement="bottom-end">
-                    <button type="button" class="btn btn-sm btn-outline-primary" [disabled]="saving" (click)="saveDraft()">
+                    <!-- For new templates or published templates, show explicit save/branch button -->
+                    <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="saving" (click)="saveDraft()" *ngIf="!editingTemplate || !editingTemplate.is_draft">
                       <i class="mdi mdi-content-save-edit-outline me-1"></i>
-                      {{ (!editingTemplate || editingTemplate.is_draft) ? 'Save Draft' : 'Start Sub-Version Draft' }}
+                      {{ !editingTemplate ? 'Save Draft' : 'Start Sub-Version Draft' }}
                     </button>
-                    <button
+                    <!-- For existing drafts: just the actions dropdown (auto-save handles saving) -->
+                    <button *ngIf="editingTemplate?.is_draft"
                       type="button"
-                      class="btn btn-sm btn-outline-primary dropdown-toggle dropdown-toggle-split"
+                      class="btn btn-sm btn-outline-secondary"
+                      ngbDropdownToggle
+                      [disabled]="saving"
+                      title="Draft actions">
+                      <i class="mdi mdi-dots-vertical"></i>
+                    </button>
+                    <!-- Split caret for non-draft mode -->
+                    <button *ngIf="!editingTemplate?.is_draft"
+                      type="button"
+                      class="btn btn-sm btn-outline-secondary dropdown-toggle dropdown-toggle-split"
                       ngbDropdownToggle
                       [disabled]="saving"
                       aria-label="Open draft actions menu">
                     </button>
                     <div ngbDropdownMenu class="dropdown-menu-end">
-                      <button ngbDropdownItem type="button" (click)="saveDraft()" *ngIf="!editingTemplate || editingTemplate.is_draft">
-                        <i class="mdi mdi-content-save-edit-outline me-2"></i>Save Draft
+                      <button ngbDropdownItem type="button" (click)="saveDraft()" *ngIf="editingTemplate?.is_draft">
+                        <i class="mdi mdi-content-save-edit-outline me-2"></i>Force Save Draft
                       </button>
                       <button ngbDropdownItem type="button" (click)="saveDraft()" *ngIf="editingTemplate && !editingTemplate.is_draft">
                         <i class="mdi mdi-content-save-edit-outline me-2"></i>Start Sub-Version Draft
@@ -567,8 +578,18 @@
               <!-- ====== ITEM PANEL ====== -->
               <div *ngIf="activePanel === 'item'" class="p-4" [class.invisible]="selectingItem">
 
+                <!-- Loading indicator while switching items -->
+                <div *ngIf="selectingItem" class="d-flex align-items-center justify-content-center" style="min-height: calc(100vh - 250px);">
+                  <div class="text-center">
+                    <div class="spinner-border text-primary" role="status" style="width: 2.5rem; height: 2.5rem;">
+                      <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="text-muted mt-3 mb-0 small">Loading item...</p>
+                  </div>
+                </div>
+
                 <!-- No item selected empty state -->
-                <div *ngIf="selectedFormItemIndex === null" class="d-flex align-items-center justify-content-center" style="min-height: calc(100vh - 250px);">
+                <div *ngIf="selectedFormItemIndex === null && !selectingItem" class="d-flex align-items-center justify-content-center" style="min-height: calc(100vh - 250px);">
                   <div class="text-center p-5">
                     <div class="avatar-xl mx-auto mb-4">
                       <div class="avatar-title bg-body-secondary text-primary rounded-circle">
@@ -681,8 +702,13 @@
                                 <span class="badge bg-primary ms-1">{{ getTotalSampleImagesCount(selectedFormItemIndex!) }}</span>
                               </button>
                             </div>
-                            <div *ngIf="getCarouselImages(selectedFormItemIndex!).length > 0" class="border rounded p-2 bg-body-tertiary">
+                            <div *ngIf="isItemMediaPending(selectedFormItemIndex!)" class="border rounded p-2 bg-body-tertiary text-center py-4">
+                              <div class="spinner-border spinner-border-sm text-secondary me-2"></div>
+                              <span class="text-muted small">Loading images...</span>
+                            </div>
+                            <div *ngIf="!isItemMediaPending(selectedFormItemIndex!) && getCarouselImages(selectedFormItemIndex!).length > 0" class="border rounded p-2 bg-body-tertiary">
                               <ngb-carousel
+                                #itemCarousel
                                 class="tce-image-carousel"
                                 [interval]="0"
                                 [keyboard]="true"
@@ -774,22 +800,16 @@
             <div *ngIf="activePanel === 'item' && selectedFormItemIndex !== null && !isPublishedLocked()"
                  class="tce-item-action-footer border-top flex-shrink-0 px-4 py-3">
               <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap">
-                <div class="small fw-medium" [ngClass]="isCurrentItemDirty() ? 'text-warning' : 'text-muted'">
-                  <i class="mdi me-1" [ngClass]="isCurrentItemDirty() ? 'mdi-content-save-alert-outline' : 'mdi-check-circle-outline'"></i>
-                  {{ isCurrentItemDirty() ? 'You have unsaved item changes' : 'Item changes are saved' }}
+                <div class="small fw-medium" [ngClass]="saving ? 'text-info' : isCurrentItemDirty() ? 'text-warning' : 'text-muted'">
+                  <i class="mdi me-1" [ngClass]="saving ? 'mdi-loading mdi-spin' : isCurrentItemDirty() ? 'mdi-content-save-alert-outline' : 'mdi-check-circle-outline'"></i>
+                  {{ saving ? 'Saving...' : isCurrentItemDirty() ? 'Saving in a moment...' : 'All changes saved' }}
                 </div>
-                <div class="d-flex align-items-center gap-2">
+                <div class="d-flex align-items-center gap-2" *ngIf="saving || isCurrentItemDirty()">
                   <button type="button" class="btn btn-outline-danger"
                           (click)="cancelCurrentItemChanges()"
                           [disabled]="saving || !isCurrentItemDirty()"
                           title="Discard current item changes">
                     <i class="mdi mdi-restore align-bottom me-1"></i>Discard Changes
-                  </button>
-                  <button type="button" class="btn btn-primary"
-                          (click)="saveCurrentItem()"
-                          [disabled]="saving || !isCurrentItemDirty()"
-                          title="Save current item changes">
-                    <i class="mdi mdi-content-save-edit-outline align-bottom me-1"></i>Save Item
                   </button>
                 </div>
               </div>

@@ -273,6 +273,46 @@ export class PhotoChecklistConfigService {
     );
   }
 
+  createTemplateItem(
+    templateId: number,
+    item: Partial<ChecklistItem>
+  ): Observable<{ success: boolean; template_id: number; item_id: number; item?: ChecklistItem }> {
+    return this.http.post<{ success: boolean; template_id: number; item_id: number; item?: ChecklistItem }>(
+      `${this.nestPhotoChecklistBaseUrl}/templates/${templateId}/items`,
+      item,
+    );
+  }
+
+  getTemplateItem(
+    templateId: number,
+    itemId: number,
+  ): Observable<{ success: boolean; item: any }> {
+    return this.http.get<{ success: boolean; item: any }>(
+      `${this.nestPhotoChecklistBaseUrl}/templates/${templateId}/items/${itemId}`,
+    );
+  }
+
+  updateTemplateItem(
+    templateId: number,
+    itemId: number,
+    fields: Partial<ChecklistItem>
+  ): Observable<{ success: boolean; template_id: number; item_id: number }> {
+    return this.http.patch<{ success: boolean; template_id: number; item_id: number }>(
+      `${this.nestPhotoChecklistBaseUrl}/templates/${templateId}/items/${itemId}`,
+      fields,
+    );
+  }
+
+  reorderTemplateItems(
+    templateId: number,
+    items: { id: number; order_index: number; level: number; parent_id: number | null }[]
+  ): Observable<{ success: boolean; template_id: number }> {
+    return this.http.patch<{ success: boolean; template_id: number }>(
+      `${this.nestPhotoChecklistBaseUrl}/templates/${templateId}/items/reorder`,
+      { items },
+    );
+  }
+
   updateTemplate(id: number, template: Partial<ChecklistTemplate>): Observable<{success: boolean, template_id?: number, template?: ChecklistTemplate}> {
     return this.http.put<{success: boolean, template_id?: number, template?: ChecklistTemplate}>(
       `${this.nestPhotoChecklistBaseUrl}/templates/${id}`,
@@ -287,6 +327,12 @@ export class PhotoChecklistConfigService {
       `${this.nestPhotoChecklistBaseUrl}/templates/${id}`
     ).pipe(
       tap(() => this.getTemplates().subscribe()) // Refresh templates list
+    );
+  }
+
+  deleteTemplateItem(templateId: number, itemId: number): Observable<{success: boolean; code?: string; message?: string; blocked_item_ids?: number[]; instance_count?: number; deleted_item_ids?: number[]}> {
+    return this.http.delete<{success: boolean; code?: string; message?: string; blocked_item_ids?: number[]; instance_count?: number; deleted_item_ids?: number[]}>(
+      `${this.nestPhotoChecklistBaseUrl}/templates/${templateId}/items/${itemId}`
     );
   }
 

@@ -6,13 +6,24 @@ import { environment } from 'src/environments/environment';
 export interface ChecklistImageUploadResponse {
   success: boolean;
   url?: string;
+  preview_url?: string;
   filename?: string;
   template_id?: number;
   item_id?: number;
   item_title?: string;
   template_name?: string;
+  bucket?: string;
+  key?: string;
   message?: string;
   error?: string;
+}
+
+export interface ChecklistItemMediaUploadRequest {
+  mediaKind: 'image' | 'video';
+  imageType?: 'sample' | 'reference' | 'defect_example' | 'diagram';
+  isPrimary?: boolean;
+  label?: string;
+  description?: string;
 }
 
 export interface ChecklistImageUploadRequest {
@@ -74,6 +85,48 @@ export class PhotoChecklistUploadService {
       const errorResponse: ChecklistImageUploadResponse = {
         success: false,
         error: error.error?.error || error.error?.message || error.message || 'Upload failed'
+      };
+      throw errorResponse;
+    }
+  }
+
+  async uploadChecklistItemMedia(
+    templateId: number,
+    itemId: number,
+    file: File,
+    request: ChecklistItemMediaUploadRequest,
+  ): Promise<ChecklistImageUploadResponse> {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('media_kind', request.mediaKind);
+      formData.append('is_primary', String(!!request.isPrimary));
+      if (request.imageType) {
+        formData.append('image_type', request.imageType);
+      }
+      if (request.label) {
+        formData.append('label', request.label);
+      }
+      if (request.description) {
+        formData.append('description', request.description);
+      }
+
+      const response = await firstValueFrom(
+        this.http.post<ChecklistImageUploadResponse>(
+          `${this.uploadApiBaseUrl}/inspection-checklist/templates/${templateId}/items/${itemId}/media`,
+          formData,
+        ),
+      );
+
+      return {
+        ...response,
+        template_id: templateId,
+        item_id: itemId,
+      };
+    } catch (error: any) {
+      const errorResponse: ChecklistImageUploadResponse = {
+        success: false,
+        error: error.error?.error || error.error?.message || error.message || 'Upload failed',
       };
       throw errorResponse;
     }

@@ -230,13 +230,273 @@ export class PhotoChecklistRepository {
 
   async getTemplateItems(templateId: number): Promise<RowDataPacket[]> {
     const sql = `
-      SELECT *
+      SELECT id, template_id, order_index, parent_id, level, title, description,
+             submission_type, is_required, validation_rules, photo_requirements,
+             sample_image_url, sample_video_url,
+             sample_images, sample_videos,
+             video_requirements, needs_media_upload, links,
+             created_at, updated_at
       FROM checklist_items
       WHERE template_id = ?
       ORDER BY order_index ASC
     `;
 
     return this.mysqlService.query<RowDataPacket[]>(sql, [templateId]);
+  }
+
+  async getTemplateItem(templateId: number, itemId: number): Promise<Record<string, unknown> | null> {
+    const sql = `
+      SELECT *
+      FROM checklist_items
+      WHERE template_id = ? AND id = ?
+      LIMIT 1
+    `;
+
+    const rows = await this.mysqlService.query<RowDataPacket[]>(sql, [templateId, itemId]);
+    if (!rows?.[0]) return null;
+    
+    // Convert RowDataPacket to plain object using JSON round-trip for safe serialization
+    const row = rows[0];
+    return JSON.parse(JSON.stringify(row)) as Record<string, unknown>;
+  }
+
+  async createTemplateItem(
+    templateId: number,
+    payload: {
+      order_index?: number;
+      parent_id?: number | null;
+      level?: number;
+      title?: string;
+      description?: string | null;
+      submission_type?: string;
+      is_required?: boolean | number | string;
+      validation_rules?: unknown | null;
+      photo_requirements?: unknown | null;
+      sample_image_url?: string | null;
+      sample_images?: unknown[] | null;
+      video_requirements?: unknown | null;
+      sample_video_url?: string | null;
+      sample_videos?: unknown[] | null;
+      needs_media_upload?: boolean | number | string;
+      links?: unknown[] | null;
+    },
+  ): Promise<{ success: boolean; itemId: number }> {
+    const needsMediaUpload = this.computeNeedsMediaUpload(payload);
+    const result = await this.mysqlService.execute<ResultSetHeader>(
+      `INSERT INTO checklist_items (
+        template_id, order_index, parent_id, level, title, description, submission_type,
+        is_required, validation_rules, photo_requirements, sample_image_url, sample_images,
+        video_requirements, sample_video_url, sample_videos, needs_media_upload, links
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        templateId,
+        Number(payload.order_index || 0),
+        payload.parent_id ?? null,
+        Number(payload.level || 0),
+        String(payload.title || ''),
+        payload.description ?? null,
+        String(payload.submission_type || 'photo'),
+        payload.is_required === false || payload.is_required === 0 || payload.is_required === '0' ? 0 : 1,
+        payload.validation_rules ? JSON.stringify(payload.validation_rules) : null,
+        payload.photo_requirements ? JSON.stringify(payload.photo_requirements) : null,
+        payload.sample_image_url ?? null,
+        payload.sample_images ? JSON.stringify(payload.sample_images) : null,
+        payload.video_requirements ? JSON.stringify(payload.video_requirements) : null,
+        payload.sample_video_url ?? null,
+        payload.sample_videos ? JSON.stringify(payload.sample_videos) : null,
+        needsMediaUpload,
+        payload.links ? JSON.stringify(payload.links) : null,
+      ],
+    );
+
+    return {
+      success: result.affectedRows > 0,
+      itemId: Number(result.insertId || 0),
+    };
+  }
+
+  async updateTemplateItem(
+    templateId: number,
+    itemId: number,
+    payload: {
+      title?: string;
+      description?: string | null;
+      submission_type?: string;
+      is_required?: boolean | number | string;
+      validation_rules?: unknown | null;
+      photo_requirements?: unknown | null;
+      sample_image_url?: string | null;
+      sample_images?: unknown[] | null;
+      video_requirements?: unknown | null;
+      sample_video_url?: string | null;
+      sample_videos?: unknown[] | null;
+      needs_media_upload?: boolean | number | string;
+      links?: unknown[] | null;
+    },
+  ): Promise<{ success: boolean }> {
+    const needsMediaUpload = this.computeNeedsMediaUpload(payload);
+
+    // Build SET clause dynamically so media columns are only touched when explicitly provided.
+    // This prevents a text-fields PATCH from accidentally wiping sample_images / sample_videos.
+    const setClauses: string[] = [];
+    const values: unknown[] = [];
+
+    setClauses.push('title = ?');
+    values.push(String(payload.title || ''));
+
+    setClauses.push('description = ?');
+    values.push(payload.description ?? null);
+
+    setClauses.push('submission_type = ?');
+    values.push(String(payload.submission_type || 'photo'));
+
+    setClauses.push('is_required = ?');
+    values.push(payload.is_required === false || payload.is_required === 0 || payload.is_required === '0' ? 0 : 1);
+
+    setClauses.push('validation_rules = ?');
+    values.push(payload.validation_rules ? JSON.stringify(payload.validation_rules) : null);
+
+    setClauses.push('photo_requirements = ?');
+    values.push(payload.photo_requirements ? JSON.stringify(payload.photo_requirements) : null);
+
+    setClauses.push('needs_media_upload = ?');
+    values.push(needsMediaUpload);
+
+    setClauses.push('links = ?');
+    values.push(payload.links ? JSON.stringify(payload.links) : null);
+
+    // Media columns — only update if the caller explicitly provides them
+    if ('sample_image_url' in payload) {
+      setClauses.push('sample_image_url = ?');
+      values.push(payload.sample_image_url ?? null);
+    }
+    if ('sample_images' in payload) {
+      setClauses.push('sample_images = ?');
+      values.push(payload.sample_images ? JSON.stringify(payload.sample_images) : null);
+    }
+    if ('sample_video_url' in payload) {
+      setClauses.push('sample_video_url = ?');
+      values.push(payload.sample_video_url ?? null);
+    }
+    if ('sample_videos' in payload) {
+      setClauses.push('sample_videos = ?');
+      values.push(payload.sample_videos ? JSON.stringify(payload.sample_videos) : null);
+    }
+    if ('video_requirements' in payload) {
+      setClauses.push('video_requirements = ?');
+      values.push(payload.video_requirements ? JSON.stringify(payload.video_requirements) : null);
+    }
+
+    setClauses.push('updated_at = CURRENT_TIMESTAMP');
+    values.push(templateId, itemId);
+
+    const result = await this.mysqlService.execute<ResultSetHeader>(
+      `UPDATE checklist_items SET ${setClauses.join(', ')} WHERE template_id = ? AND id = ?`,
+      values,
+    );
+    return { success: result.affectedRows > 0 };
+  }
+
+  async reorderTemplateItems(
+    templateId: number,
+    items: { id: number; order_index: number; level: number; parent_id: number | null }[],
+  ): Promise<{ success: boolean }> {
+    if (!items.length) return { success: true };
+    await this.mysqlService.withTransaction(async (connection) => {
+      for (const item of items) {
+        await connection.execute(
+          `UPDATE checklist_items SET order_index = ?, level = ?, parent_id = ?, updated_at = CURRENT_TIMESTAMP WHERE template_id = ? AND id = ?`,
+          [item.order_index, item.level, item.parent_id ?? null, templateId, item.id],
+        );
+      }
+    });
+    return { success: true };
+  }
+
+  async updateTemplateItemMedia(
+    templateId: number,
+    itemId: number,
+    payload: {
+      sample_image_url?: string | null;
+      sample_images?: unknown[] | null;
+      sample_video_url?: string | null;
+      sample_videos?: unknown[] | null;
+    },
+  ): Promise<{ success: boolean; updatedRows: number }> {
+    const result = await this.mysqlService.execute<ResultSetHeader>(
+      `UPDATE checklist_items
+       SET sample_image_url = ?,
+           sample_images = ?,
+           sample_video_url = ?,
+           sample_videos = ?,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE template_id = ? AND id = ?`,
+      [
+        payload.sample_image_url ?? null,
+        payload.sample_images ? JSON.stringify(payload.sample_images) : null,
+        payload.sample_video_url ?? null,
+        payload.sample_videos ? JSON.stringify(payload.sample_videos) : null,
+        templateId,
+        itemId,
+      ],
+    );
+
+    return {
+      success: result.affectedRows > 0,
+      updatedRows: result.affectedRows,
+    };
+  }
+
+  async deleteTemplateItemSubtree(templateId: number, itemId: number): Promise<{ success: boolean; deletedItemIds: number[]; blockedItemIds?: number[]; instanceCount?: number }> {
+    const items = await this.getTemplateItems(templateId);
+    const rootIndex = items.findIndex((item) => Number(item.id || 0) === Number(itemId || 0));
+    if (rootIndex < 0) {
+      return { success: false, deletedItemIds: [] };
+    }
+
+    const rootLevel = Number(items[rootIndex]?.level || 0);
+    const deletedItemIds = [Number(items[rootIndex]?.id || 0)];
+
+    for (let index = rootIndex + 1; index < items.length; index++) {
+      const currentLevel = Number(items[index]?.level || 0);
+      if (currentLevel <= rootLevel) {
+        break;
+      }
+      const currentId = Number(items[index]?.id || 0);
+      if (currentId > 0) {
+        deletedItemIds.push(currentId);
+      }
+    }
+
+    if (deletedItemIds.length === 0) {
+      return { success: false, deletedItemIds: [] };
+    }
+
+    const placeholders = deletedItemIds.map(() => '?').join(',');
+    const submissionRows = await this.mysqlService.query<RowDataPacket[]>(
+      `SELECT item_id, instance_id FROM photo_submissions WHERE item_id IN (${placeholders})`,
+      deletedItemIds,
+    );
+
+    if (submissionRows.length > 0) {
+      const blockedItemIds = Array.from(new Set(submissionRows.map((row) => Number(row.item_id || 0)).filter((id) => id > 0)));
+      const instanceCount = new Set(submissionRows.map((row) => Number(row.instance_id || 0)).filter((id) => id > 0)).size;
+      return {
+        success: false,
+        deletedItemIds,
+        blockedItemIds,
+        instanceCount,
+      };
+    }
+
+    await this.mysqlService.withTransaction<void>(async (connection) => {
+      await connection.execute(
+        `DELETE FROM checklist_items WHERE template_id = ? AND id IN (${placeholders})`,
+        [templateId, ...deletedItemIds],
+      );
+    });
+
+    return { success: true, deletedItemIds };
   }
 
   async getInstances(filters?: { status?: string; workOrder?: string }): Promise<RowDataPacket[]> {

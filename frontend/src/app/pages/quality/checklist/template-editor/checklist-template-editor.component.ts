@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy, AfterViewInit, ViewChild, ViewChildren, T
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators, AbstractControl } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { NgbModal, NgbModule } from '@ng-bootstrap/ng-bootstrap';
+import { NgbModal, NgbModule, NgbCarousel } from '@ng-bootstrap/ng-bootstrap';
 
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { QuillModule, QuillModules } from 'ngx-quill';
@@ -14,6 +14,7 @@ import Swal from 'sweetalert2';
 
 import { PhotoChecklistConfigService, ChecklistTemplate, ChecklistItem } from '@app/core/api/photo-checklist-config/photo-checklist-config.service';
 import { PhotoChecklistV2Service } from '@app/core/api/photo-checklist-config/photo-checklist-v2.service';
+import { S3MediaService } from '@app/core/api/file-storage/s3-media.service';
 import { AttachmentsService } from '@app/core/api/attachments/attachments.service';
 import { PhotoChecklistUploadService } from '@app/core/api/photo-checklist/photo-checklist-upload.service';
 import { AuthenticationService } from '@app/core/services/auth.service';
@@ -31,6 +32,7 @@ import { InlineAttachmentDropzoneComponent } from '@app/shared/components/attach
 interface SampleImage {
   id?: string;
   url: string;
+  stored_url?: string;
   label?: string;
   description?: string;
   type?: 'photo' | 'drawing' | 'bom' | 'schematic' | 'reference' | 'diagram';
@@ -38,11 +40,13 @@ interface SampleImage {
   is_primary: boolean;
   order_index: number;
   status?: 'loading' | 'loaded' | 'error';
+  storage_location?: 's3' | 'legacy' | null;  // Track where URL is stored to determine if signing needed
 }
 
 interface SampleVideo {
   id?: string;
   url: string;
+  stored_url?: string;
   label?: string;
   description?: string;
   type?: 'video' | 'screen' | 'other';
@@ -50,6 +54,7 @@ interface SampleVideo {
   order_index: number;
   status?: 'loading' | 'loaded' | 'error';
   duration_seconds?: number | null;
+  storage_location?: 's3' | 'legacy' | null;  // Track where URL is stored to determine if signing needed
 }
 
 interface ItemLink {
@@ -75,8 +80,6 @@ interface ReorderUndoState {
 
 interface ItemEditSnapshot {
   itemValue: any;
-  sampleImages: SampleImage | SampleImage[] | null;
-  sampleVideos: SampleVideo | SampleVideo[] | null;
 }
 
 interface DraftSaveOptions {
@@ -102,6 +105,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   @ViewChild('linksModalTemplate') linksModalTemplate: any;
   @ViewChild('sidebarNavList') sidebarNavListRef?: ElementRef<HTMLElement>;
   @ViewChildren('itemTitleInput') itemTitleInputs!: QueryList<ElementRef<HTMLInputElement>>;
+  @ViewChild('itemCarousel') itemCarousel?: NgbCarousel;
 
   templateForm: FormGroup;
   copyAsParentForm: FormGroup;
@@ -207,9 +211,11 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   uploadingVideo = false;
 
   // Auto-save functionality
-  autoSaveEnabled = false;
+  autoSaveEnabled = true;
   lastSavedAt: Date | null = null;
   private autoSaveTimeout: any = null;
+  private itemAutoSaveTimer: any = null;
+  private itemAutoSaveSub: Subscription | null = null;
 
   // Unsaved changes tracking (sequence-based so we can handle async saves)
   private suppressChangeTracking = false;
@@ -221,6 +227,10 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   private itemBaselineSignatures = new WeakMap<FormGroup, string>();
   private itemBaselineSnapshots = new WeakMap<FormGroup, ItemEditSnapshot>();
   private pendingMarkSavedOnStableSub: Subscription | null = null;
+  // Media counts from the list response — used for badge display before an item is fetched.
+  private itemMediaCounts: Record<number, number> = {};
+  // Tracks which item indices are currently being fetched from the backend.
+  private fetchingItemMediaSet = new Set<number>();
 
   private routeParamSub?: Subscription;
   private routeQueryParamSub?: Subscription;
@@ -265,6 +275,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     private pdfParser: PdfParserService,
     private wordParser: WordParserService,
     private sanitizer: DomSanitizer,
+    private s3Media: S3MediaService,
 
   ) {
     this.ensureQuillFileLinksEnabled();
@@ -315,6 +326,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       return;
     }
 
+    
     if (!this.items?.length) {
       void Swal.fire({
         icon: 'info',
@@ -581,6 +593,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
       this.changeSeq++;
       this.templateUnsavedChanges = this.getCurrentFormSignature() !== this.savedFormSignature;
+      this.scheduleAutoSave();
     });
 
     // React to route ID changes (e.g., Save Draft navigates to a new template ID).
@@ -989,11 +1002,17 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       return null;
     }
 
-    return {
-      itemValue: this.clonePlainData(control.getRawValue()),
-      sampleImages: this.clonePlainData(this.sampleImages[itemIndex] ?? null),
-      sampleVideos: this.clonePlainData(this.sampleVideos[itemIndex] ?? null)
-    };
+    const raw = this.clonePlainData(control.getRawValue());
+    // Quill normalises an empty description to <p><br></p> on init.
+    // Treat these as equivalent so Quill init never creates a false dirty signal.
+    if (raw.description === '<p><br></p>' || raw.description === '<p></p>') {
+      raw.description = '';
+    }
+
+    // Media (sampleImages / sampleVideos) is managed entirely through upload/delete
+    // endpoints and must NOT participate in dirty detection. Excluding it here means
+    // a fetch returning fresh signed URLs can never cause a false-dirty result.
+    return { itemValue: raw };
   }
 
   private buildItemSnapshotSignature(snapshot: ItemEditSnapshot | null): string {
@@ -1023,25 +1042,15 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   private hasItemUnsavedChanges(control: FormGroup): boolean {
     const baselineSignature = this.itemBaselineSignatures.get(control);
     if (!baselineSignature) {
-      if (control.dirty) {
-        return true;
-      }
-
       // Establish a baseline lazily for newly materialized controls.
-      // This avoids a permanent "always clean" state when the WeakMap entry
-      // is missing after save/rebind cycles.
       this.setItemBaseline(control);
       return false;
     }
 
-    // Prefer Angular's dirty flag for immediate keystroke feedback.
-    // Signature comparison remains as a fallback for non-form mutations
-    // such as media array changes that may bypass normal control dirtiness.
-    if (control.dirty) {
-      return true;
-    }
-
     const currentSignature = this.buildItemSnapshotSignature(this.captureItemSnapshot(control));
+    // Only treat as changed if the meaningful data (signature) actually differs.
+    // Ignore control.dirty alone — Quill and other editors can mark dirty on init
+    // without changing real content.
     return currentSignature !== baselineSignature;
   }
 
@@ -1080,8 +1089,6 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     this.suppressChangeTracking = true;
     control.patchValue({ ...baselineValue, links: undefined });
     control.setControl('links', this.buildLinksFormArray(baselineLinks));
-    this.sampleImages[itemIndex] = this.clonePlainData(baseline.sampleImages);
-    this.sampleVideos[itemIndex] = this.clonePlainData(baseline.sampleVideos);
     control.markAsPristine();
     this.suppressChangeTracking = false;
 
@@ -1093,6 +1100,11 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   async cancelCurrentItemChanges(): Promise<void> {
     if (!this.isCurrentItemDirty()) {
       return;
+    }
+
+    if (this.itemAutoSaveTimer) {
+      clearTimeout(this.itemAutoSaveTimer);
+      this.itemAutoSaveTimer = null;
     }
 
     const restored = this.restoreCurrentItemFromBaseline();
@@ -1214,25 +1226,25 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
   createTemplateForm(): FormGroup {
     return this.fb.group({
-      name: ['', Validators.required],
-      category: ['inspection', Validators.required],
-      description: [''],
+      name: this.fb.control('', { validators: [Validators.required], updateOn: 'blur' }),
+      category: this.fb.control('inspection', { validators: [Validators.required], updateOn: 'blur' }),
+      description: this.fb.control('', { updateOn: 'blur' }),
       // Optional override (MB) for maximum upload size when editing this template
-      max_upload_size_mb: [null],
+      max_upload_size_mb: this.fb.control(null, { updateOn: 'blur' }),
       // When true, disable max upload size checks for this template (use with caution)
-      disable_max_upload_limit: [true],
-      part_number: [''],
-      product_type: [''],
-      customer_part_number: [''],
-      customer_name: [''],
-      revision: [''],
-      original_filename: [''],
-      review_date: [''],
-      revision_number: [''],
-      revision_details: [''],
-      revised_by: [''],
-      is_active: [true],
-      quality_document_id: [null], // Add quality document field
+      disable_max_upload_limit: this.fb.control(true, { updateOn: 'change' }),
+      part_number: this.fb.control('', { updateOn: 'blur' }),
+      product_type: this.fb.control('', { updateOn: 'blur' }),
+      customer_part_number: this.fb.control('', { updateOn: 'blur' }),
+      customer_name: this.fb.control('', { updateOn: 'blur' }),
+      revision: this.fb.control('', { updateOn: 'blur' }),
+      original_filename: this.fb.control('', { updateOn: 'blur' }),
+      review_date: this.fb.control('', { updateOn: 'blur' }),
+      revision_number: this.fb.control('', { updateOn: 'blur' }),
+      revision_details: this.fb.control('', { updateOn: 'blur' }),
+      revised_by: this.fb.control('', { updateOn: 'blur' }),
+      is_active: this.fb.control(true, { updateOn: 'change' }),
+      quality_document_id: this.fb.control(null, { updateOn: 'change' }), // Add quality document field
       items: this.fb.array([])
     });
   }
@@ -1469,54 +1481,14 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       flattenedItems.forEach((item, index) => {
         this.items.push(this.createItemFormGroup(item));
 
-        // Always initialize videos from backend data, even when no sample image exists.
-        if (item.sample_videos && Array.isArray(item.sample_videos) && item.sample_videos.length > 0) {
-          this.sampleVideos[index] = item.sample_videos;
-        }
-
-        // Load sample images - handle both array format and single URL
-        if (item.sample_images && Array.isArray(item.sample_images) && item.sample_images.length > 0) {
-          // Array format: Load all images (primary + references)
-          const loadedImages: SampleImage[] = item.sample_images.map((img: any, imgIndex: number) => ({
-            id: `loaded_${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${imgIndex}`,
-            url: img.url,
-            label: img.label || (img.is_primary ? 'Sample Image' : `Reference ${imgIndex}`),
-            description: img.description || '',
-            type: img.type || 'photo',
-            image_type: img.image_type || (img.is_primary ? 'sample' : 'reference'),
-            is_primary: img.is_primary || false,
-            order_index: img.order_index || imgIndex,
-            status: 'loaded' as const
-          }));
-
-          this.sampleImages[index] = loadedImages;
-
-          // Update the form control with all images
-          const itemFormGroup = this.items.at(index) as FormGroup;
-          if (itemFormGroup) {
-            this.patchLoadedItemMedia(itemFormGroup, item, loadedImages);
-          }
-
-        } else if (item.sample_image_url) {
-          // Single URL format: Just the primary image
-          this.sampleImages[index] = {
-            id: `loaded_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            url: item.sample_image_url,
-            label: 'Sample Image',
-            description: '',
-            type: 'photo',
-            image_type: 'sample',
-            is_primary: true,
-            order_index: 0,
-            status: 'loaded' as const
-          };
-
-          // Update the form control with the loaded sample image URL
-          const itemFormGroup = this.items.at(index) as FormGroup;
-          if (itemFormGroup) {
-            this.patchLoadedItemMedia(itemFormGroup, item, [this.sampleImages[index] as SampleImage]);
-          }
-
+        // Store media counts for badge display. Actual signed URLs are fetched on demand
+        // when the user clicks the item (fetchAndApplyItemMedia). Never pre-populate
+        // sampleImages with placeholder/pending entries — that was the root cause of
+        // false dirty detection and the broken carousel.
+        const imageCount = Array.isArray(item.sample_images) ? item.sample_images.length : 0;
+        const videoCount = Array.isArray(item.sample_videos) ? item.sample_videos.length : 0;
+        if (imageCount > 0 || videoCount > 0) {
+          this.itemMediaCounts[index] = imageCount + videoCount;
         }
       });
     }
@@ -1762,6 +1734,28 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     return false;
   }
 
+  private async createPersistedChecklistItem(itemData: Record<string, unknown>): Promise<ChecklistItem | null> {
+    const templateId = Number(this.editingTemplate?.id || 0);
+    if (templateId <= 0) {
+      return null;
+    }
+
+    try {
+      const response = await firstValueFrom(this.configService.createTemplateItem(templateId, itemData as Partial<ChecklistItem>));
+      if (!response?.success || Number(response.item_id || 0) <= 0) {
+        this.showErrorDialog('Unable to create checklist item.', 'Unable to create item');
+        return null;
+      }
+
+      const createdItem = response.item ? { ...response.item, id: response.item_id } : { ...itemData, id: response.item_id, template_id: templateId };
+      return createdItem as ChecklistItem;
+    } catch (error) {
+      console.error('Error creating checklist item:', error);
+      this.showErrorDialog('Unable to create checklist item.', 'Unable to create item');
+      return null;
+    }
+  }
+
   async addItem(): Promise<void> {
     if (!this.ensureTemplateCreatedBeforeAddingItems()) {
       return;
@@ -1776,7 +1770,36 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     }
 
     const newIndex = this.items.length;
-    this.items.push(this.createItemFormGroup());
+    const createdItem = await this.createPersistedChecklistItem({
+      title: '',
+      description: '',
+      order_index: newIndex + 1,
+      is_required: true,
+      needs_media_upload: false,
+      submission_type: 'photo',
+      sample_image_url: null,
+      sample_images: [],
+      sample_videos: [],
+      level: 0,
+      parent_id: null,
+      photo_requirements: {
+        angle: '',
+        distance: '',
+        lighting: '',
+        focus: '',
+        min_photos: 1,
+        max_photos: 5,
+        picture_required: true,
+        max_video_duration_seconds: 30
+      },
+      submission_time_seconds: null,
+      links: []
+    });
+    if (!createdItem) {
+      return;
+    }
+
+    this.items.push(this.createItemFormGroup(createdItem));
     this.recalculateOrderIndices();
     this.updateNavSearchSets();
     this.rebuildEditorNavItems();
@@ -1812,7 +1835,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     const parentItem = this.items.at(parentIndex);
     const parentLevel = parentItem.get('level')?.value || 0;
     const parentOrderIndex = parentItem.get('order_index')?.value || (parentIndex + 1);
-    const parentDbId = parentItem.get('id')?.value; // Use database ID, not order_index
+    const parentDbId = parentItem.get('id')?.value;
 
     // New child will be at parent level + 1
     const childLevel = parentLevel + 1;
@@ -1842,8 +1865,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     const parentOutlineNumber = this.getOutlineNumber(parentIndex);
     const newOutlineNumber = `${parentOutlineNumber}.${childCount + 1}`;
 
-    const subItem = this.createItemFormGroup({
-      id: null,
+    const createdItem = await this.createPersistedChecklistItem({
       title: '',
       description: '',
       order_index: newOrderIndex,
@@ -1851,7 +1873,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       needs_media_upload: false,
       submission_type: 'photo',
       sample_image_url: null,
-      sample_images: null,
+      sample_images: [],
       sample_videos: [],
       level: childLevel,
       parent_id: parentDbId,
@@ -1867,7 +1889,12 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       },
       submission_time_seconds: null,
       links: []
-    } as any);
+    });
+    if (!createdItem) {
+      return;
+    }
+
+    const subItem = this.createItemFormGroup(createdItem);
 
     // Insert right after the last descendant of this parent (or after parent if no children)
     let insertIndex = parentIndex + 1;
@@ -1878,33 +1905,9 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       insertIndex = i + 1;
     }
 
+    this.shiftExpandedItemsOnInsert(insertIndex);
+    this.shiftMediaOnInsert(insertIndex);
     this.items.insert(insertIndex, subItem);
-
-    const shiftOnInsert = <T>(dict: { [itemIndex: number]: T }): { [itemIndex: number]: T } => {
-      const updated: { [itemIndex: number]: T } = {};
-      Object.keys(dict).forEach((key) => {
-        const oldIndex = parseInt(key, 10);
-        const newIndex = oldIndex >= insertIndex ? oldIndex + 1 : oldIndex;
-        updated[newIndex] = dict[oldIndex];
-      });
-      return updated;
-    };
-
-    // Shift sample media dictionaries so the new sub-item starts clean
-    this.sampleImages = shiftOnInsert(this.sampleImages);
-    this.sampleVideos = shiftOnInsert(this.sampleVideos);
-
-    // Shift expanded items and active index (index-based state)
-    const updatedExpanded = new Set<number>();
-    this.expandedItems.forEach((oldIndex) => {
-      const newIndex = oldIndex >= insertIndex ? oldIndex + 1 : oldIndex;
-      updatedExpanded.add(newIndex);
-    });
-    this.expandedItems = updatedExpanded;
-
-    if (this.activeNavItemIndex >= insertIndex) {
-      this.activeNavItemIndex = this.activeNavItemIndex + 1;
-    }
 
     this.recalculateOrderIndices(); // Auto-calculate order after adding sub-item
 
@@ -1965,6 +1968,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
     this.rebuildEditorNavItems();
     this.cdr.detectChanges();
+    this.autoSaveReorder();
   }
 
   /**
@@ -2010,6 +2014,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
     this.rebuildEditorNavItems();
     this.cdr.detectChanges();
+    this.autoSaveReorder();
   }
 
   private remapIndexedEditorStateAfterMove(oldStart: number, oldEnd: number, targetStart: number, oldLength: number): void {
@@ -2120,9 +2125,22 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     return `${prefix}item`;
   }
 
-  removeItem(index: number): void {
+  async removeItem(index: number): Promise<void> {
     const item = this.items.at(index);
     const itemLevel = item.get('level')?.value || 0;
+    const templateId = Number(this.editingTemplate?.id || 0);
+    const itemId = Number(item.get('id')?.value || 0);
+
+    if (templateId > 0 && itemId > 0) {
+      const deletion = await firstValueFrom(this.configService.deleteTemplateItem(templateId, itemId));
+      if (!deletion?.success) {
+        this.showWarningDialog(
+          deletion?.message || 'Delete blocked because this item is already used by saved checklist data.',
+          'Delete blocked',
+        );
+        return;
+      }
+    }
 
     // Collect all descendants (children, grandchildren, etc.)
     const itemsToRemove: number[] = [index];
@@ -2337,8 +2355,11 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
             return;
     }
 
-    if (placement.isNoOp) {
-            return;
+    // Explicit inside/before/after drops (e.g. "Move into group") recalculate targetStart
+    // below — don't bail early based on the raw placement result.
+    const hasExplicitDropPosition = !!options?.dropPosition;
+    if (placement.isNoOp && !hasExplicitDropPosition) {
+      return;
     }
 
     const subtreeEnd = placement.subtreeEnd;
@@ -2452,7 +2473,13 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       }
     }
 
-        const undoSnapshot: ReorderUndoState = {
+    // Final no-op guard: after all recalculations, if targetStart still equals previousIndex
+    // and no level change is needed, there is genuinely nothing to do.
+    if (targetStart === previousIndex && levelAdjustment === 0) {
+      return;
+    }
+
+    const undoSnapshot: ReorderUndoState = {
       controls: [...this.items.controls],
       sampleImages: { ...this.sampleImages },
       sampleVideos: { ...this.sampleVideos },
@@ -2519,6 +2546,16 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     });
     this.expandedItems = updatedExpanded;
 
+    // If the moved item now has a parent (explicit nest into group), auto-expand
+    // that parent so the user can immediately see where the item landed.
+    const movedNewLevel = Math.max(0, movedLevel + levelAdjustment);
+    if (movedNewLevel > 0) {
+      const parentNewIndex = this.findNearestAncestorIndexByLevel(targetStart, movedNewLevel - 1);
+      if (parentNewIndex >= 0) {
+        this.expandedItems.add(parentNewIndex);
+      }
+    }
+
     if (this.activeNavItemIndex >= 0 && this.activeNavItemIndex < oldLength) {
       this.activeNavItemIndex = mapOldIndexToNewIndex(this.activeNavItemIndex);
     }
@@ -2541,6 +2578,9 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     // Trigger change detection
     this.cdr.detectChanges();
     this.scheduleActiveItemTrackingRefresh();
+
+    // Auto-save the new order to the database immediately
+    this.autoSaveReorder();
   }
 
   private findNearestAncestorIndexByLevel(startIndex: number, targetLevel: number): number {
@@ -3201,6 +3241,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     // Handle image load error
     const sampleImage = this.getSampleImage(itemIndex);
     console.error(`Failed to load image for item ${itemIndex + 1}:`, sampleImage?.url);
+    
 
     // If this is a data URL, try to upload it
     if (sampleImage?.url?.startsWith('data:')) {
@@ -3219,12 +3260,106 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   // Primary Sample Image Methods
   // ============================================
 
+  isItemMediaPending(itemIndex: number): boolean {
+    return this.fetchingItemMediaSet.has(itemIndex);
+  }
+
   hasPrimarySampleImage(itemIndex: number): boolean {
     const images = this.sampleImages[itemIndex];
-    if (!Array.isArray(images)) {
-      return !!images; // Legacy single image
+    if (Array.isArray(images)) {
+      if (images.some(img => img.is_primary && img.image_type === 'sample')) return true;
+    } else if (images) {
+      return true; // Legacy single image
     }
-    return images.some(img => img.is_primary && img.image_type === 'sample');
+    // Fallback: sample_image_url in form control means the item has a primary image
+    // (sampleImages may not be populated yet if fetchAndApplyItemMedia hasn't returned)
+    return !!this.items.at(itemIndex)?.get('sample_image_url')?.value;
+  }
+
+  /** Fetch item from backend on demand to get freshly signed S3 media URLs. */
+  private fetchAndApplyItemMedia(index: number): void {
+    const templateId = Number(this.editingTemplate?.id || 0);
+    const itemId = Number(this.items.at(index)?.get('id')?.value || 0);
+    if (!templateId || !itemId) return;
+
+    this.fetchingItemMediaSet.add(index);
+    this.cdr.detectChanges();
+
+    this.configService.getTemplateItem(templateId, itemId).subscribe({
+      next: ({ item }) => {
+        this.fetchingItemMediaSet.delete(index);
+        if (!item) { this.cdr.detectChanges(); return; }
+
+        // Build image list — fall back to sample_image_url if sample_images array is empty
+        let images: any[] = [];
+        if (Array.isArray(item.sample_images) && item.sample_images.length > 0) {
+          images = item.sample_images;
+        } else if (item.sample_image_url) {
+          images = [{
+            id: null,
+            url: item.sample_image_url,
+            type: 'photo',
+            image_type: 'sample',
+            is_primary: true,
+            order_index: 0,
+            label: 'Sample Image',
+            description: '',
+          }];
+        }
+
+        this.sampleImages[index] = images.length > 0
+          ? images.map((img: any, i: number) => ({
+              id: img.id ?? null,
+              url: img.url || '',
+              stored_url: img.stored_url || img.url || '',
+              label: img.label || (img.is_primary ? 'Sample Image' : `Reference ${i + 1}`),
+              description: img.description || '',
+              type: img.type || 'photo',
+              image_type: img.image_type || (img.is_primary ? 'sample' : 'reference'),
+              is_primary: Boolean(img.is_primary),
+              order_index: img.order_index ?? i,
+              status: 'loaded' as const,
+            }))
+          : null;
+
+        if (Array.isArray(item.sample_videos) && item.sample_videos.length > 0) {
+          this.sampleVideos[index] = item.sample_videos;
+        }
+
+        // Update count from actual fetched data
+        const total = (images.length) + (Array.isArray(item.sample_videos) ? item.sample_videos.length : 0);
+        if (total > 0) this.itemMediaCounts[index] = total;
+
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.fetchingItemMediaSet.delete(index);
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  /** Sign S3 URLs in sampleImages/sampleVideos for the given item index, on demand. */
+  private signItemMediaUrlsIfNeeded(index: number): void {
+    const imgEntries = this.sampleImages[index];
+    const imageArray: SampleImage[] = Array.isArray(imgEntries) ? imgEntries : (imgEntries ? [imgEntries] : []);
+    const videos: SampleVideo[] = Array.isArray(this.sampleVideos[index]) ? this.sampleVideos[index] as SampleVideo[] : [];
+
+    const needsSigning = (url: string) => url && !url.startsWith('data:') && !url.startsWith('blob:') && this.s3Media.detectStorageLocation(url) === 's3' && !url.includes('X-Amz-Signature');
+
+    const toSign = [
+      ...imageArray.filter(img => needsSigning(img.url || '')).map(img => ({ obj: img })),
+      ...videos.filter(v => needsSigning(v.url || '')).map(v => ({ obj: v })),
+    ];
+
+    if (!toSign.length) return;
+
+    toSign.forEach(({ obj }) => {
+      this.s3Media.signForPreview(obj.url).then(signed => {
+        obj.url = signed;
+        this.cdr.detectChanges();
+      }).catch(() => {});
+    });
   }
 
   getPrimarySampleImage(itemIndex: number): SampleImage | null {
@@ -3295,18 +3430,36 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     this.uploadingImage = true;
 
     try {
-      const response = await this.photoUploadService.uploadTemporaryImage(file, `item-${itemIndex}-primary`);
+      const templateId = Number(this.editingTemplate?.id || 0);
+      const itemId = Number(this.items.at(itemIndex)?.get('id')?.value || 0);
+      const response = templateId > 0 && itemId > 0
+        ? await this.photoUploadService.uploadChecklistItemMedia(templateId, itemId, file, {
+            mediaKind: 'image',
+            imageType: 'sample',
+            isPrimary: true,
+            label: 'Primary Sample Image',
+            description: 'This is what users should replicate',
+          })
+        : await this.photoUploadService.uploadTemporaryImage(file, `item-${itemIndex}-primary`);
 
       if (response.success && response.url) {
+        // Detect storage location from URL
+        const storageLocation = this.s3Media.detectStorageLocation(response.url);
+
+        // Sign immediately for preview if S3
+        const previewUrl = response.preview_url || (storageLocation === 's3' ? await this.s3Media.signForPreview(response.url) : response.url);
+
         const newPrimaryImage: SampleImage = {
-          url: response.url,
+          url: previewUrl,  // Use signed URL for immediate preview
+          stored_url: response.url,
           label: 'Primary Sample Image',
           description: 'This is what users should replicate',
           type: 'photo',
           image_type: 'sample',
           is_primary: true,
           order_index: 0,
-          status: 'loaded'
+          status: 'loaded',
+          storage_location: storageLocation  // Track storage type for later signing
         };
 
         // Update sample images array
@@ -3377,11 +3530,12 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     item.markAsDirty();
     this.templateForm.markAsDirty();
 
-    if (imageToDelete?.url) {
+    const deleteUrl = imageToDelete?.stored_url || imageToDelete?.url;
+    if (deleteUrl) {
       try {
-        const deletion = await this.photoUploadService.deleteImage(imageToDelete.url);
+        const deletion = await this.photoUploadService.deleteImage(deleteUrl);
         if (!deletion?.success) {
-          console.warn('Failed to delete primary sample image from storage:', deletion?.error || imageToDelete.url);
+          console.warn('Failed to delete primary sample image from storage:', deletion?.error || deleteUrl);
         }
       } catch (error) {
         console.warn('Failed to delete primary sample image from storage:', error);
@@ -3417,6 +3571,11 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   }
 
   getTotalSampleImagesCount(itemIndex: number): number {
+    // Before the item is fetched sampleImages is null — fall back to the count stored
+    // during the initial template load so the badge shows the correct number immediately.
+    if (!this.sampleImages[itemIndex] && !this.fetchingItemMediaSet.has(itemIndex)) {
+      return this.itemMediaCounts[itemIndex] ?? 0;
+    }
     const primaryCount = this.hasPrimarySampleImage(itemIndex) ? 1 : 0;
     const referenceCount = this.getReferenceImageCount(itemIndex);
     return primaryCount + referenceCount;
@@ -3471,6 +3630,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
   setActiveCarouselSlideId(itemIndex: number, slideId: string): void {
     this.carouselActiveSlideByItem[itemIndex] = slideId;
+    this.itemCarousel?.select(slideId);
   }
 
   isCarouselSlideActive(itemIndex: number, slideId: string): boolean {
@@ -3663,23 +3823,38 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     this.updateStickyParentFromActive(index);
 
     this.activePanel = 'item';
-    this.selectingItem = false;
+    this.selectingItem = true;
 
     // Force destroy+recreate of the item panel so child components (e.g. rich text editor)
     // re-initialize with the new form group values. Split across two tasks to avoid
     // forced synchronous reflow violations in the click handler.
     this.selectedFormItemIndex = null;
+    this.itemAutoSaveSub?.unsubscribe();
+    this.itemAutoSaveSub = null;
     this.cdr.detectChanges();
-    setTimeout(() => {
-      this.selectedFormItemIndex = index;
-      this.scheduleSelectedItemQueryParamUpdate(index);
-      this.scheduleSidebarStickyAncestorsUpdate();
-      this.cdr.detectChanges();
-      const control = this.getItemFormGroup(index);
-      if (control) {
-        this.setItemBaseline(control);
-      }
-    }, 0);
+
+    // Yield one microtask so Angular can destroy the previous item panel DOM
+    // (rich text editors etc. need a full destroy before recreating).
+    await Promise.resolve();
+
+    this.selectingItem = false;
+    this.selectedFormItemIndex = index;
+    this.scheduleSelectedItemQueryParamUpdate(index);
+    this.scheduleSidebarStickyAncestorsUpdate();
+    this.cdr.detectChanges();
+    // Fetch fresh item from backend to get freshly signed S3 URLs
+    this.fetchAndApplyItemMedia(index);
+    const control = this.getItemFormGroup(index);
+    if (control) {
+      this.setItemBaseline(control);
+      // Auto-save item fields when they change
+      this.itemAutoSaveSub?.unsubscribe();
+      this.itemAutoSaveSub = control.valueChanges.subscribe(() => {
+        if (!this.suppressChangeTracking && this.changeTrackingReady) {
+          this.scheduleItemAutoSave();
+        }
+      });
+    }
 
     return true;
   }
@@ -4168,6 +4343,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       this.promoteItem(currentIndex);
       safety++;
     }
+    this.autoSaveReorder();
   }
 
   rebuildEditorNavItems(): void {
@@ -4232,6 +4408,13 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       inputOptions[String(candidate.index)] = candidate.label;
     });
 
+    const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+    const style = getComputedStyle(document.documentElement);
+    const bgColor = style.getPropertyValue('--bs-secondary-bg').trim() || style.getPropertyValue('--bs-body-bg').trim();
+    const textColor = style.getPropertyValue('--bs-body-color').trim();
+    const borderColor = style.getPropertyValue('--bs-border-color').trim();
+    const inputBg = style.getPropertyValue('--bs-body-bg').trim();
+
     const result = await Swal.fire({
       title: 'Move Under...',
       input: 'select',
@@ -4239,6 +4422,16 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       inputPlaceholder: 'Select target parent',
       showCancelButton: true,
       confirmButtonText: 'Move',
+      background: bgColor || undefined,
+      color: textColor || undefined,
+      didOpen: () => {
+        const select = document.querySelector<HTMLSelectElement>('.swal2-select');
+        if (select && isDark) {
+          select.style.backgroundColor = inputBg || '#1a1d2e';
+          select.style.color = textColor || '#ced4da';
+          select.style.border = `1px solid ${borderColor || '#3a3f52'}`;
+        }
+      },
       inputValidator: (value) => {
         if (value === undefined || value === null || value === '') {
           return 'Select a target parent';
@@ -5148,6 +5341,11 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     this.routeQueryParamSub?.unsubscribe();
     this.templateFormChangesSub?.unsubscribe();
     this.navItemsSub?.unsubscribe();
+    this.itemAutoSaveSub?.unsubscribe();
+
+    if (this.itemAutoSaveTimer) {
+      clearTimeout(this.itemAutoSaveTimer);
+    }
 
     if (this.scrollCheckTimeout) {
       clearTimeout(this.scrollCheckTimeout);
@@ -5284,18 +5482,35 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     this.uploadingImage = true;
 
     try {
-      const response = await this.photoUploadService.uploadTemporaryImage(file, `item-${itemIndex}-ref-${Date.now()}`);
+      const templateId = Number(this.editingTemplate?.id || 0);
+      const itemId = Number(this.items.at(itemIndex)?.get('id')?.value || 0);
+      const response = templateId > 0 && itemId > 0
+        ? await this.photoUploadService.uploadChecklistItemMedia(templateId, itemId, file, {
+            mediaKind: 'image',
+            imageType: 'reference',
+            isPrimary: false,
+            label: `Reference ${this.getReferenceImageCount(itemIndex) + 1}`,
+          })
+        : await this.photoUploadService.uploadTemporaryImage(file, `item-${itemIndex}-ref-${Date.now()}`);
 
       if (response.success && response.url) {
+        // Detect storage location from URL
+        const storageLocation = this.s3Media.detectStorageLocation(response.url);
+
+        // Sign immediately for preview if S3
+        const previewUrl = response.preview_url || (storageLocation === 's3' ? await this.s3Media.signForPreview(response.url) : response.url);
+
         const newReferenceImage: SampleImage = {
-          url: response.url,
+          url: previewUrl,  // Use signed URL for immediate preview
+          stored_url: response.url,
           label: `Reference ${this.getReferenceImageCount(itemIndex) + 1}`,
           description: '',
           type: 'photo',
           image_type: 'reference',
           is_primary: false,
           order_index: this.getReferenceImageCount(itemIndex) + 1,
-          status: 'loaded'
+          status: 'loaded',
+          storage_location: storageLocation  // Track storage type for later signing
         };
 
         // Update sample images array
@@ -5357,11 +5572,12 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     item.markAsDirty();
     this.templateForm.markAsDirty();
 
-    if (imageToRemove?.url) {
+    const deleteUrl = imageToRemove?.stored_url || imageToRemove?.url;
+    if (deleteUrl) {
       try {
-        const deletion = await this.photoUploadService.deleteImage(imageToRemove.url);
+        const deletion = await this.photoUploadService.deleteImage(deleteUrl);
         if (!deletion?.success) {
-          console.warn('Failed to delete reference image from storage:', deletion?.error || imageToRemove.url);
+          console.warn('Failed to delete reference image from storage:', deletion?.error || deleteUrl);
         }
       } catch (error) {
         console.warn('Failed to delete reference image from storage:', error);
@@ -5444,18 +5660,34 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       //   return;
       // }
 
-      const response = await this.photoUploadService.uploadTemporaryImage(file, tempId);
+      const templateId = Number(this.editingTemplate?.id || 0);
+      const itemId = Number(this.items.at(itemIndex)?.get('id')?.value || 0);
+      const response = templateId > 0 && itemId > 0
+        ? await this.photoUploadService.uploadChecklistItemMedia(templateId, itemId, file, {
+            mediaKind: 'video',
+            isPrimary: true,
+            label: 'Sample Video',
+          })
+        : await this.photoUploadService.uploadTemporaryImage(file, tempId);
 
       if (response && response.success && response.url) {
+        // Detect storage location from URL
+        const storageLocation = this.s3Media.detectStorageLocation(response.url);
+
+        // Sign immediately for preview if S3
+        const previewUrl = response.preview_url || (storageLocation === 's3' ? await this.s3Media.signForPreview(response.url) : response.url);
+
         const newVideo: SampleVideo = {
           id: `uploaded_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          url: response.url,
+          url: previewUrl,  // Use signed URL for immediate preview
+          stored_url: response.url,
           label: 'Sample Video',
           description: '',
           type: 'video',
           is_primary: true,
           order_index: 0,
-          status: 'loaded'
+          status: 'loaded',
+          storage_location: storageLocation  // Track storage type for later signing
         };
 
         this.sampleVideos[itemIndex] = newVideo;
@@ -5829,7 +6061,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
         const normalizedTemplate: any = this.normalizeTemplateFlags(rawTemplate);
 
         this.editingTemplate = normalizedTemplate as ChecklistTemplate;
-        this.updateComponentWithSavedTemplate(normalizedTemplate);
+        void this.updateComponentWithSavedTemplate(normalizedTemplate);
         if (!isSameTemplateSave) {
           this.populateForm(this.editingTemplate);
         }
@@ -6005,7 +6237,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       if (item.sample_images && Array.isArray(item.sample_images)) {
         // Clean up UI-specific fields that shouldn't be sent to backend
         item.sample_images = item.sample_images.map((img: SampleImage) => ({
-          url: img.url,
+          url: img.stored_url || img.url,
           label: img.label || '',
           description: img.description || '',
           type: img.type || 'photo',
@@ -6017,7 +6249,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       // Ensure sample_videos array is properly formatted for the backend
       if (item.sample_videos && Array.isArray(item.sample_videos)) {
         item.sample_videos = item.sample_videos.map((v: SampleVideo) => ({
-          url: v.url,
+          url: v.stored_url || v.url,
           label: v.label || '',
           description: v.description || '',
           type: v.type || 'video',
@@ -6567,7 +6799,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
         // Update component data with returned template (includes permanent image URLs)
         if (response.template) {
-                    this.updateComponentWithSavedTemplate(response.template);
+                    void this.updateComponentWithSavedTemplate(response.template);
         } else {
           console.warn('⚠️ Backend did not return template data in response');
         }
@@ -7049,7 +7281,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   /**
    * Update component data with saved template from backend (includes permanent URLs)
    */
-  private updateComponentWithSavedTemplate(template: any): void {
+  private async updateComponentWithSavedTemplate(template: any): Promise<void> {
     if (!template.items || !Array.isArray(template.items)) {
       return;
     }
@@ -7058,18 +7290,28 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     const flattenedItems = this.flattenNestedItems(template.items || []);
 
     // Update sampleImages with permanent URLs from backend
-    flattenedItems.forEach((item: any, index: number) => {
+    await Promise.all(flattenedItems.map(async (item: any, index: number) => {
       if (item.sample_images && Array.isArray(item.sample_images) && item.sample_images.length > 0) {
-        const updatedImages: SampleImage[] = item.sample_images.map((img: any, imgIndex: number) => ({
-          id: `saved_${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${imgIndex}`,
-          url: img.url, // This now has permanent URL (no /temp/)
-          label: img.label || (img.is_primary ? 'Sample Image' : `Reference ${imgIndex}`),
-          description: img.description || '',
-          type: img.type || 'photo',
-          image_type: img.image_type || (img.is_primary ? 'sample' : 'reference'),
-          is_primary: img.is_primary || false,
-          order_index: img.order_index || imgIndex,
-          status: 'loaded' as const
+        const updatedImages: SampleImage[] = await Promise.all(item.sample_images.map(async (img: any, imgIndex: number) => {
+          const storedUrl = String(img.url || '').trim();
+          const storageLocation = this.s3Media.detectStorageLocation(storedUrl);
+          const displayUrl = storageLocation === 's3'
+            ? await this.s3Media.getDisplayUrl({ url: storedUrl, storage_location: storageLocation })
+            : storedUrl;
+
+          return {
+            id: `saved_${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${imgIndex}`,
+            url: displayUrl,
+            stored_url: storedUrl,
+            label: img.label || (img.is_primary ? 'Sample Image' : `Reference ${imgIndex}`),
+            description: img.description || '',
+            type: img.type || 'photo',
+            image_type: img.image_type || (img.is_primary ? 'sample' : 'reference'),
+            is_primary: img.is_primary || false,
+            order_index: img.order_index || imgIndex,
+            status: 'loaded' as const,
+            storage_location: storageLocation,
+          } as SampleImage;
         }));
 
         this.sampleImages[index] = updatedImages;
@@ -7078,12 +7320,12 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
         const itemFormGroup = this.items.at(index) as FormGroup;
         if (itemFormGroup) {
           itemFormGroup.patchValue({
-            sample_image_url: item.sample_image_url || updatedImages.find(img => img.is_primary)?.url || updatedImages[0]?.url,
+            sample_image_url: item.sample_image_url || updatedImages.find(img => img.is_primary)?.stored_url || updatedImages[0]?.stored_url || updatedImages.find(img => img.is_primary)?.url || updatedImages[0]?.url,
             sample_images: updatedImages
           }, { emitEvent: false });
         }
       }
-    });
+    }));
 
       }
 
@@ -7091,30 +7333,124 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
    * Schedule an auto-save after user stops editing (debounced)
    */
   private scheduleAutoSave(): void {
-    // Auto-save intentionally disabled; manual "Save Draft" is the source of truth.
-    return;
-    // Clear any existing timeout
     if (this.autoSaveTimeout) {
       clearTimeout(this.autoSaveTimeout);
     }
-
-    // Schedule new auto-save after 3 seconds of inactivity
+    // Template-info controls now emit on blur, so this can save almost immediately
+    // instead of waiting several seconds after the user leaves the field.
     this.autoSaveTimeout = setTimeout(() => {
       this.performAutoSave();
-    }, 3000);
+    }, 150);
+  }
+
+  /** Build the serialized payload for a single item FormGroup (mirrors buildTemplatePayload per-item logic). */
+  private buildSingleItemPayload(index: number, control: FormGroup): Record<string, unknown> {
+    const raw = control.getRawValue();
+
+    // Media (sample_images / sample_videos) is intentionally excluded from this payload.
+    // Images and videos are saved immediately when uploaded/deleted via their own endpoints.
+    // Including media here caused data-wipe bugs when the fetch hadn't returned yet.
+    let links: any[] = [];
+    if (Array.isArray(raw.links)) {
+      links = (raw.links as any[])
+        .map((link: any) => ({
+          title: (link.title || '').trim(),
+          url: (link.url || '').trim(),
+          description: (link.description || '').trim(),
+        }))
+        .filter((link: any) => link.title || link.url || link.description);
+    }
+
+    return {
+      title: raw.title,
+      description: raw.description,
+      submission_type: raw.submission_type,
+      is_required: raw.is_required,
+      needs_media_upload: raw.needs_media_upload,
+      photo_requirements: raw.photo_requirements,
+      links,
+    };
+  }
+
+  /** Debounced auto-save for the currently selected item's fields. */
+  private scheduleItemAutoSave(): void {
+    if (this.itemAutoSaveTimer) {
+      clearTimeout(this.itemAutoSaveTimer);
+    }
+    this.itemAutoSaveTimer = setTimeout(async () => {
+      const index = this.selectedFormItemIndex;
+      if (index === null) return;
+      const control = this.getItemFormGroup(index);
+      if (!control) return;
+      const itemId = Number(control.get('id')?.value || 0);
+      if (itemId <= 0) return;
+      const templateId = Number(this.editingTemplate?.id || 0);
+      if (templateId <= 0) return;
+
+      const payload = this.buildSingleItemPayload(index, control);
+      this.saving = true;
+      try {
+        await firstValueFrom(this.configService.updateTemplateItem(templateId, itemId, payload as any));
+        this.lastSavedAt = new Date();
+        this.setItemBaseline(control);
+        this.markSaved(this.changeSeq);
+      } catch (err) {
+        console.error('Item auto-save failed:', err);
+      } finally {
+        this.saving = false;
+      }
+    }, 800);
+  }
+
+  /** Fire reorder auto-save after a drop/move operation. */
+  private autoSaveReorder(): void {
+    const templateId = Number(this.editingTemplate?.id || 0);
+    if (templateId <= 0 || !this.editingTemplate?.is_draft) return;
+
+    this.recalculateOrderIndices();
+    this.rebuildParentReferencesFromLevels();
+
+    const items = this.items.controls
+      .map((ctrl) => {
+        const g = ctrl as FormGroup;
+        return {
+          id: Number(g.get('id')?.value || 0),
+          order_index: Number(g.get('order_index')?.value || 0),
+          level: Number(g.get('level')?.value || 0),
+          parent_id: g.get('parent_id')?.value ? Number(g.get('parent_id')?.value) : null,
+        };
+      })
+      .filter((item) => item.id > 0);
+
+    if (!items.length) return;
+
+    this.saving = true;
+    this.configService.reorderTemplateItems(templateId, items).subscribe({
+      next: () => {
+        this.saving = false;
+        this.lastSavedAt = new Date();
+        this.hasReorderMutations = false;
+        this.markSaved(this.changeSeq);
+      },
+      error: (err) => {
+        this.saving = false;
+        console.error('Reorder auto-save failed:', err);
+      },
+    });
   }
 
   /**
-   * Perform auto-save of current template state
+   * Perform auto-save of current template metadata (not items — those are saved per-item).
    */
   private performAutoSave(): void {
-    // Auto-save intentionally disabled; manual "Save Draft" is the source of truth.
-    return;
-    if (!this.editingTemplate || this.templateForm.invalid || this.saving) {
+    // Only block on template-level required fields, not items — items save independently.
+    const nameInvalid = this.templateForm.get('name')?.invalid;
+    const categoryInvalid = this.templateForm.get('category')?.invalid;
+    if (!this.editingTemplate?.is_draft || nameInvalid || categoryInvalid || this.saving) {
       return;
     }
 
-        const startedSeq = this.changeSeq;
+    const startedSeq = this.changeSeq;
 
     const templateData = this.templateForm.value;
 
@@ -7123,12 +7459,12 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
     // Always autosave as draft to avoid modifying published templates with active instances.
     (templateData as any).is_draft = 1;
-// Update existing template
+
+    // Update existing template
     this.configService.updateTemplate(this.editingTemplate.id, templateData).subscribe({
       next: (response) => {
         this.lastSavedAt = new Date();
-                // Auto-save should also clear unsaved-change prompts.
-        this.savedSeq = Math.max(this.savedSeq, this.changeSeq, startedSeq);
+        this.markSaved(startedSeq);
 
         // Backend may have created a new draft template; switch editor to that draft.
         const newId = (response as any)?.template_id;
@@ -7170,7 +7506,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     this.sampleVideos = this.shiftIndexedDictionaryOnInsert(this.sampleVideos, insertIndex);
   }
 
-  addItemAbove(index: number, event?: Event): void {
+  async addItemAbove(index: number, event?: Event): Promise<void> {
     if (event) {
       event.stopPropagation();
     }
@@ -7182,19 +7518,39 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     const parentId = currentItem.get('parent_id')?.value ?? null;
     const submissionType = currentItem.get('submission_type')?.value || 'photo';
 
-    // Use the same FormGroup shape as regular items (includes submission_type, sample_images, etc.)
-    const newItem = this.createItemFormGroup({
+    const createdItem = await this.createPersistedChecklistItem({
       title: 'New Item',
       level: currentLevel,
       parent_id: parentId,
       submission_type: submissionType,
-      order_index: 0
-    } as any);
+      order_index: currentItem.get('order_index')?.value || 0,
+      description: '',
+      is_required: true,
+      needs_media_upload: false,
+      sample_image_url: null,
+      sample_images: [],
+      sample_videos: [],
+      photo_requirements: {
+        angle: '',
+        distance: '',
+        lighting: '',
+        focus: '',
+        min_photos: 1,
+        max_photos: 5,
+        picture_required: true,
+        max_video_duration_seconds: 30
+      },
+      submission_time_seconds: null,
+      links: []
+    });
+    if (!createdItem) {
+      return;
+    }
 
     // Shift any index-based state before insert so we don't “move” expansion/media to the wrong row
     this.shiftExpandedItemsOnInsert(index);
     this.shiftMediaOnInsert(index);
-    this.items.insert(index, newItem);
+    this.items.insert(index, this.createItemFormGroup(createdItem));
 
     this.recalculateOrderIndices();
 
@@ -7204,7 +7560,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     this.scheduleActiveItemTrackingRefresh();
   }
 
-  addItemBelow(index: number, event?: Event): void {
+  async addItemBelow(index: number, event?: Event): Promise<void> {
     if (event) {
       event.stopPropagation();
     }
@@ -7217,18 +7573,38 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     const submissionType = currentItem.get('submission_type')?.value || 'photo';
     const insertIndex = index + 1;
 
-    // Use the same FormGroup shape as regular items (includes submission_type, sample_images, etc.)
-    const newItem = this.createItemFormGroup({
+    const createdItem = await this.createPersistedChecklistItem({
       title: 'New Item',
       level: currentLevel,
       parent_id: parentId,
       submission_type: submissionType,
-      order_index: 0
-    } as any);
+      order_index: currentItem.get('order_index')?.value || 0,
+      description: '',
+      is_required: true,
+      needs_media_upload: false,
+      sample_image_url: null,
+      sample_images: [],
+      sample_videos: [],
+      photo_requirements: {
+        angle: '',
+        distance: '',
+        lighting: '',
+        focus: '',
+        min_photos: 1,
+        max_photos: 5,
+        picture_required: true,
+        max_video_duration_seconds: 30
+      },
+      submission_time_seconds: null,
+      links: []
+    });
+    if (!createdItem) {
+      return;
+    }
 
     this.shiftExpandedItemsOnInsert(insertIndex);
     this.shiftMediaOnInsert(insertIndex);
-    this.items.insert(insertIndex, newItem);
+    this.items.insert(insertIndex, this.createItemFormGroup(createdItem));
 
     this.recalculateOrderIndices();
 
@@ -7245,12 +7621,22 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     const currentItem = this.items.at(index).value;
     const insertIndex = index + 1;
 
-    // Create duplicate with same properties but new ID using the canonical item FormGroup shape
-    const duplicateItem = this.createItemFormGroup({
+    const createdItem = await this.createPersistedChecklistItem({
       ...(currentItem as any),
       id: null,
       title: `${currentItem.title || 'Untitled'} (Copy)`,
-      order_index: 0
+      order_index: currentItem.order_index || 0
+    } as any);
+    if (!createdItem) {
+      return;
+    }
+
+    // Create duplicate with same properties but new ID using the canonical item FormGroup shape
+    const duplicateItem = this.createItemFormGroup({
+      ...(createdItem as any),
+      id: createdItem.id,
+      title: `${currentItem.title || 'Untitled'} (Copy)`,
+      order_index: currentItem.order_index || 0
     } as any);
 
     this.shiftExpandedItemsOnInsert(insertIndex);

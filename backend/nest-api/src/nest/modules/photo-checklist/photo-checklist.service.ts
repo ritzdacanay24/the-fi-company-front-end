@@ -561,6 +561,279 @@ export class PhotoChecklistService {
     return { success: true, template_id: id, template };
   }
 
+  async createTemplateItem(
+    templateId: number,
+    payload: Record<string, unknown>,
+    callerId?: number,
+  ) {
+    await this.assertIsTemplateDraftOwner(templateId, callerId ?? null);
+
+    const template = await this.repository.getTemplateById(templateId, { includeInactive: true, includeDeleted: true });
+    if (!template) {
+      throw new NotFoundException({
+        code: 'RC_CHECKLIST_TEMPLATE_NOT_FOUND',
+        message: `Checklist template with id ${templateId} not found`,
+      });
+    }
+
+    const result = await this.repository.createTemplateItem(templateId, payload);
+    if (!result.success || result.itemId <= 0) {
+      throw new InternalServerErrorException('Failed to create checklist item');
+    }
+
+    const createdItem = await this.repository.getTemplateItem(templateId, result.itemId);
+
+    return {
+      success: true,
+      template_id: templateId,
+      item_id: result.itemId,
+      item: createdItem || null,
+    };
+  }
+
+  async getTemplateItem(templateId: number, itemId: number) {
+    const item = await this.repository.getTemplateItem(templateId, itemId);
+    if (!item) {
+      return { success: false, item: null };
+    }
+    const signedImages = await this.resolveSignedSampleMediaArray(
+      this.safeParseJson<unknown[]>(item.sample_images as string, []),
+      'inspectionCheckList',
+    );
+    const signedVideos = await this.resolveSignedSampleMediaArray(
+      this.safeParseJson<unknown[]>(item.sample_videos as string, []),
+      'inspectionCheckList',
+    );
+
+    // Sign sample_image_url regardless — it's the authoritative primary URL
+    // and is used as fallback for legacy entries that have no url in the array.
+    let sampleImageUrl = item.sample_image_url as string | null;
+    if (sampleImageUrl) {
+      sampleImageUrl = await this.resolveChecklistMediaReadUrl(sampleImageUrl, {}, 'inspectionCheckList');
+    }
+
+    // Patch legacy entries: sample_images stored before the url field was persisted
+    // have metadata (is_primary, image_type, etc.) but no url. Populate from
+    // sample_image_url (primary) or leave the url empty (reference — cannot recover).
+    const patchedImages = signedImages.map((img) => {
+      if (img['url']) return img; // already has a URL — nothing to patch
+      if (img['is_primary'] && sampleImageUrl) {
+        return { ...img, url: sampleImageUrl };
+      }
+      return img; // reference without URL — frontend will skip it in the carousel
+    });
+
+    // Remove entries that still have no URL so the frontend doesn't show broken slots
+    const usableImages = patchedImages.filter((img) => !!img['url']);
+
+    // If sample_images is entirely empty, synthesise a minimal primary entry from sample_image_url
+    const finalImages = usableImages.length === 0 && sampleImageUrl
+      ? [{ url: sampleImageUrl, type: 'photo', image_type: 'sample', is_primary: true, order_index: 0, label: 'Sample Image', description: '' }]
+      : usableImages;
+
+    return {
+      success: true,
+      item: { ...item, sample_image_url: sampleImageUrl, sample_images: finalImages, sample_videos: signedVideos },
+    };
+  }
+
+  async updateTemplateItem(
+    templateId: number,
+    itemId: number,
+    payload: Record<string, unknown>,
+    callerId?: number,
+  ) {
+    await this.assertIsTemplateDraftOwner(templateId, callerId ?? null);
+    const result = await this.repository.updateTemplateItem(templateId, itemId, payload);
+    return { success: result.success, template_id: templateId, item_id: itemId };
+  }
+
+  async reorderTemplateItems(
+    templateId: number,
+    items: { id: number; order_index: number; level: number; parent_id: number | null }[],
+    callerId?: number,
+  ) {
+    await this.assertIsTemplateDraftOwner(templateId, callerId ?? null);
+    const result = await this.repository.reorderTemplateItems(templateId, items);
+    return { success: result.success, template_id: templateId };
+  }
+
+  async uploadTemplateItemMedia(
+    templateId: number,
+    itemId: number,
+    file?: { originalname?: string; buffer?: Buffer; mimetype?: string },
+    payload?: {
+      media_kind?: 'image' | 'video';
+      image_type?: 'sample' | 'reference' | 'defect_example' | 'diagram';
+      is_primary?: boolean;
+      label?: string;
+      description?: string;
+    },
+  ) {
+    if (!file?.buffer || !file?.originalname) {
+      throw new BadRequestException('File is required');
+    }
+
+    const template = await this.repository.getTemplateById(templateId, { includeInactive: true, includeDeleted: true });
+    if (!template) {
+      throw new NotFoundException({
+        code: 'RC_CHECKLIST_TEMPLATE_NOT_FOUND',
+        message: `Checklist template with id ${templateId} not found`,
+      });
+    }
+
+    const items = await this.repository.getTemplateItems(templateId);
+    const item = items.find((row) => Number(row.id || 0) === Number(itemId || 0));
+    if (!item) {
+      throw new NotFoundException({
+        code: 'RC_CHECKLIST_ITEM_NOT_FOUND',
+        message: `Checklist item with id ${itemId} not found in template ${templateId}`,
+      });
+    }
+
+    const mediaKind = payload?.media_kind === 'video' ? 'video' : 'image';
+    const isPrimary = payload?.is_primary !== false;
+    const imageType = payload?.image_type || (isPrimary ? 'sample' : 'reference');
+    const label = String(payload?.label || '').trim();
+    const description = String(payload?.description || '').trim();
+
+    const stored = await this.fileStorageService.storeUploadedFileInBucket(file, {
+      keyPrefix: `checklist/manage/templates/${templateId}/items/${itemId}`,
+    });
+
+    const previewUrl = await this.fileStorageService.resolveBucketObjectUrl(stored.bucket, stored.key);
+    const existingImages = this.safeParseJson<any[]>(item.sample_images, []);
+    const existingVideos = this.safeParseJson<any[]>(item.sample_videos, []);
+
+    // Always store raw URLs (no signed query params) in the DB
+    const rawStoredUrl = this.stripUrlQueryParams(stored.url)!;
+    let sampleImageUrl: string | null = this.stripUrlQueryParams(
+      typeof item.sample_image_url === 'string' ? item.sample_image_url : null,
+    );
+    let sampleVideoUrl: string | null = this.stripUrlQueryParams(
+      typeof item.sample_video_url === 'string' ? item.sample_video_url : null,
+    );
+
+    // Normalize existing entries: strip signed URLs, frontend-only fields (id, status, stored_url)
+    const cleanEntry = (u: any) => {
+      if (!u || typeof u !== 'object') return u;
+      const { id: _id, status: _status, stored_url: _storedUrl, ...rest } = u;
+      if (typeof rest.url === 'string') rest.url = this.stripUrlQueryParams(rest.url);
+      return rest;
+    };
+    const existingImagesClean = existingImages.map(cleanEntry);
+    const existingVideosClean = existingVideos.map(cleanEntry);
+
+    let updatedImages = existingImagesClean;
+    let updatedVideos = existingVideosClean;
+
+    if (mediaKind === 'video') {
+      const nextVideo = {
+        url: rawStoredUrl,
+        label: label || (isPrimary ? 'Sample Video' : `Reference Video ${existingVideosClean.length + 1}`),
+        description,
+        type: 'video',
+        is_primary: isPrimary,
+        order_index: isPrimary ? 0 : existingVideosClean.length + 1,
+        duration_seconds: null,
+        storage_location: 's3' as const,
+      };
+
+      if (isPrimary) {
+        updatedVideos = [nextVideo, ...existingVideosClean.filter((video) => !video?.is_primary)];
+        sampleVideoUrl = rawStoredUrl;
+      } else {
+        updatedVideos = [...existingVideosClean, nextVideo];
+        sampleVideoUrl = sampleVideoUrl || existingVideosClean.find((video) => !!video?.is_primary)?.url || rawStoredUrl;
+      }
+    } else {
+      const nextImage = {
+        url: rawStoredUrl,
+        label: label || (isPrimary ? 'Primary Sample Image' : `Reference ${existingImagesClean.length + 1}`),
+        description,
+        type: 'photo',
+        image_type: imageType,
+        is_primary: isPrimary,
+        order_index: isPrimary ? 0 : existingImagesClean.filter((image) => !image?.is_primary).length + 1,
+        storage_location: 's3' as const,
+      };
+
+      if (isPrimary) {
+        updatedImages = [nextImage, ...existingImagesClean.filter((image) => !(image?.is_primary && image?.image_type === 'sample'))];
+        sampleImageUrl = rawStoredUrl;
+      } else {
+        updatedImages = [...existingImagesClean, nextImage];
+        sampleImageUrl = sampleImageUrl || existingImagesClean.find((image) => !!image?.is_primary)?.url || rawStoredUrl;
+      }
+    }
+
+    try {
+      const updateResult = await this.repository.updateTemplateItemMedia(templateId, itemId, {
+        sample_image_url: sampleImageUrl,
+        sample_images: updatedImages,
+        sample_video_url: sampleVideoUrl,
+        sample_videos: updatedVideos,
+      });
+
+      if (!updateResult.success) {
+        throw new InternalServerErrorException('Failed to update checklist item media');
+      }
+    } catch (error) {
+      await this.fileStorageService.deleteStoredFileInBucket(stored.key, stored.bucket);
+      throw error;
+    }
+
+    return {
+      success: true,
+      template_id: templateId,
+      item_id: itemId,
+      bucket: stored.bucket,
+      key: stored.key,
+      url: stored.url,
+      preview_url: previewUrl,
+      media_kind: mediaKind,
+      sample_image_url: sampleImageUrl,
+      sample_images: updatedImages,
+      sample_video_url: sampleVideoUrl,
+      sample_videos: updatedVideos,
+    };
+  }
+
+  async deleteTemplateItem(templateId: number, itemId: number) {
+    const template = await this.repository.getTemplateById(templateId, { includeInactive: true, includeDeleted: true });
+    if (!template) {
+      throw new NotFoundException({
+        code: 'RC_CHECKLIST_TEMPLATE_NOT_FOUND',
+        message: `Checklist template with id ${templateId} not found`,
+      });
+    }
+
+    const result = await this.repository.deleteTemplateItemSubtree(templateId, itemId);
+    if (!result.success) {
+      if (result.blockedItemIds?.length) {
+        return {
+          success: false,
+          code: 'UNSAFE_ITEM_DELETE_BLOCKED',
+          message: 'Delete blocked to protect existing checklist progress.',
+          blocked_item_ids: result.blockedItemIds,
+          instance_count: Number(result.instanceCount || 0),
+        };
+      }
+
+      throw new NotFoundException({
+        code: 'RC_CHECKLIST_ITEM_NOT_FOUND',
+        message: `Checklist item with id ${itemId} not found in template ${templateId}`,
+      });
+    }
+
+    return {
+      success: true,
+      template_id: templateId,
+      item_id: itemId,
+      deleted_item_ids: result.deletedItemIds,
+    };
+  }
+
   async deleteTemplate(id: number) {
     const result = await this.repository.deleteTemplate(id);
     if (result.activeInstances > 0) {
@@ -1551,12 +1824,19 @@ export class PhotoChecklistService {
         continue;
       }
 
+      const stripMediaUrls = (entries: unknown[]): unknown[] =>
+        entries.map((e) => {
+          if (!e || typeof e !== 'object') return e;
+          const { url: _url, stored_url: _stored, status: _status, ...rest } = e as Record<string, unknown>;
+          return rest;
+        });
+
       normalized.push({
         ...(item as Record<string, unknown>),
         id,
         parent_id: item.parent_id ?? null,
-        sample_images: this.safeParseJson(item.sample_images, []),
-        sample_videos: this.safeParseJson(item.sample_videos, []),
+        sample_images: stripMediaUrls(this.safeParseJson<unknown[]>(item.sample_images, [])),
+        sample_videos: stripMediaUrls(this.safeParseJson<unknown[]>(item.sample_videos, [])),
         photo_requirements: this.safeParseJson(item.photo_requirements, {}),
         video_requirements: this.safeParseJson(item.video_requirements, {}),
         links: this.safeParseJson(item.links, []),
@@ -1583,6 +1863,19 @@ export class PhotoChecklistService {
     });
 
     return roots;
+  }
+
+  /** Strip query-string params from a URL so only the base path is stored in the DB (never signed URLs). */
+  private stripUrlQueryParams(url: string | null | undefined): string | null {
+    if (!url) return null;
+    try {
+      const parsed = new URL(url);
+      parsed.search = '';
+      return parsed.toString();
+    } catch {
+      // Not a full URL — return as-is (e.g. relative paths)
+      return url.split('?')[0] || null;
+    }
   }
 
   private safeParseJson<T>(value: unknown, fallback: T): T {
@@ -1723,26 +2016,36 @@ export class PhotoChecklistService {
     subFolder = 'inspectionCheckList',
   ): Promise<string> {
     const storageLocation = String(metadata?.storage_location || metadata?.storage_type || '').trim().toLowerCase();
-    const storage = metadata?.storage as Record<string, unknown> | undefined;
-    const bucket = String(storage?.bucket || '').trim();
-    const key = String(storage?.key || '').trim();
 
     if (storageLocation === 'legacy') {
       return this.normalizeChecklistMediaUrl(rawUrl, { subFolder });
     }
 
-    if (bucket && key) {
+    // Parse bucket+key from any S3 URL format and sign it
+    const parsed = this.parseS3Url(rawUrl);
+    if (parsed) {
       try {
-        const signedUrl = await this.fileStorageService.resolveBucketObjectUrl(bucket, key);
-        if (signedUrl) {
-          return this.normalizeChecklistMediaUrl(signedUrl, { subFolder });
-        }
+        const signedUrl = await this.fileStorageService.resolveBucketObjectUrl(parsed.bucket, parsed.key);
+        if (signedUrl) return signedUrl;
       } catch {
-        // Fall back to stored URL if signed URL generation fails.
+        // fall through to raw URL
       }
     }
 
     return this.normalizeChecklistMediaUrl(rawUrl, { subFolder });
+  }
+
+  private parseS3Url(url: string): { bucket: string; key: string } | null {
+    if (!url) return null;
+    // Strip query string first
+    const base = url.split('?')[0];
+    // Virtual-hosted: https://bucket.s3.region.amazonaws.com/key
+    const virtual = base.match(/^https?:\/\/([^.]+)\.s3\.[^/]+\.amazonaws\.com\/(.+)$/);
+    if (virtual) return { bucket: virtual[1], key: decodeURIComponent(virtual[2]) };
+    // Path-style: https://s3.region.amazonaws.com/bucket/key
+    const path = base.match(/^https?:\/\/s3\.[^/]+\.amazonaws\.com\/([^/]+)\/(.+)$/);
+    if (path) return { bucket: path[1], key: decodeURIComponent(path[2]) };
+    return null;
   }
 
   private async resolveSignedSampleMediaArray(
