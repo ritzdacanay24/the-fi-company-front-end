@@ -317,8 +317,6 @@ export class PhotoChecklistConfigService {
     return this.http.put<{success: boolean, template_id?: number, template?: ChecklistTemplate}>(
       `${this.nestPhotoChecklistBaseUrl}/templates/${id}`,
       template
-    ).pipe(
-      tap(() => this.getTemplates().subscribe()) // Refresh templates list
     );
   }
 

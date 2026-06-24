@@ -6866,8 +6866,12 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     const templateId = Number(this.editingTemplate?.id || 0);
     if (templateId <= 0) return;
 
+    // Suppress valueChanges during recalculation to avoid triggering performAutoSave
+    // which would race against the reorder PATCH and send a full item replace.
+    this.suppressChangeTracking = true;
     this.recalculateOrderIndices();
     this.rebuildParentReferencesFromLevels();
+    this.suppressChangeTracking = false;
 
     const items = this.items.controls
       .map((ctrl) => {
@@ -6915,6 +6919,11 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
     // Remove quality_document_id as it's not part of the database schema
     delete templateData.quality_document_id;
+
+    // Strip items — they are saved independently via autoSaveReorder / per-item endpoints.
+    // Sending items here would cause replaceTemplateItemsInTransaction to run on every
+    // keystroke, risking media wipes and race conditions with the reorder PATCH.
+    delete templateData.items;
 
     // Always autosave as draft to avoid modifying published templates with active instances.
     (templateData as any).is_draft = 1;
