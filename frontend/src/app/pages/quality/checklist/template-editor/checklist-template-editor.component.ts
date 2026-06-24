@@ -23,6 +23,7 @@ import { QualityDocumentSelectorComponent, QualityDocumentSelection } from '@app
 import { ChecklistNavigationComponent } from '@app/shared/components/checklist-navigation/checklist-navigation.component';
 import { ChecklistNavItem } from '@app/shared/models/checklist-navigation.model';
 import { PdfParserService } from './services/pdf-parser.service';
+import { ChecklistChangeDetectionService } from './services/checklist-change-detection.service';
 import { WordParserService } from './services/word-parser.service';
 import { RevisionDescriptionDialogComponent } from './components/revision-description-dialog.component';
 import { FileViewerModalComponent } from '@app/shared/components/file-viewer-modal/file-viewer-modal.component';
@@ -76,10 +77,6 @@ interface ReorderUndoState {
   sampleVideos: { [itemIndex: number]: SampleVideo | SampleVideo[] | null };
   expandedItems: Set<number>;
   activeNavItemIndex: number;
-}
-
-interface ItemEditSnapshot {
-  itemValue: any;
 }
 
 interface DraftSaveOptions {
@@ -225,7 +222,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   templateUnsavedChanges = false;
   private changeTrackingReady = false;
   private itemBaselineSignatures = new WeakMap<FormGroup, string>();
-  private itemBaselineSnapshots = new WeakMap<FormGroup, ItemEditSnapshot>();
+  private itemBaselineSnapshots = new WeakMap<FormGroup, any>();
   private pendingMarkSavedOnStableSub: Subscription | null = null;
   // Media counts from the list response — used for badge display before an item is fetched.
   private itemMediaCounts: Record<number, number> = {};
@@ -276,7 +273,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     private wordParser: WordParserService,
     private sanitizer: DomSanitizer,
     private s3Media: S3MediaService,
-
+    private changeDetection: ChecklistChangeDetectionService,
   ) {
     this.ensureQuillFileLinksEnabled();
     this.templateForm = this.createTemplateForm();
@@ -996,7 +993,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     return JSON.parse(JSON.stringify(value)) as T;
   }
 
-  private captureItemSnapshot(control: FormGroup): ItemEditSnapshot | null {
+  private captureItemSnapshot(control: FormGroup): any | null {
     const itemIndex = this.items.controls.indexOf(control);
     if (itemIndex < 0) {
       return null;
@@ -1012,10 +1009,10 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     // Media (sampleImages / sampleVideos) is managed entirely through upload/delete
     // endpoints and must NOT participate in dirty detection. Excluding it here means
     // a fetch returning fresh signed URLs can never cause a false-dirty result.
-    return { itemValue: raw };
+    return raw;
   }
 
-  private buildItemSnapshotSignature(snapshot: ItemEditSnapshot | null): string {
+  private buildItemSnapshotSignature(snapshot: any | null): string {
     if (!snapshot) {
       return 'null';
     }
@@ -1083,7 +1080,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       return false;
     }
 
-    const baselineValue = this.clonePlainData(baseline.itemValue || {});
+    const baselineValue = this.clonePlainData(baseline || {});
     const baselineLinks = Array.isArray(baselineValue.links) ? baselineValue.links : [];
 
     this.suppressChangeTracking = true;
@@ -1474,7 +1471,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     // use them directly. Only run flattenNestedItems for nested structures (e.g. imports).
     const rawItems: any[] = template.items || [];
     const isNested = rawItems.some((item: any) => Array.isArray(item?.children));
-    const flattenedItems = isNested ? this.flattenNestedItems(rawItems) : rawItems;
+    const flattenedItems = isNested ? this.changeDetection.flattenNestedItems(rawItems) : rawItems;
 
     // Add template items and their sample images
     if (flattenedItems.length > 0) {
@@ -1508,41 +1505,6 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     this.rebuildEditorNavItems();
     this.cdr.detectChanges();
     this.scheduleActiveItemTrackingRefresh();
-  }
-
-  /**
-   * Recursively flatten nested items structure to flat array
-   * Converts children arrays to flat list with level/parent_id preserved
-   * @param items Nested items array (may contain children arrays)
-   * @param level Current nesting level (0 for root)
-   * @param parentId Parent item's database ID
-   * @returns Flat array of items in display order
-   */
-  private flattenNestedItems(items: any[], level: number = 0, parentId: number | null = null): any[] {
-    const result: any[] = [];
-
-    items.forEach(item => {
-      // Add current item with level/parent_id metadata
-      const flatItem = {
-        ...item,
-        level: item?.level ?? level,
-        parent_id: item?.parent_id ?? parentId
-      };
-
-      // Remove children array from the item itself (we'll flatten it)
-      const children = flatItem.children;
-      delete flatItem.children;
-
-      result.push(flatItem);
-
-      // Recursively flatten children
-      if (children && Array.isArray(children) && children.length > 0) {
-        const flattenedChildren = this.flattenNestedItems(children, level + 1, item.id);
-        result.push(...flattenedChildren);
-      }
-    });
-
-    return result;
   }
 
   private getItemSubmissionType(item: any): string {
@@ -2075,41 +2037,6 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
    */
   canDemote(index: number): boolean {
     return this.findPreviousSortableSiblingIndex(index) !== null;
-  }
-
-  /**
-   * Recursively promote all descendants by one level
-   */
-  private promoteDescendants(parentIndex: number, parentOldLevel: number): void {
-    const parentOrderIndex = this.items.at(parentIndex).get('order_index')?.value;
-
-    for (let i = parentIndex + 1; i < this.items.length; i++) {
-      const item = this.items.at(i);
-      const itemLevel = item.get('level')?.value || 0;
-      const itemParentId = item.get('parent_id')?.value;
-
-      // Stop when we hit item at parent's old level or lower
-      if (itemLevel <= parentOldLevel) break;
-
-      // Promote this descendant
-      item.patchValue({ level: itemLevel - 1 });
-    }
-  }
-
-  /**
-   * Recursively demote all descendants
-   */
-  private demoteDescendants(parentIndex: number, parentOldLevel: number, levelDelta: number): void {
-    for (let i = parentIndex + 1; i < this.items.length; i++) {
-      const item = this.items.at(i);
-      const itemLevel = item.get('level')?.value || 0;
-
-      // Stop when we hit item at parent's old level or lower
-      if (itemLevel <= parentOldLevel) break;
-
-      // Demote this descendant
-      item.patchValue({ level: itemLevel + levelDelta });
-    }
   }
 
   /**
@@ -2888,25 +2815,6 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       const parentId = parentIndex >= 0 ? (this.items.at(parentIndex).get('id')?.value ?? null) : null;
       item.get('parent_id')?.setValue(parentId);
     }
-  }
-
-  /**
-   * Promote a child item to become a parent item
-   */
-  promoteToParent(index: number): void {
-    const item = this.items.at(index);
-    const currentLevel = item.get('level')?.value;
-
-    if (currentLevel !== 1) {
-      return; // Only promote child items
-    }
-
-    // Change to parent
-    item.get('level')?.setValue(0);
-    item.get('parent_id')?.setValue(null);
-
-    // Recalculate all order indices
-    this.recalculateOrderIndices();
   }
 
   onQualityDocumentSelected(document: QualityDocumentSelection | null): void {
@@ -5826,7 +5734,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     const templateData = this.buildTemplatePayload();
 
     if (this.editingTemplate && !this.editingTemplate.is_draft) {
-      const changes = this.detectTemplateChanges(this.editingTemplate, templateData);
+      const changes = this.changeDetection.detectTemplateChanges(this.editingTemplate, templateData);
 
       if (!changes?.has_changes) {
         this.showInfoDialog('No changes to save.');
@@ -5921,7 +5829,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       // Pass data to the modal
       modalRef.componentInstance.templateName = this.editingTemplate.name;
       modalRef.componentInstance.currentVersion = this.editingTemplate.version || '1.0';
-      modalRef.componentInstance.nextVersion = this.getNextVersion(this.editingTemplate.version || '1.0');
+      modalRef.componentInstance.nextVersion = this.changeDetection.getNextVersion(this.editingTemplate.version || '1.0');
       // Auto-fill disabled for now
 
       modalRef.result.then(
@@ -6005,7 +5913,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       } catch (error) {
         console.error('Error loading templates for version calculation:', error);
         // Fall back to current version + 1
-        (templateData as any).version = this.getNextVersion(this.editingTemplate!.version || '1.0');
+        (templateData as any).version = this.changeDetection.getNextVersion(this.editingTemplate!.version || '1.0');
       }
 
       // CREATE a new draft row — never mutate the published template.
@@ -6199,14 +6107,6 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       ...((control as FormGroup).getRawValue())
     }));
 
-    // DEBUG: Log sample_images from form before save
-    //
-        templateData.items.forEach((item: any, index: number) => {
-      if (item.sample_images && Array.isArray(item.sample_images)) {
-              } else {
-              }
-    });
-
     // Ensure is_active is a proper boolean (convert from checkbox value if needed)
     if (typeof templateData.is_active !== 'boolean') {
       templateData.is_active = !!templateData.is_active;
@@ -6284,421 +6184,6 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     return templateData;
   }
 
-  private detectTemplateChanges(originalTemplate: any, newData: any): any {
-    const changes: any = {
-      has_changes: false,
-      field_changes: [],
-      items_added: [],
-      items_removed: [],
-      items_modified: []
-    };
-
-    // Compare metadata fields
-    const fieldsToCheck = [
-      { key: 'name', label: 'Template Name' },
-      { key: 'description', label: 'Description' },
-      { key: 'part_number', label: 'Part Number' },
-      { key: 'product_type', label: 'Product Type' },
-      { key: 'category', label: 'Category' },
-      { key: 'is_active', label: 'Active Status' },
-      { key: 'max_upload_size_mb', label: 'Max Upload Size' },
-      { key: 'disable_max_upload_limit', label: 'Disable Upload Limit' }
-    ];
-
-    for (const field of fieldsToCheck) {
-      const oldValue = originalTemplate[field.key];
-      const newValue = newData[field.key];
-
-      const normalizedOld = this.normalizeTemplateFieldValue(field.key, oldValue);
-      const normalizedNew = this.normalizeTemplateFieldValue(field.key, newValue);
-
-      if (normalizedOld !== normalizedNew) {
-        changes.has_changes = true;
-        changes.field_changes.push({
-          field: field.label,
-          old_value: normalizedOld,
-          new_value: normalizedNew
-        });
-      }
-    }
-
-    // Compare items using a SIMPLE approach:
-    // 1. Items from DB have 'id' - use that as the key
-    // 2. Match old and new by ID
-    // 3. If old item's ID not found in new items = REMOVED
-    // 4. Compare only items with matching IDs for changes
-    const oldItemsRaw = originalTemplate.items || [];
-    const oldItems = Array.isArray(oldItemsRaw) && oldItemsRaw.some((item: any) => Array.isArray(item?.children) && item.children.length > 0)
-      ? this.flattenNestedItems(oldItemsRaw)
-      : oldItemsRaw;
-    const newItems = newData.items || [];
-
-    // Build a map of NEW items by their ID (from form's hidden id field)
-    const newItemsById = new Map<number, any>();
-    const newItemsWithoutId: any[] = [];
-    newItems.forEach((item: any) => {
-      if (item.id) {
-        newItemsById.set(item.id, item);
-      } else {
-        newItemsWithoutId.push(item);
-      }
-    });
-
-    // Check each OLD item
-    oldItems.forEach((oldItem: any) => {
-      if (!oldItem.id) {
-        return; // Skip items without IDs
-      }
-
-      const newItem = newItemsById.get(oldItem.id);
-
-      if (!newItem) {
-        // Old item not found in new items = DELETED
-        changes.has_changes = true;
-        changes.items_removed.push({
-          title: oldItem.title,
-          order_index: oldItem.order_index
-        });
-      } else {
-        // Item exists in both - check for modifications
-        const itemChanges = this.compareItems(oldItem, newItem);
-        if (itemChanges.length > 0) {
-          changes.has_changes = true;
-          changes.items_modified.push({
-            title: newItem.title,
-            order_index: newItem.order_index,
-            changes: itemChanges
-          });
-        }
-
-        // Remove from map so we can detect additions later
-        newItemsById.delete(oldItem.id);
-      }
-    });
-
-    // Any items left in newItemsById are NEW
-    const addedItems: any[] = [];
-    newItemsById.forEach((newItem) => addedItems.push(newItem));
-    if (newItemsWithoutId.length > 0) {
-      addedItems.push(...newItemsWithoutId);
-    }
-
-    if (addedItems.length > 0) {
-      changes.has_changes = true;
-      addedItems.forEach((newItem) => {
-        changes.items_added.push({
-          title: newItem.title,
-          order_index: newItem.order_index
-        });
-      });
-    }
-
-    return changes;
-  }
-
-  private generateItemKey(item: any): string {
-    // Use title + order_index as unique key
-    return `${item.title}_${item.order_index}`;
-  }
-
-  private buildRevisionSummary(changes: any): string {
-    if (!changes?.has_changes) {
-      return '';
-    }
-
-    const lines: string[] = [];
-
-    if (changes.field_changes?.length) {
-      const fields = changes.field_changes.map((c: any) => c.field).join(', ');
-      lines.push(`Template fields updated: ${fields}`);
-    }
-
-    if (changes.items_added?.length) {
-      const titles = changes.items_added.map((i: any) => i.title || 'Untitled').join(', ');
-      lines.push(`Items added: ${titles}`);
-    }
-
-    if (changes.items_removed?.length) {
-      const titles = changes.items_removed.map((i: any) => i.title || 'Untitled').join(', ');
-      lines.push(`Items removed: ${titles}`);
-    }
-
-    if (changes.items_modified?.length) {
-      const combined = new Map<string, Set<string>>();
-      changes.items_modified.forEach((item: any) => {
-        const key = `${item.title || 'Untitled'}|${item.order_index ?? ''}`;
-        const fields = (item.changes || []).map((c: any) => c.field).filter(Boolean);
-        if (!combined.has(key)) {
-          combined.set(key, new Set<string>());
-        }
-        const set = combined.get(key)!;
-        fields.forEach((f: string) => set.add(f));
-      });
-
-      combined.forEach((fields, key) => {
-        const [title, orderIndex] = key.split('|');
-        const fieldList = Array.from(fields).join(', ');
-        if (fieldList) {
-          const suffix = orderIndex ? ` (#${orderIndex})` : '';
-          lines.push(`Item "${title}"${suffix}: ${fieldList}`);
-        }
-      });
-    }
-
-    return lines.join('\n');
-  }
-
-  private compareItems(oldItem: any, newItem: any): any[] {
-    const itemChanges = [];
-    // Compare fields that represent content or order changes
-    const fieldsToCheck = [
-      { key: 'title', label: 'Title' },
-      { key: 'description', label: 'Description' },
-      { key: 'is_required', label: 'Active' },
-      { key: 'sample_image_url', label: 'Sample Image' },
-      { key: 'sample_images', label: 'Sample & Reference Images' }, // Track all images (primary + references)
-      { key: 'sample_videos', label: 'Sample Videos' },
-      { key: 'links', label: 'Links' },
-      { key: 'photo_requirements', label: 'Photo Requirements' },
-      { key: 'submission_type', label: 'Submission Type' },
-      { key: 'submission_time_seconds', label: 'Submission Time Limit' },
-      { key: 'order_index', label: 'Position' },        // Track reordering
-      { key: 'level', label: 'Hierarchy Level' },       // Track parent/child changes
-      { key: 'parent_id', label: 'Parent Item' }        // Track hierarchy changes
-    ];
-
-    for (const field of fieldsToCheck) {
-      const oldValue = oldItem[field.key];
-      const newValue = newItem[field.key];
-
-      // Skip if both are empty
-      if (this.isEmptyValue(oldValue) && this.isEmptyValue(newValue)) {
-        continue;
-      }
-
-      // Special handling for sample_images array - normalize before comparing
-      if (field.key === 'sample_images') {
-        const normalizedOld = this.normalizeSampleImages(oldValue);
-        const normalizedNew = this.normalizeSampleImages(newValue);
-
-        const oldJson = this.sortedStringify(normalizedOld);
-        const newJson = this.sortedStringify(normalizedNew);
-
-        if (oldJson !== newJson) {
-          itemChanges.push({
-            field: field.label,
-            old_value: normalizedOld,
-            new_value: normalizedNew
-          });
-        }
-      } else if (field.key === 'sample_videos') {
-        const normalizedOld = this.normalizeSampleVideos(oldValue);
-        const normalizedNew = this.normalizeSampleVideos(newValue);
-
-        const oldJson = this.sortedStringify(normalizedOld);
-        const newJson = this.sortedStringify(normalizedNew);
-
-        if (oldJson !== newJson) {
-          itemChanges.push({
-            field: field.label,
-            old_value: normalizedOld,
-            new_value: normalizedNew
-          });
-        }
-      } else if (field.key === 'links') {
-        const normalizedOld = this.normalizeLinks(oldValue);
-        const normalizedNew = this.normalizeLinks(newValue);
-
-        const oldJson = this.sortedStringify(normalizedOld);
-        const newJson = this.sortedStringify(normalizedNew);
-
-        if (oldJson !== newJson) {
-          itemChanges.push({
-            field: field.label,
-            old_value: normalizedOld,
-            new_value: normalizedNew
-          });
-        }
-      } else if (field.key === 'photo_requirements') {
-        const normalizedOld = this.normalizePhotoRequirements(oldValue);
-        const normalizedNew = this.normalizePhotoRequirements(newValue);
-
-        const oldJson = this.sortedStringify(normalizedOld);
-        const newJson = this.sortedStringify(normalizedNew);
-
-        if (oldJson !== newJson) {
-          itemChanges.push({
-            field: field.label,
-            old_value: normalizedOld,
-            new_value: normalizedNew
-          });
-        }
-      }
-      // For objects (like photo_requirements), use normalized comparison
-      else if (typeof oldValue === 'object' && oldValue !== null && typeof newValue === 'object' && newValue !== null) {
-        const oldJson = this.sortedStringify(this.normalizeValue(oldValue));
-        const newJson = this.sortedStringify(this.normalizeValue(newValue));
-
-        if (oldJson !== newJson) {
-          itemChanges.push({
-            field: field.label,
-            old_value: oldValue,
-            new_value: newValue
-          });
-        }
-      }
-      // For primitives (strings, numbers, booleans)
-      else if (typeof oldValue === 'number' || typeof newValue === 'number') {
-        const oldNum = oldValue === null || oldValue === undefined ? null : Number(oldValue);
-        const newNum = newValue === null || newValue === undefined ? null : Number(newValue);
-        if (oldNum !== newNum) {
-          itemChanges.push({
-            field: field.label,
-            old_value: oldValue,
-            new_value: newValue
-          });
-        }
-      }
-      else if (oldValue !== newValue) {
-        itemChanges.push({
-          field: field.label,
-          old_value: oldValue,
-          new_value: newValue
-        });
-      }
-    }
-
-    return itemChanges;
-  }
-
-  /**
-   * Normalize sample images for comparison by keeping only relevant fields
-   * Removes UI-specific fields like 'id', 'status' that don't affect actual data
-   */
-  private normalizeSampleImages(images: any): any {
-    if (!images || !Array.isArray(images)) {
-      return null;
-    }
-
-    // Keep only the essential fields for comparison
-    return images
-      .map(img => ({
-      url: img.url,
-      label: img.label || '',
-      description: img.description || '',
-      type: img.type || 'photo',
-      image_type: img.image_type || 'sample',
-      is_primary: !!img.is_primary,
-      order_index: img.order_index || 0
-      }))
-      .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
-  }
-
-  private normalizeSampleVideos(videos: any): any {
-    if (!videos || !Array.isArray(videos)) {
-      return null;
-    }
-
-    return videos
-      .map(vid => ({
-        url: vid.url,
-        label: vid.label || '',
-        description: vid.description || '',
-        type: vid.type || 'video',
-        is_primary: !!vid.is_primary,
-        order_index: vid.order_index || 0,
-        duration_seconds: vid.duration_seconds ?? null
-      }))
-      .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
-  }
-
-  private normalizeLinks(links: any): any {
-    if (!links || !Array.isArray(links)) {
-      return null;
-    }
-
-    return links
-      .map(link => ({
-        title: (link.title || '').trim(),
-        url: (link.url || '').trim(),
-        description: (link.description || '').trim()
-      }))
-      .sort((a, b) => {
-        const aKey = `${a.title}|${a.url}|${a.description}`.toLowerCase();
-        const bKey = `${b.title}|${b.url}|${b.description}`.toLowerCase();
-        return aKey.localeCompare(bKey);
-      });
-  }
-
-  private normalizeTemplateFieldValue(key: string, value: any): any {
-    if (key === 'is_active' || key === 'disable_max_upload_limit') {
-      return !!value;
-    }
-
-    if (key === 'max_upload_size_mb') {
-      if (value === null || value === undefined || value === '') return null;
-      const num = Number(value);
-      return Number.isNaN(num) ? null : num;
-    }
-
-    if (typeof value === 'string') {
-      const trimmed = value.trim();
-      return trimmed === '' ? null : trimmed;
-    }
-
-    return value === undefined ? null : value;
-  }
-
-  private normalizePhotoRequirements(req: any): any {
-    if (!req || typeof req !== 'object') {
-      return {
-        angle: '',
-        distance: '',
-        lighting: '',
-        focus: '',
-        min_photos: null,
-        max_photos: null,
-        picture_required: true,
-        max_video_duration_seconds: 30
-      };
-    }
-
-    const normalized = {
-      angle: (req.angle || '').trim(),
-      distance: (req.distance || '').trim(),
-      lighting: (req.lighting || '').trim(),
-      focus: (req.focus || '').trim(),
-      min_photos: req.min_photos === null || req.min_photos === undefined || req.min_photos === '' ? null : Number(req.min_photos),
-      max_photos: req.max_photos === null || req.max_photos === undefined || req.max_photos === '' ? null : Number(req.max_photos),
-      picture_required: req.picture_required === undefined ? true : !!req.picture_required,
-      max_video_duration_seconds: req.max_video_duration_seconds === undefined || req.max_video_duration_seconds === null || req.max_video_duration_seconds === ''
-        ? 30
-        : Number(req.max_video_duration_seconds)
-    };
-
-    if (Number.isNaN(normalized.min_photos as any)) normalized.min_photos = null;
-    if (Number.isNaN(normalized.max_photos as any)) normalized.max_photos = null;
-    if (Number.isNaN(normalized.max_video_duration_seconds as any)) normalized.max_video_duration_seconds = 30;
-
-    return normalized;
-  }
-
-  private isEmptyValue(value: any): boolean {
-    if (value === null || value === undefined) return true;
-    if (typeof value === 'object') {
-      if (Array.isArray(value)) return value.length === 0;
-      return Object.keys(value).length === 0;
-    }
-    if (typeof value === 'string') return value.trim() === '';
-    return false;
-  }
-
-  private normalizeValue(value: any): any {
-    if (value === null || value === undefined) return null;
-    if (typeof value === 'object' && Object.keys(value).length === 0) return null;
-    return value;
-  }
-
   private sortedStringify(obj: any): string {
     if (obj === null || obj === undefined) return 'null';
     if (typeof obj !== 'object') return JSON.stringify(obj);
@@ -6742,7 +6227,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     if (createVersion && this.editingTemplate) {
       // Increment the version for the new template
       const currentVersion = this.editingTemplate.version || '1.0';
-      const newVersion = versionOverride?.trim() || this.getNextVersion(currentVersion);
+      const newVersion = versionOverride?.trim() || this.changeDetection.getNextVersion(currentVersion);
       templateData.version = newVersion;
 
       // IMPORTANT: Pass the source template ID to maintain parent/group relationships
@@ -7030,7 +6515,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       document_id: documentId,
       template_id: templateId,
       revision_description: revisionDescription,
-      changes_summary: changes ? this.generateChangesSummary(changes) : revisionDescription,
+      changes_summary: changes ? this.changeDetection.generateChangesSummary(changes) : revisionDescription,
       items_added: items_added,
       items_removed: items_removed,
       items_modified: items_modified,
@@ -7059,32 +6544,6 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
         this.saving = false;
       }
     });
-  }
-
-  /**
-   * Generate a human-readable changes summary
-   */
-  private generateChangesSummary(changes: any): string {
-    if (!changes) {
-      return 'Template updated';
-    }
-
-    const parts = [];
-
-    if (changes.field_changes?.length) {
-      parts.push(`${changes.field_changes.length} field change(s)`);
-    }
-    if (changes.items_added?.length) {
-      parts.push(`${changes.items_added.length} item(s) added`);
-    }
-    if (changes.items_removed?.length) {
-      parts.push(`${changes.items_removed.length} item(s) removed`);
-    }
-    if (changes.items_modified?.length) {
-      parts.push(`${changes.items_modified.length} item(s) modified`);
-    }
-
-    return parts.join(', ') || 'No significant changes';
   }
 
   cancel(): void {
@@ -7287,7 +6746,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     }
 
     // Flatten items if needed
-    const flattenedItems = this.flattenNestedItems(template.items || []);
+    const flattenedItems = this.changeDetection.flattenNestedItems(template.items || []);
 
     // Update sampleImages with permanent URLs from backend
     await Promise.all(flattenedItems.map(async (item: any, index: number) => {
@@ -7405,7 +6864,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   /** Fire reorder auto-save after a drop/move operation. */
   private autoSaveReorder(): void {
     const templateId = Number(this.editingTemplate?.id || 0);
-    if (templateId <= 0 || !this.editingTemplate?.is_draft) return;
+    if (templateId <= 0) return;
 
     this.recalculateOrderIndices();
     this.rebuildParentReferencesFromLevels();
@@ -7894,22 +7353,13 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   }
 
   private populateFormFromImport(parsedTemplate: any): void {
-                // Log the structure of items array
-    if (parsedTemplate.items && Array.isArray(parsedTemplate.items)) {
-      const parentCount = parsedTemplate.items.filter((i: any) => i.level === 0).length;
-      const childCount = parsedTemplate.items.filter((i: any) => i.level === 1).length;
-            parsedTemplate.items.forEach((item: any, idx: number) => {
-        if (item.level === 1) {
-                  }
-      });
-    }
-
     // Clear existing items and sample images
     while (this.items.length > 0) {
       this.items.removeAt(0);
     }
     this.sampleImages = {};
-        // Populate basic info
+
+    // Populate basic info
     this.templateForm.patchValue({
       name: parsedTemplate.name || 'Imported Template',
       category: 'inspection',
@@ -7923,11 +7373,10 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       is_active: true
     });
 
-            // Add all items (already flattened by parser - no need to process children)
+    // Add all items (already flattened by parser - no need to process children)
     if (parsedTemplate.items && Array.isArray(parsedTemplate.items)) {
-            parsedTemplate.items.forEach((item: any, index: number) => {
-        const levelLabel = item.level === 1 ? ` (sub-item, parent_id: ${item.parent_id})` : '';
-                this.addItemToForm(item, index);
+      parsedTemplate.items.forEach((item: any, index: number) => {
+        this.addItemToForm(item, index);
       });
     } else {
       console.warn('⚠️ No items array found in parsedTemplate!');
