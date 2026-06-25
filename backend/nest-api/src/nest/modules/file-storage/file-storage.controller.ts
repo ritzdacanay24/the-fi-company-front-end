@@ -195,7 +195,7 @@ export class FileStorageController {
       return null;
     }
 
-    const configuredBucket = String(process.env.MEDIA_STORAGE_BUCKET || '').trim();
+    const configuredBucket = String(process.env.FILE_STORAGE_DEFAULT_BUCKET || '').trim();
     if (!configuredBucket) {
       return null;
     }
@@ -273,7 +273,7 @@ export class FileStorageController {
 
   private shouldUseBucketStorage(): boolean {
     const mode = String(process.env.MEDIA_STORAGE_MODE || '').trim().toLowerCase();
-    const bucket = String(process.env.MEDIA_STORAGE_BUCKET || '').trim();
+    const bucket = String(process.env.FILE_STORAGE_DEFAULT_BUCKET || '').trim();
 
     if (mode === 'local') {
       return false;

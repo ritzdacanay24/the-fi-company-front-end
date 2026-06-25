@@ -42,10 +42,10 @@ export class PhotoChecklistService implements OnModuleInit {
   onModuleInit(): void {
     const mediaStorageMode = this.resolveMediaStorageMode();
     if (mediaStorageMode !== 'local') {
-      const configuredBucket = String(process.env.MEDIA_STORAGE_BUCKET || '').trim();
+      const configuredBucket = String(process.env.FILE_STORAGE_DEFAULT_BUCKET || '').trim();
       if (!configuredBucket) {
         throw new Error(
-          'Missing checklist storage configuration. Set MEDIA_STORAGE_BUCKET for checklist uploads, or set MEDIA_STORAGE_MODE="local" for local checklist storage.',
+          'Missing checklist storage configuration. Set FILE_STORAGE_DEFAULT_BUCKET for checklist uploads, or set MEDIA_STORAGE_MODE="local" for local checklist storage.',
         );
       }
       this.logger.log(`Checklist media storage: ${mediaStorageMode} (bucket=${configuredBucket})`);
@@ -1468,13 +1468,13 @@ export class PhotoChecklistService implements OnModuleInit {
     }
 
     // Config is validated at startup in onModuleInit; bucket is guaranteed to be set here.
-    return !!String(process.env.MEDIA_STORAGE_BUCKET || '').trim();
+    return !!String(process.env.FILE_STORAGE_DEFAULT_BUCKET || '').trim();
   }
 
   private resolveMediaStorageMode(): 'local' | 's3' | 'bucket' | null {
     const mode = String(process.env.MEDIA_STORAGE_MODE || '').trim().toLowerCase();
     if (mode !== 'local' && mode !== 's3' && mode !== 'bucket') {
-      const configuredBucket = String(process.env.MEDIA_STORAGE_BUCKET || '').trim();
+      const configuredBucket = String(process.env.FILE_STORAGE_DEFAULT_BUCKET || '').trim();
       if (configuredBucket) {
         return 'bucket';
       }
@@ -1486,10 +1486,10 @@ export class PhotoChecklistService implements OnModuleInit {
   }
 
   private resolveChecklistMediaBucket(): string {
-    const bucket = String(process.env.MEDIA_STORAGE_BUCKET || '').trim();
+    const bucket = String(process.env.FILE_STORAGE_DEFAULT_BUCKET || '').trim();
     if (!bucket) {
       throw new InternalServerErrorException(
-        'Missing MEDIA_STORAGE_BUCKET. Configure MEDIA_STORAGE_BUCKET for checklist bucket uploads.',
+        'Missing FILE_STORAGE_DEFAULT_BUCKET. Configure FILE_STORAGE_DEFAULT_BUCKET for checklist bucket uploads.',
       );
     }
 

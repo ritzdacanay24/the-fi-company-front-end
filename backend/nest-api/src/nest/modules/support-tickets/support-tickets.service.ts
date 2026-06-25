@@ -342,7 +342,7 @@ export class SupportTicketsService {
 
   private shouldUseBucketStorage(): boolean {
     const mode = String(process.env.MEDIA_STORAGE_MODE || '').trim().toLowerCase();
-    const bucket = String(process.env.MEDIA_STORAGE_BUCKET || '').trim();
+    const bucket = String(process.env.FILE_STORAGE_DEFAULT_BUCKET || '').trim();
 
     if (mode === 'local') {
       return false;
@@ -384,7 +384,7 @@ export class SupportTicketsService {
       return null;
     }
 
-    const configuredBucket = String(process.env.MEDIA_STORAGE_BUCKET || '').trim();
+    const configuredBucket = String(process.env.FILE_STORAGE_DEFAULT_BUCKET || '').trim();
     const parts = keyWithOptionalBucket.split('/').filter(Boolean);
     if (!parts.length) {
       return null;
@@ -412,7 +412,7 @@ export class SupportTicketsService {
       return trimmed;
     }
 
-    const bucket = String(process.env.MEDIA_STORAGE_BUCKET || '').trim();
+    const bucket = String(process.env.FILE_STORAGE_DEFAULT_BUCKET || '').trim();
     if (!bucket) {
       return trimmed;
     }
@@ -429,7 +429,7 @@ export class SupportTicketsService {
 
     if (this.shouldUseBucketStorage()) {
       const bucketKey = this.parseBucketKeyFromUrl(trimmed);
-      const bucket = String(process.env.MEDIA_STORAGE_BUCKET || '').trim();
+      const bucket = String(process.env.FILE_STORAGE_DEFAULT_BUCKET || '').trim();
 
       if (bucketKey && bucket) {
         await this.fileStorageService.deleteStoredFileInBucket(bucketKey, bucket);

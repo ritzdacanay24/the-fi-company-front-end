@@ -1,11 +1,15 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { QadOdbcService } from '@/shared/database/qad-odbc.service';
 import { GraphicsProductionRepository } from './graphics-production.repository';
+import { FileStorageService } from '../file-storage/file-storage.service';
+
+const GRAPHICS_BOM_LEGACY_BASE_URL = 'https://dashboard.eye-fi.com/attachments_mount/Yellowfish/';
 
 @Injectable()
 export class GraphicsProductionService {
   constructor(
     private readonly repository: GraphicsProductionRepository,
+    private readonly fileStorageService: FileStorageService,
     @Inject(QadOdbcService)
     private readonly qadOdbcService: QadOdbcService,
   ) {}
@@ -142,11 +146,31 @@ export class GraphicsProductionService {
 
     return {
       woInfo,
-      bomInfo,
+      bomInfo: bomInfo ? await this.withResolvedBomImageUrl(bomInfo) : bomInfo,
       woDetails,
       graphicsDemandInfo,
       salesOrderInfo,
     };
+  }
+
+  private async withResolvedBomImageUrl(row: Record<string, unknown>): Promise<Record<string, unknown>> {
+    const source = row['image_storage_source'] as string | null;
+    const bucket = row['image_storage_bucket'] as string | null;
+    const key = row['image_storage_key'] as string | null;
+    const imageData = row['Image_Data'] as string | null;
+
+    let imageUrl: string | null = null;
+
+    if (source === 'bucket' && bucket && key) {
+      imageUrl = await this.fileStorageService.resolveBucketObjectUrl(bucket, key);
+    } else if (source === 'local' && imageData) {
+      imageUrl = this.fileStorageService.resolveLink(imageData, 'graphics')
+        || `/attachments/graphics/${encodeURIComponent(imageData)}`;
+    } else if (imageData) {
+      imageUrl = `${GRAPHICS_BOM_LEGACY_BASE_URL}${imageData}`;
+    }
+
+    return { ...row, image_url: imageUrl };
   }
 
   private async getWorkOrderInformation(woNumber: string): Promise<Record<string, unknown> | null> {

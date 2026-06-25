@@ -1,4 +1,4 @@
-import { Component, ElementRef, Input, ViewChild } from "@angular/core";
+import { Component, Input } from "@angular/core";
 import { SharedModule } from "@app/shared/shared.module";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ToastrService } from "ngx-toastr";
@@ -7,14 +7,11 @@ import { GraphicsBomFormComponent } from "../graphics-bom-form/graphics-bom-form
 import { NAVIGATION_ROUTE } from "../graphics-bom-constant";
 import { GraphicsBomService } from "@app/core/api/operations/graphics/graphics-bom.service";
 import { FormGroup } from "@angular/forms";
-import moment from "moment";
-
-const GRAPHICS_BOM_FOLDER_LOCATION =
-  "https://dashboard.eye-fi.com/attachments_mount/Yellowfish/";
+import { UploadNewAttachmentsComponent } from "@app/shared/components/attachments/upload-new-attachments/upload-new-attachments.component";
 
 @Component({
   standalone: true,
-  imports: [SharedModule, GraphicsBomFormComponent],
+  imports: [SharedModule, GraphicsBomFormComponent, UploadNewAttachmentsComponent],
   selector: "app-graphics-bom-edit",
   templateUrl: "./graphics-bom-edit.component.html",
 })
@@ -67,7 +64,8 @@ export class GraphicsBomEditComponent {
     try {
       this.isLoading = true;
       this.data = await this.api.getById(this.id);
-      this.image = GRAPHICS_BOM_FOLDER_LOCATION + this.data?.Image_Data;
+      // Backend resolves the correct URL regardless of storage location (legacy, local, or S3)
+      this.image = this.data?.image_url ?? null;
       this.form.patchValue(this.data);
       this.isLoading = false;
     } catch (err) {
@@ -133,61 +131,49 @@ export class GraphicsBomEditComponent {
   }
 
   async onDeleteFile() {
-    if (!confirm("Are you sure you want to remove attachment?")) return;
+    if (!confirm('Are you sure you want to remove attachment?')) return;
     try {
       this.isLoading = true;
-      this.form.patchValue({ Image_Data: null }, { emitEvent: false });
-      await this.api.update(this.id, this.form.value);
+      // Deletes from S3 (if stored there) and clears DB fields in one call
+      await this.api.deleteImage(this.id);
       await this.getData();
       this.image = null;
-
       this.isLoading = false;
     } catch (err) {
       this.isLoading = false;
     }
   }
 
-  @ViewChild("myInput")
-  myInputVariable: ElementRef;
+  async onFilesAdded(files: File[]): Promise<void> {
+    const file = files[0];
+    if (!file) return;
 
-  file: File = null;
+    const formData = new FormData();
+    formData.append('file', file, file.name);
 
-  myFiles: any;
+    // Pass old S3 key/bucket so the backend can delete the previous object
+    const previousKey = this.data?.image_storage_key ?? null;
+    const previousBucket = this.data?.image_storage_bucket ?? null;
 
-  onFilechange(event: any) {
-    this.myFiles = event.target.files;
-  }
+    try {
+      this.isLoading = true;
+      const result: any = await this.api.upload(formData, previousKey, previousBucket);
 
-  clearUploadFile() {
-    this.myFiles = null;
-    this.myInputVariable.nativeElement.value = "";
-  }
+      // Use the URL resolved by the backend (works for both local and S3)
+      this.image = result?.url ?? null;
+      this.form.patchValue({ Image_Data: result?.fileName ?? file.name }, { emitEvent: false });
 
-  async onUploadFile() {
-    if (this.myFiles) {
-      let file: File = this.myFiles[0];
-      let formData: FormData = new FormData();
-      formData.append("file", file, file.name);
-      let headers = new Headers();
-      headers.append("Content-Type", "multipart/form-data");
-      headers.append("Accept", "application/json");
-
-      this.form.patchValue({ Image_Data: file.name }, { emitEvent: false });
-
-      this.image =
-        GRAPHICS_BOM_FOLDER_LOCATION + file.name + "?" + moment().valueOf();
-
-      try {
-        this.isLoading = true;
-        await this.api.upload(formData);
-
-        await this.api.update(this.id, this.form.value);
-        await this.getData();
-        this.myFiles = null;
-        this.isLoading = false;
-      } catch (err) {
-        this.isLoading = false;
-      }
+      // Persist storage metadata immediately after upload
+      const storageMetadata = {
+        image_storage_source: result?.imageStorageSource ?? null,
+        image_storage_bucket: result?.imageStorageBucket ?? null,
+        image_storage_key: result?.imageStorageKey ?? null,
+      };
+      await this.api.update(this.id, { ...this.form.value, ...storageMetadata });
+      await this.getData();
+      this.isLoading = false;
+    } catch (err) {
+      this.isLoading = false;
     }
   }
 }

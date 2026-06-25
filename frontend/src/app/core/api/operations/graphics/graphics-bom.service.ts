@@ -48,7 +48,16 @@ export class GraphicsBomService extends DataService<any> {
         return { message: 'Graphics BOM deleted successfully' };
     };
 
-    upload(formData: any) {
-        return firstValueFrom(this.http.post(`${url}/upload`, formData));
-    }
+    upload(formData: any, previousKey?: string | null, previousBucket?: string | null) {
+    let url_ = `${url}/upload`;
+    const params: string[] = [];
+    if (previousKey) params.push(`previousKey=${encodeURIComponent(previousKey)}`);
+    if (previousBucket) params.push(`previousBucket=${encodeURIComponent(previousBucket)}`);
+    if (params.length) url_ += '?' + params.join('&');
+    return firstValueFrom(this.http.post(url_, formData));
+  }
+
+  deleteImage(id: number | string) {
+    return firstValueFrom(this.http.delete(`${url}/deleteImage/${id}`));
+  }
 }

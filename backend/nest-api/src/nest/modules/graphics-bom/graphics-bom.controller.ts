@@ -80,7 +80,17 @@ export class GraphicsBomController {
   @Post('upload')
   @Permissions('write')
   @UseInterceptors(FileInterceptor('file'))
-  async upload(@UploadedFile() file?: { originalname?: string; buffer: Buffer }) {
-    return this.service.upload(file);
+  async upload(
+    @UploadedFile() file: { originalname?: string; buffer: Buffer; mimetype?: string },
+    @Query('previousKey') previousKey?: string,
+    @Query('previousBucket') previousBucket?: string,
+  ) {
+    return this.service.upload(file, { previousKey, previousBucket });
+  }
+
+  @Delete('deleteImage/:id')
+  @Permissions('write')
+  async deleteImage(@Param('id', ParseIntPipe) id: number) {
+    return this.service.deleteImage(id);
   }
 }

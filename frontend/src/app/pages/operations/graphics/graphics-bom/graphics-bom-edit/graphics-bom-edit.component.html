@@ -38,14 +38,17 @@
             <p>No Image Found</p>
           </div>
 
-          <div class="input-group mb-3 mt-3">
-            <input #myInput (change)="this.onFilechange($event)" class="form-control" type="file" id="file" name="file">
-            <span class="btn btn-danger px-3 pointer" *ngIf="myFiles" (click)="clearUploadFile()">X</span>
+          <div class="mt-3">
+            <app-upload-new-attachments
+              [multiple]="false"
+              [disabled]="isLoading"
+              accept="image/*,application/pdf"
+              uploadTriggerMode="on-add"
+              chooseLabel="Choose image"
+              autoFlowText="Image uploads automatically after you select it."
+              (filesAdded)="onFilesAdded($event)">
+            </app-upload-new-attachments>
           </div>
-
-          <button (click)="this.onUploadFile()" type="button" class="btn btn-primary mb-3"
-            [disabled]="isLoading || !myFiles">
-            <i class="feather icon-upload"></i> Upload File</button>
         </div>
 
         <app-graphics-bom-form (setFormEmitter)="form = $event" [submitted]="submitted"></app-graphics-bom-form>

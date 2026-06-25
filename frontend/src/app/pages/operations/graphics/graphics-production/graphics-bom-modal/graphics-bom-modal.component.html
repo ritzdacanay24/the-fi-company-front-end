@@ -27,7 +27,7 @@
       </div>
 
       <div class="col text-center align-self-center">
-        <img src="https://dashboard.eye-fi.com/attachments_mount/Yellowfish/{{data?.bomInfo.Image_Data}}"
+        <img [src]="data?.bomInfo.image_url"
           alt=" No Image" class="object-fit-sm-contain border rounded"
           style="max-width:100px;max-height:100px;width:100px">
       </div>
@@ -266,7 +266,7 @@
           <p>{{data?.bomInfo.DD2_1}}</p>
           <p>{{data?.bomInfo.DD2_2}}</p>
           <div>
-            <img src="https://dashboard.eye-fi.com/attachments_mount/Yellowfish/{{data?.bomInfo.Image_Data}}"
+            <img [src]="data?.bomInfo.image_url"
               alt="No Image" class="object-fit-sm-contain border rounded"
               style="max-width:100px;max-height:100px;width:100px;background-color: transparent;">
           </div>

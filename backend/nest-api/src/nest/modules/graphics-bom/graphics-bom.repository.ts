@@ -60,6 +60,9 @@ export class GraphicsBomRepository extends BaseRepository<RowDataPacket> {
     'Date_Modified',
     'UserName_Created',
     'UserName_Modified',
+    'image_storage_source',
+    'image_storage_bucket',
+    'image_storage_key',
   ] as const;
 
   constructor(@Inject(MysqlService) mysqlService: MysqlService) {

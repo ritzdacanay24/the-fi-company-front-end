@@ -314,7 +314,12 @@ export class FileStorageService {
       return false;
     }
 
-    return mode === 's3' || mode === 'bucket' || !!String(process.env.MEDIA_STORAGE_BUCKET || '').trim();
+    return mode === 's3' || mode === 'bucket' || !!String(process.env.FILE_STORAGE_DEFAULT_BUCKET || '').trim();
+  }
+
+  /** Public accessor — lets callers check whether S3 is the active storage mode. */
+  isS3Mode(): boolean {
+    return this.isS3Enabled();
   }
 
   private requireS3Client(): S3Client {
@@ -322,7 +327,7 @@ export class FileStorageService {
       return this.s3Client;
     }
 
-    throw new BadRequestException('Bucket storage is not enabled. Configure MEDIA_STORAGE_MODE as "s3" or "bucket" and set MEDIA_STORAGE_BUCKET.');
+    throw new BadRequestException('Bucket storage is not enabled. Configure MEDIA_STORAGE_MODE as "s3" or "bucket" and set FILE_STORAGE_DEFAULT_BUCKET.');
   }
 
   private createS3Client(): S3Client | null {
@@ -397,9 +402,9 @@ export class FileStorageService {
   }
 
   private resolveBucketName(bucket?: string): string {
-    const raw = bucket?.trim() || String(process.env.MEDIA_STORAGE_BUCKET || '').trim();
+    const raw = bucket?.trim() || String(process.env.FILE_STORAGE_DEFAULT_BUCKET || '').trim();
     if (!raw) {
-      throw new BadRequestException('Missing MEDIA_STORAGE_BUCKET. Configure MEDIA_STORAGE_BUCKET for bucket-backed storage operations.');
+      throw new BadRequestException('Missing FILE_STORAGE_DEFAULT_BUCKET. Configure FILE_STORAGE_DEFAULT_BUCKET for bucket-backed storage operations.');
     }
 
     return this.sanitizeBucketName(raw);

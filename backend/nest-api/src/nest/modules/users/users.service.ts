@@ -137,7 +137,7 @@ export class UsersService {
     const subFolder = 'users';
 
     if (this.shouldUseBucketStorage()) {
-      const bucket = String(process.env.MEDIA_STORAGE_BUCKET || '').trim() || undefined;
+      const bucket = String(process.env.FILE_STORAGE_DEFAULT_BUCKET || '').trim() || undefined;
       const key = this.resolveUserPhotoBucketKey(id, user);
       await this.fileStorageService.deleteStoredFileInBucket(key, bucket);
     } else if (user.fileName) {
@@ -158,7 +158,7 @@ export class UsersService {
 
   private shouldUseBucketStorage(): boolean {
     const mode = String(process.env.MEDIA_STORAGE_MODE || '').trim().toLowerCase();
-    const bucket = String(process.env.MEDIA_STORAGE_BUCKET || '').trim();
+    const bucket = String(process.env.FILE_STORAGE_DEFAULT_BUCKET || '').trim();
 
     if (mode === 'local') {
       return false;

@@ -568,7 +568,7 @@ export class PermitChecklistsService {
 
   private shouldUseBucketStorage(): boolean {
     const mode = String(process.env.MEDIA_STORAGE_MODE || '').trim().toLowerCase();
-    const bucket = String(process.env.MEDIA_STORAGE_BUCKET || '').trim();
+    const bucket = String(process.env.FILE_STORAGE_DEFAULT_BUCKET || '').trim();
 
     if (mode === 'local') {
       return false;
@@ -643,7 +643,7 @@ export class PermitChecklistsService {
     const explicitKey = String(attachment['storageKey'] || attachment['storage_key'] || '').trim();
 
     const fromLink = this.resolveBucketObjectFromUrl(String(attachment['url'] || attachment['link'] || ''));
-    const bucket = explicitBucket || fromLink?.bucket || String(process.env.MEDIA_STORAGE_BUCKET || '').trim();
+    const bucket = explicitBucket || fromLink?.bucket || String(process.env.FILE_STORAGE_DEFAULT_BUCKET || '').trim();
     const key = explicitKey || fromLink?.key || '';
 
     if (!bucket || !key) {
@@ -685,7 +685,7 @@ export class PermitChecklistsService {
       return null;
     }
 
-    const configuredBucket = String(process.env.MEDIA_STORAGE_BUCKET || '').trim();
+    const configuredBucket = String(process.env.FILE_STORAGE_DEFAULT_BUCKET || '').trim();
     const withoutQuery = value.split('?')[0].split('#')[0] || value;
     const marker = '/attachments/';
     const markerIndex = withoutQuery.indexOf(marker);
