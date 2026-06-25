@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { extname } from 'node:path';
 import { AttachmentsMetadataService } from './attachments-metadata.service';
 import { FileStorageService } from '@/nest/modules/file-storage/file-storage.service';
@@ -19,6 +19,8 @@ interface CreateAttachmentPayload extends Record<string, unknown> {
 
 @Injectable()
 export class AttachmentsService {
+  private readonly logger = new Logger(AttachmentsService.name);
+
   constructor(
     private readonly metadataService: AttachmentsMetadataService,
     private readonly storageService: FileStorageService,
@@ -57,10 +59,19 @@ export class AttachmentsService {
 
       return { message: 'Created successfully', insertId };
     } catch (error) {
-      if (stored?.key) {
-        await this.storageService.deleteStoredFileInBucket(stored.key);
-      } else {
-        await this.storageService.deleteStoredFile(storedFileName, subFolder);
+      // Best-effort cleanup: remove the uploaded file so it doesn't become orphaned.
+      try {
+        if (stored?.key) {
+          await this.storageService.deleteStoredFileInBucket(stored.key);
+        } else {
+          await this.storageService.deleteStoredFile(storedFileName, subFolder);
+        }
+      } catch (cleanupError) {
+        // Log but do not mask the original error.
+        this.logger.error(
+          `Orphaned file cleanup failed after DB insert error. ` +
+          `key="${stored?.key || storedFileName}" bucket="${stored?.bucket || 'local'}": ${(cleanupError as Error)?.message}`,
+        );
       }
       throw error;
     }

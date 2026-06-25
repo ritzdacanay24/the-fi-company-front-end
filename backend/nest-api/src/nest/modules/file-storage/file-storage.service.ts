@@ -41,12 +41,17 @@ export class FileStorageService {
     const key = keyPrefix ? `${keyPrefix}/${fileName}` : fileName;
     const s3Client = this.requireS3Client();
 
-    await s3Client.send(new PutObjectCommand({
-      Bucket: bucket,
-      Key: key,
-      Body: file.buffer,
-      ContentType: file.mimetype,
-    }));
+    try {
+      await s3Client.send(new PutObjectCommand({
+        Bucket: bucket,
+        Key: key,
+        Body: file.buffer,
+        ContentType: file.mimetype || 'application/octet-stream',
+      }));
+    } catch (err) {
+      this.logger.error(`S3 upload failed for key="${key}" bucket="${bucket}": ${(err as Error)?.message}`, (err as Error)?.stack);
+      throw err;
+    }
 
     return {
       bucket,
@@ -403,7 +408,10 @@ export class FileStorageService {
   private sanitizeBucketName(bucket: string): string {
     const normalized = String(bucket || '').trim().toLowerCase();
     const safe = normalized.replace(/[^a-z0-9._-]/g, '');
-    return safe || 'general';
+    if (!safe) {
+      throw new BadRequestException(`Invalid bucket name "${bucket}": must contain at least one valid character (a-z, 0-9, ., -, _).`);
+    }
+    return safe;
   }
 
   private sanitizeKeyPrefix(keyPrefix: string): string {

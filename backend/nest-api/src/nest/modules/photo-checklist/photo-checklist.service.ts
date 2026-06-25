@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, InternalServerErrorException, Logger, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -26,7 +26,8 @@ type ChecklistItemNode = Record<string, unknown> & {
 };
 
 @Injectable()
-export class PhotoChecklistService {
+export class PhotoChecklistService implements OnModuleInit {
+  private readonly logger = new Logger(PhotoChecklistService.name);
   private readonly checklistMediaPublicOrigin = this.resolveChecklistMediaPublicOrigin();
   private readonly checklistMediaRemoteBaseUrl = this.resolveChecklistMediaRemoteBaseUrl();
   private readonly displayTimeZone = String(process.env.INSPECTION_CHECKLIST_DISPLAY_TIME_ZONE || 'America/Los_Angeles').trim();
@@ -37,6 +38,21 @@ export class PhotoChecklistService {
     private readonly fileStorageService: FileStorageService,
     private readonly accessControlService: AccessControlService,
   ) {}
+
+  onModuleInit(): void {
+    const mediaStorageMode = this.resolveMediaStorageMode();
+    if (mediaStorageMode !== 'local') {
+      const configuredBucket = String(process.env.MEDIA_STORAGE_BUCKET || '').trim();
+      if (!configuredBucket) {
+        throw new Error(
+          'Missing checklist storage configuration. Set MEDIA_STORAGE_BUCKET for checklist uploads, or set MEDIA_STORAGE_MODE="local" for local checklist storage.',
+        );
+      }
+      this.logger.log(`Checklist media storage: ${mediaStorageMode} (bucket=${configuredBucket})`);
+    } else {
+      this.logger.log('Checklist media storage: local');
+    }
+  }
 
   async getTemplates(options?: { includeInactive?: boolean; includeDeleted?: boolean }) {
     return this.repository.getTemplates(options);
@@ -1451,14 +1467,8 @@ export class PhotoChecklistService {
       return false;
     }
 
-    const configuredBucket = String(process.env.MEDIA_STORAGE_BUCKET || '').trim();
-    if (configuredBucket) {
-      return true;
-    }
-
-    throw new InternalServerErrorException(
-      'Missing checklist storage configuration. Set MEDIA_STORAGE_BUCKET for checklist uploads, or set MEDIA_STORAGE_MODE="local" for local checklist storage.',
-    );
+    // Config is validated at startup in onModuleInit; bucket is guaranteed to be set here.
+    return !!String(process.env.MEDIA_STORAGE_BUCKET || '').trim();
   }
 
   private resolveMediaStorageMode(): 'local' | 's3' | 'bucket' | null {
