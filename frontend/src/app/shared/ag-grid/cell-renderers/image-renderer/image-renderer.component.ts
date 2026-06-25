@@ -28,7 +28,8 @@ export class ImageRendererComponent implements ICellRendererAngularComp {
 
     this.params = params;
 
-    this.image = params.link + "" + params.value;
+    // If the row has a pre-resolved image_url use it directly, otherwise build from link prefix + value
+    this.image = params.data.image_url || (params.link ? params.link + '' + params.value : params.value);
   }
 
   refresh(params?: any): boolean {

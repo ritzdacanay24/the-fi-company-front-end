@@ -10,7 +10,6 @@ import { AgGridModule } from "ag-grid-angular";
 import { ColDef, ColGroupDef, GridApi, GridOptions } from "ag-grid-community";
 import { GraphicsBomService } from "@app/core/api/operations/graphics/graphics-bom.service";
 import { NAVIGATION_ROUTE } from "../graphics-bom-constant";
-import { ImageRendererComponent } from "@app/shared/ag-grid/cell-renderers/image-renderer/image-renderer.component";
 import { GridFiltersComponent } from "@app/shared/grid-filters/grid-filters.component";
 import { GridSettingsComponent } from "@app/shared/grid-settings/grid-settings.component";
 import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
@@ -101,9 +100,18 @@ export class GraphicsBomListComponent implements OnInit {
           field: "Image_Data",
           headerName: "Image",
           filter: "agMultiColumnFilter",
-          cellRenderer: ImageRendererComponent,
-          cellRendererParams: {
-            link: "https://dashboard.eye-fi.com/attachments_mount/Yellowfish/",
+          maxWidth: 80,
+          minWidth: 60,
+          cellStyle: { display: 'flex', alignItems: 'center', justifyContent: 'center' },
+          cellRenderer: (params: any) => {
+            if (!params.data) return '';
+            if (params.data.image_storage_key) {
+              return '<i class="mdi mdi-image text-info" style="font-size:1rem;" title="AWS S3 image"></i>';
+            }
+            if (params.value) {
+              return '<i class="mdi mdi-image text-secondary" style="font-size:1rem;" title="Legacy image"></i>';
+            }
+            return '';
           },
         },
         {
