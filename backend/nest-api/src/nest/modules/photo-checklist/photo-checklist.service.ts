@@ -68,10 +68,48 @@ export class PhotoChecklistService implements OnModuleInit {
     }
 
     const items = await this.repository.getTemplateItems(id);
+    const nested = this.buildNestedItems(items);
+    await this.signNestedItemsRecursive(nested);
     return {
       ...template,
-      items: this.buildNestedItems(items),
+      items: nested,
     };
+  }
+
+  /**
+   * Recursively sign sample_image_url and patch sample_images[].url for all items.
+   * S3 URLs are signed; legacy URLs are normalized; items without media are skipped.
+   */
+  private async signNestedItemsRecursive(items: ChecklistItemNode[]): Promise<void> {
+    for (const item of items) {
+      const raw = item as Record<string, unknown>;
+
+      // Sign sample_image_url (primary image)
+      let signedPrimaryUrl: string | null = null;
+      const rawSampleUrl = String(raw.sample_image_url || '').trim();
+      if (rawSampleUrl) {
+        signedPrimaryUrl = await this.resolveChecklistMediaReadUrl(rawSampleUrl, {}, 'inspectionCheckList');
+        raw.sample_image_url = signedPrimaryUrl;
+      }
+
+      // Sign sample_images[] — patch url field for each entry
+      const sampleImages = Array.isArray(raw.sample_images) ? (raw.sample_images as Record<string, unknown>[]) : [];
+      if (sampleImages.length > 0) {
+        const signed = await this.resolveSignedSampleMediaArray(sampleImages, 'inspectionCheckList');
+        // For primary entries that have no stored url, fall back to signed sample_image_url
+        raw.sample_images = signed.map((img) => {
+          if (img['url']) return img;
+          if (img['is_primary'] && signedPrimaryUrl) return { ...img, url: signedPrimaryUrl };
+          return img;
+        });
+      }
+
+      // Recurse into children
+      const children = Array.isArray(raw.children) ? (raw.children as ChecklistItemNode[]) : [];
+      if (children.length > 0) {
+        await this.signNestedItemsRecursive(children);
+      }
+    }
   }
 
   async exportTemplatePdf(id: number): Promise<{ fileName: string; buffer: Buffer }> {
@@ -1115,10 +1153,26 @@ export class PhotoChecklistService implements OnModuleInit {
       normalizedInstanceId,
       normalizedItemId,
     );
+
+    // Sign the primary image URL stored in the dedicated sample_image_url column.
+    // Primary entries in sample_images[] may have no url field — they rely on this column.
+    const rawSampleImageUrl = String(templateSampleRow?.sample_image_url || '').trim();
+    const signedPrimaryUrl = rawSampleImageUrl
+      ? await this.resolveChecklistMediaReadUrl(rawSampleImageUrl, {}, 'inspectionCheckList')
+      : null;
+
     const signedSampleImages = await this.resolveSignedSampleMediaArray(
       this.safeParseJson<unknown[]>(templateSampleRow?.sample_images, []),
       'inspectionCheckList',
     );
+
+    // Patch primary entries that have no url with the signed sample_image_url
+    const patchedSampleImages = (signedSampleImages as Record<string, unknown>[]).map((img) => {
+      if (img['url']) return img;
+      if (img['is_primary'] && signedPrimaryUrl) return { ...img, url: signedPrimaryUrl };
+      return img;
+    });
+
     const signedSampleVideos = await this.resolveSignedSampleMediaArray(
       this.safeParseJson<unknown[]>(templateSampleRow?.sample_videos, []),
       'inspectionCheckList',
@@ -1130,7 +1184,7 @@ export class PhotoChecklistService implements OnModuleInit {
       item_id: normalizedItemId,
       photos: mediaItems.filter((media) => media.file_type !== 'video'),
       videos: mediaItems.filter((media) => media.file_type === 'video'),
-      sample_images: signedSampleImages,
+      sample_images: patchedSampleImages,
       sample_videos: signedSampleVideos,
     };
   }
@@ -2042,6 +2096,36 @@ export class PhotoChecklistService implements OnModuleInit {
 
     if (storageLocation === 'legacy') {
       return this.normalizeChecklistMediaUrl(rawUrl, { subFolder });
+    }
+
+    // When uploaded to S3, photo_metadata.storage contains { bucket, key, url }.
+    // file_url is stored as a /attachments/... path (buildStoredChecklistBucketPath),
+    // so parseS3Url won't match it. Use the stored S3 coordinates directly.
+    const storageMeta = metadata?.storage as Record<string, unknown> | null | undefined;
+    if (storageMeta?.bucket && storageMeta?.key) {
+      try {
+        const signedUrl = await this.fileStorageService.resolveBucketObjectUrl(
+          String(storageMeta.bucket),
+          String(storageMeta.key),
+        );
+        if (signedUrl) return signedUrl;
+      } catch {
+        // fall through
+      }
+    }
+
+    // Fallback: try the full S3 URL stored in metadata.storage.url
+    const storageUrl = String(storageMeta?.url || '').trim();
+    if (storageUrl) {
+      const parsedStorageUrl = this.parseS3Url(storageUrl);
+      if (parsedStorageUrl) {
+        try {
+          const signedUrl = await this.fileStorageService.resolveBucketObjectUrl(parsedStorageUrl.bucket, parsedStorageUrl.key);
+          if (signedUrl) return signedUrl;
+        } catch {
+          // fall through
+        }
+      }
     }
 
     // Parse bucket+key from any S3 URL format and sign it

@@ -26,6 +26,9 @@ export class ChecklistTemplatePreviewModalComponent implements OnChanges {
   previewActiveItemId: number | null = null;
   previewActiveItemIndex: number | null = null;
 
+  /** Flat ordered list matching the nav traversal order — supports arbitrary nesting depth */
+  flatDisplayItems: Array<{ item: any; level: number; outlineLabel: string }> = [];
+
   /** Precomputed reference images per item id to avoid function calls in template */
   refImagesMap = new Map<number, any[]>();
 
@@ -101,6 +104,7 @@ export class ChecklistTemplatePreviewModalComponent implements OnChanges {
 
   trackByItemId(_index: number, item: any): number { return item.id; }
   trackByChildId(_index: number, child: any): number { return child.id; }
+  trackByFlatItem(_index: number, entry: { item: any }): number { return entry.item.id; }
   trackByImageUrl(_index: number, img: any): string { return img.url; }
   trackByVideoUrl(_index: number, vid: any): string { return vid.url; }
 
@@ -118,6 +122,7 @@ export class ChecklistTemplatePreviewModalComponent implements OnChanges {
       next: (template) => {
         this.template = template;
         this.previewNavItems = this.buildPreviewNavItemsFromNestedItems((template as any)?.items || []);
+        this.flatDisplayItems = this.buildFlatDisplayItems((template as any)?.items || []);
         this.refImagesMap = this.buildRefImagesMap((template as any)?.items || []);
         this.previewActiveItemId = null;
         this.previewActiveItemIndex = null;
@@ -132,6 +137,32 @@ export class ChecklistTemplatePreviewModalComponent implements OnChanges {
         this.loading = false;
         this.errorMessage = 'Unable to load template preview. Please try again.';
       },
+    });
+  }
+
+  private buildFlatDisplayItems(items: any[]): Array<{ item: any; level: number; outlineLabel: string }> {
+    // Step 1: flatten recursively in traversal order (same as buildPreviewNavItemsFromNestedItems)
+    const flat: Array<{ item: any; level: number }> = [];
+    const flatten = (list: any[], level: number) => {
+      const ordered = list.slice().sort((a: any, b: any) => Number(a?.order_index ?? 0) - Number(b?.order_index ?? 0));
+      for (const item of ordered) {
+        flat.push({ item, level });
+        const children = Array.isArray(item?.children) ? item.children : [];
+        if (children.length) {
+          flatten(children, level + 1);
+        }
+      }
+    };
+    flatten(items, 0);
+
+    // Step 2: compute outline labels (mirrors recomputeOutlineNumbers logic in nav component)
+    const counters: number[] = [0];
+    return flat.map(({ item, level }) => {
+      while (counters.length > level + 1) counters.pop();
+      while (counters.length < level + 1) counters.push(0);
+      counters[level] = (counters[level] ?? 0) + 1;
+      const outlineLabel = counters.slice(0, level + 1).join('.');
+      return { item, level, outlineLabel };
     });
   }
 

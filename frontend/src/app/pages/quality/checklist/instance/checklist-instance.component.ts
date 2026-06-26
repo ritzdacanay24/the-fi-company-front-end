@@ -4431,29 +4431,31 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
    */
   getItemLabel(progress: ChecklistItemProgress): string {
     const index = this.itemProgress.indexOf(progress);
-    
+
     if (progress.item.level === 1) {
-      // Sub-item: find parent and calculate sub-item number
+      // Sub-item: find parent by id and use its sequential parent number
       const parentId = progress.item.parent_id;
-      const parentIndex = this.itemProgress.findIndex(p => 
-        p.item.id === parentId || p.item.baseItemId === parentId
+      const parentProgress = this.itemProgress.find(
+        p => p.item.id === parentId || p.item.baseItemId === parentId,
       );
-      
-      if (parentIndex !== -1) {
+
+      if (parentProgress) {
+        const parentNum = this.getItemNumber(parentProgress); // sequential count of level-0 items
+        const parentIndex = this.itemProgress.indexOf(parentProgress);
+
         // Count how many sub-items of this parent came before this one
         let subItemNumber = 1;
         for (let i = parentIndex + 1; i < index; i++) {
-          if (this.itemProgress[i].item.level === 1 && 
-              (this.itemProgress[i].item.parent_id === parentId)) {
+          if (this.itemProgress[i].item.level === 1 && this.itemProgress[i].item.parent_id === parentId) {
             subItemNumber++;
           }
         }
-        return `Sub-item ${parentIndex + 1}.${subItemNumber}`;
+        return `Sub-item ${parentNum}.${subItemNumber}`;
       }
       return `Sub-item ${index + 1}`;
     }
-    
-    // Parent item: count only parent items before this one
+
+    // Parent item: count only level-0 items before this one
     let parentItemNumber = 1;
     for (let i = 0; i < index; i++) {
       if (this.itemProgress[i].item.level === 0 || !this.itemProgress[i].item.level) {
@@ -4734,11 +4736,6 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   }
 
   private getItemOrderLabel(progress: ChecklistItemProgress): string {
-    const explicitOrder = String(progress.item?.order_index ?? '').trim();
-    if (explicitOrder) {
-      return explicitOrder;
-    }
-
     if ((progress.item.level ?? 0) > 0) {
       return this.getChildItemNumber(progress) || 'Sub-item';
     }

@@ -6339,6 +6339,15 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
           // New template - create document
           this.createDocument(templateId, templateData.name, 'Initial revision', templateData);
         } else if (!createVersion && this.editingTemplate?.is_draft) {
+          // Immediately mark the in-memory template as published so any pending
+          // auto-save timer sees is_draft=false and skips the rogue draft re-save.
+          if (this.editingTemplate) {
+            (this.editingTemplate as any).is_draft = false;
+          }
+          if (this.autoSaveTimeout) {
+            clearTimeout(this.autoSaveTimeout);
+            this.autoSaveTimeout = null;
+          }
           this.saving = false;
           void Swal.fire({
             icon: 'success',

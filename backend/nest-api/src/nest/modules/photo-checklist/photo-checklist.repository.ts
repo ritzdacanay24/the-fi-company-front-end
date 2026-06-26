@@ -1250,7 +1250,7 @@ export class PhotoChecklistRepository {
 
   async getTemplateSampleMediaByInstanceItemId(instanceId: number, itemId: number): Promise<RowDataPacket | null> {
     const rows = await this.mysqlService.query<RowDataPacket[]>(
-      `SELECT ci.id, ci.sample_images, ci.sample_videos
+      `SELECT ci.id, ci.sample_image_url, ci.sample_images, ci.sample_videos
        FROM checklist_instances instance
        INNER JOIN checklist_items ci ON ci.template_id = instance.template_id
        WHERE instance.id = ? AND ci.id = ?

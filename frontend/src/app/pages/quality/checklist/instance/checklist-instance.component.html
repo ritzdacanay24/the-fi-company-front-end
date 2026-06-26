@@ -1175,11 +1175,11 @@
                     </div>
                     <div>
                       <h6 class="mb-1 fw-semibold">
-                        <span class="badge bg-dark bg-opacity-75 me-2" *ngIf="progress.item.order_index">
-                          {{progress.item.order_index}}
+                        <span class="badge bg-dark bg-opacity-75 me-2">
+                          {{getItemLabel(progress)}}
                         </span>
                         <span *ngIf="progress.item.level === 1" class="badge bg-secondary me-2">Sub-item</span>
-                        {{getItemLabel(progress)}}: {{progress.item?.title}}
+                        {{progress.item?.title}}
                       </h6>
                       <div class="text-muted small mb-0 description-content" *ngIf="progress.item?.description" [innerHTML]="progress.item.description"></div>
                     </div>

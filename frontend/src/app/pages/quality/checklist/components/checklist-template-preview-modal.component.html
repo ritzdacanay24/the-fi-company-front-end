@@ -63,89 +63,100 @@
         </div>
 
         <div class="col-12 col-md-8 col-lg-9" style="height: 55vh; overflow-y: auto;">
-          <div class="list-group list-group-flush" *ngIf="template.items && template.items.length > 0">
-            <ng-container *ngFor="let item of template.items; let i = index; trackBy: trackByItemId">
-              <div class="list-group-item" [attr.id]="'preview-item-' + item.id">
+          <div class="list-group list-group-flush" *ngIf="flatDisplayItems.length > 0">
+            <ng-container *ngFor="let entry of flatDisplayItems; trackBy: trackByFlatItem">
+              <div class="list-group-item"
+                   [attr.id]="'preview-item-' + entry.item.id"
+                   [style.margin-left.px]="entry.level * 24"
+                   [class.border-start]="entry.level > 0"
+                   [class.border-2]="entry.level > 0"
+                   [class.bg-body-tertiary]="entry.level > 0">
                 <div class="d-flex align-items-start gap-3">
                   <div class="flex-shrink-0">
                     <div class="border rounded-circle d-flex align-items-center justify-content-center text-muted"
-                         style="width: 32px; height: 32px; font-size: 0.8rem; font-weight: 600;">
-                      {{i + 1}}
+                         [style.width.px]="entry.level === 0 ? 32 : 28"
+                         [style.height.px]="entry.level === 0 ? 32 : 28"
+                         [style.font-size]="entry.level === 0 ? '0.8rem' : '0.7rem'"
+                         style="font-weight: 600;">
+                      {{entry.outlineLabel}}
                     </div>
                   </div>
 
                   <div class="flex-grow-1">
                     <div class="mb-2">
-                      <h6 class="mb-0">
-                        {{item.title}}
-                        <span class="badge text-bg-danger ms-2" style="font-size: 0.7rem;" *ngIf="item.is_required">Required</span>
-                        <span class="badge text-bg-secondary ms-1" style="font-size: 0.7rem;">
+                      <h6 class="mb-0" [class.fs-6]="entry.level > 0">
+                        <i class="mdi mdi-subdirectory-arrow-right me-1 text-muted" *ngIf="entry.level > 0"></i>
+                        {{entry.item.title}}
+                        <span class="badge text-bg-danger ms-2" [style.font-size]="entry.level === 0 ? '0.7rem' : '0.65rem'" *ngIf="entry.item.is_required">Required</span>
+                        <span class="badge text-bg-secondary ms-1" [style.font-size]="entry.level === 0 ? '0.7rem' : '0.65rem'">
                           <i class="mdi" [ngClass]="{
-                            'mdi-camera': item.submission_type === 'photo',
-                            'mdi-video': item.submission_type === 'video',
-                            'mdi-file-multiple': item.submission_type === 'either'
+                            'mdi-camera': entry.item.submission_type === 'photo',
+                            'mdi-video': entry.item.submission_type === 'video',
+                            'mdi-file-multiple': entry.item.submission_type === 'either'
                           }"></i>
-                          {{item.submission_type === 'either' ? 'Photo / Video' : (item.submission_type | titlecase)}}
+                          {{entry.item.submission_type === 'either' ? 'Photo / Video' : (entry.item.submission_type | titlecase)}}
                         </span>
                       </h6>
                     </div>
-                    <div class="text-muted mb-2" *ngIf="item.description" [innerHTML]="item.description"></div>
+                    <div class="text-muted mb-2" [class.small]="entry.level > 0" *ngIf="entry.item.description" [innerHTML]="entry.item.description"></div>
 
-                    <div class="row g-2 mb-2" *ngIf="(item.submission_type === 'photo' || item.submission_type === 'either') && item.photo_requirements && hasPhotoRequirements(item.photo_requirements)">
-                      <div class="col-auto" *ngIf="item.photo_requirements.angle">
+                    <div class="row g-2 mb-2" *ngIf="(entry.item.submission_type === 'photo' || entry.item.submission_type === 'either') && entry.item.photo_requirements && hasPhotoRequirements(entry.item.photo_requirements)">
+                      <div class="col-auto" *ngIf="entry.item.photo_requirements.angle">
                         <small class="badge text-bg-secondary">
                           <i class="mdi mdi-camera-metering-spot me-1"></i>
-                          {{item.photo_requirements.angle | titlecase}}
+                          {{entry.item.photo_requirements.angle | titlecase}}
                         </small>
                       </div>
-                      <div class="col-auto" *ngIf="item.photo_requirements.distance">
+                      <div class="col-auto" *ngIf="entry.item.photo_requirements.distance">
                         <small class="badge text-bg-secondary">
                           <i class="mdi mdi-arrow-expand-all me-1"></i>
-                          {{item.photo_requirements.distance | titlecase}}
+                          {{entry.item.photo_requirements.distance | titlecase}}
                         </small>
                       </div>
-                      <div class="col-auto" *ngIf="item.photo_requirements.lighting">
+                      <div class="col-auto" *ngIf="entry.item.photo_requirements.lighting">
                         <small class="badge text-bg-secondary">
                           <i class="mdi mdi-lightbulb me-1"></i>
-                          {{item.photo_requirements.lighting | titlecase}}
+                          {{entry.item.photo_requirements.lighting | titlecase}}
                         </small>
                       </div>
-                      <div class="col-auto" *ngIf="item.photo_requirements.focus">
+                      <div class="col-auto" *ngIf="entry.item.photo_requirements.focus">
                         <small class="badge text-bg-secondary">
                           <i class="mdi mdi-target me-1"></i>
-                          {{item.photo_requirements.focus}}
+                          {{entry.item.photo_requirements.focus}}
                         </small>
                       </div>
-                      <div class="col-auto" *ngIf="item.max_photos || item.min_photos">
+                      <div class="col-auto" *ngIf="entry.item.max_photos || entry.item.min_photos">
                         <small class="badge text-bg-secondary">
                           <i class="mdi mdi-camera me-1"></i>
-                          {{getPhotoLimitText(item)}}
+                          {{getPhotoLimitText(entry.item)}}
                         </small>
                       </div>
                     </div>
 
-                    <div class="row g-2 mb-2" *ngIf="(item.submission_type === 'video' || item.submission_type === 'either') && item.video_requirements && item.video_requirements.max_video_duration_seconds">
+                    <div class="row g-2 mb-2" *ngIf="(entry.item.submission_type === 'video' || entry.item.submission_type === 'either') && entry.item.video_requirements && entry.item.video_requirements.max_video_duration_seconds">
                       <div class="col-auto">
                         <small class="badge text-bg-secondary">
                           <i class="mdi mdi-timer-off me-1"></i>
-                          Max Duration: {{item.video_requirements.max_video_duration_seconds}}s
+                          Max Duration: {{entry.item.video_requirements.max_video_duration_seconds}}s
                         </small>
                       </div>
                     </div>
 
-                    <div class="row g-2 mb-2" *ngIf="item.submission_time_seconds">
+                    <div class="row g-2 mb-2" *ngIf="entry.item.submission_time_seconds">
                       <div class="col-auto">
                         <small class="badge text-bg-secondary">
                           <i class="mdi mdi-clock-outline me-1"></i>
-                          Time Limit: {{item.submission_time_seconds}}s
+                          Time Limit: {{entry.item.submission_time_seconds}}s
                         </small>
                       </div>
                     </div>
                   </div>
 
-                  <div class="flex-shrink-0" style="width: 280px;" *ngIf="(item.sample_images && item.sample_images.length > 0) || (item.sample_videos && item.sample_videos.length > 0)">
-                    <ng-container *ngIf="item.submission_type === 'photo' || item.submission_type === 'either'">
-                      <ng-container *ngFor="let sampleImage of item.sample_images; trackBy: trackByImageUrl">
+                  <div class="flex-shrink-0"
+                       [style.width]="entry.level === 0 ? '280px' : '200px'"
+                       *ngIf="(entry.item.sample_images && entry.item.sample_images.length > 0) || (entry.item.sample_videos && entry.item.sample_videos.length > 0)">
+                    <ng-container *ngIf="entry.item.submission_type === 'photo' || entry.item.submission_type === 'either'">
+                      <ng-container *ngFor="let sampleImage of entry.item.sample_images; trackBy: trackByImageUrl">
                         <div *ngIf="sampleImage.is_primary && sampleImage.image_type === 'sample'"
                              class="mb-2 p-2 border rounded bg-body-tertiary">
                           <div class="d-flex align-items-center mb-2">
@@ -154,13 +165,15 @@
                             </small>
                             <span class="badge text-bg-secondary ms-auto" style="font-size: 0.65rem;">Primary</span>
                           </div>
-                          <img [src]="sampleImage.url"
+                        </div>
+                          <img [src]="sampleImage.url || entry.item.sample_image_url"
                                class="img-thumbnail w-100"
                                loading="lazy"
-                               style="height: 180px; object-fit: contain; cursor: pointer;"
+                               [style.height]="entry.level === 0 ? '180px' : '120px'"
+                               style="object-fit: contain; cursor: pointer;"
                                [alt]="sampleImage.label || 'Primary sample image'"
                                [title]="sampleImage.label || 'Primary Sample Image'"
-                               (click)="previewImage(sampleImage.url)"
+                               (click)="previewImage(sampleImage.url || entry.item.sample_image_url)"
                                (error)="$any($event).target.style.display='none'">
                           <p class="mb-0 mt-1 small text-muted">
                             <i class="mdi mdi-information-outline me-1"></i>
@@ -169,18 +182,20 @@
                         </div>
                       </ng-container>
 
-                      <ng-container *ngIf="(refImagesMap.get(item.id) || []).length > 0">
+                      <ng-container *ngIf="(refImagesMap.get(entry.item.id) || []).length > 0">
                         <div class="mb-1">
                           <small class="text-muted">
-                            <i class="mdi mdi-image-multiple me-1"></i>Reference ({{ (refImagesMap.get(item.id) || []).length }})
+                            <i class="mdi mdi-image-multiple me-1"></i>
+                            {{entry.level === 0 ? 'Reference' : 'Ref'}} ({{ (refImagesMap.get(entry.item.id) || []).length }})
                           </small>
                         </div>
                         <div class="row g-1">
-                          <div class="col-6" *ngFor="let refImage of refImagesMap.get(item.id); trackBy: trackByImageUrl">
+                          <div class="col-6" *ngFor="let refImage of refImagesMap.get(entry.item.id); trackBy: trackByImageUrl">
                             <img [src]="refImage.url"
                                  class="img-thumbnail w-100"
                                  loading="lazy"
-                                 style="height: 80px; object-fit: cover; cursor: pointer;"
+                                 [style.height]="entry.level === 0 ? '80px' : '60px'"
+                                 style="object-fit: cover; cursor: pointer;"
                                  [alt]="refImage.label || 'Reference image'"
                                  [title]="refImage.label || 'Reference Image'"
                                  (click)="previewImage(refImage.url)"
@@ -190,22 +205,23 @@
                       </ng-container>
                     </ng-container>
 
-                    <ng-container *ngIf="(item.submission_type === 'video' || item.submission_type === 'either') && item.sample_videos && item.sample_videos.length > 0">
-                      <ng-container *ngFor="let sampleVideo of item.sample_videos; trackBy: trackByVideoUrl">
+                    <ng-container *ngIf="(entry.item.submission_type === 'video' || entry.item.submission_type === 'either') && entry.item.sample_videos && entry.item.sample_videos.length > 0">
+                      <ng-container *ngFor="let sampleVideo of entry.item.sample_videos; trackBy: trackByVideoUrl">
                         <div *ngIf="sampleVideo.is_primary"
                              class="mb-2 p-2 border rounded bg-body-tertiary">
                           <div class="d-flex align-items-center mb-2">
                             <small class="text-muted fw-semibold">
-                              <i class="mdi mdi-video me-1"></i>Sample Video
+                              <i class="mdi mdi-video me-1"></i>{{entry.level === 0 ? 'Sample Video' : 'Sample'}}
                             </small>
                           </div>
                           <video [src]="sampleVideo.url"
                                  controls
                                  class="w-100 rounded"
-                                 style="max-height: 180px; object-fit: contain; cursor: pointer;"
+                                 [style.max-height]="entry.level === 0 ? '180px' : '120px'"
+                                 style="object-fit: contain; cursor: pointer;"
                                  [title]="sampleVideo.label || 'Primary Sample Video'">
                           </video>
-                          <p class="mb-0 mt-1 small text-muted">
+                          <p class="mb-0 mt-1 small text-muted" *ngIf="entry.level === 0">
                             <i class="mdi mdi-information-outline me-1"></i>
                             Reference video
                             <span *ngIf="sampleVideo.duration_seconds"> ({{sampleVideo.duration_seconds}}s)</span>
@@ -216,149 +232,10 @@
                   </div>
                 </div>
               </div>
-
-              <ng-container *ngIf="item.children && item.children.length > 0">
-                <div class="list-group-item ms-4 border-start border-2 bg-body-tertiary"
-                     *ngFor="let child of item.children; let j = index; trackBy: trackByChildId">
-                  <span class="d-none" [attr.id]="'preview-item-' + child.id"></span>
-                  <div class="d-flex align-items-start gap-3">
-                    <div class="flex-shrink-0">
-                      <div class="border rounded-circle d-flex align-items-center justify-content-center text-muted"
-                           style="width: 28px; height: 28px; font-size: 0.7rem; font-weight: 600;">
-                        {{i + 1}}.{{j + 1}}
-                      </div>
-                    </div>
-
-                    <div class="flex-grow-1">
-                      <div class="mb-2">
-                        <h6 class="mb-0 fs-6">
-                          <i class="mdi mdi-subdirectory-arrow-right me-1 text-muted"></i>
-                          {{child.title}}
-                          <span class="badge text-bg-danger ms-2" style="font-size: 0.65rem;" *ngIf="child.is_required">Required</span>
-                          <span class="badge text-bg-secondary ms-1" style="font-size: 0.65rem;">
-                            <i class="mdi" [ngClass]="{
-                              'mdi-camera': child.submission_type === 'photo',
-                              'mdi-video': child.submission_type === 'video',
-                              'mdi-file-multiple': child.submission_type === 'either'
-                            }"></i>
-                            {{child.submission_type === 'either' ? 'Photo / Video' : (child.submission_type | titlecase)}}
-                          </span>
-                        </h6>
-                      </div>
-                      <div class="text-muted mb-2 small" *ngIf="child.description" [innerHTML]="child.description"></div>
-
-                      <div class="row g-2 mb-2" *ngIf="(child.submission_type === 'photo' || child.submission_type === 'either') && child.photo_requirements && hasPhotoRequirements(child.photo_requirements)">
-                        <div class="col-auto" *ngIf="child.photo_requirements.angle">
-                          <small class="badge text-bg-secondary">
-                            <i class="mdi mdi-camera-metering-spot me-1"></i>
-                            {{child.photo_requirements.angle | titlecase}}
-                          </small>
-                        </div>
-                        <div class="col-auto" *ngIf="child.photo_requirements.distance">
-                          <small class="badge text-bg-secondary">
-                            <i class="mdi mdi-arrow-expand-all me-1"></i>
-                            {{child.photo_requirements.distance | titlecase}}
-                          </small>
-                        </div>
-                        <div class="col-auto" *ngIf="child.photo_requirements.lighting">
-                          <small class="badge text-bg-secondary">
-                            <i class="mdi mdi-lightbulb me-1"></i>
-                            {{child.photo_requirements.lighting | titlecase}}
-                          </small>
-                        </div>
-                        <div class="col-auto" *ngIf="child.max_photos || child.min_photos">
-                          <small class="badge text-bg-secondary">
-                            <i class="mdi mdi-camera me-1"></i>
-                            {{getPhotoLimitText(child)}}
-                          </small>
-                        </div>
-                      </div>
-
-                      <div class="row g-2 mb-2" *ngIf="(child.submission_type === 'video' || child.submission_type === 'either') && child.video_requirements && child.video_requirements.max_video_duration_seconds">
-                        <div class="col-auto">
-                          <small class="badge text-bg-secondary">
-                            <i class="mdi mdi-timer-off me-1"></i>
-                            Max Duration: {{child.video_requirements.max_video_duration_seconds}}s
-                          </small>
-                        </div>
-                      </div>
-
-                      <div class="row g-2 mb-2" *ngIf="child.submission_time_seconds">
-                        <div class="col-auto">
-                          <small class="badge text-bg-secondary">
-                            <i class="mdi mdi-clock-outline me-1"></i>
-                            Time Limit: {{child.submission_time_seconds}}s
-                          </small>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="flex-shrink-0" style="width: 200px;" *ngIf="(child.sample_images && child.sample_images.length > 0) || (child.sample_videos && child.sample_videos.length > 0)">
-                      <ng-container *ngIf="child.submission_type === 'photo' || child.submission_type === 'either'">
-                        <ng-container *ngFor="let sampleImage of child.sample_images; trackBy: trackByImageUrl">
-                          <div *ngIf="sampleImage.is_primary && sampleImage.image_type === 'sample'"
-                               class="mb-2 p-2 border rounded bg-body-tertiary">
-                            <div class="d-flex align-items-center mb-1">
-                              <small class="text-muted fw-semibold">
-                                <i class="mdi mdi-target me-1"></i>Match This
-                              </small>
-                            </div>
-                            <img [src]="sampleImage.url"
-                                 class="img-thumbnail w-100"
-                                 loading="lazy"
-                                 style="height: 120px; object-fit: contain; cursor: pointer;"
-                                 [alt]="sampleImage.label || 'Primary sample'"
-                                 (click)="previewImage(sampleImage.url)"
-                                 (error)="$any($event).target.style.display='none'">
-                          </div>
-                        </ng-container>
-
-                        <ng-container *ngIf="(refImagesMap.get(child.id) || []).length > 0">
-                          <div class="mb-1">
-                            <small class="text-muted">
-                              <i class="mdi mdi-image-multiple me-1"></i>Ref ({{ (refImagesMap.get(child.id) || []).length }})
-                            </small>
-                          </div>
-                          <div class="row g-1">
-                            <div class="col-6" *ngFor="let refImage of refImagesMap.get(child.id); trackBy: trackByImageUrl">
-                              <img [src]="refImage.url"
-                                   class="img-thumbnail w-100"
-                                   loading="lazy"
-                                   style="height: 60px; object-fit: cover; cursor: pointer;"
-                                   [alt]="refImage.label || 'Reference'"
-                                   [title]="refImage.label || 'Reference Image'"
-                                   (click)="previewImage(refImage.url)"
-                                   (error)="$any($event).target.style.display='none'">
-                            </div>
-                          </div>
-                        </ng-container>
-                      </ng-container>
-
-                      <ng-container *ngIf="(child.submission_type === 'video' || child.submission_type === 'either') && child.sample_videos && child.sample_videos.length > 0">
-                        <ng-container *ngFor="let sampleVideo of child.sample_videos; trackBy: trackByVideoUrl">
-                          <div *ngIf="sampleVideo.is_primary"
-                               class="mb-2 p-2 border rounded bg-body-tertiary">
-                            <div class="d-flex align-items-center mb-1">
-                              <small class="text-muted fw-semibold">
-                                <i class="mdi mdi-video me-1"></i>Sample
-                              </small>
-                            </div>
-                            <video [src]="sampleVideo.url"
-                                   controls
-                                   class="w-100 rounded"
-                                   style="max-height: 120px; object-fit: contain;">
-                            </video>
-                          </div>
-                        </ng-container>
-                      </ng-container>
-                    </div>
-                  </div>
-                </div>
-              </ng-container>
             </ng-container>
           </div>
 
-          <div class="text-center p-4" *ngIf="!template.items || template.items.length === 0">
+          <div class="text-center p-4" *ngIf="flatDisplayItems.length === 0 && !loading">
             <i class="mdi mdi-clipboard-outline text-muted mb-2" style="font-size: 2rem;"></i>
             <p class="text-muted mb-0">No checklist items defined</p>
           </div>
