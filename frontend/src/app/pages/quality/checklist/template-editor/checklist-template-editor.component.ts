@@ -1542,7 +1542,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
   private patchLoadedItemMedia(itemFormGroup: FormGroup, item: any, sampleImages: SampleImage[]): void {
     itemFormGroup.patchValue({
-      sample_image_url: item.sample_image_url || sampleImages.find(img => img.is_primary)?.url || sampleImages[0]?.url || null,
+      sample_image_url: sampleImages.find(img => img.is_primary && img.image_type === 'sample')?.url || item.sample_image_url || null,
       sample_images: sampleImages,
       sample_videos: this.getItemSampleVideos(item),
       photo_requirements: {
@@ -3121,6 +3121,32 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     }
   }
 
+  /** Immediately persists updated sample_images / sample_image_url to the DB for a given item. */
+  private async persistItemMediaToDb(itemIndex: number, sampleImageUrl: string | null, sampleImages: SampleImage[]): Promise<void> {
+    const templateId = Number(this.editingTemplate?.id || 0);
+    const itemId = Number(this.items.at(itemIndex)?.get('id')?.value || 0);
+    if (!templateId || !itemId) return;
+
+    // Strip signed query params before persisting — only store raw URLs
+    const cleanUrl = (url: string | null) => url ? url.split('?')[0] : null;
+    const cleanImages = sampleImages.map(img => ({
+      ...img,
+      url: cleanUrl(img.stored_url || img.url) ?? '',
+      stored_url: undefined,
+      status: undefined,
+      id: undefined,
+    }));
+
+    try {
+      await firstValueFrom(this.configService.updateTemplateItem(templateId, itemId, {
+        sample_image_url: cleanUrl(sampleImageUrl) as any,
+        sample_images: cleanImages as any,
+      }));
+    } catch (error) {
+      console.warn('Failed to persist media removal to DB:', error);
+    }
+  }
+
   removeSampleImage(itemIndex: number): void {
     // Remove the sample image for this item
     this.sampleImages[itemIndex] = null;
@@ -3188,11 +3214,12 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
         this.fetchingItemMediaSet.delete(index);
         if (!item) { this.cdr.detectChanges(); return; }
 
-        // Build image list — fall back to sample_image_url if sample_images array is empty
+        // Build image list — fall back to sample_image_url only when sample_images is empty AND no reference-only entries exist
         let images: any[] = [];
         if (Array.isArray(item.sample_images) && item.sample_images.length > 0) {
           images = item.sample_images;
         } else if (item.sample_image_url) {
+          // Only use sample_image_url as primary fallback when sample_images is truly empty
           images = [{
             id: null,
             url: item.sample_image_url,
@@ -3203,6 +3230,12 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
             label: 'Sample Image',
             description: '',
           }];
+        }
+        // If sample_images has entries but none are primary, do not promote sample_image_url
+        const hasPrimary = images.some((img: any) => img.is_primary && img.image_type === 'sample');
+        if (!hasPrimary && images.length > 0) {
+          // Strip sample_image_url influence — don't inject a fake primary
+          images = images.filter((img: any) => img.is_primary || img.image_type !== 'sample' || images.length === 1);
         }
 
         this.sampleImages[index] = images.length > 0
@@ -3427,6 +3460,10 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
     item.markAsDirty();
     this.templateForm.markAsDirty();
+
+    // Persist updated media state to DB immediately
+    const remainingArray = Array.isArray(remainingImages) ? remainingImages : (remainingImages ? [remainingImages] : []);
+    await this.persistItemMediaToDb(itemIndex, null, remainingArray);
 
     const deleteUrl = imageToDelete?.stored_url || imageToDelete?.url;
     if (deleteUrl) {
@@ -5470,6 +5507,10 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     item.markAsDirty();
     this.templateForm.markAsDirty();
 
+    // Persist updated media state to DB immediately
+    const primaryUrl = this.getPrimarySampleImage(itemIndex)?.stored_url || this.getPrimarySampleImage(itemIndex)?.url || null;
+    await this.persistItemMediaToDb(itemIndex, primaryUrl, filteredImages);
+
     const deleteUrl = imageToRemove?.stored_url || imageToRemove?.url;
     if (deleteUrl) {
       try {
@@ -6478,11 +6519,11 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
                 this.saving = false;
         void Swal.fire({
           icon: 'success',
-          title: 'Document created',
-          text: `${result.document_number}, Rev ${result.revision_number}. ${result.message}`,
-          confirmButtonText: 'Back to Templates'
+          title: 'Template created',
+          text: `${result.document_number}, Rev ${result.revision_number}. A working draft will be created so you can continue editing.`,
+          confirmButtonText: 'Continue Editing'
         }).then(() => {
-          this.navigateToTemplateManager(templateId);
+          void this.saveDraft();
         });
       },
       error: (error) => {

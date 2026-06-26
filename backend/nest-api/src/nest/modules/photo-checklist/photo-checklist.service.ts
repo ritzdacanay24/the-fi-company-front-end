@@ -760,7 +760,8 @@ export class PhotoChecklistService implements OnModuleInit {
         sampleVideoUrl = rawStoredUrl;
       } else {
         updatedVideos = [...existingVideosClean, nextVideo];
-        sampleVideoUrl = sampleVideoUrl || existingVideosClean.find((video) => !!video?.is_primary)?.url || rawStoredUrl;
+        // Only preserve existing primary URL — do NOT fall back to the reference video URL
+        sampleVideoUrl = sampleVideoUrl || existingVideosClean.find((video) => !!video?.is_primary)?.url || null;
       }
     } else {
       const nextImage = {
@@ -775,11 +776,23 @@ export class PhotoChecklistService implements OnModuleInit {
       };
 
       if (isPrimary) {
+        // Capture the old primary before filtering it out so we can delete it from S3
+        const oldPrimary = existingImagesClean.find((image) => image?.is_primary && image?.image_type === 'sample');
         updatedImages = [nextImage, ...existingImagesClean.filter((image) => !(image?.is_primary && image?.image_type === 'sample'))];
         sampleImageUrl = rawStoredUrl;
+
+        // Delete the replaced primary from S3 (fire-and-forget after DB update)
+        if (oldPrimary?.url && oldPrimary.url !== rawStoredUrl) {
+          const oldS3 = this.parseS3Url(this.stripUrlQueryParams(oldPrimary.url) ?? '');
+          if (oldS3?.key) {
+            this.fileStorageService.deleteStoredFileInBucket(oldS3.key, oldS3.bucket || stored.bucket)
+              .catch((err) => this.logger.warn(`Failed to delete replaced primary image from S3: ${oldS3.key} — ${err?.message}`));
+          }
+        }
       } else {
         updatedImages = [...existingImagesClean, nextImage];
-        sampleImageUrl = sampleImageUrl || existingImagesClean.find((image) => !!image?.is_primary)?.url || rawStoredUrl;
+        // Only preserve existing primary URL — do NOT fall back to the reference image URL
+        sampleImageUrl = sampleImageUrl || existingImagesClean.find((image) => !!image?.is_primary)?.url || null;
       }
     }
 
