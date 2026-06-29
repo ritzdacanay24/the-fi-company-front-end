@@ -413,7 +413,8 @@ export class UploadedAttachmentsListComponent implements OnChanges {
     }));
 
     const activeId = this.toNumericAttachmentId(row?.id);
-    const index = items.findIndex((item) => item.id === activeId);
+    const idIndex = activeId !== null ? items.findIndex((item) => item.id === activeId) : -1;
+    const index = idIndex >= 0 ? idIndex : this._attachments.indexOf(row);
     const initialIndex = index >= 0 ? index : 0;
     const initialItem = items[initialIndex];
 

@@ -2095,6 +2095,23 @@ export class PhotoChecklistService implements OnModuleInit {
     const storageLocation = String(metadata?.storage_location || metadata?.storage_type || '').trim().toLowerCase();
 
     if (storageLocation === 'legacy') {
+      // If legacy files have been copied to S3 under checklist/legacy/..., sign from there.
+      // Derive key by stripping the origin + /attachments/ prefix and any query string.
+      // e.g. https://dashboard.eye-fi.com/attachments/inspectionCheckList/file.png?v=123
+      //   → checklist/legacy/inspectionCheckList/file.png
+      const legacyS3Key = this.deriveLegacyS3Key(rawUrl);
+      if (legacyS3Key) {
+        const bucket = String(process.env.FILE_STORAGE_DEFAULT_BUCKET || '').trim();
+        if (bucket) {
+          try {
+            const signedUrl = await this.fileStorageService.resolveBucketObjectUrl(bucket, legacyS3Key);
+            if (signedUrl) return signedUrl;
+          } catch {
+            // S3 object not yet migrated — fall through to legacy URL
+          }
+        }
+      }
+      // Fallback: serve from legacy server (files not yet in S3)
       return this.normalizeChecklistMediaUrl(rawUrl, { subFolder });
     }
 
@@ -2153,6 +2170,27 @@ export class PhotoChecklistService implements OnModuleInit {
     const path = base.match(/^https?:\/\/s3\.[^/]+\.amazonaws\.com\/([^/]+)\/(.+)$/);
     if (path) return { bucket: path[1], key: decodeURIComponent(path[2]) };
     return null;
+  }
+
+  /**
+   * Derives the S3 key for a legacy file that has been copied flat to checklist/instance/.
+   * Strips the origin, /attachments/ prefix, and any query string, then
+   * prepends the instance prefix.
+   *
+   * e.g. https://dashboard.eye-fi.com/attachments/inspectionCheckList/file.png?v=123
+   *   →  checklist/instance/file.png
+   *
+   * New uploads go to checklist/instance/{id}/file.png — legacy files live flat
+   * at checklist/instance/file.png. S3 treats both as valid keys.
+   */
+  private deriveLegacyS3Key(rawUrl: string): string | null {
+    if (!rawUrl) return null;
+    // Strip query string
+    const base = rawUrl.split('?')[0].trim();
+    // Extract just the filename — everything after the last /
+    const filename = base.split('/').filter(Boolean).pop();
+    if (!filename) return null;
+    return `checklist/instance/${filename}`;
   }
 
   private async resolveSignedSampleMediaArray(
