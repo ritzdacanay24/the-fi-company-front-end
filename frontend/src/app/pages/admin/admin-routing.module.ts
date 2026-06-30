@@ -30,6 +30,15 @@ const routes: Routes = [
     canActivate: [AccessGuard],
     runGuardsAndResolvers: "always",
   },
+  {
+    path: "bucket-browser",
+    loadComponent: () =>
+      import("../operations/bucket-browser/bucket-browser.component").then(
+        (m) => m.BucketBrowserComponent
+      ),
+    canActivate: [AccessGuard],
+    runGuardsAndResolvers: "always",
+  },
 ];
 
 @NgModule({

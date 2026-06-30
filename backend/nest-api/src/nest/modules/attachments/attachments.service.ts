@@ -15,15 +15,36 @@ export class AttachmentsService {
     file?: { originalname?: string; buffer?: Buffer },
   ) {
     const subFolder = this.resolveSubFolder(payload);
-    const storedFileName = await this.storageService.storeUploadedFile(file, subFolder);
-    const normalizedPayload = this.normalizeCreatePayload(payload, storedFileName, file?.originalname);
+    const isBucketMode = this.storageService.isS3Mode();
+    let storedFileName = '';
+    let bucketKey: string | null = null;
+
+    if (isBucketMode) {
+      const stored = await this.storageService.storeUploadedFileInBucket(file, { keyPrefix: subFolder });
+      storedFileName = stored.fileName;
+      bucketKey = stored.key;
+    } else {
+      storedFileName = await this.storageService.storeUploadedFile(file, subFolder);
+    }
+
+    const normalizedPayload = this.normalizeCreatePayload(
+      payload,
+      storedFileName,
+      file?.originalname,
+      bucketKey,
+      isBucketMode ? 'bucket' : 'local',
+    );
 
     try {
       const insertId = await this.metadataService.createAttachment(normalizedPayload);
 
       return { message: 'Created successfully', insertId };
     } catch (error) {
-      await this.storageService.deleteStoredFile(storedFileName, subFolder);
+      if (isBucketMode && bucketKey) {
+        await this.storageService.deleteStoredFileInBucket(bucketKey);
+      } else {
+        await this.storageService.deleteStoredFile(storedFileName, subFolder);
+      }
       throw error;
     }
   }
@@ -112,16 +133,42 @@ export class AttachmentsService {
 
     const resolved = await this.storageService.withResolvedLink(row as Record<string, unknown>);
     const link = typeof resolved?.link === 'string' ? resolved.link.trim() : '';
+    const storageSource = String(resolved?.storage_source || '').trim().toLowerCase();
     if (!link) {
       throw new NotFoundException('Attachment URL not available');
     }
 
+    const url = storageSource === 'bucket'
+      ? await this.storageService.resolveBucketObjectUrl('', this.resolveBucketKeyFromLink(link))
+      : link;
+
     return {
       id,
-      url: link,
+      url,
       fileName: resolved?.fileName,
       storage_source: resolved?.storage_source,
     };
+  }
+
+  private resolveBucketKeyFromLink(link: string): string {
+    try {
+      const parsed = new URL(link);
+      const path = parsed.pathname.replace(/^\/+/, '');
+      if (!path) {
+        return '';
+      }
+
+      const bucket = String(process.env.FILE_STORAGE_DEFAULT_BUCKET || '').trim().toLowerCase();
+      const [firstSegment, ...rest] = path.split('/').filter(Boolean);
+
+      if (bucket && firstSegment && firstSegment.toLowerCase() === bucket) {
+        return rest.join('/');
+      }
+
+      return path;
+    } catch {
+      return link;
+    }
   }
 
   async updateById(id: number, payload: Record<string, unknown>) {
@@ -132,6 +179,17 @@ export class AttachmentsService {
     const row = await this.metadataService.getById(id);
     const fileName = typeof row?.fileName === 'string' ? row.fileName.trim() : '';
     if (fileName) {
+      const storageSource = String(row?.storage_source || '').trim().toLowerCase();
+      if (storageSource === 'bucket') {
+        const link = typeof row?.link === 'string' ? row.link.trim() : '';
+        const key = this.resolveBucketKeyFromLink(link);
+        if (key) {
+          await this.storageService.deleteStoredFileInBucket(key);
+        }
+
+        return this.metadataService.deleteById(id);
+      }
+
       const subFolder = this.resolveDeleteSubFolder(row as Record<string, unknown>);
       await this.storageService.deleteStoredFile(fileName, subFolder);
     }
@@ -168,12 +226,14 @@ export class AttachmentsService {
     payload: Record<string, unknown>,
     storedFileName: string,
     originalName?: string,
+    bucketKey?: string | null,
+    storageSourceOverride?: 'local' | 'bucket',
   ): Record<string, unknown> {
     const createdDate = this.normalizeCreatedDate(payload.createdDate);
     const uniqueId = payload.uniqueId ?? payload.uniqueData;
     const ext = this.normalizeExtension(payload.ext, originalName);
     const subFolder = this.resolveSubFolder(payload);
-    const link = this.normalizeLink(payload.link, storedFileName, subFolder);
+    const link = this.normalizeLink(payload.link, storedFileName, subFolder, bucketKey);
 
     return {
       ...payload,
@@ -182,18 +242,22 @@ export class AttachmentsService {
       uniqueId,
       link,
       ext,
-      storage_source: this.normalizeStorageSource(payload.storage_source) || 'local',
+      storage_source: storageSourceOverride || this.normalizeStorageSource(payload.storage_source) || 'local',
     };
   }
 
-  private normalizeStorageSource(value: unknown): 'local' | 'legacy' | undefined {
+  private normalizeStorageSource(value: unknown): 'local' | 'legacy' | 'bucket' | undefined {
     if (typeof value !== 'string') {
       return undefined;
     }
 
     const normalized = value.trim().toLowerCase();
-    if (normalized === 'local' || normalized === 'legacy') {
+    if (normalized === 'local' || normalized === 'legacy' || normalized === 'bucket') {
       return normalized;
+    }
+
+    if (normalized === 's3') {
+      return 'bucket';
     }
 
     return undefined;
@@ -220,7 +284,11 @@ export class AttachmentsService {
     return extension || undefined;
   }
 
-  private normalizeLink(value: unknown, fileName: string, subFolder: string): string | undefined {
+  private normalizeLink(value: unknown, fileName: string, subFolder: string, bucketKey?: string | null): string | undefined {
+    if (typeof bucketKey === 'string' && bucketKey.trim()) {
+      return bucketKey.trim();
+    }
+
     if (typeof value === 'string' && value.trim()) {
       return value.trim();
     }

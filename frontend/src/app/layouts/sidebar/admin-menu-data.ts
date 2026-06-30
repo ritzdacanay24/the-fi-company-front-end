@@ -58,6 +58,16 @@ export const ADMIN_MENU: MenuItem[] = [
         activatedRoutes: "/admin/access-control"
     },
     {
+        id: 9.5,
+        label: "Bucket Browser",
+        link: "/admin/bucket-browser",
+        description: "Browse and manage bucket folders and files",
+        icon: "las la-folder-open",
+        hideCheckBox: true,
+        accessRequired: true,
+        activatedRoutes: "/admin/bucket-browser*"
+    },
+    {
         id: 6,
         label: "Quick Actions",
         isTitle: true,

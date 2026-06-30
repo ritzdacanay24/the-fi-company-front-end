@@ -268,6 +268,8 @@ export class VehicleEditComponent {
 
   myFiles: File[] = [];
 
+  isUploadingAttachments = false;
+
   onFilechange(event: any) {
     this.myFiles = [];
     for (var i = 0; i < event.target.files.length; i++) {
@@ -287,7 +289,7 @@ export class VehicleEditComponent {
   async onUploadAttachments() {
     if (this.myFiles?.length) {
       let totalAttachments = 0;
-      this.isLoading = true;
+      this.isUploadingAttachments = true;
       for (var i = 0; i < this.myFiles.length; i++) {
         const formData = new FormData();
         formData.append("file", this.myFiles[i]);
@@ -300,11 +302,13 @@ export class VehicleEditComponent {
           totalAttachments++;
         } catch (err) { }
       }
-      this.isLoading = false;
+      this.isUploadingAttachments = false;
       this.clearFile();
       await this.getAttachments();
       if (totalAttachments > 0) {
         this.toastrService.success(`Uploaded ${totalAttachments} attachment${totalAttachments > 1 ? "s" : ""}`);
+      } else {
+        this.toastrService.warning("No files were uploaded");
       }
     }
   }

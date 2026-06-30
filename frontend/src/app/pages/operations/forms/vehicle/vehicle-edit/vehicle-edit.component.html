@@ -122,8 +122,13 @@
                 <button (click)="this.onUploadAttachments()" 
                   type="button" 
                   class="btn btn-outline-dark w-100"
-                  [disabled]="myFiles?.length == 0">
-                  <i class="mdi mdi-upload me-1"></i>Upload Documents
+                  [disabled]="myFiles?.length == 0 || isUploadingAttachments">
+                  @if (isUploadingAttachments) {
+                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                    Uploading to AWS...
+                  } @else {
+                    <i class="mdi mdi-upload me-1"></i>Upload Documents
+                  }
                 </button>
               </div>
               <div class="col-12">
