@@ -1,12 +1,14 @@
-import { Component, NgZone, OnDestroy, OnInit } from "@angular/core";
+import { Component, ElementRef, NgZone, OnDestroy, OnInit, ViewChild } from "@angular/core";
+import { CommonModule } from "@angular/common";
+import { FormsModule } from "@angular/forms";
 import { ActivatedRoute, Router } from "@angular/router";
 import { SharedModule } from "@app/shared/shared.module";
 import {
   _compressToEncodedURIComponent,
   _decompressFromEncodedURIComponent,
 } from "src/assets/js/util/jslzString";
-import { AgGridModule } from "ag-grid-angular";
-import { ColDef, GridApi, GridOptions } from "ag-grid-community";
+import { AgGridModule, ICellEditorAngularComp } from "ag-grid-angular";
+import { ColDef, GridApi, GridOptions, ICellEditorParams } from "ag-grid-community";
 import { NgSelectModule } from "@ng-select/ng-select";
 import { MasterSchedulingService } from "@app/core/api/operations/master-scheduling/master-scheduling.service";
 import { PathUtilsService } from "@app/core/services/path-utils.service";
@@ -91,6 +93,10 @@ interface ShippingOrder {
   [key: string]: any; // For other dynamic properties
 }
 
+interface OwnerDropdownEditorParams extends ICellEditorParams {
+  loadValues?: (params: ICellEditorParams) => Promise<string[]> | string[];
+}
+
 @Component({
   standalone: true,
   imports: [
@@ -111,6 +117,7 @@ export class ShippingComponent implements OnInit, OnDestroy {
 
   // Owner dropdown configuration - loaded dynamically from database setting
   ownerDropdownEnabled = false;
+  private cachedOwnerValues: string[] = [];
 
   onBtExport() {
     this.gridApi!.exportDataAsExcel();
@@ -338,7 +345,11 @@ export class ShippingComponent implements OnInit, OnDestroy {
       if (response.success && response.data) {
         this.ownerDropdownEnabled = response.data.enabled;
         console.log(`Owner dropdown setting loaded: ${this.ownerDropdownEnabled ? 'ENABLED' : 'DISABLED'}`);
-        
+
+        if (this.ownerDropdownEnabled) {
+          this.cachedOwnerValues = await this.loadOwnerDropdownValues();
+        }
+
         // Update owner column visibility
         if (this.gridApi) {
           this.updateOwnerColumnVisibility();
@@ -367,7 +378,7 @@ export class ShippingComponent implements OnInit, OnDestroy {
         // Only update if setting changed
         if (wasEnabled !== this.ownerDropdownEnabled) {
           console.log(`⚡ Owner dropdown setting changed: ${this.ownerDropdownEnabled ? 'ENABLED' : 'DISABLED'}`);
-          
+
           // Update the column definition immediately
           if (this.gridApi) {
             this.updateOwnerColumnEditor();
@@ -376,6 +387,25 @@ export class ShippingComponent implements OnInit, OnDestroy {
       }
     } catch (error) {
       console.error('Error refreshing owner dropdown setting:', error);
+    }
+  }
+
+  private async loadOwnerDropdownValues(): Promise<string[]> {
+    const userId = this.authenticationService.currentUserValue?.id;
+    if (!userId) {
+      return ['⚠️ Please log in to assign owners'];
+    }
+
+    try {
+      const response = await this.ownersService.getOwnersForUser(userId, true);
+      if (response.success && Array.isArray(response.data) && response.data.length > 0) {
+        return ['— Clear Owner —', ...response.data.map((owner) => owner.name)];
+      }
+
+      return ['⚠️ No owners assigned - Contact admin to assign owners'];
+    } catch (error) {
+      console.error('❌ Error loading owners:', error);
+      return ['⚠️ Error loading owners - Try again'];
     }
   }
 
@@ -408,41 +438,14 @@ export class ShippingComponent implements OnInit, OnDestroy {
 
     // Update the column definition with the correct editor
     ownerColDef.cellEditor = this.ownerDropdownEnabled ? 'agRichSelectCellEditor' : 'agTextCellEditor';
+    ownerColDef.cellEditorPopup = this.ownerDropdownEnabled ? true : false;
     ownerColDef.cellEditorParams = this.ownerDropdownEnabled ? {
-      values: async (params) => {
-        try {
-          const userId = this.authenticationService.currentUserValue?.id;
-          if (!userId) {
-            console.warn('⚠️ No user ID found');
-            return ['⚠️ Please log in to assign owners'];
-          }
-
-          console.log(`🔍 Fetching owners for user ID: ${userId}`);
-          const response = await this.ownersService.getOwnersForUser(userId, true);
-          
-          if (response.success && Array.isArray(response.data)) {
-            if (response.data.length === 0) {
-              console.warn('⚠️ No owners assigned to this user');
-              return ['⚠️ No owners assigned - Contact admin to assign owners'];
-            }
-            
-            const ownerNames = response.data.map(o => o.name);
-            console.log('✅ Loaded owners for dropdown:', ownerNames);
-            return ['— Clear Owner —', ...ownerNames];
-          } else {
-            console.error('❌ Failed to load owners:', response);
-            return ['⚠️ Failed to load owners - Try again'];
-          }
-        } catch (error) {
-          console.error('❌ Error loading owners:', error);
-          return ['⚠️ Error loading owners - Try again'];
-        }
-      },
-      searchDebounceDelay: 300,
+      values: this.cachedOwnerValues,
+      searchType: 'matchAny',
       allowTyping: true,
       filterList: true,
       highlightMatch: true,
-      valueListMaxHeight: 220
+      valueListMaxHeight: 240,
     } : {};
 
     // Force AG Grid to update the column definition by calling setColumnDefs
@@ -1047,8 +1050,32 @@ export class ShippingComponent implements OnInit, OnDestroy {
     // Add event listener for when cell editing starts (to refresh owner setting)
     this.gridApi.addEventListener('cellEditingStarted', async (event: any) => {
       if (event.column?.getColId() === 'misc.userName') {
-        // Refresh the setting when user starts editing owner column
         await this.refreshOwnerDropdownSetting();
+
+        // Fix spacebar in the custom popup editor: AG Grid's internal handlers consume
+        // space before the search input can receive it. Intercept in capture phase on
+        // the input — stopImmediatePropagation() cancels all bubble listeners (AG Grid's
+        // included) but leaves the browser's default character insertion intact.
+        if (this.ownerDropdownEnabled) {
+          requestAnimationFrame(() => {
+            const input = document.querySelector('.ag-rich-select-field-input') as HTMLInputElement | null;
+            if (!input) return;
+
+            const spaceHandler = (e: KeyboardEvent) => {
+              if (e.key === ' ') {
+                e.stopImmediatePropagation();
+              }
+            };
+
+            input.addEventListener('keydown', spaceHandler, true); // capture phase
+
+            const cleanup = () => {
+              input.removeEventListener('keydown', spaceHandler, true);
+              this.gridApi.removeEventListener('cellEditingStopped', cleanup);
+            };
+            this.gridApi.addEventListener('cellEditingStopped', cleanup);
+          });
+        }
       }
     });
 
@@ -3016,6 +3043,9 @@ export class ShippingComponent implements OnInit, OnDestroy {
   dataRenderered = false;
 
   gridOptions: GridOptions = {
+    components: {
+      ownerDropdownEditor: OwnerDropdownEditorComponent,
+    },
     rowDragManaged: true,
     suppressMoveWhenRowDragging: true,
     rowDragEntireRow: true,
@@ -3254,4 +3284,168 @@ export class ShippingComponent implements OnInit, OnDestroy {
     }
   }
 
+}
+
+@Component({
+  selector: 'app-owner-dropdown-editor',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  template: `
+    <div class="owner-dropdown-editor" (mousedown)="$event.stopPropagation()">
+      <input
+        #searchInput
+        type="text"
+        class="form-control form-control-sm owner-dropdown-search"
+        [(ngModel)]="searchText"
+        (ngModelChange)="filterValues()"
+        (keydown)="onKeydown($event)"
+        placeholder="Search owners..."
+        autocomplete="off"
+      />
+
+      <div class="owner-dropdown-list" *ngIf="filteredValues.length">
+        <button
+          type="button"
+          class="owner-dropdown-item"
+          *ngFor="let value of filteredValues; let i = index"
+          [class.active]="i === activeIndex"
+          (mousedown)="selectValue($event, value)">
+          {{ value }}
+        </button>
+      </div>
+    </div>
+  `,
+  styles: [
+    `
+      .owner-dropdown-editor {
+        min-width: 260px;
+        background: #fff;
+        padding: 6px;
+      }
+
+      .owner-dropdown-search {
+        margin-bottom: 6px;
+      }
+
+      .owner-dropdown-list {
+        max-height: 240px;
+        overflow: auto;
+        border: 1px solid #d6dce5;
+        border-radius: 6px;
+        background: #fff;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+      }
+
+      .owner-dropdown-item {
+        display: block;
+        width: 100%;
+        text-align: left;
+        border: 0;
+        background: transparent;
+        padding: 8px 10px;
+        font-size: 13px;
+        cursor: pointer;
+      }
+
+      .owner-dropdown-item:hover,
+      .owner-dropdown-item.active {
+        background: #e9f0ff;
+      }
+    `,
+  ],
+})
+export class OwnerDropdownEditorComponent implements ICellEditorAngularComp {
+  @ViewChild('searchInput', { static: true }) searchInput!: ElementRef<HTMLInputElement>;
+
+  private params!: OwnerDropdownEditorParams;
+  private values: string[] = [];
+  private readonly clearSentinel = '— Clear Owner —';
+
+  searchText = '';
+  filteredValues: string[] = [];
+  activeIndex = 0;
+
+  agInit(params: OwnerDropdownEditorParams): void {
+    this.params = params;
+    void this.loadValues(params);
+  }
+
+  afterGuiAttached(): void {
+    queueMicrotask(() => {
+      this.searchInput?.nativeElement.focus();
+      this.searchInput?.nativeElement.select();
+    });
+  }
+
+  getValue(): any {
+    const value = this.searchText.trim();
+    return value === this.clearSentinel ? '' : value;
+  }
+
+  isPopup(): boolean {
+    return true;
+  }
+
+  getPopupPosition(): 'under' {
+    return 'under';
+  }
+
+  async loadValues(params: OwnerDropdownEditorParams): Promise<void> {
+    const loader = params.colDef.cellEditorParams?.loadValues;
+    const result = typeof loader === 'function' ? await loader(params) : [];
+    this.values = Array.isArray(result) ? result : [];
+
+    const currentValue = params.value == null ? '' : String(params.value).trim();
+    this.searchText = currentValue;
+    this.filterValues();
+  }
+
+  onKeydown(event: KeyboardEvent): void {
+    const key = event.key;
+    event.stopPropagation();
+
+    if (key === 'ArrowDown') {
+      event.preventDefault();
+      this.activeIndex = Math.min(this.activeIndex + 1, Math.max(this.filteredValues.length - 1, 0));
+      return;
+    }
+
+    if (key === 'ArrowUp') {
+      event.preventDefault();
+      this.activeIndex = Math.max(this.activeIndex - 1, 0);
+      return;
+    }
+
+    if (key === 'Enter') {
+      event.preventDefault();
+      if (this.filteredValues.length > 0) {
+        this.searchText = this.filteredValues[this.activeIndex] ?? this.filteredValues[0];
+      }
+      this.params.stopEditing();
+      return;
+    }
+
+    if (key === 'Escape') {
+      event.preventDefault();
+      this.params.stopEditing(true);
+      return;
+    }
+
+    if (key === 'Tab') {
+      this.params.stopEditing();
+    }
+  }
+
+  selectValue(event: MouseEvent, value: string): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.searchText = value;
+    this.params.stopEditing();
+  }
+
+  filterValues(): void {
+    const term = this.searchText.toLowerCase();
+    this.filteredValues = this.values.filter((value) => value.toLowerCase().includes(term));
+    this.activeIndex = 0;
+  }
 }
