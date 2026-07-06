@@ -158,7 +158,7 @@
           </li>
 
           }@else if(hasItems(menu)){
-          <a *ngIf="!searchTerm()" title="{{menu.label}}" data-target="#nav{{menu.link}}" [attr.aria-expanded]="shouldExpandDropdown(menu)"
+          <a *ngIf="!searchTerm()" title="{{menu.label}}" [attr.aria-expanded]="shouldExpandDropdown(menu)"
             [class]="searchTerm() ? 'nav-item nav-link disabled-toggle' : 'nav-item nav-link'"
             [attr.data-bs-toggle]="searchTerm() ? null : 'collapse'" 
             (click)="searchTerm() ? null : toggleItem(menu)">
