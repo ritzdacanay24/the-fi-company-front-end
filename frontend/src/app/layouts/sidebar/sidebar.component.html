@@ -59,7 +59,12 @@
 
         <ngx-simplebar class="sidebar-menu-scroll sidebar-menu-scroll-with-rail">
         <ng-template #menuActionsTemplate let-item="item">
-          <div ngbDropdown class="menu-item-actions" (click)="onMenuActionsContainerClick($event)">
+          <div
+            ngbDropdown
+            class="menu-item-actions"
+            placement="end-top"
+            container="body"
+            (click)="onMenuActionsContainerClick($event)">
             <button
               type="button"
               class="btn btn-sm menu-item-actions-trigger"

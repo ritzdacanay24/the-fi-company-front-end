@@ -520,6 +520,7 @@
 	.menu-item-actions.show {
 		opacity: 1;
 		visibility: visible;
+		margin-right: 8px;
 	}
 
 	&:hover .sidebar-count-badge,
@@ -528,6 +529,12 @@
 		opacity: 0;
 		visibility: hidden;
 	}
+}
+
+/* ngbDropdown rendered in body still needs sidebar action menu sizing/layering. */
+:host ::ng-deep .menu-item-actions-menu {
+	min-width: 210px;
+	z-index: 1200;
 }
 
 /* Add breathing room below the last menu item in the scroll area */
