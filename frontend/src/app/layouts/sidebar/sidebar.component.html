@@ -81,6 +81,18 @@
                 <i class="las la-star-half-alt me-2"></i>
                 Remove favorite
               </button>
+              <button ngbDropdownItem type="button" [disabled]="!canMoveMenuItemUp(item)" (click)="moveMenuItemFromSidebar(item, 'up')">
+                <i class="las la-arrow-up me-2"></i>
+                Move up
+              </button>
+              <button ngbDropdownItem type="button" [disabled]="!canMoveMenuItemDown(item)" (click)="moveMenuItemFromSidebar(item, 'down')">
+                <i class="las la-arrow-down me-2"></i>
+                Move down
+              </button>
+              <button ngbDropdownItem type="button" [disabled]="!canHideMenuItem(item)" (click)="hideMenuItemFromSidebar(item)">
+                <i class="las la-eye-slash me-2"></i>
+                Hide from menu
+              </button>
               <button ngbDropdownItem type="button" [disabled]="!item?.link" (click)="openMenuItemInNewTab(item)">
                 <i class="las la-external-link-alt me-2"></i>
                 Open in new tab

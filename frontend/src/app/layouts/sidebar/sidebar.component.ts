@@ -834,6 +834,97 @@ export class SidebarComponent implements OnInit {
     event.stopPropagation();
   }
 
+  canMoveMenuItemUp(item: MenuItem | null | undefined): boolean {
+    const index = this.findVisibleTopLevelMenuIndex(item);
+    return index > 0;
+  }
+
+  canMoveMenuItemDown(item: MenuItem | null | undefined): boolean {
+    const index = this.findVisibleTopLevelMenuIndex(item);
+    const visibleItems = this.getVisibleTopLevelMenuItems();
+    return index >= 0 && index < visibleItems.length - 1;
+  }
+
+  moveMenuItemFromSidebar(item: MenuItem | null | undefined, direction: 'up' | 'down'): void {
+    if (!item || item.id === undefined) {
+      return;
+    }
+
+    this.loadMenuConfiguration();
+
+    const movableItems = [...this.configMenuItems()]
+      .filter((configItem) => configItem.visible && !configItem.isTitle && configItem.id !== undefined)
+      .sort((a, b) => a.order - b.order);
+
+    const currentIndex = movableItems.findIndex((configItem) => configItem.id === item.id);
+    if (currentIndex < 0) {
+      return;
+    }
+
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (targetIndex < 0 || targetIndex >= movableItems.length) {
+      return;
+    }
+
+    const currentItem = movableItems[currentIndex];
+    const targetItem = movableItems[targetIndex];
+    if (!currentItem || !targetItem) {
+      return;
+    }
+
+    const allItems = [...this.configMenuItems()];
+    const currentAllIndex = allItems.findIndex((configItem) => configItem.id === currentItem.id);
+    const targetAllIndex = allItems.findIndex((configItem) => configItem.id === targetItem.id);
+    if (currentAllIndex < 0 || targetAllIndex < 0) {
+      return;
+    }
+
+    const currentOrder = allItems[currentAllIndex].order;
+    allItems[currentAllIndex] = {
+      ...allItems[currentAllIndex],
+      order: allItems[targetAllIndex].order,
+    };
+    allItems[targetAllIndex] = {
+      ...allItems[targetAllIndex],
+      order: currentOrder,
+    };
+
+    this.configMenuItems.set(allItems);
+    this.saveCurrentOrder();
+  }
+
+  canHideMenuItem(item: MenuItem | null | undefined): boolean {
+    if (!item || item.isTitle) {
+      return false;
+    }
+
+    return this.isTopLevelMenuItem(item) || Boolean(item.link && this.findParentTopLevelItemIdByLink(item.link));
+  }
+
+  hideMenuItemFromSidebar(item: MenuItem | null | undefined): void {
+    if (!item || item.isTitle) {
+      return;
+    }
+
+    if (this.isTopLevelMenuItem(item)) {
+      if (item.id !== undefined) {
+        this.toggleMenuItemVisibility(item.id);
+      }
+      return;
+    }
+
+    if (!item.link) {
+      return;
+    }
+
+    const parentId = this.findParentTopLevelItemIdByLink(item.link);
+    if (parentId === null) {
+      return;
+    }
+
+    this.toggleSubItemVisibility(parentId, item.link);
+  }
+
   openMenuItemInNewTab(item: { link?: string } | null | undefined): void {
     const url = this.resolveMenuItemUrl(item?.link);
     if (!url) {
@@ -866,6 +957,55 @@ export class SidebarComponent implements OnInit {
     } catch {
       return null;
     }
+  }
+
+  private getVisibleTopLevelMenuItems(): MenuItem[] {
+    return this.menuItems.filter((menuItem) => !menuItem.isTitle && menuItem.id !== undefined);
+  }
+
+  private findVisibleTopLevelMenuIndex(item: MenuItem | null | undefined): number {
+    if (!item || item.id === undefined) {
+      return -1;
+    }
+
+    const visibleItems = this.getVisibleTopLevelMenuItems();
+    return visibleItems.findIndex((menuItem) => menuItem.id === item.id);
+  }
+
+  private isTopLevelMenuItem(item: MenuItem): boolean {
+    if (item.id === undefined) {
+      return false;
+    }
+
+    return this.originalMenuItems.some((menuItem) => menuItem.id === item.id);
+  }
+
+  private findParentTopLevelItemIdByLink(link: string): number | string | null {
+    for (const menuItem of this.originalMenuItems) {
+      if (!menuItem.subItems || menuItem.subItems.length === 0) {
+        continue;
+      }
+
+      if (this.hasSubItemWithLink(menuItem.subItems as MenuItem[], link)) {
+        return menuItem.id ?? null;
+      }
+    }
+
+    return null;
+  }
+
+  private hasSubItemWithLink(items: MenuItem[], link: string): boolean {
+    return items.some((menuItem) => {
+      if (menuItem.link === link) {
+        return true;
+      }
+
+      if (menuItem.subItems && menuItem.subItems.length > 0) {
+        return this.hasSubItemWithLink(menuItem.subItems as MenuItem[], link);
+      }
+
+      return false;
+    });
   }
 
   mouseLeft(item) {
@@ -1191,7 +1331,7 @@ export class SidebarComponent implements OnInit {
     this.applyMenuConfiguration();
   }
 
-  toggleSubItemVisibility(parentId: number, subItemLink: string) {
+  toggleSubItemVisibility(parentId: number | string, subItemLink: string) {
     console.log(`[${this.currentMenuType}] Toggling sub-item visibility for parent ID: ${parentId}, sub-item link: ${subItemLink}`);
     const config = this.getMenuConfiguration();
     
