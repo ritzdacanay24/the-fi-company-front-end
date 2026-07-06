@@ -95,11 +95,13 @@ export class SupportTicketsRepository {
     }
 
     const page = Number.isFinite(Number(filters.page)) && Number(filters.page) > 0 ? Math.floor(Number(filters.page)) : 1;
-    const limitRaw = Number.isFinite(Number(filters.limit)) && Number(filters.limit) > 0 ? Math.floor(Number(filters.limit)) : 50;
-    const limit = Math.min(Math.max(limitRaw, 1), 200);
-    const offset = (page - 1) * limit;
+    const hasExplicitLimit = Number.isFinite(Number(filters.limit)) && Number(filters.limit) > 0;
+    const limit = hasExplicitLimit ? Math.min(Math.max(Math.floor(Number(filters.limit)), 1), 200) : null;
+    const offset = limit ? (page - 1) * limit : 0;
 
     const whereClause = where.length > 0 ? `WHERE ${where.join(' AND ')}` : '';
+
+    const paginationClause = limit ? `LIMIT ${limit} OFFSET ${offset}` : '';
 
     const rows = await this.mysqlService.query<RowDataPacket[]>(
       `
@@ -123,7 +125,7 @@ export class SupportTicketsRepository {
         FROM eyefidb.support_tickets
         ${whereClause}
         ORDER BY created_at DESC
-        LIMIT ${limit} OFFSET ${offset}
+        ${paginationClause}
       `,
       params,
     );
