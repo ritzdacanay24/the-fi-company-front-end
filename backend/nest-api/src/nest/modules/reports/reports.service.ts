@@ -1044,7 +1044,7 @@ export class ReportsService {
     }
 
     // When "Show All" is selected, aggregate across all customers per date
-    // to match legacy PHP behavior (single 'nocustomer' series)
+    // into a single "All Customers" series.
     let mappedChartRows: ChartRow[];
     
     if (showAll) {
@@ -1062,9 +1062,9 @@ export class ReportsService {
       // Convert aggregates to ChartRow format
       mappedChartRows = Array.from(dateAggregates.values()).map((agg) => ({
         value: agg.totalLines > 0 ? Number(((agg.totalShippedOnTime / agg.totalLines) * 100).toFixed(2)) : 0,
-        label: 'nocustomer',  // Match legacy PHP key
+        label: 'All Customers',
         request_date: agg.sod_per_date,
-        background_color: this.getColorForLabel('nocustomer'),
+        background_color: this.getColorForLabel('All Customers'),
       }));
     } else {
       // Keep individual customer series for specific customer selection
