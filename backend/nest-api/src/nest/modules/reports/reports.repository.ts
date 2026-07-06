@@ -1533,6 +1533,59 @@ export class ReportsRepository extends BaseRepository<RowDataPacket> {
     return this.qad.query<Record<string, unknown>[]>(sql, { keyCase: 'lower' });
   }
 
+  async getOtdReportV1ChartData(dateFrom: string, dateTo: string, displayCustomers?: string): Promise<Record<string, unknown>[]> {
+    const showAll = !displayCustomers || displayCustomers === 'Show All' || displayCustomers === 'false' || displayCustomers === 'undefined';
+    const customerClause = showAll ? '' : 'AND customer = ?';
+
+    const sql = `
+      SELECT total_lines,
+             total_shipped_on_time,
+             (total_lines - total_shipped_on_time) AS total_shipped_late,
+             CAST(CASE WHEN total_shipped_on_time > 0
+                       THEN (total_shipped_on_time / total_lines) * 100 ELSE 0
+                  END AS DECIMAL(16,2)) AS value,
+             customer AS label,
+             performance_date AS sod_per_date,
+             customer AS so_cust
+      FROM (
+        SELECT COUNT(*) AS total_lines,
+               SUM(CASE
+                 WHEN performance_date - last_shipped_on < 0 AND performance_date < CURDATE() THEN 0
+                 WHEN last_shipped_on IS NULL THEN 0
+                 WHEN performance_date < CURDATE() AND qty_ordered != shipped_qty THEN 0
+                 ELSE 1
+               END) AS total_shipped_on_time,
+               performance_date,
+               customer
+        FROM eyefidb.on_time_delivery
+        WHERE performance_date BETWEEN ? AND ?
+          AND so_nbr NOT LIKE 'FS%'
+          ${customerClause}
+        GROUP BY performance_date, customer
+        ORDER BY CAST(CASE WHEN SUM(CASE
+          WHEN performance_date - last_shipped_on < 0 AND performance_date < CURDATE() THEN 0
+          WHEN last_shipped_on IS NULL THEN 0
+          WHEN performance_date < CURDATE() AND qty_ordered != shipped_qty THEN 0
+          ELSE 1
+        END) > 0
+        THEN (SUM(CASE
+          WHEN performance_date - last_shipped_on < 0 AND performance_date < CURDATE() THEN 0
+          WHEN last_shipped_on IS NULL THEN 0
+          WHEN performance_date < CURDATE() AND qty_ordered != shipped_qty THEN 0
+          ELSE 1
+        END) / COUNT(*)) * 100 ELSE 0 END AS DECIMAL(16,2)) DESC
+      ) inner_q
+    `;
+
+    const params: Array<string> = [dateFrom, dateTo];
+    if (!showAll && displayCustomers) {
+      params.push(displayCustomers);
+    }
+
+    const result = await this.mysqlService.query(sql, params);
+    return (result as any) || [];
+  }
+
   async getOtdReportV1Details(dateFrom: string, dateTo: string, displayCustomers?: string): Promise<any[]> {
     const showAll = !displayCustomers || displayCustomers === 'Show All' || displayCustomers === 'false' || displayCustomers === 'undefined';
     const customerClause = showAll ? '' : `AND customer = '${displayCustomers.replace(/'/g, "''")}'`;
@@ -1558,9 +1611,8 @@ export class ReportsRepository extends BaseRepository<RowDataPacket> {
              END AS is_late,
              shipped_partial
       FROM eyefidb.on_time_delivery
-      WHERE last_shipped_on BETWEEN ? AND ?
+      WHERE performance_date BETWEEN ? AND ?
         AND so_nbr NOT LIKE 'FS%'
-        AND last_shipped_on IS NOT NULL
         ${customerClause}
       ORDER BY customer, last_shipped_on ASC
     `;
@@ -1591,9 +1643,8 @@ export class ReportsRepository extends BaseRepository<RowDataPacket> {
                ELSE 1
              END) / COUNT(*)) * 100 ELSE 0 END AS value
       FROM eyefidb.on_time_delivery
-      WHERE last_shipped_on BETWEEN ? AND ?
+      WHERE performance_date BETWEEN ? AND ?
         AND so_nbr NOT LIKE 'FS%'
-        AND last_shipped_on IS NOT NULL
       GROUP BY customer
       ORDER BY CONVERT(CASE WHEN SUM(CASE
         WHEN performance_date - last_shipped_on < 0 AND performance_date < CURDATE() THEN 0
@@ -1700,9 +1751,8 @@ export class ReportsRepository extends BaseRepository<RowDataPacket> {
                @curRow := @curRow + 1 AS row_number
         FROM eyefidb.on_time_delivery a
         LEFT JOIN eyefidb.workOrderOwner b ON b.so = CONCAT(a.so_nbr, '-', a.line_nbr)
-        WHERE a.last_shipped_on BETWEEN ? AND ?
+        WHERE a.performance_date BETWEEN ? AND ?
           AND a.so_nbr NOT LIKE 'FS%'
-          AND a.last_shipped_on IS NOT NULL
           AND b.lateReasonCode <> ''
         GROUP BY b.lateReasonCode
       ) ranked

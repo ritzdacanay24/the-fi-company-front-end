@@ -995,7 +995,7 @@ export class ReportsService {
     const [details, summary, otdChartRows, reasonChartRows] = await Promise.all([
       this.repository.getOtdReportV1Details(from, to, custFilter),
       this.repository.getOtdReportV1Summary(from, to),
-      this.repository.getOtdReportChartData(from, to, custFilter),
+      this.repository.getOtdReportV1ChartData(from, to, custFilter),
       this.repository.getOtdReportReasonChart(from, to),
     ]);
 
