@@ -470,6 +470,66 @@
 	opacity: 1;
 }
 
+/* Outlook-style item actions: show 3-dot menu on hover/focus and hide badges while active. */
+.menu-item-with-actions {
+	position: relative;
+
+	.menu-link-with-actions,
+	> .nav-link {
+		padding-right: 2.7rem;
+	}
+
+	.menu-item-actions {
+		position: absolute;
+		inset-inline-end: 0.4rem;
+		top: 50%;
+		transform: translateY(-50%);
+		opacity: 0;
+		visibility: hidden;
+		z-index: 12;
+		transition: opacity 0.08s ease;
+
+		.menu-item-actions-trigger {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			width: 1.7rem;
+			height: 1.7rem;
+			padding: 0;
+			border: 0;
+			border-radius: 6px;
+			background: rgba(255, 255, 255, 0.12);
+			color: rgba(255, 255, 255, 0.95);
+
+			i {
+				font-size: 1rem;
+			}
+		}
+
+		.menu-item-actions-trigger::after {
+			display: none;
+		}
+
+		.menu-item-actions-menu {
+			min-width: 210px;
+		}
+	}
+
+	&:hover .menu-item-actions,
+	&:focus-within .menu-item-actions,
+	.menu-item-actions.show {
+		opacity: 1;
+		visibility: visible;
+	}
+
+	&:hover .sidebar-count-badge,
+	&:focus-within .sidebar-count-badge,
+	.menu-item-actions.show ~ .nav-link .sidebar-count-badge {
+		opacity: 0;
+		visibility: hidden;
+	}
+}
+
 /* Add breathing room below the last menu item in the scroll area */
 #navbar-nav {
 	padding-bottom: 12px;

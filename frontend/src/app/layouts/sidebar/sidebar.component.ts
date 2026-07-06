@@ -821,6 +821,53 @@ export class SidebarComponent implements OnInit {
     this.favoriteService.removeByLabel(item.label);
   }
 
+  isItemFavorite(item: { label?: string } | null | undefined): boolean {
+    if (!item?.label) {
+      return false;
+    }
+
+    return this.favs.some((favorite: { label?: string }) => favorite?.label === item.label);
+  }
+
+  onMenuActionsContainerClick(event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  openMenuItemInNewTab(item: { link?: string } | null | undefined): void {
+    const url = this.resolveMenuItemUrl(item?.link);
+    if (!url) {
+      return;
+    }
+
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+
+  async copyMenuItemLink(item: { link?: string } | null | undefined): Promise<void> {
+    const url = this.resolveMenuItemUrl(item?.link);
+    if (!url || !navigator?.clipboard?.writeText) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      // Clipboard can fail in insecure contexts or blocked permissions.
+    }
+  }
+
+  private resolveMenuItemUrl(link: string | undefined): string | null {
+    if (!link) {
+      return null;
+    }
+
+    try {
+      return new URL(link, window.location.href).toString();
+    } catch {
+      return null;
+    }
+  }
+
   mouseLeft(item) {
     if (!item) return; // Add safety check
     item.showStar = false;

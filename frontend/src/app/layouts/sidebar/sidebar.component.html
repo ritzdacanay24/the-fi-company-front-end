@@ -58,6 +58,36 @@
         </nav>
 
         <ngx-simplebar class="sidebar-menu-scroll sidebar-menu-scroll-with-rail">
+        <ng-template #menuActionsTemplate let-item="item">
+          <div ngbDropdown class="menu-item-actions" (click)="onMenuActionsContainerClick($event)">
+            <button
+              type="button"
+              class="btn btn-sm menu-item-actions-trigger"
+              ngbDropdownToggle
+              aria-label="More actions">
+              <i class="bx bx-dots-horizontal-rounded"></i>
+            </button>
+            <div ngbDropdownMenu class="menu-item-actions-menu">
+              <button ngbDropdownItem type="button" *ngIf="!isItemFavorite(item)" (click)="saveAsFavorite(item)">
+                <i class="las la-star me-2"></i>
+                Save as favorite
+              </button>
+              <button ngbDropdownItem type="button" *ngIf="isItemFavorite(item)" (click)="removeAsFavorite(item)">
+                <i class="las la-star-half-alt me-2"></i>
+                Remove favorite
+              </button>
+              <button ngbDropdownItem type="button" [disabled]="!item?.link" (click)="openMenuItemInNewTab(item)">
+                <i class="las la-external-link-alt me-2"></i>
+                Open in new tab
+              </button>
+              <button ngbDropdownItem type="button" [disabled]="!item?.link" (click)="copyMenuItemLink(item)">
+                <i class="bx bx-copy me-2"></i>
+                Copy link
+              </button>
+            </div>
+          </div>
+        </ng-template>
+
         <ul class="metismenu list-unstyled navbar-nav" id="navbar-nav1">
           <!-- <li class="nav-item pointer">
             <a class="is-parent nav-link menu-link" [routerLink]="'/'">
@@ -80,7 +110,7 @@
               <ul class="nav nav-sm flex-column" [attr.aria-expanded]="!isCollapsed">
 
                 <li (mouseenter)="mouseHovering(subitem)" (mouseleave)="mouseLeft(subitem);t.close()"
-                  class="pointer nav-item d-flex justify-content-between align-items-start"
+                  class="pointer nav-item d-flex justify-content-between align-items-start menu-item-with-actions"
                   *ngFor="let subitem of favs" [routerLink]="subitem.link" (click)="updateActiveFavorite($event);"
                   placement="end" [ngbTooltip]="subitem.link" container="body" [autoClose]="true" #t="ngbTooltip">
                   <a class="nav-link w-100" style="height:auto;">
@@ -97,6 +127,7 @@
                         [ngClass]="badge.variant">{{ badge.text }}</span>
                     </ng-container>
                   </a>
+                  <ng-container *ngTemplateOutlet="menuActionsTemplate; context: { item: subitem }"></ng-container>
                 </li>
               </ul>
             </div>
@@ -117,7 +148,8 @@
         </ul>
 
         <ng-template #recursiveMenu let-menuItems>
-          <li *ngFor="let menu of menuItems; trackBy: trackMenuItem" class="pointer nav-item" 
+            <li *ngFor="let menu of menuItems; trackBy: trackMenuItem" class="pointer nav-item"
+              [class.menu-item-with-actions]="!menu.isTitle && !hasItems(menu)"
               [style.display]="isMenuItemVisible(menu) ? 'block' : 'none'">
             @if(menu.isTitle){
           <li class="menu-title is-parent navbar-nav">
@@ -144,14 +176,15 @@
           </a>
           }@else{
           @if(menu.openInNewTab){
-          <a [attr.data-parent]="menu.parent_id" [href]="menu.link" target="_blank" rel="noopener noreferrer" class="nav-link"
+          <a [attr.data-parent]="menu.parent_id" [href]="menu.link" target="_blank" rel="noopener noreferrer" class="nav-link menu-link-with-actions"
             style="position:relative" (mouseenter)="mouseHovering(menu)" (mouseleave)="mouseLeft(menu)">
             <i class="{{ menu.icon }} icon nav-icon" *ngIf="menu.icon && menu.id"></i>
             <span class="">{{ menu.label }}</span>
             <i class="las la-external-link-alt" style="position:absolute;inset-inline-end:1em;top:50%;transform:translateY(-50%);font-size:0.75em;opacity:0.7"></i>
           </a>
+          <ng-container *ngTemplateOutlet="menuActionsTemplate; context: { item: menu }"></ng-container>
           }@else{
-          <a [attr.data-parent]="menu.parent_id" [routerLink]="menu.link" class="nav-link"
+          <a [attr.data-parent]="menu.parent_id" [routerLink]="menu.link" class="nav-link menu-link-with-actions"
             (click)="updateActive($event); handleHiddenItemClick(menu)"
             (contextmenu)="$event.preventDefault(); menu.showStarColor ? removeAsFavorite(menu) : saveAsFavorite(menu)">
             <i class="{{ menu.icon }} icon nav-icon" *ngIf="menu.icon && menu.id"></i>
@@ -175,6 +208,7 @@
             </span>
 
           </a>
+          <ng-container *ngTemplateOutlet="menuActionsTemplate; context: { item: menu }"></ng-container>
           }
           }
           <div class="collapse menu-dropdown" #collapse="ngbCollapse" 
