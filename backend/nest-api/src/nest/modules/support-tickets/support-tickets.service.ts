@@ -22,7 +22,8 @@ import {
 import { SupportTicketsRepository } from './support-tickets.repository';
 import { EmailService } from '@/shared/email/email.service';
 import { EmailTemplateService } from '@/shared/email/email-template.service';
-import { FileStorageService } from '@/nest/modules/file-storage/file-storage.service';
+import { S3UploadService } from '@/nest/modules/file-storage/s3-upload.service';
+import { AttachmentsMetadataService } from '@/nest/modules/attachments/attachments-metadata.service';
 
 interface RequestUser {
   id: number;
@@ -37,7 +38,8 @@ export class SupportTicketsService {
     private readonly emailService: EmailService,
     private readonly emailTemplateService: EmailTemplateService,
     private readonly configService: ConfigService,
-    private readonly fileStorageService: FileStorageService,
+    private readonly s3UploadService: S3UploadService,
+    private readonly attachmentsMetadataService: AttachmentsMetadataService,
   ) {}
 
   async create(dto: CreateSupportTicketDto, user: RequestUser): Promise<SupportTicket> {
@@ -274,29 +276,48 @@ export class SupportTicketsService {
     const userContext = await this.requireUserContext(user.id);
     await this.findOne(ticketId, user);
 
-    const subFolder = 'support-tickets';
-    const storedFileName = await this.fileStorageService.storeUploadedFile(file, subFolder);
-    const fileUrl = this.fileStorageService.resolveLink(storedFileName, subFolder);
-    if (!fileUrl) {
-      throw new InternalServerErrorException('Failed to resolve uploaded file URL');
-    }
-    const attachmentId = await this.repository.createAttachment(
-      ticketId,
-      {
-        file_name: file?.originalname || storedFileName,
-        file_url: fileUrl,
-        mime_type: file?.mimetype || undefined,
-        file_size: file?.size || undefined,
-      },
-      userContext.id,
-    );
-
-    const created = await this.repository.findAttachmentById(attachmentId);
-    if (!created) {
-      throw new NotFoundException('Attachment not found after upload');
+    if (!file?.buffer || !file?.originalname) {
+      throw new BadRequestException('File is required');
     }
 
-    return created;
+    let s3Result: any = null;
+
+    try {
+      // Step 1: Upload to S3
+      s3Result = await this.s3UploadService.upload(file, `support-tickets/${ticketId}`);
+
+      // Step 2: Insert into generic attachments table (service handles all defaults)
+      const attachmentId = await this.attachmentsMetadataService.createAttachmentFromS3(
+        file.originalname,
+        s3Result,
+        {
+          field: 'support_ticket',
+          ticket_id: ticketId,
+          uploaded_by: userContext.id,
+          mime_type: file.mimetype,
+          file_size: file.size,
+        },
+      );
+
+      // Step 3: Retrieve the full attachment record from generic attachments table
+      const created = await this.attachmentsMetadataService.getById(attachmentId);
+      if (!created) {
+        throw new NotFoundException('Attachment not found after creation');
+      }
+
+      return created as SupportTicketAttachment;
+    } catch (error) {
+      // Rollback: Delete S3 file if database creation failed
+      if (s3Result?.s3Key) {
+        this.logger.warn(`Attachment upload failed. Rolling back S3 file: key=${s3Result.s3Key}`);
+        try {
+          await this.s3UploadService.deleteFile(s3Result.s3Key);
+        } catch (deleteError) {
+          this.logger.error(`Rollback failed: ${(deleteError as Error).message}`, (deleteError as Error).stack);
+        }
+      }
+      throw error;
+    }
   }
 
   async deleteAttachment(attachmentId: number, user: RequestUser): Promise<void> {

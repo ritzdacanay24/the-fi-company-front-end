@@ -3,6 +3,7 @@ import { AttachmentsController } from './attachments.controller';
 import { AttachmentsService } from './attachments.service';
 import { AttachmentsRepository } from './attachments.repository';
 import { AttachmentsMetadataService } from './attachments-metadata.service';
+import { GenericAttachmentUploadService } from './generic-attachment-upload.service';
 import { FileStorageModule } from '../file-storage/file-storage.module';
 
 @Module({
@@ -12,7 +13,8 @@ import { FileStorageModule } from '../file-storage/file-storage.module';
     AttachmentsService,
     AttachmentsRepository,
     AttachmentsMetadataService,
+    GenericAttachmentUploadService,
   ],
-  exports: [AttachmentsService],
+  exports: [AttachmentsService, GenericAttachmentUploadService],
 })
 export class AttachmentsModule {}
