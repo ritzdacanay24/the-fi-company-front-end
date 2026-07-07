@@ -81,6 +81,7 @@
                 <i class="las la-star-half-alt me-2"></i>
                 Remove favorite
               </button>
+              <div class="dropdown-divider"></div>
               <button ngbDropdownItem type="button" [disabled]="!canMoveMenuItemUp(item)" (click)="moveMenuItemFromSidebar(item, 'up')">
                 <i class="las la-arrow-up me-2"></i>
                 Move up
@@ -100,6 +101,11 @@
               <button ngbDropdownItem type="button" [disabled]="!item?.link" (click)="copyMenuItemLink(item)">
                 <i class="bx bx-copy me-2"></i>
                 Copy link
+              </button>
+              <div class="dropdown-divider"></div>
+              <button ngbDropdownItem type="button" (click)="openConfigModal()">
+                <i class="bx bx-cog me-2"></i>
+                Configure Sidebar Menu
               </button>
             </div>
           </div>
@@ -166,7 +172,7 @@
 
         <ng-template #recursiveMenu let-menuItems>
             <li *ngFor="let menu of menuItems; trackBy: trackMenuItem" class="pointer nav-item"
-              [class.menu-item-with-actions]="!menu.isTitle && !hasItems(menu)"
+              [class.menu-item-with-actions]="!menu.isTitle"
               [style.display]="isMenuItemVisible(menu) ? 'block' : 'none'">
             @if(menu.isTitle){
           <li class="menu-title is-parent navbar-nav">
@@ -191,6 +197,7 @@
             </ng-container>
             <i *ngIf="searchTerm()" class="bx bx-search-alt-2 ms-2 text-muted small" title="Search result"></i>
           </a>
+          <ng-container *ngTemplateOutlet="menuActionsTemplate; context: { item: menu }"></ng-container>
           }@else{
           @if(menu.openInNewTab){
           <a [attr.data-parent]="menu.parent_id" [href]="menu.link" target="_blank" rel="noopener noreferrer" class="nav-link menu-link-with-actions"
