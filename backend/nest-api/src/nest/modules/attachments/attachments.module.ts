@@ -15,6 +15,6 @@ import { FileStorageModule } from '../file-storage/file-storage.module';
     AttachmentsMetadataService,
     GenericAttachmentUploadService,
   ],
-  exports: [AttachmentsService, GenericAttachmentUploadService],
+  exports: [AttachmentsService, AttachmentsMetadataService, GenericAttachmentUploadService],
 })
 export class AttachmentsModule {}
