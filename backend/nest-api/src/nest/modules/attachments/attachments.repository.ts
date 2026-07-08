@@ -52,6 +52,8 @@ export class AttachmentsRepository extends BaseRepository<RowDataPacket> {
     'description',
     'directory',
     'storage_source',
+    'storage_bucket',
+    'storage_key',
     'date_of_service',
     'type_of_work_completed',
   ]);
@@ -107,6 +109,14 @@ export class AttachmentsRepository extends BaseRepository<RowDataPacket> {
     return result.insertId;
   }
 
+  async getById(id: number): Promise<RowDataPacket | null> {
+    const results = await this.rawQuery<RowDataPacket>(
+      `SELECT * FROM attachments WHERE id = ?`,
+      [id],
+    );
+    return results.length > 0 ? results[0] : null;
+  }
+
   async updateAttachment(id: number, payload: Record<string, unknown>): Promise<number> {
     const sanitized = Object.fromEntries(
       Object.entries(payload)
@@ -124,6 +134,35 @@ export class AttachmentsRepository extends BaseRepository<RowDataPacket> {
     const sql = `UPDATE attachments SET ${setClause} WHERE id = ?`;
     const result = await this.mysqlService.execute<ResultSetHeader>(sql, [...values, id]);
     return result.affectedRows;
+  }
+
+  /**
+   * Get attachments for a specific field and ID (reusable for all components)
+   * Used by: support_ticket, fieldService, capa, etc
+   */
+  async getByFieldAndId(
+    field: string,
+    mainId: number,
+  ): Promise<(RowDataPacket & { link?: string; bucket?: string })[]> {
+    return this.rawQuery<RowDataPacket & { link?: string; bucket?: string }>(
+      `
+        SELECT 
+          id,
+          fileName as file_name,
+          link,
+          storage_bucket as bucket,
+          storage_key,
+          storage_source,
+          ext as mime_type,
+          fileSize as file_size,
+          createdBy as uploaded_by,
+          createdDate as created_at
+        FROM attachments
+        WHERE field = ? AND mainId = ?
+        ORDER BY createdDate DESC
+      `,
+      [field, mainId],
+    );
   }
 
   async getByWorkOrderId(workOrderId: number): Promise<RowDataPacket[]> {

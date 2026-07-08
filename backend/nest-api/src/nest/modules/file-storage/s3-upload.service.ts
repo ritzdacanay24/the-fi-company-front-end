@@ -82,6 +82,35 @@ export class S3UploadService {
   }
 
   /**
+   * Generate a signed URL for an existing S3 object.
+   * 
+   * @param s3Key - S3 object key
+   * @param bucket - Optional bucket name. Uses default if not provided.
+   * @returns Signed URL for accessing the file
+   */
+  async getSignedUrl(s3Key: string, bucket?: string): Promise<string> {
+    if (!s3Key) {
+      throw new BadRequestException('S3 key is required');
+    }
+
+    try {
+      const url = await this.fileStorageService.resolveBucketObjectUrl(
+        bucket || '',
+        s3Key,
+      );
+      if (!url) {
+        throw new Error('Failed to generate signed URL');
+      }
+      return url;
+    } catch (error) {
+      this.logger.warn(
+        `Failed to generate signed URL: bucket=${bucket}, key=${s3Key}, error=${(error as Error)?.message}`,
+      );
+      throw error;
+    }
+  }
+
+  /**
    * Delete a file from S3.
    * Used for rollback when database operations fail.
    * 

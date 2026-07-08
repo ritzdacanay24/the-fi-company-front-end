@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { MysqlService } from '@/shared/database/mysql.service';
+import { AttachmentsRepository } from '@/nest/modules/attachments/attachments.repository';
 import {
   CreateSupportTicketAttachmentDto,
   CreateSupportTicketCommentDto,
@@ -23,7 +24,10 @@ interface UserContext extends RowDataPacket {
 
 @Injectable()
 export class SupportTicketsRepository {
-  constructor(@Inject(MysqlService) private readonly mysqlService: MysqlService) {}
+  constructor(
+    @Inject(MysqlService) private readonly mysqlService: MysqlService,
+    @Inject(AttachmentsRepository) private readonly attachmentsRepository: AttachmentsRepository,
+  ) {}
 
   async getUserContext(userId: number): Promise<UserContext | null> {
     const rows = await this.mysqlService.query<UserContext[]>(
@@ -282,27 +286,14 @@ export class SupportTicketsRepository {
     await this.mysqlService.execute(`DELETE FROM eyefidb.support_ticket_comments WHERE id = ?`, [commentId]);
   }
 
-  async getAttachments(ticketId: number): Promise<SupportTicketAttachment[]> {
-    const rows = await this.mysqlService.query<RowDataPacket[]>(
-      `
-        SELECT *
-        FROM eyefidb.support_ticket_attachments
-        WHERE ticket_id = ?
-        ORDER BY created_at DESC
-      `,
-      [ticketId],
-    );
-
-    return rows as SupportTicketAttachment[];
+  async getAttachments(ticketId: number): Promise<(SupportTicketAttachment & { link?: string; bucket?: string })[]> {
+    return this.attachmentsRepository.getByFieldAndId('support_ticket', ticketId) as Promise<
+      (SupportTicketAttachment & { link?: string; bucket?: string })[]
+    >;
   }
 
   async findAttachmentById(attachmentId: number): Promise<SupportTicketAttachment | null> {
-    const rows = await this.mysqlService.query<RowDataPacket[]>(
-      `SELECT * FROM eyefidb.support_ticket_attachments WHERE id = ? LIMIT 1`,
-      [attachmentId],
-    );
-
-    return (rows[0] as SupportTicketAttachment) ?? null;
+    return this.attachmentsRepository.getById(attachmentId) as Promise<SupportTicketAttachment | null>;
   }
 
   async createAttachment(
@@ -324,7 +315,7 @@ export class SupportTicketsRepository {
   }
 
   async deleteAttachment(attachmentId: number): Promise<void> {
-    await this.mysqlService.execute(`DELETE FROM eyefidb.support_ticket_attachments WHERE id = ?`, [attachmentId]);
+    await this.attachmentsRepository.deleteById(attachmentId);
   }
 
   private async generateTicketNumber(): Promise<string> {

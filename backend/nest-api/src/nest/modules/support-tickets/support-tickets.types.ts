@@ -49,7 +49,7 @@ export interface SupportTicketAttachment {
   ticket_id: number;
   comment_id: number | null;
   file_name: string;
-  file_url: string;
+  file_url?: string;
   mime_type: string | null;
   file_size: number | null;
   uploaded_by: number;
