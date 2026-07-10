@@ -105,6 +105,7 @@ export class PhotoChecklistUploadService {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('folder', folder);
+    formData.append('storageMode', 'server');
 
     const response = await firstValueFrom(
       this.http.post<{ success: boolean; fileName?: string; url?: string }>(

@@ -49,11 +49,14 @@ export class FileStorageController {
   async upload(
     @Body('folder') folder?: string,
     @Body('subFolder') subFolder?: string,
+    @Body('storageMode') storageMode?: string,
     @UploadedFile() file?: { originalname?: string; mimetype?: string; buffer?: Buffer },
   ) {
     const targetFolder = folder || subFolder || 'general';
+    const requestedStorageMode = String(storageMode || '').trim().toLowerCase();
+    const forceServerStorage = requestedStorageMode === 'server';
 
-    if (this.shouldUseBucketStorage()) {
+    if (!forceServerStorage && this.shouldUseBucketStorage()) {
       const keyPrefix = this.normalizeFolder(targetFolder);
       const stored = await this.service.storeUploadedFileInBucket(file, {
         keyPrefix,
