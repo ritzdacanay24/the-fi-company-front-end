@@ -350,7 +350,6 @@ export class PermitChecklistsComponent implements OnInit {
   previewAttachmentResourceUrl: SafeResourceUrl | null = null;
   previewAttachmentKind: "image" | "pdf" | "docx" | "other" | "none" = "none";
   previewDocxHtml = "";
-  isAttachmentDragOver = false;
   isProcessNoteModalOpen = false;
   processNoteFieldKey = "";
   processNoteFieldLabel = "";
@@ -2218,97 +2217,6 @@ export class PermitChecklistsComponent implements OnInit {
     this.statusMessage = `Ticket ${ticket.ticketId} created.`;
   }
 
-  async uploadAttachment(event: Event): Promise<void> {
-    const input = event.target as HTMLInputElement;
-    const files = Array.from(input.files || []);
-    await this.uploadAttachmentFiles(files);
-    input.value = "";
-  }
-
-  onAttachmentDragOver(event: DragEvent): void {
-    event.preventDefault();
-    if (!this.canEditActiveTicket) {
-      return;
-    }
-    this.isAttachmentDragOver = true;
-  }
-
-  onAttachmentDragLeave(event: DragEvent): void {
-    event.preventDefault();
-    this.isAttachmentDragOver = false;
-  }
-
-  async onAttachmentDrop(event: DragEvent): Promise<void> {
-    event.preventDefault();
-    this.isAttachmentDragOver = false;
-    const files = Array.from(event.dataTransfer?.files || []);
-    await this.uploadAttachmentFiles(files);
-  }
-
-  private async uploadAttachmentFiles(files: File[]): Promise<void> {
-    const ticket = this.activeTicket;
-    if (!ticket || !this.canEditActiveTicket) {
-      return;
-    }
-
-    if (!files.length) {
-      return;
-    }
-
-    const newAttachments: PermitChecklistAttachment[] = [];
-    const failedUploads: string[] = [];
-    for (const file of files) {
-      try {
-        const response = await this.permitChecklistsService.uploadAttachmentFile(
-          ticket.ticketId,
-          file,
-          this.getCurrentUserDisplay(),
-        );
-
-        const payload = response?.data || {};
-        newAttachments.push({
-          id: this.generateAttachmentId(),
-          fieldKey: String(payload.fieldKey || "general"),
-          fieldLabel: String(payload.fieldLabel || "General Attachment"),
-          uploadedBy: String(payload.uploadedBy || this.getCurrentUserDisplay()),
-          fileName: String(payload.fileName || file.name),
-          fileSize: Number(payload.fileSize || file.size || 0),
-          mimeType: String(payload.mimeType || file.type || "application/octet-stream"),
-          uploadedAt: String(payload.uploadedAt || new Date().toISOString()),
-          url: String(payload.url || ""),
-        });
-
-        this.appendTransaction(ticket.ticketId, "attachment_upload", {
-          fieldKey: "general",
-          newValue: file.name,
-          source: "attachment",
-        });
-      } catch {
-        failedUploads.push(file.name);
-        continue;
-      }
-    }
-
-    if (failedUploads.length > 0) {
-      this.toastr.error(`Failed to upload ${failedUploads.length} file(s). Please try again.`);
-    }
-
-    if (!newAttachments.length) {
-      this.statusMessage = "No files were uploaded.";
-      return;
-    }
-
-    ticket.attachments = [...(ticket.attachments || []), ...newAttachments];
-    ticket.updatedAt = new Date().toISOString();
-    if (ticket.status === "submitted") {
-      ticket.status = "draft";
-    }
-
-    this.refreshRecentTickets();
-    this.persistLocalData();
-    this.statusMessage = `${newAttachments.length} attachment(s) uploaded.`;
-  }
-
   async removeAttachment(attachmentId: string): Promise<void> {
     const ticket = this.activeTicket;
     if (!ticket || !this.canEditActiveTicket) {
@@ -3475,10 +3383,6 @@ export class PermitChecklistsComponent implements OnInit {
 
     this.customers.sort((a, b) => a.name.localeCompare(b.name));
     this.architects.sort((a, b) => a.name.localeCompare(b.name));
-  }
-
-  private generateAttachmentId(): string {
-    return `att_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   }
 
   private generateFeeKey(): string {
