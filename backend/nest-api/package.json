@@ -15,6 +15,8 @@
     "logs:tail:once": "node scripts/tail-log.js latest.log --once"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1084.0",
+    "@aws-sdk/s3-request-presigner": "^3.1084.0",
     "@nestjs/common": "^11.1.9",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.1.9",

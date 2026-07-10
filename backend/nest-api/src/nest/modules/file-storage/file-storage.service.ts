@@ -112,7 +112,7 @@ export class FileStorageService {
     }
   }
 
-  async resolveBucketObjectUrl(bucket: string, key: string): Promise<string> {
+  async resolveBucketObjectUrl(bucket: string | undefined, key: string): Promise<string> {
     const bucketName = this.resolveBucketName(bucket);
     const safeKey = this.sanitizeKeyPrefix(key);
     if (!safeKey) {
