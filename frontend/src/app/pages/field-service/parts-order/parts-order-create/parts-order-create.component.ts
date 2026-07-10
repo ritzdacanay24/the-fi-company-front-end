@@ -4,10 +4,11 @@ import { SharedModule } from "@app/shared/shared.module";
 import { PartsOrderFormComponent } from "../parts-order-form/parts-order-form-component";
 import { FormGroup } from "@angular/forms";
 import { PartsOrderService } from "@app/core/api/field-service/parts-order/parts-order.service";
+import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
+import { FeatureType } from "@app/shared/enums/feature.enum";
 import moment from "moment";
 import { AuthenticationService } from "@app/core/services/auth.service";
 import { NAVIGATION_ROUTE } from "../parts-order-constant";
-import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
 
 @Component({
   standalone: true,
@@ -24,7 +25,7 @@ export class PartsOrderCreateComponent implements OnInit {
     public router: Router,
     public partsOrderService: PartsOrderService,
     public authenticationService: AuthenticationService,
-    private attachmentsService: AttachmentsService
+    private attachmentsService: AttachmentsService,
   ) {}
 
   ngOnInit(): void {}
@@ -49,14 +50,11 @@ export class PartsOrderCreateComponent implements OnInit {
       let { insertId } = await this.partsOrderService.create(this.form.value);
 
       if (this.myFiles?.length) {
-        for (var i = 0; i < this.myFiles.length; i++) {
-          const formData = new FormData();
-          formData.append("file", this.myFiles[i]);
-          formData.append("field", "FS Parts Order");
-          formData.append("uniqueData", `${insertId}`);
-          formData.append("folderName", "fieldService");
-          await this.attachmentsService.uploadfile(formData);
-        }
+        await this.attachmentsService.uploadFilesByFeature(
+          FeatureType.PARTS_REQUEST,
+          insertId,
+          this.myFiles,
+        );
       }
 
       this.isLoading = false;
@@ -80,14 +78,36 @@ export class PartsOrderCreateComponent implements OnInit {
 
   isLoading = false;
 
-  file: File = null;
-
   myFiles: File[] = [];
+  selectedFiles: File[] = [];
 
-  onFilechange(event: any) {
-    this.myFiles = [];
-    for (var i = 0; i < event.target.files.length; i++) {
-      this.myFiles.push(event.target.files[i]);
+  onAttachmentFilesAdded(files: File[]): void {
+    this.addFiles(files || []);
+  }
+
+  removeFile(index: number): void {
+    this.selectedFiles.splice(index, 1);
+    this.myFiles = [...this.selectedFiles];
+  }
+
+  private addFiles(files: File[]): void {
+    if (!files.length) {
+      return;
     }
+
+    const dedupedFiles = new Map(
+      this.selectedFiles.map((file) => [this.getFileKey(file), file])
+    );
+
+    files.forEach((file) => {
+      dedupedFiles.set(this.getFileKey(file), file);
+    });
+
+    this.selectedFiles = Array.from(dedupedFiles.values());
+    this.myFiles = [...this.selectedFiles];
+  }
+
+  private getFileKey(file: File): string {
+    return `${file.name}-${file.size}-${file.lastModified}`;
   }
 }

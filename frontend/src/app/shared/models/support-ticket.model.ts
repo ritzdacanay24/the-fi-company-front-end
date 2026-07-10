@@ -53,6 +53,7 @@ export interface SupportTicketAttachment {
   mime_type: string | null;
   file_size: number | null;
   uploaded_by: number;
+  user_name?: string | null;
   created_at: string;
 }
 

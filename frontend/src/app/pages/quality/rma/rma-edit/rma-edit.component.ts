@@ -6,6 +6,7 @@ import { RmaFormComponent } from "../rma-form/rma-form.component";
 import { RmaService } from "@app/core/api/quality/rma.service";
 import { NAVIGATION_ROUTE } from "../rma-constant";
 import { SharedModule } from "@app/shared/shared.module";
+import { FeatureType } from "@app/shared/enums/feature.enum";
 
 @Component({
   standalone: true,
@@ -41,6 +42,8 @@ export class RmaEditComponent {
   submitted = false;
 
   authorizedBy = "Quality";
+
+  readonly FeatureType = FeatureType;
 
   @Input() goBack: Function = () => {
     this.router.navigate([NAVIGATION_ROUTE.LIST], {

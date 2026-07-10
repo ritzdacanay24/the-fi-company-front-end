@@ -3,8 +3,7 @@ import { SharedModule } from 'src/app/shared/shared.module';
 import { Router, ActivatedRoute } from '@angular/router';
 import { NAVIGATION_ROUTE } from '../qir-constant';
 import { QirService } from '@app/core/api/quality/qir.service';
-import { AttachmentsService } from '@app/core/api/attachments/attachments.service';
-import { Lightbox } from 'ngx-lightbox';
+import { FeatureType } from '@app/shared/enums/feature.enum';
 
 @Component({
   standalone: true,
@@ -15,13 +14,12 @@ import { Lightbox } from 'ngx-lightbox';
   templateUrl: './qir-view.component.html'
 })
 export class QirViewComponent implements OnInit {
+  readonly FeatureType = FeatureType;
 
   constructor(
     public router: Router,
     public activatedRoute: ActivatedRoute,
     public api: QirService,
-    private attachmentsService: AttachmentsService,
-    private lightbox: Lightbox
   ) {}
 
   ngOnInit(): void {
@@ -39,10 +37,6 @@ export class QirViewComponent implements OnInit {
 
   data: any;
 
-  attachments: any[] = [];
-
-  images: any[] = [];
-
   isLoading = false;
 
   get isQirClosed() {
@@ -53,9 +47,6 @@ export class QirViewComponent implements OnInit {
     try {
       this.isLoading = true;
       this.data = await this.api.getById(this.id);
-      if (this.data?.id) {
-        await this.getAttachments();
-      }
     } catch (err) {
       console.error('Error loading QIR data:', err);
       alert('Error loading QIR data. Please try again.');
@@ -63,29 +54,6 @@ export class QirViewComponent implements OnInit {
       this.isLoading = false;
     }
   };
-
-  async getAttachments() {
-    this.images = [];
-    this.attachments = await this.attachmentsService.find({
-      field: "Capa Request",
-      uniqueId: this.id,
-    });
-
-    for (let i = 0; i < this.attachments.length; i++) {
-      let row = this.attachments[i];
-      const src =
-        "https://dashboard.eye-fi.com/attachments/capa/" + row.fileName;
-      const caption = "Image " + i + "- " + row.createdDate;
-      const thumb =
-        "https://dashboard.eye-fi.com/attachments/capa/" + row.fileName;
-      const item = {
-        src: src,
-        caption: caption,
-        thumb: thumb,
-      };
-      this.images.push(item);
-    }
-  }
 
   onEdit() {
     this.router.navigate([NAVIGATION_ROUTE.EDIT], {
@@ -110,16 +78,6 @@ export class QirViewComponent implements OnInit {
       queryParamsHandling: 'merge',
       queryParams: { id: this.id }
     });
-  }
-
-  open(index: number) {
-    // open lightbox
-    this.lightbox.open(this.images, index, {});
-  }
-
-  close(): void {
-    // close lightbox programmatically
-    this.lightbox.close();
   }
 
   goBack() {

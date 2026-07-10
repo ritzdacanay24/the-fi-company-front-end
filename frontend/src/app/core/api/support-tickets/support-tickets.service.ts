@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
@@ -9,6 +9,8 @@ import {
   SupportTicketFilters,
   SupportTicketStatus,
 } from '@app/shared/models/support-ticket.model';
+import { AttachmentsService } from '@app/core/api/attachments/attachments.service';
+import { FeatureType } from '@app/shared/enums/feature.enum';
 
 const SUPPORT_TICKETS_API = 'apiV2/support-tickets';
 const PUBLIC_SUPPORT_TICKETS_API = 'apiV2/public/support-tickets';
@@ -17,7 +19,8 @@ const PUBLIC_SUPPORT_TICKETS_API = 'apiV2/public/support-tickets';
   providedIn: 'root',
 })
 export class SupportTicketsService {
-  constructor(private readonly http: HttpClient) {}
+  private readonly http = inject(HttpClient);
+  private readonly attachmentsService = inject(AttachmentsService);
 
   getTickets(filters?: SupportTicketFilters): Observable<SupportTicket[]> {
     let params = new HttpParams();
@@ -70,16 +73,38 @@ export class SupportTicketsService {
     return this.http.delete<void>(`${SUPPORT_TICKETS_API}/${ticketId}/comments/${commentId}`);
   }
 
+  /**
+   * Get attachments for a ticket
+   * Delegates to unified AttachmentsService
+   */
   getAttachments(ticketId: number): Observable<SupportTicketAttachment[]> {
-    return this.http.get<SupportTicketAttachment[]>(`${SUPPORT_TICKETS_API}/${ticketId}/attachments`);
+    return new Observable(subscriber => {
+      this.attachmentsService.getAttachmentsByFeature(FeatureType.SUPPORT_TICKETS, ticketId)
+        .then(attachments => {
+          subscriber.next(attachments);
+          subscriber.complete();
+        })
+        .catch(error => subscriber.error(error));
+    });
   }
 
   addAttachment(ticketId: number, payload: Partial<SupportTicketAttachment>): Observable<SupportTicketAttachment> {
     return this.http.post<SupportTicketAttachment>(`${SUPPORT_TICKETS_API}/${ticketId}/attachments`, payload);
   }
 
+  /**
+   * Upload attachment to ticket
+   * Delegates to unified AttachmentsService
+   */
   uploadAttachment(ticketId: number, formData: FormData): Observable<SupportTicketAttachment> {
-    return this.http.post<SupportTicketAttachment>(`${SUPPORT_TICKETS_API}/${ticketId}/attachments/upload`, formData);
+    return new Observable(subscriber => {
+      this.attachmentsService.uploadAttachment(FeatureType.SUPPORT_TICKETS, ticketId, formData)
+        .then(result => {
+          subscriber.next(result);
+          subscriber.complete();
+        })
+        .catch(error => subscriber.error(error));
+    });
   }
 
   deleteAttachment(ticketId: number, attachmentId: number): Observable<void> {

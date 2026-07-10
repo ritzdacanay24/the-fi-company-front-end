@@ -10,8 +10,8 @@ import { ShippingRequestService } from "@app/core/api/operations/shippging-reque
 import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErrors";
 import { MyFormGroup } from "src/assets/js/util/_formGroup";
 import { IShippingRequestForm } from "../shipping-request-form/shipping-request-form.type";
-import { UploadService } from "@app/core/api/upload/upload.service";
-import { firstValueFrom } from "rxjs";
+import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
+import { FeatureType } from "@app/shared/enums/feature.enum";
 
 @Component({
   standalone: true,
@@ -26,7 +26,7 @@ export class ShippingRequestCreateComponent {
     private api: ShippingRequestService,
     private toastrService: ToastrService,
     private authenticationService: AuthenticationService,
-    private uploadService: UploadService
+    private attachmentsService: AttachmentsService
   ) {}
 
   ngOnInit(): void {}
@@ -40,6 +40,10 @@ export class ShippingRequestCreateComponent {
   isLoading = false;
 
   submitted = false;
+
+  readonly attachmentFeature = FeatureType.SHIPPING_REQUEST;
+
+  pendingAttachmentFiles: File[] = [];
 
   @Input() goBack: Function = () => {
     this.router.navigate([NAVIGATION_ROUTE.LIST], {
@@ -77,16 +81,14 @@ export class ShippingRequestCreateComponent {
       this.isLoading = true;
       let { insertId } = await this.api.create(this.form.value);
 
-      if (this.myFiles) {
-        for (var i = 0; i < this.myFiles.length; i++) {
-          const formData = new FormData();
-          formData.append("file", this.myFiles[i]);
-          formData.append("field", "shippingRequest");
-          formData.append("uniqueData", `${insertId}`);
-          formData.append("folderName", "shippingRequest");
-          formData.append("subFolder", "shippingRequest");
-          await firstValueFrom(this.uploadService.uploadAttachmentV2(formData));
-        }
+      if (this.pendingAttachmentFiles.length > 0) {
+        await this.attachmentsService.uploadFilesByFeature(
+          this.attachmentFeature,
+          insertId,
+          this.pendingAttachmentFiles,
+        );
+
+        this.pendingAttachmentFiles = [];
       }
 
       this.isLoading = false;
@@ -101,16 +103,20 @@ export class ShippingRequestCreateComponent {
     this.goBack();
   }
 
-  upload() {}
-
-  file: File = null;
-
-  myFiles: string[] = [];
-
-  onFilechange(event: any) {
-    this.myFiles = [];
-    for (var i = 0; i < event.target.files.length; i++) {
-      this.myFiles.push(event.target.files[i]);
+  onPendingAttachmentsAdded(files: File[]): void {
+    if (!Array.isArray(files) || files.length === 0) {
+      return;
     }
+
+    this.pendingAttachmentFiles = [...this.pendingAttachmentFiles, ...files];
+  }
+
+  removePendingAttachment(index: number): void {
+    if (index < 0 || index >= this.pendingAttachmentFiles.length) {
+      return;
+    }
+
+    this.pendingAttachmentFiles.splice(index, 1);
+    this.pendingAttachmentFiles = [...this.pendingAttachmentFiles];
   }
 }

@@ -225,12 +225,6 @@
             <td>{{ row.get('questionCode')?.value }}</td>
             <td>
               <div class="fw-semibold">{{ row.get('questionText')?.value }}</div>
-              <div class="print-attachments" *ngIf="getQuestionAttachments(row.get('questionCode')?.value || '').length > 0">
-                <span class="print-attachments-label">Attachments:</span>
-                <span class="print-attachment" *ngFor="let image of getQuestionAttachments(row.get('questionCode')?.value || '')">
-                  {{ displayAttachmentName(image.fileName, image.id) }}
-                </span>
-              </div>
             </td>
             <td class="print-result">{{ (row.get('responseValue')?.value || '-') | uppercase }}</td>
           </tr>
@@ -480,32 +474,6 @@
               <td>
                 <span class="small fw-semibold text-body-secondary me-1">{{ row.get('questionCode')?.value }}</span>
                 <span>{{ row.get('questionText')?.value }}</span>
-                <ng-container *ngIf="row.get('questionCode')?.value as questionCode">
-                  <div class="mt-2" *ngIf="getQuestionAttachments(questionCode).length > 0">
-                    <div class="small fw-semibold text-body-secondary mb-1">Attachments for this item</div>
-                    <div class="d-flex flex-wrap gap-2">
-                      <div *ngFor="let image of getQuestionAttachments(questionCode)" class="d-inline-flex align-items-center gap-1">
-                        <button
-                          type="button"
-                          class="badge attachment-chip text-decoration-none border-0"
-                          (click)="openAttachmentViewer(image)"
-                          [title]="image.fileName"
-                        >
-                          {{ displayAttachmentName(image.fileName, image.id) }}
-                        </button>
-                        <button
-                          type="button"
-                          class="btn btn-sm btn-outline-danger py-0 px-2"
-                          [disabled]="image.id <= 0 || isChecklistLocked"
-                          (click)="deleteQuestionAttachment(questionCode, image.id)"
-                          title="Delete image"
-                        >
-                          x
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </ng-container>
               </td>
               <td>
                 <div class="d-flex flex-wrap gap-3">
@@ -554,62 +522,14 @@
       <div class="card mt-3" data-tour="shipping-attachments">
         <div class="card-header bg-body fw-semibold">Attach Images</div>
         <div class="card-body">
-          <div class="row g-3 align-items-end">
-            <div class="col-xl-6 col-lg-7">
-              <label class="form-label">Checklist Item</label>
-              <select
-                class="form-select"
-                [(ngModel)]="selectedUploadQuestionCode"
-                (ngModelChange)="onUploadTargetChanged($event)"
-                [ngModelOptions]="{ standalone: true }"
-                [disabled]="isChecklistLocked"
-              >
-                <option value="">Select checklist item...</option>
-                <option *ngFor="let target of uploadTargets" [value]="target.questionCode">
-                  {{ target.questionCode }} - {{ target.questionText }}
-                </option>
-              </select>
-            </div>
-
-            <div class="col-xl-6 col-lg-5">
-              <label class="form-label">Upload Images</label>
-              <input
-                class="form-control"
-                type="file"
-                accept="image/*"
-                multiple
-                [disabled]="isChecklistLocked || !selectedUploadQuestionCode || isUploadingQuestion(selectedUploadQuestionCode)"
-                (change)="onSelectedTargetFilesChosen($event)"
-              />
-              <small class="text-body-secondary" *ngIf="!selectedUploadQuestionCode">Select checklist item first</small>
-              <small class="text-body-secondary" *ngIf="selectedUploadQuestionCode && isUploadingQuestion(selectedUploadQuestionCode)">Uploading...</small>
-            </div>
-          </div>
-
-          <div class="mt-3" *ngIf="getSelectedUploadAttachments().length > 0">
-            <div class="small fw-semibold mb-2">Attached Images</div>
-            <div class="d-flex flex-wrap gap-2">
-              <div *ngFor="let image of getSelectedUploadAttachments()" class="d-inline-flex align-items-center gap-1">
-                <button
-                  type="button"
-                  class="badge attachment-chip text-decoration-none border-0"
-                  (click)="openAttachmentViewer(image)"
-                  [title]="image.fileName"
-                >
-                  {{ displayAttachmentName(image.fileName, image.id) }}
-                </button>
-                <button
-                  type="button"
-                  class="btn btn-sm btn-outline-danger py-0 px-2"
-                  [disabled]="isChecklistLocked || image.id <= 0 || isUploadingQuestion(selectedUploadQuestionCode)"
-                  (click)="deleteSelectedUploadAttachment(image.id)"
-                  title="Delete image"
-                >
-                  x
-                </button>
-              </div>
-            </div>
-          </div>
+          <app-feature-attachments-panel
+            [feature]="featureType.SHIPPING_CHECKLIST"
+            [resourceId]="selectedInstanceId"
+            [disabled]="isChecklistLocked"
+            [viewMode]="'table'"
+            [showImageThumbnails]="false"
+            [showDelete]="!isChecklistLocked">
+          </app-feature-attachments-panel>
         </div>
       </div>
       </div>

@@ -8,11 +8,9 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
-  CreateSupportTicketAttachmentDto,
   CreateSupportTicketCommentDto,
   CreateSupportTicketDto,
   SupportTicket,
-  SupportTicketAttachment,
   SupportTicketComment,
   SupportTicketFilters,
   SupportTicketStatus,
@@ -22,8 +20,6 @@ import {
 import { SupportTicketsRepository } from './support-tickets.repository';
 import { EmailService } from '@/shared/email/email.service';
 import { EmailTemplateService } from '@/shared/email/email-template.service';
-import { S3UploadService } from '@/nest/modules/file-storage/s3-upload.service';
-import { AttachmentsMetadataService } from '@/nest/modules/attachments/attachments-metadata.service';
 
 interface RequestUser {
   id: number;
@@ -38,8 +34,6 @@ export class SupportTicketsService {
     private readonly emailService: EmailService,
     private readonly emailTemplateService: EmailTemplateService,
     private readonly configService: ConfigService,
-    private readonly s3UploadService: S3UploadService,
-    private readonly attachmentsMetadataService: AttachmentsMetadataService,
   ) {}
 
   async create(dto: CreateSupportTicketDto, user: RequestUser): Promise<SupportTicket> {
@@ -239,132 +233,6 @@ export class SupportTicketsService {
     }
 
     await this.repository.deleteComment(commentId);
-  }
-
-  async getAttachments(ticketId: number, user: RequestUser): Promise<SupportTicketAttachment[]> {
-    await this.findOne(ticketId, user);
-    const attachments = await this.repository.getAttachments(ticketId);
-
-    // Generate signed URLs from link field (contains S3 object key)
-    const results = await Promise.all(
-      attachments.map(async (attachment: SupportTicketAttachment & { link?: string; bucket?: string }) => {
-        const result: SupportTicketAttachment = {
-          id: attachment.id,
-          ticket_id: attachment.ticket_id,
-          comment_id: attachment.comment_id,
-          file_name: attachment.file_name,
-          mime_type: attachment.mime_type,
-          file_size: attachment.file_size,
-          uploaded_by: attachment.uploaded_by,
-          created_at: attachment.created_at,
-        };
-
-        if (attachment.link && attachment.bucket) {
-          try {
-            result.file_url = await this.s3UploadService.getSignedUrl(
-              attachment.link,
-              attachment.bucket,
-            );
-          } catch (error) {
-            this.logger.warn(
-              `Failed to generate signed URL for attachment ${attachment.id}: ${(error as Error)?.message}`,
-            );
-          }
-        }
-        return result as SupportTicketAttachment;
-      }),
-    );
-    return results as SupportTicketAttachment[];
-  }
-
-  async addAttachment(
-    ticketId: number,
-    dto: CreateSupportTicketAttachmentDto,
-    user: RequestUser,
-  ): Promise<SupportTicketAttachment> {
-    const userContext = await this.requireUserContext(user.id);
-    await this.findOne(ticketId, user);
-
-    if (!dto.file_name || !dto.file_url) {
-      throw new BadRequestException('file_name and file_url are required');
-    }
-
-    const attachmentId = await this.repository.createAttachment(ticketId, dto, userContext.id);
-    const created = await this.repository.findAttachmentById(attachmentId);
-
-    if (!created) {
-      throw new NotFoundException('Attachment not found after creation');
-    }
-
-    return created;
-  }
-
-  async uploadAttachment(
-    ticketId: number,
-    file: { originalname?: string; buffer?: Buffer; mimetype?: string; size?: number } | undefined,
-    user: RequestUser,
-  ): Promise<SupportTicketAttachment> {
-    const userContext = await this.requireUserContext(user.id);
-    await this.findOne(ticketId, user);
-
-    if (!file?.buffer || !file?.originalname) {
-      throw new BadRequestException('File is required');
-    }
-
-    let s3Result: any = null;
-
-    try {
-      // Step 1: Upload to S3
-      s3Result = await this.s3UploadService.upload(file, `support-tickets/${ticketId}`);
-
-      // Step 2: Insert into attachments table
-      const attachmentId = await this.attachmentsMetadataService.createAttachmentFromS3(
-        file.originalname,
-        s3Result.bucket,
-        s3Result.key,
-        file.mimetype || 'application/octet-stream',
-        file.size || 0,
-        'support_ticket',
-        userContext.id,
-        ticketId,
-      );
-
-      // Step 3: Retrieve the full attachment record
-      const created = await this.attachmentsMetadataService.getById(attachmentId);
-      if (!created) {
-        throw new NotFoundException('Attachment not found after creation');
-      }
-
-      return created as SupportTicketAttachment;
-    } catch (error) {
-      // Rollback: Delete S3 file if database creation failed
-      if (s3Result?.key) {
-        this.logger.warn(`Attachment upload failed. Rolling back S3 file: key=${s3Result.key}`);
-        try {
-          await this.s3UploadService.deleteFile(s3Result.key, s3Result.bucket);
-        } catch (deleteError) {
-          this.logger.error(`Rollback failed: ${(deleteError as Error).message}`, (deleteError as Error).stack);
-        }
-      }
-      throw error;
-    }
-  }
-
-  async deleteAttachment(attachmentId: number, user: RequestUser): Promise<void> {
-    const userContext = await this.requireUserContext(user.id);
-    const attachment = await this.repository.findAttachmentById(attachmentId);
-
-    if (!attachment) {
-      throw new NotFoundException('Attachment not found');
-    }
-
-    await this.findOne(attachment.ticket_id, user);
-
-    if (!this.isAdmin(userContext.admin) && Number(attachment.uploaded_by) !== userContext.id) {
-      throw new ForbiddenException('You do not have permission to delete this attachment');
-    }
-
-    await this.repository.deleteAttachment(attachmentId);
   }
 
   private async requireUserContext(userId: number) {

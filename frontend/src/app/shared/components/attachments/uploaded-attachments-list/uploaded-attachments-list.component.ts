@@ -1,13 +1,12 @@
 import { CommonModule } from "@angular/common";
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject } from "@angular/core";
-import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
-import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
+import { Component, EventEmitter, Input, Output, inject } from "@angular/core";
+import { NgbDropdownModule, NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { FileViewerModalComponent } from "@app/shared/components/file-viewer-modal/file-viewer-modal.component";
 
 @Component({
   selector: "app-uploaded-attachments-list",
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, NgbDropdownModule],
   template: `
     <div class="mb-3" *ngIf="isLoading">
       <div class="alert alert-info py-2 d-flex align-items-center mb-0" role="status">
@@ -26,8 +25,8 @@ import { FileViewerModalComponent } from "@app/shared/components/file-viewer-mod
                   href="#"
                   (click)="onOpen(row, $event)"
                   class="text-decoration-none qir-attachment-name d-block text-truncate"
-                  [title]="row?.fileName || ''">
-                  {{ row?.fileName }}
+                  [title]="getFileName(row)">
+                  {{ getFileName(row) }}
                 </a>
               </h6>
               <small class="text-muted">{{ row?.createdDate | date:'MMM d, y h:mm a' }}</small>
@@ -92,7 +91,7 @@ import { FileViewerModalComponent } from "@app/shared/components/file-viewer-mod
                 </button>
               </ng-template>
 
-              <p class="small text-muted mb-2 text-truncate" [title]="row?.fileName || ''">{{ row?.fileName }}</p>
+              <p class="small text-muted mb-2 text-truncate" [title]="getFileName(row)">{{ getFileName(row) }}</p>
               <div class="d-flex justify-content-center gap-2">
                 <button
                   class="btn btn-sm btn-outline-primary"
@@ -129,11 +128,11 @@ import { FileViewerModalComponent } from "@app/shared/components/file-viewer-mod
           <div class="d-flex align-items-start justify-content-between gap-2">
             <div class="flex-grow-1" style="min-width: 0;">
               <button
-                class="btn btn-link p-0 text-start text-decoration-none fw-medium"
+                class="btn btn-link p-0 text-start text-decoration-underline fw-medium"
                 type="button"
-                [title]="row?.fileName || ''"
+                [title]="getFileName(row)"
                 (click)="onOpenFromButton(row)">
-                <span class="text-truncate d-block">{{ row?.fileName }}</span>
+                <span class="text-truncate d-block">{{ getFileName(row) }}</span>
               </button>
 
               <div class="small text-warning-emphasis mt-1" *ngIf="showMissingSourceWarning && !hasPreviewSource(row)">
@@ -181,20 +180,28 @@ import { FileViewerModalComponent } from "@app/shared/components/file-viewer-mod
     <div class="mb-3" *ngIf="!isLoading && attachments?.length > 0 && viewMode === 'table'">
       <div class="table-responsive border rounded" [style.max-height]="maxHeight" style="overflow-y: auto;">
         <table class="table table-sm align-middle mb-0">
-          <thead class="table-light">
+          <thead class="table-light sticky-top" style="z-index: 2;">
             <tr>
               <th scope="col" style="width: 64px;" *ngIf="showThumbnails">Media</th>
               <th scope="col">File Name</th>
-              <th scope="col" style="width: 170px;">Uploaded By</th>
-              <th scope="col" style="width: 190px;">Uploaded</th>
-              <th scope="col" style="width: 120px;">Actions</th>
+              <th scope="col" style="width: 170px;">
+                <span class="d-inline-block text-truncate align-middle" style="max-width: 150px; white-space: nowrap;" title="Uploaded By">
+                  Uploaded By
+                </span>
+              </th>
+              <th scope="col" style="width: 190px;">
+                <span class="d-inline-block text-truncate align-middle" style="max-width: 170px; white-space: nowrap;" title="Uploaded">
+                  Uploaded
+                </span>
+              </th>
+              <th scope="col" style="width: 130px;">Actions</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let row of attachments; let i = index">
               <td *ngIf="showThumbnails">
                 <button
-                  *ngIf="isImageAttachment(row) && !row?.__thumbnailError && resolveThumbnailUrl(row); else fileTypeIcon"
+                  *ngIf="showImageThumbnails && isImageAttachment(row) && !row?.__thumbnailError && resolveThumbnailUrl(row); else fileTypeIcon"
                   type="button"
                   class="btn p-0 border-0 bg-transparent"
                   title="Preview image"
@@ -215,41 +222,62 @@ import { FileViewerModalComponent } from "@app/shared/components/file-viewer-mod
                   </span>
                 </ng-template>
               </td>
-              <td style="min-width: 0; max-width: 0;">
+              <td style="min-width: 220px; max-width: 320px;">
                 <a
                   href="#"
                   (click)="onOpen(row, $event)"
-                  class="text-decoration-none d-block text-truncate"
-                  [title]="row?.fileName || ''">
-                  {{ row?.fileName }}
+                  class="text-decoration-underline d-inline-block text-truncate align-middle"
+                  style="max-width: 300px;"
+                  [title]="getFileName(row)">
+                  {{ getFileName(row) }}
                 </a>
               </td>
-              <td>
-                <small class="text-muted">{{ getUploaderLabel(row) }}</small>
+              <td style="width: 170px;">
+                <small class="text-muted d-inline-block text-truncate align-middle" style="max-width: 150px; white-space: nowrap;" [title]="getUploaderLabel(row)">
+                  {{ getUploaderLabel(row) }}
+                </small>
+              </td>
+              <td style="width: 190px;">
+                <small
+                  class="text-muted d-inline-block text-truncate align-middle"
+                  style="max-width: 170px; white-space: nowrap;"
+                  [title]="(getUploadedDate(row) | date:'MMM d, y h:mm a') || ''">
+                  {{ getUploadedDate(row) | date:'MMM d, y h:mm a' }}
+                </small>
               </td>
               <td>
-                <small class="text-muted">{{ getUploadedDate(row) | date:'MMM d, y h:mm a' }}</small>
-              </td>
-              <td>
-                <div class="d-flex align-items-center gap-2">
+                <div ngbDropdown container="body" class="d-inline-block">
                   <button
-                    class="btn btn-sm btn-outline-primary"
+                    class="btn btn-sm btn-outline-secondary"
                     type="button"
-                    title="Download attachment"
-                    aria-label="Download attachment"
-                    (click)="onDownload(row, $event)">
-                    <i class="mdi mdi-download"></i>
+                    ngbDropdownToggle
+                    aria-expanded="false"
+                    title="Attachment actions"
+                    aria-label="Attachment actions">
+                    Actions
                   </button>
-                  <button
-                    *ngIf="showDelete"
-                    class="btn btn-sm btn-outline-danger"
-                    [disabled]="disableDelete"
-                    [title]="deleteTitle"
-                    aria-label="Delete attachment"
-                    type="button"
-                    (click)="onDelete(row, i)">
-                    <i class="mdi mdi-delete"></i>
-                  </button>
+                  <ul ngbDropdownMenu class="dropdown-menu dropdown-menu-end">
+                    <li>
+                      <button ngbDropdownItem type="button" (click)="onOpenFromButton(row)">
+                        Open
+                      </button>
+                    </li>
+                    <li>
+                      <button ngbDropdownItem type="button" (click)="onDownloadFromButton(row)">
+                        Download
+                      </button>
+                    </li>
+                    <li *ngIf="showDelete">
+                      <button
+                        ngbDropdownItem
+                        class="text-danger"
+                        type="button"
+                        [disabled]="disableDelete"
+                        (click)="onDelete(row, i)">
+                        Delete
+                      </button>
+                    </li>
+                  </ul>
                 </div>
               </td>
             </tr>
@@ -263,33 +291,27 @@ import { FileViewerModalComponent } from "@app/shared/components/file-viewer-mod
     </div>
   `,
 })
-export class UploadedAttachmentsListComponent implements OnChanges {
+export class UploadedAttachmentsListComponent {
   @Input() set attachments(value: any[]) {
     this._attachments = value;
-
-    // When eager preview resolution is enabled, resolve signed URLs as rows arrive.
-    if (this.resolvePreviewUrls && this._attachments?.length > 0) {
-      this.resolvedIds.clear();
-      this.resolveAttachmentUrls();
-    }
   }
   get attachments(): any[] {
     return this._attachments;
   }
   private _attachments: any[] = [];
 
-  @Input() viewMode: "card" | "table" | "media-grid" | "detailed-list" = "card";
+  @Input() viewMode: "card" | "table" | "media-grid" | "detailed-list" = "table";
   @Input() isLoading = false;
   @Input() loadingText = "Loading attachments...";
-  @Input() showThumbnails = false;
+  @Input() showThumbnails = true;
+  @Input() showImageThumbnails = true;
   @Input() showDelete = true;
   @Input() disableDelete = false;
   @Input() deleteTitle = "Delete attachment";
   @Input() maxHeight = "300px";
-  @Input() showHelperText = true;
+  @Input() showHelperText = false;
   @Input() helperText = "Click on filenames to preview, or use direct download links if preview fails.";
   @Input() showMediaBadge = false;
-  @Input() resolvePreviewUrls = false;
   @Input() showMissingSourceWarning = false;
   @Input() missingSourceText = "Missing file source. Reupload required for preview/download.";
   @Input() useSharedViewer = true;
@@ -300,14 +322,22 @@ export class UploadedAttachmentsListComponent implements OnChanges {
   @Output() downloadRequested = new EventEmitter<any>();
   @Output() deleteRequested = new EventEmitter<{ id: any; index: number; row: any }>();
 
-  private readonly attachmentsService = inject(AttachmentsService);
   private readonly modalService = inject(NgbModal);
-  private resolvedIds = new Set<number>();
 
   getUploaderLabel(row: any): string {
-    const explicitName = row?.createdByName || row?.uploadedByName || row?.uploadedBy || row?.uploaderName || row?.user_name || row?.createdBy;
+    const explicitName =
+      this.getNonNumericText(row?.createdByName) ||
+      this.getNonNumericText(row?.uploadedByName) ||
+      this.getNonNumericText(row?.uploaderName) ||
+      this.getNonNumericText(row?.user_name) ||
+      this.getNonNumericText(row?.created_by_name);
+
     if (explicitName) {
-      return String(explicitName);
+      return explicitName;
+    }
+
+    if (row?.uploaded_by !== undefined && row?.uploaded_by !== null && row?.uploaded_by !== "") {
+      return `User #${row.uploaded_by}`;
     }
 
     if (row?.createdBy !== undefined && row?.createdBy !== null && row?.createdBy !== "") {
@@ -321,48 +351,43 @@ export class UploadedAttachmentsListComponent implements OnChanges {
     return "Unknown";
   }
 
-  ngOnChanges(changes: SimpleChanges): void {
-    // If resolvePreviewUrls flag is explicitly set to true, resolve URLs for current rows.
-    if (changes['resolvePreviewUrls'] && this.resolvePreviewUrls && this._attachments?.length > 0) {
-      this.resolvedIds.clear();
-      this.resolveAttachmentUrls();
-    }
+  getFileName(row: any): string {
+    const value =
+      row?.file_name ??
+      row?.fileName ??
+      row?.name ??
+      row?.filename ??
+      row?.originalName ??
+      row?.original_name ??
+      "";
+
+    const normalized = String(value).trim();
+    return normalized || "Attachment";
   }
 
-  private resolveAttachmentUrls(): void {
-    if (!this.attachments || this.attachments.length === 0) {
-      return;
+  private getNonNumericText(value: unknown): string | null {
+    if (value === null || value === undefined) {
+      return null;
     }
 
-    this.attachments.forEach((attachment, index) => {
-      const numericId = this.toNumericAttachmentId(attachment?.id);
-      if (numericId !== null && !this.resolvedIds.has(numericId)) {
-        this.resolvedIds.add(numericId);
-        
-        this.attachmentsService
-          .getViewById(numericId)
-          .then((response: any) => {
-            const signedUrl = response?.url || response?.previewUrl;
-            if (signedUrl) {
-              // Create a new reference to trigger change detection
-              this.attachments[index] = {
-                ...attachment,
-                previewUrl: signedUrl,
-              };
-            }
-          })
-          .catch((err) => {
-            console.warn(`Failed to resolve preview URL for attachment ${attachment.id}:`, err);
-          });
-      }
-    });
+    const text = String(value).trim();
+    if (!text) {
+      return null;
+    }
+
+    // Pure numeric values are IDs, not display names.
+    if (/^\d+$/.test(text)) {
+      return null;
+    }
+
+    return text;
   }
 
   onOpen(row: any, event: Event): void {
     event.preventDefault();
 
     if (this.useSharedViewer) {
-      this.openInSharedViewer(row);
+      void this.openInSharedViewer(row);
       return;
     }
 
@@ -386,39 +411,64 @@ export class UploadedAttachmentsListComponent implements OnChanges {
 
   onOpenFromButton(row: any): void {
     if (this.useSharedViewer) {
-      this.openInSharedViewer(row);
+      void this.openInSharedViewer(row);
       return;
     }
 
     this.openRequested.emit(row);
   }
 
-  private openInSharedViewer(row: any): void {
+  onDownloadFromButton(row: any): void {
+    if (this.useSharedViewer) {
+      this.downloadFromSharedViewer(row);
+      return;
+    }
+
+    this.downloadRequested.emit(row);
+  }
+
+  private async openInSharedViewer(row: any): Promise<void> {
     const items = (this.attachments || []).map((attachment) => ({
       id: this.toNumericAttachmentId(attachment?.id),
-      url: this.toNumericAttachmentId(attachment?.id) !== null
-        ? ""
-        : this.normalizeAttachmentUrl(
-            String(
-              attachment?.previewUrl ||
-                attachment?.dataUrl ||
-                attachment?.link ||
-                attachment?.url ||
-                attachment?.path ||
-                attachment?.filePath ||
-                "",
-            ).trim(),
-          ),
-      fileName: attachment?.fileName || "Attachment",
+      url: this.normalizeAttachmentUrl(
+        String(
+          attachment?.file_url ||
+          attachment?.previewUrl ||
+          attachment?.dataUrl ||
+          attachment?.link ||
+          attachment?.url ||
+          attachment?.path ||
+          attachment?.filePath ||
+          "",
+        ).trim(),
+      ),
+      fileName: attachment?.file_name || attachment?.fileName || "Attachment",
     }));
 
     const activeId = this.toNumericAttachmentId(row?.id);
     const idIndex = activeId !== null ? items.findIndex((item) => item.id === activeId) : -1;
     const index = idIndex >= 0 ? idIndex : this._attachments.indexOf(row);
     const initialIndex = index >= 0 ? index : 0;
-    const initialItem = items[initialIndex];
+    let initialItem = items[initialIndex];
 
-    if (!initialItem?.url && !initialItem?.id) {
+    if (activeId !== null && this.resolveById) {
+      try {
+        const fresh = await this.resolveById(activeId);
+        const freshUrl = this.normalizeAttachmentUrl(String(fresh?.url || "").trim());
+        if (freshUrl) {
+          initialItem = {
+            ...initialItem,
+            url: freshUrl,
+            fileName: fresh?.fileName || initialItem?.fileName,
+          };
+          items[initialIndex] = initialItem;
+        }
+      } catch {
+        // Keep existing URL if on-demand resolve fails.
+      }
+    }
+
+    if (!initialItem?.url) {
       return;
     }
 
@@ -428,7 +478,7 @@ export class UploadedAttachmentsListComponent implements OnChanges {
       scrollable: true,
     });
 
-    modalRef.componentInstance.url = initialItem?.url || "";
+    modalRef.componentInstance.url = initialItem?.url;
     modalRef.componentInstance.fileName = initialItem?.fileName || "Attachment";
     modalRef.componentInstance.items = items;
     modalRef.componentInstance.initialIndex = initialIndex;
@@ -438,44 +488,42 @@ export class UploadedAttachmentsListComponent implements OnChanges {
         return this.resolveById(id);
       }
 
-      const numericId = this.toNumericAttachmentId(id);
-      if (numericId === null) {
-        return null;
+      // Find the attachment by ID and return its signed URL
+      const attachment = this._attachments.find(a => this.toNumericAttachmentId(a?.id) === this.toNumericAttachmentId(id));
+      if (attachment?.file_url) {
+        return {
+          url: this.normalizeAttachmentUrl(String(attachment.file_url).trim()),
+          fileName: attachment?.file_name || attachment?.fileName,
+        };
       }
 
-      try {
-        const resolved = await this.attachmentsService.getViewById(numericId);
-        return {
-          url: this.normalizeAttachmentUrl(String(resolved?.url || "").trim()),
-          fileName: resolved?.fileName,
-        };
-      } catch {
-        return null;
-      }
+      return null;
     };
   }
 
   private async downloadFromSharedViewer(row: any): Promise<void> {
     const id = Number(row?.id);
-    if (!Number.isFinite(id)) {
-      const fallbackUrl = this.normalizeAttachmentUrl(
-        String(row?.previewUrl || row?.dataUrl || row?.link || row?.url || row?.path || row?.filePath || "").trim(),
-      );
-      if (fallbackUrl) {
-        window.open(fallbackUrl, "_blank", "noopener");
-      }
+    
+    // First, try to get the signed URL directly from the attachment object
+    const signedUrl = row?.file_url || row?.previewUrl || row?.dataUrl || row?.link || row?.url || row?.path || row?.filePath;
+    if (signedUrl) {
+      window.open(this.normalizeAttachmentUrl(String(signedUrl).trim()), "_blank", "noopener");
+      return;
+    }
+
+    // If no URL in object and resolveById is available, use it
+    if (!Number.isFinite(id) || !this.resolveById) {
       return;
     }
 
     try {
-      const resolved = this.resolveById
-        ? await this.resolveById(id)
-        : await this.attachmentsService.getViewById(id);
+      const resolved = await this.resolveById(id);
       const resolvedUrl = this.normalizeAttachmentUrl(String(resolved?.url || "").trim());
       if (resolvedUrl) {
         window.open(resolvedUrl, "_blank", "noopener");
       }
     } catch {
+      // Silent fail
     }
   }
 
@@ -513,12 +561,12 @@ export class UploadedAttachmentsListComponent implements OnChanges {
       return true;
     }
 
-    const fileName = String(row?.fileName || '').toLowerCase();
+    const fileName = this.getFileName(row).toLowerCase();
     return /\.(jpg|jpeg|png|gif|webp|bmp|svg|avif)$/i.test(fileName);
   }
 
   resolveThumbnailUrl(row: any): string {
-    return String(row?.previewUrl || row?.dataUrl || row?.link || row?.url || '');
+    return String(row?.file_url || row?.previewUrl || row?.dataUrl || row?.link || row?.url || '');
   }
 
   onThumbnailError(row: any): void {
@@ -528,10 +576,13 @@ export class UploadedAttachmentsListComponent implements OnChanges {
   private getExtension(row: any): string {
     const fromExt = String(row?.ext || '').trim().toLowerCase();
     if (fromExt) {
+      if (fromExt.includes('/')) {
+        return fromExt.split('/').pop() || '';
+      }
       return fromExt;
     }
 
-    const fileName = String(row?.fileName || '').toLowerCase();
+    const fileName = this.getFileName(row).toLowerCase();
     const match = fileName.match(/\.([a-z0-9]+)$/i);
     return match?.[1] || '';
   }

@@ -6,11 +6,21 @@
 <div class="modal-body">
     <app-calendar-form (setFormEmitter)="setFormEmitter($event)"></app-calendar-form>
 
-    <div class="row mb-3">
-        <label class="col-sm-3 col-form-label">Upload</label>
-        <div class="col-sm-9">
-            <div class="form-group">
-                <input (change)="this.onFilechange($event)" class="form-control" type="file" id="formFile">
+    <div class="card mt-3">
+        <div class="card-header bg-body fw-semibold">Attachments</div>
+        <div class="card-body">
+            <app-inline-attachment-dropzone
+                [disabled]="loadingIndicator"
+                (filesAdded)="onAttachmentFilesAdded($event)">
+            </app-inline-attachment-dropzone>
+
+            <div class="mt-3">
+                <app-pending-attachments-list
+                    [files]="selectedFiles"
+                    [disabled]="loadingIndicator"
+                    [helperText]="'Selected files are queued and will upload after creating the event.'"
+                    (removeRequested)="removeFile($event)">
+                </app-pending-attachments-list>
             </div>
         </div>
     </div>
@@ -19,5 +29,5 @@
 
 <div class="modal-footer">
     <button class="btn btn-light" (click)="dismiss()">Cancel</button>
-    <button type="button" class="btn btn-primary" (click)="onSubmit()">Save</button>
+    <button type="button" class="btn btn-primary" (click)="onSubmit()" [disabled]="loadingIndicator">Save</button>
 </div>

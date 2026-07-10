@@ -9,16 +9,12 @@ import {
   Put,
   Query,
   Req,
-  UploadedFile,
   UseGuards,
-  UseInterceptors,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { AuthGuard } from '@/nest/guards/auth.guard';
-import { FileInterceptor } from '@nestjs/platform-express';
 import { SupportTicketsService } from './support-tickets.service';
 import {
-  CreateSupportTicketAttachmentDto,
   CreateSupportTicketCommentDto,
   CreateSupportTicketDto,
   SupportTicketFilters,
@@ -86,38 +82,6 @@ export class SupportTicketsController {
   @Delete(':ticketId/comments/:commentId')
   async deleteComment(@Param('commentId', ParseIntPipe) commentId: number, @Req() req: Request) {
     return this.supportTicketsService.deleteComment(commentId, this.getRequestUser(req));
-  }
-
-  @Get(':id/attachments')
-  async getAttachments(@Param('id', ParseIntPipe) ticketId: number, @Req() req: Request) {
-    return this.supportTicketsService.getAttachments(ticketId, this.getRequestUser(req));
-  }
-
-  @Post(':id/attachments')
-  async addAttachment(
-    @Param('id', ParseIntPipe) ticketId: number,
-    @Body() dto: CreateSupportTicketAttachmentDto,
-    @Req() req: Request,
-  ) {
-    return this.supportTicketsService.addAttachment(ticketId, dto, this.getRequestUser(req));
-  }
-
-  @Post(':id/attachments/upload')
-  @UseInterceptors(FileInterceptor('file'))
-  async uploadAttachment(
-    @Param('id', ParseIntPipe) ticketId: number,
-    @UploadedFile() file?: { originalname?: string; buffer?: Buffer; mimetype?: string; size?: number },
-    @Req() req?: Request,
-  ) {
-    return this.supportTicketsService.uploadAttachment(ticketId, file, this.getRequestUser(req as Request));
-  }
-
-  @Delete(':ticketId/attachments/:attachmentId')
-  async deleteAttachment(
-    @Param('attachmentId', ParseIntPipe) attachmentId: number,
-    @Req() req: Request,
-  ) {
-    return this.supportTicketsService.deleteAttachment(attachmentId, this.getRequestUser(req));
   }
 
   private getRequestUser(req: Request): { id: number } {

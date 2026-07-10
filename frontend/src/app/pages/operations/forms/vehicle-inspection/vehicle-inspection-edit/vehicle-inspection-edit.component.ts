@@ -7,10 +7,7 @@ import { NAVIGATION_ROUTE } from "../vehicle-inspection-constant";
 import { VehicleInspectionService } from "@app/core/api/operations/vehicle-inspection/vehicle-inspection.service";
 import { VehicleInspectionFormComponent } from "../vehicle-inspection-form/vehicle-inspection-form.component";
 import { VehicleService } from "@app/core/api/operations/vehicle/vehicle.service";
-import { environment } from "src/environments/environment";
-import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
-import { FileViewerModalComponent } from "@app/shared/components/file-viewer-modal/file-viewer-modal.component";
-import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
+import { FeatureType } from "@app/shared/enums/feature.enum";
 
 @Component({
   standalone: true,
@@ -26,8 +23,6 @@ export class VehicleInspectionEditComponent {
     private toastrService: ToastrService,
     private activatedRoute: ActivatedRoute,
     private fb: FormBuilder,
-    private modalService: NgbModal,
-    private attachmentsService: AttachmentsService
   ) {}
 
   getFormValues() {
@@ -65,6 +60,8 @@ export class VehicleInspectionEditComponent {
 
   submitted = false;
 
+  readonly attachmentFeature = FeatureType.INSPECTIONS_VEHICLE;
+
   @Input() goBack: Function = () => {
     this.router.navigate([NAVIGATION_ROUTE.LIST], {
       queryParamsHandling: "merge",
@@ -72,108 +69,6 @@ export class VehicleInspectionEditComponent {
   };
 
   data;
-
-  private getUploadsBaseUrl(): string {
-    const apiBase = String(environment.apiV2BaseUrl || '').trim();
-
-    // Dev uses absolute api base (http://localhost:3002); use it for upload links.
-    if (apiBase.startsWith('http://') || apiBase.startsWith('https://')) {
-      const withoutTrailingSlash = apiBase.replace(/\/+$/, '');
-      return withoutTrailingSlash.replace(/\/apiV2$/, '');
-    }
-
-    // Relative api base means same-origin deployment.
-    return window.location.origin;
-  }
-
-  private normalizeUploadPath(path: string): string {
-    const base = this.getUploadsBaseUrl();
-    return `${base}${path}`;
-  }
-
-  private getLegacyVehicleImageUrl(fileName: string): string {
-    return `https://dashboard.eye-fi.com/attachments/vehicleInformation/${encodeURIComponent(fileName)}`;
-  }
-
-  getImageUrl(attachment): string {
-    if (!attachment) return '';
-
-    const fileName = String(attachment?.fileName || '').trim();
-    const storageSource = String(attachment?.storage_source || '').toLowerCase();
-    const isLocalStorage = storageSource === 'local';
-
-    // Null/legacy sources should always use legacy public attachment path.
-    if (!isLocalStorage && fileName) {
-      return this.getLegacyVehicleImageUrl(fileName);
-    }
-
-    // Prefer persisted link (supports local uploads).
-    if (attachment.link) {
-      const rawLink = String(attachment.link);
-
-      if (rawLink.startsWith('/uploads/')) {
-        return this.normalizeUploadPath(rawLink);
-      }
-
-      // Vehicle inspection uploads now live locally; normalize legacy dashboard links.
-      if (rawLink.includes('dashboard.eye-fi.com/attachments') && attachment.fileName) {
-        return this.normalizeUploadPath(`/uploads/vehicleInformation/${attachment.fileName}`);
-      }
-
-      return rawLink;
-    }
-
-    // Fallback for legacy rows that only have directory + fileName.
-    if (attachment.directory && attachment.fileName) {
-      const directory = String(attachment.directory);
-      if (directory.includes('dashboard.eye-fi.com/attachments')) {
-        return this.normalizeUploadPath(`/uploads/vehicleInformation/${attachment.fileName}`);
-      }
-
-      return `${attachment.directory}/${attachment.fileName}`;
-    }
-
-    // Last fallback for rows with only filename.
-    if (attachment.fileName) {
-      return this.normalizeUploadPath(`/uploads/vehicleInformation/${attachment.fileName}`);
-    }
-
-    return '';
-  }
-
-  private openFileViewerModal(url: string, fileName: string): void {
-    const modalRef = this.modalService.open(FileViewerModalComponent, {
-      size: 'xl',
-      centered: true,
-      backdrop: true,
-      keyboard: true,
-    });
-
-    modalRef.componentInstance.url = url;
-    modalRef.componentInstance.fileName = fileName;
-  }
-
-  async viewImage(attachment: any) {
-    try {
-      let url = this.getImageUrl(attachment);
-      if (attachment?.id) {
-        const resolved = await this.attachmentsService.getViewById(attachment.id);
-        if (resolved?.url) {
-          url = resolved.url;
-        }
-      }
-
-      if (!url) {
-        this.toastrService.warning('Attachment URL not available');
-        return;
-      }
-
-      this.openFileViewerModal(url, attachment?.fileName || 'Attachment');
-    } catch (error) {
-      console.error('Failed to open attachment:', error);
-      this.toastrService.error('Unable to open attachment');
-    }
-  }
 
   setFormErrorsEmitter($event){
   }
@@ -194,13 +89,6 @@ export class VehicleInspectionEditComponent {
     this.info = await this.vehicleService.findOne({ licensePlate: license });
   }
 
-  attachments = [];
-  private readonly vehiclePhotoTitles = {
-    front: ['Vehicle Front View'],
-    rear: ['Vehicle Rear View'],
-    left: ['Vehicle Left Side View', 'Vehicle Left Side (Front) View', 'Vehicle Left Side (Rear) View'],
-    right: ['Vehicle Right Side View', 'Vehicle Right Side (Front) View', 'Vehicle Right Side (Rear) View']
-  };
   getData = async () => {
     try {
       this.isLoading = true;
@@ -229,8 +117,6 @@ export class VehicleInspectionEditComponent {
           details,
         };
       });
-
-      this.attachments = data?.attachments;
       this.data = data;
       this.form.patchValue({
         ...data.main,
@@ -246,45 +132,6 @@ export class VehicleInspectionEditComponent {
       this.isLoading = false;
     }
   };
-
-  getVehiclePhotosByTitles(titles: string[]) {
-    if (!Array.isArray(this.attachments)) return [];
-    return this.attachments.filter((attachment) => titles.includes(attachment?.title));
-  }
-
-  getVehiclePhotosBySide(side: 'front' | 'rear' | 'left' | 'right') {
-    return this.getVehiclePhotosByTitles(this.vehiclePhotoTitles[side]);
-  }
-
-  getVehiclePhotoBadgeLabel(attachment: any, fallback: string): string {
-    const title = String(attachment?.title || '').trim();
-    if (!title) {
-      return fallback;
-    }
-
-    return title
-      .replace(/^Vehicle\s+/i, '')
-      .replace(/\s+View$/i, '')
-      .replace(/\s+Photo\s*\d*$/i, '')
-      .trim() || fallback;
-  }
-
-  getAdditionalVehiclePhotos() {
-    if (!Array.isArray(this.attachments)) return [];
-    return this.attachments.filter((attachment) =>
-      typeof attachment?.title === 'string' && attachment.title.startsWith('Vehicle Additional Photo')
-    );
-  }
-
-  hasGroupedVehiclePhotos(): boolean {
-    const groupedCount =
-      this.getVehiclePhotosBySide('front').length +
-      this.getVehiclePhotosBySide('rear').length +
-      this.getVehiclePhotosBySide('left').length +
-      this.getVehiclePhotosBySide('right').length +
-      this.getAdditionalVehiclePhotos().length;
-    return groupedCount > 0;
-  }
 
   setFormEmitter($event) {
     this.form = $event;

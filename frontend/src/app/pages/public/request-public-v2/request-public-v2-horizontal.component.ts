@@ -289,11 +289,12 @@ export class RequestPublicV2HorizontalComponent {
     try {
       const payload = this.buildLegacyRequestPayload();
       const response: any = await this.requestService.createFieldServiceRequest(payload);
-      const requestId = response?.id;
+      const requestId = Number(response?.id || 0);
+      const token = String(response?.token || '').trim();
 
       let uploadedCount = 0;
-      if (requestId) {
-        uploadedCount = await this.uploadAllProductFiles(requestId);
+      if (requestId > 0 && token) {
+        uploadedCount = await this.uploadAllProductFiles(requestId, token);
       }
 
       alert(`Request submitted successfully${requestId ? ` (ID: ${requestId})` : ""}. Uploaded ${uploadedCount} attachment(s).`);
@@ -392,19 +393,13 @@ export class RequestPublicV2HorizontalComponent {
     };
   }
 
-  private async uploadAllProductFiles(requestId: number): Promise<number> {
+  private async uploadAllProductFiles(requestId: number, token: string): Promise<number> {
     const files = Object.values(this.productFiles).flat();
     let uploadedCount = 0;
 
     for (const file of files) {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("field", FIELD_SERVICE.UPLOAD_FIELD_NAME);
-      formData.append("uniqueData", `${requestId}`);
-      formData.append("folderName", FIELD_SERVICE.UPLOAD_FOLDER_NAME);
-
       try {
-        await this.attachmentsService.uploadfilePublic(formData);
+        await this.attachmentsService.uploadRequestAttachmentPublic(requestId, token, file);
         uploadedCount++;
       } catch (error) {
         console.error("Failed to upload file", file?.name, error);

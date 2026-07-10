@@ -515,17 +515,29 @@
 		}
 	}
 
-	&:hover .menu-item-actions,
-	&:focus-within .menu-item-actions,
-	.menu-item-actions.show {
+	> .menu-link-with-actions:hover ~ .menu-item-actions,
+	> .menu-link-with-actions:focus-visible ~ .menu-item-actions,
+	> .nav-link:hover ~ .menu-item-actions,
+	> .nav-link:focus-visible ~ .menu-item-actions,
+	> .menu-item-actions:hover,
+	> .menu-item-actions:focus-within,
+	> .menu-item-actions.show {
 		opacity: 1;
 		visibility: visible;
 		margin-right: 8px;
 	}
 
-	&:hover .sidebar-count-badge,
-	&:focus-within .sidebar-count-badge,
-	.menu-item-actions.show ~ .nav-link .sidebar-count-badge {
+	> .menu-link-with-actions:hover .sidebar-count-badge,
+	> .menu-link-with-actions:focus-visible .sidebar-count-badge,
+	> .nav-link:hover .sidebar-count-badge,
+	> .nav-link:focus-visible .sidebar-count-badge {
+		opacity: 0;
+		visibility: hidden;
+	}
+
+	&:has(> .menu-item-actions:hover) .sidebar-count-badge,
+	&:has(> .menu-item-actions:focus-within) .sidebar-count-badge,
+	&:has(> .menu-item-actions.show) .sidebar-count-badge {
 		opacity: 0;
 		visibility: hidden;
 	}

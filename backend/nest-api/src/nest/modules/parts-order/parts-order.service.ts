@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { QadOdbcService } from '@/shared/database/qad-odbc.service';
 import { EmailService } from '@/shared/email/email.service';
@@ -25,6 +25,7 @@ interface PartsOrderChangeItem {
 
 @Injectable()
 export class PartsOrderService {
+  private readonly logger = new Logger(PartsOrderService.name);
   private readonly createRecipientsKey: EmailNotificationAccessValue = 'create_parts_order';
   private readonly updateRecipientsKey: EmailNotificationAccessValue = 'update_parts_order';
 

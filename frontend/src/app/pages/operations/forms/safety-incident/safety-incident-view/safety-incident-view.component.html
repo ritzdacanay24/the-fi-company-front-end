@@ -147,18 +147,17 @@
             </div>
 
             <!-- Supporting Documentation -->
-            <div class="col-md-12" *ngIf="attachments && attachments.length > 0">
+            <div class="col-md-12">
               <h6 class="mb-2">Supporting Documentation:</h6>
-              <div *ngFor="let attachment of attachments" class="d-flex align-items-center p-2 border rounded mb-2">
-                <i class="mdi mdi-file-document me-2 text-warning"></i>
-                <div class="flex-grow-1" style="overflow:hidden; text-overflow: ellipsis;">
-                  <p class="mb-0 small fw-medium">{{attachment.fileName}}</p>
-                  <small class="text-muted">{{attachment.fileSizeConv}}</small>
-                </div>
-                <button type="button" class="btn btn-sm btn-outline-warning" (click)="openAttachment(attachment)">
-                  <i class="mdi mdi-download"></i>
-                </button>
-              </div>
+              <app-feature-attachments-panel
+                [feature]="attachmentFeature"
+                [resourceId]="id"
+                [legacyFieldNames]="['safetyIncident']"
+                [showDropzone]="false"
+                [showDelete]="false"
+                [disabled]="true"
+                [viewMode]="'table'">
+              </app-feature-attachments-panel>
             </div>
 
           </div>

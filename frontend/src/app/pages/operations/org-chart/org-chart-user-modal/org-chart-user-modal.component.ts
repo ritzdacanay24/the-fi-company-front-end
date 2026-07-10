@@ -43,6 +43,7 @@ export class OrgChartUserModalComponent {
   form: FormGroup;
   myFiles: FileList | null = null;
   imagePreview: string | null = null;
+  imageMarkedForRemoval = false;
   availableRoles: AccessControlRole[] = [];
   availableDomains: string[] = [];
   userGrants: AccessControlUserGrant[] = [];
@@ -180,6 +181,7 @@ export class OrgChartUserModalComponent {
       });
 
       this.imagePreview = this.data.image || null;
+      this.imageMarkedForRemoval = false;
 
       if (!this.isEditMode) {
         this.form.disable({ emitEvent: false });
@@ -225,13 +227,14 @@ export class OrgChartUserModalComponent {
       return;
     }
 
+    this.imageMarkedForRemoval = false;
     this.imagePreview = URL.createObjectURL(file);
-    this.form.patchValue({ image: this.imagePreview });
   }
 
   removeImage(): void {
     this.imagePreview = null;
     this.myFiles = null;
+    this.imageMarkedForRemoval = true;
     this.form.patchValue({ image: "" });
   }
 
@@ -275,6 +278,11 @@ export class OrgChartUserModalComponent {
 
       delete payload.locationKey;
 
+      const hasSelectedFile = !!this.myFiles?.[0];
+      if (hasSelectedFile) {
+        delete payload.image;
+      }
+
       await this.api.update(this.id, payload);
 
       if (this.isEditMode) {
@@ -285,6 +293,9 @@ export class OrgChartUserModalComponent {
       const uploadedImageUrl = await this.uploadSelectedImage();
       if (uploadedImageUrl) {
         payload.image = uploadedImageUrl;
+      } else if (!hasSelectedFile && this.imageMarkedForRemoval) {
+        await this.api.deletePhoto(this.id);
+        payload.image = "";
       }
 
       const result = { ...this.data, ...payload, id: this.id };

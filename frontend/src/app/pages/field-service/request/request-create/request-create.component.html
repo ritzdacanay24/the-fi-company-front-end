@@ -7,11 +7,27 @@
         <h4 class="card-title mb-0 flex-grow-1 text-end"> {{title}} </h4>
       </div>
       <div class="card-body" style="min-height:300px">
-        <app-request-form (setFormEmitter)="setFormEmitter($event)" [submitted]="submitted" [showCaptcha]="showCaptcha"></app-request-form>
+        <app-request-form (setFormEmitter)="setFormEmitter($event)" [submitted]="submitted"
+          [showCaptcha]="showCaptcha"></app-request-form>
 
-        <div class="mb-3 mt-3">
-          <div class="form-group">
-            <input (change)="this.onFilechange($event)" class="form-control" type="file" id="file" multiple name="file">
+        <div class="mt-4 pt-4 border-top">
+          <div class="mb-3">
+            <h3 class="h5 mb-1">Attachments</h3>
+            <p class="text-muted mb-0">Add files now. They will be uploaded automatically after creating the request.</p>
+          </div>
+
+          <app-inline-attachment-dropzone
+            [disabled]="isLoading"
+            (filesAdded)="onPendingAttachmentFilesAdded($event)">
+          </app-inline-attachment-dropzone>
+
+          <div class="mt-3">
+            <app-pending-attachments-list
+              [files]="myFiles"
+              [disabled]="isLoading"
+              [helperText]="'Selected files are queued and will upload after creating the request.'"
+              (removeRequested)="removePendingAttachment($event)">
+            </app-pending-attachments-list>
           </div>
         </div>
       </div>

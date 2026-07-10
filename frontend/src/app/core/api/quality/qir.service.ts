@@ -63,10 +63,6 @@ export class QirService extends DataService<any> {
     };
   }
 
-  async uploadAttachmentPublic(formData: FormData): Promise<any> {
-    return firstValueFrom(this.http.post(`${url}/upload-public`, formData));
-  }
-
   async getQirById(id: number) {
     return this.getById(id);
   }

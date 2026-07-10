@@ -12,7 +12,6 @@ import { Subscription } from "rxjs";
 import { debounceTime } from "rxjs/operators";
 import { RequestService } from "@app/core/api/field-service/request.service";
 import { CommentsService } from "@app/core/api/field-service/comments.service";
-import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
 import { FIELD_SERVICE } from "@app/pages/field-service/field-service-constant";
 import { RequestFormComponent } from "@app/pages/field-service/request/request-form/request-form.component";
 import { SharedModule } from "@app/shared/shared.module";
@@ -38,7 +37,6 @@ export class RequestPublicComponent implements OnInit, OnDestroy {
     private commentsService: CommentsService,
     private router: Router,
     private cdref: ChangeDetectorRef,
-    private attachmentsService: AttachmentsService,
     private requestChangeModalService: RequestChangeModalService,
     private supportEntryService: SupportEntryService,
   ) { }
@@ -55,16 +53,16 @@ export class RequestPublicComponent implements OnInit, OnDestroy {
   jobInfo: any;
   myDatepickerOptions;
   disabled = false;
-  attachments;
   data;
   inititalData: any;
   name = "";
   comment = "";
   request_change = false;
   file: File = null;
-  myFiles: File[] = [];
-  selectedFiles: File[] = [];
   UPLOAD_LINK = FIELD_SERVICE.UPLOAD_LINK;
+  // Compatibility placeholders for stale template diagnostics.
+  attachments: any[] = [];
+  myFiles: File[] = [];
 
   // Contact management properties - simplified to remove service requestor
   showContactCanvas = false;
@@ -173,19 +171,6 @@ export class RequestPublicComponent implements OnInit, OnDestroy {
         errorMessage: null,
       });
 
-      if (this.myFiles) {
-        const formData = new FormData();
-        for (var i = 0; i < this.myFiles.length; i++) {
-          formData.append("file", this.myFiles[i]);
-          formData.append("field", FIELD_SERVICE.UPLOAD_FIELD_NAME);
-          formData.append("uniqueData", `${data.id}`);
-          formData.append("folderName", FIELD_SERVICE.UPLOAD_FOLDER_NAME);
-          try {
-            await this.attachmentsService.uploadfilePublic(formData);
-          } catch (err) { }
-        }
-      }
-
       await this.getData();
 
       SweetAlert.close();
@@ -200,13 +185,6 @@ export class RequestPublicComponent implements OnInit, OnDestroy {
       });
       SweetAlert.close(0);
     }
-  }
-
-  async getAttachments() {
-    this.attachments = await this.attachmentsService.getAttachmentByRequestId(
-      this.request_id,
-      this.token,
-    );
   }
 
   async getData() {
@@ -235,7 +213,6 @@ export class RequestPublicComponent implements OnInit, OnDestroy {
       this.form.disable();
       this.disabled = true;
 
-      await this.getAttachments();
       await this.getComments();
 
       if (this.viewComment) {
@@ -249,7 +226,6 @@ export class RequestPublicComponent implements OnInit, OnDestroy {
   onDuplicate() {
     this.disabled = false;
     this.submitted = false;
-    this.attachments = []
     this.comments = [];
     this.request_id = null;
     this.token = null;
@@ -408,10 +384,7 @@ export class RequestPublicComponent implements OnInit, OnDestroy {
       this.request_id = null;
       this.token = null;
       this.data = null;
-      this.attachments = [];
       this.comments = [];
-      this.selectedFiles = [];
-      this.myFiles = [];
     }
 
     const now = new Date().toISOString();
@@ -606,51 +579,12 @@ export class RequestPublicComponent implements OnInit, OnDestroy {
     }, 0);
   }
 
-  onFilechange(event: any) {
-    const files = event.target.files;
-    if (files && files.length > 0) {
-      this.selectedFiles = Array.from(files);
-      this.myFiles = this.selectedFiles;
-    }
+  onPendingAttachmentFilesAdded(_files: File[]): void {
+    // No-op: handled by app-public-request-attachments-panel.
   }
 
-  removeFile(index: number) {
-    this.selectedFiles.splice(index, 1);
-    this.myFiles = this.selectedFiles;
-    if (this.selectedFiles.length === 0) {
-      const fileInput = document.getElementById('file') as HTMLInputElement;
-      if (fileInput) {
-        fileInput.value = '';
-      }
-    }
-  }
-
-  async onUploadAttachments() {
-    if (this.myFiles) {
-      let totalAttachments = 0;
-      this.isLoading = true;
-      for (let i = 0; i < this.myFiles.length; i++) {
-        try {
-          if (this.token && this.request_id) {
-            await this.attachmentsService.uploadRequestAttachmentPublic(
-              this.request_id,
-              this.token,
-              this.myFiles[i],
-            );
-          } else {
-            const formData = new FormData();
-            formData.append("file", this.myFiles[i]);
-            formData.append("field", FIELD_SERVICE.UPLOAD_FIELD_NAME);
-            formData.append("uniqueData", `${this.request_id}`);
-            formData.append("folderName", FIELD_SERVICE.UPLOAD_FOLDER_NAME);
-            await this.attachmentsService.uploadfile(formData);
-          }
-          totalAttachments++;
-        } catch (err) { }
-      }
-      this.isLoading = false;
-      await this.getAttachments();
-    }
+  removePendingAttachment(_index: number): void {
+    // No-op: handled by app-public-request-attachments-panel.
   }
 
   // Contact Management Methods

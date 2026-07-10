@@ -27,23 +27,27 @@
         <div class="card-body p-4">
           <app-vehicle-form (setFormEmitter)="setFormEmitter($event)" [submitted]="submitted"></app-vehicle-form>
 
-          <!-- File Upload Section -->
-          <div class="mb-3 mt-4 pt-4 border-top" *ngIf="id">
+          <!-- Attachments Section -->
+          <div class="mb-3 mt-4">
             <div class="mb-3">
               <h3 class="h5 mb-1">Vehicle Documents</h3>
               <p class="text-muted mb-0">
-                Upload vehicle-related documents, registration, or maintenance records.
+                Add files now. They will be uploaded automatically after the vehicle is created.
               </p>
             </div>
-            <div class="form-group">
-              <input (change)="this.onFilechange($event)" class="form-control" type="file" id="file" multiple name="file">
-              <div class="form-text">
-                <i class="mdi mdi-information-outline me-1"></i>
-                Select multiple files to upload vehicle documentation.
-              </div>
-              <button (click)="this.upload()" type="button" class="btn btn-outline-dark mt-2" *ngIf="id">
-                <i class="mdi mdi-upload me-1"></i>Upload Documents
-              </button>
+
+            <app-inline-attachment-dropzone
+              [disabled]="isLoading"
+              (filesAdded)="onAttachmentFilesAdded($event)">
+            </app-inline-attachment-dropzone>
+
+            <div class="mt-3">
+              <app-pending-attachments-list
+                [files]="selectedFiles"
+                [disabled]="isLoading"
+                [helperText]="'Selected files are queued and will upload after creating the vehicle.'"
+                (removeRequested)="removeFile($event)">
+              </app-pending-attachments-list>
             </div>
           </div>
         </div>

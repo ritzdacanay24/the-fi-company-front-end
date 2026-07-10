@@ -97,11 +97,22 @@ export class UsersService {
   }
 
   async uploadPhoto(id: number, file?: { originalname?: string; buffer?: Buffer }) {
-    await this.getById(id);
+    const user = await this.getById(id);
 
     const subFolder = 'users';
-    const storedFileName = await this.fileStorageService.storeUploadedFile(file, subFolder);
-    const url = this.fileStorageService.resolveLink(storedFileName, subFolder);
+    let storedFileName: string;
+    let url: string | null;
+
+    if (this.fileStorageService.isS3Mode()) {
+      const stored = await this.fileStorageService.storeUploadedFileInBucket(file, {
+        keyPrefix: `${subFolder}/${id}`,
+      });
+      storedFileName = stored.fileName;
+      url = stored.url;
+    } else {
+      storedFileName = await this.fileStorageService.storeUploadedFile(file, subFolder);
+      url = this.fileStorageService.resolveLink(storedFileName, subFolder);
+    }
 
     await this.usersRepository.updateById(id, {
       image: url,
@@ -109,11 +120,101 @@ export class UsersService {
       showImage: 1,
     });
 
+    await this.deleteUserImageAssets(user);
+
     return {
       success: true,
       message: 'Photo uploaded successfully',
       url,
       fileName: storedFileName,
     };
+  }
+
+  async deletePhoto(id: number) {
+    const user = await this.getById(id);
+
+    await this.deleteUserImageAssets(user);
+
+    await this.usersRepository.updateById(id, {
+      image: '',
+      fileName: '',
+      showImage: 0,
+    });
+
+    return {
+      success: true,
+      message: 'Photo removed successfully',
+    };
+  }
+
+  private async deleteUserImageAssets(user: Pick<UserRecord, 'image' | 'fileName'>): Promise<void> {
+    const currentImage = String(user?.image || '').trim();
+    const currentFileName = String(user?.fileName || '').trim();
+
+    if (!currentImage && !currentFileName) {
+      return;
+    }
+
+    const subFolder = 'users';
+
+    if (this.fileStorageService.isS3Mode()) {
+      const bucketKey = this.resolveBucketKey(currentImage, currentFileName, subFolder);
+      if (bucketKey) {
+        await this.fileStorageService.deleteStoredFileInBucket(bucketKey);
+      }
+      return;
+    }
+
+    const fileName = currentFileName || this.resolveFileNameFromUrl(currentImage);
+    if (fileName) {
+      await this.fileStorageService.deleteStoredFile(fileName, subFolder);
+    }
+  }
+
+  private resolveBucketKey(imageUrl: string, fileName: string, subFolder: string): string {
+    const rawUrl = String(imageUrl || '').trim();
+    if (rawUrl) {
+      try {
+        const parsed = new URL(rawUrl);
+        const segments = decodeURIComponent(parsed.pathname || '')
+          .split('/')
+          .filter(Boolean);
+
+        if (segments.length) {
+          const bucketName = String(process.env.FILE_STORAGE_DEFAULT_BUCKET || '').trim();
+          if (bucketName && segments[0] === bucketName) {
+            return segments.slice(1).join('/');
+          }
+
+          return segments.join('/');
+        }
+      } catch {
+        // Fall back to fileName-derived key when URL parsing fails.
+      }
+    }
+
+    const normalizedFileName = this.resolveFileNameFromUrl(fileName) || fileName;
+    if (normalizedFileName) {
+      return `${subFolder}/${normalizedFileName}`;
+    }
+
+    return '';
+  }
+
+  private resolveFileNameFromUrl(value: string): string {
+    const raw = String(value || '').trim();
+    if (!raw) {
+      return '';
+    }
+
+    try {
+      const parsed = new URL(raw);
+      const segments = decodeURIComponent(parsed.pathname || '').split('/').filter(Boolean);
+      return segments[segments.length - 1] || '';
+    } catch {
+      const cleaned = raw.split('?')[0].split('#')[0];
+      const segments = cleaned.split('/').filter(Boolean);
+      return segments[segments.length - 1] || '';
+    }
   }
 }

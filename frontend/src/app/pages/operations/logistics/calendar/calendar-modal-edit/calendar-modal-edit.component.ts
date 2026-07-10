@@ -9,6 +9,7 @@ import { SharedModule } from "@app/shared/shared.module";
 import { ToastrService } from "ngx-toastr";
 import { CalendarFormComponent } from "../calendar-form/calendar-form.component";
 import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErrors";
+import { FeatureType } from "@app/shared/enums/feature.enum";
 
 @Injectable({
   providedIn: "root",
@@ -36,41 +37,11 @@ export class CalendarModalEditComponent implements OnInit {
 
   loadingIndicator: boolean;
   currentUserInfo: any;
-
-  view(row) {
-    window.open(
-      `https://dashboard.eye-fi.com/attachments/receiving/${row.fileName}`,
-      "",
-      "width=600,height=400,left=200,top=200"
-    );
-  }
+  readonly attachmentFeature = FeatureType.RECEIVING;
 
   setFormEmitter($event) {
     this.form = $event;
     this.form.patchValue(this.data);
-  }
-
-  async removeAttachment(id, index) {
-    if (!confirm("Are you sure you want to remove attachment?")) return;
-    await this.api.deleteAttachment(id);
-    this.attachments.splice(index, 1);
-  }
-
-  file: File = null;
-  attachments: any = [];
-
-  onFilechange(event: any) {
-    this.file = event.target.files[0];
-  }
-
-  async upload() {
-    if (this.file) {
-      await this.api.uploadfile(this.id, this.file);
-      this.toastrService.success("File upldated");
-      this.attachments = await this.api.getAttachment(this.id);
-    } else {
-      this.toastrService.error("Please select file.");
-    }
   }
 
   form: FormGroup;
@@ -78,8 +49,7 @@ export class CalendarModalEditComponent implements OnInit {
 
   constructor(
     private ngbActiveModal: NgbActiveModal,
-    private api: ReceivingService,
-    private toastrService: ToastrService
+    private api: ReceivingService
   ) {}
 
   onPrint() {
@@ -135,7 +105,6 @@ export class CalendarModalEditComponent implements OnInit {
     this.loadingIndicator = true;
     let data = await this.api.getById(this.id);
     this.form.patchValue(data);
-    this.attachments = await this.api.getAttachment(this.id);
     this.loadingIndicator = false;
   }
 

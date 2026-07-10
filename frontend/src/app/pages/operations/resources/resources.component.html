@@ -30,7 +30,21 @@
             </div>
             <div class="col-12">
               <label class="form-label">Document File</label>
-              <input class="form-control" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv" (change)="onUploadFileSelected($event)" />
+              <app-inline-attachment-dropzone
+                [disabled]="isUploading"
+                [multiple]="true"
+                [showPasteHint]="false"
+                [accept]="'*/*'"
+                (filesAdded)="onUploadPendingFilesAdded($event)">
+              </app-inline-attachment-dropzone>
+              <div class="mt-2">
+                <app-pending-attachments-list
+                  [files]="uploadPendingFiles"
+                  [disabled]="isUploading"
+                  [helperText]="'Only one file is kept for each resource upload.'"
+                  (removeRequested)="removeUploadPendingFile($event)">
+                </app-pending-attachments-list>
+              </div>
             </div>
             <div class="col-12">
               <label class="form-label">Description</label>
@@ -64,7 +78,21 @@
             </div>
             <div class="col-12">
               <label class="form-label">Replace Document (optional)</label>
-              <input class="form-control" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv" (change)="onEditFileSelected($event)" />
+              <app-inline-attachment-dropzone
+                [disabled]="isSavingEdit"
+                [multiple]="true"
+                [showPasteHint]="false"
+                [accept]="'*/*'"
+                (filesAdded)="onEditPendingFilesAdded($event)">
+              </app-inline-attachment-dropzone>
+              <div class="mt-2">
+                <app-pending-attachments-list
+                  [files]="editPendingFiles"
+                  [disabled]="isSavingEdit"
+                  [helperText]="'Optional replacement file. Keep empty to retain current document.'"
+                  (removeRequested)="removeEditPendingFile($event)">
+                </app-pending-attachments-list>
+              </div>
             </div>
             <div class="col-12">
               <label class="form-label">Description</label>
@@ -109,7 +137,7 @@
 
       <div *ngFor="let group of groupedResources; trackBy: trackByCategory" class="card border-0 shadow-sm mb-4">
         <div class="card-header bg-light border-bottom d-flex align-items-center">
-          <i class="ri-folder-2-line text-primary me-2"></i>
+          <!-- <i class="ri-folder-2-line text-primary me-2"></i> -->
           <div>
             <h5 class="mb-0">{{ group.category }}</h5>
             <small class="text-muted">{{ group.items.length }} item{{ group.items.length === 1 ? '' : 's' }}</small>
@@ -120,16 +148,30 @@
           <table class="table table-hover mb-0 align-middle">
             <thead class="table-light">
               <tr>
-                <th style="width: 32%;">Resource</th>
-                <th style="width: 43%;">Description</th>
-                <th style="width: 10%;" class="text-center">Type</th>
-                <th style="width: 15%;" class="text-end">Action</th>
+                <th style="width: 8%;" class="text-center">Preview</th>
+                <th style="width: 28%;">Resource</th>
+                <th style="width: 41%;">Description</th>
+                <th style="width: 10%;" class="text-center">Size</th>
+                <th style="width: 13%;" class="text-end">Action</th>
               </tr>
             </thead>
             <tbody>
               <tr *ngFor="let item of group.items; trackBy: trackById">
+                <td class="text-center">
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-secondary"
+                    [title]="'Preview ' + item.title"
+                    (click)="previewResource(item)">
+                    <i [class]="item.icon || 'ri-file-line'"></i>
+                  </button>
+                </td>
                 <td>
-                  <div class="fw-semibold">{{ item.title }}</div>
+                  <div class="fw-semibold">
+                    <a href="#" class="text-decoration-underline" (click)="previewResource(item); $event.preventDefault()">
+                      {{ item.title }}
+                    </a>
+                  </div>
                   <small class="text-muted">{{ item.fileName }}</small>
                   <div class="small text-muted">
                     Uploaded {{ item.uploadedAt | date: 'MMM d, y' }}
@@ -142,14 +184,22 @@
                 </td>
                 <td class="text-end">
                   <div class="btn-group btn-group-sm" role="group">
-                    <button type="button" class="btn btn-outline-primary" (click)="previewResource(item)">
+                    <button
+                      type="button"
+                      class="btn btn-outline-primary d-inline-flex align-items-center justify-content-center text-nowrap"
+                      (click)="previewResource(item)">
                       <i class="ri-eye-line"></i>
                     </button>
-                    <button type="button" class="btn btn-primary" (click)="downloadResource(item)">
-                      <i class="ri-download-line me-1"></i>
+                    <button
+                      type="button"
+                      class="btn btn-primary d-inline-flex align-items-center justify-content-center gap-1 text-nowrap"
+                      (click)="downloadResource(item)">
+                      <i class="ri-download-line"></i>
                       Download
                     </button>
-                    <button type="button" class="btn btn-outline-secondary"
+                    <button
+                      type="button"
+                      class="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center text-nowrap"
                       (click)="openAdminEdit(adminEditOffcanvas, item)">
                       <i class="ri-edit-line"></i>
                     </button>

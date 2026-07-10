@@ -20,6 +20,11 @@ import { NgxMaskDirective, provideNgxMask } from "ngx-mask";
 import { LoadingComponent } from "./loading/loading.component";
 import { IgtHelpModule } from "./components/igt-help/igt-help.module";
 import { BreadcrumbComponent } from "./components/breadcrumb/breadcrumb.component";
+import { InlineAttachmentDropzoneComponent } from "./components/inline-attachment-dropzone/inline-attachment-dropzone.component";
+import { UploadedAttachmentsListComponent } from "./components/attachments/uploaded-attachments-list/uploaded-attachments-list.component";
+import { FeatureAttachmentsPanelComponent } from "./components/attachments/feature-attachments-panel/feature-attachments-panel.component";
+import { PendingAttachmentsListComponent } from "./components/attachments/pending-attachments-list/pending-attachments-list.component";
+import { PublicRequestAttachmentsPanelComponent } from "./components/attachments/public-request-attachments-panel/public-request-attachments-panel.component";
 
 // AG Grid
 import { AgGridModule } from "ag-grid-angular";
@@ -39,6 +44,11 @@ import { AgGridModule } from "ag-grid-angular";
     IgtHelpModule,
     AgGridModule,
     BreadcrumbComponent,
+    InlineAttachmentDropzoneComponent,
+    UploadedAttachmentsListComponent,
+    FeatureAttachmentsPanelComponent,
+    PendingAttachmentsListComponent,
+    PublicRequestAttachmentsPanelComponent,
   ],
   imports: [
     CommonModule,
@@ -57,6 +67,11 @@ import { AgGridModule } from "ag-grid-angular";
     IgtHelpModule,
     AgGridModule,
     BreadcrumbComponent,
+    InlineAttachmentDropzoneComponent,
+    UploadedAttachmentsListComponent,
+    FeatureAttachmentsPanelComponent,
+    PendingAttachmentsListComponent,
+    PublicRequestAttachmentsPanelComponent,
   ],
   providers: [provideNgxMask(), provideHttpClient(withInterceptorsFromDi())],
 })

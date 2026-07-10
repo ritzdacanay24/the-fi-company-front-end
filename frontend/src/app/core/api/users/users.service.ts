@@ -28,5 +28,8 @@ export class NewUserService extends DataService<any> {
       .toPromise();
   }
 
+  deletePhoto = async (id: number | string): Promise<any> =>
+    firstValueFrom(this.http.delete<any>(`${usersV2Url}/${id}/photo`));
+
   addPhoto;
 }

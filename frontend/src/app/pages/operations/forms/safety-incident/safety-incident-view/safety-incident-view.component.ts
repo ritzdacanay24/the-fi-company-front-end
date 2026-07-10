@@ -3,10 +3,8 @@ import { SharedModule } from "@app/shared/shared.module";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ToastrService } from "ngx-toastr";
 import { SafetyIncidentService } from "@app/core/api/operations/safety-incident/safety-incident.service";
-import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
-import { NAVIGATION_ROUTE, FILE } from "../safety-incident-constant";
-import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
-import { FileViewerModalComponent } from "@app/shared/components/file-viewer-modal/file-viewer-modal.component";
+import { NAVIGATION_ROUTE } from "../safety-incident-constant";
+import { FeatureType } from "@app/shared/enums/feature.enum";
 
 @Component({
     standalone: true,
@@ -19,9 +17,7 @@ export class SafetyIncidentViewComponent {
         private router: Router,
         private activatedRoute: ActivatedRoute,
         private api: SafetyIncidentService,
-        private toastrService: ToastrService,
-        private attachmentsService: AttachmentsService,
-        private modalService: NgbModal
+        private toastrService: ToastrService
     ) { }
 
     ngOnInit(): void {
@@ -36,8 +32,8 @@ export class SafetyIncidentViewComponent {
     id = null;
     data: any = {};
     isLoading = false;
-    attachments: any = [];
     selectedAction = "";
+    readonly attachmentFeature = FeatureType.SAFETY_INCIDENT;
 
     goBack = () => {
         this.router.navigate([NAVIGATION_ROUTE.LIST], {
@@ -62,50 +58,10 @@ export class SafetyIncidentViewComponent {
         try {
             this.isLoading = true;
             this.data = await this.api.getById(this.id);
-            await this.getAttachments();
             this.isLoading = false;
         } catch (err) {
             this.isLoading = false;
             this.toastrService.error("Error loading safety incident details");
-        }
-    }
-
-    async getAttachments() {
-        try {
-            this.attachments = await this.attachmentsService.find({
-                field: FILE.FIELD,
-                uniqueId: this.id,
-            });
-        } catch (err) {
-            console.error("Error loading attachments:", err);
-        }
-    }
-
-    private openFileViewerModal(url: string, fileName: string): void {
-        const modalRef = this.modalService.open(FileViewerModalComponent, {
-            size: 'xl',
-            centered: true,
-            backdrop: true,
-            keyboard: true,
-        });
-
-        modalRef.componentInstance.url = url;
-        modalRef.componentInstance.fileName = fileName;
-    }
-
-    async openAttachment(attachment: any): Promise<void> {
-        try {
-            const resolved = await this.attachmentsService.getViewById(attachment?.id);
-            const resolvedUrl = resolved?.url || attachment?.link;
-            if (!resolvedUrl) {
-                this.toastrService.warning('Attachment URL not available');
-                return;
-            }
-
-            this.openFileViewerModal(resolvedUrl, attachment?.fileName || resolved?.fileName || 'Attachment');
-        } catch (error) {
-            console.error('Failed to resolve attachment URL:', error);
-            this.toastrService.error('Unable to open attachment');
         }
     }
 

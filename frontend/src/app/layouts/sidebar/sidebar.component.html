@@ -197,7 +197,6 @@
             </ng-container>
             <i *ngIf="searchTerm()" class="bx bx-search-alt-2 ms-2 text-muted small" title="Search result"></i>
           </a>
-          <ng-container *ngTemplateOutlet="menuActionsTemplate; context: { item: menu }"></ng-container>
           }@else{
           @if(menu.openInNewTab){
           <a [attr.data-parent]="menu.parent_id" [href]="menu.link" target="_blank" rel="noopener noreferrer" class="nav-link menu-link-with-actions"

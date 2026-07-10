@@ -6,29 +6,16 @@
 <div class="modal-body">
     <app-calendar-form (setFormEmitter)="setFormEmitter($event)"></app-calendar-form>
 
-    <div class="row mb-3">
-        <label class="col-sm-3 col-form-label">Upload</label>
-        <div class="col-sm-9">
-            <div class="form-group">
-                <input (change)="this.onFilechange($event)" class="form-control" type="file" id="formFile">
-                <button (click)="this.upload()" type="button" class="btn btn-primary mt-3" *ngIf="id">Upload</button>
-            </div>
+    <div class="card mt-3" *ngIf="id">
+        <div class="card-header bg-body fw-semibold">Attachments</div>
+        <div class="card-body">
+            <app-feature-attachments-panel
+                [feature]="attachmentFeature"
+                [resourceId]="id"
+                [viewMode]="'table'"
+                [showImageThumbnails]="false">
+            </app-feature-attachments-panel>
         </div>
-    </div>
-
-    <div *ngIf="id">
-        <h4>Attachments</h4>
-        <p *ngIf="attachments?.length == 0">No Attachment found.
-        <p>
-
-        <ul class="list-group">
-            <li class="list-group-item d-flex justify-content-between align-items-center pointer" (click)="view(row)"
-                *ngFor="let row of attachments; let i = index">
-                {{row.fileName}}
-                <i class="feather icon-trash-2 pointer"
-                    (click)="$event.stopPropagation();removeAttachment(row.id, i)"></i>
-            </li>
-        </ul>
     </div>
 </div>
 

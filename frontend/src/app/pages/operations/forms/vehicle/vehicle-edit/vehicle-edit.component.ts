@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, ElementRef, Input, ViewChild } from "@angular/core";
+import { Component, Input } from "@angular/core";
 import { SharedModule } from "@app/shared/shared.module";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ToastrService } from "ngx-toastr";
@@ -8,19 +8,11 @@ import { VehicleService } from "@app/core/api/operations/vehicle/vehicle.service
 import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErrors";
 import { IVehicleForm } from "../vehicle-form/vehicle-form.type";
 import { MyFormGroup } from "src/assets/js/util/_formGroup";
-import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
-import { ColDef, GridOptions } from "ag-grid-community";
-import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
-import { AgGridModule } from "ag-grid-angular";
-import { UploadService } from "@app/core/api/upload/upload.service";
-import { firstValueFrom } from "rxjs";
-import { environment } from "src/environments/environment";
-import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
-import { FileViewerModalComponent } from "@app/shared/components/file-viewer-modal/file-viewer-modal.component";
+import { FeatureType } from "@app/shared/enums/feature.enum";
 
 @Component({
   standalone: true,
-  imports: [SharedModule, VehicleFormComponent, AgGridModule],
+  imports: [SharedModule, VehicleFormComponent],
   selector: "app-vehicle-edit",
   templateUrl: "./vehicle-edit.component.html",
 })
@@ -30,10 +22,7 @@ export class VehicleEditComponent {
     private activatedRoute: ActivatedRoute,
     private api: VehicleService,
     private toastrService: ToastrService,
-    private attachmentsService: AttachmentsService,
-    private ref: ChangeDetectorRef,
-    private uploadService: UploadService,
-    private modalService: NgbModal
+  
   ) { }
 
   ngOnInit(): void {
@@ -53,16 +42,7 @@ export class VehicleEditComponent {
   isLoading = false;
 
   submitted = false;
-
-  async saveAttachmentInfo(id, key, value) {
-    try {
-      await this.attachmentsService.update(id, {
-        [key]: value
-      })
-      this.toastrService.success("Successfully Updated");
-    } catch (err) {
-    }
-  }
+  readonly FeatureType = FeatureType;
 
   @Input() goBack: Function = () => {
     this.router.navigate([NAVIGATION_ROUTE.LIST], {
@@ -72,152 +52,13 @@ export class VehicleEditComponent {
 
   data: any;
 
-  async onEdit(row: any) {
-    try {
-      const attachmentId = Number(row?.id);
-      if (!attachmentId) {
-        this.toastrService.warning("Attachment ID not available");
-        return;
-      }
-
-      const payload = await this.attachmentsService.getViewById(attachmentId);
-      const url = this.normalizeAttachmentViewUrl(String(payload?.url || "").trim(), payload?.storage_source ?? null);
-      if (!url) {
-        this.toastrService.warning("Attachment URL not available");
-        return;
-      }
-
-      const modalRef = this.modalService.open(FileViewerModalComponent, {
-        size: "xl",
-        centered: true,
-        scrollable: true,
-      });
-      modalRef.componentInstance.url = url;
-      modalRef.componentInstance.fileName = payload?.fileName || row?.fileName || "Attachment";
-    } catch (error) {
-      this.toastrService.error("Unable to load attachment");
-    }
-  }
-
-  private normalizeAttachmentViewUrl(url: string, storageSource: string | null): string {
-    if (!url) {
-      return "";
-    }
-
-    if (/^https?:\/\//i.test(url)) {
-      return url;
-    }
-
-    const apiBaseUrl = String(environment.apiV2BaseUrl || "").replace(/\/+$/, "");
-    const normalizedPath = url.startsWith("/") ? url : `/${url}`;
-
-    if (storageSource === "local" || normalizedPath.startsWith("/uploads/")) {
-      return `${apiBaseUrl}${normalizedPath}`;
-    }
-
-    return `${apiBaseUrl}${normalizedPath}`;
-  }
-
-  getAttachmentUrl(row: any): string {
-    const rawLink = String(row?.link || "").trim();
-    if (rawLink) {
-      if (/^https?:\/\//i.test(rawLink)) {
-        return rawLink;
-      }
-
-      if (rawLink.startsWith("/")) {
-        const apiBaseUrl = String(environment.apiV2BaseUrl || "").replace(/\/+$/, "");
-        return `${apiBaseUrl}${rawLink}`;
-      }
-
-      return rawLink;
-    }
-
-    const fileName = String(row?.fileName || "").trim();
-    if (!fileName) {
-      return "";
-    }
-
-    return `https://dashboard.eye-fi.com/attachments/vehicleInformation/${fileName}`;
-
-  }
-
-  columnDefs: ColDef[] = [
-    {
-      field: "View",
-      headerName: "View",
-      filter: "agMultiColumnFilter",
-      pinned: "left",
-      cellRenderer: LinkRendererV2Component,
-      cellRendererParams: {
-        onClick: (e: any) => this.onEdit(e.rowData),
-        value: "View",
-      },
-      maxWidth: 100,
-      minWidth: 100,
-    },
-    { field: "id", headerName: "ID", filter: "agMultiColumnFilter" },
-    { field: "fileName", headerName: "File Name", filter: "agMultiColumnFilter" },
-    { field: "date_of_service", headerName: "Date of Service", filter: "agMultiColumnFilter", editable: true, cellEditor: 'agDateStringCellEditor', },
-    { field: "type_of_work_completed", headerName: "Type of Work Completed", filter: "agMultiColumnFilter", editable: true },
-    { field: "createdDate", headerName: "Created Date", filter: "agMultiColumnFilter" },
-    {
-      headerName: "Delete",
-      field: "delete",
-      pinned: "right",
-      maxWidth: 120,
-      minWidth: 120,
-      sortable: false,
-      filter: false,
-      cellRenderer: (params: any) => {
-        if (!params?.data?.id) {
-          return "";
-        }
-
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "btn btn-sm btn-outline-danger";
-        btn.innerHTML = '<i class="mdi mdi-delete-outline me-1"></i>Delete';
-        btn.addEventListener("click", (event) => {
-          event.stopPropagation();
-          this.deleteAttachment(params.data.id);
-        });
-        return btn;
-      },
-    },
-  ]
-
-
-  gridApi
-  gridOptions: GridOptions = {
-    columnDefs: this.columnDefs,
-    onGridReady: (params: any) => {
-      this.gridApi = params.api;
-    },
-    getRowId: (params) => params.data.id?.toString(),
-    onCellEditingStopped: (event) => {
-      if (event.oldValue == event.newValue || event.value === undefined) return;
-      this.update(event.data, event);
-    },
-  };
-
-
-  public async update(data: any, event) {
-    try {
-      await this.attachmentsService.update(data.id, {
-        [event.column.colId]: event.value
-      })
-      this.toastrService.success("Successfully Updated");
-    } catch (err) {
-    }
-  }
-
   async getData() {
     try {
       this.isLoading = true;
       this.data = await this.api.getById(this.id);
-      this.form.patchValue(this.data);
-      await this.getAttachments();
+      if (this.form) {
+        this.form.patchValue(this.data);
+      }
       this.isLoading = false;
     } catch (err) {
       this.isLoading = false;
@@ -247,69 +88,10 @@ export class VehicleEditComponent {
     this.goBack();
   }
 
-  attachments: any = [];
-  async getAttachments() {
-    this.attachments = await this.attachmentsService.find({
-      field: "Vehicle Information",
-      uniqueId: this.id,
-    });
-    this.gridApi?.setGridOption("rowData", this.attachments || []);
-    this.ref.detectChanges();
-  }
-
-  async deleteAttachment(id) {
-    if (!confirm("Are you sure you want to remove attachment?")) return;
-    await this.attachmentsService.delete(id);
-    await this.getAttachments();
-    this.toastrService.success("Attachment deleted");
-  }
-
-  file: File = null;
-
-  myFiles: File[] = [];
-
-  isUploadingAttachments = false;
-
-  onFilechange(event: any) {
-    this.myFiles = [];
-    for (var i = 0; i < event.target.files.length; i++) {
-      this.myFiles.push(event.target.files[i]);
-    }
-    this.ref.markForCheck();
-
-  }
-
-  @ViewChild("userPhoto") userPhoto!: ElementRef;
-  clearFile() {
-    this.file = null;
-    this.myFiles = [];
-    this.userPhoto.nativeElement.value = null;
-  }
-
-  async onUploadAttachments() {
-    if (this.myFiles?.length) {
-      let totalAttachments = 0;
-      this.isUploadingAttachments = true;
-      for (var i = 0; i < this.myFiles.length; i++) {
-        const formData = new FormData();
-        formData.append("file", this.myFiles[i]);
-        formData.append("field", "Vehicle Information");
-        formData.append("uniqueData", `${this.id}`);
-        formData.append("folderName", "vehicleInformation");
-        formData.append("subFolder", "vehicleInformation");
-        try {
-          await firstValueFrom(this.uploadService.uploadAttachmentV2(formData));
-          totalAttachments++;
-        } catch (err) { }
-      }
-      this.isUploadingAttachments = false;
-      this.clearFile();
-      await this.getAttachments();
-      if (totalAttachments > 0) {
-        this.toastrService.success(`Uploaded ${totalAttachments} attachment${totalAttachments > 1 ? "s" : ""}`);
-      } else {
-        this.toastrService.warning("No files were uploaded");
-      }
+  onFormReady(form: MyFormGroup<IVehicleForm>): void {
+    this.form = form;
+    if (this.data) {
+      this.form.patchValue(this.data);
     }
   }
 }

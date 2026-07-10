@@ -8,14 +8,9 @@ import { ShippingRequestService } from "@app/core/api/operations/shippging-reque
 import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErrors";
 import { IShippingRequestForm } from "../shipping-request-form/shipping-request-form.type";
 import { MyFormGroup } from "src/assets/js/util/_formGroup";
-import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
 import moment from "moment";
 import { AuthenticationService } from "@app/core/services/auth.service";
-import { UploadService } from "@app/core/api/upload/upload.service";
-import { firstValueFrom } from "rxjs";
-import { environment } from "src/environments/environment";
-import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
-import { FileViewerModalComponent } from "@app/shared/components/file-viewer-modal/file-viewer-modal.component";
+import { FeatureType } from "@app/shared/enums/feature.enum";
 
 @Component({
   standalone: true,
@@ -29,10 +24,7 @@ export class ShippingRequestEditComponent {
     private activatedRoute: ActivatedRoute,
     private api: ShippingRequestService,
     private toastrService: ToastrService,
-    private attachmentsService: AttachmentsService,
-    private authenticationService: AuthenticationService,
-    private uploadService: UploadService,
-    private modalService: NgbModal
+    private authenticationService: AuthenticationService
   ) {}
 
   ngOnInit(): void {
@@ -56,6 +48,8 @@ export class ShippingRequestEditComponent {
   // When true child form will call form.disable() and then keep tracking enabled
   formDisabled = false;
 
+  readonly attachmentFeature = FeatureType.SHIPPING_REQUEST;
+
   @Input() goBack: Function = () => {
     this.router.navigate([NAVIGATION_ROUTE.LIST], {
       queryParamsHandling: "merge",
@@ -77,7 +71,6 @@ export class ShippingRequestEditComponent {
       }
       // For edit page, disable the form except tracking number
       this.formDisabled = !!this.id;
-      await this.getAttachments();
       this.isLoading = false;
     } catch (err) {
       this.isLoading = false;
@@ -194,93 +187,6 @@ export class ShippingRequestEditComponent {
       this.isLoading = false;
       this.toastrService.error("Failed to delete shipping request");
     }
-  }
-
-  attachments: any = [];
-  async getAttachments() {
-    this.attachments = await this.attachmentsService.find({
-      field: "shippingRequest",
-      uniqueId: this.id,
-    });
-  }
-
-  async deleteAttachment(id, index) {
-    if (!confirm("Are you sure you want to remove attachment?")) return;
-    await this.attachmentsService.delete(id);
-    this.attachments.splice(index, 1);
-  }
-
-  file: File = null;
-
-  myFiles: string[] = [];
-
-  onFilechange(event: any) {
-    this.myFiles = [];
-    for (var i = 0; i < event.target.files.length; i++) {
-      this.myFiles.push(event.target.files[i]);
-    }
-  }
-
-  async onUploadAttachments() {
-    if (this.myFiles) {
-      let totalAttachments = 0;
-      this.isLoading = true;
-      for (var i = 0; i < this.myFiles.length; i++) {
-        const formData = new FormData();
-        formData.append("file", this.myFiles[i]);
-        formData.append("field", "shippingRequest");
-        formData.append("uniqueData", `${this.id}`);
-        formData.append("folderName", "shippingRequest");
-        formData.append("subFolder", "shippingRequest");
-        try {
-          await firstValueFrom(this.uploadService.uploadAttachmentV2(formData));
-          totalAttachments++;
-        } catch (err) {}
-      }
-      this.isLoading = false;
-      await this.getAttachments();
-    }
-  }
-
-  getAttachmentUrl(attachment: any): string {
-    const rawLink = String(attachment?.link || "").trim();
-    if (rawLink) {
-      if (/^https?:\/\//i.test(rawLink)) {
-        return rawLink;
-      }
-
-      if (rawLink.startsWith("/")) {
-        const apiBaseUrl = String(environment.apiV2BaseUrl || "").replace(/\/+$/, "");
-        return `${apiBaseUrl}${rawLink}`;
-      }
-
-      return rawLink;
-    }
-
-    const fileName = attachment?.fileName || "";
-    if (!fileName) {
-      return "";
-    }
-
-    return `https://dashboard.eye-fi.com/attachments/shippingRequest/${fileName}`;
-  }
-
-  openAttachment(attachment: any, event?: Event): void {
-    event?.preventDefault();
-
-    const url = this.getAttachmentUrl(attachment);
-    if (!url) {
-      this.toastrService.warning("Attachment URL not available");
-      return;
-    }
-
-    const modalRef = this.modalService.open(FileViewerModalComponent, {
-      size: "xl",
-      centered: true,
-      scrollable: true,
-    });
-    modalRef.componentInstance.url = url;
-    modalRef.componentInstance.fileName = attachment?.fileName || "Attachment";
   }
 
   updateTracking = async () => {

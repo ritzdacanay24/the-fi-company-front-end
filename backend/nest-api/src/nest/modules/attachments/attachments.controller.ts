@@ -1,12 +1,58 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, ForbiddenException, Get, Param, ParseIntPipe, Post, Put, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { Permissions, RolePermissionGuard } from '../access-control';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { CurrentUserId } from '@/nest/decorators/current-user-id.decorator';
+import { Public } from '@/nest/decorators/public.decorator';
 import { AttachmentsService } from './attachments.service';
 
 @Controller('attachments')
 @UseGuards(RolePermissionGuard)
 export class AttachmentsController {
   constructor(private readonly service: AttachmentsService) {}
+
+  /**
+   * Unified attachment upload endpoint for all features
+   * Routes: /attachments/:feature/:id/upload
+   * Examples: /attachments/support-tickets/123/upload, /attachments/parts-order/456/upload
+   */
+  @Post(':feature/:id/upload')
+  @Permissions('write')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadAttachmentForFeature(
+    @Param('feature') feature: string,
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFile() file?: { originalname?: string; buffer?: Buffer; mimetype?: string; size?: number },
+    @CurrentUserId() userId?: number,
+  ) {
+    if (!userId) {
+      throw new ForbiddenException('User ID is required');
+    }
+
+    return this.service.uploadAttachmentForFeature(
+      feature,
+      id,
+      file,
+      userId,
+    );
+  }
+
+  @Public()
+  @Post('public/qir/:id/upload')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadQirAttachmentPublic(
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFile() file?: { originalname?: string; buffer?: Buffer },
+  ) {
+    const payload: Record<string, unknown> = {
+      field: 'Capa Request',
+      uniqueId: id,
+      uniqueData: id,
+      subFolder: 'qir',
+      createdDate: new Date().toISOString().slice(0, 19).replace('T', ' '),
+    };
+
+    return this.service.create(payload, file);
+  }
 
   @Post('upload')
   @Permissions('write')
@@ -25,8 +71,9 @@ export class AttachmentsController {
   async create(
     @Body() payload: Record<string, unknown>,
     @UploadedFile() file?: { originalname?: string; buffer?: Buffer },
+    @CurrentUserId() userId?: number,
   ) {
-    return this.service.create(payload, file);
+    return this.service.create(payload, file, userId);
   }
 
   @Get('getByWorkOrderId')
@@ -52,6 +99,20 @@ export class AttachmentsController {
   @Get('viewById/:id')
   async viewByIdPath(@Param('id', ParseIntPipe) id: number) {
     return this.service.getViewById(id);
+  }
+
+  /**
+   * Get attachments for a specific feature and resource ID
+   * Handles legacy field names automatically for backward compatibility
+   * Routes: /attachments/:feature/:id
+   * Examples: /attachments/support-tickets/123, /attachments/parts-order/456
+   */
+  @Get(':feature/:id')
+  async getAttachmentsByFeature(
+    @Param('feature') feature: string,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.service.getAttachmentsByFeature(feature, id);
   }
 
   @Put(':id')

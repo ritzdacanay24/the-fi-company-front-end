@@ -89,15 +89,6 @@ export class PublicFieldServiceController {
     return this.service.uploadAttachment(requestId, token, file);
   }
 
-  @Post('attachments')
-  @UseInterceptors(FileInterceptor('file'))
-  async uploadPublicAttachment(
-    @Body() payload: Record<string, unknown>,
-    @UploadedFile() file?: { originalname?: string; size?: number; buffer?: Buffer },
-  ) {
-    return this.service.createPublicAttachment(payload, file);
-  }
-
   @Get('requests/:id/attachments')
   @UseGuards(PublicRequestTokenGuard)
   async listAttachments(

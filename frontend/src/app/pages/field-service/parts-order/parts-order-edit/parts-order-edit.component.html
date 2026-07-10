@@ -61,30 +61,12 @@
 
           <div class="mt-4 pt-4 border-top">
             <h5 class="mb-3">Attachments</h5>
-            <ul class="list-group mb-3">
-              <li class="list-group-item d-flex justify-content-between pointer"
-                *ngFor="let row of attachments; let i = index">
-                <div>
-                  <a (click)="open(i)">{{row.fileName}} - {{row.createdDate}}</a> <br />
-                  <p>
-                    Can't open/view file? Click
-                    <a href="" (click)="openAttachmentInNewTab(row, $event)"
-                      class="link-primary"> <u>here</u>
-                    </a>
-                  </p>
-                </div>
-                <span class="text-danger pointer" (click)="deleteAttachment(row.id, i)">X</span>
-              </li>
-            </ul>
-
-            <label class="form-label">Upload Documents</label>
-            <div class="d-flex gap-2 align-items-center">
-              <input (change)="this.onFilechange($event)" class="form-control" type="file" id="file" multiple name="file">
-              <button (click)="this.onUploadAttachments()" type="button" class="btn btn-primary text-nowrap"
-                [disabled]="isLoading || myFiles?.length == 0">
-                <i class="feather icon-upload me-1"></i>Upload
-              </button>
-            </div>
+            <app-feature-attachments-panel
+              [feature]="FeatureType.PARTS_REQUEST"
+              [resourceId]="id"
+              [legacyFieldNames]="['FS Parts Order']"
+              [disabled]="isLoading">
+            </app-feature-attachments-panel>
           </div>
 
         </div>

@@ -8,6 +8,7 @@ import { AgGridModule } from "ag-grid-angular";
 import { ColDef, GridOptions } from "ag-grid-community";
 import { PermitTicketActionsRendererComponent } from "./permit-ticket-actions-renderer.component";
 import { PermitChecklistSummaryComponent } from "./permit-checklist-summary.component";
+import { FeatureAttachmentsPanelComponent } from "@app/shared/components/attachments/feature-attachments-panel/feature-attachments-panel.component";
 import { AuthenticationService } from "@app/core/services/auth.service";
 import { THE_FI_COMPANY_CURRENT_USER } from "@app/core/guards/admin.guard";
 import { PermitChecklistsService } from "@app/core/api/quality/permit-checklists.service";
@@ -16,6 +17,7 @@ import { ToastrService } from "ngx-toastr";
 import { environment } from "src/environments/environment";
 import * as mammoth from "mammoth";
 import { TextFieldModule } from "@angular/cdk/text-field";
+import { FeatureType } from "@app/shared/enums/feature.enum";
 
 type PermitChecklistType = "seismic" | "dca";
 type BillingSection = "customer" | "eyefi";
@@ -179,11 +181,12 @@ interface StoredChecklistData {
 @Component({
   standalone: true,
   selector: "app-permit-checklists",
-  imports: [CommonModule, FormsModule, AgGridModule, NgbDropdownModule, NgbModalModule, PermitChecklistSummaryComponent, TextFieldModule],
+  imports: [CommonModule, FormsModule, AgGridModule, NgbDropdownModule, NgbModalModule, PermitChecklistSummaryComponent, FeatureAttachmentsPanelComponent, TextFieldModule],
   templateUrl: "./permit-checklists.component.html",
   styleUrls: ["./permit-checklists.component.scss"],
 })
 export class PermitChecklistsComponent implements OnInit {
+  readonly FeatureType = FeatureType;
   private readonly maxTransactions = 2000;
   private readonly ticketGridStateKey = "quality_permit_checklists_ticket_grid_state_v1";
   private readonly auditGridStateKey = "quality_permit_checklists_audit_grid_state_v1";
@@ -1038,6 +1041,30 @@ export class PermitChecklistsComponent implements OnInit {
     }
 
     return [...this.activeTicket.attachments].sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt));
+  }
+
+  get activeTicketAwsResourceId(): number | null {
+    const ticketId = String(this.activeTicket?.ticketId || "").trim();
+    if (!ticketId) {
+      return null;
+    }
+
+    const directMatch = ticketId.toUpperCase().match(/^(SEI|DCA)-(\d{8})-(\d{3,})$/);
+    if (directMatch) {
+      const typeCode = directMatch[1] === "SEI" ? 1 : 2;
+      const numericTail = Number(`${directMatch[2]}${directMatch[3]}`);
+      if (Number.isFinite(numericTail) && numericTail > 0) {
+        return typeCode * 1_000_000_000_000 + numericTail;
+      }
+    }
+
+    // Fallback for legacy/non-standard ticket IDs.
+    let hash = 0;
+    for (let i = 0; i < ticketId.length; i += 1) {
+      hash = ((hash << 5) - hash + ticketId.charCodeAt(i)) | 0;
+    }
+
+    return 3_000_000_000 + Math.abs(hash);
   }
 
   get referenceNotesDisplay(): string[] {

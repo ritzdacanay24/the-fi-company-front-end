@@ -10,8 +10,8 @@ import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErr
 import { MyFormGroup } from "src/assets/js/util/_formGroup";
 import { IVehicleForm } from "../vehicle-form/vehicle-form.type";
 import { VehicleService } from "@app/core/api/operations/vehicle/vehicle.service";
-import { UploadService } from "@app/core/api/upload/upload.service";
-import { firstValueFrom } from "rxjs";
+import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
+import { FeatureType } from "@app/shared/enums/feature.enum";
 
 @Component({
   standalone: true,
@@ -20,12 +20,14 @@ import { firstValueFrom } from "rxjs";
   templateUrl: "./vehicle-create.component.html",
 })
 export class VehicleCreateComponent {
+  readonly FeatureType = FeatureType;
+
   constructor(
     private router: Router,
     private api: VehicleService,
     private toastrService: ToastrService,
     private authenticationService: AuthenticationService,
-    private uploadService: UploadService
+    private attachmentsService: AttachmentsService
   ) {}
 
   @HostListener("window:beforeunload")
@@ -37,8 +39,6 @@ export class VehicleCreateComponent {
   }
 
   ngOnInit(): void {}
-
-  upload() {}
 
   title = "Create Vehicle";
 
@@ -77,20 +77,19 @@ export class VehicleCreateComponent {
       this.isLoading = true;
       let { insertId } = await this.api.create(this.form.value);
 
-      if (this.myFiles) {
-        for (var i = 0; i < this.myFiles.length; i++) {
-          const formData = new FormData();
-          formData.append("file", this.myFiles[i]);
-          formData.append("field", "Vehicle Information");
-          formData.append("uniqueData", `${insertId}`);
-          formData.append("folderName", "vehicleInformation");
-          formData.append("subFolder", "vehicleInformation");
-          await firstValueFrom(this.uploadService.uploadAttachmentV2(formData));
-        }
+      if (this.myFiles.length > 0) {
+        await this.attachmentsService.uploadFilesByFeature(
+          FeatureType.VEHICLE,
+          insertId,
+          this.myFiles,
+        );
       }
 
       this.isLoading = false;
       this.toastrService.success("Successfully Created");
+      this.selectedFiles = [];
+      this.myFiles = [];
+      this.form.markAsPristine();
       this.goBack();
     } catch (err) {
       this.isLoading = false;
@@ -101,14 +100,36 @@ export class VehicleCreateComponent {
     this.goBack();
   }
 
-  file: File = null;
+  myFiles: File[] = [];
+  selectedFiles: File[] = [];
 
-  myFiles: string[] = [];
+  onAttachmentFilesAdded(files: File[]): void {
+    this.addFiles(files || []);
+  }
 
-  onFilechange(event: any) {
-    this.myFiles = [];
-    for (var i = 0; i < event.target.files.length; i++) {
-      this.myFiles.push(event.target.files[i]);
+  removeFile(index: number): void {
+    this.selectedFiles.splice(index, 1);
+    this.myFiles = [...this.selectedFiles];
+  }
+
+  private addFiles(files: File[]): void {
+    if (!files.length) {
+      return;
     }
+
+    const dedupedFiles = new Map(
+      this.selectedFiles.map((file) => [this.getFileKey(file), file])
+    );
+
+    files.forEach((file) => {
+      dedupedFiles.set(this.getFileKey(file), file);
+    });
+
+    this.selectedFiles = Array.from(dedupedFiles.values());
+    this.myFiles = [...this.selectedFiles];
+  }
+
+  private getFileKey(file: File): string {
+    return `${file.name}-${file.size}-${file.lastModified}`;
   }
 }

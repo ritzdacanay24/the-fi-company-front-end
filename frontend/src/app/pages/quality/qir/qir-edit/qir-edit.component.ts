@@ -1,9 +1,7 @@
 import {
   Component,
-  ElementRef,
   HostListener,
   Input,
-  ViewChild,
 } from "@angular/core";
 import { SharedModule } from "@app/shared/shared.module";
 import { ActivatedRoute, Router } from "@angular/router";
@@ -11,17 +9,14 @@ import { ToastrService } from "ngx-toastr";
 import { QirFormComponent } from "../qir-form/qir-form.component";
 import { QirService } from "@app/core/api/quality/qir.service";
 import { NAVIGATION_ROUTE } from "../qir-constant";
-import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
 import { IQirForm } from "../qir-form/qir-form-type";
 import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErrors";
 import { MyFormGroup } from "src/assets/js/util/_formGroup";
 import { AuthenticationService } from "@app/core/services/auth.service";
 import moment from "moment";
-import { QirResponseModalService } from "../qir-response/qir-repsonse-modal/qir-repsonse-modal.component";
 import { QirResponseService } from "@app/core/api/quality/qir-response.service";
 import { QirResponseFormComponent } from "../qir-response/qir-response-form/qir-response-form.component";
-import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
-import { FileViewerModalComponent } from "@app/shared/components/file-viewer-modal/file-viewer-modal.component";
+import { FeatureType } from "@app/shared/enums/feature.enum";
 
 @Component({
   standalone: true,
@@ -31,30 +26,16 @@ import { FileViewerModalComponent } from "@app/shared/components/file-viewer-mod
   styleUrls: ["./qir-edit.component.scss"],
 })
 export class QirEditComponent {
-  private readonly imageExtensions = [
-    "jpg",
-    "jpeg",
-    "png",
-    "gif",
-    "webp",
-    "bmp",
-    "svg",
-    "avif",
-  ];
+  readonly FeatureType = FeatureType;
 
   constructor(
     private router: Router,
     private activatedRoute: ActivatedRoute,
     private api: QirService,
     private toastrService: ToastrService,
-    private attachmentsService: AttachmentsService,
     private authenticationService: AuthenticationService,
-    private qirResponseModalService: QirResponseModalService,
     private qirResponseService: QirResponseService,
-    private modalService: NgbModal
   ) {}
-
-  @ViewChild("fileInput") fileInput?: ElementRef<HTMLInputElement>;
 
   ngOnInit(): void {
     this.activatedRoute.queryParams.subscribe((params) => {
@@ -71,7 +52,6 @@ export class QirEditComponent {
   id = null;
 
   isLoading = false;
-  isDragOver = false;
 
   submitted = false;
 
@@ -219,8 +199,6 @@ export class QirEditComponent {
         this.form.get("last_name").disable();
         this.form.get("email").disable();
       }
-
-      this.getAttachments();
     } catch (err) {}
   }
 
@@ -243,7 +221,6 @@ export class QirEditComponent {
     try {
       this.isLoading = true;
       await this.api.update(this.id, this.form.getRawValue());
-      await this.onUploadAttachments();
       this.isLoading = false;
       this.toastrService.success("Successfully Updated");
       this.form.markAsPristine();
@@ -346,213 +323,6 @@ export class QirEditComponent {
     } finally {
       this.isLoading = false;
     }
-  }
-
-  attachments: any = [];
-
-  get imageAttachments() {
-    return this.attachments.filter(
-      (row) => row.isImage && row.previewUrl && !row.previewFailed
-    );
-  }
-
-  async getAttachments() {
-    const attachments = await this.attachmentsService.find({
-      field: "Capa Request",
-      uniqueId: this.id,
-    });
-
-    this.attachments = await Promise.all(
-      attachments.map(async (attachment) => {
-        const isImage = this.isImageAttachment(attachment?.fileName);
-        const previewUrl = isImage
-          ? await this.resolveAttachmentUrl(attachment, false)
-          : null;
-
-        return {
-          ...attachment,
-          isImage,
-          previewUrl,
-          previewFailed: !previewUrl && isImage,
-        };
-      })
-    );
-  }
-
-  private getLegacyAttachmentUrl(fileName: string): string {
-    return `https://dashboard.eye-fi.com/attachments/capa/${encodeURIComponent(fileName)}`;
-  }
-
-  private isImageAttachment(fileName?: string): boolean {
-    const extension = fileName?.split(".").pop()?.toLowerCase();
-    return !!extension && this.imageExtensions.includes(extension);
-  }
-
-  private async resolveAttachmentUrl(
-    row: any,
-    showError = true
-  ): Promise<string | null> {
-    try {
-      const resolved = await this.attachmentsService.getViewById(row?.id);
-      return (
-        resolved?.url ||
-        row?.previewUrl ||
-        row?.link ||
-        this.getLegacyAttachmentUrl(row?.fileName || "")
-      );
-    } catch (error) {
-      if (showError) {
-        console.error("Failed to resolve attachment URL:", error);
-        this.toastrService.error("Unable to open attachment");
-      }
-
-      return row?.link || null;
-    }
-  }
-
-  private openFileViewerModal(url: string, fileName: string): void {
-    const modalRef = this.modalService.open(FileViewerModalComponent, {
-      size: "xl",
-      centered: true,
-      backdrop: true,
-      keyboard: true,
-    });
-
-    modalRef.componentInstance.url = url;
-    modalRef.componentInstance.fileName = fileName;
-  }
-
-  async openAttachment(row: any, event?: Event): Promise<void> {
-    event?.preventDefault();
-
-    const resolvedUrl = await this.resolveAttachmentUrl(row);
-
-    if (!resolvedUrl) {
-      this.toastrService.warning("Attachment URL not available");
-      return;
-    }
-
-    this.openFileViewerModal(resolvedUrl, row?.fileName || "Attachment");
-  }
-
-  async downloadAttachment(row: any, event?: Event): Promise<void> {
-    event?.preventDefault();
-
-    const resolvedUrl = await this.resolveAttachmentUrl(row);
-
-    if (!resolvedUrl) {
-      this.toastrService.warning("Attachment URL not available");
-      return;
-    }
-
-    window.open(resolvedUrl, "_blank");
-  }
-
-  onPreviewError(row: any) {
-    row.previewFailed = true;
-  }
-
-  async deleteAttachment(id, index) {
-    if (!confirm("Are you sure you want to remove attachment?")) return;
-    await this.attachmentsService.delete(id);
-    this.attachments.splice(index, 1);
-  }
-
-  file: File = null;
-  myFiles: File[] = [];
-  selectedFiles: File[] = [];
-
-  openFilePicker() {
-    if (this.isQirClosed) return;
-    this.fileInput?.nativeElement.click();
-  }
-
-  onFilechange(event: Event) {
-    const input = event.target as HTMLInputElement;
-    const files = input.files ? Array.from(input.files) : [];
-    this.addFiles(files);
-    this.resetFileInput();
-  }
-
-  onDragOver(event: DragEvent) {
-    event.preventDefault();
-    event.stopPropagation();
-    if (this.isQirClosed) return;
-    this.isDragOver = true;
-  }
-
-  onDragLeave(event: DragEvent) {
-    event.preventDefault();
-    event.stopPropagation();
-    this.isDragOver = false;
-  }
-
-  onDrop(event: DragEvent) {
-    event.preventDefault();
-    event.stopPropagation();
-    if (this.isQirClosed) return;
-
-    this.isDragOver = false;
-    const files = event.dataTransfer?.files ? Array.from(event.dataTransfer.files) : [];
-    this.addFiles(files);
-  }
-
-  removeFile(index: number) {
-    this.selectedFiles.splice(index, 1);
-    this.myFiles = [...this.selectedFiles];
-    this.resetFileInput();
-  }
-
-  private addFiles(files: File[]) {
-    if (!files.length) return;
-
-    const dedupedFiles = new Map(
-      this.selectedFiles.map((file) => [this.getFileKey(file), file])
-    );
-
-    files.forEach((file) => {
-      dedupedFiles.set(this.getFileKey(file), file);
-    });
-
-    this.selectedFiles = Array.from(dedupedFiles.values());
-    this.myFiles = [...this.selectedFiles];
-  }
-
-  private getFileKey(file: File) {
-    return `${file.name}-${file.size}-${file.lastModified}`;
-  }
-
-  private resetFileInput() {
-    if (this.fileInput) {
-      this.fileInput.nativeElement.value = "";
-    }
-  }
-
-  async onUploadAttachments() {
-    if (this.myFiles.length === 0) {
-      return;
-    }
-
-    this.isLoading = true;
-    for (const file of this.myFiles) {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("field", "Capa Request");
-      formData.append("uniqueData", `${this.id}`);
-      formData.append("folderName", "capa");
-      try {
-        await this.attachmentsService.uploadfile(formData);
-      } catch (err) {}
-    }
-
-    this.resetFileInput();
-
-    this.isLoading = false;
-    try {
-      this.getAttachments();
-      this.myFiles = [];
-      this.selectedFiles = [];
-    } catch (err) {}
   }
 
   qirResponse;

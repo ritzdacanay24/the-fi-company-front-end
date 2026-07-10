@@ -9,6 +9,7 @@ import { NAVIGATION_ROUTE } from "../qir-constant";
 import { QirService } from "@app/core/api/quality/qir.service";
 import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
 import { AuthenticationService } from "@app/core/services/auth.service";
+import { FeatureType } from "@app/shared/enums/feature.enum";
 import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErrors";
 
 @Component({
@@ -19,6 +20,8 @@ import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErr
   styleUrls: ["./qir-create.component.scss"],
 })
 export class QirCreateComponent {
+  readonly FeatureType = FeatureType;
+
   constructor(
     private router: Router,
     private activatedRoute: ActivatedRoute,
@@ -113,15 +116,12 @@ export class QirCreateComponent {
       this.isLoading = true;
       let { insertId } = await this.api.create(this.form.getRawValue());
 
-      if (this.myFiles) {
-        const formData = new FormData();
-        for (var i = 0; i < this.myFiles.length; i++) {
-          formData.append("file", this.myFiles[i]);
-          formData.append("field", "Capa Request");
-          formData.append("uniqueData", `${insertId}`);
-          formData.append("folderName", "capa");
-          await this.attachmentsService.uploadfile(formData);
-        }
+      if (this.myFiles.length > 0) {
+        await this.attachmentsService.uploadFilesByFeature(
+          FeatureType.QIR,
+          insertId,
+          this.myFiles,
+        );
       }
 
       this.isLoading = false;
@@ -146,18 +146,36 @@ export class QirCreateComponent {
     this.toastrService.info("This action is available after the QIR is created.");
   }
 
-  file: File = null;
-
-  myFiles: string[] = [];
+  myFiles: File[] = [];
   selectedFiles: File[] = [];
 
+  onAttachmentFilesAdded(files: File[]): void {
+    this.addFiles(files || []);
+  }
+
   onFilechange(event: any) {
-    this.myFiles = [];
-    this.selectedFiles = [];
-    for (var i = 0; i < event.target.files.length; i++) {
-      this.myFiles.push(event.target.files[i]);
-      this.selectedFiles.push(event.target.files[i]);
+    this.addFiles(Array.from(event?.target?.files || []));
+  }
+
+  private addFiles(files: File[]): void {
+    if (!files.length) {
+      return;
     }
+
+    const dedupedFiles = new Map(
+      this.selectedFiles.map((file) => [this.getFileKey(file), file])
+    );
+
+    files.forEach((file) => {
+      dedupedFiles.set(this.getFileKey(file), file);
+    });
+
+    this.selectedFiles = Array.from(dedupedFiles.values());
+    this.myFiles = [...this.selectedFiles];
+  }
+
+  private getFileKey(file: File): string {
+    return `${file.name}-${file.size}-${file.lastModified}`;
   }
 
   removeFile(index: number) {

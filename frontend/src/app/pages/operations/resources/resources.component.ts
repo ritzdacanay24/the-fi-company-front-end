@@ -6,6 +6,8 @@ import { AuthenticationService } from '@app/core/services/auth.service';
 import { ToastrService } from 'ngx-toastr';
 import { FileViewerModalComponent } from '@app/shared/components/file-viewer-modal/file-viewer-modal.component';
 import { ResourceDto, ResourcesService } from '@app/core/api/resources/resources.service';
+import { InlineAttachmentDropzoneComponent } from '@app/shared/components/inline-attachment-dropzone/inline-attachment-dropzone.component';
+import { PendingAttachmentsListComponent } from '@app/shared/components/attachments/pending-attachments-list/pending-attachments-list.component';
 
 interface ResourceItem {
   id: number;
@@ -27,7 +29,12 @@ interface ResourceGroup {
 
 @Component({
   standalone: true,
-  imports: [SharedModule, ReactiveFormsModule],
+  imports: [
+    SharedModule,
+    ReactiveFormsModule,
+    InlineAttachmentDropzoneComponent,
+    PendingAttachmentsListComponent,
+  ],
   selector: 'app-operations-resources',
   templateUrl: './resources.component.html',
   styleUrls: ['./resources.component.scss'],
@@ -47,6 +54,8 @@ export class ResourcesComponent implements OnInit {
 
   uploadFile: File | null = null;
   editFile: File | null = null;
+  uploadPendingFiles: File[] = [];
+  editPendingFiles: File[] = [];
   editingResource: ResourceItem | null = null;
 
   readonly uploadForm = this.fb.group({
@@ -138,12 +147,14 @@ export class ResourcesComponent implements OnInit {
   openAdminUpload(content: unknown): void {
     this.uploadForm.reset({ category: '', title: '', description: '' });
     this.uploadFile = null;
+    this.uploadPendingFiles = [];
     this.offcanvasService.open(content, { position: 'end', panelClass: 'resources-admin-offcanvas' });
   }
 
   openAdminEdit(content: unknown, item: ResourceItem): void {
     this.editingResource = item;
     this.editFile = null;
+    this.editPendingFiles = [];
     this.editForm.patchValue({
       category: item.category,
       title: item.title,
@@ -154,14 +165,34 @@ export class ResourcesComponent implements OnInit {
     this.offcanvasService.open(content, { position: 'end', panelClass: 'resources-admin-offcanvas' });
   }
 
-  onUploadFileSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    this.uploadFile = input.files?.[0] || null;
+  onUploadPendingFilesAdded(files: File[]): void {
+    this.uploadPendingFiles = this.toSingleFileQueue(files, this.uploadPendingFiles);
+    this.uploadFile = this.uploadPendingFiles[0] || null;
   }
 
-  onEditFileSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    this.editFile = input.files?.[0] || null;
+  onEditPendingFilesAdded(files: File[]): void {
+    this.editPendingFiles = this.toSingleFileQueue(files, this.editPendingFiles);
+    this.editFile = this.editPendingFiles[0] || null;
+  }
+
+  removeUploadPendingFile(index: number): void {
+    if (index < 0 || index >= this.uploadPendingFiles.length) {
+      return;
+    }
+
+    this.uploadPendingFiles.splice(index, 1);
+    this.uploadPendingFiles = [...this.uploadPendingFiles];
+    this.uploadFile = this.uploadPendingFiles[0] || null;
+  }
+
+  removeEditPendingFile(index: number): void {
+    if (index < 0 || index >= this.editPendingFiles.length) {
+      return;
+    }
+
+    this.editPendingFiles.splice(index, 1);
+    this.editPendingFiles = [...this.editPendingFiles];
+    this.editFile = this.editPendingFiles[0] || null;
   }
 
   async uploadResource(offcanvas: { dismiss: () => void }): Promise<void> {
@@ -261,7 +292,25 @@ export class ResourcesComponent implements OnInit {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(blobUrl);
     } catch {
-      this.toastr.error('Failed to download resource');
+      try {
+        const signed = await this.resourcesService.getSignedUrl(item.id, 'attachment');
+        window.open(signed.url, '_blank', 'noopener');
+      } catch {
+        this.toastr.error('Failed to download resource');
+      }
     }
+  }
+
+  private toSingleFileQueue(newFiles: File[], currentFiles: File[]): File[] {
+    const combined = [...currentFiles, ...(newFiles || [])].filter(Boolean);
+    if (!combined.length) {
+      return [];
+    }
+
+    if (combined.length > 1) {
+      this.toastr.info('Resources supports one file per upload. Keeping the latest selected file.');
+    }
+
+    return [combined[combined.length - 1]];
   }
 }

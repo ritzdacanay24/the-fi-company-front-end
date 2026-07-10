@@ -10,8 +10,6 @@ import { SchedulerService } from "@app/core/api/field-service/scheduler.service"
 import { CommentsService } from "@app/core/api/field-service/comments.service";
 import moment from "moment";
 import { RequestScheduleJobComponent } from "../request-schedule-job/request-schedule-job.component";
-import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
-import { FIELD_SERVICE } from "../../field-service-constant";
 import { SweetAlert } from "@app/shared/sweet-alert/sweet-alert.service";
 import { AutosizeModule } from "ngx-autosize";
 import { AuthenticationService } from "@app/core/services/auth.service";
@@ -22,6 +20,7 @@ import { JobService } from "@app/core/api/field-service/job.service";
 import { JobModalService } from "../../job/job-modal-edit/job-modal.service";
 import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErrors";
 import { RequestChangeModalService } from "../request-change/request-change-modal.component";
+import { FeatureType } from "@app/shared/enums/feature.enum";
 
 @Component({
   standalone: true,
@@ -45,7 +44,6 @@ export class RequestEditComponent {
     private schedulerService: SchedulerService,
     private commentsService: CommentsService,
     private cdref: ChangeDetectorRef,
-    private attachmentsService: AttachmentsService,
     private authenticationService: AuthenticationService,
     public techScheduleModalService: TechScheduleModalService,
     private jobModalCreateService: JobModalCreateService,
@@ -120,6 +118,7 @@ export class RequestEditComponent {
   isLoading = false;
 
   submitted = false;
+  readonly FeatureType = FeatureType;
 
   @Input() goBack: Function = () => {
     if (this.goBackUrl) {
@@ -146,65 +145,6 @@ export class RequestEditComponent {
 
   schedulerInfo;
 
-  attachments;
-  async getAttachments() {
-    this.attachments = await this.attachmentsService.find({
-      field: "Field Service Request",
-      uniqueId: this.id,
-    });
-  }
-
-  async deleteAttachment(id) {
-    const { value: accept } = await SweetAlert.confirm();
-
-    if (!accept) return;
-
-    try {
-      SweetAlert.loading("Deleting. Please wait.");
-      await this.attachmentsService.delete(id);
-      await this.getData();
-      SweetAlert.close();
-    } catch (err) {
-      SweetAlert.close(0);
-    }
-  }
-
-  file: File = null;
-
-  myFiles: File[] = [];
-
-  handleFileChange(event: Event): void {
-    const target = event.target as HTMLInputElement;
-    this.myFiles = [];
-    if (target.files) {
-      for (let i = 0; i < target.files.length; i++) {
-        this.myFiles.push(target.files[i]);
-      }
-    }
-  }
-
-  UPLOAD_LINK = FIELD_SERVICE.UPLOAD_LINK;
-
-  async onUploadAttachments() {
-    if (this.myFiles) {
-      let totalAttachments = 0;
-      this.isLoading = true;
-      const formData = new FormData();
-      for (var i = 0; i < this.myFiles.length; i++) {
-        formData.append("file", this.myFiles[i]);
-        formData.append("field", FIELD_SERVICE.UPLOAD_FIELD_NAME);
-        formData.append("uniqueData", `${this.id}`);
-        formData.append("folderName", FIELD_SERVICE.UPLOAD_FOLDER_NAME);
-        try {
-          await this.attachmentsService.uploadfile(formData);
-          totalAttachments++;
-        } catch (err) {}
-      }
-      this.isLoading = false;
-      await this.getAttachments();
-    }
-  }
-
   disabled = false;
 
   async getData() {
@@ -227,8 +167,6 @@ export class RequestEditComponent {
       this.form.get("g-recaptcha-response").disable();
 
       this.form.patchValue(this.data);
-
-      await this.getAttachments();
 
       await this.getComments();
       

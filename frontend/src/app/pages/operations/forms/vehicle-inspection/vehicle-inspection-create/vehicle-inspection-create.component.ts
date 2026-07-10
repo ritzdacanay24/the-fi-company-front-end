@@ -9,8 +9,8 @@ import { VehicleInspectionService } from "@app/core/api/operations/vehicle-inspe
 import { VehicleInspectionFormComponent } from "../vehicle-inspection-form/vehicle-inspection-form.component";
 import { AuthenticationService } from "@app/core/services/auth.service";
 import { resetVehicleInspectionFormValues } from "../vehicle-inspection-form/formData";
-import { UploadService } from "@app/core/api/upload/upload.service";
-import { first } from "rxjs";
+import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
+import { FeatureType } from "@app/shared/enums/feature.enum";
 
 @Component({
   standalone: true,
@@ -25,7 +25,7 @@ export class VehicleInspectionCreateComponent {
     private api: VehicleInspectionService,
     private toastrService: ToastrService,
     private authenticationService: AuthenticationService,
-    private uploadService: UploadService,
+    private attachmentsService: AttachmentsService,
     private cdr: ChangeDetectorRef
   ) {
 
@@ -50,6 +50,8 @@ export class VehicleInspectionCreateComponent {
   isLoading = false;
 
   submitted = false;
+
+  readonly attachmentFeature = FeatureType.INSPECTIONS_VEHICLE;
 
   hasUnresolvedFailures = false;
 
@@ -156,7 +158,6 @@ export class VehicleInspectionCreateComponent {
   };
 
   additionalVehiclePhotos: File[] = [];
-  additionalVehiclePhotoPreviews: string[] = [];
 
   onVehiclePhotoChange(
     event: any,
@@ -198,25 +199,21 @@ export class VehicleInspectionCreateComponent {
     this.cdr.detectChanges();
   }
 
-  onAdditionalVehiclePhotosChange(event: any) {
-    const files: File[] = Array.from(event?.target?.files || []);
-    if (!files.length) return;
+  onAdditionalVehiclePhotosAdded(files: File[]) {
+    if (!files.length) {
+      return;
+    }
 
-    files.forEach((file) => {
-      this.additionalVehiclePhotos.push(file);
-      const reader = new FileReader();
-      reader.onload = (e: any) => {
-        this.additionalVehiclePhotoPreviews.push(e.target.result);
-      };
-      reader.readAsDataURL(file);
-    });
-
-    event.target.value = '';
+    this.additionalVehiclePhotos = [...this.additionalVehiclePhotos, ...files];
   }
 
   removeAdditionalVehiclePhoto(index: number) {
+    if (index < 0 || index >= this.additionalVehiclePhotos.length) {
+      return;
+    }
+
     this.additionalVehiclePhotos.splice(index, 1);
-    this.additionalVehiclePhotoPreviews.splice(index, 1);
+    this.additionalVehiclePhotos = [...this.additionalVehiclePhotos];
   }
 
   areAllVehiclePhotosUploaded(): boolean {
@@ -253,7 +250,7 @@ export class VehicleInspectionCreateComponent {
     try {
       this.isLoading = true;
       let { insertId } = await this.api._create(this.form.value);
-      const uniqueData = String(insertId ?? "");
+      const inspectionId = Number(insertId);
 
       // Upload vehicle photos with specific labels
       const photoPositions = this.useSplitSidePhotos
@@ -275,37 +272,25 @@ export class VehicleInspectionCreateComponent {
         if (this.vehiclePhotos[position]) {
           const formData = new FormData();
           formData.append("file", this.vehiclePhotos[position]!);
-          formData.append("field", "Vehicle Inspection");
           const resolvedTitle = titleMap[position] || `Vehicle ${position} View`;
           formData.append("title", resolvedTitle);
-          formData.append("uniqueData", uniqueData);
-          formData.append("folderName", "vehicleInformation");
-          formData.append("subFolder", "vehicleInformation");
-          this.uploadService
-            .uploadAttachmentV2(formData)
-            .pipe(first())
-            .subscribe((data) => { });
+          await this.attachmentsService.uploadAttachment(this.attachmentFeature, inspectionId, formData);
         }
       }
 
       if (this.additionalVehiclePhotos.length > 0) {
-        this.additionalVehiclePhotos.forEach((file, index) => {
+        for (const [index, file] of this.additionalVehiclePhotos.entries()) {
           const formData = new FormData();
           formData.append("file", file);
-          formData.append("field", "Vehicle Inspection");
           formData.append("title", `Vehicle Additional Photo ${index + 1}`);
-          formData.append("uniqueData", uniqueData);
-          formData.append("folderName", "vehicleInformation");
-          formData.append("subFolder", "vehicleInformation");
-          this.uploadService
-            .uploadAttachmentV2(formData)
-            .pipe(first())
-            .subscribe((data) => { });
-        });
+          await this.attachmentsService.uploadAttachment(this.attachmentFeature, inspectionId, formData);
+        }
       }
 
       this.isLoading = false;
       this.toastrService.success("Successfully Created");
+
+      this.additionalVehiclePhotos = [];
 
       resetVehicleInspectionFormValues();
 

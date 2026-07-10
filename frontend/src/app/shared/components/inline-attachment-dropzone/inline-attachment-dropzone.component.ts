@@ -160,7 +160,7 @@ export class InlineAttachmentDropzoneComponent {
       return;
     }
 
-    const files = this.extractFilesFromClipboard(event.clipboardData);
+    const files = this.normalizeClipboardFileNames(this.extractFilesFromClipboard(event.clipboardData));
     if (!files.length) {
       return;
     }
@@ -184,5 +184,65 @@ export class InlineAttachmentDropzoneComponent {
       .filter((item) => item.kind === 'file')
       .map((item) => item.getAsFile())
       .filter((file): file is File => !!file);
+  }
+
+  private normalizeClipboardFileNames(files: File[]): File[] {
+    if (!files.length) {
+      return files;
+    }
+
+    const timestamp = this.formatTimestampForFileName(new Date());
+
+    return files.map((file, index) => {
+      if (!this.isGenericClipboardName(file.name)) {
+        return file;
+      }
+
+      const extension = this.getFileExtension(file.name, file.type);
+      const friendlyName = `pasted-${timestamp}-${index + 1}.${extension}`;
+
+      return new File([file], friendlyName, {
+        type: file.type,
+        lastModified: file.lastModified,
+      });
+    });
+  }
+
+  private isGenericClipboardName(fileName: string): boolean {
+    const normalized = String(fileName || '').trim().toLowerCase();
+
+    if (!normalized) {
+      return true;
+    }
+
+    return /^(image|clipboard|screenshot)(\s*\(\d+\))?\.(png|jpe?g|gif|webp|bmp)$/i.test(normalized);
+  }
+
+  private getFileExtension(fileName: string, mimeType: string): string {
+    const fromName = String(fileName || '').trim().toLowerCase();
+    const extMatch = fromName.match(/\.([a-z0-9]+)$/i);
+    if (extMatch?.[1]) {
+      return extMatch[1];
+    }
+
+    const fromMime = String(mimeType || '').trim().toLowerCase();
+    if (fromMime.includes('png')) return 'png';
+    if (fromMime.includes('jpeg') || fromMime.includes('jpg')) return 'jpg';
+    if (fromMime.includes('gif')) return 'gif';
+    if (fromMime.includes('webp')) return 'webp';
+    if (fromMime.includes('bmp')) return 'bmp';
+
+    return 'bin';
+  }
+
+  private formatTimestampForFileName(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hour = String(date.getHours()).padStart(2, '0');
+    const minute = String(date.getMinutes()).padStart(2, '0');
+    const second = String(date.getSeconds()).padStart(2, '0');
+
+    return `${year}${month}${day}-${hour}${minute}${second}`;
   }
 }

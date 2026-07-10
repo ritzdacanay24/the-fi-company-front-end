@@ -11,6 +11,9 @@ export type ResourceRow = RowDataPacket & {
   mime_type: string | null;
   size_bytes: number | null;
   link: string;
+  storage_source: string | null;
+  storage_bucket: string | null;
+  storage_key: string | null;
   icon: string | null;
   color: string | null;
   sort_order: number;
@@ -29,6 +32,9 @@ export type CreateResourcePayload = {
   mimeType?: string | null;
   sizeBytes?: number | null;
   link: string;
+  storageSource?: string | null;
+  storageBucket?: string | null;
+  storageKey?: string | null;
   icon?: string | null;
   color?: string | null;
   sortOrder?: number;
@@ -55,6 +61,9 @@ export class ResourcesRepository {
         mime_type,
         size_bytes,
         link,
+        storage_source,
+        storage_bucket,
+        storage_key,
         icon,
         color,
         sort_order,
@@ -81,6 +90,9 @@ export class ResourcesRepository {
         mime_type,
         size_bytes,
         link,
+        storage_source,
+        storage_bucket,
+        storage_key,
         icon,
         color,
         sort_order,
@@ -110,13 +122,16 @@ export class ResourcesRepository {
         mime_type,
         size_bytes,
         link,
+        storage_source,
+        storage_bucket,
+        storage_key,
         icon,
         color,
         sort_order,
         active,
         created_by,
         created_by_name
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
         payload.category,
@@ -126,6 +141,9 @@ export class ResourcesRepository {
         payload.mimeType ?? null,
         payload.sizeBytes ?? null,
         payload.link,
+        payload.storageSource ?? null,
+        payload.storageBucket ?? null,
+        payload.storageKey ?? null,
         payload.icon ?? 'ri-file-pdf-line',
         payload.color ?? '#dc3545',
         payload.sortOrder ?? 0,
@@ -157,6 +175,9 @@ export class ResourcesRepository {
     push('mime_type', payload.mimeType === undefined ? undefined : payload.mimeType ?? null);
     push('size_bytes', payload.sizeBytes === undefined ? undefined : payload.sizeBytes ?? null);
     push('link', payload.link);
+    push('storage_source', payload.storageSource === undefined ? undefined : payload.storageSource ?? null);
+    push('storage_bucket', payload.storageBucket === undefined ? undefined : payload.storageBucket ?? null);
+    push('storage_key', payload.storageKey === undefined ? undefined : payload.storageKey ?? null);
     push('icon', payload.icon === undefined ? undefined : payload.icon ?? null);
     push('color', payload.color === undefined ? undefined : payload.color ?? null);
     push('sort_order', payload.sortOrder);

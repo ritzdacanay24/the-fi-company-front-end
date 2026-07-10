@@ -53,14 +53,20 @@
               <h5 class="mb-1">Supporting Files</h5>
               <p class="text-muted mb-0">Upload any supporting documentation or photos</p>
             </div>
-            <div class="form-group">
-              <label for="file" class="form-label">Attachments</label>
-              <input id="file" type="file" multiple class="form-control" (change)="onFileChange($event)">
-              <div class="form-text">
-                <i class="mdi mdi-information-outline me-1"></i>
-                Upload images, documents, or other files related to this inspection.
-              </div>
+
+            <div class="mb-3">
+              <app-inline-attachment-dropzone
+                [disabled]="isLoading"
+                (filesAdded)="onPendingAttachmentsAdded($event)">
+              </app-inline-attachment-dropzone>
             </div>
+
+            <app-pending-attachments-list
+              [files]="pendingAttachmentFiles"
+              [disabled]="isLoading"
+              [helperText]="'Files are queued and will upload after creating this forklift inspection.'"
+              (removeRequested)="removePendingAttachment($event)">
+            </app-pending-attachments-list>
           </div>
         </div>
         

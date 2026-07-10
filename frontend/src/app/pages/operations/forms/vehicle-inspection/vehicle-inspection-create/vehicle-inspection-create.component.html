@@ -37,21 +37,19 @@
                 <h6 class="mb-1"><i class="mdi mdi-image-multiple me-2"></i>Vehicle Photos (Optional)</h6>
                 <p class="text-muted mb-0">Capture extra photos on the spot (damage, decals, interior, etc.).</p>
               </div>
-              <input type="file" accept="image/*" capture="environment" class="form-control"
-                     (change)="onAdditionalVehiclePhotosChange($event)">
 
-              <div class="row g-3 mt-2" *ngIf="additionalVehiclePhotoPreviews.length > 0">
-                <div class="col-md-4 col-lg-3" *ngFor="let preview of additionalVehiclePhotoPreviews; let i = index">
-                  <div class="card h-100">
-                    <div class="card-body text-center">
-                      <img [src]="preview" class="img-thumbnail mb-2" style="max-height: 150px; width: 100%; object-fit: cover;">
-                      <button type="button" class="btn btn-sm btn-outline-danger" (click)="removeAdditionalVehiclePhoto(i)">
-                        <i class="mdi mdi-close"></i> Remove
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <app-inline-attachment-dropzone
+                [disabled]="isLoading"
+                [accept]="'image/*'"
+                (filesAdded)="onAdditionalVehiclePhotosAdded($event)">
+              </app-inline-attachment-dropzone>
+
+              <app-pending-attachments-list
+                [files]="additionalVehiclePhotos"
+                [disabled]="isLoading"
+                [helperText]="'These photos are queued and will upload after creating the inspection.'"
+                (removeRequested)="removeAdditionalVehiclePhoto($event)">
+              </app-pending-attachments-list>
             </div>
           </div>
           <div class="alert alert-info mt-4" *ngIf="form?.value?.not_used">

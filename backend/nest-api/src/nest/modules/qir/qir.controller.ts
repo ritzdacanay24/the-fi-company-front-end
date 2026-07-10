@@ -1,17 +1,12 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { Public } from '@/nest/decorators/public.decorator';
 import { Permissions, RolePermissionGuard } from '../access-control';
-import { AttachmentsService } from '../attachments/attachments.service';
 import { QirService } from './qir.service';
 
 @Controller('qir')
 @UseGuards(RolePermissionGuard)
 export class QirController {
-  constructor(
-    private readonly service: QirService,
-    private readonly attachmentsService: AttachmentsService,
-  ) {}
+  constructor(private readonly service: QirService) {}
 
   @Get('getList')
   async getList(
@@ -58,21 +53,6 @@ export class QirController {
   @Post('create-public')
   async createPublic(@Body() payload: Record<string, unknown>) {
     return this.service.create(payload);
-  }
-
-  @Public()
-  @Post('upload-public')
-  @UseInterceptors(FileInterceptor('file'))
-  async uploadPublic(
-    @Body() payload: Record<string, unknown>,
-    @UploadedFile() file?: { originalname?: string; buffer?: Buffer },
-  ) {
-    const normalizedPayload: Record<string, unknown> = {
-      ...payload,
-      field: 'Capa Request',
-      subFolder: 'capa',
-    };
-    return this.attachmentsService.create(normalizedPayload, file);
   }
 
   @Put('updateById/:id')

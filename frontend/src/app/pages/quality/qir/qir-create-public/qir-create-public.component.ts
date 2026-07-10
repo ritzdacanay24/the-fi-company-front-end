@@ -1,4 +1,4 @@
-import { Component, ElementRef, HostListener, Input, ViewChild } from "@angular/core";
+import { Component, HostListener, Input } from "@angular/core";
 import { SharedModule } from "@app/shared/shared.module";
 import { FormGroup } from "@angular/forms";
 import { ActivatedRoute, Router } from "@angular/router";
@@ -35,8 +35,6 @@ export class QirCreatePublicComponent {
       history.pushState(null, null, window.location.href);
     });
   }
-
-  @ViewChild("fileInput") fileInput?: ElementRef<HTMLInputElement>;
 
   @HostListener("window:beforeunload")
   canDeactivate() {
@@ -79,7 +77,6 @@ export class QirCreatePublicComponent {
   fsId = null;
 
   isLoading = false;
-  isDragOver = false;
 
   submitted = false;
 
@@ -138,12 +135,8 @@ export class QirCreatePublicComponent {
 
       if (this.myFiles.length > 0) {
         for (const file of this.myFiles) {
-          const formData = new FormData();
-          formData.append("file", file);
-          formData.append("uniqueData", `${res.insertId}`);
-          formData.append("uniqueId", `${res.insertId}`);
           try {
-            await this.api.uploadAttachmentPublic(formData);
+            await this.attachmentsService.uploadQirAttachmentPublic(res.insertId, file);
           } catch (err) {}
         }
       }
@@ -175,49 +168,16 @@ export class QirCreatePublicComponent {
     this.goBack();
   }
 
-  file: File = null;
   myFiles: File[] = [];
   selectedFiles: File[] = [];
 
-  openFilePicker() {
-    if (this.form?.disabled) return;
-    this.fileInput?.nativeElement.click();
-  }
-
-  onFilechange(event: Event) {
-    const input = event.target as HTMLInputElement;
-    const files = input.files ? Array.from(input.files) : [];
-    this.addFiles(files);
-    this.resetFileInput();
-  }
-
-  onDragOver(event: DragEvent) {
-    event.preventDefault();
-    event.stopPropagation();
-    if (this.form?.disabled) return;
-    this.isDragOver = true;
-  }
-
-  onDragLeave(event: DragEvent) {
-    event.preventDefault();
-    event.stopPropagation();
-    this.isDragOver = false;
-  }
-
-  onDrop(event: DragEvent) {
-    event.preventDefault();
-    event.stopPropagation();
-    if (this.form?.disabled) return;
-
-    this.isDragOver = false;
-    const files = event.dataTransfer?.files ? Array.from(event.dataTransfer.files) : [];
-    this.addFiles(files);
+  onAttachmentFilesAdded(files: File[]): void {
+    this.addFiles(files || []);
   }
 
   removeFile(index: number) {
     this.selectedFiles.splice(index, 1);
     this.myFiles = [...this.selectedFiles];
-    this.resetFileInput();
   }
 
   private addFiles(files: File[]) {
@@ -237,12 +197,6 @@ export class QirCreatePublicComponent {
 
   private getFileKey(file: File) {
     return `${file.name}-${file.size}-${file.lastModified}`;
-  }
-
-  private resetFileInput() {
-    if (this.fileInput) {
-      this.fileInput.nativeElement.value = "";
-    }
   }
 
   attachments: any = [];

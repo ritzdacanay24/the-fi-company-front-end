@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   Inject,
   Param,
@@ -97,5 +98,11 @@ export class UsersController {
     @UploadedFile() file?: { originalname?: string; buffer?: Buffer },
   ) {
     return this.usersService.uploadPhoto(id, file);
+  }
+
+  @Delete(':id/photo')
+  @Permissions('manage')
+  async deletePhoto(@Param('id', ParseIntPipe) id: number) {
+    return this.usersService.deletePhoto(id);
   }
 }

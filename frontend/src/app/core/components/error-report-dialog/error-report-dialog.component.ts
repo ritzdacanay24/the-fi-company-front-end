@@ -4,6 +4,8 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { HttpClient } from '@angular/common/http';
 import { NotificationService } from '@app/core/services/notification.service';
+import { AttachmentsService } from '@app/core/api/attachments/attachments.service';
+import { FeatureType } from '@app/shared/enums/feature.enum';
 import {
   TicketImpactLevel,
   TicketPriority,
@@ -323,6 +325,7 @@ export class ErrorReportDialogComponent implements OnDestroy {
   private readonly draftService = inject(SupportTicketDraftService);
   private readonly authService = inject(AuthenticationService);
   private readonly modalService = inject(NgbModal);
+  private readonly attachmentsService = inject(AttachmentsService);
 
   readonly highUrgencyLevel = TicketUrgencyLevel.HIGH;
   readonly stepsPlaceholder = '1. Go to...\n2. Click on...\n3. See error';
@@ -585,44 +588,15 @@ export class ErrorReportDialogComponent implements OnDestroy {
 
     for (const file of files) {
       try {
-        await this.uploadAttachmentViaTicketEndpoint(ticketId, file);
+        const formData = new FormData();
+        formData.append('file', file);
+        await this.attachmentsService.uploadAttachment(FeatureType.SUPPORT_TICKETS, ticketId, formData);
       } catch (err) {
-        console.warn(`Ticket endpoint upload failed for ${file.name}, trying fallback flow:`, err);
-        try {
-          await this.uploadAttachmentViaFallbackFlow(ticketId, file);
-        } catch (fallbackError) {
-          console.warn(`Fallback upload also failed for ${file.name}:`, fallbackError);
-          failedFiles.push(file.name);
-        }
+        console.warn(`Attachment upload failed for ${file.name}:`, err);
+        failedFiles.push(file.name);
       }
     }
 
     return failedFiles;
-  }
-
-  private async uploadAttachmentViaTicketEndpoint(ticketId: number, file: File): Promise<void> {
-    const uploadFormData = new FormData();
-    uploadFormData.append('file', file);
-    await this.http.post(`apiV2/support-tickets/${ticketId}/attachments/upload`, uploadFormData).toPromise();
-  }
-
-  private async uploadAttachmentViaFallbackFlow(ticketId: number, file: File): Promise<void> {
-    const uploadFormData = new FormData();
-    uploadFormData.append('file', file);
-    uploadFormData.append('subFolder', 'support-tickets');
-
-    const uploaded: any = await this.http.post('apiV2/attachments/upload', uploadFormData).toPromise();
-    const uploadedUrl = String(uploaded?.url || uploaded?.file_url || uploaded?.link || '').trim();
-
-    if (!uploadedUrl) {
-      throw new Error('Fallback upload API did not return file URL');
-    }
-
-    await this.http.post(`apiV2/support-tickets/${ticketId}/attachments`, {
-      file_name: file.name,
-      file_url: uploadedUrl,
-      mime_type: file.type || null,
-      file_size: file.size || null,
-    }).toPromise();
   }
 }

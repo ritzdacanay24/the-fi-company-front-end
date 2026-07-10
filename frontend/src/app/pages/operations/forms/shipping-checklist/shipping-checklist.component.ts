@@ -2,13 +2,9 @@ import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { firstValueFrom, Subscription } from 'rxjs';
-import { AttachmentsService } from '@app/core/api/attachments/attachments.service';
-import { UploadService } from '@app/core/api/upload/upload.service';
 import { SalesOrderInfoService } from '@app/core/api/sales-order/sales-order-info.service';
 import { AuthenticationService } from '@app/core/services/auth.service';
-import { FileViewerModalComponent } from '@app/shared/components/file-viewer-modal/file-viewer-modal.component';
 import { SharedModule } from '@app/shared/shared.module';
 import { ToastrService } from 'ngx-toastr';
 import Swal from 'sweetalert2';
@@ -17,6 +13,7 @@ import {
   ShippingChecklistTemplate,
   ShippingChecklistsService,
 } from '@app/core/api/operations/shipping-checklists/shipping-checklists.service';
+import { FeatureType } from '@app/shared/enums/feature.enum';
 import { environment } from 'src/environments/environment';
 import { AppTourDefinition, AppTourService } from '@app/core/services/app-tour.service';
 import { AppGuideContext, AppGuideService } from '@app/core/services/app-guide.service';
@@ -46,6 +43,7 @@ export class ShippingChecklistComponent implements OnInit {
   private readonly minLineRows = 1;
   private readonly shippingChecklistTourId = 'shipping-checklist-workflow';
   private readonly shippingChecklistGuideId = 'shipping-checklist';
+  readonly featureType = FeatureType;
   private draftSaveVersion = 0;
   private tourDraftSaveBaseline = 0;
 
@@ -62,11 +60,6 @@ export class ShippingChecklistComponent implements OnInit {
   isSaving = false;
   isLoadingSalesOrderLines = false;
   isLoadingPackingSlipSerials = false;
-  uploadingByQuestion: Record<string, boolean> = {};
-  questionAttachments: Record<string, Array<{ id: number; fileName: string; link: string }>> = {};
-  uploadTargets: Array<{ questionCode: string; questionText: string }> = [];
-  selectedUploadQuestionCode = '';
-  uploadScopeId = this.createUploadScopeId();
   expandedLineIndexes: Record<number, boolean> = {};
   private linesValueChangesSub: Subscription | null = null;
 
@@ -75,11 +68,8 @@ export class ShippingChecklistComponent implements OnInit {
     private readonly service: ShippingChecklistsService,
     private readonly route: ActivatedRoute,
     private readonly router: Router,
-    private readonly uploadService: UploadService,
     private readonly salesOrderInfoService: SalesOrderInfoService,
-    private readonly attachmentsService: AttachmentsService,
     private readonly authService: AuthenticationService,
-    private readonly modalService: NgbModal,
     private readonly offcanvasService: NgbOffcanvas,
     private readonly toastr: ToastrService,
     private readonly appTourService: AppTourService,
@@ -458,7 +448,6 @@ export class ShippingChecklistComponent implements OnInit {
     const template = this.templates.find((item) => item.id === templateId) || null;
     if (!template) {
       this.selectedTemplate = null;
-      this.selectedUploadQuestionCode = '';
       this.checklistStatus = '';
       return;
     }
@@ -466,8 +455,6 @@ export class ShippingChecklistComponent implements OnInit {
     this.selectedInstanceId = null;
     this.checklistStatus = '';
     this.syncChecklistUrl(null);
-    this.questionAttachments = {};
-    this.uploadScopeId = this.createUploadScopeId();
     this.applyTemplate(template);
     this.resetLineRows(this.minLineRows);
   }
@@ -526,14 +513,11 @@ export class ShippingChecklistComponent implements OnInit {
           questionText: [question.questionText],
           isRequired: [question.isRequired],
           responseValue: [''],
-          imageUrls: [[]],
         }),
       ),
     );
 
     this.form.setControl('responses', responses);
-    this.refreshUploadTargets();
-    this.selectedUploadQuestionCode = String(this.uploadTargets[0]?.questionCode || '');
   }
 
   resetLineRows(count: number): void {
@@ -746,8 +730,6 @@ export class ShippingChecklistComponent implements OnInit {
       const normalizedStatus = String(instance.status || '').toLowerCase();
       this.checklistStatus = normalizedStatus === 'verified' ? 'verified' : normalizedStatus === 'submitted' ? 'submitted' : 'draft';
       this.syncChecklistUrl(this.selectedInstanceId);
-      this.uploadScopeId = `instance-${this.selectedInstanceId}`;
-      this.questionAttachments = {};
 
       this.form.patchValue({
         templateId: Number(instance.templateId),
@@ -800,22 +782,6 @@ export class ShippingChecklistComponent implements OnInit {
 
       const responseRows = Array.isArray(instance.responses) ? instance.responses : [];
       this.setInstanceResponses(responseRows, template);
-      for (const control of this.responsesArray.controls) {
-        const questionCode = String(control.get('questionCode')?.value || '');
-        const imageUrls = Array.isArray(control.get('imageUrls')?.value) ? (control.get('imageUrls')?.value as string[]) : [];
-        this.mergeQuestionImageUrls(questionCode, imageUrls);
-      }
-
-      await this.loadAllQuestionAttachments();
-      for (const control of this.responsesArray.controls) {
-        const questionCode = String(control.get('questionCode')?.value || '');
-        control.patchValue({ imageUrls: this.getQuestionImageUrls(questionCode) }, { emitEvent: false });
-      }
-
-      this.refreshUploadTargets();
-      if (this.uploadTargets.length > 0 && !this.uploadTargets.some((target) => target.questionCode === this.selectedUploadQuestionCode)) {
-        this.selectedUploadQuestionCode = String(this.uploadTargets[0].questionCode || '');
-      }
 
       this.applyFormLockState();
 
@@ -970,11 +936,7 @@ export class ShippingChecklistComponent implements OnInit {
     this.selectedInstanceId = null;
     this.checklistStatus = '';
     this.selectedTemplate = null;
-    this.selectedUploadQuestionCode = '';
     this.syncChecklistUrl(null);
-    this.questionAttachments = {};
-    this.uploadingByQuestion = {};
-    this.uploadScopeId = this.createUploadScopeId();
     this.createdByDisplay = '';
 
     this.form.patchValue({
@@ -1000,7 +962,6 @@ export class ShippingChecklistComponent implements OnInit {
 
     this.form.setControl('responses', this.fb.array<FormGroup>([]));
     this.resetLineRows(this.minLineRows);
-    this.refreshUploadTargets();
     this.applyFormLockState();
   }
 
@@ -1071,27 +1032,6 @@ export class ShippingChecklistComponent implements OnInit {
     }
   }
 
-  refreshUploadTargets(): void {
-    this.uploadTargets = this.responsesArray.controls
-      .map((row) => ({
-        questionCode: String(row.get('questionCode')?.value || '').trim(),
-        questionText: String(row.get('questionText')?.value || '').trim(),
-      }))
-      .filter((row) => row.questionCode.length > 0);
-  }
-
-  onUploadTargetChanged(questionCodeInput: string): void {
-    this.selectedUploadQuestionCode = String(questionCodeInput || '').trim();
-  }
-
-  getSelectedUploadAttachments(): Array<{ id: number; fileName: string; link: string }> {
-    if (!this.selectedUploadQuestionCode) {
-      return [];
-    }
-
-    return this.getQuestionAttachments(this.selectedUploadQuestionCode);
-  }
-
   getLineSerialSummary(lineIndex: number): string {
     const serials = this.normalizeSerialNumbers(this.serialsArrayAt(lineIndex).getRawValue());
     if (serials.length === 0) {
@@ -1099,104 +1039,6 @@ export class ShippingChecklistComponent implements OnInit {
     }
 
     return serials.join(', ');
-  }
-
-  displayAttachmentName(fileName: string, fallbackId: number): string {
-    const raw = String(fileName || '').trim();
-    if (!raw) {
-      return `Image ${fallbackId}`;
-    }
-
-    if (raw.length <= 32) {
-      return raw;
-    }
-
-    const extensionMatch = raw.match(/(\.[a-z0-9]{1,6})$/i);
-    const extension = extensionMatch ? extensionMatch[1] : '';
-    const baseName = extension ? raw.slice(0, -extension.length) : raw;
-
-    if (baseName.length <= 20) {
-      return `${baseName.slice(0, 16)}…${extension}`;
-    }
-
-    return `${baseName.slice(0, 14)}…${baseName.slice(-6)}${extension}`;
-  }
-
-  openAttachmentViewer(attachment: { fileName: string; link: string }): void {
-    const url = String(attachment?.link || '').trim();
-    if (!url) {
-      this.toastr.warning('Attachment link is unavailable.');
-      return;
-    }
-
-    const fileName = String(attachment?.fileName || '').trim() || 'Attachment';
-    const modalRef = this.modalService.open(FileViewerModalComponent, {
-      size: 'xl',
-      centered: true,
-      backdrop: 'static',
-      scrollable: false,
-    });
-
-    modalRef.componentInstance.url = url;
-    modalRef.componentInstance.fileName = fileName;
-  }
-
-  async onSelectedTargetFilesChosen(event: Event): Promise<void> {
-    if (!this.selectedUploadQuestionCode) {
-      const input = event.target as HTMLInputElement;
-      this.toastr.warning('Select a checklist item first.');
-      if (input) {
-        input.value = '';
-      }
-      return;
-    }
-
-    await this.onQuestionFilesSelected(event, this.selectedUploadQuestionCode);
-  }
-
-  async deleteSelectedUploadAttachment(attachmentId: number): Promise<void> {
-    await this.deleteQuestionAttachment(this.selectedUploadQuestionCode, attachmentId);
-  }
-
-  async deleteQuestionAttachment(questionCode: string, attachmentId: number): Promise<void> {
-    const normalizedQuestionCode = String(questionCode || '').trim();
-    if (!normalizedQuestionCode) {
-      this.toastr.warning('Select a checklist item first.');
-      return;
-    }
-
-    const normalizedId = Number(attachmentId || 0);
-    if (normalizedId <= 0) {
-      this.toastr.warning('This image reference cannot be deleted from attachments.');
-      return;
-    }
-
-    const confirmed = await Swal.fire({
-      icon: 'warning',
-      title: 'Delete Image?',
-      text: 'Delete this image attachment?',
-      showCancelButton: true,
-      confirmButtonText: 'Delete Image',
-      cancelButtonText: 'Cancel',
-      reverseButtons: true,
-    });
-    if (!confirmed.isConfirmed) {
-      return;
-    }
-
-    const key = this.getQuestionKey(normalizedQuestionCode);
-    this.uploadingByQuestion[key] = true;
-
-    try {
-      await this.attachmentsService.delete(normalizedId);
-      await this.refreshQuestionAttachments(normalizedQuestionCode);
-      this.patchResponseImageUrls(normalizedQuestionCode);
-      this.toastr.success('Image deleted');
-    } catch (error) {
-      throw error;
-    } finally {
-      this.uploadingByQuestion[key] = false;
-    }
   }
 
   buildPayload(status: 'draft' | 'submitted' | 'verified'): ShippingChecklistInstancePayload {
@@ -1226,12 +1068,10 @@ export class ShippingChecklistComponent implements OnInit {
     const totalPallets = this.calculateTotalPalletsFromLines(raw.lines || []);
 
     const responses = (raw.responses || []).map((response: any) => {
-      const questionCode = String(response.questionCode || '').trim();
       return {
-        questionCode,
+        questionCode: String(response.questionCode || '').trim(),
         questionText: String(response.questionText || '').trim(),
         responseValue: String(response.responseValue || '').trim().toLowerCase() as 'yes' | 'no' | 'na' | '',
-        imageUrls: this.getQuestionImageUrls(questionCode),
       };
     });
 
@@ -1365,7 +1205,6 @@ export class ShippingChecklistComponent implements OnInit {
             questionText: [String(row?.questionText || '').trim()],
             isRequired: [templateRequiredByCode.get(questionCode) ?? true],
             responseValue: [String(row?.responseValue || '').trim().toLowerCase()],
-            imageUrls: [Array.isArray(row?.imageUrls) ? row.imageUrls : []],
           });
         }),
       );
@@ -1382,7 +1221,6 @@ export class ShippingChecklistComponent implements OnInit {
             questionText: [question.questionText],
             isRequired: [question.isRequired],
             responseValue: [''],
-            imageUrls: [[]],
           }),
         ),
       );
@@ -1439,164 +1277,6 @@ export class ShippingChecklistComponent implements OnInit {
 
   get recentChecklistPreview(): ShippingChecklistListItem[] {
     return this.instances.slice(0, 10);
-  }
-
-  getQuestionKey(questionCode: string): string {
-    return `${this.uploadScopeId}:${String(questionCode || '').trim()}`;
-  }
-
-  createUploadScopeId(): string {
-    try {
-      if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-        return `draft-${crypto.randomUUID()}`;
-      }
-    } catch {
-      // Fallback when crypto UUID is unavailable.
-    }
-
-    return `draft-${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
-  }
-
-  mergeQuestionImageUrls(questionCode: string, imageUrls: string[]): void {
-    const key = this.getQuestionKey(questionCode);
-    const existing = this.questionAttachments[key] || [];
-
-    const byLink = new Map<string, { id: number; fileName: string; link: string }>();
-    for (const attachment of existing) {
-      const link = String(attachment.link || '').trim();
-      if (link) {
-        byLink.set(link, attachment);
-      }
-    }
-
-    for (const imageUrl of Array.isArray(imageUrls) ? imageUrls : []) {
-      const link = String(imageUrl || '').trim();
-      if (!link || byLink.has(link)) {
-        continue;
-      }
-
-      byLink.set(link, {
-        id: -1,
-        fileName: link.split('/').pop() || 'Image',
-        link,
-      });
-    }
-
-    this.questionAttachments[key] = Array.from(byLink.values());
-  }
-
-  getQuestionAttachments(questionCode: string): Array<{ id: number; fileName: string; link: string }> {
-    return this.questionAttachments[this.getQuestionKey(questionCode)] || [];
-  }
-
-  getQuestionImageUrls(questionCode: string): string[] {
-    return this.getQuestionAttachments(questionCode)
-      .map((attachment) => String(attachment.link || '').trim())
-      .filter((link) => link.length > 0);
-  }
-
-  isUploadingQuestion(questionCode: string): boolean {
-    return Boolean(this.uploadingByQuestion[this.getQuestionKey(questionCode)]);
-  }
-
-  async onQuestionFilesSelected(event: Event, questionCode: string): Promise<void> {
-    const input = event.target as HTMLInputElement;
-    const files = Array.from(input?.files || []);
-
-    if (files.length === 0) {
-      return;
-    }
-
-    const key = this.getQuestionKey(questionCode);
-    this.uploadingByQuestion[key] = true;
-
-    try {
-      for (const file of files) {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('field', 'shippingChecklistItem');
-        formData.append('uniqueData', key);
-        formData.append('folderName', 'shippingChecklist');
-        formData.append('subFolder', 'shippingChecklist');
-        formData.append('storage_source', 'legacy');
-        await firstValueFrom(this.uploadService.uploadAttachmentV2(formData));
-      }
-
-      await this.refreshQuestionAttachments(questionCode);
-      this.patchResponseImageUrls(questionCode);
-      this.toastr.success('Images uploaded');
-    } catch (error) {
-      throw error;
-    } finally {
-      this.uploadingByQuestion[key] = false;
-      input.value = '';
-    }
-  }
-
-  async refreshQuestionAttachments(questionCode: string): Promise<void> {
-    const key = this.getQuestionKey(questionCode);
-    const rows = await this.attachmentsService.find({
-      field: 'shippingChecklistItem',
-      uniqueId: key,
-    });
-
-    const fetched = (rows || [])
-      .map((row: any) => ({
-        id: Number(row.id || 0),
-        fileName: String(row.fileName || row.originalName || 'Image'),
-        link: String(row.link || ''),
-      }))
-      .filter((row: any) => row.id > 0 && row.link);
-
-    const existing = this.questionAttachments[key] || [];
-    const byLink = new Map<string, { id: number; fileName: string; link: string }>();
-
-    for (const item of fetched) {
-      const link = String(item.link || '').trim();
-      if (!link) {
-        continue;
-      }
-
-      byLink.set(link, item);
-    }
-
-    for (const item of existing) {
-      const link = String(item.link || '').trim();
-      if (!link || byLink.has(link)) {
-        continue;
-      }
-
-      byLink.set(link, item);
-    }
-
-    this.questionAttachments[key] = Array.from(byLink.values());
-  }
-
-  async loadAllQuestionAttachments(): Promise<void> {
-    for (const control of this.responsesArray.controls) {
-      const questionCode = String(control.get('questionCode')?.value || '');
-      if (!questionCode) {
-        continue;
-      }
-
-      try {
-        await this.refreshQuestionAttachments(questionCode);
-      } catch {
-        // Continue loading remaining rows even if one attachment query fails.
-      }
-    }
-  }
-
-  patchResponseImageUrls(questionCode: string): void {
-    const control = this.responsesArray.controls.find(
-      (row) => String(row.get('questionCode')?.value || '') === String(questionCode || ''),
-    );
-
-    if (!control) {
-      return;
-    }
-
-    control.patchValue({ imageUrls: this.getQuestionImageUrls(questionCode) }, { emitEvent: false });
   }
 
   syncChecklistUrl(id: number | null): void {

@@ -7,6 +7,8 @@ import moment from "moment";
 import { ReceivingService } from "@app/core/api/receiving/receiving.service";
 import { first } from "rxjs";
 import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErrors";
+import { FeatureType } from "@app/shared/enums/feature.enum";
+import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
 
 @Injectable({
   providedIn: "root",
@@ -32,7 +34,8 @@ export class CalendarModalCreateService {
 export class CalendarModalCreateComponent {
   constructor(
     private ngbActiveModal: NgbActiveModal,
-    private api: ReceivingService
+    private api: ReceivingService,
+    private attachmentsService: AttachmentsService,
   ) {}
 
   form: FormGroup;
@@ -48,6 +51,9 @@ export class CalendarModalCreateComponent {
 
   @Input() submitted = false;
 
+  myFiles: File[] = [];
+  selectedFiles: File[] = [];
+
   onSubmit() {
     this.submitted = true;
 
@@ -62,7 +68,39 @@ export class CalendarModalCreateComponent {
   loadingIndicator = false;
 
   id = null;
+
+  onAttachmentFilesAdded(files: File[]): void {
+    this.addFiles(files || []);
+  }
+
+  removeFile(index: number): void {
+    this.selectedFiles.splice(index, 1);
+    this.myFiles = [...this.selectedFiles];
+  }
+
+  private addFiles(files: File[]): void {
+    if (!files.length) {
+      return;
+    }
+
+    const dedupedFiles = new Map(
+      this.selectedFiles.map((file) => [this.getFileKey(file), file])
+    );
+
+    files.forEach((file) => {
+      dedupedFiles.set(this.getFileKey(file), file);
+    });
+
+    this.selectedFiles = Array.from(dedupedFiles.values());
+    this.myFiles = [...this.selectedFiles];
+  }
+
+  private getFileKey(file: File): string {
+    return `${file.name}-${file.size}-${file.lastModified}`;
+  }
+
   create() {
+    this.loadingIndicator = true;
     this.form.value.start_date = moment(this.form.value.start_date).format(
       "YYYY-MM-DD"
     );
@@ -76,20 +114,21 @@ export class CalendarModalCreateComponent {
       .pipe(first())
       .subscribe(
         async (data) => {
-          if (this.file) {
-            await this.api.uploadfile(data, this.file);
+          this.id = Number(data) || data;
+
+          if (this.myFiles.length > 0) {
+            await this.attachmentsService.uploadFilesByFeature(
+              FeatureType.RECEIVING,
+              this.id,
+              this.myFiles,
+            );
           }
-          this.ngbActiveModal.close({ transaction: "CREATE", id: data });
+
+          this.ngbActiveModal.close({ transaction: "CREATE", id: this.id });
           this.loadingIndicator = false;
         },
         () => (this.loadingIndicator = false)
       );
-  }
-
-  file: File = null;
-
-  onFilechange(event: any) {
-    this.file = event.target.files[0];
   }
 
   dismiss() {

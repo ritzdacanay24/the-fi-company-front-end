@@ -8,10 +8,8 @@ import { NAVIGATION_ROUTE } from "../forklift-inspection-constant";
 import { ForkliftInspectionFormComponent } from "../forklift-inspection-form/forklift-inspection-form.component";
 import { ForkliftInspectionService } from "@app/core/api/operations/forklift-inspection/forklift-inspection.service";
 import { formValues as formData } from "./../forklift-inspection-form/formData";
-import { environment } from "src/environments/environment";
-import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
-import { FileViewerModalComponent } from "@app/shared/components/file-viewer-modal/file-viewer-modal.component";
 import { AuthenticationService } from "@app/core/services/auth.service";
+import { FeatureType } from "@app/shared/enums/feature.enum";
 
 interface ForkliftIssueItem {
   id: number;
@@ -38,7 +36,6 @@ export class ForkliftInspectionEditComponent {
     private api: ForkliftInspectionService,
     private toastrService: ToastrService,
     private activatedRoute: ActivatedRoute,
-    private modalService: NgbModal,
     private authenticationService: AuthenticationService,
   ) {}
 
@@ -60,6 +57,8 @@ export class ForkliftInspectionEditComponent {
 
   submitted = false;
 
+  readonly attachmentFeature = FeatureType.INSPECTIONS_FORKLIFT;
+
   @Input() goBack: Function = () => {
     this.router.navigate([NAVIGATION_ROUTE.LIST], {
       queryParamsHandling: "merge",
@@ -73,56 +72,6 @@ export class ForkliftInspectionEditComponent {
   confirmDateInput = "";
   issueActionLoadingId: number | null = null;
 
-  viewImage(row: any, event?: Event) {
-    event?.preventDefault();
-
-    const url = this.getAttachmentUrl(row);
-    if (!url) {
-      this.toastrService.warning("Attachment URL not available");
-      return;
-    }
-
-    const modalRef = this.modalService.open(FileViewerModalComponent, {
-      size: "xl",
-      centered: true,
-      scrollable: true,
-    });
-    modalRef.componentInstance.url = url;
-    modalRef.componentInstance.fileName = row?.fileName || row?.filename || row?.name || "Attachment";
-  }
-
-  getAttachmentUrl(attachment: any): string {
-    if (attachment?.link) {
-      const rawLink = String(attachment.link).trim();
-      if (!rawLink) {
-        return "";
-      }
-
-      if (/^https?:\/\//i.test(rawLink)) {
-        return rawLink;
-      }
-
-      if (rawLink.startsWith("/")) {
-        const apiBaseUrl = String(environment.apiV2BaseUrl || "").replace(/\/+$/, "");
-        return `${apiBaseUrl}${rawLink}`;
-      }
-
-      return rawLink;
-    }
-
-    const fileName = attachment?.fileName || attachment?.filename || attachment?.name || "";
-    if (!fileName) {
-      return "";
-    }
-
-    if (attachment?.directory) {
-      const normalizedDirectory = String(attachment.directory).replace(/\/+$/, "");
-      return `${normalizedDirectory}/${fileName}`;
-    }
-
-    return `https://dashboard.eye-fi.com/attachments/vehicleInformation/${fileName}`;
-  }
-
   compare(a, b) {
     if (a.name > b.name) {
       return -1;
@@ -134,7 +83,6 @@ export class ForkliftInspectionEditComponent {
   }
   formValues;
 
-  attachments = [];
   async getData() {
     try {
       this.isLoading = true;
@@ -164,7 +112,6 @@ export class ForkliftInspectionEditComponent {
         };
       });
 
-      this.attachments = data?.attachments;
       this.data = data;
       this.form.patchValue({
         ...data.main,

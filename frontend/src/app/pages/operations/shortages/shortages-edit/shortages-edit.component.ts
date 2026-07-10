@@ -4,7 +4,6 @@ import { ToastrService } from 'ngx-toastr';
 import { NAVIGATION_ROUTE } from '../shortages-constant';
 import { ShortagesFormComponent } from '../shortages-form/shortages-form.component';
 import { IShortagesForm } from '../shortages-form/shortages-form.type';
-import { AttachmentsService } from '@app/core/api/attachments/attachments.service';
 import { ShortagesService } from '@app/core/api/operations/shortages/shortages.service';
 import moment from 'moment';
 import { AuthenticationService } from '@app/core/services/auth.service';
@@ -24,7 +23,6 @@ export class ShortagesEditComponent {
     private activatedRoute: ActivatedRoute,
     private api: ShortagesService,
     private toastrService: ToastrService,
-    private attachmentsService: AttachmentsService,
     private authenticationService: AuthenticationService
   ) { }
 
@@ -98,7 +96,6 @@ export class ShortagesEditComponent {
       this.isLoading = true;
       this.data = await this.api.getById(this.id);
       this.form.patchValue(this.data);
-      await this.getAttachments()
       this.isLoading = false;
     } catch (err) {
       this.isLoading = false;
@@ -157,49 +154,6 @@ export class ShortagesEditComponent {
     } catch (err) {
       this.isLoading = false;
       this.toastrService.error('Failed to delete shortage');
-    }
-  }
-
-  attachments: any = []
-  async getAttachments() {
-    this.attachments = await this.attachmentsService.find({ field: 'Vehicle Information', uniqueId: this.id })
-  }
-
-  async deleteAttachment(id, index) {
-    if (!confirm('Are you sure you want to remove attachment?')) return
-    await this.attachmentsService.delete(id);
-    this.attachments.splice(index, 1)
-  }
-
-  file: File = null;
-
-  myFiles: string[] = [];
-
-  onFilechange(event: any) {
-    this.myFiles = [];
-    for (var i = 0; i < event.target.files.length; i++) {
-      this.myFiles.push(event.target.files[i]);
-    }
-  }
-
-  async onUploadAttachments() {
-    if (this.myFiles) {
-      let totalAttachments = 0;
-      this.isLoading = true;
-      const formData = new FormData();
-      for (var i = 0; i < this.myFiles.length; i++) {
-        formData.append("file", this.myFiles[i]);
-        formData.append("field", "Vehicle Information");
-        formData.append("uniqueData", `${this.id}`);
-        formData.append("folderName", 'vehicleInformation');
-        try {
-          await this.attachmentsService.uploadfile(formData);
-          totalAttachments++
-        } catch (err) {
-        }
-      }
-      this.isLoading = false;
-      await this.getAttachments()
     }
   }
 

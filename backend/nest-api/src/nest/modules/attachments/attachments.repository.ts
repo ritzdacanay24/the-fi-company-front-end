@@ -66,8 +66,12 @@ export class AttachmentsRepository extends BaseRepository<RowDataPacket> {
     const params: unknown[] = [];
 
     let sql = `
-      SELECT *
-      FROM attachments
+      SELECT
+        a.*,
+        NULLIF(TRIM(CONCAT(COALESCE(u.first, ''), ' ', COALESCE(u.last, ''))), '') as created_by_name,
+        NULLIF(TRIM(CONCAT(COALESCE(u.first, ''), ' ', COALESCE(u.last, ''))), '') as user_name
+      FROM attachments a
+      LEFT JOIN db.users u ON a.createdBy = u.id
       WHERE 1 = 1
     `;
 
@@ -76,11 +80,11 @@ export class AttachmentsRepository extends BaseRepository<RowDataPacket> {
         continue;
       }
 
-      sql += ` AND \`${key}\` = ?`;
+      sql += ` AND a.\`${key}\` = ?`;
       params.push(value);
     }
 
-    sql += ` ORDER BY CASE WHEN date_of_service IS NOT NULL THEN date_of_service ELSE id END DESC`;
+    sql += ` ORDER BY CASE WHEN a.date_of_service IS NOT NULL THEN a.date_of_service ELSE a.id END DESC`;
 
     return this.rawQuery<RowDataPacket>(sql, params);
   }
@@ -138,30 +142,48 @@ export class AttachmentsRepository extends BaseRepository<RowDataPacket> {
 
   /**
    * Get attachments for a specific field and ID (reusable for all components)
-   * Used by: support_ticket, fieldService, capa, etc
+   * Supports legacy field names for backward compatibility
+   * 
+   * @param fields - Field name(s) to search for. Can be a single string or array for legacy compatibility.
+   *                 If array provided, queries: WHERE field IN (fields) AND mainId = ?
+   * @param mainId - The main resource ID
+   * 
+   * @example
+   * // Search current field only
+   * getByFieldAndId('parts_order', orderId)
+   * 
+   * // Search current AND legacy fields
+   * getByFieldAndId(['parts_order', 'FS Parts Order'], orderId)
    */
   async getByFieldAndId(
-    field: string,
+    fields: string | string[],
     mainId: number,
   ): Promise<(RowDataPacket & { link?: string; bucket?: string })[]> {
+    const fieldArray = Array.isArray(fields) ? fields : [fields];
+
+    // Build placeholders for IN clause: (?, ?, ?)
+    const placeholders = fieldArray.map(() => '?').join(',');
+
     return this.rawQuery<RowDataPacket & { link?: string; bucket?: string }>(
       `
         SELECT 
-          id,
-          fileName as file_name,
-          link,
-          storage_bucket as bucket,
-          storage_key,
-          storage_source,
-          ext as mime_type,
-          fileSize as file_size,
-          createdBy as uploaded_by,
-          createdDate as created_at
-        FROM attachments
-        WHERE field = ? AND mainId = ?
-        ORDER BY createdDate DESC
+          a.id,
+          a.fileName as file_name,
+          a.link,
+          a.storage_bucket as bucket,
+          a.storage_key,
+          a.storage_source,
+          a.ext as mime_type,
+          a.fileSize as file_size,
+          a.createdBy as uploaded_by,
+          a.createdDate as created_at,
+          CONCAT(u.first, ' ', u.last) as created_by_name
+        FROM attachments a
+        LEFT JOIN db.users u ON a.createdBy = u.id
+        WHERE a.field IN (${placeholders}) AND a.mainId = ?
+        ORDER BY a.createdDate DESC
       `,
-      [field, mainId],
+      [...fieldArray, mainId],
     );
   }
 

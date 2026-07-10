@@ -45,28 +45,20 @@
                 <span class="text-muted fw-normal small">- Upload photos, reports, or other relevant documents to support the incident report.</span>
               </h3>
             </div>
+
             <div class="mb-3">
-              <label for="file" class="form-label">Upload Supporting Documents</label>
-              <input id="file" type="file" multiple class="form-control" #myInput (change)="onFileChange($event)">
-              <div class="form-text">
-                <i class="mdi mdi-information-outline me-1"></i>
-                Accepted file types: images, PDFs, documents. Maximum 10MB per file.
-              </div>
+              <app-inline-attachment-dropzone
+                [disabled]="isLoading"
+                (filesAdded)="onPendingAttachmentsAdded($event)">
+              </app-inline-attachment-dropzone>
             </div>
 
-            <div class="mb-3" *ngIf="imagePreviews.length > 0">
-              <h6 class="mb-2">Image Preview</h6>
-              <div class="row g-3">
-                <div class="col-6 col-md-4 col-lg-3" *ngFor="let item of imagePreviews">
-                  <div class="card h-100 border-0 shadow-sm">
-                    <img [src]="item.url" [alt]="item.name" class="card-img-top" style="height: 140px; object-fit: cover;">
-                    <div class="card-body py-2 px-2">
-                      <p class="small text-muted mb-0 text-truncate" [title]="item.name">{{ item.name }}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <app-pending-attachments-list
+              [files]="pendingAttachmentFiles"
+              [disabled]="isLoading"
+              [helperText]="'Files are queued and will upload after submitting this safety incident.'"
+              (removeRequested)="removePendingAttachment($event)">
+            </app-pending-attachments-list>
           </div>
         </div>
 

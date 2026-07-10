@@ -441,41 +441,19 @@
         </div>
       </div>
 
-      <!-- Supporting Documents -->
-      <div class="card shadow-sm border-0 mb-4" *ngIf="attachments?.length > 0">
+      <div class="card shadow-sm border-0 mb-4" *ngIf="id">
         <div class="card-header bg-secondary text-white">
           <h5 class="mb-0 fw-bold text-white">
-            <i class="mdi mdi-paperclip me-2"></i>Supporting Documents ({{attachments?.length}})
+            <i class="mdi mdi-paperclip me-2"></i>Supporting Documents
           </h5>
         </div>
         <div class="card-body p-4">
-          <div class="row g-3">
-            <div class="col-md-6" *ngFor="let row of attachments; let i = index">
-              <div class="border rounded p-3 bg-light">
-                <div class="d-flex align-items-start">
-                  <div class="flex-shrink-0 me-3">
-                    <i class="mdi mdi-file-document text-primary" style="font-size: 1.5rem;"></i>
-                  </div>
-                  <div class="flex-grow-1 min-width-0">
-                    <h6 class="fw-semibold mb-1 text-truncate">{{row.fileName}}</h6>
-                    <p class="text-muted small mb-3">
-                      {{row.createdDate | date:'MMM d, yyyy h:mm a'}}
-                    </p>
-                    <div class="d-flex gap-2">
-                      <button class="btn btn-outline-primary btn-sm" (click)="open(i)">
-                        <i class="mdi mdi-eye me-1"></i>View
-                      </button>
-                      <a href="https://dashboard.eye-fi.com/attachments/capa/{{row.fileName}}" 
-                         target="_blank" 
-                         class="btn btn-outline-secondary btn-sm">
-                        <i class="mdi mdi-download me-1"></i>Download
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <app-feature-attachments-panel
+            [feature]="FeatureType.QIR"
+            [resourceId]="id"
+            [legacyFieldNames]="['Capa Request']"
+            [disabled]="true">
+          </app-feature-attachments-panel>
         </div>
       </div>
 

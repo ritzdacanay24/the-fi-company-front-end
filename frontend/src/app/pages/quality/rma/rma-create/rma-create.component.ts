@@ -9,6 +9,8 @@ import { AuthenticationService } from "@app/core/services/auth.service";
 import { SharedModule } from "@app/shared/shared.module";
 import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErrors";
 import { RmaService } from "@app/core/api/quality/rma.service";
+import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
+import { FeatureType } from "@app/shared/enums/feature.enum";
 
 @Component({
   standalone: true,
@@ -23,7 +25,8 @@ export class RmaCreateComponent {
     private activatedRoute: ActivatedRoute,
     private api: RmaService,
     private toastrService: ToastrService,
-    private authenticationService: AuthenticationService
+    private authenticationService: AuthenticationService,
+    private attachmentsService: AttachmentsService,
   ) {}
 
   ngOnInit(): void {
@@ -43,6 +46,9 @@ export class RmaCreateComponent {
   isLoading = false;
 
   submitted = false;
+
+  myFiles: File[] = [];
+  selectedFiles: File[] = [];
 
   @Input() goBack: Function = () => {
     this.router.navigate([NAVIGATION_ROUTE.LIST], {
@@ -80,9 +86,20 @@ export class RmaCreateComponent {
 
     try {
       this.isLoading = true;
-      await this.api.create(this.form.value);
+      const { insertId } = await this.api.create(this.form.value);
+
+      if (this.myFiles.length > 0) {
+        await this.attachmentsService.uploadFilesByFeature(
+          FeatureType.RMA,
+          insertId,
+          this.myFiles,
+        );
+      }
+
       this.isLoading = false;
       this.toastrService.success("Successfully Created");
+      this.selectedFiles = [];
+      this.myFiles = [];
       this.goBack();
     } catch (err) {
       this.isLoading = false;
@@ -91,5 +108,35 @@ export class RmaCreateComponent {
 
   onCancel() {
     this.goBack();
+  }
+
+  onAttachmentFilesAdded(files: File[]): void {
+    this.addFiles(files || []);
+  }
+
+  removeFile(index: number): void {
+    this.selectedFiles.splice(index, 1);
+    this.myFiles = [...this.selectedFiles];
+  }
+
+  private addFiles(files: File[]): void {
+    if (!files.length) {
+      return;
+    }
+
+    const dedupedFiles = new Map(
+      this.selectedFiles.map((file) => [this.getFileKey(file), file])
+    );
+
+    files.forEach((file) => {
+      dedupedFiles.set(this.getFileKey(file), file);
+    });
+
+    this.selectedFiles = Array.from(dedupedFiles.values());
+    this.myFiles = [...this.selectedFiles];
+  }
+
+  private getFileKey(file: File): string {
+    return `${file.name}-${file.size}-${file.lastModified}`;
   }
 }

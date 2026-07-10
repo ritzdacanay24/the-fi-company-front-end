@@ -1,12 +1,17 @@
 import { Component, ElementRef, OnInit } from "@angular/core";
 import { FormBuilder, Validators } from "@angular/forms";
 import { ActivatedRoute, Router } from "@angular/router";
+import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
 import { TripDetailService } from "@app/core/api/field-service/trip-detail/trip-detail.service";
 import { TripDetailHeaderService } from "@app/core/api/field-service/trip-detail-header/trip-detail-header.service";
 import { states } from "@app/core/data/states";
 import { SharedModule } from "@app/shared/shared.module";
 import { AddressSearchComponent } from "@app/shared/components/address-search/address-search.component";
 import { JobSearchComponent } from "@app/shared/components/job-search/job-search.component";
+import { InlineAttachmentDropzoneComponent } from "@app/shared/components/inline-attachment-dropzone/inline-attachment-dropzone.component";
+import { PendingAttachmentsListComponent } from "@app/shared/components/attachments/pending-attachments-list/pending-attachments-list.component";
+import { FeatureAttachmentsPanelComponent } from "@app/shared/components/attachments/feature-attachments-panel/feature-attachments-panel.component";
+import { FeatureType } from "@app/shared/enums/feature.enum";
 import { ToastrService } from "ngx-toastr";
 
 interface TripRecord {
@@ -48,7 +53,14 @@ interface TripHeader {
 
 @Component({
   standalone: true,
-  imports: [SharedModule, AddressSearchComponent, JobSearchComponent],
+  imports: [
+    SharedModule,
+    AddressSearchComponent,
+    JobSearchComponent,
+    InlineAttachmentDropzoneComponent,
+    PendingAttachmentsListComponent,
+    FeatureAttachmentsPanelComponent,
+  ],
   selector: "app-trip-itinerary-workflow",
   templateUrl: "./trip-itinerary-workflow.component.html",
   styleUrls: ["./trip-itinerary-workflow.component.scss"],
@@ -57,6 +69,7 @@ export class TripItineraryWorkflowComponent implements OnInit {
   constructor(
     private readonly api: TripDetailService,
     private readonly headerApi: TripDetailHeaderService,
+    private readonly attachmentsService: AttachmentsService,
     private readonly fb: FormBuilder,
     private readonly toastr: ToastrService,
     private readonly route: ActivatedRoute,
@@ -65,6 +78,7 @@ export class TripItineraryWorkflowComponent implements OnInit {
   ) {}
 
   readonly states = states;
+  readonly FeatureType = FeatureType;
 
   readonly travelTypes = [
     {
@@ -113,11 +127,38 @@ export class TripItineraryWorkflowComponent implements OnInit {
   private initialGroupId: number | null = null;
   private initialTripId: number | null = null;
 
+  private readonly advancedDetailFields: Array<
+    | "confirmation"
+    | "flight_out"
+    | "flight_in"
+    | "rental_car_driver"
+    | "address_name"
+    | "address"
+    | "address1"
+    | "city"
+    | "state"
+    | "zip_code"
+    | "notes"
+  > = [
+    "confirmation",
+    "flight_out",
+    "flight_in",
+    "rental_car_driver",
+    "address_name",
+    "address",
+    "address1",
+    "city",
+    "state",
+    "zip_code",
+    "notes",
+  ];
+
   allTrips: TripRecord[] = [];
   headerGroups: TripHeader[] = [];
   groups: TripGroup[] = [];
   newGroupName = "";
   selectedGroupNameDraft = "";
+  pendingAttachmentFiles: File[] = [];
 
   form = this.fb.group({
     fsId: [null as number | null, Validators.required],
@@ -290,6 +331,23 @@ export class TripItineraryWorkflowComponent implements OnInit {
     return this.selectedGroupTrips.filter((trip) => !!trip.email_sent).length;
   }
 
+  get advancedDetailsCount(): number {
+    const value = this.form.getRawValue();
+
+    return this.advancedDetailFields.reduce((count, fieldName) => {
+      const fieldValue = value[fieldName];
+      const hasValue = typeof fieldValue === "string"
+        ? fieldValue.trim().length > 0
+        : !!fieldValue;
+
+      return hasValue ? count + 1 : count;
+    }, 0);
+  }
+
+  get hasAdvancedDetails(): boolean {
+    return this.advancedDetailsCount > 0;
+  }
+
   isFieldInvalid(fieldName: keyof typeof this.form.controls): boolean {
     const control = this.form.controls[fieldName];
     return !!control && control.invalid && (control.touched || control.dirty);
@@ -299,6 +357,7 @@ export class TripItineraryWorkflowComponent implements OnInit {
     this.mode = "create";
     this.selectedTripId = null;
     this.showAdvancedDetails = false;
+    this.pendingAttachmentFiles = [];
 
     this.form.reset({
       fsId: null,
@@ -341,7 +400,6 @@ export class TripItineraryWorkflowComponent implements OnInit {
 
   selectTrip(trip: TripRecord): void {
     this.mode = "edit";
-    this.showAdvancedDetails = false;
     this.selectedTripId = trip.id;
     this.selectedGroupId = Number(trip.fs_travel_header_id || 0) || null;
     this.form.patchValue({
@@ -365,6 +423,8 @@ export class TripItineraryWorkflowComponent implements OnInit {
       zip_code: trip.zip_code || "",
       notes: trip.notes || "",
     });
+
+    this.showAdvancedDetails = this.hasAdvancedDetails;
 
     this.syncQueryParams();
     this.syncSelectedGroupNameDraft();
@@ -483,6 +543,24 @@ export class TripItineraryWorkflowComponent implements OnInit {
         this.toastr.success("Itinerary stop updated");
       } else {
         saved = await this.api.create(payload);
+        const createdId = Number(saved?.id || 0);
+        if (createdId > 0 && this.pendingAttachmentFiles.length > 0) {
+          const result = await this.attachmentsService.uploadFilesByFeature(
+            FeatureType.FIELD_SERVICE_TRIP_DETAILS,
+            createdId,
+            this.pendingAttachmentFiles,
+          );
+
+          if (result.uploaded > 0) {
+            this.toastr.success(`Uploaded ${result.uploaded} attachment${result.uploaded > 1 ? "s" : ""}`);
+          }
+
+          if (result.failed > 0) {
+            this.toastr.warning(`${result.failed} attachment${result.failed > 1 ? "s" : ""} failed to upload`);
+          }
+        }
+
+        this.pendingAttachmentFiles = [];
         this.toastr.success("Itinerary stop created");
       }
 
@@ -529,6 +607,23 @@ export class TripItineraryWorkflowComponent implements OnInit {
       zip_code: place?.address?.postalCode || "",
       address_name: place?.poi?.name || place?.address?.streetName || "",
     });
+  }
+
+  onPendingAttachmentFilesAdded(files: File[]): void {
+    if (!files?.length) {
+      return;
+    }
+
+    this.pendingAttachmentFiles = [...this.pendingAttachmentFiles, ...files];
+  }
+
+  removePendingAttachment(index: number): void {
+    if (index < 0 || index >= this.pendingAttachmentFiles.length) {
+      return;
+    }
+
+    this.pendingAttachmentFiles.splice(index, 1);
+    this.pendingAttachmentFiles = [...this.pendingAttachmentFiles];
   }
 
   private applyTypeDefaults(type: string): void {

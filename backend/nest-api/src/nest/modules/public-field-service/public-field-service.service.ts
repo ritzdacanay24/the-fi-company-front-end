@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import { EmailService } from '@/shared/email/email.service';
 import { EmailTemplateService } from '@/shared/email/email-template.service';
@@ -224,42 +224,39 @@ export class PublicFieldServiceService {
     };
   }
 
-  async createPublicAttachment(
-    payload: Record<string, unknown>,
-    file?: { originalname?: string; size?: number; buffer?: Buffer },
-  ) {
-    const rawUnique = payload['uniqueId'] ?? payload['uniqueData'];
-    const requestId = Number.parseInt(String(rawUnique ?? '').trim(), 10);
-    if (Number.isNaN(requestId) || requestId <= 0) {
-      throw new BadRequestException('uniqueId is required for public attachment upload');
-    }
-
-    const normalizedPayload: Record<string, unknown> = {
-      ...payload,
-      field: 'Field Service Request',
-      subFolder: 'fieldService',
-      uniqueId: requestId,
-      uniqueData: requestId,
-      createdDate:
-        typeof payload['createdDate'] === 'string' && payload['createdDate'].trim()
-          ? payload['createdDate']
-          : new Date().toISOString().slice(0, 19).replace('T', ' '),
-    };
-
-    const result = await this.attachmentsService.create(normalizedPayload, file);
-
-    return {
-      id: result?.insertId ?? null,
-      requestId,
-      fileName: file?.originalname ?? null,
-      size: file?.size ?? null,
-      message: 'Attachment uploaded',
-    };
-  }
-
   async listAttachments(requestId: number, token?: string) {
     await this.getTokenBoundRequest(requestId, token);
-    const attachments = await this.attachmentsService.find({ field: 'Field Service Request', uniqueId: String(requestId) });
+
+    const rows = await this.attachmentsService.find({
+      field: 'Field Service Request',
+      uniqueId: String(requestId),
+    });
+
+    const attachments = await Promise.all(
+      (Array.isArray(rows) ? rows : []).map(async (row: Record<string, unknown>) => {
+        const attachmentId = Number(row?.id || 0);
+
+        if (!Number.isFinite(attachmentId) || attachmentId <= 0) {
+          return row;
+        }
+
+        try {
+          const resolved = await this.attachmentsService.getViewById(attachmentId);
+
+          return {
+            ...row,
+            file_url: String(resolved?.url || '').trim(),
+            file_name: String(row?.fileName || row?.file_name || 'Attachment').trim() || 'Attachment',
+          };
+        } catch {
+          return {
+            ...row,
+            file_url: String(row?.link || row?.file_url || '').trim(),
+            file_name: String(row?.fileName || row?.file_name || 'Attachment').trim() || 'Attachment',
+          };
+        }
+      }),
+    );
 
     return {
       id: requestId,

@@ -562,22 +562,15 @@
 
             <div class="attachments-block mt-4 border-top border-secondary-subtle pt-3">
               <h6 class="section-title mb-2">Attachments</h6>
-              <p class="text-muted small mb-3">
-                Drag and drop files anywhere in this box, or click to browse.
-              </p>
+              <p class="text-muted small mb-3">Shared attachment panel (new) plus legacy list (below).</p>
 
-              <div class="attachments-dropzone mb-3" [class.is-drag-over]="isAttachmentDragOver"
-                [class.is-disabled]="!canEditActiveTicket" (click)="canEditActiveTicket && ticketAttachmentInput.click()"
-                (dragover)="onAttachmentDragOver($event)" (dragleave)="onAttachmentDragLeave($event)"
-                (drop)="onAttachmentDrop($event)">
-                <input #ticketAttachmentInput class="d-none" type="file" multiple [disabled]="!canEditActiveTicket"
-                  (change)="uploadAttachment($event)" />
-                <div class="dropzone-content">
-                  <i class="mdi mdi-cloud-upload-outline dropzone-icon"></i>
-                  <div class="dropzone-title">Drop files here or click to upload</div>
-                  <div class="dropzone-subtitle">Attachments are stored at ticket level.</div>
-                </div>
-              </div>
+              <app-feature-attachments-panel
+                [feature]="FeatureType.PERMIT_CHECKLIST"
+                [resourceId]="activeTicketAwsResourceId"
+                [disabled]="!canEditActiveTicket"
+                [showDelete]="canEditActiveTicket"
+                [viewMode]="'table'">
+              </app-feature-attachments-panel>
 
               <div class="attachments-list" *ngIf="activeTicketAttachments.length; else noAttachmentsYet">
                 <div class="attachment-item" *ngFor="let attachment of activeTicketAttachments">

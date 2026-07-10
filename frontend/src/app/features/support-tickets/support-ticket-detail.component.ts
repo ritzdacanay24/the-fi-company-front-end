@@ -3,18 +3,15 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators, FormGroup } from '@angular/forms';
-import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { SupportTicketsService } from '@app/core/api/support-tickets/support-tickets.service';
 import { NotificationService } from '@app/core/services/notification.service';
 import { BreadcrumbComponent } from '@app/shared/components/breadcrumb/breadcrumb.component';
-import { FileViewerModalComponent } from '@app/shared/components/file-viewer-modal/file-viewer-modal.component';
-import { InlineAttachmentDropzoneComponent } from '@app/shared/components/inline-attachment-dropzone/inline-attachment-dropzone.component';
+import { FeatureAttachmentsPanelComponent } from '@app/shared/components/attachments/feature-attachments-panel/feature-attachments-panel.component';
 import {
   SUPPORT_TICKET_PRIORITY_LABELS,
   SUPPORT_TICKET_STATUS_LABELS,
   SUPPORT_TICKET_TYPE_LABELS,
   SupportTicket,
-  SupportTicketAttachment,
   SupportTicketComment,
   SupportTicketStatus,
   SupportTicketPriority,
@@ -28,20 +25,12 @@ import {
   TicketMetadata,
 } from '@app/shared/interfaces/ticket.interface';
 import moment from 'moment';
-import { firstValueFrom } from 'rxjs';
-
-type TicketMediaItem = {
-  id: string;
-  fileName: string;
-  url: string;
-  createdAt?: string | null;
-  source: 'attachment' | 'screenshot';
-};
+import { FeatureType } from '@app/shared/enums/feature.enum';
 
 @Component({
   selector: 'app-support-ticket-detail',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, BreadcrumbComponent, InlineAttachmentDropzoneComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, BreadcrumbComponent, FeatureAttachmentsPanelComponent],
   templateUrl: './support-ticket-detail.component.html',
   styles: [
     `
@@ -140,16 +129,11 @@ export class SupportTicketDetailComponent implements OnInit {
   private readonly supportTicketsService = inject(SupportTicketsService);
   private readonly notification = inject(NotificationService);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly modalService = inject(NgbModal);
 
   ticket = signal<SupportTicket | null>(null);
   comments = signal<SupportTicketComment[]>([]);
-  attachments = signal<SupportTicketAttachment[]>([]);
-  selectedUploadFiles = signal<File[]>([]);
   isLoading = signal(false);
   isSaving = signal(false);
-  isUploadingMedia = signal(false);
-  uploadError = signal<string | null>(null);
 
   commentForm: FormGroup;
   detailsForm: FormGroup;
@@ -169,48 +153,14 @@ export class SupportTicketDetailComponent implements OnInit {
   impactOptions: TicketImpactLevel[] = [TicketImpactLevel.HIGH, TicketImpactLevel.MEDIUM, TicketImpactLevel.LOW];
   urgencyOptions: TicketUrgencyLevel[] = [TicketUrgencyLevel.HIGH, TicketUrgencyLevel.MEDIUM, TicketUrgencyLevel.LOW];
 
-  private ticketId = 0;
+  ticketId = 0;
+  readonly FeatureType = FeatureType;
 
   breadcrumbItems = computed(() => [
     { label: 'Home', link: '/' },
     { label: 'My Tickets', link: '/support-tickets' },
     { label: this.ticket()?.ticket_number || 'Ticket', active: true }
   ]);
-
-  mediaItems = computed<TicketMediaItem[]>(() => {
-    const items: TicketMediaItem[] = [];
-    const currentTicket = this.ticket();
-
-    if (currentTicket?.screenshot_path) {
-      const screenshotUrl = this.normalizeMediaUrl(currentTicket.screenshot_path);
-      if (screenshotUrl) {
-        items.push({
-          id: `screenshot-${currentTicket.id}`,
-          fileName: 'Original Screenshot',
-          url: screenshotUrl,
-          createdAt: currentTicket.created_at,
-          source: 'screenshot',
-        });
-      }
-    }
-
-    for (const attachment of this.attachments()) {
-      const attachmentUrl = this.normalizeMediaUrl(attachment.file_url);
-      if (!attachmentUrl) {
-        continue;
-      }
-
-      items.push({
-        id: `attachment-${attachment.id}`,
-        fileName: attachment.file_name,
-        url: attachmentUrl,
-        createdAt: attachment.created_at,
-        source: 'attachment',
-      });
-    }
-
-    return items;
-  });
 
   constructor() {
     this.commentForm = this.formBuilder.group({
@@ -233,7 +183,6 @@ export class SupportTicketDetailComponent implements OnInit {
 
     this.loadTicket();
     this.loadComments();
-    this.loadAttachments();
   }
 
   loadTicket(): void {
@@ -259,18 +208,6 @@ export class SupportTicketDetailComponent implements OnInit {
       .subscribe({
         next: (comments) => this.comments.set(comments),
         error: (error) => console.error('Failed to load comments:', error),
-      });
-  }
-
-  loadAttachments(): void {
-    this.supportTicketsService.getAttachments(this.ticketId)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (attachments) => this.attachments.set(attachments),
-        error: (error) => {
-          console.error('Failed to load attachments:', error);
-          this.attachments.set([]);
-        },
       });
   }
 
@@ -449,76 +386,6 @@ export class SupportTicketDetailComponent implements OnInit {
     this.router.navigate(['/support-tickets']);
   }
 
-  openMedia(item: TicketMediaItem): void {
-    const modalRef = this.modalService.open(FileViewerModalComponent, {
-      size: 'xl',
-      centered: true,
-      backdrop: 'static',
-      scrollable: false,
-    });
-
-    modalRef.componentInstance.url = item.url;
-    modalRef.componentInstance.fileName = item.fileName;
-  }
-
-  isImageUrl(url: string): boolean {
-    const normalized = url.toLowerCase();
-    return normalized.startsWith('data:image/')
-      || normalized.includes('.png')
-      || normalized.includes('.jpg')
-      || normalized.includes('.jpeg')
-      || normalized.includes('.gif')
-      || normalized.includes('.webp');
-  }
-
-  onMediaFilesAdded(files: File[]): void {
-    if (this.isUploadingMedia() || this.isSaving()) {
-      return;
-    }
-
-    if (!files.length) {
-      return;
-    }
-
-    void this.uploadMediaFiles(files);
-  }
-
-  async uploadSelectedMedia(): Promise<void> {
-    return;
-  }
-
-  removePendingUpload(_index: number): void {
-    return;
-  }
-
-  private async uploadMediaFiles(files: File[]): Promise<void> {
-    if (files.length === 0 || !this.ticketId) {
-      return;
-    }
-
-    this.isUploadingMedia.set(true);
-    this.uploadError.set(null);
-
-    try {
-      for (const file of files) {
-        const uploadFormData = new FormData();
-        uploadFormData.append('file', file);
-        const createdAttachment = await firstValueFrom(
-          this.supportTicketsService.uploadAttachment(this.ticketId, uploadFormData),
-        );
-
-        this.attachments.update((current) => [createdAttachment, ...current]);
-      }
-
-      this.loadAttachments();
-    } catch (error) {
-      console.error('Failed to upload media attachments:', error);
-      this.uploadError.set('Upload failed. Please try again.');
-    } finally {
-      this.isUploadingMedia.set(false);
-    }
-  }
-
   private getTicketMetadata(ticket: SupportTicket): TicketMetadata {
     const metadata = ticket.metadata;
     if (metadata && typeof metadata === 'object') {
@@ -537,27 +404,6 @@ export class SupportTicketDetailComponent implements OnInit {
       impactLevel: (metadata.impactLevel as TicketImpactLevel) || TicketImpactLevel.LOW,
       urgencyLevel: (metadata.urgencyLevel as TicketUrgencyLevel) || TicketUrgencyLevel.LOW,
     });
-  }
-
-  private normalizeMediaUrl(rawUrl: string | null | undefined): string | null {
-    if (!rawUrl || typeof rawUrl !== 'string') {
-      return null;
-    }
-
-    const trimmed = rawUrl.trim();
-    if (!trimmed || trimmed === '[inline-base64-image]') {
-      return null;
-    }
-
-    if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:') || trimmed.startsWith('blob:')) {
-      return trimmed;
-    }
-
-    if (trimmed.startsWith('/')) {
-      return trimmed;
-    }
-
-    return `/${trimmed}`;
   }
 
   private getMetadataString(metadata: Record<string, unknown>, keys: string[]): string {

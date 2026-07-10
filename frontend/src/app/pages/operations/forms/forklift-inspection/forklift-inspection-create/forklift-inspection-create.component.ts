@@ -9,8 +9,8 @@ import { ForkliftInspectionService } from "@app/core/api/operations/forklift-ins
 import { ForkliftInspectionFormComponent } from "../forklift-inspection-form/forklift-inspection-form.component";
 import { AuthenticationService } from "@app/core/services/auth.service";
 import { resetVehicleInspectionFormValues } from "../forklift-inspection-form/formData";
-import { UploadService } from "@app/core/api/upload/upload.service";
-import { firstValueFrom } from "rxjs";
+import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
+import { FeatureType } from "@app/shared/enums/feature.enum";
 
 @Component({
   standalone: true,
@@ -24,7 +24,7 @@ export class ForkliftInspectionCreateComponent {
     private api: ForkliftInspectionService,
     private toastrService: ToastrService,
     private authenticationService: AuthenticationService,
-    private uploadService: UploadService
+    private attachmentsService: AttachmentsService
   ) {}
 
   ngOnInit(): void {}
@@ -38,6 +38,8 @@ export class ForkliftInspectionCreateComponent {
   isLoading = false;
 
   submitted = false;
+
+  readonly attachmentFeature = FeatureType.INSPECTIONS_FORKLIFT;
 
   @Input() goBack: Function = () => {
     this.router.navigate([NAVIGATION_ROUTE.LIST], {
@@ -80,12 +82,23 @@ export class ForkliftInspectionCreateComponent {
     this.toastrService.info("Create the inspection first before deleting.");
   }
 
-  myFiles: string[] | any = [];
-  onFileChange(event: any) {
-    this.myFiles = [];
-    for (var i = 0; i < event.target.files.length; i++) {
-      this.myFiles.push(event.target.files[i]);
+  pendingAttachmentFiles: File[] = [];
+
+  onPendingAttachmentsAdded(files: File[]): void {
+    if (!Array.isArray(files) || files.length === 0) {
+      return;
     }
+
+    this.pendingAttachmentFiles = [...this.pendingAttachmentFiles, ...files];
+  }
+
+  removePendingAttachment(index: number): void {
+    if (index < 0 || index >= this.pendingAttachmentFiles.length) {
+      return;
+    }
+
+    this.pendingAttachmentFiles.splice(index, 1);
+    this.pendingAttachmentFiles = [...this.pendingAttachmentFiles];
   }
 
   async onSubmit() {
@@ -95,21 +108,18 @@ export class ForkliftInspectionCreateComponent {
     try {
       this.isLoading = true;
       let { insertId } = await this.api._create(this.form.value);
-      const uniqueData = String(insertId ?? "");
+      const inspectionId = Number(insertId);
 
-      for (var i = 0; i < this.myFiles.length; i++) {
+      for (const file of this.pendingAttachmentFiles) {
         const formData = new FormData();
-        formData.append("file", this.myFiles[i]);
-        formData.append("field", "Vehicle Inspection");
-        formData.append("uniqueData", uniqueData);
-        formData.append("folderName", "vehicleInformation");
-        formData.append("subFolder", "vehicleInformation");
-
-        await firstValueFrom(this.uploadService.uploadAttachmentV2(formData));
+        formData.append("file", file);
+        await this.attachmentsService.uploadAttachment(this.attachmentFeature, inspectionId, formData);
       }
 
       this.isLoading = false;
       this.toastrService.success("Successfully Created");
+
+      this.pendingAttachmentFiles = [];
 
       resetVehicleInspectionFormValues();
 

@@ -7,10 +7,10 @@ import { NAVIGATION_ROUTE } from '../request-constant';
 import { RequestService } from '@app/core/api/field-service/request.service';
 import { RequestFormComponent } from '../request-form/request-form.component';
 import { AttachmentsService } from '@app/core/api/attachments/attachments.service';
-import { FIELD_SERVICE } from '../../field-service-constant';
 import moment from 'moment';
 import { getFormValidationErrors } from 'src/assets/js/util/getFormValidationErrors';
 import { AuthenticationService } from '@app/core/services/auth.service';
+import { FeatureType } from '@app/shared/enums/feature.enum';
 
 @Component({
   standalone: true,
@@ -77,17 +77,13 @@ export class RequestCreateComponent {
       this.isLoading = true;
       let data: any = await this.requestService.createFieldServiceRequest(this.form.value, this.sendEmail);
 
-      if (this.myFiles) {
-        const formData = new FormData();
-        for (var i = 0; i < this.myFiles.length; i++) {
-          formData.append("file", this.myFiles[i]);
-          formData.append("field", FIELD_SERVICE.UPLOAD_FIELD_NAME);
-          formData.append("uniqueData", `${data.id}`);
-          formData.append("folderName", FIELD_SERVICE.UPLOAD_FOLDER_NAME);
-          try {
-            await this.attachmentsService.uploadfile(formData)
-          } catch (err) { }
-        }
+      const requestId = Number(data?.id || data?.insertId || 0);
+      if (requestId > 0 && this.myFiles.length > 0) {
+        await this.attachmentsService.uploadFilesByFeature(
+          FeatureType.FIELD_SERVICE_REQUEST,
+          requestId,
+          this.myFiles,
+        );
       }
 
       this.isLoading = false;
@@ -102,15 +98,23 @@ export class RequestCreateComponent {
     this.goBack()
   }
 
-  file: File = null;
+  myFiles: File[] = [];
 
-  myFiles: string[] = [];
-
-  onFilechange(event: any) {
-    this.myFiles = [];
-    for (var i = 0; i < event.target.files.length; i++) {
-      this.myFiles.push(event.target.files[i]);
+  onPendingAttachmentFilesAdded(files: File[]): void {
+    if (!files?.length) {
+      return;
     }
+
+    this.myFiles = [...this.myFiles, ...files];
+  }
+
+  removePendingAttachment(index: number): void {
+    if (index < 0 || index >= this.myFiles.length) {
+      return;
+    }
+
+    this.myFiles.splice(index, 1);
+    this.myFiles = [...this.myFiles];
   }
 
 }
