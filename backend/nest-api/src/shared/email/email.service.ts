@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createHmac } from 'crypto';
 import nodemailer, { SendMailOptions, Transporter } from 'nodemailer';
+import { SESClient } from '@aws-sdk/client-ses';
+import * as awsSes from '@aws-sdk/client-ses';
 
 interface ScheduledJobMailOptions extends SendMailOptions {
   scheduledJobId?: string;
@@ -15,7 +17,7 @@ export class EmailService {
   private readonly isDevelopment: boolean;
   private readonly defaultFrom: string;
   private readonly devEmailRerouteTo: string;
-  private readonly mailTransport: 'smtp' | 'sendmail';
+  private readonly mailTransport: 'smtp' | 'sendmail' | 'ses';
   private readonly dashboardWebBaseUrl: string;
   private readonly unsubscribeTokenSecret: string;
   private readonly unsubscribeTtlSeconds: number;
@@ -28,7 +30,7 @@ export class EmailService {
     console.log(`EmailService initialized in ${this.isDevelopment }`);
     this.defaultFrom = this.configService.getOrThrow<string>('MAIL_FROM');
     this.devEmailRerouteTo = this.configService.getOrThrow<string>('DEV_EMAIL_REROUTE_TO');
-    this.mailTransport = this.configService.get<'smtp' | 'sendmail'>('MAIL_TRANSPORT') ?? 'smtp';
+    this.mailTransport = this.configService.get<'smtp' | 'sendmail' | 'ses'>('MAIL_TRANSPORT') ?? 'smtp';
     this.dashboardWebBaseUrl = String(this.configService.getOrThrow<string>('DASHBOARD_WEB_BASE_URL')).replace(/\/+$/, '');
     this.unsubscribeTokenSecret =
       this.configService.get<string>('APP_SECRET_KEY') ||
@@ -55,6 +57,28 @@ export class EmailService {
         sendmail: true,
         path: sendmailPath,
         newline,
+      });
+      return;
+    }
+
+    if (this.mailTransport === 'ses') {
+      const sesRegion = this.configService.getOrThrow<string>('AWS_SES_REGION').trim();
+      const sesAccessKeyId = String(this.configService.get<string>('AWS_SES_ACCESS_KEY_ID') || '').trim();
+      const sesSecretAccessKey = String(this.configService.get<string>('AWS_SES_SECRET_ACCESS_KEY') || '').trim();
+
+      const sesClient = new SESClient({
+        region: sesRegion,
+        credentials:
+          sesAccessKeyId && sesSecretAccessKey
+            ? {
+                accessKeyId: sesAccessKeyId,
+                secretAccessKey: sesSecretAccessKey,
+              }
+            : undefined,
+      });
+
+      this.transporter = nodemailer.createTransport({
+        SES: { ses: sesClient, aws: awsSes },
       });
       return;
     }

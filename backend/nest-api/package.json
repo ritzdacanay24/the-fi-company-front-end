@@ -11,11 +11,13 @@
     "start": "npm run build && cross-env NODE_ENV=development node dist/index.js",
     "start:dev": "npm run build && cross-env NODE_ENV=development node dist/index.js",
     "start:prod": "npm run build && cross-env NODE_ENV=production node dist/index.js",
+    "email:test": "node scripts/test-email.js",
     "logs:tail": "node scripts/tail-log.js latest.log",
     "logs:tail:once": "node scripts/tail-log.js latest.log --once"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1084.0",
+    "@aws-sdk/client-ses": "^3.1085.0",
     "@aws-sdk/s3-request-presigner": "^3.1084.0",
     "@nestjs/common": "^11.1.9",
     "@nestjs/config": "^4.0.2",
