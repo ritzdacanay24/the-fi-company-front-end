@@ -337,19 +337,19 @@ export class ProjectManagerTasksComponent implements OnInit {
   columnDefs: ColDef<PmTreeRow>[] = [
     { field: 'groupName', rowGroup: true, hide: true },
     { field: 'subGroupName', rowGroup: true, hide: true },
-    {
-      headerName: '',
-      colId: 'dragHandle',
-      width: 34,
-      pinned: 'right',
-      rowDrag: params => !!params.data && (params.data.rowType === 'group' || params.data.rowType === 'subgroup' || params.data.rowType === 'task'),
-      cellRenderer: 'agRowDragCellRenderer',
-      sortable: false,
-      filter: false,
-      resizable: false,
-      suppressMovable: true,
-      valueGetter: () => ''
-    },
+    // {
+    //   headerName: '',
+    //   colId: 'dragHandle',
+    //   width: 34,
+    //   pinned: 'right',
+    //   rowDrag: params => !!params.data && (params.data.rowType === 'group' || params.data.rowType === 'subgroup' || params.data.rowType === 'task'),
+    //   cellRenderer: 'agRowDragCellRenderer',
+    //   sortable: false,
+    //   filter: false,
+    //   resizable: false,
+    //   suppressMovable: true,
+    //   valueGetter: () => ''
+    // },
     {
       field: 'gate',
       headerName: 'Gate',
@@ -495,7 +495,7 @@ export class ProjectManagerTasksComponent implements OnInit {
           <div class="progress" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100" style="width:72px;height:${barH}px;background:#e8ecf1;border-radius:999px;overflow:hidden;">
             <div class="progress-bar" style="width:${fillWidth};height:100%;background:${fillColor};"></div>
           </div>
-          <span style="font-size:11px;color:#3f4954;min-width:34px;text-align:right;line-height:1;">${pct}%</span>
+          <span style="font-size:11px;color:var(--vz-body-color);min-width:34px;text-align:right;line-height:1;">${pct}%</span>
         </div>`;
       }
     },
