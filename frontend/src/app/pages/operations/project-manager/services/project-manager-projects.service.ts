@@ -80,12 +80,25 @@ export interface GateComment {
   createdAt: string;
 }
 
+export interface StakeholderSignoffConfigItem {
+  key: string;
+  label: string;
+  owner: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ProjectManagerProjectsService {
   private readonly projectsCache: ProjectDashboardItem[] = [];
   private selectedProjectIdCache = '';
   private readonly intakeStateCache = new Map<string, IntakeStoragePayload>();
   private readonly gateCommentsCache = new Map<string, GateComment[]>();
+  private readonly stakeholderSignoffDefaultsStorageKey = 'pmStakeholderSignoffDefaults';
+  private stakeholderSignoffDefaultsCache: StakeholderSignoffConfigItem[] = [
+    { key: 'signoff_user_1', label: 'Temenuga Terzieva', owner: 'Temenuga Terzieva' },
+    { key: 'signoff_user_2', label: 'Mike Bristol', owner: 'Mike Bristol' },
+    { key: 'signoff_user_3', label: 'Nick Walter', owner: 'Nick Walter' },
+    { key: 'signoff_user_4', label: 'Juvenal Torres', owner: 'Juvenal Torres' },
+  ];
 
   private readonly gateFieldMap: Record<GateKey, string[]> = {
     gate1: [
@@ -140,7 +153,12 @@ export class ProjectManagerProjectsService {
     ]
   };
 
-  constructor(private authService: AuthenticationService, private http: HttpClient) {}
+  constructor(private authService: AuthenticationService, private http: HttpClient) {
+    const persistedDefaults = this.loadStakeholderSignoffDefaultsFromStorage();
+    if (persistedDefaults.length) {
+      this.stakeholderSignoffDefaultsCache = persistedDefaults;
+    }
+  }
 
   // ─── Observable API (used by components) ───────────────────────────────────
 
@@ -369,6 +387,26 @@ export class ProjectManagerProjectsService {
         return of(options);
       })
     );
+  }
+
+  getStakeholderSignoffDefaults$(): Observable<StakeholderSignoffConfigItem[]> {
+    const persistedDefaults = this.loadStakeholderSignoffDefaultsFromStorage();
+    if (persistedDefaults.length) {
+      this.stakeholderSignoffDefaultsCache = persistedDefaults;
+    }
+
+    return of(this.stakeholderSignoffDefaultsCache.map((item) => ({ ...item })));
+  }
+
+  saveStakeholderSignoffDefaults$(items: StakeholderSignoffConfigItem[]): Observable<StakeholderSignoffConfigItem[]> {
+    const normalized = this.normalizeStakeholderSignoffConfig(items);
+    if (!normalized.length) {
+      return of(this.stakeholderSignoffDefaultsCache.map((item) => ({ ...item })));
+    }
+
+    this.stakeholderSignoffDefaultsCache = normalized;
+    this.saveStakeholderSignoffDefaultsToStorage(normalized);
+    return of(normalized.map((item) => ({ ...item })));
   }
 
   getGateComments$(projectId: string, gateNumber: 1 | 2 | 3 | 4 | 5 | 6): Observable<GateComment[]> {
@@ -740,6 +778,65 @@ export class ProjectManagerProjectsService {
       Custom: '$120K-$200K'
     };
     return revenueByCategory[category] || '$120K-$200K';
+  }
+
+  private normalizeStakeholderSignoffConfig(items: unknown): StakeholderSignoffConfigItem[] {
+    if (!Array.isArray(items)) {
+      return [];
+    }
+
+    const blockedRoleNames = new Set(['production', 'qc', 'npi', 'gm']);
+    const canonicalOwnerNames = new Map<string, string>([
+      ['temenuga', 'Temenuga Terzieva'],
+      ['mike', 'Mike Bristol'],
+      ['nick', 'Nick Walter'],
+      ['juvenal', 'Juvenal Torres'],
+      ['temenuga terzieva', 'Temenuga Terzieva'],
+      ['mike bristol', 'Mike Bristol'],
+      ['nick walter', 'Nick Walter'],
+      ['juvenal torres', 'Juvenal Torres'],
+    ]);
+    const unique = new Map<string, StakeholderSignoffConfigItem>();
+
+    items.forEach((rawItem, index) => {
+      const row = rawItem as Partial<StakeholderSignoffConfigItem>;
+      const key = String(row?.key || '').trim().toLowerCase() || `signoff_user_${index + 1}`;
+      const ownerRaw = String(row?.owner || '').trim();
+      const owner = canonicalOwnerNames.get(ownerRaw.toLowerCase()) || ownerRaw;
+      if (!owner || blockedRoleNames.has(owner.toLowerCase())) {
+        return;
+      }
+
+      unique.set(key, {
+        key,
+        label: owner,
+        owner,
+      });
+    });
+
+    return Array.from(unique.values());
+  }
+
+  private loadStakeholderSignoffDefaultsFromStorage(): StakeholderSignoffConfigItem[] {
+    try {
+      const raw = localStorage.getItem(this.stakeholderSignoffDefaultsStorageKey);
+      if (!raw) {
+        return [];
+      }
+
+      const parsed = JSON.parse(raw);
+      return this.normalizeStakeholderSignoffConfig(parsed);
+    } catch {
+      return [];
+    }
+  }
+
+  private saveStakeholderSignoffDefaultsToStorage(items: StakeholderSignoffConfigItem[]): void {
+    try {
+      localStorage.setItem(this.stakeholderSignoffDefaultsStorageKey, JSON.stringify(items));
+    } catch {
+      // Ignore storage failures; in-memory defaults remain usable.
+    }
   }
 
   private buildGateProgress(

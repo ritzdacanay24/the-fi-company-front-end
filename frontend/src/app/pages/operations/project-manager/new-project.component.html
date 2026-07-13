@@ -96,7 +96,7 @@
                     <li>Inventory strategy aligned (Y/N)</li>
                     <li>QC procedure defined (Y/N)</li>
                     <li>Production PO's</li>
-                    <li>Stakeholder sign-off: Production, QC, NPI, GM</li>
+                    <li>Stakeholder sign-off users</li>
                   </ul>
                 </td>
               </tr>
@@ -393,6 +393,14 @@
                     End date must be on or after start date.
                   </div>
                 </div>
+                <div class="mb-2" *ngIf="projectForm.get('longLeadItemsIdentified')?.value">
+                  <label class="form-label">Long Lead Comment</label>
+                  <textarea
+                    class="form-control form-control-sm"
+                    formControlName="longLeadItemsComment"
+                    rows="2"
+                    placeholder="Add context, supplier notes, constraints, or follow-up details"></textarea>
+                </div>
 
                 <ng-container *ngTemplateOutlet="gateAttachmentsBlock"></ng-container>
               </div>
@@ -604,7 +612,7 @@
           <div class="col-12 col-lg-8" *ngIf="activeInputSystem === 'gate6'">
             <div class="gate-card h-100">
               <div class="gate-header d-flex align-items-center justify-content-between">
-                <span>Gate #6 — Production</span>
+                <span>Gate #6 — Final Readiness</span>
                 <div class="d-flex align-items-center gap-2">
                   <div class="btn-group btn-group-sm task-board-actions" role="group" aria-label="Task board actions" ngbDropdown placement="bottom-end" container="body">
                     <button type="button" class="btn btn-outline-primary" [disabled]="!canOpenTasksBoard" (click)="openTasksBoard()">
@@ -651,38 +659,89 @@
                     <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('inventoryStrategyAligned', false) ? 'btn-danger' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('inventoryStrategyAligned', false)">No</button>
                   </div>
                 </div>
-                <div class="small fw-semibold mt-3 mb-2">Stakeholder Sign-off</div>
-                <div class="row g-2">
-                  <div class="col-12 col-md-6" *ngFor="let stakeholder of stakeholderSignoffConfig">
-                    <div class="border rounded p-2 h-100">
-                      <div class="d-flex justify-content-between align-items-start mb-2">
-                        <div>
-                          <div class="fw-semibold">{{ stakeholder.label }}</div>
-                          <div class="small text-muted">Owner: {{ stakeholder.owner }}</div>
-                        </div>
-                        <span class="badge" [ngClass]="isStakeholderSigned(stakeholder.key) ? 'bg-success' : 'bg-secondary'">
-                          {{ isStakeholderSigned(stakeholder.key) ? 'Signed' : 'Pending' }}
-                        </span>
-                      </div>
-
-                      <button
-                        type="button"
-                        class="btn btn-sm w-100"
-                        [ngClass]="isStakeholderSigned(stakeholder.key) ? 'btn-outline-success' : 'btn-outline-primary'"
-                        [disabled]="!canSignOffStakeholder(stakeholder.key)"
-                        (click)="signOffStakeholder(stakeholder.key)">
-                        {{ isStakeholderSigned(stakeholder.key) ? 'Signed Off' : 'Sign Off' }}
-                      </button>
-
-                      <div class="small text-muted mt-2" *ngIf="!isStakeholderSigned(stakeholder.key)">
-                        {{ getStakeholderSignoffHint(stakeholder.key) }}
-                      </div>
-
-                      <div class="small text-muted mt-2" *ngIf="isStakeholderSigned(stakeholder.key)">
-                        {{ getStakeholderSignedBy(stakeholder.key) }} · {{ getStakeholderSignedAt(stakeholder.key) }}
-                      </div>
+                <div class="small fw-semibold mt-3 mb-2">Sign-off Users</div>
+                <div class="d-flex flex-wrap align-items-end justify-content-between gap-2 mb-2">
+                  <div class="d-flex align-items-end gap-2 flex-grow-1" style="max-width: 420px;">
+                    <div class="flex-grow-1">
+                      <label class="form-label mb-1">Add user to this project</label>
+                      <select
+                        class="form-select form-select-sm"
+                        [(ngModel)]="stakeholderProjectUserToAdd"
+                        [ngModelOptions]="{ standalone: true }"
+                        name="stakeholderProjectUserToAdd">
+                        <option value="">Select user</option>
+                        <option *ngFor="let userName of getProjectAddableSignoffUsers()" [value]="userName">{{ userName }}</option>
+                      </select>
                     </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary" (click)="addStakeholderToProject()">Add</button>
                   </div>
+                  <button type="button" class="btn btn-sm btn-outline-secondary" (click)="openStakeholderSignoffManagement(stakeholderSignoffManagementModal)">
+                    Manage Sign-off Defaults
+                  </button>
+                </div>
+                <div class="table-responsive border rounded">
+                  <table class="table table-sm align-middle mb-0">
+                    <thead>
+                      <tr>
+                        <th scope="col">User</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Signed By</th>
+                        <th scope="col">Signed At</th>
+                        <th scope="col" class="text-end">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngIf="!stakeholderSignoffConfig.length">
+                        <td colspan="5" class="text-muted">No sign-off users assigned to this project.</td>
+                      </tr>
+                      <tr *ngFor="let stakeholder of stakeholderSignoffConfig">
+                        <td class="fw-semibold">{{ stakeholder.owner }}</td>
+                        <td>
+                          <span class="badge" [ngClass]="isStakeholderSigned(stakeholder.key) ? 'bg-success' : 'bg-secondary'">
+                            {{ isStakeholderSigned(stakeholder.key) ? 'Signed' : 'Pending' }}
+                          </span>
+                        </td>
+                        <td class="small text-muted">{{ getStakeholderSignedBy(stakeholder.key) || '-' }}</td>
+                        <td class="small text-muted">{{ getStakeholderSignedAt(stakeholder.key) || '-' }}</td>
+                        <td>
+                          <div class="d-flex justify-content-end gap-2">
+                            <span
+                              class="text-muted d-inline-flex align-items-center"
+                              *ngIf="!isStakeholderSigned(stakeholder.key)"
+                              [attr.title]="getStakeholderSignoffHint(stakeholder.key)"
+                              [attr.aria-label]="getStakeholderSignoffHint(stakeholder.key)">
+                              <i class="mdi mdi-help-circle-outline"></i>
+                            </span>
+                            <button
+                              type="button"
+                              class="btn btn-sm"
+                              [ngClass]="isStakeholderSigned(stakeholder.key) ? 'btn-outline-success' : 'btn-outline-primary'"
+                              [disabled]="isStakeholderSigned(stakeholder.key) || !canSignOffStakeholder(stakeholder.key)"
+                              (click)="signOffStakeholder(stakeholder.key)">
+                              Sign Off
+                            </button>
+                            <button
+                              type="button"
+                              class="btn btn-sm btn-outline-warning"
+                              *ngIf="isStakeholderSigned(stakeholder.key)"
+                              title="Revert to unsigned"
+                              aria-label="Revert to unsigned"
+                              (click)="unsignStakeholder(stakeholder.key)">
+                              <i class="mdi mdi-undo-variant"></i>
+                            </button>
+                            <button
+                              type="button"
+                              class="btn btn-sm btn-outline-danger"
+                              title="Remove user"
+                              aria-label="Remove user"
+                              (click)="removeStakeholderFromProject(stakeholder.key)">
+                              <i class="mdi mdi-trash-can-outline"></i>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
 
                 <ng-container *ngTemplateOutlet="gateAttachmentsBlock"></ng-container>
@@ -812,6 +871,55 @@
             <div class="modal-footer">
               <button type="button" class="btn btn-outline-secondary" (click)="modal.dismiss()">Cancel</button>
               <button type="button" class="btn btn-primary" (click)="saveVolumeEstimateManagement(modal)">Save Labels</button>
+            </div>
+          </ng-template>
+
+          <ng-template #stakeholderSignoffManagementModal let-modal>
+            <div class="modal-header">
+              <h5 class="modal-title">Manage Sign-off Defaults</h5>
+              <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
+            </div>
+            <div class="modal-body">
+              <div class="d-flex align-items-end gap-2 mb-3">
+                <div class="flex-grow-1">
+                  <label class="form-label">Add user</label>
+                  <select class="form-select" [(ngModel)]="stakeholderUserToAdd" [ngModelOptions]="{ standalone: true }" name="stakeholderUserToAdd">
+                    <option value="">Select user</option>
+                    <option *ngFor="let userName of getAllSignoffUsers()" [value]="userName">{{ userName }}</option>
+                  </select>
+                </div>
+                <button type="button" class="btn btn-outline-primary" (click)="addStakeholderUserToDraft()">Add</button>
+              </div>
+
+              <div class="border rounded p-2" style="max-height: 320px; overflow: auto;">
+                <div *ngIf="!stakeholderSignoffDraft.length" class="small text-muted">No sign-off items configured.</div>
+                <div *ngFor="let stakeholder of stakeholderSignoffDraft" class="border-bottom py-2">
+                  <div class="row g-2 align-items-end">
+                    <div class="col-12 col-md-10">
+                      <label class="form-label">Assigned User</label>
+                      <select
+                        class="form-select"
+                        [ngModel]="stakeholder.owner"
+                        (ngModelChange)="updateStakeholderOwnerDraft(stakeholder, $event)"
+                        [ngModelOptions]="{ standalone: true }"
+                        [name]="'stakeholderOwner_' + stakeholder.key">
+                        <option value="">Select user</option>
+                        <option *ngFor="let userName of getStakeholderOwnerOptions(stakeholder)" [value]="userName">{{ userName }}</option>
+                      </select>
+                    </div>
+                    <div class="col-12 col-md-2 d-grid">
+                      <button type="button" class="btn btn-outline-danger" (click)="removeStakeholderUserFromDraft(stakeholder.key)">Remove</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div *ngIf="stakeholderSignoffManagementError" class="alert alert-danger py-2 mt-3 mb-0">{{ stakeholderSignoffManagementError }}</div>
+              <div class="small text-muted mt-3">Changes apply to new projects. Existing projects keep their saved sign-off assignments.</div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-secondary" (click)="modal.dismiss()">Cancel</button>
+              <button type="button" class="btn btn-primary" (click)="saveStakeholderSignoffManagement(modal)">Save Defaults</button>
             </div>
           </ng-template>
           

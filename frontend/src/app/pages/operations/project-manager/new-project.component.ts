@@ -8,11 +8,13 @@ import {
   GateComment,
   ProjectDashboardItem,
   ProjectManagerProjectsService,
+  StakeholderSignoffConfigItem,
   VolumeEstimateOption
 } from './services/project-manager-projects.service';
 import { ProjectManagerTasksDataService } from './services/project-manager-tasks-data.service';
 import { Router } from '@angular/router';
 import { AuthenticationService } from '@app/core/services/auth.service';
+import { AccessControlApiService } from '@app/core/api/access-control/access-control.service';
 import { NgbDropdownModule, NgbModal, NgbModalModule } from '@ng-bootstrap/ng-bootstrap';
 import { FeatureType } from '@app/shared/enums/feature.enum';
 
@@ -42,12 +44,19 @@ export class NewProjectComponent implements OnDestroy {
   private estimateRangeDefinition = 'Low > 50, Medium 50-150, High 150+';
   private readonly projectManagerBaseRoute = '/project-manager';
   private readonly operationsBaseRoute = '/operations/project-manager';
-  readonly stakeholderSignoffConfig: Array<{ key: 'production' | 'qc' | 'npi' | 'gm'; label: string; owner: string; aliases: string[] }> = [
-    { key: 'production', label: 'Production', owner: 'Juvenal', aliases: ['juvenal', 'production'] },
-    { key: 'qc', label: 'QC', owner: 'Temenuga', aliases: ['temenuga', 'qc', 'quality'] },
-    { key: 'npi', label: 'NPI', owner: 'Mike', aliases: ['mike', 'npi'] },
-    { key: 'gm', label: 'GM', owner: 'Nick', aliases: ['nick', 'gm', 'general manager'] }
+  private readonly legacyStakeholderSignoffConfig: StakeholderSignoffConfigItem[] = [
+    { key: 'signoff_user_1', label: 'Temenuga Terzieva', owner: 'Temenuga Terzieva' },
+    { key: 'signoff_user_2', label: 'Mike Bristol', owner: 'Mike Bristol' },
+    { key: 'signoff_user_3', label: 'Nick Walter', owner: 'Nick Walter' },
+    { key: 'signoff_user_4', label: 'Juvenal Torres', owner: 'Juvenal Torres' }
   ];
+  stakeholderSignoffConfig: StakeholderSignoffConfigItem[] = this.cloneStakeholderSignoffConfig(this.legacyStakeholderSignoffConfig);
+  stakeholderSignoffDefaults: StakeholderSignoffConfigItem[] = this.cloneStakeholderSignoffConfig(this.legacyStakeholderSignoffConfig);
+  stakeholderSignoffDraft: StakeholderSignoffConfigItem[] = [];
+  stakeholderSignoffManagementError = '';
+  stakeholderAssignableUsers: string[] = [];
+  stakeholderUserToAdd = '';
+  stakeholderProjectUserToAdd = '';
   saveSuccessful = false;
   saveMessage = '';
   saveMessageType: 'success' | 'info' = 'success';
@@ -134,6 +143,7 @@ export class NewProjectComponent implements OnDestroy {
     longLeadItemsIdentified: [null],
   longLeadItemsStartDate: [''],
   longLeadItemsEndDate: [''],
+  longLeadItemsComment: [''],
     dfmCompleted: [null],
   sourcingProductionLogisticsAligned: [null],
     changeRequestLog: [''],
@@ -170,6 +180,8 @@ export class NewProjectComponent implements OnDestroy {
     npiSignoffAt: [''],
     gmSignoffBy: [''],
     gmSignoffAt: [''],
+    stakeholderSignoffConfig: [this.cloneStakeholderSignoffConfig(this.legacyStakeholderSignoffConfig)],
+    stakeholderSignoffStatus: [{} as Record<string, { signedBy: string; signedAt: string }>],
 
     notes: [''],
 
@@ -192,11 +204,14 @@ export class NewProjectComponent implements OnDestroy {
     private projectsService: ProjectManagerProjectsService,
     private tasksDataService: ProjectManagerTasksDataService,
     private authService: AuthenticationService,
+    private accessControlApi: AccessControlApiService,
     private modalService: NgbModal
   ) {
     this.syncExecutionRoleFromCurrentUser();
     this.loadCustomerOptionsFromApi();
     this.loadVolumeEstimateOptionsFromApi();
+    this.loadStakeholderSignoffDefaultsFromApi();
+    this.loadStakeholderAssignableUsers();
 
     const today = this.formatDate(new Date());
     this.generatedProjectId = '';
@@ -253,6 +268,7 @@ export class NewProjectComponent implements OnDestroy {
       this.isDraftProject = false;
       this.taskBoardNames = ['Project Tasks'];
       this.selectedTaskBoardName = requestedTaskBoard || 'Project Tasks';
+      this.applyStakeholderSignoffConfig(this.getDefaultStakeholderSignoffSnapshot(), true);
       this.applyRequestedGateFromQuery(requestedGate);
       this.loadActiveGateComments();
     });
@@ -358,6 +374,68 @@ export class NewProjectComponent implements OnDestroy {
       const selectedExists = this.customers.some(customer => customer === selectedCustomer);
       if (selectedCustomer && !selectedExists) {
         this.projectForm.patchValue({ customer: '' });
+      }
+
+      modal.close();
+    });
+  }
+
+  openStakeholderSignoffManagement(content: TemplateRef<unknown>): void {
+    this.stakeholderSignoffDraft = this.cloneStakeholderSignoffConfig(this.stakeholderSignoffDefaults);
+    this.stakeholderSignoffManagementError = '';
+    this.stakeholderUserToAdd = '';
+    this.modalService.open(content, { centered: true, size: 'lg' });
+  }
+
+  addStakeholderUserToDraft(): void {
+    const selectedUser = String(this.stakeholderUserToAdd || '').trim();
+    if (!selectedUser) {
+      return;
+    }
+
+    const exists = this.stakeholderSignoffDraft.some(
+      (item) => String(item.owner || '').trim().toLowerCase() === selectedUser.toLowerCase(),
+    );
+    if (exists) {
+      this.stakeholderUserToAdd = '';
+      return;
+    }
+
+    const slug = selectedUser.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'user';
+    let key = `signoff_${slug}`;
+    let counter = 2;
+    while (this.stakeholderSignoffDraft.some((item) => item.key === key)) {
+      key = `signoff_${slug}_${counter++}`;
+    }
+
+    this.stakeholderSignoffDraft = [
+      ...this.stakeholderSignoffDraft,
+      { key, label: selectedUser, owner: selectedUser },
+    ];
+    this.stakeholderUserToAdd = '';
+  }
+
+  removeStakeholderUserFromDraft(key: string): void {
+    this.stakeholderSignoffDraft = this.stakeholderSignoffDraft.filter((item) => item.key !== key);
+  }
+
+  updateStakeholderOwnerDraft(stakeholder: StakeholderSignoffConfigItem, owner: string): void {
+    const normalizedOwner = String(owner || '').trim();
+    stakeholder.owner = normalizedOwner;
+  }
+
+  saveStakeholderSignoffManagement(modal: { close: () => void }): void {
+    const normalized = this.normalizeStakeholderSignoffConfig(this.stakeholderSignoffDraft, this.stakeholderSignoffDefaults);
+    if (!normalized.length) {
+      this.stakeholderSignoffManagementError = 'At least one sign-off user is required.';
+      return;
+    }
+
+    this.projectsService.saveStakeholderSignoffDefaults$(normalized).subscribe((saved) => {
+      this.stakeholderSignoffDefaults = this.normalizeStakeholderSignoffConfig(saved, normalized);
+
+      if (!this.hasPersistableProjectContext) {
+        this.applyStakeholderSignoffConfig(this.stakeholderSignoffDefaults, true);
       }
 
       modal.close();
@@ -549,6 +627,7 @@ export class NewProjectComponent implements OnDestroy {
       longLeadItemsIdentified: null,
       longLeadItemsStartDate: '',
       longLeadItemsEndDate: '',
+      longLeadItemsComment: '',
       dfmCompleted: null,
       sourcingProductionLogisticsAligned: null,
       changeRequestLog: '',
@@ -583,8 +662,11 @@ export class NewProjectComponent implements OnDestroy {
       npiSignoffAt: '',
       gmSignoffBy: '',
       gmSignoffAt: '',
+      stakeholderSignoffConfig: this.getDefaultStakeholderSignoffSnapshot(),
+      stakeholderSignoffStatus: {},
       notes: ''
     });
+    this.applyStakeholderSignoffConfig(this.getDefaultStakeholderSignoffSnapshot(), false);
     this.saveSuccessful = false;
     this.saveMessage = '';
     this.workflow.reset();
@@ -856,10 +938,7 @@ export class NewProjectComponent implements OnDestroy {
       'qcProcedureDefined',
       'productionPoReceived',
       'inventoryStrategyAligned',
-      'productionSignoffAt',
-      'qcSignoffAt',
-      'npiSignoffAt',
-      'gmSignoffAt'
+      'stakeholderSignoffStatus'
     ]
   };
 
@@ -902,39 +981,115 @@ export class NewProjectComponent implements OnDestroy {
     });
   }
 
-  canSignOffStakeholder(stakeholder: 'production' | 'qc' | 'npi' | 'gm'): boolean {
-    if (this.isStakeholderSigned(stakeholder)) {
+  canSignOffStakeholder(stakeholderKey: string): boolean {
+    if (this.isStakeholderSigned(stakeholderKey)) {
       return false;
     }
 
     const matchedStakeholder = this.getMatchedStakeholderForCurrentUser();
-    return matchedStakeholder === stakeholder;
+    return matchedStakeholder === stakeholderKey;
   }
 
-  signOffStakeholder(stakeholder: 'production' | 'qc' | 'npi' | 'gm'): void {
-    if (!this.canSignOffStakeholder(stakeholder)) {
+  signOffStakeholder(stakeholderKey: string): void {
+    if (!this.canSignOffStakeholder(stakeholderKey)) {
       return;
     }
 
-    const atField = this.getStakeholderAtField(stakeholder);
-    const byField = this.getStakeholderByField(stakeholder);
+    const current = this.getStakeholderSignoffStatusMap();
     const signedAt = this.formatDateTime(new Date());
     this.projectForm.patchValue({
-      [atField]: signedAt,
-      [byField]: this.currentUserDisplayName
+      stakeholderSignoffStatus: {
+        ...current,
+        [stakeholderKey]: {
+          signedBy: this.currentUserDisplayName,
+          signedAt,
+        },
+      }
     });
   }
 
-  isStakeholderSigned(stakeholder: 'production' | 'qc' | 'npi' | 'gm'): boolean {
-    return !!this.projectForm.get(this.getStakeholderAtField(stakeholder))?.value;
+  unsignStakeholder(stakeholderKey: string): void {
+    const key = String(stakeholderKey || '').trim();
+    if (!key) {
+      return;
+    }
+
+    const current = this.getStakeholderSignoffStatusMap();
+    if (!current[key]) {
+      return;
+    }
+
+    const next = { ...current };
+    delete next[key];
+
+    this.projectForm.patchValue({
+      stakeholderSignoffStatus: next,
+    });
   }
 
-  getStakeholderSignedBy(stakeholder: 'production' | 'qc' | 'npi' | 'gm'): string {
-    return String(this.projectForm.get(this.getStakeholderByField(stakeholder))?.value || '');
+  removeStakeholderFromProject(stakeholderKey: string): void {
+    const key = String(stakeholderKey || '').trim().toLowerCase();
+    if (!key) {
+      return;
+    }
+
+    const next = this.stakeholderSignoffConfig.filter((item) => item.key !== key);
+    this.applyStakeholderSignoffConfig(next, true);
   }
 
-  getStakeholderSignedAt(stakeholder: 'production' | 'qc' | 'npi' | 'gm'): string {
-    const raw = this.projectForm.get(this.getStakeholderAtField(stakeholder))?.value;
+  getProjectAddableSignoffUsers(): string[] {
+    const existingOwners = new Set(
+      this.stakeholderSignoffConfig
+        .map((item) => String(item.owner || '').trim().toLowerCase())
+        .filter(Boolean)
+    );
+
+    return this.getAllSignoffUsers().filter((name) => !existingOwners.has(String(name || '').trim().toLowerCase()));
+  }
+
+  addStakeholderToProject(): void {
+    const selectedUser = String(this.stakeholderProjectUserToAdd || '').trim();
+    if (!selectedUser) {
+      return;
+    }
+
+    const exists = this.stakeholderSignoffConfig.some(
+      (item) => String(item.owner || '').trim().toLowerCase() === selectedUser.toLowerCase(),
+    );
+    if (exists) {
+      this.stakeholderProjectUserToAdd = '';
+      return;
+    }
+
+    const slug = selectedUser.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'user';
+    let key = `signoff_${slug}`;
+    let counter = 2;
+    while (this.stakeholderSignoffConfig.some((item) => item.key === key)) {
+      key = `signoff_${slug}_${counter++}`;
+    }
+
+    const next = [
+      ...this.stakeholderSignoffConfig,
+      { key, label: selectedUser, owner: selectedUser },
+    ];
+
+    this.applyStakeholderSignoffConfig(next, true);
+    this.stakeholderProjectUserToAdd = '';
+  }
+
+  isStakeholderSigned(stakeholderKey: string): boolean {
+    const status = this.getStakeholderSignoffStatusMap()[stakeholderKey];
+    return !!String(status?.signedAt || '').trim();
+  }
+
+  getStakeholderSignedBy(stakeholderKey: string): string {
+    const status = this.getStakeholderSignoffStatusMap()[stakeholderKey];
+    return String(status?.signedBy || '').trim();
+  }
+
+  getStakeholderSignedAt(stakeholderKey: string): string {
+    const status = this.getStakeholderSignoffStatusMap()[stakeholderKey];
+    const raw = String(status?.signedAt || '').trim();
     if (!raw) {
       return '';
     }
@@ -947,38 +1102,25 @@ export class NewProjectComponent implements OnDestroy {
     return date.toLocaleString();
   }
 
-  getStakeholderSignoffHint(stakeholder: 'production' | 'qc' | 'npi' | 'gm'): string {
-    if (this.isStakeholderSigned(stakeholder)) {
+  getStakeholderSignoffHint(stakeholderKey: string): string {
+    if (this.isStakeholderSigned(stakeholderKey)) {
       return 'Signed';
     }
 
     const matchedStakeholder = this.getMatchedStakeholderForCurrentUser();
-    if (matchedStakeholder === stakeholder) {
+    if (matchedStakeholder === stakeholderKey) {
       return 'You can sign off';
     }
 
-    const stakeholderConfig = this.stakeholderSignoffConfig.find(config => config.key === stakeholder);
+    const stakeholderConfig = this.stakeholderSignoffConfig.find(config => config.key === stakeholderKey);
     return stakeholderConfig ? `Only ${stakeholderConfig.owner} can sign` : 'Restricted';
   }
 
-  private getMatchedStakeholderForCurrentUser(): 'production' | 'qc' | 'npi' | 'gm' | null {
-    const user = this.authService.currentUserValue || {};
-    const fullText = [
-      user.full_name,
-      user.fullName,
-      user.username,
-      user.name,
-      user.role,
-      user.user_role,
-      user.department,
-      user.title,
-      this.executionRole
-    ]
-      .map(value => String(value || '').toLowerCase())
-      .join(' ');
-
+  private getMatchedStakeholderForCurrentUser(): string | null {
+    const currentUserTokens = this.getCurrentUserIdentityTokens();
     for (const stakeholder of this.stakeholderSignoffConfig) {
-      if (stakeholder.aliases.some(alias => fullText.includes(alias))) {
+      const owner = String(stakeholder.owner || '').trim().toLowerCase();
+      if (owner && currentUserTokens.has(owner)) {
         return stakeholder.key;
       }
     }
@@ -986,18 +1128,24 @@ export class NewProjectComponent implements OnDestroy {
     return null;
   }
 
-  private getStakeholderByField(stakeholder: 'production' | 'qc' | 'npi' | 'gm'): string {
-    if (stakeholder === 'production') return 'productionSignoffBy';
-    if (stakeholder === 'qc') return 'qcSignoffBy';
-    if (stakeholder === 'npi') return 'npiSignoffBy';
-    return 'gmSignoffBy';
+  private getCurrentUserIdentityTokens(): Set<string> {
+    const user = this.authService.currentUserValue || {};
+    return new Set(
+      [
+        user.full_name,
+        user.fullName,
+        user.username,
+        user.name,
+        user.email,
+      ]
+        .map((value) => String(value || '').trim().toLowerCase())
+        .filter(Boolean),
+    );
   }
 
-  private getStakeholderAtField(stakeholder: 'production' | 'qc' | 'npi' | 'gm'): string {
-    if (stakeholder === 'production') return 'productionSignoffAt';
-    if (stakeholder === 'qc') return 'qcSignoffAt';
-    if (stakeholder === 'npi') return 'npiSignoffAt';
-    return 'gmSignoffAt';
+  private getStakeholderSignoffStatusMap(): Record<string, { signedBy: string; signedAt: string }> {
+    const raw = this.projectForm.get('stakeholderSignoffStatus')?.value;
+    return raw && typeof raw === 'object' ? raw : {};
   }
 
   private syncExecutionRoleFromCurrentUser(): void {
@@ -1049,6 +1197,19 @@ export class NewProjectComponent implements OnDestroy {
   }
 
   private isFieldComplete(fieldName: string): boolean {
+    if (fieldName === 'stakeholderSignoffStatus') {
+      if (!this.stakeholderSignoffConfig.length) {
+        return true;
+      }
+
+      const statusMap = this.getStakeholderSignoffStatusMap();
+      return this.stakeholderSignoffConfig.every((item) => !!String(statusMap[item.key]?.signedAt || '').trim());
+    }
+
+    if (this.isDisabledStakeholderSignoffField(fieldName)) {
+      return true;
+    }
+
     if ((fieldName === 'longLeadItemsStartDate' || fieldName === 'longLeadItemsEndDate') && this.projectForm.get('longLeadItemsIdentified')?.value !== true) {
       return true;
     }
@@ -1069,6 +1230,19 @@ export class NewProjectComponent implements OnDestroy {
   }
 
   private isFieldReady(fieldName: string): boolean {
+    if (fieldName === 'stakeholderSignoffStatus') {
+      if (!this.stakeholderSignoffConfig.length) {
+        return true;
+      }
+
+      const statusMap = this.getStakeholderSignoffStatusMap();
+      return this.stakeholderSignoffConfig.every((item) => !!String(statusMap[item.key]?.signedAt || '').trim());
+    }
+
+    if (this.isDisabledStakeholderSignoffField(fieldName)) {
+      return true;
+    }
+
     if ((fieldName === 'longLeadItemsStartDate' || fieldName === 'longLeadItemsEndDate') && this.projectForm.get('longLeadItemsIdentified')?.value !== true) {
       return true;
     }
@@ -1160,8 +1334,14 @@ export class NewProjectComponent implements OnDestroy {
       return true;
     }
 
-    const priorGate = this.gateOrder[targetIndex - 1];
-    return this.getGateCompletionByInputSystem(priorGate) >= 100;
+    for (let i = 0; i < targetIndex; i++) {
+      const priorGate = this.gateOrder[i];
+      if (this.getGateCompletionByInputSystem(priorGate) < 100) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   setBooleanFieldValue(fieldName: string, value: boolean): void {
@@ -1393,9 +1573,17 @@ export class NewProjectComponent implements OnDestroy {
       return '';
     }
 
-    const priorGate = this.gateOrder[targetIndex - 1];
-    const priorCompletion = this.getGateCompletionByInputSystem(priorGate);
-    const priorLabel = priorGate.replace('gate', 'Gate ');
+    let blockingGate = this.gateOrder[targetIndex - 1];
+    for (let i = 0; i < targetIndex; i++) {
+      const candidate = this.gateOrder[i];
+      if (this.getGateCompletionByInputSystem(candidate) < 100) {
+        blockingGate = candidate;
+        break;
+      }
+    }
+
+    const priorCompletion = this.getGateCompletionByInputSystem(blockingGate);
+    const priorLabel = blockingGate.replace('gate', 'Gate ');
     const targetLabel = targetGate.replace('gate', 'Gate ');
 
     return `Complete ${priorLabel} to 100% before moving to ${targetLabel}. Current ${priorLabel}: ${priorCompletion}%.`;
@@ -1567,6 +1755,157 @@ export class NewProjectComponent implements OnDestroy {
     });
   }
 
+  private loadStakeholderAssignableUsers(): void {
+    this.accessControlApi.getUsers()
+      .then((users) => {
+        const names = users
+          .map((user) => String(user?.name || user?.email || '').trim())
+          .filter(Boolean);
+
+        const defaults = this.legacyStakeholderSignoffConfig
+          .map((item) => String(item.owner || '').trim())
+          .filter(Boolean);
+
+        this.stakeholderAssignableUsers = Array.from(new Set([...defaults, ...names]))
+          .sort((a, b) => a.localeCompare(b));
+      })
+      .catch(() => {
+        this.stakeholderAssignableUsers = this.legacyStakeholderSignoffConfig
+          .map((item) => String(item.owner || '').trim())
+          .filter(Boolean);
+      });
+  }
+
+  getAllSignoffUsers(): string[] {
+    const fromDefaults = this.stakeholderSignoffDefaults.map((item) => String(item.owner || '').trim());
+    const fromDraft = this.stakeholderSignoffDraft.map((item) => String(item.owner || '').trim());
+
+    return Array.from(new Set([
+      ...fromDefaults,
+      ...fromDraft,
+      ...this.stakeholderAssignableUsers,
+    ].filter(Boolean))).sort((a, b) => a.localeCompare(b));
+  }
+
+  getStakeholderOwnerOptions(stakeholder: StakeholderSignoffConfigItem): string[] {
+    const currentOwner = String(stakeholder?.owner || '').trim();
+    const source = currentOwner
+      ? [currentOwner, ...this.stakeholderAssignableUsers]
+      : [...this.stakeholderAssignableUsers];
+
+    return Array.from(new Set(source.map((item) => String(item || '').trim()).filter(Boolean)));
+  }
+
+  private loadStakeholderSignoffDefaultsFromApi(): void {
+    this.projectsService.getStakeholderSignoffDefaults$().subscribe((items) => {
+      const normalized = this.normalizeStakeholderSignoffConfig(items, this.legacyStakeholderSignoffConfig);
+      this.stakeholderSignoffDefaults = normalized.length
+        ? normalized
+        : this.cloneStakeholderSignoffConfig(this.legacyStakeholderSignoffConfig);
+
+      if (!this.hasPersistableProjectContext) {
+        this.applyStakeholderSignoffConfig(this.getDefaultStakeholderSignoffSnapshot(), true);
+      }
+    });
+  }
+
+  private getDefaultStakeholderSignoffSnapshot(): StakeholderSignoffConfigItem[] {
+    const source = this.stakeholderSignoffDefaults.length
+      ? this.stakeholderSignoffDefaults
+      : this.legacyStakeholderSignoffConfig;
+
+    return this.cloneStakeholderSignoffConfig(source);
+  }
+
+  private cloneStakeholderSignoffConfig(items: StakeholderSignoffConfigItem[]): StakeholderSignoffConfigItem[] {
+    return (items || []).map((item) => ({
+      key: String(item.key || '').trim().toLowerCase(),
+      label: String(item.label || '').trim(),
+      owner: String(item.owner || '').trim(),
+    }));
+  }
+
+  private normalizeStakeholderSignoffConfig(
+    items: unknown,
+    fallback: StakeholderSignoffConfigItem[]
+  ): StakeholderSignoffConfigItem[] {
+    if (!Array.isArray(items)) {
+      return this.cloneStakeholderSignoffConfig(fallback);
+    }
+
+    const blockedRoleNames = new Set(['production', 'qc', 'npi', 'gm']);
+    const canonicalOwnerNames = new Map<string, string>([
+      ['temenuga', 'Temenuga Terzieva'],
+      ['mike', 'Mike Bristol'],
+      ['nick', 'Nick Walter'],
+      ['juvenal', 'Juvenal Torres'],
+      ['temenuga terzieva', 'Temenuga Terzieva'],
+      ['mike bristol', 'Mike Bristol'],
+      ['nick walter', 'Nick Walter'],
+      ['juvenal torres', 'Juvenal Torres'],
+    ]);
+    const normalized: StakeholderSignoffConfigItem[] = [];
+
+    items.forEach((raw, index) => {
+      const item = raw as Partial<StakeholderSignoffConfigItem>;
+      const key = String(item?.key || '').trim().toLowerCase() || `signoff_user_${index + 1}`;
+      const ownerRaw = String(item?.owner || '').trim();
+      const owner = canonicalOwnerNames.get(ownerRaw.toLowerCase()) || ownerRaw;
+
+      if (!key || !owner || blockedRoleNames.has(owner.toLowerCase())) {
+        return;
+      }
+
+      normalized.push({
+        key,
+        label: owner,
+        owner,
+      });
+    });
+
+    if (!normalized.length) {
+      return this.cloneStakeholderSignoffConfig(fallback);
+    }
+
+    return normalized;
+  }
+
+  private applyStakeholderSignoffConfig(items: StakeholderSignoffConfigItem[], patchControl: boolean): void {
+    this.stakeholderSignoffConfig = this.cloneStakeholderSignoffConfig(items);
+    this.pruneStakeholderSignoffStatus();
+    if (patchControl) {
+      this.projectForm.patchValue({
+        stakeholderSignoffConfig: this.stakeholderSignoffConfig,
+      }, { emitEvent: false });
+    }
+  }
+
+  private pruneStakeholderSignoffStatus(): void {
+    const allowedKeys = new Set(this.stakeholderSignoffConfig.map((item) => item.key));
+    const current = this.getStakeholderSignoffStatusMap();
+    const next: Record<string, { signedBy: string; signedAt: string }> = {};
+
+    Object.entries(current).forEach(([key, value]) => {
+      if (!allowedKeys.has(key)) {
+        return;
+      }
+
+      const signedBy = String((value as any)?.signedBy || '').trim();
+      const signedAt = String((value as any)?.signedAt || '').trim();
+      if (!signedBy && !signedAt) {
+        return;
+      }
+
+      next[key] = { signedBy, signedAt };
+    });
+
+    this.projectForm.patchValue({ stakeholderSignoffStatus: next }, { emitEvent: false });
+  }
+
+  private isDisabledStakeholderSignoffField(fieldName: string): boolean {
+    return false;
+  }
+
   private normalizeCustomerName(value: unknown): string {
     const normalized = String(value || '').trim().replace(/\s+/g, ' ');
     if (!normalized) {
@@ -1620,6 +1959,13 @@ export class NewProjectComponent implements OnDestroy {
         if (parsed) {
           if (parsed.formValue) {
             this.projectForm.patchValue(parsed.formValue, { emitEvent: false });
+
+            const savedStakeholderConfig = (parsed.formValue as any)?.stakeholderSignoffConfig;
+            const normalizedStakeholderConfig = this.normalizeStakeholderSignoffConfig(
+              savedStakeholderConfig,
+              this.legacyStakeholderSignoffConfig
+            );
+            this.applyStakeholderSignoffConfig(normalizedStakeholderConfig, true);
 
             const legacyEngineeringReleaseEta = String((parsed.formValue as any)?.engineeringReleaseEta || '').trim();
             const hasEngineeringReleaseDate = String(this.projectForm.get('engineeringReleaseDate')?.value || '').trim();
@@ -1692,6 +2038,7 @@ export class NewProjectComponent implements OnDestroy {
       longLeadItemsIdentified: null,
       longLeadItemsStartDate: '',
       longLeadItemsEndDate: '',
+      longLeadItemsComment: '',
       dfmCompleted: null,
       sourcingProductionLogisticsAligned: null,
       changeRequestLog: '',
@@ -1726,6 +2073,10 @@ export class NewProjectComponent implements OnDestroy {
       npiSignoffAt: '',
       gmSignoffBy: '',
       gmSignoffAt: '',
+      stakeholderSignoffStatus: {},
+      stakeholderSignoffConfig: projectSummary
+        ? this.cloneStakeholderSignoffConfig(this.legacyStakeholderSignoffConfig)
+        : this.getDefaultStakeholderSignoffSnapshot(),
       notes: '',
       gate1Status: 'In Progress',
       gate2Status: 'Not Started',
