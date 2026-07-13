@@ -1848,9 +1848,7 @@ export class ProjectManagerTasksComponent implements OnInit {
       this.projectsService.setSelectedProjectId(requestedProjectId);
     }
 
-    let resolvedProjectId = hasRequested
-      ? requestedProjectId
-      : this.projectsService.getSelectedProjectId(projects);
+    let resolvedProjectId = hasRequested ? requestedProjectId : '';
 
     const hasResolved = !!resolvedProjectId && projects.some(project => project.id === resolvedProjectId);
     if (!hasResolved) {
