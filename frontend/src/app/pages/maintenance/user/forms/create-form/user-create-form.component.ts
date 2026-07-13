@@ -14,7 +14,7 @@ export class UserCreateFormComponent {
   @ViewChild('badgeInput') badgeInput?: ElementRef<HTMLInputElement>;
 
   constructor(private fb: FormBuilder, private departmentService: DepartmentService) {
-    this.form.get('lastLoggedIn').disable();
+    this.form.get('lastLoggedIn')?.disable();
   }
 
   ngOnInit(): void {
