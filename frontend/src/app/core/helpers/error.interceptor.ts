@@ -70,6 +70,10 @@ export class ErrorInterceptor implements HttpInterceptor {
     return !request.url.includes('/health/deploy-status');
   }
 
+  private isDeployStatusProbeRequest(request: HttpRequest<any>): boolean {
+    return request.url.includes('/health/deploy-status');
+  }
+
   private isLikelyDeployDowntimeError(error: HttpErrorResponse): boolean {
     const status = Number(error?.status || 0);
     const deploying = this.deployStatusService.snapshot.deploying === true;
@@ -308,6 +312,7 @@ export class ErrorInterceptor implements HttpInterceptor {
             : error?.statusText;
 
         const isPublicInspectionReport = this.isPublicInspectionReportRequest(request);
+        const isDeployStatusProbe = this.isDeployStatusProbeRequest(request);
 
         // Check for suppress flags from our serial number component
         const suppressGlobalError =
@@ -315,6 +320,7 @@ export class ErrorInterceptor implements HttpInterceptor {
           || error?._handledLocally
           || isDeployInProgress
           || isDeployDowntime
+          || isDeployStatusProbe
           || isPublicInspectionReport;
 
         // Only show toast if backend did not set showPopup === false AND we haven't suppressed it
