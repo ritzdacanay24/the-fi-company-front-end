@@ -7,18 +7,6 @@
       <div class="d-flex flex-column gap-1 justify-content-center flex-shrink-0">
         <div class="d-flex align-items-center gap-2 flex-nowrap">
           <h5 class="fw-bold mb-0" style="color:var(--vz-emphasis-color,var(--vz-body-color))">{{ projectTaskBoardName }}</h5>
-          <span class="badge rounded-pill fw-semibold"
-            style="background:rgba(var(--vz-primary-rgb),0.1);color:var(--vz-primary);font-size:0.72rem">
-            {{ gateContextLabel }}
-          </span>
-          <span class="badge rounded-pill fw-semibold"
-            style="background:rgba(var(--vz-primary-rgb),0.1);color:var(--vz-primary);border:1px solid rgba(var(--vz-primary-rgb),0.3);font-size:0.72rem">
-            ID: {{ currentProjectIdLabel }}
-          </span>
-          <span *ngIf="currentProjectSummary?.name" class="badge rounded-pill fw-semibold"
-            style="background:var(--vz-secondary-bg);color:var(--vz-body-color);border:1px solid var(--vz-border-color);font-size:0.72rem">
-            {{ currentProjectSummary?.name }}
-          </span>
           <span *ngIf="currentProjectSummary?.customer" class="badge rounded-pill fw-semibold"
             style="background:var(--vz-secondary-bg);color:var(--vz-body-color);border:1px solid var(--vz-border-color);font-size:0.72rem">
             Customer: {{ currentProjectSummary?.customer }}
@@ -41,7 +29,7 @@
             [ngModelOptions]="{ standalone: true }"
             (ngModelChange)="onProjectSelect($event)">
             <option value="">— Select a project —</option>
-            <option *ngFor="let p of allProjects" [value]="p.id">{{ p.id }} – {{ p.name }}</option>
+            <option *ngFor="let p of projectSelectOptions" [value]="p.id">{{ p.id }} – {{ p.name }}</option>
           </select>
         </div>
         <div class="d-inline-flex align-items-center gap-2">
@@ -73,7 +61,7 @@
       [value]="''"
       (change)="onProjectSelect($any($event.target).value)">
       <option value="">— Select a project —</option>
-      <option *ngFor="let p of allProjects" [value]="p.id">{{ p.id }} – {{ p.name }}</option>
+      <option *ngFor="let p of projectSelectOptions" [value]="p.id">{{ p.id }} – {{ p.name }}</option>
     </select>
     <a class="btn btn-sm btn-outline-primary mt-3" [routerLink]="dashboardRoute">Go to Dashboard</a>
   </div>

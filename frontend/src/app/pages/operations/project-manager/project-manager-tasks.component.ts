@@ -479,7 +479,7 @@ export class ProjectManagerTasksComponent implements OnInit {
         if (!isGroupNode && params.data?.rowType !== 'task') return '';
         const pct = Math.max(0, Math.min(100, Number(params.value) || 0));
         const isTaskRow = params.data?.rowType === 'task';
-        const barH = isTaskRow ? 8 : 6;
+        const barH = 8;
         const opacity = isTaskRow ? '' : 'opacity:0.85;';
         const fillColor = pct >= 100
           ? '#59b563'
@@ -741,6 +741,17 @@ export class ProjectManagerTasksComponent implements OnInit {
 
   get selectedProjectId(): string {
     return this.activeProjectId || this.currentProjectSummary?.id || '';
+  }
+
+  get projectSelectOptions(): ProjectDashboardItem[] {
+    const options = [...this.allProjects];
+    const active = this.currentProjectSummary;
+
+    if (active && !options.some((project) => project.id === active.id)) {
+      options.unshift(active);
+    }
+
+    return options;
   }
 
   onProjectSelect(id: string): void {
