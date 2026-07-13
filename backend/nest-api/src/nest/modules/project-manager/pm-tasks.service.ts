@@ -100,7 +100,7 @@ export class PmTasksService {
 
   /** Replace all tasks for a project with the provided list. */
   async saveState(projectId: string, dto: TaskStateDto): Promise<void> {
-    const rows: Omit<PmTaskRow, 'created_at' | 'updated_at'>[] = (dto.taskRecords || []).map(t => ({
+    const rows: Omit<PmTaskRow, 'created_at' | 'updated_at'>[] = (dto.taskRecords || []).map((t, index) => ({
       id: t.id || 0,
       project_id: projectId,
       project_task_name: String(t.projectTaskName || '').trim() || 'Project Tasks',
@@ -117,6 +117,7 @@ export class PmTasksService {
       status: t.status,
       completion: t.completion,
       source: t.source,
+      sort_order: index + 1,
     } as any));
 
     const normalizedTemplates = Array.from(new Set((dto.defaultTaskTemplates || [])

@@ -328,6 +328,12 @@ export class ProjectManagerTasksComponent implements OnInit {
 
   rowData: PmTreeRow[] = [];
 
+  defaultColDef: ColDef<PmTreeRow> = {
+    sortable: true,
+    resizable: true,
+    filter: true,
+  };
+
   columnDefs: ColDef<PmTreeRow>[] = [
     { field: 'groupName', rowGroup: true, hide: true },
     { field: 'subGroupName', rowGroup: true, hide: true },
@@ -337,6 +343,7 @@ export class ProjectManagerTasksComponent implements OnInit {
       width: 34,
       pinned: 'right',
       rowDrag: params => !!params.data && (params.data.rowType === 'group' || params.data.rowType === 'subgroup' || params.data.rowType === 'task'),
+      cellRenderer: 'agRowDragCellRenderer',
       sortable: false,
       filter: false,
       resizable: false,
@@ -550,6 +557,7 @@ export class ProjectManagerTasksComponent implements OnInit {
       headerName: 'Task Name',
       field: 'taskName',
       minWidth: 250,
+      rowDrag: (params: any) => params?.data?.rowType === 'task' || params?.data?.rowType === 'subgroup' || params?.data?.rowType === 'group',
       editable: (params: any) => params?.data?.rowType === 'task' && !params?.node?.group,
       cellRenderer: 'agGroupCellRenderer',
       cellRendererParams: {
@@ -604,6 +612,9 @@ export class ProjectManagerTasksComponent implements OnInit {
     undoRedoCellEditingLimit: 20,
     suppressMoveWhenRowDragging: true,
     suppressRowClickSelection: true,
+    postSortRows: (params: any) => {
+      this.enforceAddItemRowsAtBottom(params?.nodes || []);
+    },
     onCellClicked: (event: any) => {
       const row = event?.data as PmTreeRow | undefined;
       if (!row) {
@@ -1487,6 +1498,38 @@ export class ProjectManagerTasksComponent implements OnInit {
       return;
     }
 
+    const overRow = event.overNode?.data;
+
+    // If dropping a task onto another task in the same scope, reorder within that group/subgroup.
+    if (
+      dragRow.rowType === 'task'
+      && dragRow.taskId !== null
+      && overRow?.rowType === 'task'
+      && overRow.taskId !== null
+    ) {
+      const dragTask = this.taskRecords.find(task => task.id === dragRow.taskId);
+      const overTask = this.taskRecords.find(task => task.id === overRow.taskId);
+
+      const sameScope = !!dragTask
+        && !!overTask
+        && dragTask.groupName === overTask.groupName
+        && dragTask.subGroupName === overTask.subGroupName
+        && String(dragTask.projectTaskName || '').trim().toLowerCase() === String(overTask.projectTaskName || '').trim().toLowerCase();
+
+      if (sameScope) {
+        const dragRowIndex = Number(event.node?.rowIndex ?? -1);
+        const overRowIndex = Number(event.overNode?.rowIndex ?? -1);
+        const placeAfter = Number.isFinite(dragRowIndex) && Number.isFinite(overRowIndex) && dragRowIndex < overRowIndex;
+
+        const reordered = this.reorderTaskRecord(dragRow.taskId, overRow.taskId, placeAfter);
+        if (reordered) {
+          this.persistTaskState();
+          this.rebuildTreeRows();
+        }
+        return;
+      }
+    }
+
     const target = this.resolveTreeDropTarget(event.overNode as IRowNode<PmTreeRow> | undefined);
     if (!target) {
       return;
@@ -1525,14 +1568,123 @@ export class ProjectManagerTasksComponent implements OnInit {
     }
 
     this.ensureSubgroup(targetGroup, targetSubgroup);
-    this.taskRecords = this.taskRecords.map(task => {
-      if (!taskIds.has(task.id)) {
-        return task;
+    const movedTasks = this.taskRecords
+      .filter((task) => taskIds.has(task.id))
+      .map((task) => ({ ...task, groupName: targetGroup, subGroupName: targetSubgroup }));
+
+    if (!movedTasks.length) {
+      return;
+    }
+
+    const remainingTasks = this.taskRecords.filter((task) => !taskIds.has(task.id));
+    const activeBoard = String(this.projectTaskBoardName || '').trim().toLowerCase() || 'project tasks';
+
+    let insertAfterIndex = -1;
+    for (let i = 0; i < remainingTasks.length; i++) {
+      const task = remainingTasks[i];
+      const boardName = String(task.projectTaskName || 'Project Tasks').trim().toLowerCase() || 'project tasks';
+      if (boardName !== activeBoard) {
+        continue;
       }
-      return { ...task, groupName: targetGroup, subGroupName: targetSubgroup };
-    });
+
+      if (task.groupName === targetGroup && task.subGroupName === targetSubgroup) {
+        insertAfterIndex = i;
+      }
+    }
+
+    if (insertAfterIndex < 0) {
+      for (let i = 0; i < remainingTasks.length; i++) {
+        const task = remainingTasks[i];
+        const boardName = String(task.projectTaskName || 'Project Tasks').trim().toLowerCase() || 'project tasks';
+        if (boardName === activeBoard) {
+          insertAfterIndex = i;
+        }
+      }
+    }
+
+    const insertAt = insertAfterIndex + 1;
+    this.taskRecords = [
+      ...remainingTasks.slice(0, insertAt),
+      ...movedTasks,
+      ...remainingTasks.slice(insertAt),
+    ];
     this.persistTaskState();
     this.rebuildTreeRows();
+  }
+
+  private enforceAddItemRowsAtBottom(nodes: IRowNode<PmTreeRow>[]): void {
+    if (!Array.isArray(nodes) || !nodes.length) {
+      return;
+    }
+
+    const parentGroups = new Map<string, IRowNode<PmTreeRow>[]>();
+
+    nodes.forEach((node) => {
+      if (!node || node.group || !node.data) {
+        return;
+      }
+
+      const parent = node.parent as IRowNode<PmTreeRow> | null;
+      const parentKey = parent
+        ? this.getExpansionKey(parent) || `parent__${String(parent.id || parent.key || '')}`
+        : '__root__';
+
+      const siblings = parentGroups.get(parentKey) || [];
+      siblings.push(node);
+      parentGroups.set(parentKey, siblings);
+    });
+
+    parentGroups.forEach((siblings) => {
+      const addRows = siblings.filter((sibling) => sibling.data?.rowType === 'add-item');
+      if (!addRows.length) {
+        return;
+      }
+
+      addRows.forEach((addRow) => {
+        const currentIndex = nodes.indexOf(addRow);
+        if (currentIndex < 0) {
+          return;
+        }
+
+        nodes.splice(currentIndex, 1);
+
+        let insertAfter = -1;
+        siblings.forEach((sibling) => {
+          if (sibling === addRow) {
+            return;
+          }
+          const siblingIndex = nodes.indexOf(sibling);
+          if (siblingIndex > insertAfter) {
+            insertAfter = siblingIndex;
+          }
+        });
+
+        nodes.splice(insertAfter + 1, 0, addRow);
+      });
+    });
+  }
+
+  private reorderTaskRecord(dragTaskId: number, overTaskId: number, placeAfter: boolean): boolean {
+    if (dragTaskId === overTaskId) {
+      return false;
+    }
+
+    const dragIndex = this.taskRecords.findIndex(task => task.id === dragTaskId);
+    const overIndex = this.taskRecords.findIndex(task => task.id === overTaskId);
+    if (dragIndex < 0 || overIndex < 0) {
+      return false;
+    }
+
+    const [dragTask] = this.taskRecords.splice(dragIndex, 1);
+    let insertIndex = overIndex + (placeAfter ? 1 : 0);
+
+    // Removing the drag row shifts subsequent indexes by one.
+    if (dragIndex < insertIndex) {
+      insertIndex -= 1;
+    }
+
+    this.taskRecords.splice(Math.max(0, insertIndex), 0, dragTask);
+    return true;
   }
 
   private initializeTaskState(projectId: string): void {

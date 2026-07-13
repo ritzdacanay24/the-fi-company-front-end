@@ -19,6 +19,7 @@ export interface PmTaskRow extends RowDataPacket {
   status: string;
   completion: number;
   source: string;
+  sort_order: number;
   created_at: string;
   updated_at: string;
 }
@@ -62,7 +63,7 @@ export class PmTasksRepository {
 
   async getTasksByProject(projectId: string): Promise<PmTaskRow[]> {
     return this.mysqlService.query<PmTaskRow[]>(
-      `SELECT * FROM eyefidb.pm_tasks WHERE project_id = ? ORDER BY id ASC`,
+      `SELECT * FROM eyefidb.pm_tasks WHERE project_id = ? ORDER BY sort_order ASC, id ASC`,
       [projectId],
     );
   }
@@ -97,8 +98,8 @@ export class PmTasksRepository {
     const result = await this.mysqlService.execute<ResultSetHeader>(
       `INSERT INTO eyefidb.pm_tasks
          (project_id, project_task_name, gate, group_name, sub_group_name, task_name, assigned_to,
-          duration_days, start_date, finish_date, depends_on, bucket, status, completion, source)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          duration_days, start_date, finish_date, depends_on, bucket, status, completion, source, sort_order)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         projectId,
         task.project_task_name,
@@ -115,6 +116,7 @@ export class PmTasksRepository {
         task.status,
         task.completion,
         task.source,
+        Number.isFinite(task.sort_order) ? task.sort_order : 0,
       ],
     );
     return result.insertId;
@@ -191,15 +193,88 @@ export class PmTasksRepository {
     state: PmTaskStateUpsertInput,
   ): Promise<void> {
     await this.mysqlService.withTransaction(async (connection) => {
-      await connection.query(`DELETE FROM eyefidb.pm_tasks WHERE project_id = ?`, [projectId]);
+      const normalizedTaskIds = Array.from(new Set(
+        tasks
+          .map((task) => Number(task.id))
+          .filter((id) => Number.isFinite(id) && id > 0),
+      ));
 
-      for (const task of tasks) {
+      // Remove rows not present in payload while preserving IDs for rows that remain.
+      if (normalizedTaskIds.length) {
+        const placeholders = normalizedTaskIds.map(() => '?').join(',');
+        await connection.query(
+          `DELETE FROM eyefidb.pm_task_comments
+           WHERE task_id IN (
+             SELECT id FROM (
+               SELECT id FROM eyefidb.pm_tasks
+               WHERE project_id = ? AND id NOT IN (${placeholders})
+             ) stale
+           )`,
+          [projectId, ...normalizedTaskIds],
+        );
+
+        await connection.query(
+          `DELETE FROM eyefidb.pm_task_attachments
+           WHERE task_id IN (
+             SELECT id FROM (
+               SELECT id FROM eyefidb.pm_tasks
+               WHERE project_id = ? AND id NOT IN (${placeholders})
+             ) stale
+           )`,
+          [projectId, ...normalizedTaskIds],
+        );
+
+        await connection.query(
+          `DELETE FROM eyefidb.pm_tasks WHERE project_id = ? AND id NOT IN (${placeholders})`,
+          [projectId, ...normalizedTaskIds],
+        );
+      } else {
+        await connection.query(
+          `DELETE FROM eyefidb.pm_task_comments
+           WHERE task_id IN (SELECT id FROM (SELECT id FROM eyefidb.pm_tasks WHERE project_id = ?) stale)`,
+          [projectId],
+        );
+        await connection.query(
+          `DELETE FROM eyefidb.pm_task_attachments
+           WHERE task_id IN (SELECT id FROM (SELECT id FROM eyefidb.pm_tasks WHERE project_id = ?) stale)`,
+          [projectId],
+        );
+        await connection.query(`DELETE FROM eyefidb.pm_tasks WHERE project_id = ?`, [projectId]);
+      }
+
+      for (let index = 0; index < tasks.length; index += 1) {
+        const task = tasks[index];
+        const id = Number(task.id);
+        if (!Number.isFinite(id) || id <= 0) {
+          continue;
+        }
+
+        const sortOrder = index + 1;
+
         await connection.execute(
           `INSERT INTO eyefidb.pm_tasks
-             (project_id, project_task_name, gate, group_name, sub_group_name, task_name, assigned_to,
-              duration_days, start_date, finish_date, depends_on, bucket, status, completion, source)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)` ,
+             (id, project_id, project_task_name, gate, group_name, sub_group_name, task_name, assigned_to,
+              duration_days, start_date, finish_date, depends_on, bucket, status, completion, source, sort_order)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+           ON DUPLICATE KEY UPDATE
+             project_id = VALUES(project_id),
+             project_task_name = VALUES(project_task_name),
+             gate = VALUES(gate),
+             group_name = VALUES(group_name),
+             sub_group_name = VALUES(sub_group_name),
+             task_name = VALUES(task_name),
+             assigned_to = VALUES(assigned_to),
+             duration_days = VALUES(duration_days),
+             start_date = VALUES(start_date),
+             finish_date = VALUES(finish_date),
+             depends_on = VALUES(depends_on),
+             bucket = VALUES(bucket),
+             status = VALUES(status),
+             completion = VALUES(completion),
+             source = VALUES(source),
+             sort_order = VALUES(sort_order)` ,
           [
+            id,
             projectId,
             task.project_task_name,
             task.gate,
@@ -215,6 +290,7 @@ export class PmTasksRepository {
             task.status,
             task.completion,
             task.source,
+            sortOrder,
           ],
         );
       }
