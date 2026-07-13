@@ -4,6 +4,7 @@
  * Maps to actual S3 bucket folder structure
  */
 export enum FeatureType {
+  PROJECT_MANAGER = 'project-manager',
   NCR = 'ncr',
   QIR = 'qir',
   SUPPORT_TICKETS = 'support-tickets',

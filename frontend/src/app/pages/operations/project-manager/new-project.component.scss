@@ -323,6 +323,46 @@ textarea.form-control {
   .small.fw-semibold {
     margin-top: 0.5rem;
   }
+
+  .customer-field-row {
+    .customer-field-controls {
+      grid-column: 2;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+
+      .form-select {
+        grid-column: auto;
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+
+      .btn {
+        flex: 0 0 auto;
+        white-space: nowrap;
+      }
+    }
+  }
+
+  .volume-estimate-field-row {
+    .volume-estimate-field-controls {
+      grid-column: 2;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+
+      .form-select {
+        grid-column: auto;
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+
+      .btn {
+        flex: 0 0 auto;
+        white-space: nowrap;
+      }
+    }
+  }
 }
 
 @media (max-width: 768px) {
@@ -350,6 +390,30 @@ textarea.form-control {
     .yes-no-field {
       .form-label {
         margin-bottom: 0.2rem;
+      }
+    }
+
+    .customer-field-row {
+      .customer-field-controls {
+        grid-column: auto;
+        flex-direction: column;
+        align-items: stretch;
+
+        .btn {
+          align-self: flex-start;
+        }
+      }
+    }
+
+    .volume-estimate-field-row {
+      .volume-estimate-field-controls {
+        grid-column: auto;
+        flex-direction: column;
+        align-items: stretch;
+
+        .btn {
+          align-self: flex-start;
+        }
       }
     }
   }

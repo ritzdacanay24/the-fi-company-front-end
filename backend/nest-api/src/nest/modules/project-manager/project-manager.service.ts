@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { ProjectManagerRepository } from './project-manager.repository';
 import { toMysqlDate, toMysqlDatetime } from '@/shared/utils/date.util';
 
@@ -40,6 +40,19 @@ export interface UpsertIntakeDto {
   activeInputSystem: string;
   activeGate: number;
   gateCompletedAt: Record<string, string | null>;
+}
+
+export interface UpsertCustomerOptionsDto {
+  customers: string[];
+}
+
+export interface UpsertVolumeEstimateOptionsDto {
+  options: Array<{ key: 'Low' | 'Medium' | 'High'; label: string }>;
+}
+
+export interface CreateGateCommentDto {
+  commentText: string;
+  createdBy?: string;
 }
 
 @Injectable()
@@ -129,6 +142,161 @@ export class ProjectManagerService {
     );
 
     return { success: true };
+  }
+
+  async getCustomerOptions() {
+    const rows = await this.repository.getCustomerOptions();
+    return rows.map(row => String(row.customer_name || '').trim()).filter(Boolean);
+  }
+
+  async upsertCustomerOptions(dto: UpsertCustomerOptionsDto) {
+    const sanitized = Array.from(new Set((dto.customers || [])
+      .map(value => String(value || '').trim().replace(/\s+/g, ' '))
+      .filter(Boolean)
+      .map(value => value.slice(0, 120))
+    ));
+
+    if (!sanitized.length) {
+      throw new BadRequestException('At least one customer is required');
+    }
+
+    await this.repository.replaceCustomerOptions(sanitized);
+    return this.getCustomerOptions();
+  }
+
+  async getVolumeEstimateOptions() {
+    const rows = await this.repository.getVolumeEstimateOptions();
+    const normalized = rows
+      .map((row) => ({
+        key: String(row.option_key || '').trim() as 'Low' | 'Medium' | 'High',
+        label: String(row.option_label || '').trim(),
+        displayOrder: Number(row.display_order || 0),
+      }))
+      .filter((row) => ['Low', 'Medium', 'High'].includes(row.key) && !!row.label)
+      .sort((a, b) => a.displayOrder - b.displayOrder);
+
+    if (!normalized.length) {
+      return [
+        { key: 'Low', label: 'Low > 50' },
+        { key: 'Medium', label: 'Medium 50-150' },
+        { key: 'High', label: 'High 150+' },
+      ];
+    }
+
+    return normalized.map((item) => ({ key: item.key, label: item.label }));
+  }
+
+  async upsertVolumeEstimateOptions(dto: UpsertVolumeEstimateOptionsDto) {
+    const base: Record<'Low' | 'Medium' | 'High', string> = {
+      Low: 'Low > 50',
+      Medium: 'Medium 50-150',
+      High: 'High 150+'
+    };
+
+    for (const item of (dto.options || [])) {
+      const key = item?.key;
+      const label = String(item?.label || '').trim().replace(/\s+/g, ' ').slice(0, 120);
+      if (!key || !['Low', 'Medium', 'High'].includes(key)) {
+        continue;
+      }
+
+      if (label) {
+        base[key] = label;
+      }
+    }
+
+    const normalized = [
+      { key: 'Low' as const, label: base.Low, displayOrder: 1 },
+      { key: 'Medium' as const, label: base.Medium, displayOrder: 2 },
+      { key: 'High' as const, label: base.High, displayOrder: 3 },
+    ];
+
+    if (normalized.some(item => !item.label)) {
+      throw new BadRequestException('All volume estimate labels are required');
+    }
+
+    await this.repository.replaceVolumeEstimateOptions(normalized);
+    return this.getVolumeEstimateOptions();
+  }
+
+  async getGateComments(projectId: string, gateNumber: number) {
+    this.validateGateNumber(gateNumber);
+
+    const rows = await this.repository.getGateComments(projectId, gateNumber);
+    return rows.map((row) => ({
+      id: row.id,
+      projectId: row.project_id,
+      gateNumber: row.gate_number,
+      commentText: String(row.comment_text || ''),
+      createdBy: String(row.created_by || ''),
+      createdById: Number(row.created_by_id || 0),
+      createdAt: row.created_at,
+    }));
+  }
+
+  async createGateComment(projectId: string, gateNumber: number, dto: CreateGateCommentDto, currentUserId: number) {
+    this.validateGateNumber(gateNumber);
+
+    const project = await this.repository.findOne({ id: projectId });
+    if (!project) {
+      throw new NotFoundException(`Project ${projectId} not found`);
+    }
+
+    if (!currentUserId || Number.isNaN(currentUserId)) {
+      throw new BadRequestException('Authenticated user context is required');
+    }
+
+    const commentText = String(dto?.commentText || '').trim().replace(/\s+/g, ' ').slice(0, 2000);
+    if (!commentText) {
+      throw new BadRequestException('commentText is required');
+    }
+
+    const createdBy = String(dto?.createdBy || '').trim().slice(0, 120) || 'Unknown';
+    const created = await this.repository.addGateComment(projectId, gateNumber, commentText, createdBy, currentUserId);
+
+    return {
+      id: created.id,
+      projectId: created.project_id,
+      gateNumber: created.gate_number,
+      commentText: String(created.comment_text || ''),
+      createdBy: String(created.created_by || ''),
+      createdById: Number(created.created_by_id || 0),
+      createdAt: created.created_at,
+    };
+  }
+
+  async deleteGateComment(projectId: string, gateNumber: number, commentId: number, currentUserId: number) {
+    this.validateGateNumber(gateNumber);
+
+    if (!Number.isInteger(commentId) || commentId <= 0) {
+      throw new BadRequestException('commentId must be a positive integer');
+    }
+
+    if (!currentUserId || Number.isNaN(currentUserId)) {
+      throw new BadRequestException('Authenticated user context is required');
+    }
+
+    const comment = await this.repository.getGateCommentById(commentId);
+    if (!comment) {
+      throw new NotFoundException('Comment not found');
+    }
+
+    if (comment.project_id !== projectId || Number(comment.gate_number) !== gateNumber) {
+      throw new NotFoundException('Comment not found for this project gate');
+    }
+
+    if (Number(comment.created_by_id || 0) !== Number(currentUserId)) {
+      throw new ForbiddenException('You can only delete your own comment');
+    }
+
+    await this.repository.deleteGateCommentById(commentId);
+    return { success: true, id: commentId };
+  }
+
+  private validateGateNumber(gateNumber: number): void {
+    if (!Number.isInteger(gateNumber) || gateNumber < 1 || gateNumber > 6) {
+      throw new BadRequestException('gate must be an integer from 1 to 6');
+    }
   }
 
   private toApiShape(row: any) {

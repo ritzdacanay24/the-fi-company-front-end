@@ -1,14 +1,20 @@
-import { Component, OnDestroy } from '@angular/core';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Component, OnDestroy, TemplateRef } from '@angular/core';
+import { AbstractControl, FormBuilder, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { SharedModule } from '@app/shared/shared.module';
 import { ExecutionRole, ProjectWorkflowEngineService } from './services/project-workflow-engine.service';
-import { ProjectDashboardItem, ProjectManagerProjectsService } from './services/project-manager-projects.service';
+import {
+  GateComment,
+  ProjectDashboardItem,
+  ProjectManagerProjectsService,
+  VolumeEstimateOption
+} from './services/project-manager-projects.service';
 import { ProjectManagerTasksDataService } from './services/project-manager-tasks-data.service';
 import { Router } from '@angular/router';
 import { AuthenticationService } from '@app/core/services/auth.service';
-import { NgbDropdownModule } from '@ng-bootstrap/ng-bootstrap';
+import { NgbDropdownModule, NgbModal, NgbModalModule } from '@ng-bootstrap/ng-bootstrap';
+import { FeatureType } from '@app/shared/enums/feature.enum';
 
 type IntakeStoragePayload = {
   formValue: any;
@@ -27,11 +33,13 @@ type IntakeStoragePayload = {
 @Component({
   standalone: true,
   selector: 'app-new-project',
-  imports: [SharedModule, ReactiveFormsModule, NgbDropdownModule],
+  imports: [SharedModule, ReactiveFormsModule, NgbDropdownModule, NgbModalModule],
   templateUrl: './new-project.component.html',
   styleUrls: ['./new-project.component.scss']
 })
 export class NewProjectComponent implements OnDestroy {
+  readonly FeatureType = FeatureType;
+  private estimateRangeDefinition = 'Low > 50, Medium 50-150, High 150+';
   private readonly projectManagerBaseRoute = '/project-manager';
   private readonly operationsBaseRoute = '/operations/project-manager';
   readonly stakeholderSignoffConfig: Array<{ key: 'production' | 'qc' | 'npi' | 'gm'; label: string; owner: string; aliases: string[] }> = [
@@ -70,6 +78,23 @@ export class NewProjectComponent implements OnDestroy {
   private isApplyingProjectState = false;
 
   customers = ['Aristocrat', 'Light & Wonder', 'IGT', 'Konami', 'Ainsworth', 'Custom'];
+  customerDraftList: string[] = [];
+  customerModalError = '';
+  managedVolumeEstimateOptions: VolumeEstimateOption[] = [
+    { key: 'Low', label: 'Low > 50' },
+    { key: 'Medium', label: 'Medium 50-150' },
+    { key: 'High', label: 'High 150+' },
+  ];
+  volumeEstimateDraftByKey: Record<'Low' | 'Medium' | 'High', string> = {
+    Low: 'Low > 50',
+    Medium: 'Medium 50-150',
+    High: 'High 150+',
+  };
+  volumeEstimateModalError = '';
+  gateCommentText = '';
+  gateCommentError = '';
+  isSavingGateComment = false;
+  activeGateComments: GateComment[] = [];
   projectCategories = ['New', 'Revision', 'Cost Down', 'Custom'];
   strategyTypes = ['Growth', 'Retention', 'Platform', 'Sustainment'];
   rangeOptions = ['Low', 'Medium', 'High'];
@@ -87,7 +112,9 @@ export class NewProjectComponent implements OnDestroy {
     initialRfpDate: ['', Validators.required],
     targetProductionDate: ['', Validators.required],
     volumeEstimate: ['Medium'],
+    volumeEstimateDefinition: [this.estimateRangeDefinition],
     roughRevenuePotential: ['Medium'],
+    roughRevenuePotentialDefinition: [this.estimateRangeDefinition],
     estimatedRevenue: [''],
     priceProposalSubmitted: [null],
     businessAwarded: [null],
@@ -97,6 +124,7 @@ export class NewProjectComponent implements OnDestroy {
     // Gate #2-4
   designTeamConceptProposal: [null],
     conceptArchitectureDefined: [null],
+    newTechnologyToSource: [null],
     roughCostEntered: [null],
   timelineEstimatedLlt: [null],
   preliminaryBomForSourcing: [null],
@@ -104,11 +132,14 @@ export class NewProjectComponent implements OnDestroy {
   firstPosConfirmed: [null],
   detailedEngineeringDesign: [null],
     longLeadItemsIdentified: [null],
-    longLeadItemsDate: [''],
+  longLeadItemsStartDate: [''],
+  longLeadItemsEndDate: [''],
     dfmCompleted: [null],
   sourcingProductionLogisticsAligned: [null],
     changeRequestLog: [''],
-    engineeringReleaseEta: [''],
+    engineeringReleaseDate: [''],
+    protoEtdDate: [''],
+    protoEtaDate: [''],
     protoQty: [null],
     partNumberMapped: [null],
   finalBomReview: [null],
@@ -149,6 +180,8 @@ export class NewProjectComponent implements OnDestroy {
     gate4Status: ['Not Started'],
     gate5Status: ['Not Started'],
     gate6Status: ['Not Started']
+  }, {
+    validators: [this.longLeadDateRangeValidator]
   });
 
   constructor(
@@ -158,9 +191,12 @@ export class NewProjectComponent implements OnDestroy {
     private workflow: ProjectWorkflowEngineService,
     private projectsService: ProjectManagerProjectsService,
     private tasksDataService: ProjectManagerTasksDataService,
-    private authService: AuthenticationService
+    private authService: AuthenticationService,
+    private modalService: NgbModal
   ) {
     this.syncExecutionRoleFromCurrentUser();
+    this.loadCustomerOptionsFromApi();
+    this.loadVolumeEstimateOptionsFromApi();
 
     const today = this.formatDate(new Date());
     this.generatedProjectId = '';
@@ -195,6 +231,7 @@ export class NewProjectComponent implements OnDestroy {
         this.loadProjectIntakeState(selected.id, selected);
         this.refreshTaskBoards(selected.id);
         this.applyRequestedGateFromQuery(requestedGate);
+        this.loadActiveGateComments();
         return;
       }
 
@@ -205,6 +242,7 @@ export class NewProjectComponent implements OnDestroy {
         this.loadProjectIntakeState(projectId);
         this.refreshTaskBoards(projectId);
         this.applyRequestedGateFromQuery(requestedGate);
+        this.loadActiveGateComments();
         return;
       }
 
@@ -216,11 +254,151 @@ export class NewProjectComponent implements OnDestroy {
       this.taskBoardNames = ['Project Tasks'];
       this.selectedTaskBoardName = requestedTaskBoard || 'Project Tasks';
       this.applyRequestedGateFromQuery(requestedGate);
+      this.loadActiveGateComments();
     });
   }
 
   ngOnDestroy(): void {
     this.formSub?.unsubscribe();
+  }
+
+  get volumeEstimateOptions(): Array<{ value: 'Low' | 'Medium' | 'High'; label: string }> {
+    const definition = String(this.projectForm.get('volumeEstimateDefinition')?.value || this.estimateRangeDefinition);
+    const labels = this.parseVolumeEstimateDefinition(definition);
+
+    return [
+      { value: 'Low', label: labels.Low },
+      { value: 'Medium', label: labels.Medium },
+      { value: 'High', label: labels.High }
+    ];
+  }
+
+  openVolumeEstimateManagement(content: TemplateRef<unknown>): void {
+    const current = this.optionsArrayToMap(this.managedVolumeEstimateOptions);
+    this.volumeEstimateDraftByKey = {
+      Low: current.Low,
+      Medium: current.Medium,
+      High: current.High,
+    };
+    this.volumeEstimateModalError = '';
+    this.modalService.open(content, { centered: true });
+  }
+
+  saveVolumeEstimateManagement(modal: { close: () => void }): void {
+    const normalized: VolumeEstimateOption[] = [
+      { key: 'Low', label: this.normalizeVolumeLabel(this.volumeEstimateDraftByKey.Low) },
+      { key: 'Medium', label: this.normalizeVolumeLabel(this.volumeEstimateDraftByKey.Medium) },
+      { key: 'High', label: this.normalizeVolumeLabel(this.volumeEstimateDraftByKey.High) },
+    ];
+
+    if (normalized.some(item => !item.label)) {
+      this.volumeEstimateModalError = 'All labels are required.';
+      return;
+    }
+
+    this.projectsService.saveVolumeEstimateOptions$(normalized).subscribe((saved) => {
+      const next = saved.length ? saved : normalized;
+      this.managedVolumeEstimateOptions = next;
+      const nextDefinition = this.optionsToDefinition(next);
+      const currentDefinition = String(this.projectForm.get('volumeEstimateDefinition')?.value || '').trim();
+
+      // Only auto-apply to new unsaved intakes; existing projects keep their historical snapshot.
+      if (!this.hasPersistableProjectContext || currentDefinition === this.estimateRangeDefinition) {
+        this.projectForm.patchValue({
+          volumeEstimateDefinition: nextDefinition,
+          roughRevenuePotentialDefinition: nextDefinition,
+        });
+      }
+
+      this.estimateRangeDefinition = nextDefinition;
+      modal.close();
+    });
+  }
+
+  openCustomerManagement(content: TemplateRef<unknown>): void {
+    this.customerDraftList = [...this.customers];
+    this.customerModalError = '';
+    this.modalService.open(content, { centered: true, size: 'lg' });
+  }
+
+  addCustomerOption(inputElement: HTMLInputElement): void {
+    const nextName = this.normalizeCustomerName(inputElement.value);
+    if (!nextName) {
+      this.customerModalError = 'Enter a customer name.';
+      return;
+    }
+
+    const exists = this.customerDraftList.some(customer => customer.toLowerCase() === nextName.toLowerCase());
+    if (exists) {
+      this.customerModalError = 'Customer already exists.';
+      return;
+    }
+
+    this.customerDraftList = [...this.customerDraftList, nextName].sort((a, b) => a.localeCompare(b));
+    this.customerModalError = '';
+    inputElement.value = '';
+    inputElement.focus();
+  }
+
+  removeCustomerOption(customerName: string): void {
+    this.customerDraftList = this.customerDraftList.filter(customer => customer !== customerName);
+  }
+
+  saveCustomerManagement(modal: { close: () => void }): void {
+    if (!this.customerDraftList.length) {
+      this.customerModalError = 'At least one customer is required.';
+      return;
+    }
+
+    this.projectsService.saveCustomerOptions$(this.customerDraftList).subscribe((savedCustomers) => {
+      const nextCustomers = savedCustomers.length ? savedCustomers : this.customerDraftList;
+      this.customers = [...nextCustomers];
+
+      const selectedCustomer = String(this.projectForm.get('customer')?.value || '').trim();
+      const selectedExists = this.customers.some(customer => customer === selectedCustomer);
+      if (selectedCustomer && !selectedExists) {
+        this.projectForm.patchValue({ customer: '' });
+      }
+
+      modal.close();
+    });
+  }
+
+  addGateComment(): void {
+    const projectId = this.linkProjectId;
+    if (!projectId) {
+      this.gateCommentError = 'Save draft first to add gate comments.';
+      return;
+    }
+
+    const commentText = String(this.gateCommentText || '').trim();
+    if (!commentText) {
+      this.gateCommentError = 'Enter a comment before saving.';
+      return;
+    }
+
+    this.gateCommentError = '';
+    this.isSavingGateComment = true;
+    this.projectsService.addGateComment$(projectId, this.activeGate, commentText, this.currentUserDisplayName).subscribe((created) => {
+      this.gateCommentText = '';
+      this.isSavingGateComment = false;
+
+      if (created) {
+        this.activeGateComments = [created, ...this.activeGateComments.filter(item => item.id !== created.id)];
+        return;
+      }
+
+      this.loadActiveGateComments();
+    });
+  }
+
+  formatGateCommentTimestamp(value: string): string {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return String(value || '');
+    }
+
+    return date.toLocaleString();
   }
 
   submit(): void {
@@ -351,7 +529,9 @@ export class NewProjectComponent implements OnDestroy {
       initialRfpDate: today,
       targetProductionDate: '',
       volumeEstimate: 'Medium',
+      volumeEstimateDefinition: this.estimateRangeDefinition,
       roughRevenuePotential: 'Medium',
+      roughRevenuePotentialDefinition: this.estimateRangeDefinition,
       estimatedRevenue: '',
       priceProposalSubmitted: null,
       businessAwarded: null,
@@ -359,6 +539,7 @@ export class NewProjectComponent implements OnDestroy {
       forecastConfirmed: null,
       designTeamConceptProposal: null,
       conceptArchitectureDefined: null,
+      newTechnologyToSource: null,
       roughCostEntered: null,
       timelineEstimatedLlt: null,
       preliminaryBomForSourcing: null,
@@ -366,11 +547,14 @@ export class NewProjectComponent implements OnDestroy {
       firstPosConfirmed: null,
       detailedEngineeringDesign: null,
       longLeadItemsIdentified: null,
-      longLeadItemsDate: '',
+      longLeadItemsStartDate: '',
+      longLeadItemsEndDate: '',
       dfmCompleted: null,
       sourcingProductionLogisticsAligned: null,
       changeRequestLog: '',
-      engineeringReleaseEta: '',
+      engineeringReleaseDate: '',
+      protoEtdDate: '',
+      protoEtaDate: '',
       protoQty: null,
       partNumberMapped: null,
       finalBomReview: null,
@@ -615,6 +799,17 @@ export class NewProjectComponent implements OnDestroy {
   get gate5Completion(): number { return this.getGateCompletion('gate5'); }
   get gate6Completion(): number { return this.getGateCompletion('gate6'); }
 
+  get isLongLeadDateRangeInvalid(): boolean {
+    const hasRangeError = this.projectForm.hasError('longLeadDateRangeInvalid');
+    if (!hasRangeError) {
+      return false;
+    }
+
+    const startTouched = !!this.projectForm.get('longLeadItemsStartDate')?.touched;
+    const endTouched = !!this.projectForm.get('longLeadItemsEndDate')?.touched;
+    return startTouched || endTouched;
+  }
+
   private gateFieldMap: Record<'gate1' | 'gate2' | 'gate3' | 'gate4' | 'gate5' | 'gate6', string[]> = {
     gate1: [
       'customer',
@@ -629,14 +824,19 @@ export class NewProjectComponent implements OnDestroy {
     ],
     gate2: [
       'conceptArchitectureDefined',
+      'newTechnologyToSource',
       'roughCostEntered',
-      'longLeadItemsIdentified'
+      'longLeadItemsIdentified',
+      'longLeadItemsStartDate',
+      'longLeadItemsEndDate'
     ],
     gate3: [
       'preliminaryBomUploaded',
       'protoQty',
       'partNumberMapped',
-      'engineeringReleaseEta'
+      'engineeringReleaseDate',
+      'protoEtdDate',
+      'protoEtaDate'
     ],
     gate4: [
       'dfmCompleted',
@@ -668,6 +868,38 @@ export class NewProjectComponent implements OnDestroy {
     return String(
       user.full_name || user.fullName || user.username || user.name || user.email || 'Current User'
     ).trim();
+  }
+
+  get currentUserId(): number {
+    const user = this.authService.currentUserValue || {};
+    const possibleId = Number(user.id ?? user.user_id ?? user.userId ?? 0);
+    return Number.isInteger(possibleId) && possibleId > 0 ? possibleId : 0;
+  }
+
+  canDeleteGateComment(comment: GateComment): boolean {
+    return this.currentUserId > 0 && Number(comment.createdById || 0) === this.currentUserId;
+  }
+
+  deleteGateComment(comment: GateComment): void {
+    if (!this.canDeleteGateComment(comment)) {
+      return;
+    }
+
+    const projectId = this.linkProjectId;
+    if (!projectId) {
+      return;
+    }
+
+    const confirmed = window.confirm('Delete this comment?');
+    if (!confirmed) {
+      return;
+    }
+
+    this.projectsService.deleteGateComment$(projectId, this.activeGate, comment.id).subscribe((success) => {
+      if (success) {
+        this.loadActiveGateComments();
+      }
+    });
   }
 
   canSignOffStakeholder(stakeholder: 'production' | 'qc' | 'npi' | 'gm'): boolean {
@@ -817,6 +1049,10 @@ export class NewProjectComponent implements OnDestroy {
   }
 
   private isFieldComplete(fieldName: string): boolean {
+    if ((fieldName === 'longLeadItemsStartDate' || fieldName === 'longLeadItemsEndDate') && this.projectForm.get('longLeadItemsIdentified')?.value !== true) {
+      return true;
+    }
+
     const control = this.projectForm.get(fieldName);
     if (!control) {
       return false;
@@ -833,6 +1069,10 @@ export class NewProjectComponent implements OnDestroy {
   }
 
   private isFieldReady(fieldName: string): boolean {
+    if ((fieldName === 'longLeadItemsStartDate' || fieldName === 'longLeadItemsEndDate') && this.projectForm.get('longLeadItemsIdentified')?.value !== true) {
+      return true;
+    }
+
     const control = this.projectForm.get(fieldName);
     if (!control) {
       return false;
@@ -903,6 +1143,7 @@ export class NewProjectComponent implements OnDestroy {
     if (this.hasPersistableProjectContext) {
       this.persistProjectIntakeState(this.persistableProjectId);
     }
+    this.loadActiveGateComments();
   }
 
   canAccessGate(inputSystem: 'gate1' | 'gate2' | 'gate3' | 'gate4' | 'gate5' | 'gate6'): boolean {
@@ -943,6 +1184,15 @@ export class NewProjectComponent implements OnDestroy {
   get taskBoardContextLabel(): string {
     const labels: Record<string, string> = { gate1: 'Gate 1', gate2: 'Gate 2', gate3: 'Gate 3', gate4: 'Gate 4', gate5: 'Gate 5', gate6: 'Gate 6' };
     return labels[this.activeInputSystem] || 'Gate 1';
+  }
+
+  get activeGateAttachmentResourceId(): number | null {
+    const baseId = this.getProjectAttachmentBaseId();
+    if (!baseId) {
+      return null;
+    }
+
+    return (baseId * 10) + this.activeGate;
   }
 
   get taskBoardQueryParams(): { gateContext: 'gate1' | 'gate2' | 'gate3' | 'gate4' | 'gate5' | 'gate6'; gate: number; projectId: string; taskBoard: string } {
@@ -1077,6 +1327,29 @@ export class NewProjectComponent implements OnDestroy {
     return this.lastSavedProjectId || this.activeProjectId || '';
   }
 
+  private getProjectAttachmentBaseId(): number | null {
+    const projectId = String(this.persistableProjectId || this.generatedProjectId || '').trim();
+    if (!projectId) {
+      return null;
+    }
+
+    const digitsOnly = projectId.replace(/\D+/g, '');
+    if (digitsOnly) {
+      const parsed = Number.parseInt(digitsOnly.slice(-9), 10);
+      if (Number.isFinite(parsed) && parsed > 0) {
+        return parsed;
+      }
+    }
+
+    // Fallback for non-numeric IDs: stable, deterministic hash that stays positive.
+    let hash = 0;
+    for (let i = 0; i < projectId.length; i++) {
+      hash = ((hash * 31) + projectId.charCodeAt(i)) >>> 0;
+    }
+
+    return hash > 0 ? hash : null;
+  }
+
   setActiveGate(gate: 1 | 2 | 3 | 4 | 5 | 6): void {
     const inputSystem = `gate${gate}` as 'gate1' | 'gate2' | 'gate3' | 'gate4' | 'gate5' | 'gate6';
     if (!this.canAccessGate(inputSystem)) {
@@ -1090,6 +1363,7 @@ export class NewProjectComponent implements OnDestroy {
     if (this.hasPersistableProjectContext) {
       this.persistProjectIntakeState(this.persistableProjectId);
     }
+    this.loadActiveGateComments();
   }
 
   nextGate(): void {
@@ -1139,10 +1413,24 @@ export class NewProjectComponent implements OnDestroy {
       if (Number.isFinite(gateNumber) && gateNumber >= 1 && gateNumber <= 6) {
         this.activeGate = gateNumber as 1 | 2 | 3 | 4 | 5 | 6;
       }
+      this.loadActiveGateComments();
       return;
     }
 
     this.gateNavigationMessage = this.getGateLockMessage(requestedGate);
+  }
+
+  private loadActiveGateComments(): void {
+    const projectId = this.linkProjectId;
+    this.gateCommentError = '';
+    if (!projectId) {
+      this.activeGateComments = [];
+      return;
+    }
+
+    this.projectsService.getGateComments$(projectId, this.activeGate).subscribe((items) => {
+      this.activeGateComments = items;
+    });
   }
 
   private parseGateInputSystem(rawGate: string | null): 'gate1' | 'gate2' | 'gate3' | 'gate4' | 'gate5' | 'gate6' | null {
@@ -1167,6 +1455,125 @@ export class NewProjectComponent implements OnDestroy {
     };
 
     return gateMap[normalized] || null;
+  }
+
+  private longLeadDateRangeValidator(control: AbstractControl): ValidationErrors | null {
+    const isEnabled = !!control.get('longLeadItemsIdentified')?.value;
+    if (!isEnabled) {
+      return null;
+    }
+
+    const startRaw = String(control.get('longLeadItemsStartDate')?.value || '').trim();
+    const endRaw = String(control.get('longLeadItemsEndDate')?.value || '').trim();
+    if (!startRaw || !endRaw) {
+      return null;
+    }
+
+    const start = new Date(startRaw);
+    const end = new Date(endRaw);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+      return null;
+    }
+
+    return end.getTime() < start.getTime() ? { longLeadDateRangeInvalid: true } : null;
+  }
+
+  private parseVolumeEstimateDefinition(definition: string): Record<'Low' | 'Medium' | 'High', string> {
+    const fallback: Record<'Low' | 'Medium' | 'High', string> = {
+      Low: 'Low > 50',
+      Medium: 'Medium 50-150',
+      High: 'High 150+'
+    };
+
+    const parts = String(definition || '')
+      .split(',')
+      .map(part => part.trim())
+      .filter(Boolean);
+
+    for (const part of parts) {
+      const lowMatch = part.match(/^low\b/i);
+      if (lowMatch) {
+        fallback.Low = part;
+        continue;
+      }
+
+      const mediumMatch = part.match(/^medium\b/i);
+      if (mediumMatch) {
+        fallback.Medium = part;
+        continue;
+      }
+
+      const highMatch = part.match(/^high\b/i);
+      if (highMatch) {
+        fallback.High = part;
+      }
+    }
+
+    return fallback;
+  }
+
+  private loadVolumeEstimateOptionsFromApi(): void {
+    this.projectsService.getVolumeEstimateOptions$().subscribe((items) => {
+      if (!items.length) {
+        return;
+      }
+
+      const previousDefinition = this.estimateRangeDefinition;
+      const normalizedMap = this.optionsArrayToMap(items);
+      const normalizedOptions: VolumeEstimateOption[] = [
+        { key: 'Low', label: normalizedMap.Low },
+        { key: 'Medium', label: normalizedMap.Medium },
+        { key: 'High', label: normalizedMap.High },
+      ];
+
+      this.managedVolumeEstimateOptions = normalizedOptions;
+      const nextDefinition = this.optionsToDefinition(normalizedOptions);
+      this.estimateRangeDefinition = nextDefinition;
+
+      const currentDefinition = String(this.projectForm.get('volumeEstimateDefinition')?.value || '').trim();
+      if (!this.hasPersistableProjectContext && currentDefinition === previousDefinition) {
+        this.projectForm.patchValue({
+          volumeEstimateDefinition: nextDefinition,
+          roughRevenuePotentialDefinition: nextDefinition,
+        });
+      }
+    });
+  }
+
+  private optionsArrayToMap(options: VolumeEstimateOption[]): Record<'Low' | 'Medium' | 'High', string> {
+    const byKey = new Map((options || []).map(item => [item.key, this.normalizeVolumeLabel(item.label)]));
+    const fallback = this.parseVolumeEstimateDefinition(this.estimateRangeDefinition);
+    return {
+      Low: byKey.get('Low') || fallback.Low,
+      Medium: byKey.get('Medium') || fallback.Medium,
+      High: byKey.get('High') || fallback.High,
+    };
+  }
+
+  private optionsToDefinition(options: VolumeEstimateOption[]): string {
+    const map = this.optionsArrayToMap(options);
+    return `${map.Low}, ${map.Medium}, ${map.High}`;
+  }
+
+  private normalizeVolumeLabel(value: unknown): string {
+    return String(value || '').trim().replace(/\s+/g, ' ').slice(0, 120);
+  }
+
+  private loadCustomerOptionsFromApi(): void {
+    this.projectsService.getCustomerOptions$().subscribe((items) => {
+      if (items.length) {
+        this.customers = items;
+      }
+    });
+  }
+
+  private normalizeCustomerName(value: unknown): string {
+    const normalized = String(value || '').trim().replace(/\s+/g, ' ');
+    if (!normalized) {
+      return '';
+    }
+
+    return normalized.slice(0, 120);
   }
 
   private persistProjectIntakeState(projectId: string): void {
@@ -1213,6 +1620,12 @@ export class NewProjectComponent implements OnDestroy {
         if (parsed) {
           if (parsed.formValue) {
             this.projectForm.patchValue(parsed.formValue, { emitEvent: false });
+
+            const legacyEngineeringReleaseEta = String((parsed.formValue as any)?.engineeringReleaseEta || '').trim();
+            const hasEngineeringReleaseDate = String(this.projectForm.get('engineeringReleaseDate')?.value || '').trim();
+            if (legacyEngineeringReleaseEta && !hasEngineeringReleaseDate) {
+              this.projectForm.patchValue({ engineeringReleaseDate: legacyEngineeringReleaseEta }, { emitEvent: false });
+            }
           }
 
           if (parsed.activeInputSystem && ['gate1', 'gate2', 'gate3', 'gate4', 'gate5', 'gate6'].includes(parsed.activeInputSystem)) {
@@ -1233,6 +1646,7 @@ export class NewProjectComponent implements OnDestroy {
 
         this.saveSuccessful = false;
         this.updateGateCompletionTimestamps();
+        this.loadActiveGateComments();
         this.isApplyingProjectState = false;
       });
       return; // rest of the finally block is replaced by the subscribe
@@ -1258,7 +1672,9 @@ export class NewProjectComponent implements OnDestroy {
       initialRfpDate: projectSummary?.rfpDate || today,
       targetProductionDate: projectSummary?.targetProd || '',
       volumeEstimate: 'Medium',
+      volumeEstimateDefinition: this.estimateRangeDefinition,
       roughRevenuePotential: 'Medium',
+      roughRevenuePotentialDefinition: this.estimateRangeDefinition,
       estimatedRevenue: '',
       priceProposalSubmitted: null,
       businessAwarded: null,
@@ -1266,6 +1682,7 @@ export class NewProjectComponent implements OnDestroy {
       forecastConfirmed: null,
       designTeamConceptProposal: null,
       conceptArchitectureDefined: null,
+      newTechnologyToSource: null,
       roughCostEntered: null,
       timelineEstimatedLlt: null,
       preliminaryBomForSourcing: null,
@@ -1273,11 +1690,14 @@ export class NewProjectComponent implements OnDestroy {
       firstPosConfirmed: null,
       detailedEngineeringDesign: null,
       longLeadItemsIdentified: null,
-      longLeadItemsDate: '',
+      longLeadItemsStartDate: '',
+      longLeadItemsEndDate: '',
       dfmCompleted: null,
       sourcingProductionLogisticsAligned: null,
       changeRequestLog: '',
-      engineeringReleaseEta: '',
+      engineeringReleaseDate: '',
+      protoEtdDate: '',
+      protoEtaDate: '',
       protoQty: null,
       partNumberMapped: null,
       finalBomReview: null,

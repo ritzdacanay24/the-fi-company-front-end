@@ -208,12 +208,17 @@
                   <div><strong>Project ID:</strong> {{ hasProjectContext ? generatedProjectId : 'Pending (created on draft save or submit)' }}</div>
                 </div>
 
-                <div class="mb-2">
+                <div class="mb-2 customer-field-row">
                   <label class="form-label">Customer *</label>
-                  <select class="form-select form-select-sm" formControlName="customer">
-                    <option value="">Select customer</option>
-                    <option *ngFor="let customer of customers" [value]="customer">{{ customer }}</option>
-                  </select>
+                  <div class="customer-field-controls">
+                    <select class="form-select form-select-sm" formControlName="customer">
+                      <option value="">Select customer</option>
+                      <option *ngFor="let customer of customers" [value]="customer">{{ customer }}</option>
+                    </select>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" (click)="openCustomerManagement(customerManagementModal)">
+                      Manage
+                    </button>
+                  </div>
                 </div>
 
                 <div class="mb-2">
@@ -249,11 +254,16 @@
 
                 <div class="small text-muted mt-3 mb-2">Editable but structured</div>
 
-                <div class="mb-2">
+                <div class="mb-2 volume-estimate-field-row">
                   <label class="form-label">Volume Estimate</label>
-                  <select class="form-select form-select-sm" formControlName="volumeEstimate">
-                    <option *ngFor="let option of rangeOptions" [value]="option">{{ option }}</option>
-                  </select>
+                  <div class="volume-estimate-field-controls">
+                    <select class="form-select form-select-sm" formControlName="volumeEstimate">
+                      <option *ngFor="let option of volumeEstimateOptions" [value]="option.value">{{ option.label }}</option>
+                    </select>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" (click)="openVolumeEstimateManagement(volumeEstimateManagementModal)">
+                      Manage
+                    </button>
+                  </div>
                 </div>
 
                 <div class="mb-2">
@@ -265,7 +275,17 @@
 
                 <div class="mb-2">
                   <label class="form-label">Estimated Revenue</label>
-                  <input type="text" class="form-control form-control-sm" formControlName="estimatedRevenue" placeholder="e.g. $275,000" />
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text">$</span>
+                    <input
+                      type="number"
+                      class="form-control form-control-sm"
+                      formControlName="estimatedRevenue"
+                      min="0"
+                      step="0.01"
+                      inputmode="decimal"
+                      placeholder="0.00" />
+                  </div>
                 </div>
 
                 <div class="yes-no-field mb-2">
@@ -296,6 +316,8 @@
                     <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('forecastConfirmed', false) ? 'btn-danger' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('forecastConfirmed', false)">No</button>
                   </div>
                 </div>
+
+                <ng-container *ngTemplateOutlet="gateAttachmentsBlock"></ng-container>
               </div>
             </div>
           </div>
@@ -330,10 +352,17 @@
               </div>
               <div class="gate-body horizontal-gate-form">
                 <div class="yes-no-field mb-2">
-                  <label class="form-label mb-1">Concept architecture defined, new technology to source?</label>
-                  <div class="btn-group btn-group-sm" role="group" aria-label="Concept architecture defined, new technology to source">
+                  <label class="form-label mb-1">Concept architecture defined</label>
+                  <div class="btn-group btn-group-sm" role="group" aria-label="Concept architecture defined">
                     <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('conceptArchitectureDefined', true) ? 'btn-success' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('conceptArchitectureDefined', true)">Yes</button>
                     <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('conceptArchitectureDefined', false) ? 'btn-danger' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('conceptArchitectureDefined', false)">No</button>
+                  </div>
+                </div>
+                <div class="yes-no-field mb-2">
+                  <label class="form-label mb-1">New technology to source identified</label>
+                  <div class="btn-group btn-group-sm" role="group" aria-label="New technology to source identified">
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('newTechnologyToSource', true) ? 'btn-success' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('newTechnologyToSource', true)">Yes</button>
+                    <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('newTechnologyToSource', false) ? 'btn-danger' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('newTechnologyToSource', false)">No</button>
                   </div>
                 </div>
                 <div class="yes-no-field mb-2">
@@ -351,9 +380,21 @@
                   </div>
                 </div>
                 <div class="mb-2" *ngIf="projectForm.get('longLeadItemsIdentified')?.value">
-                  <label class="form-label">Long Lead Date</label>
-                  <input type="date" class="form-control form-control-sm" formControlName="longLeadItemsDate" />
+                  <label class="form-label">Long Lead Date Range</label>
+                  <div class="d-flex gap-2">
+                    <input type="date" class="form-control form-control-sm" formControlName="longLeadItemsStartDate" />
+                    <input
+                      type="date"
+                      class="form-control form-control-sm"
+                      formControlName="longLeadItemsEndDate"
+                      [min]="projectForm.get('longLeadItemsStartDate')?.value || null" />
+                  </div>
+                  <div class="small text-danger mt-1" *ngIf="isLongLeadDateRangeInvalid">
+                    End date must be on or after start date.
+                  </div>
                 </div>
+
+                <ng-container *ngTemplateOutlet="gateAttachmentsBlock"></ng-container>
               </div>
             </div>
           </div>
@@ -406,9 +447,19 @@
                   </div>
                 </div>
                 <div class="mb-2">
-                  <label class="form-label">Engineering release / ETD-ETA Proto</label>
-                  <input type="date" class="form-control form-control-sm" formControlName="engineeringReleaseEta" />
+                  <label class="form-label">Engineering release</label>
+                  <input type="date" class="form-control form-control-sm" formControlName="engineeringReleaseDate" />
                 </div>
+                <div class="mb-2">
+                  <label class="form-label">ETD Proto</label>
+                  <input type="date" class="form-control form-control-sm" formControlName="protoEtdDate" />
+                </div>
+                <div class="mb-2">
+                  <label class="form-label">ETA Proto</label>
+                  <input type="date" class="form-control form-control-sm" formControlName="protoEtaDate" />
+                </div>
+
+                <ng-container *ngTemplateOutlet="gateAttachmentsBlock"></ng-container>
               </div>
             </div>
           </div>
@@ -484,6 +535,8 @@
                     <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('engChecklistQualityDocs', false) ? 'btn-danger' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('engChecklistQualityDocs', false)">No</button>
                   </div>
                 </div>
+
+                <ng-container *ngTemplateOutlet="gateAttachmentsBlock"></ng-container>
               </div>
             </div>
           </div>
@@ -542,6 +595,8 @@
                     <button type="button" class="btn" [ngClass]="isBooleanFieldSelected('packagingInstructionsComplete', false) ? 'btn-danger' : 'btn-outline-secondary'" (click)="setBooleanFieldValue('packagingInstructionsComplete', false)">No</button>
                   </div>
                 </div>
+
+                <ng-container *ngTemplateOutlet="gateAttachmentsBlock"></ng-container>
               </div>
             </div>
           </div>
@@ -629,10 +684,137 @@
                     </div>
                   </div>
                 </div>
+
+                <ng-container *ngTemplateOutlet="gateAttachmentsBlock"></ng-container>
               </div>
             </div>
           </div>
 
+          <ng-template #gateAttachmentsBlock>
+            <hr />
+            <div class="small fw-semibold mb-2">Gate Attachments</div>
+            <p class="small text-muted mb-2">Add and manage files for Gate {{ activeGate }}.</p>
+            <div *ngIf="activeGateAttachmentResourceId">
+              <app-feature-attachments-panel
+                [feature]="FeatureType.PROJECT_MANAGER"
+                [resourceId]="activeGateAttachmentResourceId"
+                [viewMode]="'table'"
+                [showDelete]="true">
+              </app-feature-attachments-panel>
+            </div>
+            <div class="small text-muted" *ngIf="!activeGateAttachmentResourceId">Save draft first to enable gate attachments.</div>
+
+            <hr />
+            <div class="small fw-semibold mb-2">Gate Comments</div>
+            <p class="small text-muted mb-2">Add timestamped comments for Gate {{ activeGate }}.</p>
+            <div *ngIf="hasProjectContext; else gateCommentRequiresSave">
+              <textarea
+                class="form-control form-control-sm mb-2"
+                rows="2"
+                [value]="gateCommentText"
+                (input)="gateCommentText = $any($event.target).value"
+                placeholder="Add a gate comment"></textarea>
+              <div class="d-flex justify-content-end mb-2">
+                <button type="button" class="btn btn-sm btn-outline-primary" [disabled]="isSavingGateComment" (click)="addGateComment()">
+                  Add Comment
+                </button>
+              </div>
+              <div *ngIf="gateCommentError" class="small text-danger mb-2">{{ gateCommentError }}</div>
+
+              <div class="border rounded p-2" style="max-height: 220px; overflow: auto;">
+                <div *ngIf="!activeGateComments.length" class="small text-muted">No comments yet for this gate.</div>
+                <div *ngFor="let comment of activeGateComments; let isLast = last" class="py-2" [class.border-bottom]="!isLast">
+                  <div class="d-flex justify-content-between align-items-start gap-2">
+                    <div class="small">{{ comment.commentText }}</div>
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline-danger"
+                      *ngIf="canDeleteGateComment(comment)"
+                      (click)="deleteGateComment(comment)">
+                      Delete
+                    </button>
+                  </div>
+                  <div class="small text-muted">{{ comment.createdBy }} · {{ formatGateCommentTimestamp(comment.createdAt) }}</div>
+                </div>
+              </div>
+            </div>
+            <ng-template #gateCommentRequiresSave>
+              <div class="small text-muted">Save draft first to enable gate comments.</div>
+            </ng-template>
+          </ng-template>
+
+          <ng-template #customerManagementModal let-modal>
+            <div class="modal-header">
+              <h5 class="modal-title">Manage Customers</h5>
+              <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
+            </div>
+            <div class="modal-body">
+              <div class="input-group input-group-sm mb-3">
+                <input #newCustomerInput type="text" class="form-control" placeholder="Add customer name" (keydown.enter)="addCustomerOption(newCustomerInput)" />
+                <button type="button" class="btn btn-primary" (click)="addCustomerOption(newCustomerInput)">Add</button>
+              </div>
+
+              <div *ngIf="customerModalError" class="alert alert-danger py-2 mb-3">{{ customerModalError }}</div>
+
+              <div class="border rounded p-2" style="max-height: 280px; overflow: auto;">
+                <div *ngIf="!customerDraftList.length" class="small text-muted">No customers in the list.</div>
+                <div *ngFor="let customer of customerDraftList" class="d-flex align-items-center justify-content-between border-bottom py-2">
+                  <span>{{ customer }}</span>
+                  <button type="button" class="btn btn-outline-danger btn-sm" (click)="removeCustomerOption(customer)">Delete</button>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-secondary" (click)="modal.dismiss()">Cancel</button>
+              <button type="button" class="btn btn-primary" (click)="saveCustomerManagement(modal)">Save Customers</button>
+            </div>
+          </ng-template>
+
+          <ng-template #volumeEstimateManagementModal let-modal>
+            <div class="modal-header">
+              <h5 class="modal-title">Manage Volume Estimate</h5>
+              <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
+            </div>
+            <div class="modal-body">
+              <div class="mb-3">
+                <label class="form-label">Low Label</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  [value]="volumeEstimateDraftByKey.Low"
+                  (input)="volumeEstimateDraftByKey.Low = $any($event.target).value"
+                  placeholder="Low > 50"
+                  maxlength="120" />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Medium Label</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  [value]="volumeEstimateDraftByKey.Medium"
+                  (input)="volumeEstimateDraftByKey.Medium = $any($event.target).value"
+                  placeholder="Medium 50-150"
+                  maxlength="120" />
+              </div>
+              <div class="mb-2">
+                <label class="form-label">High Label</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  [value]="volumeEstimateDraftByKey.High"
+                  (input)="volumeEstimateDraftByKey.High = $any($event.target).value"
+                  placeholder="High 150+"
+                  maxlength="120" />
+              </div>
+
+              <div *ngIf="volumeEstimateModalError" class="alert alert-danger py-2 mt-3 mb-0">{{ volumeEstimateModalError }}</div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-secondary" (click)="modal.dismiss()">Cancel</button>
+              <button type="button" class="btn btn-primary" (click)="saveVolumeEstimateManagement(modal)">Save Labels</button>
+            </div>
+          </ng-template>
+          
           <div class="col-12 col-lg-4">
             <div class="calc-card card shadow-sm h-100">
               <h5 class="mb-3">System calculates</h5>

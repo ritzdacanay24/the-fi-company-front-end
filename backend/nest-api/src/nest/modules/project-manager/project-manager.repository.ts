@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { RowDataPacket } from 'mysql2/promise';
+import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { BaseRepository } from '@/shared/repositories/base.repository';
 import { MysqlService } from '@/shared/database/mysql.service';
 
@@ -42,6 +42,33 @@ export interface PmProjectIntakeRow extends RowDataPacket {
   active_gate: number;
   gate_completed_at: string | null;
   updated_at: string;
+}
+
+export interface PmCustomerOptionRow extends RowDataPacket {
+  id: number;
+  customer_name: string;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PmVolumeEstimateOptionRow extends RowDataPacket {
+  id: number;
+  option_key: 'Low' | 'Medium' | 'High';
+  option_label: string;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PmGateCommentRow extends RowDataPacket {
+  id: number;
+  project_id: string;
+  gate_number: number;
+  comment_text: string;
+  created_by: string;
+  created_by_id: number;
+  created_at: string;
 }
 
 @Injectable()
@@ -144,5 +171,112 @@ export class ProjectManagerRepository extends BaseRepository<PmProjectRow> {
 
   async deleteIntakeByProjectId(projectId: string): Promise<void> {
     await this.rawQuery(`DELETE FROM eyefidb.pm_project_intake WHERE project_id = ?`, [projectId]);
+  }
+
+  async getCustomerOptions(): Promise<PmCustomerOptionRow[]> {
+    return this.rawQuery<PmCustomerOptionRow>(
+      `SELECT *
+       FROM eyefidb.pm_customer_options
+       ORDER BY display_order ASC, customer_name ASC`,
+    );
+  }
+
+  async replaceCustomerOptions(customerNames: string[]): Promise<void> {
+    await this.mysqlService.withTransaction(async (connection) => {
+      await connection.query(`DELETE FROM eyefidb.pm_customer_options`);
+
+      for (let i = 0; i < customerNames.length; i++) {
+        await connection.execute(
+          `INSERT INTO eyefidb.pm_customer_options (customer_name, display_order)
+           VALUES (?, ?)`,
+          [customerNames[i], i + 1],
+        );
+      }
+    });
+  }
+
+  async getVolumeEstimateOptions(): Promise<PmVolumeEstimateOptionRow[]> {
+    return this.rawQuery<PmVolumeEstimateOptionRow>(
+      `SELECT *
+       FROM eyefidb.pm_volume_estimate_options
+       ORDER BY display_order ASC, id ASC`,
+    );
+  }
+
+  async replaceVolumeEstimateOptions(
+    options: Array<{ key: 'Low' | 'Medium' | 'High'; label: string; displayOrder: number }>
+  ): Promise<void> {
+    await this.mysqlService.withTransaction(async (connection) => {
+      await connection.query(`DELETE FROM eyefidb.pm_volume_estimate_options`);
+
+      for (const option of options) {
+        await connection.execute(
+          `INSERT INTO eyefidb.pm_volume_estimate_options (option_key, option_label, display_order)
+           VALUES (?, ?, ?)`,
+          [option.key, option.label, option.displayOrder],
+        );
+      }
+    });
+  }
+
+  async getGateComments(projectId: string, gateNumber: number): Promise<PmGateCommentRow[]> {
+    return this.rawQuery<PmGateCommentRow>(
+      `SELECT *
+       FROM eyefidb.pm_gate_comments
+       WHERE project_id = ? AND gate_number = ?
+       ORDER BY created_at DESC, id DESC`,
+      [projectId, gateNumber],
+    );
+  }
+
+  async addGateComment(
+    projectId: string,
+    gateNumber: number,
+    commentText: string,
+    createdBy: string,
+    createdById: number
+  ): Promise<PmGateCommentRow> {
+    const insertSql = `
+      INSERT INTO eyefidb.pm_gate_comments (project_id, gate_number, comment_text, created_by, created_by_id)
+      VALUES (?, ?, ?, ?, ?)
+    `;
+
+    const insertResult = await this.mysqlService.execute<ResultSetHeader>(insertSql, [
+      projectId,
+      gateNumber,
+      commentText,
+      createdBy,
+      createdById,
+    ]);
+    const insertedId = Number(insertResult?.insertId || 0);
+
+    const rows = await this.rawQuery<PmGateCommentRow>(
+      `SELECT *
+       FROM eyefidb.pm_gate_comments
+       WHERE id = ?
+       LIMIT 1`,
+      [insertedId],
+    );
+
+    return rows[0];
+  }
+
+  async getGateCommentById(commentId: number): Promise<PmGateCommentRow | null> {
+    const rows = await this.rawQuery<PmGateCommentRow>(
+      `SELECT *
+       FROM eyefidb.pm_gate_comments
+       WHERE id = ?
+       LIMIT 1`,
+      [commentId],
+    );
+
+    return rows[0] || null;
+  }
+
+  async deleteGateCommentById(commentId: number): Promise<void> {
+    await this.mysqlService.execute<ResultSetHeader>(
+      `DELETE FROM eyefidb.pm_gate_comments WHERE id = ?`,
+      [commentId],
+    );
   }
 }

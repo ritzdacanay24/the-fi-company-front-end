@@ -25,12 +25,13 @@
   bottom: 0;
   left: var(--vz-vertical-menu-width, 250px);
   right: 0;
-  background-color: var(--vz-card-bg, #fff);
+  background-color: var(--vz-body-bg, var(--vz-card-bg));
   background-image: none;
   opacity: 1;
   backdrop-filter: none;
-  border-top: 1px solid var(--vz-border-color);
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+  color: var(--vz-body-color);
+  border-top: 1px solid var(--vz-border-color-translucent, var(--vz-border-color));
+  box-shadow: 0 -0.125rem 0.25rem rgba(0, 0, 0, 0.075);
   padding: 10px 16px;
   z-index: 100;
   display: flex;

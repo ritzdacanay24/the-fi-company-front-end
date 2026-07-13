@@ -20,8 +20,6 @@ const GROUP_PALETTE = [
   '#00c875', '#0f3d78', '#ff7575', '#fdab3d', '#66ccff'
 ];
 
-const DEPENDS_ON_OPTIONS = ['3FS', '6FS', '8FS', '1FS', '2FS', '4FS', '5FS', '7FS', '9FS', '10FS'];
-
 const DEFAULT_PROJECT_TASK_TEMPLATES = [
   'DFM completed / checkbox',
   'Pixel Mapping / software files',
@@ -94,7 +92,7 @@ export class ProjectManagerTasksComponent implements OnInit {
   private groupColorMap = new Map<string, string>();
   private groupColorIndex = 0;
   private subgroupCatalog: Record<string, Set<string>> = {};
-  private readonly singleClickDropdownCols = new Set(['gate', 'status', 'dependsOn', 'startDate', 'finishDate']);
+  private readonly singleClickDropdownCols = new Set(['gate', 'status', 'startDate', 'finishDate']);
   private lastInteractedTaskId: number | null = null;
   private requestedTaskBoardFromQuery = '';
   actionMessage = '';
@@ -297,7 +295,6 @@ export class ProjectManagerTasksComponent implements OnInit {
     taskName: ['', [Validators.required, Validators.maxLength(140)]],
     startDate: ['2026-03-12', Validators.required],
     finishDate: ['2026-03-29', Validators.required],
-    dependsOn: [''],
     bucket: ['Overall'],
     status: ['Open' as TaskStatus],
     completion: [0]
@@ -322,7 +319,6 @@ export class ProjectManagerTasksComponent implements OnInit {
       suppressMovable: true,
       valueGetter: () => ''
     },
-    { field: 'taskId', headerName: '#', width: 70, valueFormatter: params => params.value ?? '' },
     {
       field: 'gate',
       headerName: 'Gate',
@@ -330,7 +326,15 @@ export class ProjectManagerTasksComponent implements OnInit {
       editable: params => params.data?.rowType === 'task',
       cellEditor: 'agSelectCellEditor',
       cellEditorParams: { values: ['', ...this.gateOptions] },
-      valueFormatter: (params: any) => String(params.value || '').trim() || 'Project'
+      valueFormatter: (params: any) => {
+        const value = String(params.value || '').trim();
+        if (value) {
+          return value;
+        }
+
+        const isTaskRow = params?.data?.rowType === 'task' && !params?.node?.group;
+        return isTaskRow ? 'Project' : '';
+      }
     },
     {
       field: 'taskName',
@@ -411,19 +415,6 @@ export class ProjectManagerTasksComponent implements OnInit {
       cellEditor: 'agDateStringCellEditor',
       aggFunc: (params: any) => this.aggregateMaxDate(params?.values),
     },
-    {
-      field: 'dependsOn', headerName: 'Depends On', width: 120,
-      editable: params => params.data?.rowType === 'task',
-      cellEditor: 'agRichSelectCellEditor',
-      cellEditorParams: {
-        values: DEPENDS_ON_OPTIONS,
-        allowTyping: true,
-        filterList: true,
-        searchType: 'matchAny',
-        highlightMatch: true
-      }
-    },
-    { field: 'bucket', headerName: 'Bucket', width: 120, editable: params => params.data?.rowType === 'task' },
     {
       field: 'status',
       headerName: 'Status',
@@ -514,7 +505,7 @@ export class ProjectManagerTasksComponent implements OnInit {
   ];
 
   gridOptions: GridOptions<PmTreeRow> = {
-    animateRows: true,
+    animateRows: false,
     suppressAggFuncInHeader: true,
     getRowId: params => params.data.rowId,
     groupAllowUnbalanced: true,
@@ -667,7 +658,7 @@ export class ProjectManagerTasksComponent implements OnInit {
 
       const gateFilterParam = (params.get('gateFilter') || '').trim();
       if (gateFilterParam === 'All' || this.gateOptions.includes(gateFilterParam as TaskGate)) {
-        this.setGateFilter(gateFilterParam as TaskGateFilter, false);
+        this.setGateFilter(gateFilterParam as TaskGateFilter, false, false);
       }
       this.suppressFilterParamSync = false;
 
@@ -756,7 +747,7 @@ export class ProjectManagerTasksComponent implements OnInit {
     this.filterStatus = '';
     this.hideDone = false;
     this.quickFilterText = '';
-    this.setGateFilter('All', false);
+    this.setGateFilter('All', false, false);
     this.syncFilterQueryParams();
     this.gridApi?.setGridOption('quickFilterText', '');
     this.rebuildTreeRows();
@@ -954,7 +945,7 @@ export class ProjectManagerTasksComponent implements OnInit {
       startDate: value.startDate || '',
       finishDate: value.finishDate || '',
       durationDays: this.calculateDuration(value.startDate || '', value.finishDate || ''),
-      dependsOn: value.dependsOn || '',
+      dependsOn: '',
       bucket: value.bucket || 'Overall',
       status: (value.status || 'Open') as TaskStatus,
       completion: Number(value.completion || 0),
@@ -1012,10 +1003,9 @@ export class ProjectManagerTasksComponent implements OnInit {
         gate: selectedGate,
         groupName: 'PM',
         subGroupName: 'Customer Inputs',
-        bucket: 'Overall',
-        dependsOn: selectedGate
+        bucket: 'Overall'
       });
-      this.setGateFilter(selectedGate, false);
+      this.setGateFilter(selectedGate, false, false);
       return;
     }
 
@@ -1024,12 +1014,11 @@ export class ProjectManagerTasksComponent implements OnInit {
         gate: selectedGate,
         groupName: 'Engineering',
         subGroupName: 'Backlog',
-        bucket: 'Engineering',
-        dependsOn: selectedGate
+        bucket: 'Engineering'
       });
       this.moveTargetGroup = 'Engineering';
       this.moveTargetSubGroup = 'Backlog';
-      this.setGateFilter(selectedGate, false);
+      this.setGateFilter(selectedGate, false, false);
       return;
     }
 
@@ -1038,25 +1027,28 @@ export class ProjectManagerTasksComponent implements OnInit {
         gate: selectedGate,
         groupName: 'Quality',
         subGroupName: 'QA',
-        bucket: 'Validation',
-        dependsOn: selectedGate
+        bucket: 'Validation'
       });
       this.moveTargetGroup = 'Quality';
       this.moveTargetSubGroup = 'QA';
-      this.setGateFilter(selectedGate, false);
+      this.setGateFilter(selectedGate, false, false);
       return;
     }
 
-    this.setGateFilter(hasExplicitGateSelection ? selectedGate : 'All', false);
+    if (hasExplicitGateSelection) {
+      this.setGateFilter(selectedGate, false, false);
+    }
   }
 
-  setGateFilter(gate: TaskGateFilter, syncParams = true): void {
+  setGateFilter(gate: TaskGateFilter, syncParams = true, rebuildRows = true): void {
     this.activeGateFilter = gate;
     this.gateContextLabel = gate === 'All' ? 'All Gates' : `Gate ${gate.replace('G', '')}`;
     if (syncParams) {
       this.syncFilterQueryParams();
     }
-    this.rebuildTreeRows();
+    if (rebuildRows) {
+      this.rebuildTreeRows();
+    }
   }
 
   onGateFilterChange(value: string): void {
@@ -1135,7 +1127,7 @@ export class ProjectManagerTasksComponent implements OnInit {
       durationDays,
       startDate,
       finishDate,
-      dependsOn: value.dependsOn || 'Engineering Input',
+      dependsOn: '',
       bucket: 'Engineering',
       status: 'Open',
       completion: 0,

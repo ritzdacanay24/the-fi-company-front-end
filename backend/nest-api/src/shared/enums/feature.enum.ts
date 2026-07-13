@@ -4,6 +4,7 @@
  * Maps to actual S3 bucket folder structure
  */
 export enum FeatureType {
+  PROJECT_MANAGER = 'project-manager',
   NCR = 'ncr',
   QIR = 'qir',
   SUPPORT_TICKETS = 'support-tickets',
@@ -36,6 +37,11 @@ export enum FeatureType {
  * Legacy names are automatically queried when retrieving existing records
  */
 export const FEATURE_CONFIG: Record<FeatureType, { s3Prefix: string; field: string; legacyNames?: string[] }> = {
+  [FeatureType.PROJECT_MANAGER]: {
+    s3Prefix: 'project-manager/{id}',
+    field: 'project_manager',
+    legacyNames: ['project_manager', 'Project Manager'],
+  },
   [FeatureType.NCR]: {
     s3Prefix: 'ncr/{id}',
     field: 'ncr',

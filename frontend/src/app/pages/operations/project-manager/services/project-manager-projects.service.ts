@@ -65,11 +65,27 @@ type IntakeStoragePayload = {
   gateCompletedAt?: Partial<Record<GateKey, string | null>>;
 };
 
+export interface VolumeEstimateOption {
+  key: 'Low' | 'Medium' | 'High';
+  label: string;
+}
+
+export interface GateComment {
+  id: number;
+  projectId: string;
+  gateNumber: 1 | 2 | 3 | 4 | 5 | 6;
+  commentText: string;
+  createdBy: string;
+  createdById: number;
+  createdAt: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ProjectManagerProjectsService {
   private readonly projectsCache: ProjectDashboardItem[] = [];
   private selectedProjectIdCache = '';
   private readonly intakeStateCache = new Map<string, IntakeStoragePayload>();
+  private readonly gateCommentsCache = new Map<string, GateComment[]>();
 
   private readonly gateFieldMap: Record<GateKey, string[]> = {
     gate1: [
@@ -85,14 +101,19 @@ export class ProjectManagerProjectsService {
     ],
     gate2: [
       'conceptArchitectureDefined',
+      'newTechnologyToSource',
       'roughCostEntered',
-      'longLeadItemsIdentified'
+      'longLeadItemsIdentified',
+      'longLeadItemsStartDate',
+      'longLeadItemsEndDate'
     ],
     gate3: [
       'preliminaryBomUploaded',
       'protoQty',
       'partNumberMapped',
-      'engineeringReleaseEta'
+      'engineeringReleaseDate',
+      'protoEtdDate',
+      'protoEtaDate'
     ],
     gate4: [
       'dfmCompleted',
@@ -248,6 +269,229 @@ export class ProjectManagerProjectsService {
       catchError(err => {
         console.error('[PM] saveIntakeState$ failed (in-memory cache already updated)', err);
         return of(undefined);
+      })
+    );
+  }
+
+  getCustomerOptions$(): Observable<string[]> {
+    if (!this.isApiMode) {
+      return of([]);
+    }
+
+    return this.http.get<string[]>(`${environment.pmApiUrl}/customer-options`).pipe(
+      map((items) => Array.isArray(items)
+        ? Array.from(new Set(items.map((item) => String(item || '').trim()).filter(Boolean)))
+        : []
+      ),
+      catchError((err) => {
+        console.error('[PM] getCustomerOptions$ failed', err);
+        return of([]);
+      })
+    );
+  }
+
+  saveCustomerOptions$(customers: string[]): Observable<string[]> {
+    if (!this.isApiMode) {
+      return of(customers);
+    }
+
+    return this.http.put<string[]>(`${environment.pmApiUrl}/customer-options`, {
+      customers,
+    }).pipe(
+      map((items) => Array.isArray(items)
+        ? Array.from(new Set(items.map((item) => String(item || '').trim()).filter(Boolean)))
+        : []
+      ),
+      catchError((err) => {
+        console.error('[PM] saveCustomerOptions$ failed', err);
+        return of(customers);
+      })
+    );
+  }
+
+  getVolumeEstimateOptions$(): Observable<VolumeEstimateOption[]> {
+    if (!this.isApiMode) {
+      return of([]);
+    }
+
+    return this.http.get<VolumeEstimateOption[]>(`${environment.pmApiUrl}/volume-estimate-options`).pipe(
+      map((items) => {
+        if (!Array.isArray(items)) {
+          return [];
+        }
+
+        const normalized = items
+          .map((item) => ({
+            key: String(item?.key || '').trim() as 'Low' | 'Medium' | 'High',
+            label: String(item?.label || '').trim().replace(/\s+/g, ' '),
+          }))
+          .filter((item) => ['Low', 'Medium', 'High'].includes(item.key) && !!item.label);
+
+        const byKey = new Map(normalized.map(item => [item.key, item]));
+        return (['Low', 'Medium', 'High'] as const)
+          .filter(key => byKey.has(key))
+          .map(key => byKey.get(key) as VolumeEstimateOption);
+      }),
+      catchError((err) => {
+        console.error('[PM] getVolumeEstimateOptions$ failed', err);
+        return of([]);
+      })
+    );
+  }
+
+  saveVolumeEstimateOptions$(options: VolumeEstimateOption[]): Observable<VolumeEstimateOption[]> {
+    if (!this.isApiMode) {
+      return of(options);
+    }
+
+    return this.http.put<VolumeEstimateOption[]>(`${environment.pmApiUrl}/volume-estimate-options`, {
+      options,
+    }).pipe(
+      map((items) => {
+        if (!Array.isArray(items)) {
+          return options;
+        }
+
+        const normalized = items
+          .map((item) => ({
+            key: String(item?.key || '').trim() as 'Low' | 'Medium' | 'High',
+            label: String(item?.label || '').trim().replace(/\s+/g, ' '),
+          }))
+          .filter((item) => ['Low', 'Medium', 'High'].includes(item.key) && !!item.label);
+
+        const byKey = new Map(normalized.map(item => [item.key, item]));
+        return (['Low', 'Medium', 'High'] as const)
+          .map(key => byKey.get(key))
+          .filter((item): item is VolumeEstimateOption => !!item);
+      }),
+      catchError((err) => {
+        console.error('[PM] saveVolumeEstimateOptions$ failed', err);
+        return of(options);
+      })
+    );
+  }
+
+  getGateComments$(projectId: string, gateNumber: 1 | 2 | 3 | 4 | 5 | 6): Observable<GateComment[]> {
+    const cacheKey = `${projectId}:${gateNumber}`;
+    if (!projectId) {
+      return of([]);
+    }
+
+    if (!this.isApiMode) {
+      return of(this.gateCommentsCache.get(cacheKey) || []);
+    }
+
+    return this.http.get<GateComment[]>(`${environment.pmApiUrl}/${encodeURIComponent(projectId)}/gates/${gateNumber}/comments`).pipe(
+      map((items) => {
+        const normalized = Array.isArray(items)
+          ? items.map((item) => ({
+            id: Number(item?.id || 0),
+            projectId: String(item?.projectId || projectId),
+            gateNumber: Number(item?.gateNumber || gateNumber) as 1 | 2 | 3 | 4 | 5 | 6,
+            commentText: String(item?.commentText || '').trim(),
+            createdBy: String(item?.createdBy || '').trim() || 'Unknown',
+            createdById: Number(item?.createdById || 0),
+            createdAt: String(item?.createdAt || ''),
+          })).filter(item => !!item.commentText)
+          : [];
+
+        this.gateCommentsCache.set(cacheKey, normalized);
+        return normalized;
+      }),
+      catchError((err) => {
+        console.error('[PM] getGateComments$ failed', err);
+        return of(this.gateCommentsCache.get(cacheKey) || []);
+      })
+    );
+  }
+
+  addGateComment$(
+    projectId: string,
+    gateNumber: 1 | 2 | 3 | 4 | 5 | 6,
+    commentText: string,
+    createdBy: string
+  ): Observable<GateComment | null> {
+    const cacheKey = `${projectId}:${gateNumber}`;
+    if (!projectId) {
+      return of(null);
+    }
+
+    const trimmedText = String(commentText || '').trim();
+    if (!trimmedText) {
+      return of(null);
+    }
+
+    if (!this.isApiMode) {
+      const newComment: GateComment = {
+        id: Date.now(),
+        projectId,
+        gateNumber,
+        commentText: trimmedText,
+        createdBy: String(createdBy || '').trim() || 'Unknown',
+        createdById: 0,
+        createdAt: new Date().toISOString(),
+      };
+      const existing = this.gateCommentsCache.get(cacheKey) || [];
+      this.gateCommentsCache.set(cacheKey, [newComment, ...existing]);
+      return of(newComment);
+    }
+
+    return this.http.post<GateComment>(`${environment.pmApiUrl}/${encodeURIComponent(projectId)}/gates/${gateNumber}/comments`, {
+      commentText: trimmedText,
+      createdBy,
+    }).pipe(
+      map((item) => {
+        if (!item) {
+          return null;
+        }
+
+        const normalized: GateComment = {
+          id: Number(item.id || 0),
+          projectId: String(item.projectId || projectId),
+          gateNumber: Number(item.gateNumber || gateNumber) as 1 | 2 | 3 | 4 | 5 | 6,
+          commentText: String(item.commentText || '').trim(),
+          createdBy: String(item.createdBy || '').trim() || 'Unknown',
+          createdById: Number(item.createdById || 0),
+          createdAt: String(item.createdAt || ''),
+        };
+
+        const existing = this.gateCommentsCache.get(cacheKey) || [];
+        this.gateCommentsCache.set(cacheKey, [normalized, ...existing]);
+        return normalized;
+      }),
+      catchError((err) => {
+        console.error('[PM] addGateComment$ failed', err);
+        return of(null);
+      })
+    );
+  }
+
+  deleteGateComment$(projectId: string, gateNumber: 1 | 2 | 3 | 4 | 5 | 6, commentId: number): Observable<boolean> {
+    const cacheKey = `${projectId}:${gateNumber}`;
+    if (!projectId || !commentId) {
+      return of(false);
+    }
+
+    if (!this.isApiMode) {
+      const existing = this.gateCommentsCache.get(cacheKey) || [];
+      this.gateCommentsCache.set(cacheKey, existing.filter(item => item.id !== commentId));
+      return of(true);
+    }
+
+    return this.http.delete<{ success?: boolean }>(
+      `${environment.pmApiUrl}/${encodeURIComponent(projectId)}/gates/${gateNumber}/comments/${commentId}`
+    ).pipe(
+      map((result) => {
+        const success = !!result?.success;
+        if (success) {
+          const existing = this.gateCommentsCache.get(cacheKey) || [];
+          this.gateCommentsCache.set(cacheKey, existing.filter(item => item.id !== commentId));
+        }
+        return success;
+      }),
+      catchError((err) => {
+        console.error('[PM] deleteGateComment$ failed', err);
+        return of(false);
       })
     );
   }
@@ -713,11 +957,19 @@ export class ProjectManagerProjectsService {
 
     (Object.keys(this.gateFieldMap) as GateKey[]).forEach((gate) => {
       const fields = this.gateFieldMap[gate];
-      const completed = fields.filter((field) => this.isFieldComplete(form[field])).length;
+      const completed = fields.filter((field) => this.isFormFieldComplete(form, field)).length;
       result[gate] = fields.length ? Math.round((completed / fields.length) * 100) : 0;
     });
 
     return result;
+  }
+
+  private isFormFieldComplete(form: Record<string, any>, fieldName: string): boolean {
+    if ((fieldName === 'longLeadItemsStartDate' || fieldName === 'longLeadItemsEndDate') && form['longLeadItemsIdentified'] !== true) {
+      return true;
+    }
+
+    return this.isFieldComplete(form[fieldName]);
   }
 
   private isFieldComplete(value: any): boolean {
@@ -793,8 +1045,16 @@ export class ProjectManagerProjectsService {
       return 0;
     }
 
-    const completed = allFields.filter((field) => this.isFieldReady(form[field])).length;
+    const completed = allFields.filter((field) => this.isFormFieldReady(form, field)).length;
     return Math.round((completed / allFields.length) * 100);
+  }
+
+  private isFormFieldReady(form: Record<string, any>, fieldName: string): boolean {
+    if ((fieldName === 'longLeadItemsStartDate' || fieldName === 'longLeadItemsEndDate') && form['longLeadItemsIdentified'] !== true) {
+      return true;
+    }
+
+    return this.isFieldReady(form[fieldName]);
   }
 
   private computeReadinessStatus(readiness: number, targetProductionDate: string): 'Green' | 'Yellow' | 'Red' {
