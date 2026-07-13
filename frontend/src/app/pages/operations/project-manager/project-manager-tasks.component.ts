@@ -4,11 +4,14 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { SharedModule } from '@app/shared/shared.module';
 import { AccessControlApiService } from '@app/core/api/access-control/access-control.service';
+import { AttachmentsService } from '@app/core/api/attachments/attachments.service';
+import { CommentsService } from '@app/core/api/comments/comments.service';
+import { FeatureType } from '@app/shared/enums/feature.enum';
+import { CommentOffcanvasComponent } from '@app/shared/components/comment-offcanvas/comment-offcanvas.component';
 import { AgGridModule } from 'ag-grid-angular';
 import { CellValueChangedEvent, ColDef, GridApi, GridOptions, GridReadyEvent, IRowNode, RowDragEndEvent, RowSelectedEvent } from 'ag-grid-community';
-import { PmTaskComment, PmTaskAttachment, PmTaskRecord, ProjectManagerTasksDataService, TaskGate, TaskStatus } from './services/project-manager-tasks-data.service';
+import { PmTaskRecord, ProjectManagerTasksDataService, TaskGate, TaskStatus } from './services/project-manager-tasks-data.service';
 import { ProjectDashboardItem, ProjectManagerProjectsService } from './services/project-manager-projects.service';
-import { PmTaskCommentModalComponent } from './pm-task-comment-modal.component';
 import { PmTaskAttachmentModalComponent } from './pm-task-attachment-modal.component';
 
 type TaskGateFilter = 'All' | TaskGate;
@@ -50,12 +53,14 @@ interface PmTreeRow {
   completion: number | null;
   source: 'manual' | 'bulk-engineering' | '';
   _groupColor?: string;
+  _commentCount?: number;
+  _attachmentCount?: number;
 }
 
 @Component({
   standalone: true,
   selector: 'app-project-manager-tasks',
-  imports: [SharedModule, ReactiveFormsModule, AgGridModule],
+  imports: [SharedModule, ReactiveFormsModule, AgGridModule, CommentOffcanvasComponent],
   templateUrl: './project-manager-tasks.component.html',
   styleUrls: ['./project-manager-tasks.component.scss']
 })
@@ -98,6 +103,25 @@ export class ProjectManagerTasksComponent implements OnInit {
   actionMessage = '';
   actionMessageType: 'success' | 'warning' = 'success';
   currentProjectSummary: ProjectDashboardItem | null = null;
+  readonly attachmentFeature = FeatureType.PROJECT_MANAGER;
+  readonly commentType = 'Project Manager Task';
+  private taskAttachmentCountMap = new Map<number, number>();
+  private taskCommentCountMap = new Map<number, number>();
+  isCommentPanelOpen = false;
+  selectedCommentOrderNum: string | null = null;
+  selectedCommentTaskId: number | null = null;
+  focusedCommentId: number | null = null;
+  commentViewMode: 'offcanvas' | 'modal' = 'offcanvas';
+  commentPanelWidth = 420;
+  private pendingDeepLinkTaskId: number | null = null;
+
+  get commentPanelPushWidth(): number {
+    if (!this.isCommentPanelOpen || window.innerWidth <= 991.98) {
+      return 0;
+    }
+
+    return this.commentPanelWidth;
+  }
 
   engineeringPeople = [
     'Ankit Batra',
@@ -476,8 +500,10 @@ export class ProjectManagerTasksComponent implements OnInit {
       filter: false,
       cellRenderer: (params: any) => {
         if (!params.data || params.data.rowType !== 'task') return '';
-        const count = (params.data as PmTreeRow & { _commentCount?: number })._commentCount ?? 0;
-        const label = count > 0 ? `💬 ${count}` : '💬 Add';
+        const taskId = Number(params.data.taskId);
+        const liveCount = Number.isFinite(taskId) ? this.taskCommentCountMap.get(taskId) : undefined;
+        const count = liveCount ?? params.data._commentCount ?? 0;
+        const label = count > 0 ? `💬 ${count}` : `💬 Add (${count})`;
         return `<button class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:11px">${label}</button>`;
       },
       onCellClicked: (params: any) => {
@@ -493,8 +519,10 @@ export class ProjectManagerTasksComponent implements OnInit {
       filter: false,
       cellRenderer: (params: any) => {
         if (!params.data || params.data.rowType !== 'task') return '';
-        const count = (params.data as PmTreeRow & { _attachmentCount?: number })._attachmentCount ?? 0;
-        const label = count > 0 ? `📎 ${count}` : '📎 Add';
+        const taskId = Number(params.data.taskId);
+        const liveCount = Number.isFinite(taskId) ? this.taskAttachmentCountMap.get(taskId) : undefined;
+        const count = liveCount ?? params.data._attachmentCount ?? 0;
+        const label = count > 0 ? `📎 ${count}` : `📎 Add (${count})`;
         return `<button class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:11px">${label}</button>`;
       },
       onCellClicked: (params: any) => {
@@ -552,10 +580,22 @@ export class ProjectManagerTasksComponent implements OnInit {
       return { borderLeft: `3px solid transparent` };
     },
     getRowClass: (params: any) => {
-      if (params.node?.group && params.node.level === 0) return 'pm-group-row';
-      if (params.node?.group) return 'pm-subgroup-row';
-      if (params.data?.rowType === 'add-item') return 'pm-add-item-row';
-      return '';
+      const classes: string[] = [];
+
+      if (params.node?.group && params.node.level === 0) {
+        classes.push('pm-group-row');
+      } else if (params.node?.group) {
+        classes.push('pm-subgroup-row');
+      } else if (params.data?.rowType === 'add-item') {
+        classes.push('pm-add-item-row');
+      }
+
+      const rowTaskId = Number(params?.data?.taskId);
+      if (params?.data?.rowType === 'task' && Number.isFinite(rowTaskId) && this.selectedCommentTaskId === rowTaskId) {
+        classes.push('pm-comment-focused-row');
+      }
+
+      return classes.join(' ');
     },
     isRowSelectable: undefined,
     singleClickEdit: true,
@@ -616,6 +656,8 @@ export class ProjectManagerTasksComponent implements OnInit {
     private tasksDataService: ProjectManagerTasksDataService,
     private projectsService: ProjectManagerProjectsService,
     private accessControlApi: AccessControlApiService,
+    private attachmentsService: AttachmentsService,
+    private commentsService: CommentsService,
     private modalService: NgbModal
   ) {
     // Initialized from query params to keep URL and local state in sync.
@@ -644,8 +686,14 @@ export class ProjectManagerTasksComponent implements OnInit {
     this.route.queryParamMap.subscribe(params => {
       const gateContext = (params.get('gateContext') || '').trim();
       const gate = Number(params.get('gate') || 0);
-      const projectId = (params.get('projectId') || '').trim();
+      const routeProjectId = (params.get('projectId') || '').trim();
+      const commentParam = (params.get('comment') || '').trim();
+      const commentTypeParam = (params.get('type') || '').trim();
+      const commentIdParam = Number(params.get('commentId') || 0);
       this.requestedTaskBoardFromQuery = String(params.get('taskBoard') || '').trim();
+
+      const linkedTask = this.parseTaskCommentContext(commentParam);
+      const projectId = routeProjectId || linkedTask?.projectId || '';
 
       this.applyGateContext(gateContext, gate);
       this.applyProjectContext(projectId);
@@ -664,6 +712,15 @@ export class ProjectManagerTasksComponent implements OnInit {
 
       this.rebuildTreeRows();
       this.gridApi?.setGridOption('quickFilterText', this.quickFilterText);
+
+      if (commentParam && (!commentTypeParam || commentTypeParam === this.commentType) && linkedTask) {
+        this.commentViewMode = 'offcanvas';
+        this.selectedCommentTaskId = linkedTask.taskId;
+        this.selectedCommentOrderNum = commentParam;
+        this.focusedCommentId = Number.isFinite(commentIdParam) && commentIdParam > 0 ? commentIdParam : null;
+        this.pendingDeepLinkTaskId = linkedTask.taskId;
+        this.isCommentPanelOpen = true;
+      }
     });
   }
 
@@ -968,30 +1025,89 @@ export class ProjectManagerTasksComponent implements OnInit {
     const task = this.taskRecords.find(t => t.id === taskId);
     if (!task) return;
 
-    const ref = this.modalService.open(PmTaskAttachmentModalComponent, { size: 'md' });
-    ref.componentInstance.task = task;
-    ref.componentInstance.initialAttachments = task.attachments ? [...task.attachments] : [];
+    const resourceId = this.getTaskAttachmentResourceId(task.id);
+    if (!resourceId) {
+      this.actionMessageType = 'warning';
+      this.actionMessage = 'Save/select a project first to manage task attachments.';
+      return;
+    }
 
-    ref.result.then((updatedAttachments: PmTaskAttachment[]) => {
-      task.attachments = updatedAttachments;
-      this.persistTaskState();
-      this.rebuildTreeRows();
-    }).catch(() => { /* dismissed — no save */ });
+    const ref = this.modalService.open(PmTaskAttachmentModalComponent, { size: 'lg' });
+    ref.componentInstance.task = task;
+    ref.componentInstance.resourceId = resourceId;
+
+    ref.result
+      .then(() => this.reloadTaskAttachmentCount(task.id))
+      .catch(() => this.reloadTaskAttachmentCount(task.id));
   }
 
   openCommentModal(taskId: number): void {
     const task = this.taskRecords.find(t => t.id === taskId);
     if (!task) return;
 
-    const ref = this.modalService.open(PmTaskCommentModalComponent, { size: 'md' });
-    ref.componentInstance.task = task;
-    ref.componentInstance.initialComments = task.comments ? [...task.comments] : [];
+    const commentContext = this.getTaskCommentContext(task.id);
+    if (!commentContext) {
+      this.actionMessageType = 'warning';
+      this.actionMessage = 'Save/select a project first to manage task comments.';
+      return;
+    }
 
-    ref.result.then((updatedComments: PmTaskComment[]) => {
-      task.comments = updatedComments;
-      this.persistTaskState();
-      this.rebuildTreeRows();
-    }).catch(() => { /* dismissed — no save */ });
+    this.selectedCommentTaskId = task.id;
+    this.selectedCommentOrderNum = commentContext;
+    this.focusedCommentId = null;
+    this.isCommentPanelOpen = true;
+
+    const url = this.router.url.split('?')[0];
+    this.router.navigate([url], {
+      queryParams: {
+        comment: commentContext,
+        commentId: null,
+        type: this.commentType,
+        commentViewMode: this.commentViewMode,
+      },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
+
+  closeCommentPanel(): void {
+    this.isCommentPanelOpen = false;
+    if (this.selectedCommentTaskId !== null) {
+      void this.reloadTaskCommentCount(this.selectedCommentTaskId);
+    }
+    this.selectedCommentOrderNum = null;
+    this.selectedCommentTaskId = null;
+    this.focusedCommentId = null;
+
+    const url = this.router.url.split('?')[0];
+    this.router.navigate([url], {
+      queryParams: {
+        comment: null,
+        commentId: null,
+        type: null,
+        commentViewMode: null,
+      },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
+
+  setCommentViewMode(mode: 'offcanvas' | 'modal'): void {
+    this.commentViewMode = mode;
+  }
+
+  onCommentSaved(): void {
+    if (this.selectedCommentTaskId !== null) {
+      void this.reloadTaskCommentCount(this.selectedCommentTaskId);
+    }
+  }
+
+  onCommentPanelWidthChange(width: number): void {
+    if (!Number.isFinite(width)) {
+      return;
+    }
+
+    this.commentPanelWidth = Math.round(width);
   }
 
   private applyGateContext(gateContext: string, gate: number): void {
@@ -1589,6 +1705,8 @@ export class ProjectManagerTasksComponent implements OnInit {
     }
 
     this.activeProjectId = resolvedProjectId;
+    this.taskAttachmentCountMap.clear();
+    this.taskCommentCountMap.clear();
     this.initializeTaskState(this.activeProjectId);
     this.patchDefaultProjectFromSelection();
 
@@ -1606,6 +1724,158 @@ export class ProjectManagerTasksComponent implements OnInit {
 
     const projects = this.projectsService.getProjects();
     return this.projectsService.getSelectedProjectId(projects);
+  }
+
+  private getTaskAttachmentResourceId(taskId: number): number | null {
+    if (!Number.isFinite(taskId) || taskId <= 0) {
+      return null;
+    }
+
+    const baseId = this.getProjectAttachmentBaseId();
+    if (!baseId) {
+      return null;
+    }
+
+    return (baseId * 100000) + taskId;
+  }
+
+  private getTaskCommentContext(taskId: number): string | null {
+    if (!Number.isFinite(taskId) || taskId <= 0) {
+      return null;
+    }
+
+    const projectId = String(this.activeProjectId || this.currentProjectSummary?.id || '').trim();
+    if (!projectId) {
+      return null;
+    }
+
+    return `${projectId}::task::${taskId}`;
+  }
+
+  private parseTaskCommentContext(context: string): { projectId: string; taskId: number } | null {
+    const value = String(context || '').trim();
+    if (!value) {
+      return null;
+    }
+
+    const marker = '::task::';
+    const markerIndex = value.indexOf(marker);
+    if (markerIndex <= 0) {
+      return null;
+    }
+
+    const projectId = value.slice(0, markerIndex).trim();
+    const taskIdRaw = value.slice(markerIndex + marker.length).trim();
+    const taskId = Number(taskIdRaw);
+
+    if (!projectId || !Number.isFinite(taskId) || taskId <= 0) {
+      return null;
+    }
+
+    return { projectId, taskId };
+  }
+
+  private highlightTaskRow(taskId: number): void {
+    if (!this.gridApi || !Number.isFinite(taskId) || taskId <= 0) {
+      return;
+    }
+
+    const rowNode = this.gridApi.getRowNode(this.toTaskRowId(taskId));
+    if (!rowNode || rowNode.rowIndex === null || rowNode.rowIndex === undefined) {
+      return;
+    }
+
+    this.gridApi.ensureNodeVisible(rowNode, 'middle');
+    rowNode.setSelected(true, true);
+    this.gridApi.flashCells({
+      rowNodes: [rowNode],
+      flashDuration: 1800,
+      fadeDuration: 1000,
+    });
+  }
+
+  private getProjectAttachmentBaseId(): number | null {
+    const projectId = String(this.activeProjectId || this.currentProjectSummary?.id || '').trim();
+    if (!projectId) {
+      return null;
+    }
+
+    const digitsOnly = projectId.replace(/\D+/g, '');
+    if (digitsOnly) {
+      const parsed = Number.parseInt(digitsOnly.slice(-9), 10);
+      if (Number.isFinite(parsed) && parsed > 0) {
+        return parsed;
+      }
+    }
+
+    let hash = 0;
+    for (let i = 0; i < projectId.length; i++) {
+      hash = ((hash * 31) + projectId.charCodeAt(i)) >>> 0;
+    }
+
+    return hash > 0 ? hash : null;
+  }
+
+  private ensureTaskAttachmentCounts(taskIds: number[]): void {
+    const uniqueTaskIds = Array.from(new Set(taskIds.filter((id) => Number.isFinite(id) && id > 0)));
+    if (!uniqueTaskIds.length) {
+      return;
+    }
+
+    uniqueTaskIds.forEach((taskId) => {
+      if (!this.taskAttachmentCountMap.has(taskId)) {
+        void this.reloadTaskAttachmentCount(taskId);
+      }
+    });
+  }
+
+  private ensureTaskCommentCounts(taskIds: number[]): void {
+    const uniqueTaskIds = Array.from(new Set(taskIds.filter((id) => Number.isFinite(id) && id > 0)));
+    if (!uniqueTaskIds.length) {
+      return;
+    }
+
+    uniqueTaskIds.forEach((taskId) => {
+      if (!this.taskCommentCountMap.has(taskId)) {
+        void this.reloadTaskCommentCount(taskId);
+      }
+    });
+  }
+
+  private async reloadTaskAttachmentCount(taskId: number): Promise<void> {
+    const resourceId = this.getTaskAttachmentResourceId(taskId);
+    if (!resourceId) {
+      this.taskAttachmentCountMap.set(taskId, 0);
+      this.gridApi?.refreshCells({ force: true, columns: ['attachments'] });
+      return;
+    }
+
+    try {
+      const attachments = await this.attachmentsService.getAttachmentsByFeature(FeatureType.PROJECT_MANAGER, resourceId);
+      this.taskAttachmentCountMap.set(taskId, Array.isArray(attachments) ? attachments.length : 0);
+      this.gridApi?.refreshCells({ force: true, columns: ['attachments'] });
+    } catch {
+      this.taskAttachmentCountMap.set(taskId, 0);
+      this.gridApi?.refreshCells({ force: true, columns: ['attachments'] });
+    }
+  }
+
+  private async reloadTaskCommentCount(taskId: number): Promise<void> {
+    const orderNum = this.getTaskCommentContext(taskId);
+    if (!orderNum) {
+      this.taskCommentCountMap.set(taskId, 0);
+      this.gridApi?.refreshCells({ force: true, columns: ['comments'] });
+      return;
+    }
+
+    try {
+      const comments = await this.commentsService.find({ orderNum, type: this.commentType, active: 1 });
+      this.taskCommentCountMap.set(taskId, Array.isArray(comments) ? comments.length : 0);
+      this.gridApi?.refreshCells({ force: true, columns: ['comments'] });
+    } catch {
+      this.taskCommentCountMap.set(taskId, 0);
+      this.gridApi?.refreshCells({ force: true, columns: ['comments'] });
+    }
   }
 
   private resolveTreeDropTarget(overNode?: IRowNode<PmTreeRow>): { groupName: string; subGroupName: string } | null {
@@ -1726,7 +1996,8 @@ export class ProjectManagerTasksComponent implements OnInit {
         completion: task.completion,
         source: task.source,
         _groupColor: groupColor,
-        _commentCount: task.comments?.length ?? 0
+        _commentCount: this.taskCommentCountMap.get(task.id) ?? 0,
+        _attachmentCount: this.taskAttachmentCountMap.get(task.id) ?? 0
       } as PmTreeRow & { _commentCount: number });
     });
 
@@ -1817,15 +2088,24 @@ export class ProjectManagerTasksComponent implements OnInit {
         completion: task.completion,
         source: task.source,
         _groupColor: '#888888',
-        _commentCount: task.comments?.length ?? 0
+        _commentCount: this.taskCommentCountMap.get(task.id) ?? 0,
+        _attachmentCount: this.taskAttachmentCountMap.get(task.id) ?? 0
       } as PmTreeRow & { _commentCount: number });
     });
+
+    const taskIds = rows.filter(row => row.rowType === 'task' && row.taskId !== null).map(row => row.taskId as number);
+    this.ensureTaskAttachmentCounts(taskIds);
+    this.ensureTaskCommentCounts(taskIds);
 
     this.rowData = rows;
     this.gridApi?.setGridOption('rowData', rows);
 
     setTimeout(() => {
       this.restoreExpandedState(expanded);
+      if (this.pendingDeepLinkTaskId !== null) {
+        this.highlightTaskRow(this.pendingDeepLinkTaskId);
+        this.pendingDeepLinkTaskId = null;
+      }
     }, 0);
   }
 

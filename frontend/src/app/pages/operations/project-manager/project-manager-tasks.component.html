@@ -1,3 +1,4 @@
+<div class="pm-tasks-page" [style.margin-right.px]="commentPanelPushWidth">
 <div class="card shadow-sm overflow-hidden">
 
   <!-- ── Card Header ─────────────────────────────────────────────────────── -->
@@ -319,7 +320,7 @@
   </div>  </ng-container></div>
 
 <!-- ── Floating Toolbox ───────────────────────────────────────────────────── -->
-<div *ngIf="hasProject" class="pm-floating-toolbar">
+<div *ngIf="hasProject" class="pm-floating-toolbar" [style.right.px]="commentPanelPushWidth">
   <div class="d-flex align-items-center gap-2 flex-nowrap w-100 pm-scroll-row">
     <div class="d-flex gap-1 flex-nowrap flex-shrink-0">
       <button *ngFor="let s of ['Open','In Process','Review','Completed','Locked']" class="pm-status-pill"
@@ -335,3 +336,17 @@
     <button class="btn btn-sm btn-outline-secondary" (click)="toggleBulkPanel()">Bulk Add</button>
   </div>
 </div>
+</div>
+
+<app-comment-offcanvas
+  [isOpen]="isCommentPanelOpen"
+  [orderNum]="selectedCommentOrderNum"
+  [focusCommentId]="focusedCommentId"
+  [type]="commentType"
+  [title]="'Task Comments'"
+  [commentViewMode]="commentViewMode"
+  (closed)="closeCommentPanel()"
+  (commentViewModeChange)="setCommentViewMode($event)"
+  (panelWidthChange)="onCommentPanelWidthChange($event)"
+  (saved)="onCommentSaved()">
+</app-comment-offcanvas>
