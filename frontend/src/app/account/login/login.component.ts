@@ -32,6 +32,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   submitted = false;
   fieldTextType!: boolean;
   error = "";
+  isLoggingIn = false;
   returnUrl!: string;
   // set the current year
   year: number = new Date().getFullYear();
@@ -189,9 +190,11 @@ export class LoginComponent implements OnInit, OnDestroy {
     this.submitted = true;
     this.error = '';
 
-    if (this.loginForm.invalid) {
+    if (this.loginForm.invalid || this.isLoggingIn) {
       return;
     }
+
+    this.isLoggingIn = true;
 
     // Login Api
     this.authenticationService
@@ -218,12 +221,14 @@ export class LoginComponent implements OnInit, OnDestroy {
           }
 
           this.error = data?.message || 'Invalid email or password.';
+          this.isLoggingIn = false;
         },
         error: (error: any) => {
           this.error =
             error?.error?.message ||
             error?.message ||
             'Invalid email or password.';
+          this.isLoggingIn = false;
         },
       });
   }

@@ -1,6 +1,6 @@
 import { CommonModule } from "@angular/common";
 import { SafeResourceUrl, DomSanitizer } from "@angular/platform-browser";
-import { Component, Input } from "@angular/core";
+import { Component, Input, OnDestroy } from "@angular/core";
 import { NgbActiveModal } from "@ng-bootstrap/ng-bootstrap";
 
 interface FileViewerItem {
@@ -37,15 +37,18 @@ interface FileViewerItem {
 
     <div class="modal-body p-0">
       <div class="viewer-container">
-        @if (resolvingItem) {
+        @if (resolvingItem || heicConverting) {
           <div class="preview-unavailable">
             <div class="spinner-border text-primary" role="status"></div>
             <h5 class="mt-3">Loading File...</h5>
+            @if (isHeic()) {
+              <p class="mb-0 text-muted">Converting HEIC preview...</p>
+            }
           </div>
         } @else if (isImage() && !imageLoadError) {
           <div class="image-viewer">
             <img
-              [src]="url"
+              [src]="displayImageUrl"
               [alt]="fileName"
               [style.transform]="'scale(' + zoomLevel + ')'"
               (error)="onImageError()"
@@ -68,6 +71,9 @@ interface FileViewerItem {
             <i class="mdi mdi-image-broken-variant preview-icon"></i>
             <h5>Image Preview Unavailable</h5>
             <p>The image could not be loaded from the current URL.</p>
+            @if (isHeic()) {
+              <p class="mb-2 text-muted">HEIC conversion failed in the browser. Try downloading the file.</p>
+            }
             <div class="d-flex justify-content-center gap-2">
               <a [href]="url" target="_blank" class="btn btn-outline-primary">Open in New Tab</a>
               <a [href]="url" download class="btn btn-primary">Download</a>
@@ -185,26 +191,35 @@ interface FileViewerItem {
     `,
   ],
 })
-export class FileViewerModalComponent {
+export class FileViewerModalComponent implements OnDestroy {
   @Input() url!: string;
   @Input() fileName = "Attachment";
   @Input() items: FileViewerItem[] = [];
   @Input() initialIndex = 0;
   @Input() enableNavigation = false;
   @Input() resolveById?: (id: string | number) => Promise<{ url: string; fileName?: string } | null>;
+  @Input() loadBlob?: () => Promise<Blob>;
 
   safeUrl: SafeResourceUrl | null = null;
   safeOfficeUrl: SafeResourceUrl | null = null;
+  convertedImageUrl: string | null = null;
   zoomLevel = 1;
   imageLoadError = false;
   currentIndex = 0;
   resolvingItem = false;
+  heicConverting = false;
+
+  private convertedImageObjectUrl: string | null = null;
 
   constructor(public activeModal: NgbActiveModal, private sanitizer: DomSanitizer) {}
 
   ngOnInit(): void {
     this.currentIndex = Math.max(0, this.initialIndex || 0);
     this.applyCurrentItem();
+  }
+
+  ngOnDestroy(): void {
+    this.releaseConvertedImageUrl();
   }
 
   showNavigation(): boolean {
@@ -242,6 +257,8 @@ export class FileViewerModalComponent {
     this.safeUrl = null;
     this.safeOfficeUrl = null;
     this.zoomLevel = 1;
+    this.heicConverting = false;
+    this.releaseConvertedImageUrl();
 
     if (!Array.isArray(this.items) || this.items.length === 0) {
       this.refreshPreviewUrls();
@@ -283,6 +300,15 @@ export class FileViewerModalComponent {
       const officeEmbedUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(this.url)}`;
       this.safeOfficeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(officeEmbedUrl);
     }
+
+    if (this.isHeic()) {
+      this.heicConverting = true;
+      void this.prepareHeicPreview();
+    }
+  }
+
+  get displayImageUrl(): string {
+    return this.convertedImageUrl || this.url;
   }
 
   onImageError(): void {
@@ -299,7 +325,7 @@ export class FileViewerModalComponent {
       return true;
     }
 
-    if (this.hasExtension([".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".svg"])) {
+    if (this.hasExtension([".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".svg", ".heic", ".heif"])) {
       return true;
     }
 
@@ -345,6 +371,10 @@ export class FileViewerModalComponent {
     return url.startsWith('data:video/') || this.hasExtension([".mp4", ".webm", ".mov", ".avi", ".mkv"]);
   }
 
+  isHeic(): boolean {
+    return this.hasExtension([".heic", ".heif"]);
+  }
+
   private getNormalizedUrl(): string {
     return String(this.url || '').toLowerCase().trim();
   }
@@ -375,4 +405,54 @@ export class FileViewerModalComponent {
   resetZoom(): void {
     this.zoomLevel = 1;
   }
+
+  private async prepareHeicPreview(): Promise<void> {
+    try {
+      const heicBlob = this.loadBlob ? await this.loadBlob() : await this.fetchBlobFromUrl();
+      const heic2anyModule = await import('heic2any');
+      const heicConverter = (heic2anyModule.default || heic2anyModule) as unknown as (options: {
+        blob: Blob;
+        toType: string;
+        quality: number;
+      }) => Promise<Blob | Blob[]>;
+
+      const converted = await heicConverter({
+        blob: heicBlob,
+        toType: 'image/jpeg',
+        quality: 0.92,
+      });
+
+      const convertedBlob = Array.isArray(converted) ? converted[0] : converted;
+      if (!(convertedBlob instanceof Blob)) {
+        throw new Error('HEIC conversion did not return a blob');
+      }
+
+      this.releaseConvertedImageUrl();
+      this.convertedImageObjectUrl = URL.createObjectURL(convertedBlob);
+      this.convertedImageUrl = this.convertedImageObjectUrl;
+      this.imageLoadError = false;
+    } catch {
+      this.imageLoadError = true;
+      this.convertedImageUrl = null;
+    } finally {
+      this.heicConverting = false;
+    }
+  }
+
+  private async fetchBlobFromUrl(): Promise<Blob> {
+    const response = await fetch(this.url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch HEIC file: ${response.status}`);
+    }
+    return response.blob();
+  }
+
+  private releaseConvertedImageUrl(): void {
+    if (this.convertedImageObjectUrl) {
+      URL.revokeObjectURL(this.convertedImageObjectUrl);
+      this.convertedImageObjectUrl = null;
+    }
+    this.convertedImageUrl = null;
+  }
+
 }

@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, ElementRef, HostListener, OnInit, ViewChild, inject } from '@angular/core';
 import { SharedModule } from '@app/shared/shared.module';
 import { BucketBrowserItem, BucketBrowserService } from '@app/core/api/file-storage/bucket-browser.service';
 import { ToastrService } from 'ngx-toastr';
@@ -125,10 +125,18 @@ export class BucketBrowserComponent implements OnInit {
   private readonly api = inject(BucketBrowserService);
   private readonly toastr = inject(ToastrService);
   private readonly modal = inject(NgbModal);
+  private searchReloadTimer?: ReturnType<typeof setTimeout>;
+
+  @ViewChild('fileSearchInput') fileSearchInput?: ElementRef<HTMLInputElement>;
 
   bucket = '';
+  availableBuckets: string[] = [];
+  selectedBucket = '';
   prefix = '';
   prefixInput = '';
+  fileSearch = '';
+  fileSearchMode: 'name' | 'path' = 'name';
+  fileSearchScope: 'current' | 'all' = 'current';
   isLoading = false;
   isDeleting = false;
   nextToken = '';
@@ -136,7 +144,38 @@ export class BucketBrowserComponent implements OnInit {
   readonly rootNode: FolderNode = this.createNode('', 'root', 0);
   files: FileEntry[] = [];
 
+  get filteredFiles(): FileEntry[] {
+    if (!this.hasSearchTerm) {
+      return this.files;
+    }
+
+    return this.files.filter((file) => this.matchesSearch(file));
+  }
+
+  get hasSearchTerm(): boolean {
+    return !!String(this.fileSearch || '').trim();
+  }
+
+  get isGlobalSearchActive(): boolean {
+    return !this.prefix && this.fileSearchScope === 'all' && this.hasSearchTerm;
+  }
+
+  get searchResultSummary(): string {
+    if (!this.prefix && this.fileSearchScope === 'all' && !this.hasSearchTerm) {
+      return 'Type to search all directories';
+    }
+
+    if (!this.hasSearchTerm) {
+      return `${this.files.length} file${this.files.length === 1 ? '' : 's'}`;
+    }
+
+    const total = this.files.length;
+    const visible = this.filteredFiles.length;
+    return `${visible} of ${total} file${total === 1 ? '' : 's'}`;
+  }
+
   async ngOnInit(): Promise<void> {
+    await this.loadAvailableBuckets();
     this.rootNode.isExpanded = true;
     await this.loadNodeChildren(this.rootNode);
     await this.load();
@@ -156,11 +195,22 @@ export class BucketBrowserComponent implements OnInit {
   }
 
   async load(append = false): Promise<void> {
+    const shouldSkipGlobalSearch = !this.prefix && this.fileSearchScope === 'all' && !this.hasSearchTerm;
+    if (!append && shouldSkipGlobalSearch) {
+      this.files = [];
+      this.nextToken = '';
+      return;
+    }
+
     this.isLoading = true;
     try {
-      const fileResponse = await this.api.list(this.prefix, append ? this.nextToken : '', 200, '');
+      const delimiter = this.fileSearchScope === 'all' ? '' : '/';
+      const fileResponse = await this.api.list(this.prefix, append ? this.nextToken : '', 200, delimiter, this.selectedBucket);
 
       this.bucket = fileResponse.bucket;
+      if (!this.selectedBucket && this.bucket) {
+        this.selectedBucket = this.bucket;
+      }
       this.prefix = fileResponse.prefix || '';
       this.prefixInput = this.prefix;
       this.nextToken = fileResponse.nextContinuationToken || '';
@@ -264,7 +314,7 @@ export class BucketBrowserComponent implements OnInit {
 
     this.isDeleting = true;
     try {
-      await this.api.deletePrefix(node.prefix);
+      await this.api.deletePrefix(node.prefix, this.selectedBucket);
       this.toastr.success('Folder deleted');
 
       const parentPrefix = this.getParentPrefix(node.prefix);
@@ -286,7 +336,7 @@ export class BucketBrowserComponent implements OnInit {
 
   async previewFile(file: FileEntry): Promise<void> {
     try {
-      const signed = await this.api.getSignedUrl(file.key);
+      const signed = await this.api.getSignedUrl(file.key, this.selectedBucket);
       const modalRef = this.modal.open(FileViewerModalComponent, {
         size: 'xl',
         centered: true,
@@ -294,6 +344,7 @@ export class BucketBrowserComponent implements OnInit {
       });
       modalRef.componentInstance.url = signed.url;
       modalRef.componentInstance.fileName = signed.fileName;
+      modalRef.componentInstance.loadBlob = () => this.api.getObjectBlob(file.key, this.selectedBucket);
     } catch {
       this.toastr.error('Failed to preview file');
     }
@@ -301,7 +352,7 @@ export class BucketBrowserComponent implements OnInit {
 
   async downloadFile(file: FileEntry): Promise<void> {
     try {
-      const signed = await this.api.getSignedUrl(file.key);
+      const signed = await this.api.getSignedUrl(file.key, this.selectedBucket);
       const link = document.createElement('a');
       link.href = signed.url;
       link.download = signed.fileName;
@@ -332,7 +383,7 @@ export class BucketBrowserComponent implements OnInit {
 
     this.isDeleting = true;
     try {
-      await this.api.deleteObject(file.key);
+      await this.api.deleteObject(file.key, this.selectedBucket);
       this.toastr.success('File deleted');
       await this.load();
     } catch {
@@ -340,6 +391,115 @@ export class BucketBrowserComponent implements OnInit {
     } finally {
       this.isDeleting = false;
     }
+  }
+
+  setFileSearchMode(mode: 'name' | 'path'): void {
+    this.fileSearchMode = mode;
+  }
+
+  async onBucketChange(nextBucket: string): Promise<void> {
+    const safeBucket = String(nextBucket || '').trim();
+    if (!safeBucket || safeBucket === this.selectedBucket) {
+      return;
+    }
+
+    this.selectedBucket = safeBucket;
+    this.bucket = safeBucket;
+    this.prefix = '';
+    this.prefixInput = '';
+    this.nextToken = '';
+    this.files = [];
+
+    this.rootNode.children = [];
+    this.rootNode.hasLoadedChildren = false;
+    this.rootNode.hasChildren = true;
+    this.rootNode.isExpanded = true;
+
+    await this.loadNodeChildren(this.rootNode, true);
+    await this.load();
+  }
+
+  setFileSearchScope(scope: 'current' | 'all'): void {
+    if (this.fileSearchScope === scope) {
+      return;
+    }
+
+    this.fileSearchScope = scope;
+    this.nextToken = '';
+
+    void this.load();
+  }
+
+  onFileSearchChange(): void {
+    if (this.prefix || this.fileSearchScope !== 'all') {
+      return;
+    }
+
+    if (this.searchReloadTimer) {
+      clearTimeout(this.searchReloadTimer);
+    }
+
+    const term = String(this.fileSearch || '').trim();
+    if (!term) {
+      this.files = [];
+      this.nextToken = '';
+      return;
+    }
+
+    this.searchReloadTimer = setTimeout(() => {
+      this.nextToken = '';
+      void this.load();
+    }, 250);
+  }
+
+  clearFileSearch(): void {
+    this.fileSearch = '';
+    this.onFileSearchChange();
+    this.focusSearch();
+  }
+
+  focusSearch(): void {
+    const input = this.fileSearchInput?.nativeElement;
+    if (!input) {
+      return;
+    }
+
+    input.focus();
+    input.select();
+  }
+
+  highlightMatch(value: string): string {
+    const safeValue = this.escapeHtml(String(value || ''));
+    const term = String(this.fileSearch || '').trim();
+    if (!term) {
+      return safeValue;
+    }
+
+    const escapedTerm = this.escapeRegExp(this.escapeHtml(term));
+    const regex = new RegExp(`(${escapedTerm})`, 'ig');
+    return safeValue.replace(regex, '<mark>$1</mark>');
+  }
+
+  @HostListener('window:keydown', ['$event'])
+  onWindowKeydown(event: KeyboardEvent): void {
+    if (event.key !== '/') {
+      return;
+    }
+
+    const target = event.target as HTMLElement | null;
+    const isTypingTarget =
+      !!target &&
+      (target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.tagName === 'SELECT' ||
+        target.isContentEditable);
+
+    if (isTypingTarget) {
+      return;
+    }
+
+    event.preventDefault();
+    this.focusSearch();
   }
 
   private normalizePrefix(value: string): string {
@@ -368,6 +528,34 @@ export class BucketBrowserComponent implements OnInit {
     return segments.length ? `${segments.join('/')}/` : '';
   }
 
+  private matchesSearch(file: FileEntry): boolean {
+    const term = String(this.fileSearch || '').trim().toLowerCase();
+    if (!term) {
+      return true;
+    }
+
+    const fileName = String(file.name || '').toLowerCase();
+    if (this.fileSearchMode === 'name') {
+      return fileName.includes(term);
+    }
+
+    const fileKey = String(file.key || '').toLowerCase();
+    return fileName.includes(term) || fileKey.includes(term);
+  }
+
+  private escapeRegExp(value: string): string {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  private escapeHtml(value: string): string {
+    return value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   private createNode(prefix: string, name: string, depth: number): FolderNode {
     return {
       prefix,
@@ -388,7 +576,11 @@ export class BucketBrowserComponent implements OnInit {
 
     node.isLoading = true;
     try {
-      const response = await this.api.list(node.prefix, '', 200, '/');
+      const response = await this.api.list(node.prefix, '', 200, '/', this.selectedBucket);
+      this.bucket = response.bucket || this.bucket;
+      if (!this.selectedBucket && this.bucket) {
+        this.selectedBucket = this.bucket;
+      }
       const existingByPrefix = new Map(node.children.map((child) => [child.prefix, child]));
       const children = (response.prefixes || []).map((childPrefix) => {
         const existing = existingByPrefix.get(childPrefix);
@@ -441,14 +633,31 @@ export class BucketBrowserComponent implements OnInit {
 
       let next = cursor.children.find((child) => child.prefix === runningPrefix);
       if (!next) {
-        next = this.createNode(runningPrefix, segment, cursor.depth + 1);
-        cursor.children = [...cursor.children, next];
-        cursor.hasChildren = true;
+        break;
       }
 
       cursor.isExpanded = true;
       cursor = next;
       await this.loadNodeChildren(cursor);
+    }
+  }
+
+  private async loadAvailableBuckets(): Promise<void> {
+    try {
+      const response = await this.api.listBuckets();
+      const buckets = Array.from(new Set((response.buckets || []).map((bucket) => String(bucket || '').trim()).filter(Boolean)));
+      this.availableBuckets = buckets;
+
+      const preferred = String(response.defaultBucket || '').trim();
+      if (preferred) {
+        this.selectedBucket = preferred;
+      } else if (!this.selectedBucket && buckets.length) {
+        this.selectedBucket = buckets[0];
+      }
+    } catch {
+      this.availableBuckets = [];
+      this.selectedBucket = '';
+      this.toastr.error('Failed to load available buckets');
     }
   }
 

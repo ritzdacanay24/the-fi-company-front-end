@@ -25,11 +25,11 @@
             style="font-size:0.7rem;letter-spacing:0.04em;color:var(--vz-secondary-color)"
             for="pm-project-select">Project</label>
           <select id="pm-project-select" class="form-select form-select-sm" style="min-width:200px"
-            [ngModel]="selectedProjectId"
+            [(ngModel)]="projectDropdownSelectedId"
             [ngModelOptions]="{ standalone: true }"
             (ngModelChange)="onProjectSelect($event)">
             <option value="">— Select a project —</option>
-            <option *ngFor="let p of projectSelectOptions" [value]="p.id">{{ p.id }} – {{ p.name }}</option>
+            <option *ngFor="let p of projectSelectOptions; trackBy: trackByProjectId" [value]="p.id">{{ p.id }} – {{ p.name }}</option>
           </select>
         </div>
         <div class="d-inline-flex align-items-center gap-2">

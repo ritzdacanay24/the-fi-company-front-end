@@ -93,6 +93,7 @@ export class ProjectManagerTasksComponent implements OnInit {
   filterStatus = '';
   quickFilterText = '';
   allProjects: ProjectDashboardItem[] = [];
+  projectDropdownSelectedId = '';
   private suppressFilterParamSync = false;
   private groupColorMap = new Map<string, string>();
   private groupColorIndex = 0;
@@ -678,7 +679,11 @@ export class ProjectManagerTasksComponent implements OnInit {
     this.loadAssigneeDirectory();
 
     this.allProjects = this.projectsService.getProjects();
-    this.applyProjectContext((this.route.snapshot.queryParamMap.get('projectId') || '').trim());
+    this.applyProjectContext(
+      (this.route.snapshot.queryParamMap.get('projectId')
+        || this.route.snapshot.queryParamMap.get('project-id')
+        || '').trim()
+    );
 
     this.tasksDataService.saveFallback$.subscribe((projectId) => {
       if (projectId !== this.activeProjectId) {
@@ -690,14 +695,18 @@ export class ProjectManagerTasksComponent implements OnInit {
 
     this.projectsService.getProjects$().subscribe(projects => {
       this.allProjects = projects;
-      const projectIdFromQuery = (this.route.snapshot.queryParamMap.get('projectId') || '').trim();
+      const projectIdFromQuery = (
+        this.route.snapshot.queryParamMap.get('projectId')
+        || this.route.snapshot.queryParamMap.get('project-id')
+        || ''
+      ).trim();
       this.applyProjectContext(projectIdFromQuery);
     });
 
     this.route.queryParamMap.subscribe(params => {
       const gateContext = (params.get('gateContext') || '').trim();
       const gate = Number(params.get('gate') || 0);
-      const routeProjectId = (params.get('projectId') || '').trim();
+      const routeProjectId = (params.get('projectId') || params.get('project-id') || '').trim();
       const commentParam = (params.get('comment') || '').trim();
       const commentTypeParam = (params.get('type') || '').trim();
       const commentIdParam = Number(params.get('commentId') || 0);
@@ -743,15 +752,27 @@ export class ProjectManagerTasksComponent implements OnInit {
     return this.activeProjectId || this.currentProjectSummary?.id || '';
   }
 
-  get projectSelectOptions(): ProjectDashboardItem[] {
-    const options = [...this.allProjects];
-    const active = this.currentProjectSummary;
+  get projectSelectOptions(): Array<{ id: string; name: string }> {
+    const options = this.allProjects
+      .map((project) => ({
+        id: String(project?.id || '').trim(),
+        name: String(project?.name || project?.id || '').trim(),
+      }))
+      .filter((project) => !!project.id);
 
-    if (active && !options.some((project) => project.id === active.id)) {
-      options.unshift(active);
+    const selectedId = String(this.selectedProjectId || '').trim();
+    if (selectedId && !options.some((project) => project.id === selectedId)) {
+      options.unshift({
+        id: selectedId,
+        name: String(this.currentProjectSummary?.name || selectedId).trim(),
+      });
     }
 
     return options;
+  }
+
+  trackByProjectId(_: number, p: { id: string }): string {
+    return p.id;
   }
 
   onProjectSelect(id: string): void {
@@ -1842,20 +1863,10 @@ export class ProjectManagerTasksComponent implements OnInit {
 
   private applyProjectContext(requestedProjectId: string): void {
     const projects = this.projectsService.getProjects();
-    const hasRequested = !!requestedProjectId && projects.some(project => project.id === requestedProjectId);
-
-    if (hasRequested) {
-      this.projectsService.setSelectedProjectId(requestedProjectId);
-    }
-
-    let resolvedProjectId = hasRequested ? requestedProjectId : '';
-
-    const hasResolved = !!resolvedProjectId && projects.some(project => project.id === resolvedProjectId);
-    if (!hasResolved) {
-      resolvedProjectId = '';
-    }
+    const resolvedProjectId = String(requestedProjectId || '').trim();
 
     this.currentProjectSummary = projects.find(project => project.id === resolvedProjectId) || null;
+    this.projectDropdownSelectedId = resolvedProjectId;
 
     if (resolvedProjectId) {
       this.projectsService.setSelectedProjectId(resolvedProjectId);
@@ -1871,7 +1882,7 @@ export class ProjectManagerTasksComponent implements OnInit {
     this.initializeTaskState(this.activeProjectId);
     this.patchDefaultProjectFromSelection();
 
-    if (!hasRequested && requestedProjectId) {
+    if (requestedProjectId) {
       this.taskForm.patchValue({ project: requestedProjectId });
     }
 

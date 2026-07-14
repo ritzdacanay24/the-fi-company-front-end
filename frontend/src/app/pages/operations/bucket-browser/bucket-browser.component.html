@@ -6,6 +6,19 @@
           <h2 class="mb-1">AWS Bucket Browser</h2>
           <p class="text-muted mb-0">Browse folders and files in bucket <strong>{{ bucket || '...' }}</strong>.</p>
         </div>
+        <div class="d-flex align-items-center gap-2">
+          <label class="form-label mb-0 small text-muted">Bucket</label>
+          <select
+            class="form-select form-select-sm"
+            style="min-width: 260px;"
+            [ngModel]="selectedBucket"
+            (ngModelChange)="onBucketChange($event)"
+            [disabled]="isLoading || isDeleting"
+          >
+            <option [ngValue]="''" disabled>Select bucket...</option>
+            <option *ngFor="let bucketName of availableBuckets" [ngValue]="bucketName">{{ bucketName }}</option>
+          </select>
+        </div>
       </div>
 
       <div class="card border-0 shadow-sm mb-3 panel-card">
@@ -71,6 +84,72 @@
               <span class="small text-muted">{{ prefix || 'root' }}</span>
             </div>
 
+            <div class="card-body border-bottom">
+              <div class="d-flex justify-content-between align-items-center mb-1 gap-2">
+                <label class="form-label mb-0">Search files</label>
+                <span class="small text-muted">Press / to focus</span>
+              </div>
+
+              <input
+                #fileSearchInput
+                type="text"
+                class="form-control"
+                [placeholder]="fileSearchMode === 'name' ? 'Find by file name...' : 'Find by name or full key/path...'"
+                [(ngModel)]="fileSearch"
+                (ngModelChange)="onFileSearchChange()"
+              />
+
+              <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-2">
+                <div class="d-flex flex-wrap gap-2">
+                  <div class="btn-group" role="group" aria-label="Search scope">
+                    <button
+                      type="button"
+                      class="btn btn-sm"
+                      [ngClass]="fileSearchScope === 'current' ? 'btn-secondary' : 'btn-outline-secondary'"
+                      (click)="setFileSearchScope('current')"
+                    >
+                      Current Dir
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-sm"
+                      [ngClass]="fileSearchScope === 'all' ? 'btn-secondary' : 'btn-outline-secondary'"
+                      (click)="setFileSearchScope('all')"
+                    >
+                      All Dirs
+                    </button>
+                  </div>
+
+                  <div class="btn-group" role="group" aria-label="Search mode">
+                    <button
+                      type="button"
+                      class="btn btn-sm"
+                      [ngClass]="fileSearchMode === 'name' ? 'btn-secondary' : 'btn-outline-secondary'"
+                      (click)="setFileSearchMode('name')"
+                    >
+                      Name
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-sm"
+                      [ngClass]="fileSearchMode === 'path' ? 'btn-secondary' : 'btn-outline-secondary'"
+                      (click)="setFileSearchMode('path')"
+                    >
+                      Name + Path
+                    </button>
+                  </div>
+                </div>
+
+                <button class="btn btn-outline-secondary btn-sm" type="button" [disabled]="!fileSearch" (click)="clearFileSearch()">
+                  Clear
+                </button>
+              </div>
+
+              <div class="mt-2">
+                <span class="small text-muted">{{ searchResultSummary }}</span>
+              </div>
+            </div>
+
             <div class="table-responsive">
               <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
@@ -82,13 +161,13 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr *ngFor="let file of files">
+                  <tr *ngFor="let file of filteredFiles">
                     <td class="file-name-cell">
                       <div class="d-flex align-items-start gap-2">
                         <i class="ri-file-3-line text-secondary mt-1"></i>
                         <div class="min-w-0">
-                          <div class="fw-semibold file-name" [title]="file.name">{{ file.name }}</div>
-                          <div class="small text-muted file-key" [title]="file.key">{{ file.key }}</div>
+                          <div class="fw-semibold file-name" [title]="file.name" [innerHTML]="highlightMatch(file.name)"></div>
+                          <div class="small text-muted file-key" [title]="file.key" [innerHTML]="highlightMatch(file.key)"></div>
                         </div>
                       </div>
                     </td>
@@ -109,8 +188,24 @@
                     </td>
                   </tr>
 
-                  <tr *ngIf="!isLoading && files.length === 0">
+                  <tr *ngIf="!isLoading && !prefix && fileSearchScope === 'current' && files.length === 0">
+                    <td colspan="4" class="text-center py-4 text-muted">No files found in root.</td>
+                  </tr>
+
+                  <tr *ngIf="!isLoading && !prefix && fileSearchScope === 'all' && !hasSearchTerm">
+                    <td colspan="4" class="text-center py-4 text-muted">Type in search to scan files across all directories.</td>
+                  </tr>
+
+                  <tr *ngIf="!isLoading && prefix && files.length === 0">
                     <td colspan="4" class="text-center py-4 text-muted">No files found in this directory.</td>
+                  </tr>
+
+                  <tr *ngIf="!isLoading && !prefix && fileSearchScope === 'all' && hasSearchTerm && files.length === 0">
+                    <td colspan="4" class="text-center py-4 text-muted">No files found for this search.</td>
+                  </tr>
+
+                  <tr *ngIf="!isLoading && files.length > 0 && filteredFiles.length === 0">
+                    <td colspan="4" class="text-center py-4 text-muted">No files match your search.</td>
                   </tr>
                 </tbody>
               </table>

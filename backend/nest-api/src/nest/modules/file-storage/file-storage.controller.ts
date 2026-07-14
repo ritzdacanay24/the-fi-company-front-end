@@ -1,7 +1,8 @@
-import { BadRequestException, Body, Controller, Delete, Get, Post, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Post, Query, Res, StreamableFile, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { Permissions, RolePermissionGuard } from '../access-control';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { FileStorageService } from './file-storage.service';
+import type { Response } from 'express';
 
 @Controller('file-storage')
 @UseGuards(RolePermissionGuard)
@@ -11,6 +12,7 @@ export class FileStorageController {
   @Get('bucket/list')
   @Permissions('read')
   async listBucket(
+    @Query('bucket') bucket?: string,
     @Query('prefix') prefix?: string,
     @Query('delimiter') delimiter?: string,
     @Query('continuationToken') continuationToken?: string,
@@ -18,6 +20,7 @@ export class FileStorageController {
   ) {
     const parsedMaxKeys = Number(maxKeys || 100);
     return this.service.listBucketObjects({
+      bucket: String(bucket || '').trim() || undefined,
       prefix,
       delimiter,
       continuationToken,
@@ -25,15 +28,21 @@ export class FileStorageController {
     });
   }
 
+  @Get('bucket/available')
+  @Permissions('read')
+  async listAvailableBuckets() {
+    return this.service.listAvailableBuckets();
+  }
+
   @Get('bucket/signed-url')
   @Permissions('read')
-  async getBucketSignedUrl(@Query('key') key?: string) {
+  async getBucketSignedUrl(@Query('key') key?: string, @Query('bucket') bucket?: string) {
     const safeKey = String(key || '').trim();
     if (!safeKey) {
       throw new BadRequestException('Missing bucket object key');
     }
 
-    const url = await this.service.resolveBucketObjectUrl(undefined, safeKey);
+    const url = await this.service.resolveBucketObjectUrl(String(bucket || '').trim() || undefined, safeKey);
     const fileName = decodeURIComponent(safeKey.split('/').filter(Boolean).pop() || 'file');
 
     return {
@@ -41,6 +50,27 @@ export class FileStorageController {
       fileName,
       url,
     };
+  }
+
+  @Get('bucket/object')
+  @Permissions('read')
+  async getBucketObject(
+    @Query('key') key: string | undefined,
+    @Query('bucket') bucket: string | undefined,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<StreamableFile> {
+    const safeKey = String(key || '').trim();
+    if (!safeKey) {
+      throw new BadRequestException('Missing bucket object key');
+    }
+
+    const file = await this.service.getBucketObject(String(bucket || '').trim() || undefined, safeKey);
+    response.setHeader('Content-Type', file.contentType || 'application/octet-stream');
+    if (file.contentLength) {
+      response.setHeader('Content-Length', String(file.contentLength));
+    }
+    response.setHeader('Content-Disposition', file.contentDisposition || 'inline');
+    return new StreamableFile(file.body);
   }
 
   @Post('upload')
@@ -119,13 +149,13 @@ export class FileStorageController {
 
   @Delete('bucket/object')
   @Permissions('delete')
-  async deleteBucketObject(@Body('key') key?: string) {
+  async deleteBucketObject(@Body('key') key?: string, @Body('bucket') bucket?: string) {
     const safeKey = String(key || '').trim();
     if (!safeKey) {
       throw new BadRequestException('Missing bucket object key');
     }
 
-    await this.service.deleteStoredFileInBucket(safeKey);
+    await this.service.deleteStoredFileInBucket(safeKey, String(bucket || '').trim() || undefined);
 
     return {
       success: true,
@@ -135,13 +165,13 @@ export class FileStorageController {
 
   @Delete('bucket/prefix')
   @Permissions('delete')
-  async deleteBucketPrefix(@Body('prefix') prefix?: string) {
+  async deleteBucketPrefix(@Body('prefix') prefix?: string, @Body('bucket') bucket?: string) {
     const safePrefix = String(prefix || '').trim();
     if (!safePrefix) {
       throw new BadRequestException('Missing bucket prefix');
     }
 
-    const deleted = await this.service.deleteBucketPrefixIfEmpty(safePrefix);
+    const deleted = await this.service.deleteBucketPrefixIfEmpty(safePrefix, String(bucket || '').trim() || undefined);
 
     return {
       success: true,

@@ -82,9 +82,14 @@
                                 }
 
                                 <div class="d-grid gap-2">
-                                    <button class="btn btn-primary" type="submit">
+                                    <button class="btn btn-primary" type="submit" [disabled]="isLoggingIn">
+                                        @if (isLoggingIn) {
+                                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                        Signing in...
+                                        } @else {
                                         <i class="mdi mdi-login me-2"></i>
                                         Login
+                                        }
                                     </button>
                                 </div>
 

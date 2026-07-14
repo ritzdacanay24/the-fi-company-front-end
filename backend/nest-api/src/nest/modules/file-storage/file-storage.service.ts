@@ -1,9 +1,10 @@
-import { DeleteObjectCommand, GetObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand, GetObjectCommand, ListBucketsCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { mkdir, stat, unlink, writeFile } from 'node:fs/promises';
 import { basename, join } from 'node:path';
+import { Readable } from 'node:stream';
 
 @Injectable()
 export class FileStorageService {
@@ -138,6 +139,42 @@ export class FileStorageService {
     }
   }
 
+  async getBucketObject(bucket: string | undefined, key: string): Promise<{
+    bucket: string;
+    key: string;
+    body: Buffer;
+    contentType: string;
+    contentLength?: number;
+    contentDisposition?: string;
+  }> {
+    const bucketName = this.resolveBucketName(bucket);
+    const safeKey = this.sanitizeKeyPrefix(key);
+    if (!safeKey) {
+      throw new BadRequestException('Bucket object key is required');
+    }
+
+    const s3Client = this.requireS3Client();
+    const response = await s3Client.send(new GetObjectCommand({
+      Bucket: bucketName,
+      Key: safeKey,
+    }));
+
+    const body = await this.readS3Body(response.Body);
+    const contentType = String(response.ContentType || 'application/octet-stream');
+    const contentLength = typeof response.ContentLength === 'number' ? response.ContentLength : undefined;
+    const fileName = decodeURIComponent(safeKey.split('/').filter(Boolean).pop() || 'file');
+    const contentDisposition = String(response.ContentDisposition || `inline; filename="${fileName}"`);
+
+    return {
+      bucket: bucketName,
+      key: safeKey,
+      body,
+      contentType,
+      contentLength,
+      contentDisposition,
+    };
+  }
+
   async listBucketObjects(options?: {
     bucket?: string;
     prefix?: string;
@@ -192,6 +229,47 @@ export class FileStorageService {
       prefixes,
       items,
     };
+  }
+
+  async listAvailableBuckets(): Promise<{ defaultBucket: string; buckets: string[] }> {
+    const defaultBucket = String(process.env.FILE_STORAGE_DEFAULT_BUCKET || '').trim();
+    const s3Client = this.requireS3Client();
+
+    try {
+      const response = await s3Client.send(new ListBucketsCommand({}));
+      const buckets = (response.Buckets || [])
+        .map((bucket) => String(bucket.Name || '').trim())
+        .filter(Boolean)
+        .sort((left, right) => left.localeCompare(right));
+
+      if (!buckets.length && defaultBucket) {
+        return {
+          defaultBucket,
+          buckets: [defaultBucket],
+        };
+      }
+
+      if (defaultBucket && !buckets.includes(defaultBucket)) {
+        return {
+          defaultBucket,
+          buckets: [defaultBucket, ...buckets],
+        };
+      }
+
+      return {
+        defaultBucket,
+        buckets,
+      };
+    } catch {
+      if (defaultBucket) {
+        return {
+          defaultBucket,
+          buckets: [defaultBucket],
+        };
+      }
+
+      throw new BadRequestException('Failed to query available buckets');
+    }
   }
 
   async deleteBucketPrefixIfEmpty(prefix: string, bucket?: string): Promise<{ bucket: string; prefix: string; deleted: boolean }> {
@@ -433,10 +511,37 @@ export class FileStorageService {
     const segments = normalized.split('/').filter(Boolean);
     const safeSegments = segments
       .filter((segment) => segment !== '.' && segment !== '..')
-      .map((segment) => segment.replace(/[^a-zA-Z0-9._-]/g, ''))
+      // Preserve valid S3 object key characters such as spaces and apostrophes.
+      .map((segment) => segment.replace(/[\u0000-\u001F\u007F]/g, ''))
       .filter(Boolean);
 
     return safeSegments.join('/');
+  }
+
+  private async readS3Body(body: unknown): Promise<Buffer> {
+    if (!body) {
+      return Buffer.alloc(0);
+    }
+
+    const transformToByteArray = (body as { transformToByteArray?: () => Promise<Uint8Array> }).transformToByteArray;
+    if (typeof transformToByteArray === 'function') {
+      const bytes = await transformToByteArray.call(body);
+      return Buffer.from(bytes);
+    }
+
+    if (body instanceof Uint8Array) {
+      return Buffer.from(body);
+    }
+
+    const stream = body as Readable;
+    return new Promise<Buffer>((resolve, reject) => {
+      const chunks: Buffer[] = [];
+      stream.on('data', (chunk) => {
+        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+      });
+      stream.on('end', () => resolve(Buffer.concat(chunks)));
+      stream.on('error', reject);
+    });
   }
 
   private resolveUploadRootDirs(): string[] {

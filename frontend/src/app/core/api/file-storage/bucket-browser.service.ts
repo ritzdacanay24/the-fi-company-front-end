@@ -18,14 +18,26 @@ export interface BucketBrowserList {
   items: BucketBrowserItem[];
 }
 
+export interface BucketBrowserAvailableBuckets {
+  defaultBucket: string;
+  buckets: string[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class BucketBrowserService {
   private readonly baseUrl = 'apiV2/file-storage/bucket';
 
   constructor(private readonly http: HttpClient) {}
 
-  list(prefix = '', continuationToken = '', maxKeys = 200, delimiter: string | undefined = '/'): Promise<BucketBrowserList> {
+  list(
+    prefix = '',
+    continuationToken = '',
+    maxKeys = 200,
+    delimiter: string | undefined = '/',
+    bucket?: string,
+  ): Promise<BucketBrowserList> {
     const params = new URLSearchParams();
+    if (bucket) params.set('bucket', bucket);
     if (prefix) params.set('prefix', prefix);
     if (continuationToken) params.set('continuationToken', continuationToken);
     if (delimiter !== undefined) params.set('delimiter', delimiter);
@@ -36,20 +48,39 @@ export class BucketBrowserService {
     return firstValueFrom(this.http.get<BucketBrowserList>(url));
   }
 
-  getSignedUrl(key: string): Promise<{ key: string; fileName: string; url: string }> {
-    const encodedKey = encodeURIComponent(key);
-    return firstValueFrom(this.http.get<{ key: string; fileName: string; url: string }>(`${this.baseUrl}/signed-url?key=${encodedKey}`));
+  listBuckets(): Promise<BucketBrowserAvailableBuckets> {
+    return firstValueFrom(this.http.get<BucketBrowserAvailableBuckets>(`${this.baseUrl}/available`));
   }
 
-  deleteObject(key: string): Promise<{ success: boolean; key: string }> {
+  getSignedUrl(key: string, bucket?: string): Promise<{ key: string; fileName: string; url: string }> {
+    const params = new URLSearchParams();
+    params.set('key', key);
+    if (bucket) params.set('bucket', bucket);
+    return firstValueFrom(this.http.get<{ key: string; fileName: string; url: string }>(`${this.baseUrl}/signed-url?${params.toString()}`));
+  }
+
+  getObjectBlob(key: string, bucket?: string): Promise<Blob> {
+    const params = new URLSearchParams();
+    params.set('key', key);
+    if (bucket) params.set('bucket', bucket);
+    return firstValueFrom(this.http.get(`${this.baseUrl}/object?${params.toString()}`, { responseType: 'blob' }));
+  }
+
+  deleteObject(key: string, bucket?: string): Promise<{ success: boolean; key: string }> {
     return firstValueFrom(this.http.request<{ success: boolean; key: string }>('delete', `${this.baseUrl}/object`, {
-      body: { key },
+      body: {
+        key,
+        bucket,
+      },
     }));
   }
 
-  deletePrefix(prefix: string): Promise<{ success: boolean; prefix: string }> {
+  deletePrefix(prefix: string, bucket?: string): Promise<{ success: boolean; prefix: string }> {
     return firstValueFrom(this.http.request<{ success: boolean; prefix: string }>('delete', `${this.baseUrl}/prefix`, {
-      body: { prefix },
+      body: {
+        prefix,
+        bucket,
+      },
     }));
   }
 }

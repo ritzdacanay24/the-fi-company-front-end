@@ -76,6 +76,7 @@
     "firebase": "^10.7.0",
     "flatpickr": "^4.6.13",
     "fuzzy-search": "^3.2.1",
+    "heic2any": "^0.0.4",
     "install": "^0.13.0",
     "intersection-observer": "^0.12.2",
     "jasmine-core": "^5.1.1",
