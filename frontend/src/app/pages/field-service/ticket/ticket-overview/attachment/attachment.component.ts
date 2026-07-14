@@ -23,8 +23,9 @@ import { FileViewerModalComponent } from '@app/shared/components/file-viewer-mod
 export class AttachmentComponent implements OnInit {
   @Input() public data: any = [];
   @Input() public workOrderId: number | string;
-  @Input() public disabled: boolean = true;
+  @Input() public disabled: boolean = false;
   tripExpenseTotal = 0;
+  private viewerItems: Array<{ id: any; url: string; fileName: string }> = [];
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['workOrderId']) {
@@ -49,6 +50,7 @@ export class AttachmentComponent implements OnInit {
     try {
       this.loading = true;
       this.data = await this.api.getByWorkOrderId(this.workOrderId);
+      this.rebuildViewerItems();
       this.loading = false;
     } catch (err) {
       this.loading = false;
@@ -56,18 +58,18 @@ export class AttachmentComponent implements OnInit {
   }
 
   openMedia(row: any): void {
+    if (this.disabled) {
+      return;
+    }
+
     const currentLink = String(row?.link || '').trim();
     if (!currentLink) {
       return;
     }
 
-    const viewerItems = (this.data || [])
-      .filter((item: any) => String(item?.link || '').trim())
-      .map((item: any) => ({
-        id: item?.id,
-        url: String(item?.link || '').trim(),
-        fileName: String(item?.fileName || 'Attachment').trim(),
-      }));
+    const viewerItems = this.viewerItems.length
+      ? this.viewerItems
+      : this.buildViewerItems(this.data || []);
 
     const initialIndex = Math.max(
       0,
@@ -79,6 +81,7 @@ export class AttachmentComponent implements OnInit {
       centered: true,
       backdrop: true,
       keyboard: true,
+      animation: false,
     });
 
     modalRef.componentInstance.items = viewerItems;
@@ -122,6 +125,8 @@ export class AttachmentComponent implements OnInit {
     Object.keys(params).map((key) => {
       formData.append(key, params[key]);
     });
+
+    formData.append('subFolder', 'fieldService');
 
     try {
       SweetAlert.loading();
@@ -175,6 +180,20 @@ export class AttachmentComponent implements OnInit {
     }
     // Implement delete all functionality
     // this.api.deleteAllByWorkOrderId(this.workOrderId);
+  }
+
+  private rebuildViewerItems(): void {
+    this.viewerItems = this.buildViewerItems(this.data || []);
+  }
+
+  private buildViewerItems(source: any[]): Array<{ id: any; url: string; fileName: string }> {
+    return source
+      .filter((item: any) => String(item?.link || '').trim())
+      .map((item: any) => ({
+        id: item?.id,
+        url: String(item?.link || '').trim(),
+        fileName: String(item?.fileName || 'Attachment').trim(),
+      }));
   }
 
 }

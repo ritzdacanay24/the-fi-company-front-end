@@ -84,7 +84,9 @@ interface FileViewerItem {
         } @else if (isOfficeDocument()) {
           <iframe [src]="safeOfficeUrl" class="pdf-viewer"></iframe>
         } @else if (isVideo()) {
-          <video [src]="url" controls class="pdf-viewer"></video>
+          <div class="video-viewer-wrap">
+            <video [src]="url" controls class="video-viewer"></video>
+          </div>
         } @else {
           <div class="preview-unavailable">
             <i class="mdi mdi-file-document-outline preview-icon"></i>
@@ -143,6 +145,24 @@ interface FileViewerItem {
         min-height: 70vh;
         border: 0;
         background: var(--bs-body-bg);
+      }
+
+      .video-viewer-wrap {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+      }
+
+      .video-viewer {
+        width: auto;
+        max-width: 100%;
+        max-height: 75vh;
+        border: 0;
+        background: #000;
+        object-fit: contain;
       }
 
       .zoom-controls {

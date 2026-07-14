@@ -315,8 +315,22 @@ export class AttachmentsService {
 
   async getByWorkOrderId(workOrderId: number) {
     const rows = await this.metadataService.getByWorkOrderId(workOrderId);
+    const normalizedRows = (rows as Array<Record<string, unknown>>).map((row) => {
+      const explicitSubFolder = typeof row?.subFolder === 'string' ? row.subFolder.trim() : '';
+      const fieldName = String(row?.field || '').trim().toLowerCase();
+
+      if (!explicitSubFolder && fieldName === 'field service') {
+        return {
+          ...row,
+          subFolder: 'fieldService',
+        };
+      }
+
+      return row;
+    });
+
     return Promise.all(
-      (rows as Array<Record<string, unknown>>).map((row) =>
+      normalizedRows.map((row) =>
         this.storageService.withResolvedLink(row),
       ),
     );

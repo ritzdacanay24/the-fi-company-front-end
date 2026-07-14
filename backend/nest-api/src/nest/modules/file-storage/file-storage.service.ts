@@ -607,6 +607,12 @@ export class FileStorageService {
       }
     }
 
+    // If legacy rows have no link/storage metadata, derive folder from domain field.
+    const mappedFromField = this.resolveSubFolderFromField(row);
+    if (mappedFromField) {
+      return mappedFromField;
+    }
+
     const link = typeof row?.link === 'string' ? row.link.trim() : '';
     if (link) {
       const matched = link.match(/\/(?:uploads|attachments)\/([^/?#]+)/i);
@@ -616,6 +622,23 @@ export class FileStorageService {
     }
 
     return 'general';
+  }
+
+  private resolveSubFolderFromField(row: Record<string, unknown>): string | null {
+    const fieldName = String(row?.field || '').trim().toLowerCase();
+    if (!fieldName) {
+      return null;
+    }
+
+    const byField: Record<string, string> = {
+      'field service': 'fieldService',
+      'field service scheduler': 'fieldService',
+      'field service request': 'fieldService',
+      'field service receipts': 'fieldService',
+    };
+
+    const mapped = byField[fieldName];
+    return mapped ? this.sanitizeSubFolder(mapped, 'general') : null;
   }
 
 }
