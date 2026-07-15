@@ -223,6 +223,30 @@ export class TripDetailService {
         return text || '-';
       };
 
+      const normalizeNotes = (value: unknown): string => {
+        const text = String(value ?? '')
+          .normalize('NFKC')
+          .replace(/[\u00A0\u1680\u2000-\u200B\u202F\u205F\u3000]/g, ' ')
+          .replace(/[\t\v\f\r]+/g, ' ')
+          .replace(/[“”„‟]/g, '')
+          .replace(/[‘’‚‛]/g, '')
+          .replace(/[•·]/g, '\n')
+          .replace(/\r?\n/g, '\n')
+          .replace(/\s*\n\s*/g, '\n')
+          .replace(/\n{3,}/g, '\n\n')
+          .trim();
+
+        if (!text) {
+          return '-';
+        }
+
+        return text
+          .split('\n')
+          .map((line) => line.replace(/\s+/g, ' ').trim())
+          .filter((line) => !!line)
+          .join('\n');
+      };
+
       const joinAddress = (...parts: unknown[]): string => {
         const values = parts
           .map((part) => String(part ?? '').trim())
@@ -360,7 +384,7 @@ export class TripDetailService {
             formatDateTime(row.start_datetime),
             formatDateTime(row.end_datetime),
             normalize(row.confirmation),
-            normalize(row.notes),
+            normalizeNotes(row.notes),
           ];
 
           const travelType = String(row.type_of_travel ?? '').trim().toLowerCase();
