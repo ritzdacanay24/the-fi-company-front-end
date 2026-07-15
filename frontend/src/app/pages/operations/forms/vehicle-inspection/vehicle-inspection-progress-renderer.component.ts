@@ -8,27 +8,36 @@ import { CommonModule } from '@angular/common';
   imports: [CommonModule],
   template: `
     <div class="d-flex align-items-center gap-2 h-100" style="min-width: 180px;">
-      <div class="flex-grow-1">
-        <div class="progress" style="height: 10px; border-radius: 5px;">
-          <div class="progress-bar bg-success"
-            role="progressbar"
-            [style.width]="passedPct + '%'"
-            [title]="passed + ' passed'">
-          </div>
-          <div class="progress-bar bg-danger"
-            role="progressbar"
-            [style.width]="failedPct + '%'"
-            [title]="failed + ' failed'">
+      <ng-container *ngIf="!notUsed; else notUsedMessage">
+        <div class="flex-grow-1">
+          <div class="progress" style="height: 10px; border-radius: 5px;">
+            <div class="progress-bar bg-success"
+              role="progressbar"
+              [style.width]="passedPct + '%'"
+              [title]="passed + ' passed'">
+            </div>
+            <div class="progress-bar bg-danger"
+              role="progressbar"
+              [style.width]="failedPct + '%'"
+              [title]="failed + ' failed'">
+            </div>
           </div>
         </div>
-      </div>
-      <span class="small text-nowrap" [class.text-success]="failedPct === 0" [class.text-danger]="failedPct > 0">
-        {{ passed }}/{{ total }}
-      </span>
+        <span class="small text-nowrap" [class.text-success]="failedPct === 0" [class.text-danger]="failedPct > 0">
+          {{ passed }}/{{ total }}
+        </span>
+      </ng-container>
+
+      <ng-template #notUsedMessage>
+        <span class="small text-muted text-nowrap">
+          Vehicle Not Used
+        </span>
+      </ng-template>
     </div>
   `,
 })
 export class VehicleInspectionProgressRendererComponent implements ICellRendererAngularComp {
+  notUsed = false;
   passed = 0;
   failed = 0;
   total = 0;
@@ -41,6 +50,7 @@ export class VehicleInspectionProgressRendererComponent implements ICellRenderer
 
   refresh(params: ICellRendererParams): boolean {
     const d = params.data;
+    this.notUsed = Number(d?.not_used) === 1;
     this.passed = d?.passed_count ?? 0;
     this.failed = d?.failed_count ?? 0;
     this.total = d?.total_count ?? 0;
