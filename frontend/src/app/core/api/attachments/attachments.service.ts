@@ -129,8 +129,7 @@ export class AttachmentsService extends DataService<any> {
    * );
    */
   getAttachmentsByFeature = async (feature: FeatureType, id: number): Promise<any[]> => {
-    const encodedFeature = encodeURIComponent(String(feature));
-    const getUrl = `apiV2/attachments/${encodedFeature}/${id}`;
+    const getUrl = `apiV2/attachments/${String(feature)}/${id}`;
     return firstValueFrom(this.http.get<any[]>(getUrl));
   };
 
@@ -151,8 +150,7 @@ export class AttachmentsService extends DataService<any> {
    * );
    */
   uploadAttachment = async (feature: FeatureType, id: number, formData: FormData): Promise<any> => {
-    const encodedFeature = encodeURIComponent(String(feature));
-    const uploadUrl = `apiV2/attachments/${encodedFeature}/${id}/upload`;
+    const uploadUrl = `apiV2/attachments/${String(feature)}/${id}/upload`;
     return firstValueFrom(this.http.post<any>(uploadUrl, formData));
   };
 
