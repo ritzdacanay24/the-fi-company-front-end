@@ -223,6 +223,13 @@ export class TripDetailService {
         return text || '-';
       };
 
+      const joinAddress = (...parts: unknown[]): string => {
+        const values = parts
+          .map((part) => String(part ?? '').trim())
+          .filter((part) => !!part);
+        return values.length ? values.join(', ') : '-';
+      };
+
       const drawTable = (headers: string[], widths: number[], rows: string[][]): void => {
         const cellPaddingX = 5;
         const cellPaddingY = 4;
@@ -297,6 +304,203 @@ export class TripDetailService {
         });
       };
 
+      const drawTripDetailsWithAdvanced = (rowsData: Array<Record<string, unknown>>): void => {
+        const headers = ['Type', 'FSID', 'Name', 'Start', 'End', 'Confirmation', 'Notes'];
+        const widths = [70, 52, 104, 96, 96, 76, contentWidth - 494];
+        const cellPaddingX = 5;
+        const cellPaddingY = 4;
+        const minRowHeight = 18;
+        const subCellPaddingX = 4;
+        const subCellPaddingY = 2;
+        const subLeft = left + 10;
+        const subWidth = contentWidth - 20;
+        const subBoxPaddingX = 6;
+        const subBoxPaddingY = 4;
+        const detailLabelWidth = 110;
+        const detailValueWidth = subWidth - subBoxPaddingX * 2 - detailLabelWidth;
+
+        const drawHeaderRow = (): number => {
+          doc.font('Helvetica-Bold').fontSize(9);
+          const headerHeight = headers.reduce((maxHeight, headerText, idx) => {
+            const textHeight = doc.heightOfString(headerText, {
+              width: widths[idx] - cellPaddingX * 2,
+              align: 'left',
+            });
+            return Math.max(maxHeight, Math.max(minRowHeight, textHeight + cellPaddingY * 2));
+          }, minRowHeight);
+
+          let x = left;
+          headers.forEach((headerText, idx) => {
+            doc
+              .rect(x, y, widths[idx], headerHeight)
+              .fillAndStroke('#e2ecfb', '#b9cae7');
+
+            doc
+              .fillColor('#1c3f72')
+              .text(headerText, x + cellPaddingX, y + cellPaddingY, {
+                width: widths[idx] - cellPaddingX * 2,
+                align: 'left',
+              })
+              .fillColor('#000000');
+            x += widths[idx];
+          });
+
+          y += headerHeight;
+          return headerHeight;
+        };
+
+        ensureSpace(40);
+        drawHeaderRow();
+
+        rowsData.forEach((row, rowIndex) => {
+          const basicRow = [
+            normalize(toTitleCase(row.type_of_travel)),
+            normalize(row.fsId),
+            normalize(row.address_name),
+            formatDateTime(row.start_datetime),
+            formatDateTime(row.end_datetime),
+            normalize(row.confirmation),
+            normalize(row.notes),
+          ];
+
+          const travelType = String(row.type_of_travel ?? '').trim().toLowerCase();
+          const hasValue = (value: unknown): boolean => {
+            const text = String(value ?? '').trim();
+            return !!text && text !== '-';
+          };
+
+          const locationLabel = normalize(row.location_name);
+          const fullLocation = joinAddress(
+            row.address_name,
+            row.address,
+            row.address1,
+            row.city,
+            row.state,
+            row.zip_code,
+          );
+          const flightOut = normalize(row.flight_out);
+          const flightIn = normalize(row.flight_in);
+          const rentalDriver = normalize(row.rental_car_driver);
+
+          const detailRows: string[][] = [];
+
+          if (hasValue(locationLabel)) {
+            detailRows.push(['Location Label', locationLabel]);
+          }
+
+          if (hasValue(fullLocation)) {
+            detailRows.push(['Full Location', fullLocation]);
+          }
+
+          const isFlightType = /flight|air/.test(travelType);
+          if (isFlightType || hasValue(flightOut) || hasValue(flightIn)) {
+            detailRows.push(['Flight Out', flightOut]);
+            detailRows.push(['Flight In', flightIn]);
+          }
+
+          const isRentalType = /rental/.test(travelType);
+          if (isRentalType || hasValue(rentalDriver)) {
+            detailRows.push(['Rental Driver', rentalDriver]);
+          }
+
+          if (!detailRows.length) {
+            detailRows.push(['Details', '-']);
+          }
+
+          doc.font('Helvetica').fontSize(9);
+          const basicRowHeight = basicRow.reduce((maxHeight, cellText, idx) => {
+            const textHeight = doc.heightOfString(cellText, {
+              width: widths[idx] - cellPaddingX * 2,
+              align: 'left',
+            });
+            return Math.max(maxHeight, Math.max(minRowHeight, textHeight + cellPaddingY * 2));
+          }, minRowHeight);
+
+          doc.font('Helvetica').fontSize(7);
+          const detailRowHeights = detailRows.map(([labelText, valueText]) => {
+            const labelHeight = doc.heightOfString(labelText, {
+              width: detailLabelWidth - subCellPaddingX * 2,
+              align: 'left',
+            });
+            const valueHeight = doc.heightOfString(valueText, {
+              width: detailValueWidth - subCellPaddingX * 2,
+              align: 'left',
+            });
+            return Math.max(12, Math.max(labelHeight, valueHeight) + subCellPaddingY * 2);
+          });
+
+          const advancedBlockHeight = detailRowHeights.reduce((sum, rowHeight) => sum + rowHeight, 0);
+          const groupBlockHeight = basicRowHeight + advancedBlockHeight + subBoxPaddingY * 2;
+
+          if (y + groupBlockHeight > bottom) {
+            doc.addPage();
+            y = 40;
+            drawHeaderRow();
+          }
+
+          // Draw one outer border so each trip-detail row and its nested details read as one section.
+          doc.rect(left, y, contentWidth, groupBlockHeight).lineWidth(1).strokeColor('#c5d3e8').stroke();
+
+          doc.font('Helvetica').fontSize(9);
+          let x = left;
+          basicRow.forEach((cellText, idx) => {
+            const fill = rowIndex % 2 === 0 ? '#ffffff' : '#f8fbff';
+            doc.rect(x, y, widths[idx], basicRowHeight).fillAndStroke(fill, '#d8e1ee');
+
+            doc
+              .fillColor('#1d2736')
+              .text(cellText, x + cellPaddingX, y + cellPaddingY, {
+                width: widths[idx] - cellPaddingX * 2,
+                align: 'left',
+              })
+              .fillColor('#000000');
+            x += widths[idx];
+          });
+
+          const detailsStartY = y + basicRowHeight;
+
+          doc
+            .rect(subLeft, detailsStartY, subWidth, advancedBlockHeight + subBoxPaddingY * 2)
+            .fillAndStroke('#f9fbff', '#d8e1ee');
+
+          let subY = detailsStartY + subBoxPaddingY;
+          detailRows.forEach(([labelText, valueText], idx) => {
+            const rowHeight = detailRowHeights[idx];
+
+            doc
+              .rect(subLeft + subBoxPaddingX, subY, detailLabelWidth, rowHeight)
+              .fillAndStroke('#f2f6fd', '#d8e1ee');
+            doc
+              .font('Helvetica-Bold')
+              .fontSize(7)
+              .fillColor('#4a607f')
+              .text(labelText, subLeft + subBoxPaddingX + subCellPaddingX, subY + subCellPaddingY, {
+                width: detailLabelWidth - subCellPaddingX * 2,
+                align: 'left',
+              })
+              .fillColor('#000000');
+
+            const valueFill = rowIndex % 2 === 0 ? '#ffffff' : '#f8fbff';
+            doc
+              .rect(subLeft + subBoxPaddingX + detailLabelWidth, subY, detailValueWidth, rowHeight)
+              .fillAndStroke(valueFill, '#d8e1ee');
+            doc
+              .font('Helvetica')
+              .fontSize(7)
+              .fillColor('#2a3342')
+              .text(valueText, subLeft + subBoxPaddingX + detailLabelWidth + subCellPaddingX, subY + subCellPaddingY, {
+                width: detailValueWidth - subCellPaddingX * 2,
+                align: 'left',
+              })
+              .fillColor('#000000');
+
+            subY += rowHeight;
+          });
+
+          y += groupBlockHeight;
+        });
+      };
+
       const techNames = String(namesCsv || '')
         .split(',')
         .map((name) => name.trim())
@@ -336,23 +540,15 @@ export class TripDetailService {
 
       y += 12;
       writeSectionHeader('Trip Details');
-      const detailRows = details.length
-        ? details.map((row) => [
-          normalize(toTitleCase(row.type_of_travel)),
-          normalize(row.fsId),
-          normalize(row.address_name),
-          formatDateTime(row.start_datetime),
-          formatDateTime(row.end_datetime),
-          normalize(row.confirmation),
-          normalize(row.notes),
-        ])
-        : [['-', '-', 'No trip details found', '-', '-', '-', '-']];
-
-      drawTable(
-        ['Type', 'FSID', 'Name', 'Start', 'End', 'Confirmation', 'Notes'],
-        [70, 52, 104, 96, 96, 76, contentWidth - 494],
-        detailRows,
-      );
+      if (details.length) {
+        drawTripDetailsWithAdvanced(details);
+      } else {
+        drawTable(
+          ['Type', 'FSID', 'Name', 'Start', 'End', 'Confirmation', 'Notes'],
+          [70, 52, 104, 96, 96, 76, contentWidth - 494],
+          [['-', '-', 'No trip details found', '-', '-', '-', '-']],
+        );
+      }
 
       const pageRange = doc.bufferedPageRange();
       for (let i = 0; i < pageRange.count; i += 1) {
