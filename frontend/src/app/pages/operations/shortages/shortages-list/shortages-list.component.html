@@ -25,7 +25,7 @@
 
             <div class="form-icon" style="width: 280px;">
               <input type="search" class="form-control form-control-icon"
-                (ngModelChange)="this.gridApi.setGridOption('quickFilterText', query);" [(ngModel)]="query" placeholder="Search">
+                (ngModelChange)="onQuickFilterChanged($event)" [(ngModel)]="query" placeholder="Search">
               <i class="ri-search-2-line"></i>
             </div>
 

@@ -24,6 +24,7 @@ import { CommentsRendererV2Component } from "@app/shared/ag-grid/comments-render
 import { LateReasonCodeRendererV2Component } from "@app/shared/ag-grid/cell-renderers/late-reason-code-renderer-v2/late-reason-code-renderer-v2.component";
 import { BreadcrumbComponent, BreadcrumbItem } from "@app/shared/components/breadcrumb/breadcrumb.component";
 import { ShortagesActionsCellRendererComponent } from "../shortages-actions-cell-renderer.component";
+import { AgGridUrlStateService } from "@app/shared/services/ag-grid-url-state.service";
 
 @Component({
   standalone: true,
@@ -47,19 +48,33 @@ export class ShortagesListComponent implements OnInit {
     private commentsModalService: CommentsModalService,
     private itemInfoModalService: ItemInfoModalService,
     private workOrderInfoModalService: WorkOrderInfoModalService,
-    private lateReasonCodeModalService: LateReasonCodeModalService
+    private lateReasonCodeModalService: LateReasonCodeModalService,
+    private agGridUrlStateService: AgGridUrlStateService
   ) {}
 
   comment;
+
+  private syncingGridState = false;
+
+  private readonly queryKeys = {
+    selectedViewType: "sv",
+    selectedQueueType: "sq",
+    query: "q",
+    gridState: "gs",
+  } as const;
 
   ngOnInit(): void {
     this.activatedRoute.queryParams.subscribe((params) => {
       this.id = params["id"];
       this.selectedViewType =
-        params["selectedViewType"] || this.selectedViewType;
+        params[this.queryKeys.selectedViewType] ||
+        params["selectedViewType"] ||
+        this.selectedViewType;
       this.selectedQueueType =
-        params["selectedQueueType"] || this.selectedQueueType;
-      this.query = params["query"] || "";
+        params[this.queryKeys.selectedQueueType] ||
+        params["selectedQueueType"] ||
+        this.selectedQueueType;
+      this.query = params[this.queryKeys.query] || params["query"] || "";
       this.comment = params["comment"];
 
       this.gridApi?.setGridOption("quickFilterText", this.query || "");
@@ -360,24 +375,105 @@ export class ShortagesListComponent implements OnInit {
   id = null;
 
   copiedData;
+
+  private onGridStateChange(params: any) {
+    if (params && "finished" in params && params.finished === false) {
+      return;
+    }
+
+    this.updateUrl(params);
+  }
+
   gridOptions: GridOptions = {
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
       this.gridApi = params.api;
+
+      const compactState = this.agGridUrlStateService.decodeState(
+        this.activatedRoute.snapshot.queryParams[this.queryKeys.gridState] ||
+          null
+      );
+      const legacyState = this.agGridUrlStateService.decodeLegacyState(
+        this.activatedRoute.snapshot.queryParams
+      );
+      const stateToApply = compactState || legacyState;
+
+      this.syncingGridState = true;
+      this.agGridUrlStateService.applyStateToGrid(this.gridApi, stateToApply);
+
+      this.gridApi.setGridOption("quickFilterText", this.query || "");
+      this.syncingGridState = false;
     },
     onFirstDataRendered: (params) => {
       highlightRowView(params, "id", this.id);
       autoSizeColumns(params);
     },
     getRowId: (params) => params.data.id?.toString(),
+    onFilterChanged: (params) => this.updateUrl(params),
+    onSortChanged: (params) => this.updateUrl(params),
+    onColumnPinned: (params) => this.onGridStateChange(params),
+    onColumnMoved: (params) => this.onGridStateChange(params),
+    onColumnVisible: (params) => this.onGridStateChange(params),
+    onColumnResized: (params) => this.onGridStateChange(params),
+    onColumnRowGroupChanged: (params) => this.onGridStateChange(params),
+    onColumnPivotChanged: (params) => this.onGridStateChange(params),
+    onColumnValueChanged: (params) => this.onGridStateChange(params),
+    onColumnPivotModeChanged: (params) => this.onGridStateChange(params),
+  };
+
+  onQuickFilterChanged(value: string) {
+    this.query = value || "";
+    this.gridApi?.setGridOption("quickFilterText", this.query);
+    if (this.gridApi) {
+      this.updateUrl({ api: this.gridApi });
+    }
+  }
+
+  updateUrl = (params) => {
+    if (this.syncingGridState) return;
+
+    const compactState = this.agGridUrlStateService.encodeState(
+      this.agGridUrlStateService.getStateFromGrid(params.api)
+    );
+
+    this.router.navigate(["."], {
+      relativeTo: this.activatedRoute,
+      queryParamsHandling: "merge",
+      queryParams: {
+        [this.queryKeys.selectedViewType]: this.selectedViewType,
+        [this.queryKeys.selectedQueueType]: this.selectedQueueType,
+        [this.queryKeys.query]: this.query || null,
+        [this.queryKeys.gridState]: compactState,
+        selectedViewType: null,
+        selectedQueueType: null,
+        query: null,
+        filterModel: null,
+        sortModel: null,
+        columnState: null,
+      },
+    });
   };
 
   onEdit(id) {
+    const compactState = this.agGridUrlStateService.encodeState(
+      this.agGridUrlStateService.getStateFromGrid(this.gridApi)
+    );
+
     this.router.navigate([NAVIGATION_ROUTE.EDIT], {
       queryParamsHandling: "merge",
       queryParams: {
         id: id,
         goBackUrl: this.router.url,
+        [this.queryKeys.gridState]: compactState,
+        [this.queryKeys.selectedViewType]: this.selectedViewType,
+        [this.queryKeys.selectedQueueType]: this.selectedQueueType,
+        [this.queryKeys.query]: this.query || null,
+        selectedViewType: null,
+        selectedQueueType: null,
+        query: null,
+        filterModel: null,
+        sortModel: null,
+        columnState: null,
       },
     });
   }
@@ -398,11 +494,22 @@ export class ShortagesListComponent implements OnInit {
 
       this.data = await this.api.getList(params);
 
+      const compactState = this.agGridUrlStateService.encodeState(
+        this.agGridUrlStateService.getStateFromGrid(this.gridApi)
+      );
+
       this.router.navigate(["."], {
         queryParams: {
-          selectedViewType: this.selectedViewType,
-          selectedQueueType: this.selectedQueueType,
-          query: this.query || null,
+          [this.queryKeys.selectedViewType]: this.selectedViewType,
+          [this.queryKeys.selectedQueueType]: this.selectedQueueType,
+          [this.queryKeys.query]: this.query || null,
+          [this.queryKeys.gridState]: compactState,
+          selectedViewType: null,
+          selectedQueueType: null,
+          query: null,
+          filterModel: null,
+          sortModel: null,
+          columnState: null,
         },
         relativeTo: this.activatedRoute,
         queryParamsHandling: "merge",
