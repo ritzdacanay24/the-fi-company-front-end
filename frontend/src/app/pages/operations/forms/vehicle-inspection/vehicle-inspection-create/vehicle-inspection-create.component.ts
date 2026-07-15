@@ -236,6 +236,11 @@ export class VehicleInspectionCreateComponent {
 
   async onSubmit() {
     this.submitted = true;
+    const inspectorName = String(this.form?.value?.created_by || '').trim() || this.authenticationService.currentUserValue.full_name;
+    this.form.patchValue({
+      created_by: inspectorName,
+      created_by_name: inspectorName,
+    }, { emitEvent: false });
     this.form.value.details = this.details;
 
     // Check if form is valid
