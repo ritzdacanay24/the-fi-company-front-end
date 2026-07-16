@@ -141,6 +141,7 @@ export const FEATURE_ATTACHMENT_CONFIG: Record<FeatureType, FeatureAttachmentCon
     legacyNames: ['legacy_migration'],
     description: 'Legacy migration attachments',
   },
+  // STATUS: LOCKED - RMA mapping finalized and aligned.
   [FeatureType.RMA]: {
     feature: FeatureType.RMA,
     s3Path: 'rma',
@@ -148,11 +149,12 @@ export const FEATURE_ATTACHMENT_CONFIG: Record<FeatureType, FeatureAttachmentCon
     legacyNames: ['RMA'],
     description: 'RMA attachments',
   },
+  // STATUS: LOCKED - Receiving mapping finalized and aligned.
   [FeatureType.RECEIVING]: {
     feature: FeatureType.RECEIVING,
     s3Path: 'receiving',
     dbField: 'receiving',
-    legacyNames: ['receiving'],
+    legacyNames: ['receiving', 'LOGISTICS_CALENDAR'],
     description: 'Receiving attachments',
   },
   // STATUS: LOCKED - Resources mapping finalized and aligned.

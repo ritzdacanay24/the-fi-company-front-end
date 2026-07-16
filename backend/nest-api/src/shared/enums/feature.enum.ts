@@ -132,15 +132,17 @@ export const FEATURE_CONFIG: Record<FeatureType, { s3Prefix: string; field: stri
     field: 'legacy_migration',
     legacyNames: ['legacy_migration'],
   },
+  // STATUS: LOCKED - RMA mapping finalized and aligned.
   [FeatureType.RMA]: {
     s3Prefix: 'rma/{id}',
     field: 'rma',
     legacyNames: ['RMA'],
   },
+  // STATUS: LOCKED - Receiving mapping finalized and aligned.
   [FeatureType.RECEIVING]: {
     s3Prefix: 'receiving/{id}',
     field: 'receiving',
-    legacyNames: ['receiving'],
+    legacyNames: ['receiving', 'LOGISTICS_CALENDAR'],
   },
   // STATUS: LOCKED - Resources mapping finalized and aligned.
   [FeatureType.RESOURCES]: {
