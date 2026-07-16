@@ -159,6 +159,7 @@ export const FEATURE_CONFIG: Record<FeatureType, { s3Prefix: string; field: stri
     field: 'shippingChecklistItem',
     legacyNames: ['shippingChecklistItem'],
   },
+  // STATUS: LOCKED - Shipping request mapping finalized and aligned.
   [FeatureType.SHIPPING_REQUEST]: {
     s3Prefix: 'shipping-request/{id}',
     field: 'shipping_request',

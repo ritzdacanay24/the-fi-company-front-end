@@ -29,7 +29,6 @@ export const FEATURE_ATTACHMENT_CONFIG: Record<FeatureType, FeatureAttachmentCon
     legacyNames: ['NCR'],
     description: 'NCR attachments',
   },
-  // STATUS: LOCKED - QIR mapping finalized and aligned.
   [FeatureType.QIR]: {
     feature: FeatureType.QIR,
     s3Path: 'qir',
@@ -37,7 +36,6 @@ export const FEATURE_ATTACHMENT_CONFIG: Record<FeatureType, FeatureAttachmentCon
     legacyNames: ['Capa Request'],
     description: 'Quality incident report attachments',
   },
-  // STATUS: LOCKED - Support tickets mapping finalized and aligned.
   [FeatureType.SUPPORT_TICKETS]: {
     feature: FeatureType.SUPPORT_TICKETS,
     s3Path: 'support-tickets',
@@ -66,7 +64,6 @@ export const FEATURE_ATTACHMENT_CONFIG: Record<FeatureType, FeatureAttachmentCon
     legacyNames: ['FS Parts Order'],
     description: 'Parts request attachments (239 records)',
   },
-  // STATUS: LOCKED - Vehicle management mapping finalized and aligned.
   [FeatureType.VEHICLE_MANAGEMENT]: {
     feature: FeatureType.VEHICLE_MANAGEMENT,
     s3Path: 'vehicle-management',
@@ -123,7 +120,6 @@ export const FEATURE_ATTACHMENT_CONFIG: Record<FeatureType, FeatureAttachmentCon
     legacyNames: ['Incoming Inspections'],
     description: 'Inspection attachments (4,835 records)',
   },
-  // STATUS: LOCKED - Vehicle inspection mapping finalized and kept separate from vehicle management.
   [FeatureType.INSPECTIONS_VEHICLE]: {
     feature: FeatureType.INSPECTIONS_VEHICLE,
     s3Path: 'inspections/vehicle',
@@ -131,7 +127,6 @@ export const FEATURE_ATTACHMENT_CONFIG: Record<FeatureType, FeatureAttachmentCon
     legacyNames: ['Incoming Inspections', 'Vehicle Inspection'],
     description: 'Vehicle inspection attachments',
   },
-  // STATUS: LOCKED - Forklift inspection mapping finalized.
   [FeatureType.INSPECTIONS_FORKLIFT]: {
     feature: FeatureType.INSPECTIONS_FORKLIFT,
     s3Path: 'inspections/forklift',
@@ -173,7 +168,7 @@ export const FEATURE_ATTACHMENT_CONFIG: Record<FeatureType, FeatureAttachmentCon
     feature: FeatureType.SAFETY_INCIDENT,
     s3Path: 'safety-incident',
     dbField: 'safety_incident',
-    legacyNames: ['safety-incident'],
+    legacyNames: ['Safety Incident'],
     description: 'Safety incident attachments (113 records)',
   },
   [FeatureType.SHIPPING_CHECKLIST]: {
@@ -183,6 +178,7 @@ export const FEATURE_ATTACHMENT_CONFIG: Record<FeatureType, FeatureAttachmentCon
     legacyNames: ['shippingChecklistItem'],
     description: 'Shipping checklist attachments',
   },
+  // STATUS: LOCKED - Shipping request mapping finalized and aligned.
   [FeatureType.SHIPPING_REQUEST]: {
     feature: FeatureType.SHIPPING_REQUEST,
     s3Path: 'shipping-request',
