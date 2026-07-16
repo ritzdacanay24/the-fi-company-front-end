@@ -64,11 +64,11 @@ export const FEATURE_ATTACHMENT_CONFIG: Record<FeatureType, FeatureAttachmentCon
     legacyNames: ['FS Parts Order'],
     description: 'Parts request attachments (239 records)',
   },
-  [FeatureType.VEHICLE]: {
-    feature: FeatureType.VEHICLE,
-    s3Path: 'vehicle',
-    dbField: 'vehicle_information',
-    legacyNames: ['Vehicle Information'],
+  [FeatureType.VEHICLE_MANAGEMENT]: {
+    feature: FeatureType.VEHICLE_MANAGEMENT,
+    s3Path: 'vehicle-management',
+    dbField: 'vehicle_management',
+    legacyNames: ['Vehicle Management', 'Vehicle Information'],
     description: 'Vehicle attachments',
   },
   [FeatureType.CHECKLIST]: {
@@ -123,7 +123,7 @@ export const FEATURE_ATTACHMENT_CONFIG: Record<FeatureType, FeatureAttachmentCon
   [FeatureType.INSPECTIONS_VEHICLE]: {
     feature: FeatureType.INSPECTIONS_VEHICLE,
     s3Path: 'inspections/vehicle',
-    dbField: 'incoming_inspections',
+    dbField: 'vehicle_inspection',
     legacyNames: ['Incoming Inspections', 'Vehicle Inspection'],
     description: 'Vehicle inspection attachments',
   },

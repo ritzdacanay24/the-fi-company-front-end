@@ -11,7 +11,7 @@ export enum FeatureType {
   FIELD_SERVICE_REQUEST = 'field-service-request',
   FIELD_SERVICE_TRIP_DETAILS = 'field-service-trip-details',
   PARTS_REQUEST = 'parts-request',
-  VEHICLE = 'vehicle',
+  VEHICLE_MANAGEMENT = 'vehicle-management',
   CHECKLIST = 'checklist',
   PERMIT_CHECKLIST = 'permit-checklist',
   CHECKLIST_INSTANCE = 'checklist/instance',

@@ -63,7 +63,7 @@ const routes: Routes = [
         runGuardsAndResolvers: "always",
       },
       {
-        title: "Vehicle Information",
+        title: "Vehicle Management",
         path: "vehicle",
         loadChildren: () =>
           import("./vehicle/vehicle-routing.module").then(

@@ -11,7 +11,7 @@ export enum FeatureType {
   FIELD_SERVICE_REQUEST = 'field-service-request',
   FIELD_SERVICE_TRIP_DETAILS = 'field-service-trip-details',
   PARTS_REQUEST = 'parts-request',
-  VEHICLE = 'vehicle',
+  VEHICLE_MANAGEMENT = 'vehicle-management',
   CHECKLIST = 'checklist',
   PERMIT_CHECKLIST = 'permit-checklist',
   CHECKLIST_INSTANCE = 'checklist/instance',
@@ -72,10 +72,10 @@ export const FEATURE_CONFIG: Record<FeatureType, { s3Prefix: string; field: stri
     field: 'parts_order',
     legacyNames: ['FS Parts Order'],
   },
-  [FeatureType.VEHICLE]: {
-    s3Prefix: 'vehicle/{id}',
-    field: 'vehicle_information',
-    legacyNames: ['Vehicle Information'],
+  [FeatureType.VEHICLE_MANAGEMENT]: {
+    s3Prefix: 'vehicle-management/{id}',
+    field: 'vehicle_management',
+    legacyNames: ['Vehicle Management', 'Vehicle Information'],
   },
   [FeatureType.CHECKLIST]: {
     s3Prefix: 'checklist/{id}',
@@ -114,7 +114,7 @@ export const FEATURE_CONFIG: Record<FeatureType, { s3Prefix: string; field: stri
   },
   [FeatureType.INSPECTIONS_VEHICLE]: {
     s3Prefix: 'inspections/vehicle/{id}',
-    field: 'incoming_inspections',
+    field: 'vehicle_inspection',
     legacyNames: ['Incoming Inspections', 'Vehicle Inspection'],
   },
   [FeatureType.INSPECTIONS_FORKLIFT]: {

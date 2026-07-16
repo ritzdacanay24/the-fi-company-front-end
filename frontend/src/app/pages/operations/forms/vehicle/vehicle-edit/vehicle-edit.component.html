@@ -56,7 +56,7 @@
           </div>
           <div>
             <h2 class="mb-1 text-dark">{{title}}</h2>
-            <p class="text-muted mb-0">Update vehicle information, maintenance records, and manage documentation</p>
+            <p class="text-muted mb-0">Update vehicle management details, maintenance records, and documentation</p>
           </div>
         </div>
         
@@ -98,9 +98,8 @@
             </div>
 
             <app-feature-attachments-panel
-              [feature]="FeatureType.VEHICLE"
+              [feature]="FeatureType.VEHICLE_MANAGEMENT"
               [resourceId]="id"
-              [legacyFieldNames]="['Vehicle Information']"
               [disabled]="isLoading">
             </app-feature-attachments-panel>
           </div>

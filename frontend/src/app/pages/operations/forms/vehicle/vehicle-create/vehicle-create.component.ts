@@ -79,7 +79,7 @@ export class VehicleCreateComponent {
 
       if (this.myFiles.length > 0) {
         await this.attachmentsService.uploadFilesByFeature(
-          FeatureType.VEHICLE,
+          FeatureType.VEHICLE_MANAGEMENT,
           insertId,
           this.myFiles,
         );
