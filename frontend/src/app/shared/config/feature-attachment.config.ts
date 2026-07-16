@@ -29,6 +29,7 @@ export const FEATURE_ATTACHMENT_CONFIG: Record<FeatureType, FeatureAttachmentCon
     legacyNames: ['NCR'],
     description: 'NCR attachments',
   },
+  // STATUS: LOCKED - QIR mapping finalized and aligned.
   [FeatureType.QIR]: {
     feature: FeatureType.QIR,
     s3Path: 'qir',
@@ -36,6 +37,7 @@ export const FEATURE_ATTACHMENT_CONFIG: Record<FeatureType, FeatureAttachmentCon
     legacyNames: ['Capa Request'],
     description: 'Quality incident report attachments',
   },
+  // STATUS: LOCKED - Support tickets mapping finalized and aligned.
   [FeatureType.SUPPORT_TICKETS]: {
     feature: FeatureType.SUPPORT_TICKETS,
     s3Path: 'support-tickets',
@@ -64,6 +66,7 @@ export const FEATURE_ATTACHMENT_CONFIG: Record<FeatureType, FeatureAttachmentCon
     legacyNames: ['FS Parts Order'],
     description: 'Parts request attachments (239 records)',
   },
+  // STATUS: LOCKED - Vehicle management mapping finalized and aligned.
   [FeatureType.VEHICLE_MANAGEMENT]: {
     feature: FeatureType.VEHICLE_MANAGEMENT,
     s3Path: 'vehicle-management',
@@ -120,6 +123,7 @@ export const FEATURE_ATTACHMENT_CONFIG: Record<FeatureType, FeatureAttachmentCon
     legacyNames: ['Incoming Inspections'],
     description: 'Inspection attachments (4,835 records)',
   },
+  // STATUS: LOCKED - Vehicle inspection mapping finalized and kept separate from vehicle management.
   [FeatureType.INSPECTIONS_VEHICLE]: {
     feature: FeatureType.INSPECTIONS_VEHICLE,
     s3Path: 'inspections/vehicle',
@@ -127,6 +131,7 @@ export const FEATURE_ATTACHMENT_CONFIG: Record<FeatureType, FeatureAttachmentCon
     legacyNames: ['Incoming Inspections', 'Vehicle Inspection'],
     description: 'Vehicle inspection attachments',
   },
+  // STATUS: LOCKED - Forklift inspection mapping finalized.
   [FeatureType.INSPECTIONS_FORKLIFT]: {
     feature: FeatureType.INSPECTIONS_FORKLIFT,
     s3Path: 'inspections/forklift',
@@ -155,6 +160,7 @@ export const FEATURE_ATTACHMENT_CONFIG: Record<FeatureType, FeatureAttachmentCon
     legacyNames: ['receiving'],
     description: 'Receiving attachments',
   },
+  // STATUS: LOCKED - Resources mapping finalized and aligned.
   [FeatureType.RESOURCES]: {
     feature: FeatureType.RESOURCES,
     s3Path: 'resources',
@@ -162,6 +168,7 @@ export const FEATURE_ATTACHMENT_CONFIG: Record<FeatureType, FeatureAttachmentCon
     legacyNames: ['resources'],
     description: 'Resource attachments',
   },
+  // STATUS: LOCKED - Safety incident legacy naming finalized.
   [FeatureType.SAFETY_INCIDENT]: {
     feature: FeatureType.SAFETY_INCIDENT,
     s3Path: 'safety-incident',

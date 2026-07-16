@@ -47,11 +47,13 @@ export const FEATURE_CONFIG: Record<FeatureType, { s3Prefix: string; field: stri
     field: 'ncr',
     legacyNames: ['NCR'],
   },
+  // STATUS: LOCKED - QIR mapping finalized and aligned.
   [FeatureType.QIR]: {
     s3Prefix: 'qir/{id}',
     field: 'capa_request',
     legacyNames: ['Capa Request'],
   },
+  // STATUS: LOCKED - Support tickets mapping finalized and aligned.
   [FeatureType.SUPPORT_TICKETS]: {
     s3Prefix: 'support-tickets/{id}',
     field: 'support_ticket',
@@ -72,6 +74,7 @@ export const FEATURE_CONFIG: Record<FeatureType, { s3Prefix: string; field: stri
     field: 'parts_order',
     legacyNames: ['FS Parts Order'],
   },
+  // STATUS: LOCKED - Vehicle management mapping finalized and aligned.
   [FeatureType.VEHICLE_MANAGEMENT]: {
     s3Prefix: 'vehicle-management/{id}',
     field: 'vehicle_management',
@@ -112,11 +115,13 @@ export const FEATURE_CONFIG: Record<FeatureType, { s3Prefix: string; field: stri
     field: 'incoming_inspections',
     legacyNames: ['Incoming Inspections'],
   },
+  // STATUS: LOCKED - Vehicle inspection mapping finalized and kept separate from vehicle management.
   [FeatureType.INSPECTIONS_VEHICLE]: {
     s3Prefix: 'inspections/vehicle/{id}',
     field: 'vehicle_inspection',
     legacyNames: ['Incoming Inspections', 'Vehicle Inspection'],
   },
+  // STATUS: LOCKED - Forklift inspection mapping finalized.
   [FeatureType.INSPECTIONS_FORKLIFT]: {
     s3Prefix: 'inspections/forklift/{id}',
     field: 'forklift_inspection',
@@ -137,11 +142,13 @@ export const FEATURE_CONFIG: Record<FeatureType, { s3Prefix: string; field: stri
     field: 'receiving',
     legacyNames: ['receiving'],
   },
+  // STATUS: LOCKED - Resources mapping finalized and aligned.
   [FeatureType.RESOURCES]: {
     s3Prefix: 'resources/{id}',
     field: 'resources',
     legacyNames: ['resources'],
   },
+  // STATUS: LOCKED - Safety incident legacy naming finalized.
   [FeatureType.SAFETY_INCIDENT]: {
     s3Prefix: 'safety-incident/{id}',
     field: 'safety_incident',
