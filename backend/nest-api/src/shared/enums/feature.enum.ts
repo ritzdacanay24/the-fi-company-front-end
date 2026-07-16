@@ -119,8 +119,8 @@ export const FEATURE_CONFIG: Record<FeatureType, { s3Prefix: string; field: stri
   },
   [FeatureType.INSPECTIONS_FORKLIFT]: {
     s3Prefix: 'inspections/forklift/{id}',
-    field: 'incoming_inspections',
-    legacyNames: ['Incoming Inspections', 'Vehicle Inspection'],
+    field: 'forklift_inspection',
+    legacyNames: ['forklift_inspection'],
   },
   [FeatureType.LEGACY_MIGRATION]: {
     s3Prefix: 'legacy-migration/{id}',

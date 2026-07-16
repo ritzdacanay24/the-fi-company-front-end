@@ -3,6 +3,7 @@ import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { ToastrService } from 'ngx-toastr';
 import { AttachmentsService } from '@app/core/api/attachments/attachments.service';
 import { FeatureType } from '@app/shared/enums/feature.enum';
+import { FEATURE_ATTACHMENT_CONFIG } from '@app/shared/config/feature-attachment.config';
 import { InlineAttachmentDropzoneComponent } from '@app/shared/components/inline-attachment-dropzone/inline-attachment-dropzone.component';
 import { UploadedAttachmentsListComponent } from '@app/shared/components/attachments/uploaded-attachments-list/uploaded-attachments-list.component';
 import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
@@ -86,6 +87,14 @@ export class FeatureAttachmentsPanelComponent implements OnChanges {
       || !!this.resolveByIdOverride;
   }
 
+  private get resolvedLegacyFieldNames(): string[] {
+    if (Array.isArray(this.legacyFieldNames) && this.legacyFieldNames.length > 0) {
+      return this.legacyFieldNames;
+    }
+
+    return FEATURE_ATTACHMENT_CONFIG[this.feature]?.legacyNames || [];
+  }
+
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['attachmentsOverride'] && this.attachmentsOverride !== null) {
       this.attachments = this.attachmentsOverride;
@@ -116,7 +125,7 @@ export class FeatureAttachmentsPanelComponent implements OnChanges {
       this.attachments = await this.attachmentsService.getMergedAttachmentsByFeature(
         this.feature,
         this.resourceId!,
-        this.legacyFieldNames,
+        this.resolvedLegacyFieldNames,
         { legacyIdField: this.legacyIdField },
       );
     } finally {

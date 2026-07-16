@@ -15,6 +15,13 @@ export interface FeatureAttachmentConfig {
 }
 
 export const FEATURE_ATTACHMENT_CONFIG: Record<FeatureType, FeatureAttachmentConfig> = {
+  [FeatureType.PROJECT_MANAGER]: {
+    feature: FeatureType.PROJECT_MANAGER,
+    s3Path: 'project-manager',
+    dbField: 'project_manager',
+    legacyNames: ['project_manager', 'Project Manager'],
+    description: 'Project manager attachments',
+  },
   [FeatureType.NCR]: {
     feature: FeatureType.NCR,
     s3Path: 'ncr',
@@ -113,6 +120,20 @@ export const FEATURE_ATTACHMENT_CONFIG: Record<FeatureType, FeatureAttachmentCon
     legacyNames: ['Incoming Inspections'],
     description: 'Inspection attachments (4,835 records)',
   },
+  [FeatureType.INSPECTIONS_VEHICLE]: {
+    feature: FeatureType.INSPECTIONS_VEHICLE,
+    s3Path: 'inspections/vehicle',
+    dbField: 'incoming_inspections',
+    legacyNames: ['Incoming Inspections', 'Vehicle Inspection'],
+    description: 'Vehicle inspection attachments',
+  },
+  [FeatureType.INSPECTIONS_FORKLIFT]: {
+    feature: FeatureType.INSPECTIONS_FORKLIFT,
+    s3Path: 'inspections/forklift',
+    dbField: 'forklift_inspection',
+    legacyNames: ['forklift_inspection'],
+    description: 'Forklift inspection attachments',
+  },
   [FeatureType.LEGACY_MIGRATION]: {
     feature: FeatureType.LEGACY_MIGRATION,
     s3Path: 'legacy-migration',
@@ -147,6 +168,13 @@ export const FEATURE_ATTACHMENT_CONFIG: Record<FeatureType, FeatureAttachmentCon
     dbField: 'safety_incident',
     legacyNames: ['Safety Incident'],
     description: 'Safety incident attachments (113 records)',
+  },
+  [FeatureType.SHIPPING_CHECKLIST]: {
+    feature: FeatureType.SHIPPING_CHECKLIST,
+    s3Path: 'inspections/shipping',
+    dbField: 'shippingChecklistItem',
+    legacyNames: ['shippingChecklistItem'],
+    description: 'Shipping checklist attachments',
   },
   [FeatureType.SHIPPING_REQUEST]: {
     feature: FeatureType.SHIPPING_REQUEST,
