@@ -166,7 +166,7 @@ export const FEATURE_ATTACHMENT_CONFIG: Record<FeatureType, FeatureAttachmentCon
     feature: FeatureType.SAFETY_INCIDENT,
     s3Path: 'safety-incident',
     dbField: 'safety_incident',
-    legacyNames: ['Safety Incident'],
+    legacyNames: ['safety-incident'],
     description: 'Safety incident attachments (113 records)',
   },
   [FeatureType.SHIPPING_CHECKLIST]: {

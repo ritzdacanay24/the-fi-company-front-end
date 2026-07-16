@@ -145,7 +145,7 @@ export const FEATURE_CONFIG: Record<FeatureType, { s3Prefix: string; field: stri
   [FeatureType.SAFETY_INCIDENT]: {
     s3Prefix: 'safety-incident/{id}',
     field: 'safety_incident',
-    legacyNames: ['Safety Incident'],
+    legacyNames: ['safety-incident'],
   },
   [FeatureType.SHIPPING_CHECKLIST]: {
     s3Prefix: 'inspections/shipping/{id}',
