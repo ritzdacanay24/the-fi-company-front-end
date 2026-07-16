@@ -23,16 +23,30 @@ export class ImageRendererComponent implements ICellRendererAngularComp {
       "https://instagramimages-a.akamaihd.net/profiles/anonymousUser.jpg";
   }
 
+  private resolveImage(params: any): string {
+    const signedOrResolved = String(params?.data?.Image_Url || "").trim();
+    if (signedOrResolved) {
+      return signedOrResolved;
+    }
+
+    const rawValue = String(params?.value || "").trim();
+    if (!rawValue) {
+      return "";
+    }
+
+    return `${params?.link || ""}${rawValue}`;
+  }
+
   agInit(params): void {
     if (!params.data) return;
 
     this.params = params;
-
-    this.image = params.link + "" + params.value;
+    this.image = this.resolveImage(params);
   }
 
   refresh(params?: any): boolean {
-    this.params.value = params?.value;
+    this.params = params;
+    this.image = this.resolveImage(params);
     return true;
   }
 

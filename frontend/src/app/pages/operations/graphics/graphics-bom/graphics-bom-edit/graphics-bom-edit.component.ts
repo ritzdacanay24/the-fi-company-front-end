@@ -67,7 +67,7 @@ export class GraphicsBomEditComponent {
     try {
       this.isLoading = true;
       this.data = await this.api.getById(this.id);
-      this.image = GRAPHICS_BOM_FOLDER_LOCATION + this.data?.Image_Data;
+      this.image = this.data?.Image_Url || (this.data?.Image_Data ? GRAPHICS_BOM_FOLDER_LOCATION + this.data.Image_Data : null);
       this.form.patchValue(this.data);
       this.isLoading = false;
     } catch (err) {
@@ -137,7 +137,13 @@ export class GraphicsBomEditComponent {
     try {
       this.isLoading = true;
       this.form.patchValue({ Image_Data: null }, { emitEvent: false });
-      await this.api.update(this.id, this.form.value);
+      await this.api.update(this.id, {
+        ...this.form.value,
+        Image_Data: null,
+        image_storage_source: null,
+        image_storage_bucket: null,
+        image_storage_key: null,
+      });
       await this.getData();
       this.image = null;
 
@@ -164,30 +170,46 @@ export class GraphicsBomEditComponent {
   }
 
   async onUploadFile() {
-    if (this.myFiles) {
-      let file: File = this.myFiles[0];
-      let formData: FormData = new FormData();
-      formData.append("file", file, file.name);
-      let headers = new Headers();
-      headers.append("Content-Type", "multipart/form-data");
-      headers.append("Accept", "application/json");
+    if (!this.id) {
+      this.toastrService.warning("Save the Graphics BOM record first before uploading a file.");
+      return;
+    }
 
-      this.form.patchValue({ Image_Data: file.name }, { emitEvent: false });
+    if (!this.myFiles) {
+      return;
+    }
 
-      this.image =
-        GRAPHICS_BOM_FOLDER_LOCATION + file.name + "?" + moment().valueOf();
+    const file: File = this.myFiles[0];
+    const formData: FormData = new FormData();
+    formData.append("file", file, file.name);
 
-      try {
-        this.isLoading = true;
-        await this.api.upload(formData);
+    try {
+      this.isLoading = true;
+      const uploadResult = await this.api.upload(formData) as {
+        fileName?: string;
+        url?: string;
+        key?: string;
+        bucket?: string;
+        storageSource?: 'bucket' | 'local';
+      };
+      const storedFileName = String(uploadResult?.fileName || file.name).trim();
 
-        await this.api.update(this.id, this.form.value);
-        await this.getData();
-        this.myFiles = null;
-        this.isLoading = false;
-      } catch (err) {
-        this.isLoading = false;
-      }
+      this.form.patchValue({ Image_Data: storedFileName }, { emitEvent: false });
+      this.image = String(uploadResult?.url || '').trim() || (GRAPHICS_BOM_FOLDER_LOCATION + storedFileName + "?" + moment().valueOf());
+
+      await this.api.update(this.id, {
+        ...this.form.value,
+        Image_Data: storedFileName,
+        image_storage_source: uploadResult?.storageSource || 'local',
+        image_storage_bucket: uploadResult?.bucket || null,
+        image_storage_key: uploadResult?.key || null,
+      });
+      await this.getData();
+      this.myFiles = null;
+      this.myInputVariable.nativeElement.value = "";
+      this.isLoading = false;
+    } catch (err) {
+      this.isLoading = false;
     }
   }
 }

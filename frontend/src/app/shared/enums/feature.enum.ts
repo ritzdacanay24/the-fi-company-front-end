@@ -18,7 +18,6 @@ export enum FeatureType {
   CHECKLIST_LEGACY = 'checklist/legacy-migration',
   CHECKLIST_MANAGE = 'checklist/manage',
   GRAPHICS_BOM = 'graphics-bom',
-  INSPECTIONS = 'inspections',
   INSPECTIONS_VEHICLE = 'inspections/vehicle',
   INSPECTIONS_FORKLIFT = 'inspections/forklift',
   LEGACY_MIGRATION = 'legacy-migration',

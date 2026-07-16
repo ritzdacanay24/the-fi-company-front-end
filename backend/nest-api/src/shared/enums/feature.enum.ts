@@ -18,7 +18,6 @@ export enum FeatureType {
   CHECKLIST_LEGACY = 'checklist/legacy-migration',
   CHECKLIST_MANAGE = 'checklist/manage',
   GRAPHICS_BOM = 'graphics-bom',
-  INSPECTIONS = 'inspections',
   INSPECTIONS_VEHICLE = 'inspections/vehicle',
   INSPECTIONS_FORKLIFT = 'inspections/forklift',
   LEGACY_MIGRATION = 'legacy-migration',
@@ -109,11 +108,6 @@ export const FEATURE_CONFIG: Record<FeatureType, { s3Prefix: string; field: stri
     s3Prefix: 'graphics-bom/{id}',
     field: 'graphics_bom',
     legacyNames: ['graphics_bom'],
-  },
-  [FeatureType.INSPECTIONS]: {
-    s3Prefix: 'inspections/{id}',
-    field: 'incoming_inspections',
-    legacyNames: ['Incoming Inspections'],
   },
   // STATUS: LOCKED - Vehicle inspection mapping finalized and kept separate from vehicle management.
   [FeatureType.INSPECTIONS_VEHICLE]: {

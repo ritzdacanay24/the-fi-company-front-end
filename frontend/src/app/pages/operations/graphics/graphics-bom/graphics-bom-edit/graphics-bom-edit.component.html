@@ -44,7 +44,7 @@
           </div>
 
           <button (click)="this.onUploadFile()" type="button" class="btn btn-primary mb-3"
-            [disabled]="isLoading || !myFiles">
+            [disabled]="isLoading || !myFiles || !id">
             <i class="feather icon-upload"></i> Upload File</button>
         </div>
 

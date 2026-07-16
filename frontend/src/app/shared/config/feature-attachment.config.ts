@@ -113,13 +113,6 @@ export const FEATURE_ATTACHMENT_CONFIG: Record<FeatureType, FeatureAttachmentCon
     legacyNames: ['graphics_bom'],
     description: 'Graphics BOM attachments',
   },
-  [FeatureType.INSPECTIONS]: {
-    feature: FeatureType.INSPECTIONS,
-    s3Path: 'inspections',
-    dbField: 'incoming_inspections',
-    legacyNames: ['Incoming Inspections'],
-    description: 'Inspection attachments (4,835 records)',
-  },
   [FeatureType.INSPECTIONS_VEHICLE]: {
     feature: FeatureType.INSPECTIONS_VEHICLE,
     s3Path: 'inspections/vehicle',
