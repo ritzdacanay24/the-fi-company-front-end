@@ -154,10 +154,11 @@ export const FEATURE_CONFIG: Record<FeatureType, { s3Prefix: string; field: stri
     field: 'safety_incident',
     legacyNames: ['safety-incident'],
   },
+  // STATUS: LOCKED - Shipping checklist mapping finalized and aligned.
   [FeatureType.SHIPPING_CHECKLIST]: {
     s3Prefix: 'inspections/shipping/{id}',
-    field: 'shippingChecklistItem',
-    legacyNames: ['shippingChecklistItem'],
+    field: 'shipping_checklist',
+    legacyNames: ['shipping_checklist'],
   },
   // STATUS: LOCKED - Shipping request mapping finalized and aligned.
   [FeatureType.SHIPPING_REQUEST]: {

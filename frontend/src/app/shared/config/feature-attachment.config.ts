@@ -171,11 +171,12 @@ export const FEATURE_ATTACHMENT_CONFIG: Record<FeatureType, FeatureAttachmentCon
     legacyNames: ['Safety Incident'],
     description: 'Safety incident attachments (113 records)',
   },
+  // STATUS: LOCKED - Shipping checklist mapping finalized and aligned.
   [FeatureType.SHIPPING_CHECKLIST]: {
     feature: FeatureType.SHIPPING_CHECKLIST,
     s3Path: 'inspections/shipping',
-    dbField: 'shippingChecklistItem',
-    legacyNames: ['shippingChecklistItem'],
+    dbField: 'shipping_checklist',
+    legacyNames: ['shipping_checklist'],
     description: 'Shipping checklist attachments',
   },
   // STATUS: LOCKED - Shipping request mapping finalized and aligned.
