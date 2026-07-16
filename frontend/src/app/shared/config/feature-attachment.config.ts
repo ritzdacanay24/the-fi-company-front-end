@@ -50,6 +50,7 @@ export const FEATURE_ATTACHMENT_CONFIG: Record<FeatureType, FeatureAttachmentCon
     legacyNames: ['Field Service Request'],
     description: 'Field service request attachments',
   },
+  // STATUS: LOCKED - Field service trip details mapping finalized and aligned.
   [FeatureType.FIELD_SERVICE_TRIP_DETAILS]: {
     feature: FeatureType.FIELD_SERVICE_TRIP_DETAILS,
     s3Path: 'field-service-trip-details',
@@ -57,13 +58,15 @@ export const FEATURE_ATTACHMENT_CONFIG: Record<FeatureType, FeatureAttachmentCon
     legacyNames: ['Field Service Trip Details'],
     description: 'Field service trip details attachments',
   },
+  // STATUS: LOCKED - Parts request mapping finalized and aligned.
   [FeatureType.PARTS_REQUEST]: {
     feature: FeatureType.PARTS_REQUEST,
     s3Path: 'parts-request',
     dbField: 'parts_order',
-    legacyNames: ['FS Parts Order'],
+    legacyNames: ['FS Parts Order', 'parts_order'],
     description: 'Parts request attachments (239 records)',
   },
+  // STATUS: LOCKED - Vehicle management mapping finalized and aligned.
   [FeatureType.VEHICLE_MANAGEMENT]: {
     feature: FeatureType.VEHICLE_MANAGEMENT,
     s3Path: 'vehicle-management',
@@ -78,11 +81,12 @@ export const FEATURE_ATTACHMENT_CONFIG: Record<FeatureType, FeatureAttachmentCon
     legacyNames: ['CheckList'],
     description: 'Checklist attachments (22,225 records)',
   },
+  // STATUS: LOCKED - Permit checklist mapping finalized and aligned.
   [FeatureType.PERMIT_CHECKLIST]: {
     feature: FeatureType.PERMIT_CHECKLIST,
     s3Path: 'permit-checklist',
     dbField: 'permit_checklist',
-    legacyNames: ['permit_checklist', 'checklist', 'CheckList'],
+    legacyNames: ['permit_checklist'],
     description: 'Permit checklist attachments',
   },
   [FeatureType.CHECKLIST_INSTANCE]: {
@@ -106,6 +110,7 @@ export const FEATURE_ATTACHMENT_CONFIG: Record<FeatureType, FeatureAttachmentCon
     legacyNames: ['CheckList'],
     description: 'Checklist management attachments (uses CheckList legacy field)',
   },
+  // STATUS: LOCKED - Graphics BOM mapping finalized and aligned.
   [FeatureType.GRAPHICS_BOM]: {
     feature: FeatureType.GRAPHICS_BOM,
     s3Path: 'graphics-bom',

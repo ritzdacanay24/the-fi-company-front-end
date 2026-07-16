@@ -63,11 +63,13 @@ export const FEATURE_CONFIG: Record<FeatureType, { s3Prefix: string; field: stri
     field: 'field_service_request',
     legacyNames: ['Field Service Request'],
   },
+  // STATUS: LOCKED - Field service trip details mapping finalized and aligned.
   [FeatureType.FIELD_SERVICE_TRIP_DETAILS]: {
     s3Prefix: 'field-service-trip-details/{id}',
     field: 'field_service_trip_details',
     legacyNames: ['Field Service Trip Details'],
   },
+  // STATUS: LOCKED - Parts request mapping finalized and aligned.
   [FeatureType.PARTS_REQUEST]: {
     s3Prefix: 'parts-request/{id}',
     field: 'parts_order',
@@ -84,10 +86,11 @@ export const FEATURE_CONFIG: Record<FeatureType, { s3Prefix: string; field: stri
     field: 'checklist',
     legacyNames: ['CheckList'],
   },
+  // STATUS: LOCKED - Permit checklist mapping finalized and aligned.
   [FeatureType.PERMIT_CHECKLIST]: {
     s3Prefix: 'permit-checklist/{id}',
     field: 'permit_checklist',
-    legacyNames: ['permit_checklist', 'checklist', 'CheckList'],
+    legacyNames: ['permit_checklist'],
   },
   [FeatureType.CHECKLIST_INSTANCE]: {
     s3Prefix: 'checklist/instance/{id}',
@@ -104,6 +107,7 @@ export const FEATURE_CONFIG: Record<FeatureType, { s3Prefix: string; field: stri
     field: 'checklist_manage',
     legacyNames: ['CheckList'],
   },
+  // STATUS: LOCKED - Graphics BOM mapping finalized and aligned.
   [FeatureType.GRAPHICS_BOM]: {
     s3Prefix: 'graphics-bom/{id}',
     field: 'graphics_bom',
