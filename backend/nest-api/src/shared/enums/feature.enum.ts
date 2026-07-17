@@ -42,6 +42,7 @@ export const FEATURE_CONFIG: Record<FeatureType, { s3Prefix: string; field: stri
     field: 'project_manager',
     legacyNames: ['project_manager', 'Project Manager'],
   },
+  // STATUS: LOCKED - NCR mapping finalized and aligned.
   [FeatureType.NCR]: {
     s3Prefix: 'ncr/{id}',
     field: 'ncr',

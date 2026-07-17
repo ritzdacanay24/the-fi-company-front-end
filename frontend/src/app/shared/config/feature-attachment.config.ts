@@ -22,6 +22,7 @@ export const FEATURE_ATTACHMENT_CONFIG: Record<FeatureType, FeatureAttachmentCon
     legacyNames: ['project_manager', 'Project Manager'],
     description: 'Project manager attachments',
   },
+  // STATUS: LOCKED - NCR mapping finalized and aligned.
   [FeatureType.NCR]: {
     feature: FeatureType.NCR,
     s3Path: 'ncr',
