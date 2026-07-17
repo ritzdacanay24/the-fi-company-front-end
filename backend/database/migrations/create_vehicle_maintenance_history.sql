@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS `vehicle_maintenance_history` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `vehicle_id` int(11) NOT NULL,
+  `service_date` varchar(25) NOT NULL,
+  `mileage` int(11) DEFAULT NULL,
+  `service_type` varchar(255) NOT NULL,
+  `description` text,
+  `vendor_name` varchar(255) DEFAULT NULL,
+  `cost` decimal(12,2) DEFAULT NULL,
+  `work_order_no` varchar(100) DEFAULT NULL,
+  `next_service_date` varchar(25) DEFAULT NULL,
+  `next_service_mileage` int(11) DEFAULT NULL,
+  `created_by` int(11) NOT NULL,
+  `created_date` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `active` int(11) NOT NULL DEFAULT 1,
+  PRIMARY KEY (`id`),
+  KEY `idx_vehicle_maintenance_vehicle_id` (`vehicle_id`),
+  KEY `idx_vehicle_maintenance_active` (`active`),
+  KEY `idx_vehicle_maintenance_service_date` (`service_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;

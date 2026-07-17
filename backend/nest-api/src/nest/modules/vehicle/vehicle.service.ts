@@ -1,5 +1,5 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { CreateVehicleDto, UpdateVehicleDto } from './dto';
+import { CreateVehicleDto, CreateVehicleMaintenanceDto, UpdateVehicleDto, UpdateVehicleMaintenanceDto } from './dto';
 import { VehicleRepository } from './vehicle.repository';
 
 export interface VehicleListParams {
@@ -50,6 +50,64 @@ export class VehicleService {
 
     const rows = await this.vehicleRepository.checkAnyFailures(value);
     return rows as Record<string, unknown>[];
+  }
+
+  async getMaintenanceByVehicleId(vehicleId: number): Promise<Record<string, unknown>[]> {
+    const vehicle = await this.vehicleRepository.getById(vehicleId);
+    if (!vehicle) {
+      throw new NotFoundException({
+        code: 'RC_VEHICLE_NOT_FOUND',
+        message: `Vehicle record not found for id ${vehicleId}`,
+      });
+    }
+
+    const rows = await this.vehicleRepository.getMaintenanceByVehicleId(vehicleId);
+    return rows as Record<string, unknown>[];
+  }
+
+  async createMaintenance(payload: CreateVehicleMaintenanceDto): Promise<{ insertId: number }> {
+    const vehicle = await this.vehicleRepository.getById(payload.vehicle_id);
+    if (!vehicle) {
+      throw new NotFoundException({
+        code: 'RC_VEHICLE_NOT_FOUND',
+        message: `Vehicle record not found for id ${payload.vehicle_id}`,
+      });
+    }
+
+    const insertId = await this.vehicleRepository.createMaintenance(payload);
+    return { insertId };
+  }
+
+  async updateMaintenance(payload: UpdateVehicleMaintenanceDto): Promise<{ rowCount: number }> {
+    const id = Number(payload?.id);
+    if (!Number.isFinite(id) || id <= 0) {
+      throw new NotFoundException({
+        code: 'RC_VEHICLE_MAINTENANCE_NOT_FOUND',
+        message: `Vehicle maintenance record not found for id ${id}`,
+      });
+    }
+
+    const rowCount = await this.vehicleRepository.updateMaintenanceById(id, {
+      service_date: payload.service_date,
+      mileage: payload.mileage,
+      service_type: payload.service_type,
+      description: payload.description,
+      vendor_name: payload.vendor_name,
+      cost: payload.cost,
+      work_order_no: payload.work_order_no,
+      next_service_date: payload.next_service_date,
+      next_service_mileage: payload.next_service_mileage,
+      active: payload.active,
+    });
+
+    if (rowCount === 0) {
+      throw new NotFoundException({
+        code: 'RC_VEHICLE_MAINTENANCE_NOT_FOUND',
+        message: `Vehicle maintenance record not found for id ${id}`,
+      });
+    }
+
+    return { rowCount };
   }
 
   async create(payload: CreateVehicleDto): Promise<{ insertId: number }> {

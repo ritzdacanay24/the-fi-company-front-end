@@ -108,19 +108,8 @@ export class VehicleListComponent implements OnInit {
       filter: "agMultiColumnFilter",
     },
     {
-      field: "lastServiceDate",
-      headerName: "Last Service Date",
-      filter: "agMultiColumnFilter",
-    },
-    {
       field: "licensePlate",
       headerName: "License Plate",
-      filter: "agMultiColumnFilter",
-    },
-    { field: "mileage", headerName: "Mileage", filter: "agMultiColumnFilter" },
-    {
-      field: "typeOfService",
-      headerName: "Type Of Service",
       filter: "agMultiColumnFilter",
     },
     {

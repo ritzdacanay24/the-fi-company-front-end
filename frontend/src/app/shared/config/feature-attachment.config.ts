@@ -93,6 +93,13 @@ export const FEATURE_ATTACHMENT_CONFIG: Record<FeatureType, FeatureAttachmentCon
     legacyNames: ['Vehicle Management', 'Vehicle Information'],
     description: 'Vehicle attachments',
   },
+  [FeatureType.VEHICLE_MAINTENANCE_SERVICE]: {
+    feature: FeatureType.VEHICLE_MAINTENANCE_SERVICE,
+    s3Path: 'vehicle-maintenance-service',
+    dbField: 'vehicle_maintenance_service',
+    legacyNames: [],
+    description: 'Vehicle maintenance service attachments',
+  },
   [FeatureType.CHECKLIST]: {
     feature: FeatureType.CHECKLIST,
     s3Path: 'checklist',

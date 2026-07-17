@@ -14,6 +14,7 @@ export enum FeatureType {
   FIELD_SERVICE_TRIP_DETAILS = 'field-service-trip-details',
   PARTS_REQUEST = 'parts-request',
   VEHICLE_MANAGEMENT = 'vehicle-management',
+  VEHICLE_MAINTENANCE_SERVICE = 'vehicle-maintenance-service',
   CHECKLIST = 'checklist',
   PERMIT_CHECKLIST = 'permit-checklist',
   CHECKLIST_INSTANCE = 'checklist-instance',
@@ -95,6 +96,11 @@ export const FEATURE_CONFIG: Record<FeatureType, { s3Prefix: string; field: stri
     s3Prefix: 'vehicle-management/{id}',
     field: 'vehicle_management',
     legacyNames: ['Vehicle Management', 'Vehicle Information'],
+  },
+  [FeatureType.VEHICLE_MAINTENANCE_SERVICE]: {
+    s3Prefix: 'vehicle-maintenance-service/{id}',
+    field: 'vehicle_maintenance_service',
+    legacyNames: [],
   },
   [FeatureType.CHECKLIST]: {
     s3Prefix: 'checklist/{id}',

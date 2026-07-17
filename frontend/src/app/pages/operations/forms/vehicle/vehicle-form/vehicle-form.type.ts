@@ -6,9 +6,6 @@ export interface IVehicleForm {
   vin: string;
   exp: string;
   vehicleNumber: string;
-  mileage: string;
-  lastServiceDate: string;
-  typeOfService: string;
   fuelType: string;
   createdBy: number;
   active: number;

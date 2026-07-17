@@ -54,41 +54,6 @@
 
       <div class="col-12 col-xl-6">
 
-        <!-- Maintenance & Service Section -->
-        <div class="mb-4 pb-4 border-bottom h-100">
-          <div class="mb-3">
-            <h3 class="h5 mb-1">Maintenance & Service</h3>
-            <p class="text-muted mb-0">
-              Current mileage and service history tracking.
-            </p>
-          </div>
-
-          <div class="row">
-            <div class="col-md-6 mb-3">
-              <label class="form-label" [ngClass]="formValidator('mileage')">Current Mileage</label>
-              <input type="text" class="form-control" name="mileage" formControlName="mileage"
-                placeholder="Enter current mileage" [ngClass]="{ 'is-invalid': submitted && f.mileage.errors }" />
-            </div>
-            <div class="col-md-6 mb-3">
-              <label class="form-label" [ngClass]="formValidator('lastServiceDate')">Last Service Date</label>
-              <input type="date" class="form-control" name="lastServiceDate" formControlName="lastServiceDate"
-                placeholder="Select last service date" [ngClass]="{ 'is-invalid': submitted && f.lastServiceDate.errors }" />
-            </div>
-          </div>
-
-          <div class="row">
-            <div class="col-md-12 mb-3">
-              <label class="form-label" [ngClass]="formValidator('typeOfService')">Type of Service</label>
-              <input type="text" class="form-control" name="typeOfService" formControlName="typeOfService"
-                placeholder="Enter service description" [ngClass]="{ 'is-invalid': submitted && f.typeOfService.errors }" />
-            </div>
-          </div>
-        </div>
-
-      </div>
-
-      <div class="col-12 col-xl-6">
-
         <!-- Registration & Identification Section -->
         <div class="mb-4 pb-4 border-bottom h-100">
           <div class="mb-3">
@@ -153,6 +118,13 @@
           </div>
         </div>
 
+      </div>
+
+      <div class="col-12">
+        <div class="alert alert-secondary mb-0">
+          <i class="mdi mdi-information-outline me-2"></i>
+          Maintenance services are tracked as individual history records in the vehicle edit page.
+        </div>
       </div>
     </div>
 

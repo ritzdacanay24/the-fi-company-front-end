@@ -11,7 +11,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Permissions, RolePermissionGuard } from '../access-control';
-import { CreateVehicleDto, UpdateVehicleDto } from './dto';
+import { CreateVehicleDto, CreateVehicleMaintenanceDto, UpdateVehicleDto, UpdateVehicleMaintenanceDto } from './dto';
 import { VehicleService } from './vehicle.service';
 
 @Controller('vehicle')
@@ -47,6 +47,23 @@ export class VehicleController {
   @Get('checkAnyFailures')
   async checkAnyFailures(@Query('license') license?: string) {
     return await this.vehicleService.checkAnyFailures(license || '');
+  }
+
+  @Get('maintenance')
+  async getMaintenanceByVehicleId(@Query('vehicle_id', ParseIntPipe) vehicleId: number) {
+    return await this.vehicleService.getMaintenanceByVehicleId(vehicleId);
+  }
+
+  @Post('maintenance')
+  @Permissions('write')
+  async createMaintenance(@Body() payload: CreateVehicleMaintenanceDto) {
+    return await this.vehicleService.createMaintenance(payload);
+  }
+
+  @Put('maintenance')
+  @Permissions('write')
+  async updateMaintenance(@Body() payload: UpdateVehicleMaintenanceDto) {
+    return await this.vehicleService.updateMaintenance(payload);
   }
 
   @Post('create')

@@ -68,4 +68,42 @@ export class VehicleService extends DataService<any> {
     await firstValueFrom(
       this.http.get<any[]>(`${url}/checkAnyFailures?license=${encodeURIComponent(license)}`)
     );
+
+  getMaintenanceHistory = async (vehicleId: number): Promise<any[]> => {
+    return await firstValueFrom(
+      this.http.get<any[]>(`${url}/maintenance?vehicle_id=${vehicleId}`),
+    );
+  };
+
+  createMaintenanceRecord = async (payload: {
+    vehicle_id: number;
+    service_date: string;
+    mileage?: number | null;
+    service_type: string;
+    description?: string;
+    vendor_name?: string;
+    cost?: number | null;
+    work_order_no?: string;
+    next_service_date?: string;
+    next_service_mileage?: number | null;
+    created_by: number;
+  }): Promise<{ insertId: number }> => {
+    return await firstValueFrom(this.http.post<{ insertId: number }>(`${url}/maintenance`, payload));
+  };
+
+  updateMaintenanceRecord = async (payload: {
+    id: number;
+    service_date?: string;
+    mileage?: number | null;
+    service_type?: string;
+    description?: string;
+    vendor_name?: string;
+    cost?: number | null;
+    work_order_no?: string;
+    next_service_date?: string;
+    next_service_mileage?: number | null;
+    active?: number;
+  }): Promise<{ rowCount: number }> => {
+    return await firstValueFrom(this.http.put<{ rowCount: number }>(`${url}/maintenance`, payload));
+  };
 }

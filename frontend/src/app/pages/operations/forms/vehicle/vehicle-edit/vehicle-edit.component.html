@@ -86,6 +86,94 @@
         </div>
       </div>
 
+      <div class="card shadow-sm border-0 mb-3">
+        <div class="card-body p-4">
+          <div class="d-flex align-items-center justify-content-between mb-3">
+            <div>
+              <h3 class="h5 mb-1">Maintenance History</h3>
+              <p class="text-muted mb-0">
+                Track every maintenance service as a separate record for this vehicle.
+              </p>
+            </div>
+            <button type="button" class="btn btn-dark" [disabled]="isLoading || isLoadingMaintenance" (click)="addMaintenanceService()">
+              <i class="mdi mdi-plus me-1"></i>Add Maintenance Service
+            </button>
+          </div>
+
+          <div class="alert alert-info mb-0" *ngIf="isLoadingMaintenance">
+            Loading maintenance history...
+          </div>
+
+          <div class="table-responsive border rounded" *ngIf="!isLoadingMaintenance && maintenanceHistory?.length > 0">
+            <table class="table table-sm table-bordered align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th class="text-nowrap">Service Date</th>
+                  <th class="text-nowrap">Service Type</th>
+                  <th class="text-nowrap">Mileage</th>
+                  <th class="text-nowrap">Description</th>
+                  <th class="text-nowrap">Vendor</th>
+                  <th class="text-nowrap">Cost</th>
+                  <th class="text-nowrap">Work Order / Invoice</th>
+                  <th class="text-nowrap">Next Service Date</th>
+                  <th class="text-nowrap">Next Service Mileage</th>
+                  <th class="text-nowrap">Recorded By</th>
+                  <th class="text-nowrap">Recorded At</th>
+                  <th class="text-nowrap">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <ng-container *ngFor="let row of maintenanceHistory">
+                  <tr>
+                    <td>{{ row?.service_date || '-' }}</td>
+                    <td>{{ row?.service_type || '-' }}</td>
+                    <td>{{ row?.mileage ?? '-' }}</td>
+                    <td>{{ row?.description || '-' }}</td>
+                    <td>{{ row?.vendor_name || '-' }}</td>
+                    <td>{{ row?.cost ?? '-' }}</td>
+                    <td>{{ row?.work_order_no || '-' }}</td>
+                    <td>{{ row?.next_service_date || '-' }}</td>
+                    <td>{{ row?.next_service_mileage ?? '-' }}</td>
+                    <td>{{ row?.created_by_name || row?.created_by || '-' }}</td>
+                    <td>{{ row?.created_date | date:'MMM d, y h:mm a' }}</td>
+                    <td class="text-nowrap">
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-outline-primary me-2 text-nowrap"
+                        (click)="editMaintenanceService(row)">
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-outline-secondary text-nowrap"
+                        (click)="toggleMaintenanceAttachments(row?.id)">
+                        {{ expandedMaintenanceAttachmentId === row?.id ? 'Hide Files' : 'Files' }}
+                      </button>
+                    </td>
+                  </tr>
+                  <tr *ngIf="expandedMaintenanceAttachmentId === row?.id">
+                    <td colspan="12" class="bg-light-subtle">
+                      <div class="py-2">
+                        <app-feature-attachments-panel
+                          [feature]="FeatureType.VEHICLE_MAINTENANCE_SERVICE"
+                          [resourceId]="row?.id"
+                          [disabled]="isLoading || isLoadingMaintenance"
+                          [showImageThumbnails]="true">
+                        </app-feature-attachments-panel>
+                      </div>
+                    </td>
+                  </tr>
+                </ng-container>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="alert alert-secondary mb-0" *ngIf="!isLoadingMaintenance && (!maintenanceHistory || maintenanceHistory.length === 0)">
+            No maintenance services recorded yet.
+          </div>
+        </div>
+      </div>
+
       <div class="card shadow-sm border-0">
         <div class="card-body p-4">
           <!-- Attachments Section -->
