@@ -119,6 +119,16 @@ const routes: Routes = [
         runGuardsAndResolvers: "always",
       },
       {
+        title: "Forklift Management",
+        path: "forklift",
+        loadChildren: () =>
+          import("./forklift/forklift-routing.module").then(
+            (m) => m.ForkliftRoutingModule
+          ),
+        canActivate: [AccessGuard],
+        runGuardsAndResolvers: "always",
+      },
+      {
         title: "Safety Incident",
         path: "safety-incident",
         loadChildren: () =>

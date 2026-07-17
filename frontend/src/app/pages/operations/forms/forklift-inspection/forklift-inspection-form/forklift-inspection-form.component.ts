@@ -22,6 +22,7 @@ import { SharedModule } from "@app/shared/shared.module";
 })
 export class ForkliftInspectionFormComponent implements OnInit {
   @Input() formValues = formValues;
+  @Input() forkliftModels: Array<{ name: string; details: Array<{ name: string }> }> | null = null;
   form: FormGroup;
 
   @Input() submitted: boolean;
@@ -31,6 +32,13 @@ export class ForkliftInspectionFormComponent implements OnInit {
   // convenience getter for easy access to form fields
   get f() {
     return this.form.controls;
+  }
+
+  get modelGroups(): Array<{ name: string; details: Array<{ name: string }> }> {
+    if (Array.isArray(this.forkliftModels) && this.forkliftModels.length > 0) {
+      return this.forkliftModels;
+    }
+    return this.formValues?.models || [];
   }
 
   public clear() {

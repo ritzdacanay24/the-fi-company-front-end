@@ -15,6 +15,8 @@ export enum FeatureType {
   PARTS_REQUEST = 'parts-request',
   VEHICLE_MANAGEMENT = 'vehicle-management',
   VEHICLE_MAINTENANCE_SERVICE = 'vehicle-maintenance-service',
+  FORKLIFT_MANAGEMENT = 'forklift-management',
+  FORKLIFT_MAINTENANCE_SERVICE = 'forklift-maintenance-service',
   CHECKLIST = 'checklist',
   PERMIT_CHECKLIST = 'permit-checklist',
   CHECKLIST_INSTANCE = 'checklist-instance',

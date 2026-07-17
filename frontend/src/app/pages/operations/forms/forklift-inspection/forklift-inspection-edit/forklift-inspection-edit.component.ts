@@ -10,6 +10,7 @@ import { ForkliftInspectionService } from "@app/core/api/operations/forklift-ins
 import { formValues as formData } from "./../forklift-inspection-form/formData";
 import { AuthenticationService } from "@app/core/services/auth.service";
 import { FeatureType } from "@app/shared/enums/feature.enum";
+import { ForkliftService } from "@app/core/api/operations/forklift/forklift.service";
 
 interface ForkliftIssueItem {
   id: number;
@@ -37,9 +38,12 @@ export class ForkliftInspectionEditComponent {
     private toastrService: ToastrService,
     private activatedRoute: ActivatedRoute,
     private authenticationService: AuthenticationService,
+    private forkliftService: ForkliftService,
   ) {}
 
   ngOnInit(): void {
+    this.loadForkliftModelGroups();
+
     this.activatedRoute.queryParams.subscribe((params) => {
       this.id = params["id"];
     });
@@ -58,6 +62,7 @@ export class ForkliftInspectionEditComponent {
   submitted = false;
 
   readonly attachmentFeature = FeatureType.INSPECTIONS_FORKLIFT;
+  forkliftModelGroups: Array<{ name: string; details: Array<{ name: string }> }> = [];
 
   @Input() goBack: Function = () => {
     this.router.navigate([NAVIGATION_ROUTE.LIST], {
@@ -82,6 +87,59 @@ export class ForkliftInspectionEditComponent {
     return 0;
   }
   formValues;
+
+  private async loadForkliftModelGroups(): Promise<void> {
+    try {
+      const rows = await this.forkliftService.getList('Active');
+      const groups = new Map<string, Set<string>>();
+
+      for (const row of rows || []) {
+        const unitNumber = String(row?.unit_number || '').trim();
+        if (!unitNumber) {
+          continue;
+        }
+
+        const normalizedUnit = unitNumber.toUpperCase();
+        let groupName = '';
+
+        if (/^SD[0-9]+$/.test(normalizedUnit)) {
+          groupName = 'Sit Down Forklift';
+        } else if (/^SU[0-9]+$/.test(normalizedUnit)) {
+          groupName = 'Stand Up Forklift';
+        } else if (/^CP[0-9]+$/.test(normalizedUnit)) {
+          groupName = 'Cherry Pickers';
+        } else {
+          // Ignore malformed or legacy non-unit rows in inspection dropdown.
+          continue;
+        }
+
+        if (!groups.has(groupName)) {
+          groups.set(groupName, new Set<string>());
+        }
+        groups.get(groupName)?.add(normalizedUnit);
+      }
+
+      this.forkliftModelGroups = Array.from(groups.entries()).map(([name, details]) => ({
+        name,
+        details: Array.from(details).sort().map((unit) => ({ name: unit })),
+      }));
+
+      const currentModel = String(this.data?.main?.model_number || this.form?.get('model_number')?.value || '').trim();
+      if (currentModel) {
+        const hasCurrentModel = this.forkliftModelGroups.some((group) =>
+          (group.details || []).some((detail) => detail.name === currentModel),
+        );
+        if (!hasCurrentModel) {
+          this.forkliftModelGroups = [
+            ...this.forkliftModelGroups,
+            { name: 'Legacy', details: [{ name: currentModel }] },
+          ];
+        }
+      }
+    } catch {
+      this.forkliftModelGroups = [];
+    }
+  }
 
   async getData() {
     try {
@@ -122,6 +180,19 @@ export class ForkliftInspectionEditComponent {
         ...formData,
         checklist,
       };
+
+      const currentModel = String(data?.main?.model_number || '').trim();
+      if (currentModel) {
+        const hasCurrentModel = this.forkliftModelGroups.some((group) =>
+          (group.details || []).some((detail) => detail.name === currentModel),
+        );
+        if (!hasCurrentModel) {
+          this.forkliftModelGroups = [
+            ...this.forkliftModelGroups,
+            { name: 'Legacy', details: [{ name: currentModel }] },
+          ];
+        }
+      }
 
       this.syncIssueInputsFromChecklist(checklist);
 

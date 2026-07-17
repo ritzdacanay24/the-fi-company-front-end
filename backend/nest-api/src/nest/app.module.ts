@@ -17,6 +17,7 @@ import { RequestContextMiddleware } from './middlewares/request-context.middlewa
 import { AttachmentsModule } from './modules/attachments/attachments.module';
 import { BomStructureModule } from './modules/bom-structure/bom-structure.module';
 import { ForkliftInspectionModule } from './modules/forklift-inspection';
+import { ForkliftModule } from './modules/forklift';
 import { GraphicsBomModule } from './modules/graphics-bom/graphics-bom.module';
 import { GraphicsDemandModule } from './modules/graphics-demand/graphics-demand.module';
 import { GraphicsProductionModule } from './modules/graphics-production/graphics-production.module';
@@ -164,6 +165,7 @@ import { UrlModule } from '../shared/url/url.module';
     DataScrubModule,
     DepartmentsModule,
     ForkliftInspectionModule,
+    ForkliftModule,
     GraphicsBomModule,
     GraphicsDemandModule,
     GraphicsProductionModule,

@@ -1,0 +1,39 @@
+<form [formGroup]="form" class="settings-form">
+  <div class="row g-3">
+    <div class="col-md-4">
+      <label class="form-label required">Forklift Type</label>
+      <input class="form-control" formControlName="forklift_type" [ngClass]="{ 'is-invalid': submitted && f['forklift_type']?.errors }" placeholder="Sit Down, Stand Up, Cherry Picker">
+    </div>
+    <div class="col-md-4">
+      <label class="form-label required">Unit Number</label>
+      <input class="form-control" formControlName="unit_number" [ngClass]="{ 'is-invalid': submitted && f['unit_number']?.errors }" placeholder="SD1, SU2, CP1">
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Model Name</label>
+      <input class="form-control" formControlName="model_name" placeholder="Manufacturer model">
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Serial Number</label>
+      <input class="form-control" formControlName="serial_number" placeholder="Optional serial number">
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Department</label>
+      <input class="form-control" formControlName="department" placeholder="Warehouse, Logistics">
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Fuel Type</label>
+      <input class="form-control" formControlName="fuel_type" placeholder="Electric, LPG, Diesel">
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Year</label>
+      <input class="form-control" formControlName="year" placeholder="2024">
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Active</label>
+      <select class="form-select" formControlName="active">
+        <option [ngValue]="1">Active</option>
+        <option [ngValue]="0">Inactive</option>
+      </select>
+    </div>
+  </div>
+</form>

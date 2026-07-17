@@ -403,6 +403,13 @@ export const MENU_DATA: MenuItem[] = [
                 activatedRoutes: "/operations/forms/vehicle-inspection/*"
             },
             {
+                label: "Forklift Management",
+                link: "/operations/forms/forklift/list",
+                description: "Manage forklift units and maintenance",
+                icon: "las la-warehouse",
+                activatedRoutes: "/operations/forms/forklift/*"
+            },
+            {
                 badgeId: "forkliftInspectionPendingResolutions",
                 label: "Forklift Inspections",
                 link: "/operations/forms/forklift-inspection",

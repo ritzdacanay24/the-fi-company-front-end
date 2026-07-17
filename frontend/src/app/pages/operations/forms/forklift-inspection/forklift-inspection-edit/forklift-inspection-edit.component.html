@@ -167,6 +167,7 @@
         <div class="card-body p-4">
           <app-forklift-inspection-form (setFormEmitter)="setFormEmitter($event)"
               (setDetailsFormEmitter)="setDetailsFormEmitter($event)" [formValues]="formValues"
+              [forkliftModels]="forkliftModelGroups"
               [submitted]="submitted"></app-forklift-inspection-form>
 
           <!-- Attachments Section -->

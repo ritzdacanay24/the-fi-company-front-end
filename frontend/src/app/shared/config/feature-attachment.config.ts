@@ -100,6 +100,20 @@ export const FEATURE_ATTACHMENT_CONFIG: Record<FeatureType, FeatureAttachmentCon
     legacyNames: [],
     description: 'Vehicle maintenance service attachments',
   },
+  [FeatureType.FORKLIFT_MANAGEMENT]: {
+    feature: FeatureType.FORKLIFT_MANAGEMENT,
+    s3Path: 'forklift-management',
+    dbField: 'forklift_management',
+    legacyNames: [],
+    description: 'Forklift management attachments',
+  },
+  [FeatureType.FORKLIFT_MAINTENANCE_SERVICE]: {
+    feature: FeatureType.FORKLIFT_MAINTENANCE_SERVICE,
+    s3Path: 'forklift-maintenance-service',
+    dbField: 'forklift_maintenance_service',
+    legacyNames: [],
+    description: 'Forklift maintenance service attachments',
+  },
   [FeatureType.CHECKLIST]: {
     feature: FeatureType.CHECKLIST,
     s3Path: 'checklist',

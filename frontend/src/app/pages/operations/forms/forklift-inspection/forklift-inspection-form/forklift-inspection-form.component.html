@@ -34,7 +34,7 @@
           <select class="form-select" formControlName="model_number"
             [ngClass]="{ 'is-invalid': submitted && f['model_number'].errors }">
             <option value="" selected disabled>Select forklift to inspect</option>
-            <optgroup *ngFor="let row of formValues?.models" [label]="row.name">
+            <optgroup *ngFor="let row of modelGroups" [label]="row.name">
               <option *ngFor="let row1 of row.details" [value]="row1.name">{{row1.name}}</option>
             </optgroup>
           </select>
