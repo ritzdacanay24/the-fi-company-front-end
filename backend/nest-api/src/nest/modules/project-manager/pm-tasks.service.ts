@@ -46,11 +46,12 @@ export class PmTasksService {
   constructor(private readonly repository: PmTasksRepository) {}
 
   async getState(projectId: string): Promise<object> {
-    const [tasks, comments, attachments, meta] = await Promise.all([
+    const [tasks, comments, attachments, meta, globalMaxTaskId] = await Promise.all([
       this.repository.getTasksByProject(projectId),
       this.repository.getCommentsByProject(projectId),
       this.repository.getAttachmentsByProject(projectId),
       this.repository.getTaskStateByProject(projectId),
+      this.repository.getGlobalMaxTaskId(),
     ]);
 
     const commentsByTask = this.groupBy(comments, c => c.task_id);
@@ -84,7 +85,6 @@ export class PmTasksService {
     const taskAttachmentCounts = await this.getTaskAttachmentCounts(projectId, tasks);
     const taskCommentCounts = await this.getTaskCommentCounts(projectId, tasks);
 
-    const maxId = tasks.reduce((m, t) => Math.max(m, t.id), 0);
     const boardNames = Array.from(new Set([
       ...this.parseJson<string[]>(meta?.task_board_names || null, []),
       ...taskRecords.map((task) => String(task.projectTaskName || '').trim()).filter(Boolean),
@@ -92,8 +92,9 @@ export class PmTasksService {
     ]));
 
     return {
-      nextId: maxId + 1,
+      nextId: Math.max(1, Number(globalMaxTaskId || 0) + 1),
       taskRecords,
+      hasPersistedState: !!meta || tasks.length > 0,
       taskAttachmentCounts,
       taskCommentCounts,
       subgroupCatalog: this.buildSubgroupCatalog(tasks),

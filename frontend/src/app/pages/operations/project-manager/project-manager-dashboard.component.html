@@ -119,6 +119,7 @@
                   <option value="checklist">Continue Checklist</option>
                   <option value="tasks">Open Tasks</option>
                   <option value="intake">Open Intake</option>
+                  <option value="copy">Copy Project...</option>
                   <option value="delete">Delete Project</option>
                 </select>
               </td>
@@ -273,4 +274,45 @@
       </div>
     </div>
   </div>
+
+  <ng-template #copyProjectModal let-modal>
+    <div class="modal-header text-white border-0 rounded-top-2">
+      <h5 class="modal-title fw-bold fs-6">Copy Project</h5>
+      <button type="button" class="btn-close btn-close-white" (click)="modal.dismiss()"></button>
+    </div>
+    <div class="modal-body">
+      <p class="mb-2 small text-muted">
+        Copy {{ pendingCopyProject?.name || pendingCopyProject?.id }} ({{ pendingCopyProject?.id }}) to:
+      </p>
+
+      <label class="form-label fw-semibold small">Destination</label>
+      <select class="form-select mb-2" [(ngModel)]="copyTargetMode" [ngModelOptions]="{ standalone: true }">
+        <option value="existing">Existing Project</option>
+        <option value="new">New Project</option>
+      </select>
+
+      <ng-container *ngIf="copyTargetMode === 'existing'; else newProjectCopyTarget">
+        <label class="form-label fw-semibold small">Target Project</label>
+        <select class="form-select" [(ngModel)]="copyTargetProjectId" [ngModelOptions]="{ standalone: true }">
+          <option value="">Select project</option>
+          <option *ngFor="let p of copyTargetProjectOptions" [value]="p.id">{{ p.id }} - {{ p.name }}</option>
+        </select>
+      </ng-container>
+
+      <ng-template #newProjectCopyTarget>
+        <label class="form-label fw-semibold small">New Project ID</label>
+        <input
+          type="text"
+          class="form-control"
+          [(ngModel)]="copyNewProjectId"
+          [ngModelOptions]="{ standalone: true }"
+          placeholder="e.g. PRJ-12345678"
+        />
+      </ng-template>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-light border" (click)="modal.dismiss()">Cancel</button>
+      <button type="button" class="btn btn-primary" [disabled]="!canCopyProject" (click)="confirmCopyProject(modal)">Copy</button>
+    </div>
+  </ng-template>
 </div>

@@ -51,6 +51,7 @@ export interface PmTaskRecord {
 export interface ProjectManagerTasksState {
   nextId: number;
   taskRecords: PmTaskRecord[];
+  hasPersistedState?: boolean;
   subgroupCatalog: Record<string, string[]>;
   defaultTaskTemplates?: string[];
   projectTaskBoardName?: string;
@@ -76,6 +77,7 @@ export class ProjectManagerTasksDataService {
       map(res => ({
         nextId: res.nextId || 1,
         taskRecords: this.normalizeTaskRecords(res.taskRecords || []),
+        hasPersistedState: !!res.hasPersistedState,
         subgroupCatalog: this.normalizeSubgroupCatalog(res.subgroupCatalog || {}),
         defaultTaskTemplates: this.normalizeTaskTemplates(res.defaultTaskTemplates || []),
         projectTaskBoardName: this.normalizeBoardName(res.projectTaskBoardName),
@@ -89,13 +91,21 @@ export class ProjectManagerTasksDataService {
 
   /** Observable API: save task state to server. Falls back to in-memory cache on error. */
   saveState$(state: ProjectManagerTasksState, projectId: string): Observable<void> {
+    return this.saveStateWithStatus$(state, projectId).pipe(
+      map(() => undefined),
+    );
+  }
+
+  /** Observable API: save task state and return true only when persisted to API. */
+  saveStateWithStatus$(state: ProjectManagerTasksState, projectId: string): Observable<boolean> {
     if (!this.isApiMode || !projectId) {
       this.saveStateToCache(state, projectId);
-      return of(undefined);
+      return of(true);
     }
     const payload: ProjectManagerTasksState = {
       nextId: state.nextId,
       taskRecords: this.normalizeTaskRecords(state.taskRecords || []),
+      hasPersistedState: state.hasPersistedState,
       subgroupCatalog: this.normalizeSubgroupCatalog(state.subgroupCatalog || {}),
       defaultTaskTemplates: this.normalizeTaskTemplates(state.defaultTaskTemplates || []),
       projectTaskBoardName: this.normalizeBoardName(state.projectTaskBoardName),
@@ -105,10 +115,11 @@ export class ProjectManagerTasksDataService {
     };
 
     return this.http.put<void>(`${this.apiUrl}/${projectId}/tasks`, payload).pipe(
+      map(() => true),
       catchError(() => {
         this.saveStateToCache(state, projectId);
         this.saveFallback$.next(projectId);
-        return of(undefined);
+        return of(false);
       }),
     );
   }
@@ -155,6 +166,7 @@ export class ProjectManagerTasksDataService {
     return {
       nextId: cached.nextId,
       taskRecords: this.normalizeTaskRecords(cached.taskRecords),
+      hasPersistedState: !!cached.hasPersistedState,
       subgroupCatalog: this.normalizeSubgroupCatalog(cached.subgroupCatalog),
       defaultTaskTemplates: this.normalizeTaskTemplates(cached.defaultTaskTemplates || []),
       projectTaskBoardName: this.normalizeBoardName(cached.projectTaskBoardName),
@@ -168,6 +180,7 @@ export class ProjectManagerTasksDataService {
     this.stateCache.set(projectId, {
       nextId: state.nextId,
       taskRecords: this.normalizeTaskRecords(state.taskRecords),
+      hasPersistedState: !!state.hasPersistedState,
       subgroupCatalog: this.normalizeSubgroupCatalog(state.subgroupCatalog),
       defaultTaskTemplates: this.normalizeTaskTemplates(state.defaultTaskTemplates || []),
       projectTaskBoardName: this.normalizeBoardName(state.projectTaskBoardName),
@@ -181,6 +194,7 @@ export class ProjectManagerTasksDataService {
     return {
       nextId: 1,
       taskRecords: [],
+      hasPersistedState: false,
       subgroupCatalog: {},
       defaultTaskTemplates: [],
       projectTaskBoardName: 'Project Tasks',

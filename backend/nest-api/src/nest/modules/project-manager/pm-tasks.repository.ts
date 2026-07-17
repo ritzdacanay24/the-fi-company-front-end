@@ -104,6 +104,13 @@ export class PmTasksRepository {
     return rows[0] || null;
   }
 
+  async getGlobalMaxTaskId(): Promise<number> {
+    const rows = await this.mysqlService.query<RowDataPacket[]>(
+      `SELECT COALESCE(MAX(id), 0) AS max_id FROM eyefidb.pm_tasks`,
+    );
+    return Number((rows[0] as any)?.max_id || 0);
+  }
+
   async getAttachmentCountsByMainIds(mainIds: number[]): Promise<CountByMainIdRow[]> {
     const normalizedIds = Array.from(new Set(mainIds.filter((id) => Number.isFinite(id) && id > 0)));
     if (!normalizedIds.length) {

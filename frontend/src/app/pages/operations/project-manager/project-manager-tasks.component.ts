@@ -10,9 +10,10 @@ import { FeatureType } from '@app/shared/enums/feature.enum';
 import { CommentOffcanvasComponent } from '@app/shared/components/comment-offcanvas/comment-offcanvas.component';
 import { AgGridModule } from 'ag-grid-angular';
 import { CellValueChangedEvent, ColDef, GridApi, GridOptions, GridReadyEvent, IRowNode, RowDragEndEvent, RowSelectedEvent } from 'ag-grid-community';
-import { PmTaskRecord, ProjectManagerTasksDataService, TaskGate, TaskStatus } from './services/project-manager-tasks-data.service';
+import { PmTaskRecord, ProjectManagerTasksDataService, ProjectManagerTasksState, TaskGate, TaskStatus } from './services/project-manager-tasks-data.service';
 import { ProjectDashboardItem, ProjectManagerProjectsService } from './services/project-manager-projects.service';
 import { PmTaskAttachmentModalComponent } from './pm-task-attachment-modal.component';
+import { PmTaskActionsRendererComponent } from './pm-task-actions-renderer.component';
 
 type TaskGateFilter = 'All' | TaskGate;
 
@@ -60,7 +61,7 @@ interface PmTreeRow {
 @Component({
   standalone: true,
   selector: 'app-project-manager-tasks',
-  imports: [SharedModule, ReactiveFormsModule, AgGridModule, CommentOffcanvasComponent],
+  imports: [SharedModule, ReactiveFormsModule, AgGridModule, CommentOffcanvasComponent, PmTaskActionsRendererComponent],
   templateUrl: './project-manager-tasks.component.html',
   styleUrls: ['./project-manager-tasks.component.scss']
 })
@@ -86,7 +87,12 @@ export class ProjectManagerTasksComponent implements OnInit {
   @ViewChild('addTaskModal') addTaskModalTpl!: TemplateRef<any>;
   @ViewChild('manageGroupsModal') manageGroupsModalTpl!: TemplateRef<any>;
   @ViewChild('bulkAddModal') bulkAddModalTpl!: TemplateRef<any>;
+  @ViewChild('moveProjectModal') moveProjectModalTpl!: TemplateRef<any>;
   private activeModalRef: any = null;
+  private pendingMoveTaskIds: Set<number> = new Set<number>();
+  pendingMoveTaskCount = 0;
+  moveTargetProjectId = '';
+  copyKeepOriginalStatus = false;
 
   hideDone = false;
   filterPerson = '';
@@ -316,7 +322,7 @@ export class ProjectManagerTasksComponent implements OnInit {
     gate: ['' as TaskGate | ''],
     groupName: [''],
     subGroupName: [''],
-    project: ['VWL-035XX-XXX', Validators.required],
+    project: ['', Validators.required],
     taskName: ['', [Validators.required, Validators.maxLength(140)]],
     startDate: ['2026-03-12', Validators.required],
     finishDate: ['2026-03-29', Validators.required],
@@ -401,7 +407,14 @@ export class ProjectManagerTasksComponent implements OnInit {
         return `<span style="display:inline-block;padding-left:${indent}px">${value}</span>`;
       }
     },
-    { field: 'project', headerName: 'Project', minWidth: 180, filter: 'agTextColumnFilter', editable: params => params.data?.rowType === 'task' },
+    {
+      field: 'project',
+      headerName: 'Project',
+      minWidth: 180,
+      filter: 'agTextColumnFilter',
+      hide: true,
+      editable: false,
+    },
     {
       field: 'assignedTo', headerName: 'Assigned To', minWidth: 170, filter: 'agTextColumnFilter',
       editable: params => params.data?.rowType === 'task',
@@ -537,6 +550,24 @@ export class ProjectManagerTasksComponent implements OnInit {
         if (!params.data || params.data.rowType !== 'task' || params.data.taskId === null) return;
         this.openAttachmentModal(params.data.taskId);
       }
+    },
+    {
+      headerName: 'Actions',
+      colId: 'rowActions',
+      width: 120,
+      sortable: false,
+      filter: false,
+      pinned: 'right',
+      suppressMovable: true,
+      cellRenderer: PmTaskActionsRendererComponent,
+      cellRendererParams: (params: any) => ({
+        onDuplicate: () => this.duplicateFromGridRow(params),
+        onMoveProject: () => this.openMoveProjectFromGridRow(params),
+        onArchive: () => this.archiveFromGridRow(params),
+        onDelete: () => this.deleteFromGridRow(params),
+        onComment: () => this.openCommentFromGridRow(params),
+        onAttachment: () => this.openAttachmentFromGridRow(params),
+      }),
     }
   ];
 
@@ -690,7 +721,7 @@ export class ProjectManagerTasksComponent implements OnInit {
         return;
       }
       this.actionMessageType = 'warning';
-      this.actionMessage = 'Save to DB failed. Changes are cached locally for now.';
+      this.actionMessage = 'We could not save your changes right now. Please try again.';
     });
 
     this.projectsService.getProjects$().subscribe(projects => {
@@ -773,6 +804,15 @@ export class ProjectManagerTasksComponent implements OnInit {
 
   trackByProjectId(_: number, p: { id: string }): string {
     return p.id;
+  }
+
+  getProjectIdOptions(): string[] {
+    const options = this.projectSelectOptions.map((project) => project.id).filter(Boolean);
+    const currentProject = String(this.taskForm.get('project')?.value || '').trim();
+    if (currentProject && !options.includes(currentProject)) {
+      return [currentProject, ...options];
+    }
+    return options;
   }
 
   onProjectSelect(id: string): void {
@@ -1412,11 +1452,467 @@ export class ProjectManagerTasksComponent implements OnInit {
       return;
     }
 
+    const previousRecords = [...this.taskRecords];
     this.taskRecords = this.taskRecords.filter(task => !targetTaskIds.has(task.id));
+    this.rebuildTreeRows();
+    this.persistTaskStateWithStatus((savedToApi) => {
+      if (savedToApi) {
+        this.actionMessageType = 'success';
+        this.actionMessage = `Deleted ${targetTaskIds.size} task(s).`;
+        return;
+      }
+
+      this.taskRecords = previousRecords;
+      this.rebuildTreeRows();
+      this.actionMessageType = 'warning';
+      this.actionMessage = 'Delete did not go through. Please try again.';
+    });
+  }
+
+  private duplicateFromGridRow(params: any): void {
+    params?.event?.stopPropagation?.();
+
+    if (params?.node?.group) {
+      const route = this.getNodeGroupRoute(params.node);
+      const groupName = String(route[0] || '').trim();
+      if (!groupName) {
+        return;
+      }
+
+      if (route.length === 1) {
+        this.duplicateGroup(groupName);
+      } else {
+        this.duplicateSubgroup(groupName, route.slice(1).join('/'));
+      }
+      return;
+    }
+
+    const row = params?.data as PmTreeRow | undefined;
+    if (!row || row.rowType === 'add-item') {
+      return;
+    }
+
+    if (row.rowType === 'task' && row.taskId !== null) {
+      this.duplicateTask(row.taskId);
+      return;
+    }
+
+    if (row.rowType === 'group') {
+      this.duplicateGroup(row.groupName);
+      return;
+    }
+
+    if (row.rowType === 'subgroup') {
+      this.duplicateSubgroup(row.groupName, row.subGroupName);
+    }
+  }
+
+  private archiveFromGridRow(params: any): void {
+    params?.event?.stopPropagation?.();
+    const targetRows = this.getRowsForCompleteAction(params);
+    if (!targetRows.length) {
+      this.actionMessageType = 'warning';
+      this.actionMessage = 'No rows available to archive.';
+      return;
+    }
+
+    const targetTaskIds = new Set(targetRows.map((task) => task.id));
+    this.taskRecords = this.taskRecords.map((task) => {
+      if (!targetTaskIds.has(task.id)) {
+        return task;
+      }
+      return {
+        ...task,
+        status: 'Locked',
+        completion: 100,
+      };
+    });
+
     this.persistTaskState();
     this.rebuildTreeRows();
     this.actionMessageType = 'success';
-    this.actionMessage = `Deleted ${targetTaskIds.size} task(s).`;
+    this.actionMessage = `Archived ${targetTaskIds.size} task(s) as Locked.`;
+  }
+
+  private openMoveProjectFromGridRow(params: any): void {
+    params?.event?.stopPropagation?.();
+
+    const availableProjectIds = this.getProjectIdOptions();
+    if (!availableProjectIds.length) {
+      this.actionMessageType = 'warning';
+      this.actionMessage = 'No target projects are available.';
+      return;
+    }
+
+    const targetRows = this.getRowsForCompleteAction(params);
+    if (!targetRows.length) {
+      this.actionMessageType = 'warning';
+      this.actionMessage = 'No rows available to copy.';
+      return;
+    }
+
+    this.pendingMoveTaskIds = new Set(targetRows.map((task) => task.id));
+    this.pendingMoveTaskCount = this.pendingMoveTaskIds.size;
+    this.copyKeepOriginalStatus = false;
+
+    const currentSelection = String(this.selectedProjectId || this.activeProjectId || '').trim();
+    const firstDifferent = availableProjectIds.find((projectId) => projectId !== currentSelection);
+    this.moveTargetProjectId = firstDifferent || availableProjectIds[0];
+
+    this.activeModalRef = this.modalService.open(this.moveProjectModalTpl, {
+      size: 'sm',
+      centered: true,
+      backdrop: 'static',
+      keyboard: true,
+    });
+  }
+
+  copyEntireTasksToProject(): void {
+    const sourceProjectId = String(this.activeProjectId || '').trim();
+    if (!sourceProjectId) {
+      this.actionMessageType = 'warning';
+      this.actionMessage = 'Select a project first.';
+      return;
+    }
+
+    const availableProjectIds = this.getProjectIdOptions().filter((projectId) => projectId !== sourceProjectId);
+    if (!availableProjectIds.length) {
+      this.actionMessageType = 'warning';
+      this.actionMessage = 'No target projects are available.';
+      return;
+    }
+
+    const tasksToCopy = this.getActiveBoardTasks();
+    if (!tasksToCopy.length) {
+      this.actionMessageType = 'warning';
+      this.actionMessage = 'No tasks available to copy.';
+      return;
+    }
+
+    this.pendingMoveTaskIds = new Set(tasksToCopy.map((task) => task.id));
+    this.pendingMoveTaskCount = this.pendingMoveTaskIds.size;
+    this.moveTargetProjectId = availableProjectIds[0];
+    this.copyKeepOriginalStatus = false;
+
+    this.activeModalRef = this.modalService.open(this.moveProjectModalTpl, {
+      size: 'sm',
+      centered: true,
+      backdrop: 'static',
+      keyboard: true,
+    });
+  }
+
+  confirmMoveToProject(modal?: any): void {
+    const targetProjectId = String(this.moveTargetProjectId || '').trim();
+    if (!targetProjectId) {
+      this.actionMessageType = 'warning';
+      this.actionMessage = 'Select a target project first.';
+      return;
+    }
+
+    if (!this.pendingMoveTaskIds.size) {
+      this.actionMessageType = 'warning';
+      this.actionMessage = 'No rows available to copy.';
+      modal?.dismiss?.();
+      return;
+    }
+
+    const sourceProjectId = String(this.activeProjectId || '').trim();
+    if (!sourceProjectId) {
+      this.actionMessageType = 'warning';
+      this.actionMessage = 'Select a source project first.';
+      return;
+    }
+
+    if (targetProjectId === sourceProjectId) {
+      this.actionMessageType = 'warning';
+      this.actionMessage = 'Select a different target project.';
+      return;
+    }
+
+    const targetTaskIds = new Set(this.pendingMoveTaskIds);
+    const tasksToMove = this.taskRecords.filter((task) => targetTaskIds.has(task.id));
+    if (!tasksToMove.length) {
+      this.actionMessageType = 'warning';
+      this.actionMessage = 'No rows available to copy.';
+      modal?.dismiss?.();
+      return;
+    }
+
+    this.tasksDataService.loadState$(targetProjectId).subscribe((targetState) => {
+      let nextTargetId = Math.max(1, Number(targetState.nextId || 1));
+
+      const movedTasks = tasksToMove.map((task) => ({
+        ...task,
+        id: nextTargetId++,
+        project: targetProjectId,
+        assignedTo: [...(task.assignedTo || [])],
+        status: this.copyKeepOriginalStatus ? task.status : ('Open' as TaskStatus),
+        completion: this.copyKeepOriginalStatus ? Number(task.completion || 0) : 0,
+      }));
+
+      const targetSubgroupCatalog: Record<string, string[]> = { ...(targetState.subgroupCatalog || {}) };
+      for (const movedTask of movedTasks) {
+        const group = String(movedTask.groupName || '').trim();
+        const subgroup = String(movedTask.subGroupName || '').trim();
+        if (!group || !subgroup) {
+          continue;
+        }
+        const current = new Set(targetSubgroupCatalog[group] || []);
+        current.add(subgroup);
+        targetSubgroupCatalog[group] = Array.from(current);
+      }
+
+      const nextTargetState: ProjectManagerTasksState = {
+        ...targetState,
+        hasPersistedState: true,
+        nextId: nextTargetId,
+        taskRecords: [...movedTasks, ...(targetState.taskRecords || [])],
+        subgroupCatalog: targetSubgroupCatalog,
+      };
+
+      this.tasksDataService.saveStateWithStatus$(nextTargetState, targetProjectId).subscribe((savedToApi) => {
+        if (savedToApi) {
+          this.actionMessageType = 'success';
+          this.actionMessage = `Copied ${tasksToMove.length} task(s) to project ${targetProjectId}.`;
+        } else {
+          this.actionMessageType = 'warning';
+          this.actionMessage = 'Copy did not go through for the target project. Please try again.';
+        }
+
+        this.pendingMoveTaskIds.clear();
+        this.pendingMoveTaskCount = 0;
+        this.moveTargetProjectId = '';
+        this.copyKeepOriginalStatus = false;
+        modal?.close?.();
+      });
+    });
+  }
+
+  private deleteFromGridRow(params: any): void {
+    params?.event?.stopPropagation?.();
+    const targetRows = this.getRowsForCompleteAction(params);
+    if (!targetRows.length) {
+      this.actionMessageType = 'warning';
+      this.actionMessage = 'No rows available to delete.';
+      return;
+    }
+
+    const targetTaskIds = new Set(targetRows.map((task) => task.id));
+    const confirmed = window.confirm(`Delete ${targetTaskIds.size} task(s)? This cannot be undone.`);
+    if (!confirmed) {
+      return;
+    }
+
+    const previousRecords = [...this.taskRecords];
+    this.taskRecords = this.taskRecords.filter((task) => !targetTaskIds.has(task.id));
+    this.rebuildTreeRows();
+    this.persistTaskStateWithStatus((savedToApi) => {
+      if (savedToApi) {
+        this.actionMessageType = 'success';
+        this.actionMessage = `Deleted ${targetTaskIds.size} task(s).`;
+        return;
+      }
+
+      this.taskRecords = previousRecords;
+      this.rebuildTreeRows();
+      this.actionMessageType = 'warning';
+      this.actionMessage = 'Delete did not go through. Please try again.';
+    });
+  }
+
+  private openCommentFromGridRow(params: any): void {
+    params?.event?.stopPropagation?.();
+    const taskId = Number(params?.data?.taskId);
+    if (!Number.isFinite(taskId) || taskId <= 0) {
+      this.actionMessageType = 'warning';
+      this.actionMessage = 'Comments are available for task rows only.';
+      return;
+    }
+
+    this.openCommentModal(taskId);
+  }
+
+  private openAttachmentFromGridRow(params: any): void {
+    params?.event?.stopPropagation?.();
+    const taskId = Number(params?.data?.taskId);
+    if (!Number.isFinite(taskId) || taskId <= 0) {
+      this.actionMessageType = 'warning';
+      this.actionMessage = 'Attachments are available for task rows only.';
+      return;
+    }
+
+    this.openAttachmentModal(taskId);
+  }
+
+  private duplicateTask(taskId: number): void {
+    const sourceTask = this.taskRecords.find((task) => task.id === taskId);
+    if (!sourceTask) {
+      return;
+    }
+
+    const existingNames = new Set(
+      this.taskRecords
+        .filter((task) =>
+          task.groupName === sourceTask.groupName
+          && task.subGroupName === sourceTask.subGroupName
+          && this.sameBoard(task.projectTaskName, sourceTask.projectTaskName)
+        )
+        .map((task) => String(task.taskName || '').trim().toLowerCase())
+    );
+
+    const copiedTask: PmTaskRecord = {
+      ...sourceTask,
+      id: this.nextId++,
+      taskName: this.createUniqueLabel(sourceTask.taskName, existingNames),
+      status: sourceTask.status,
+      completion: sourceTask.completion,
+      assignedTo: [...(sourceTask.assignedTo || [])],
+    };
+
+    this.insertClonesAfter((task) => task.id === taskId, [copiedTask]);
+    this.persistTaskState();
+    this.rebuildTreeRows();
+    this.actionMessageType = 'success';
+    this.actionMessage = `Duplicated task ${sourceTask.taskName}.`;
+  }
+
+  private duplicateGroup(groupName: string): void {
+    const sourceGroup = String(groupName || '').trim();
+    if (!sourceGroup) {
+      return;
+    }
+
+    const sourceTasks = this.getActiveBoardTasks().filter((task) => task.groupName === sourceGroup);
+    if (!sourceTasks.length) {
+      return;
+    }
+
+    const existingGroups = new Set(this.getActiveBoardTasks().map((task) => String(task.groupName || '').trim().toLowerCase()));
+    const newGroupName = this.createUniqueLabel(sourceGroup, existingGroups);
+
+    const clones = sourceTasks.map((task) => ({
+      ...task,
+      id: this.nextId++,
+      groupName: newGroupName,
+      assignedTo: [...(task.assignedTo || [])],
+    }));
+
+    const subgroupPaths = Array.from(this.subgroupCatalog[sourceGroup] || []);
+    subgroupPaths.forEach((path) => this.ensureSubgroup(newGroupName, path));
+
+    this.insertClonesAfter((task) => task.groupName === sourceGroup && this.sameBoard(task.projectTaskName, this.projectTaskBoardName), clones);
+    this.persistTaskState();
+    this.rebuildTreeRows();
+    this.actionMessageType = 'success';
+    this.actionMessage = `Duplicated group ${sourceGroup} with ${clones.length} task(s).`;
+  }
+
+  private duplicateSubgroup(groupName: string, subgroupPath: string): void {
+    const sourceGroup = String(groupName || '').trim();
+    const sourcePath = String(subgroupPath || '').trim();
+    if (!sourceGroup || !sourcePath) {
+      return;
+    }
+
+    const sourceTasks = this.getActiveBoardTasks().filter((task) =>
+      task.groupName === sourceGroup
+      && (task.subGroupName === sourcePath || task.subGroupName.startsWith(`${sourcePath}/`))
+    );
+
+    if (!sourceTasks.length) {
+      return;
+    }
+
+    const segments = sourcePath.split('/').filter(Boolean);
+    const rootName = segments[segments.length - 1] || sourcePath;
+    const parentPath = segments.slice(0, -1).join('/');
+
+    const siblingNames = new Set<string>();
+    Array.from(this.subgroupCatalog[sourceGroup] || []).forEach((path) => {
+      const normalized = String(path || '').trim();
+      if (!normalized) {
+        return;
+      }
+      const pathSegments = normalized.split('/').filter(Boolean);
+      if (pathSegments.length !== segments.length) {
+        return;
+      }
+      if (pathSegments.slice(0, -1).join('/') !== parentPath) {
+        return;
+      }
+      siblingNames.add(pathSegments[pathSegments.length - 1].toLowerCase());
+    });
+
+    const copiedRootName = this.createUniqueLabel(rootName, siblingNames);
+    const copiedRootPath = parentPath ? `${parentPath}/${copiedRootName}` : copiedRootName;
+
+    const clones = sourceTasks.map((task) => {
+      const suffix = task.subGroupName.slice(sourcePath.length);
+      const nextSubGroup = `${copiedRootPath}${suffix}`;
+      this.ensureSubgroup(sourceGroup, nextSubGroup);
+      return {
+        ...task,
+        id: this.nextId++,
+        subGroupName: nextSubGroup,
+        assignedTo: [...(task.assignedTo || [])],
+      } as PmTaskRecord;
+    });
+
+    this.insertClonesAfter((task) =>
+      task.groupName === sourceGroup
+      && (task.subGroupName === sourcePath || task.subGroupName.startsWith(`${sourcePath}/`))
+      && this.sameBoard(task.projectTaskName, this.projectTaskBoardName), clones);
+
+    this.persistTaskState();
+    this.rebuildTreeRows();
+    this.actionMessageType = 'success';
+    this.actionMessage = `Duplicated subgroup ${sourcePath} with ${clones.length} task(s).`;
+  }
+
+  private createUniqueLabel(baseLabel: string, existingLowercaseNames: Set<string>): string {
+    const normalizedBase = String(baseLabel || '').trim() || 'Copy';
+    const preferred = `${normalizedBase} Copy`;
+    if (!existingLowercaseNames.has(preferred.toLowerCase())) {
+      return preferred;
+    }
+
+    let index = 2;
+    while (index < 5000) {
+      const candidate = `${normalizedBase} Copy ${index}`;
+      if (!existingLowercaseNames.has(candidate.toLowerCase())) {
+        return candidate;
+      }
+      index += 1;
+    }
+
+    return `${normalizedBase} Copy ${Date.now()}`;
+  }
+
+  private sameBoard(a: string | undefined, b: string | undefined): boolean {
+    const left = String(a || 'Project Tasks').trim().toLowerCase() || 'project tasks';
+    const right = String(b || 'Project Tasks').trim().toLowerCase() || 'project tasks';
+    return left === right;
+  }
+
+  private insertClonesAfter(predicate: (task: PmTaskRecord) => boolean, clones: PmTaskRecord[]): void {
+    if (!clones.length) {
+      return;
+    }
+
+    let insertAfterIndex = -1;
+    this.taskRecords.forEach((task, index) => {
+      if (predicate(task)) {
+        insertAfterIndex = index;
+      }
+    });
+
+    const insertAt = insertAfterIndex + 1;
+    this.taskRecords = [
+      ...this.taskRecords.slice(0, insertAt),
+      ...clones,
+      ...this.taskRecords.slice(insertAt),
+    ];
   }
 
   get selectedTaskCount(): number {
@@ -1780,7 +2276,7 @@ export class ProjectManagerTasksComponent implements OnInit {
       });
       this.subgroupCatalog = catalog;
 
-      if (!this.taskRecords.length) {
+      if (!this.taskRecords.length && !state.hasPersistedState) {
         this.seedDefaultProjectTasks();
       }
 
@@ -1851,19 +2347,29 @@ export class ProjectManagerTasksComponent implements OnInit {
   }
 
   private persistTaskState(): void {
+    this.tasksDataService.saveState(this.buildTaskStateSnapshot(), this.activeProjectId);
+  }
+
+  private persistTaskStateWithStatus(onComplete: (savedToApi: boolean) => void): void {
+    this.tasksDataService.saveStateWithStatus$(this.buildTaskStateSnapshot(), this.activeProjectId)
+      .subscribe((savedToApi) => onComplete(savedToApi));
+  }
+
+  private buildTaskStateSnapshot(): ProjectManagerTasksState {
     const subgroupCatalog: Record<string, string[]> = {};
     Object.keys(this.subgroupCatalog).forEach(group => {
       subgroupCatalog[group] = Array.from(this.subgroupCatalog[group]);
     });
 
-    this.tasksDataService.saveState({
+    return {
       nextId: this.nextId,
       taskRecords: this.taskRecords,
+      hasPersistedState: true,
       subgroupCatalog,
       defaultTaskTemplates: this.defaultTaskTemplates,
       projectTaskBoardName: this.projectTaskBoardName,
       taskBoardNames: this.taskBoardNames
-    }, this.activeProjectId);
+    };
   }
 
   private getActiveBoardTasks(): PmTaskRecord[] {
@@ -1883,7 +2389,7 @@ export class ProjectManagerTasksComponent implements OnInit {
     }
 
     this.taskForm.patchValue({
-      project: selected.code || selected.name
+      project: selected.id
     });
   }
 

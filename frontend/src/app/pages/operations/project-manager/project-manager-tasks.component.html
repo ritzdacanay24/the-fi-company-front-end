@@ -70,6 +70,7 @@
   <!-- ── Toolbar (Top) ──────────────────────────────────────────────────────── -->
   <div class="d-flex align-items-center gap-2 flex-nowrap px-3 py-2 border-bottom pm-scroll-row">
     <button class="btn btn-primary btn-sm fw-bold px-3" (click)="openAddTaskPanel()">+ Add New Task</button>
+    <button class="btn btn-outline-primary btn-sm fw-semibold" (click)="copyEntireTasksToProject()">Copy Entire Tasks</button>
 
     <div class="vr"></div>
 
@@ -126,7 +127,10 @@
           </div>
           <div class="col-12">
             <label class="form-label fw-semibold small">Project ID</label>
-            <input class="form-control" formControlName="project" placeholder="e.g. PRJ-001" />
+            <select class="form-select" formControlName="project">
+              <option value="">Select project ID</option>
+              <option *ngFor="let p of projectSelectOptions; trackBy: trackByProjectId" [value]="p.id">{{ p.id }}</option>
+            </select>
           </div>
           <div class="col-6">
             <label class="form-label fw-semibold small">Gate</label>
@@ -297,6 +301,37 @@
       <button type="button" class="btn btn-light border" (click)="modal.dismiss()">Cancel</button>
       <button type="button" class="btn btn-primary px-4"
         (click)="createEngineeringTasksForPeople(); modal.close()">Create Tasks</button>
+    </div>
+  </ng-template>
+
+  <ng-template #moveProjectModal let-modal>
+    <div class="modal-header text-white border-0 rounded-top-2">
+      <h5 class="modal-title fw-bold fs-6">Copy To Project</h5>
+      <button type="button" class="btn-close btn-close-white" (click)="modal.dismiss()"></button>
+    </div>
+    <div class="modal-body">
+      <p class="mb-2 small text-muted">Copy {{ pendingMoveTaskCount }} task(s) recursively to:</p>
+      <label class="form-label fw-semibold small">Target Project ID</label>
+      <select class="form-select" [(ngModel)]="moveTargetProjectId" [ngModelOptions]="{ standalone: true }">
+        <option value="">Select project ID</option>
+        <option *ngFor="let p of projectSelectOptions; trackBy: trackByProjectId" [value]="p.id">{{ p.id }} - {{ p.name }}</option>
+      </select>
+      <div class="form-check mt-3">
+        <input
+          class="form-check-input"
+          type="checkbox"
+          id="copy-keep-task-status"
+          [(ngModel)]="copyKeepOriginalStatus"
+          [ngModelOptions]="{ standalone: true }"
+        />
+        <label class="form-check-label small" for="copy-keep-task-status">
+          Keep original statuses (default copies as Open)
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-light border" (click)="modal.dismiss()">Cancel</button>
+      <button type="button" class="btn btn-primary" (click)="confirmMoveToProject(modal)">Copy</button>
     </div>
   </ng-template>
 
