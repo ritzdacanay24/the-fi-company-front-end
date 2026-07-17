@@ -42,7 +42,7 @@ export class PmTaskAttachmentModalComponent {
   @Input() task!: PmTaskRecord;
   @Input() resourceId: number | null = null;
 
-  readonly feature = FeatureType.PROJECT_MANAGER;
+  readonly feature = FeatureType.PROJECT_MANAGER_TASK;
 
   constructor(public readonly activeModal: NgbActiveModal) {}
 }

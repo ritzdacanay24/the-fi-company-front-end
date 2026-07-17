@@ -5,6 +5,7 @@
  */
 export enum FeatureType {
   PROJECT_MANAGER = 'project-manager',
+  PROJECT_MANAGER_TASK = 'project-manager-task',
   NCR = 'ncr',
   QIR = 'qir',
   SUPPORT_TICKETS = 'support-tickets',
@@ -41,6 +42,12 @@ export const FEATURE_CONFIG: Record<FeatureType, { s3Prefix: string; field: stri
     s3Prefix: 'project-manager/{id}',
     field: 'project_manager',
     legacyNames: ['project_manager', 'Project Manager'],
+  },
+  // STATUS: LOCKED - Project manager task attachments are isolated from project header attachments.
+  [FeatureType.PROJECT_MANAGER_TASK]: {
+    s3Prefix: 'project-manager-task/{id}',
+    field: 'project_manager_task',
+    legacyNames: ['project_manager_task'],
   },
   // STATUS: LOCKED - NCR mapping finalized and aligned.
   [FeatureType.NCR]: {

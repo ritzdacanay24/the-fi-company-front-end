@@ -5,6 +5,7 @@
  */
 export enum FeatureType {
   PROJECT_MANAGER = 'project-manager',
+  PROJECT_MANAGER_TASK = 'project-manager-task',
   NCR = 'ncr',
   QIR = 'qir',
   SUPPORT_TICKETS = 'support-tickets',

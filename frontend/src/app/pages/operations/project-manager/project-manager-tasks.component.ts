@@ -104,7 +104,7 @@ export class ProjectManagerTasksComponent implements OnInit {
   actionMessage = '';
   actionMessageType: 'success' | 'warning' = 'success';
   currentProjectSummary: ProjectDashboardItem | null = null;
-  readonly attachmentFeature = FeatureType.PROJECT_MANAGER;
+  readonly attachmentFeature = FeatureType.PROJECT_MANAGER_TASK;
   readonly commentType = 'Project Manager Task';
   private taskAttachmentCountMap = new Map<number, number>();
   private taskCommentCountMap = new Map<number, number>();
@@ -1254,7 +1254,7 @@ export class ProjectManagerTasksComponent implements OnInit {
         person: this.filterPerson || null,
         status: this.filterStatus || null,
         hideDone: this.hideDone ? '1' : null,
-        gateFilter: this.activeGateFilter !== 'All' ? this.activeGateFilter : null,
+        gateFilter: this.activeGateFilter,
         taskBoard: this.projectTaskBoardName || null,
         q: this.quickFilterText.trim() || null
       },
@@ -2023,7 +2023,7 @@ export class ProjectManagerTasksComponent implements OnInit {
     }
 
     try {
-      const attachments = await this.attachmentsService.getAttachmentsByFeature(FeatureType.PROJECT_MANAGER, resourceId);
+      const attachments = await this.attachmentsService.getAttachmentsByFeature(FeatureType.PROJECT_MANAGER_TASK, resourceId);
       this.taskAttachmentCountMap.set(taskId, Array.isArray(attachments) ? attachments.length : 0);
       this.gridApi?.refreshCells({ force: true, columns: ['attachments'] });
     } catch {

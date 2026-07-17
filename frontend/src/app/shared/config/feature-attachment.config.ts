@@ -22,6 +22,14 @@ export const FEATURE_ATTACHMENT_CONFIG: Record<FeatureType, FeatureAttachmentCon
     legacyNames: ['project_manager', 'Project Manager'],
     description: 'Project manager attachments',
   },
+  // STATUS: LOCKED - Project manager task attachments are isolated from project header attachments.
+  [FeatureType.PROJECT_MANAGER_TASK]: {
+    feature: FeatureType.PROJECT_MANAGER_TASK,
+    s3Path: 'project-manager-task',
+    dbField: 'project_manager_task',
+    legacyNames: ['project_manager_task'],
+    description: 'Project manager task attachments',
+  },
   // STATUS: LOCKED - NCR mapping finalized and aligned.
   [FeatureType.NCR]: {
     feature: FeatureType.NCR,
