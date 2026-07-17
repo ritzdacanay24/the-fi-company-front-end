@@ -102,6 +102,42 @@ export class AttachmentsController {
   }
 
   /**
+   * Slash-safe feature endpoint for environments where encoded slashes are rewritten by proxies.
+   * Example: /attachments/by-feature?feature=inspections/forklift&id=5087
+   */
+  @Get('by-feature')
+  async getAttachmentsByFeatureQuery(
+    @Query('feature') feature: string,
+    @Query('id', ParseIntPipe) id: number,
+  ) {
+    return this.service.getAttachmentsByFeature(feature, id);
+  }
+
+  /**
+   * Slash-safe upload endpoint for features that contain '/'.
+   */
+  @Post('by-feature/upload')
+  @Permissions('write')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadAttachmentByFeatureBody(
+    @Body('feature') feature: string,
+    @Body('id', ParseIntPipe) id: number,
+    @UploadedFile() file?: { originalname?: string; buffer?: Buffer; mimetype?: string; size?: number },
+    @CurrentUserId() userId?: number,
+  ) {
+    if (!userId) {
+      throw new ForbiddenException('User ID is required');
+    }
+
+    return this.service.uploadAttachmentForFeature(
+      feature,
+      id,
+      file,
+      userId,
+    );
+  }
+
+  /**
    * Get attachments for a specific feature and resource ID
    * Handles legacy field names automatically for backward compatibility
    * Routes: /attachments/:feature/:id
