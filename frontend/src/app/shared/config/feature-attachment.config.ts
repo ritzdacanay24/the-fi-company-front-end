@@ -15,6 +15,7 @@ export interface FeatureAttachmentConfig {
 }
 
 export const FEATURE_ATTACHMENT_CONFIG: Record<FeatureType, FeatureAttachmentConfig> = {
+  // STATUS: LOCKED - Project manager header and gate attachments mapping finalized and aligned.
   [FeatureType.PROJECT_MANAGER]: {
     feature: FeatureType.PROJECT_MANAGER,
     s3Path: 'project-manager',
@@ -114,13 +115,6 @@ export const FEATURE_ATTACHMENT_CONFIG: Record<FeatureType, FeatureAttachmentCon
     legacyNames: ['CheckList'],
     description: 'Checklist instance attachments (uses CheckList legacy field)',
   },
-  [FeatureType.CHECKLIST_LEGACY]: {
-    feature: FeatureType.CHECKLIST_LEGACY,
-    s3Path: 'checklist/legacy-migration',
-    dbField: 'checklist_legacy',
-    legacyNames: ['CheckList'],
-    description: 'Checklist legacy migration attachments (uses CheckList legacy field)',
-  },
   [FeatureType.CHECKLIST_MANAGE]: {
     feature: FeatureType.CHECKLIST_MANAGE,
     s3Path: 'checklist/manage',
@@ -149,13 +143,6 @@ export const FEATURE_ATTACHMENT_CONFIG: Record<FeatureType, FeatureAttachmentCon
     dbField: 'forklift_inspection',
     legacyNames: ['forklift_inspection'],
     description: 'Forklift inspection attachments',
-  },
-  [FeatureType.LEGACY_MIGRATION]: {
-    feature: FeatureType.LEGACY_MIGRATION,
-    s3Path: 'legacy-migration',
-    dbField: 'legacy_migration',
-    legacyNames: ['legacy_migration'],
-    description: 'Legacy migration attachments',
   },
   // STATUS: LOCKED - RMA mapping finalized and aligned.
   [FeatureType.RMA]: {

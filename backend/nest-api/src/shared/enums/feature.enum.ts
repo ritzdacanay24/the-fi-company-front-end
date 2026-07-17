@@ -17,12 +17,10 @@ export enum FeatureType {
   CHECKLIST = 'checklist',
   PERMIT_CHECKLIST = 'permit-checklist',
   CHECKLIST_INSTANCE = 'checklist/instance',
-  CHECKLIST_LEGACY = 'checklist/legacy-migration',
   CHECKLIST_MANAGE = 'checklist/manage',
   GRAPHICS_BOM = 'graphics-bom',
   INSPECTIONS_VEHICLE = 'inspections/vehicle',
   INSPECTIONS_FORKLIFT = 'inspections/forklift',
-  LEGACY_MIGRATION = 'legacy-migration',
   RMA = 'rma',
   RECEIVING = 'receiving',
   RESOURCES = 'resources',
@@ -38,6 +36,7 @@ export enum FeatureType {
  * Legacy names are automatically queried when retrieving existing records
  */
 export const FEATURE_CONFIG: Record<FeatureType, { s3Prefix: string; field: string; legacyNames?: string[] }> = {
+  // STATUS: LOCKED - Project manager header and gate attachments mapping finalized and aligned.
   [FeatureType.PROJECT_MANAGER]: {
     s3Prefix: 'project-manager/{id}',
     field: 'project_manager',
@@ -113,11 +112,6 @@ export const FEATURE_CONFIG: Record<FeatureType, { s3Prefix: string; field: stri
     field: 'checklist_instance',
     legacyNames: ['CheckList'],
   },
-  [FeatureType.CHECKLIST_LEGACY]: {
-    s3Prefix: 'checklist/legacy-migration/{id}',
-    field: 'checklist_legacy',
-    legacyNames: ['CheckList'],
-  },
   [FeatureType.CHECKLIST_MANAGE]: {
     s3Prefix: 'checklist/manage/{id}',
     field: 'checklist_manage',
@@ -140,11 +134,6 @@ export const FEATURE_CONFIG: Record<FeatureType, { s3Prefix: string; field: stri
     s3Prefix: 'inspections/forklift/{id}',
     field: 'forklift_inspection',
     legacyNames: ['forklift_inspection'],
-  },
-  [FeatureType.LEGACY_MIGRATION]: {
-    s3Prefix: 'legacy-migration/{id}',
-    field: 'legacy_migration',
-    legacyNames: ['legacy_migration'],
   },
   // STATUS: LOCKED - RMA mapping finalized and aligned.
   [FeatureType.RMA]: {
