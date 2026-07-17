@@ -129,6 +129,16 @@ const routes: Routes = [
         runGuardsAndResolvers: "always",
       },
       {
+        title: "Computer Management",
+        path: "computer",
+        loadChildren: () =>
+          import("./computer/computer-routing.module").then(
+            (m) => m.ComputerRoutingModule
+          ),
+        canActivate: [AccessGuard],
+        runGuardsAndResolvers: "always",
+      },
+      {
         title: "Safety Incident",
         path: "safety-incident",
         loadChildren: () =>

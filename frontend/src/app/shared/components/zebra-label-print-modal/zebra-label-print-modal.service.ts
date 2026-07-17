@@ -17,6 +17,7 @@ export class ZebraLabelPrintModalService {
     hz?: string;
     amps?: string;
     templateId?: string;
+    lockTemplate?: boolean;
   }) {
     const modalRef = this.modalService.open(ZebraLabelPrintModalComponent, {
       size: 'lg',
@@ -31,6 +32,7 @@ export class ZebraLabelPrintModalService {
     modalRef.componentInstance.hz = data.hz || '';
     modalRef.componentInstance.amps = data.amps || '';
     modalRef.componentInstance.templateId = data.templateId || 'serial-number-standard';
+    modalRef.componentInstance.lockTemplate = !!data.lockTemplate;
 
     return modalRef;
   }

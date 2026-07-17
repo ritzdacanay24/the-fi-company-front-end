@@ -75,7 +75,7 @@
           <button type="button" class="btn btn-outline-secondary me-2" [disabled]="isLoading" (click)="onCancel()">
             <i class="mdi mdi-close me-1"></i>Cancel
           </button>
-          <button type="submit" class="btn btn-dark ms-auto" [disabled]="isLoading" (click)="onSubmit()">
+          <button type="submit" class="btn btn-primary ms-auto" [disabled]="isLoading" (click)="onSubmit()">
             @if (isLoading) {
               <span class="spinner-border spinner-border-sm me-2" role="status"></span>
               Updating Vehicle...
@@ -95,7 +95,7 @@
                 Track every maintenance service as a separate record for this vehicle.
               </p>
             </div>
-            <button type="button" class="btn btn-dark" [disabled]="isLoading || isLoadingMaintenance" (click)="addMaintenanceService()">
+            <button type="button" class="btn btn-primary" [disabled]="isLoading || isLoadingMaintenance" (click)="addMaintenanceService()">
               <i class="mdi mdi-plus me-1"></i>Add Maintenance Service
             </button>
           </div>

@@ -114,6 +114,20 @@ export const FEATURE_ATTACHMENT_CONFIG: Record<FeatureType, FeatureAttachmentCon
     legacyNames: [],
     description: 'Forklift maintenance service attachments',
   },
+  [FeatureType.COMPUTER_MANAGEMENT]: {
+    feature: FeatureType.COMPUTER_MANAGEMENT,
+    s3Path: 'computer-management',
+    dbField: 'computer_management',
+    legacyNames: [],
+    description: 'Computer management attachments',
+  },
+  [FeatureType.COMPUTER_MAINTENANCE_SERVICE]: {
+    feature: FeatureType.COMPUTER_MAINTENANCE_SERVICE,
+    s3Path: 'computer-maintenance-service',
+    dbField: 'computer_maintenance_service',
+    legacyNames: [],
+    description: 'Computer maintenance service attachments',
+  },
   [FeatureType.CHECKLIST]: {
     feature: FeatureType.CHECKLIST,
     s3Path: 'checklist',

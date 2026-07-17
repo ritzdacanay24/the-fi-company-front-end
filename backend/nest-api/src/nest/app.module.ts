@@ -108,6 +108,7 @@ import { JobCommentsModule } from './modules/job-comments';
 import { LicensedTechsModule } from './modules/licensed-techs';
 import { CrashKitModule } from './modules/crash-kit';
 import { CommentsModule } from './modules/comments/comments.module';
+import { ComputerModule } from './modules/computer';
 import { RequestModule } from './modules/request';
 import { RequestCommentsModule } from './modules/request-comments';
 import { PublicFieldServiceModule } from './modules/public-field-service';
@@ -255,6 +256,7 @@ import { UrlModule } from '../shared/url/url.module';
     LicensedTechsModule,
     CrashKitModule,
     CommentsModule,
+    ComputerModule,
     RequestModule,
     RequestCommentsModule,
     PublicFieldServiceModule,

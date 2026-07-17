@@ -19,7 +19,7 @@
     </div>
 
     <!-- Template Selection -->
-    <div class="row mb-3">
+    <div class="row mb-3" *ngIf="!lockTemplate">
       <div class="col-12">
         <label class="form-label">Label Template</label>
         <select class="form-select" formControlName="templateId">

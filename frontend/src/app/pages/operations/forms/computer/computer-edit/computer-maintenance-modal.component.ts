@@ -7,11 +7,11 @@ import { PendingAttachmentsListComponent } from '@app/shared/components/attachme
 
 @Component({
   standalone: true,
-  selector: 'app-forklift-maintenance-modal',
+  selector: 'app-computer-maintenance-modal',
   imports: [CommonModule, ReactiveFormsModule, InlineAttachmentDropzoneComponent, PendingAttachmentsListComponent],
   template: `
     <div class="modal-header">
-      <h5 class="modal-title">{{ mode === 'edit' ? 'Edit Forklift Maintenance' : 'Add Forklift Maintenance' }}</h5>
+      <h5 class="modal-title">{{ mode === 'edit' ? 'Edit Computer Maintenance' : 'Add Computer Maintenance' }}</h5>
       <button type="button" class="btn-close" aria-label="Close" (click)="activeModal.dismiss()"></button>
     </div>
 
@@ -22,8 +22,8 @@ import { PendingAttachmentsListComponent } from '@app/shared/components/attachme
           <input type="date" class="form-control" formControlName="service_date">
         </div>
         <div class="col-md-6">
-          <label class="form-label">Hour Meter</label>
-          <input type="number" class="form-control" formControlName="hour_meter" placeholder="Optional hour meter">
+          <label class="form-label">Usage Hours</label>
+          <input type="number" class="form-control" formControlName="usage_hours" placeholder="Optional usage hours">
         </div>
         <div class="col-12">
           <label class="form-label required">Service Type</label>
@@ -42,16 +42,16 @@ import { PendingAttachmentsListComponent } from '@app/shared/components/attachme
           <input type="number" min="0" step="0.01" class="form-control" formControlName="cost" placeholder="Optional cost">
         </div>
         <div class="col-md-6">
-          <label class="form-label">Work Order / Invoice #</label>
-          <input type="text" class="form-control" formControlName="work_order_no" placeholder="Optional reference">
+          <label class="form-label">Ticket / Invoice #</label>
+          <input type="text" class="form-control" formControlName="ticket_no" placeholder="Optional reference">
         </div>
         <div class="col-md-6">
           <label class="form-label">Next Service Date</label>
           <input type="date" class="form-control" formControlName="next_service_date">
         </div>
         <div class="col-md-6">
-          <label class="form-label">Next Service Hour Meter</label>
-          <input type="number" class="form-control" formControlName="next_service_hour_meter" placeholder="Optional next PM hours">
+          <label class="form-label">Next Service Usage Hours</label>
+          <input type="number" class="form-control" formControlName="next_service_usage_hours" placeholder="Optional next-service usage">
         </div>
 
         <div class="col-12" *ngIf="mode === 'create'">
@@ -78,7 +78,7 @@ import { PendingAttachmentsListComponent } from '@app/shared/components/attachme
     </div>
   `,
 })
-export class ForkliftMaintenanceModalComponent {
+export class ComputerMaintenanceModalComponent {
   @Input() mode: 'create' | 'edit' = 'create';
   @Input() initialData: any = null;
 
@@ -91,14 +91,14 @@ export class ForkliftMaintenanceModalComponent {
   ) {
     this.form = this.fb.group({
       service_date: ['', Validators.required],
-      hour_meter: [null],
+      usage_hours: [null],
       service_type: ['', [Validators.required, Validators.maxLength(255)]],
       description: [''],
       vendor_name: ['', [Validators.maxLength(255)]],
       cost: [null],
-      work_order_no: ['', [Validators.maxLength(100)]],
+      ticket_no: ['', [Validators.maxLength(100)]],
       next_service_date: [''],
-      next_service_hour_meter: [null],
+      next_service_usage_hours: [null],
     });
   }
 
@@ -109,14 +109,14 @@ export class ForkliftMaintenanceModalComponent {
 
     this.form.patchValue({
       service_date: String(this.initialData?.service_date || '').slice(0, 10),
-      hour_meter: this.initialData?.hour_meter ?? null,
+      usage_hours: this.initialData?.usage_hours ?? null,
       service_type: String(this.initialData?.service_type || ''),
       description: String(this.initialData?.description || ''),
       vendor_name: String(this.initialData?.vendor_name || ''),
       cost: this.initialData?.cost ?? null,
-      work_order_no: String(this.initialData?.work_order_no || ''),
+      ticket_no: String(this.initialData?.ticket_no || ''),
       next_service_date: String(this.initialData?.next_service_date || '').slice(0, 10),
-      next_service_hour_meter: this.initialData?.next_service_hour_meter ?? null,
+      next_service_usage_hours: this.initialData?.next_service_usage_hours ?? null,
     });
   }
 
@@ -128,20 +128,20 @@ export class ForkliftMaintenanceModalComponent {
     const value = this.form.getRawValue();
     this.activeModal.close({
       service_date: String(value?.service_date || '').trim(),
-      hour_meter: value?.hour_meter === null || value?.hour_meter === undefined || value?.hour_meter === ''
+      usage_hours: value?.usage_hours === null || value?.usage_hours === undefined || value?.usage_hours === ''
         ? null
-        : Number(value.hour_meter),
+        : Number(value.usage_hours),
       service_type: String(value?.service_type || '').trim(),
       description: String(value?.description || '').trim(),
       vendor_name: String(value?.vendor_name || '').trim(),
       cost: value?.cost === null || value?.cost === undefined || value?.cost === ''
         ? null
         : Number(value.cost),
-      work_order_no: String(value?.work_order_no || '').trim(),
+      ticket_no: String(value?.ticket_no || '').trim(),
       next_service_date: String(value?.next_service_date || '').trim(),
-      next_service_hour_meter: value?.next_service_hour_meter === null || value?.next_service_hour_meter === undefined || value?.next_service_hour_meter === ''
+      next_service_usage_hours: value?.next_service_usage_hours === null || value?.next_service_usage_hours === undefined || value?.next_service_usage_hours === ''
         ? null
-        : Number(value.next_service_hour_meter),
+        : Number(value.next_service_usage_hours),
       files: this.mode === 'create' ? [...this.selectedFiles] : [],
     });
   }

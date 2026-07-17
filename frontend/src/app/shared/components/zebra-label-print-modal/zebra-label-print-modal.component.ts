@@ -22,6 +22,7 @@ export class ZebraLabelPrintModalComponent {
   @Input() hz: string = '';
   @Input() amps: string = '';
   @Input() templateId: string = 'serial-number-standard';
+  @Input() lockTemplate: boolean = false;
 
   form: FormGroup;
   zebraTemplates: ZebraLabelTemplate[] = [];
@@ -48,6 +49,10 @@ export class ZebraLabelPrintModalComponent {
       hz: this.hz,
       amps: this.amps
     });
+
+    if (this.lockTemplate) {
+      this.form.get('templateId')?.disable({ emitEvent: false });
+    }
   }
 
   private initializeForm() {
@@ -68,7 +73,7 @@ export class ZebraLabelPrintModalComponent {
   }
 
   getZplPreview(): string {
-    const formValue = this.form.value;
+    const formValue = this.form.getRawValue();
     return this.zebraLabelService.previewLabel(
       formValue.templateId,
       this.serialNumber,
@@ -98,7 +103,7 @@ export class ZebraLabelPrintModalComponent {
   }
 
   downloadZpl() {
-    const formValue = this.form.value;
+    const formValue = this.form.getRawValue();
     this.zebraLabelService.downloadZplFile(
       formValue.templateId,
       this.serialNumber,
@@ -119,7 +124,7 @@ export class ZebraLabelPrintModalComponent {
       return;
     }
 
-    const formValue = this.form.value;
+    const formValue = this.form.getRawValue();
     this.zebraLabelService.printLabel(
       formValue.templateId,
       this.serialNumber,

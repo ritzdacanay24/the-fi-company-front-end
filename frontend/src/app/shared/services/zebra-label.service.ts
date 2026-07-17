@@ -58,8 +58,9 @@ export class ZebraLabelService {
       width: 200,
       height: 100,
       zplTemplate: `^XA
-^FO30,30^A0N,40,35^FD{SERIAL_NUMBER}^FS
-^FO30,80^BY2,2,60^BCN,,Y,N,N,A^FD{SERIAL_NUMBER}^FS
+^CF0,40
+^FO30,16^FB340,1,0,C,0^FD{SERIAL_NUMBER}^FS
+^FO52,58^BY2,2,56^BCN,,Y,N,N,A^FD{SERIAL_NUMBER}^FS
 ^PQ{QUANTITY}^FS
 ^XZ`
     },
@@ -150,6 +151,29 @@ export class ZebraLabelService {
 ^CF0,16
 ^FO20,390^FDMADE IN USA  |  UL FILE #E325442  |  the-fi-company.com^FS
 
+^PQ{QUANTITY}^FS
+^XZ`
+    },
+    {
+      id: 'computer-asset-kit',
+      name: 'Computer Asset Kit Label',
+      description: '2x3 inch kit-size asset label for computers using asset tag and barcode',
+      size: '2 x 3',
+      orientation: 'Portrait',
+      width: 200,
+      height: 300,
+      zplTemplate: `^XA
+^PW406
+^LL609
+^CF0,42
+^FO20,20^FDCOMPUTER ASSET^FS
+^FO20,70^GB366,2,2^FS
+^CF0,56
+^FO20,95^FD{SERIAL_NUMBER}^FS
+^FO20,165^BY2,2,110^BCN,110,N,N,N^FD{SERIAL_NUMBER}^FS
+^CF0,24
+^FO20,295^FDDATE: {DATE}^FS
+^FO20,330^FDPN: {PART_NUMBER}^FS
 ^PQ{QUANTITY}^FS
 ^XZ`
     }

@@ -1,0 +1,69 @@
+<form [formGroup]="form" class="settings-form">
+  <div class="row g-3">
+    <div class="col-md-4">
+      <label class="form-label required">Computer Type</label>
+      <ng-select
+        [items]="computerTypes"
+        [searchable]="true"
+        [clearable]="false"
+        [appendTo]="'body'"
+        formControlName="computer_type"
+        [ngClass]="{ 'is-invalid': submitted && f['computer_type']?.errors }"
+        placeholder="Select computer type"
+      >
+      </ng-select>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Asset Tag</label>
+      <input class="form-control" formControlName="asset_tag" [ngClass]="{ 'is-invalid': submitted && f['asset_tag']?.errors }" placeholder="Leave blank to auto-generate">
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Computer Name</label>
+      <input class="form-control" formControlName="computer_name" placeholder="WS-ACCOUNTING-01">
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Model Name</label>
+      <input class="form-control" formControlName="model_name" placeholder="Dell OptiPlex 7010">
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Serial Number</label>
+      <input class="form-control" formControlName="serial_number" placeholder="Optional serial number">
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Department</label>
+      <input class="form-control" formControlName="department" placeholder="IT, Accounting, Production">
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Assigned To</label>
+      <ng-select
+        [items]="assignedToUsers"
+        bindLabel="name"
+        bindValue="name"
+        [searchable]="true"
+        [clearable]="true"
+        [appendTo]="'body'"
+        formControlName="assigned_to"
+        placeholder="Select active user"
+      >
+      </ng-select>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Operating System</label>
+      <input class="form-control" formControlName="operating_system" placeholder="Windows 11 Pro">
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Active</label>
+      <select class="form-select" formControlName="active">
+        <option [ngValue]="1">Active</option>
+        <option [ngValue]="0">Inactive</option>
+      </select>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Daily Inspection Email</label>
+      <select class="form-select" formControlName="include_in_inspection_report">
+        <option [ngValue]="1">Include in report</option>
+        <option [ngValue]="0">Exclude from report</option>
+      </select>
+    </div>
+  </div>
+</form>

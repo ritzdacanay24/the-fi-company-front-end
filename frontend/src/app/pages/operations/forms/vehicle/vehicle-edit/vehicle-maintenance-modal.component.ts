@@ -77,7 +77,7 @@ import { PendingAttachmentsListComponent } from "@app/shared/components/attachme
 
     <div class="modal-footer">
       <button type="button" class="btn btn-outline-secondary" (click)="activeModal.dismiss()">Cancel</button>
-      <button type="button" class="btn btn-dark" [disabled]="form.invalid" (click)="save()">
+      <button type="button" class="btn btn-primary" [disabled]="form.invalid" (click)="save()">
         {{ mode === 'edit' ? 'Save Changes' : 'Save Service' }}
       </button>
     </div>

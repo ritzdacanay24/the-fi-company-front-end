@@ -17,6 +17,8 @@ export enum FeatureType {
   VEHICLE_MAINTENANCE_SERVICE = 'vehicle-maintenance-service',
   FORKLIFT_MANAGEMENT = 'forklift-management',
   FORKLIFT_MAINTENANCE_SERVICE = 'forklift-maintenance-service',
+  COMPUTER_MANAGEMENT = 'computer-management',
+  COMPUTER_MAINTENANCE_SERVICE = 'computer-maintenance-service',
   CHECKLIST = 'checklist',
   PERMIT_CHECKLIST = 'permit-checklist',
   CHECKLIST_INSTANCE = 'checklist-instance',
@@ -112,6 +114,16 @@ export const FEATURE_CONFIG: Record<FeatureType, { s3Prefix: string; field: stri
   [FeatureType.FORKLIFT_MAINTENANCE_SERVICE]: {
     s3Prefix: 'forklift-maintenance-service/{id}',
     field: 'forklift_maintenance_service',
+    legacyNames: [],
+  },
+  [FeatureType.COMPUTER_MANAGEMENT]: {
+    s3Prefix: 'computer-management/{id}',
+    field: 'computer_management',
+    legacyNames: [],
+  },
+  [FeatureType.COMPUTER_MAINTENANCE_SERVICE]: {
+    s3Prefix: 'computer-maintenance-service/{id}',
+    field: 'computer_maintenance_service',
     legacyNames: [],
   },
   [FeatureType.CHECKLIST]: {

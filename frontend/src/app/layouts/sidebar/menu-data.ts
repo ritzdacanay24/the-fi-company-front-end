@@ -410,6 +410,13 @@ export const MENU_DATA: MenuItem[] = [
                 activatedRoutes: "/operations/forms/forklift/*"
             },
             {
+                label: "Computer Management",
+                link: "/operations/forms/computer/list",
+                description: "Manage company computers and maintenance",
+                icon: "las la-laptop",
+                activatedRoutes: "/operations/forms/computer/*"
+            },
+            {
                 badgeId: "forkliftInspectionPendingResolutions",
                 label: "Forklift Inspections",
                 link: "/operations/forms/forklift-inspection",

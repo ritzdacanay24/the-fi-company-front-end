@@ -2,11 +2,14 @@
   <div class="card shadow-sm border-0 mb-3">
     <div class="card-body p-4">
       <h3 class="h5 mb-3">{{ title }}</h3>
-      <app-forklift-form (setFormEmitter)="onFormReady($event)" [submitted]="submitted"></app-forklift-form>
+      <app-computer-form (setFormEmitter)="onFormReady($event)" [submitted]="submitted"></app-computer-form>
     </div>
     <div class="card-footer bg-light d-flex p-3">
       <button class="btn btn-outline-secondary" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
-      <button class="btn btn-primary ms-auto" [disabled]="isLoading" (click)="onSubmit()">Update Forklift</button>
+      <button class="btn btn-outline-primary ms-2" [disabled]="isLoading" (click)="onPrintAssetLabel()">
+        <i class="mdi mdi-printer me-1"></i>Print Asset Label
+      </button>
+      <button class="btn btn-primary ms-auto" [disabled]="isLoading" (click)="onSubmit()">Update Computer</button>
     </div>
   </div>
 
@@ -15,7 +18,7 @@
       <div class="d-flex align-items-center justify-content-between mb-3">
         <div>
           <h3 class="h5 mb-1">Maintenance History</h3>
-          <p class="text-muted mb-0">Track forklift maintenance as separate records.</p>
+          <p class="text-muted mb-0">Track computer maintenance as separate records.</p>
         </div>
         <button type="button" class="btn btn-primary" [disabled]="isLoading || isLoadingMaintenance" (click)="addMaintenanceService()">
           <i class="mdi mdi-plus me-1"></i>Add Maintenance Service
@@ -30,13 +33,13 @@
             <tr>
               <th class="text-nowrap">Service Date</th>
               <th class="text-nowrap">Service Type</th>
-              <th class="text-nowrap">Hour Meter</th>
+              <th class="text-nowrap">Usage Hours</th>
               <th class="text-nowrap">Description</th>
               <th class="text-nowrap">Vendor</th>
               <th class="text-nowrap">Cost</th>
-              <th class="text-nowrap">Work Order / Invoice</th>
+              <th class="text-nowrap">Ticket / Invoice</th>
               <th class="text-nowrap">Next Service Date</th>
-              <th class="text-nowrap">Next Service Hour Meter</th>
+              <th class="text-nowrap">Next Service Usage Hours</th>
               <th class="text-nowrap">Recorded By</th>
               <th class="text-nowrap">Recorded At</th>
               <th class="text-nowrap">Actions</th>
@@ -47,13 +50,13 @@
               <tr>
                 <td>{{ row?.service_date || '-' }}</td>
                 <td>{{ row?.service_type || '-' }}</td>
-                <td>{{ row?.hour_meter ?? '-' }}</td>
+                <td>{{ row?.usage_hours ?? '-' }}</td>
                 <td>{{ row?.description || '-' }}</td>
                 <td>{{ row?.vendor_name || '-' }}</td>
                 <td>{{ row?.cost ?? '-' }}</td>
-                <td>{{ row?.work_order_no || '-' }}</td>
+                <td>{{ row?.ticket_no || '-' }}</td>
                 <td>{{ row?.next_service_date || '-' }}</td>
-                <td>{{ row?.next_service_hour_meter ?? '-' }}</td>
+                <td>{{ row?.next_service_usage_hours ?? '-' }}</td>
                 <td>{{ row?.created_by_name || row?.created_by || '-' }}</td>
                 <td>{{ row?.created_date | date:'MMM d, y h:mm a' }}</td>
                 <td class="text-nowrap">
@@ -69,7 +72,7 @@
                 <td colspan="12" class="bg-light-subtle">
                   <div class="py-2">
                     <app-feature-attachments-panel
-                      [feature]="FeatureType.FORKLIFT_MAINTENANCE_SERVICE"
+                      [feature]="FeatureType.COMPUTER_MAINTENANCE_SERVICE"
                       [resourceId]="row?.id"
                       [disabled]="isLoading || isLoadingMaintenance"
                       [showImageThumbnails]="true">
@@ -90,10 +93,10 @@
 
   <div class="card shadow-sm border-0">
     <div class="card-body p-4">
-      <h3 class="h5 mb-1">Forklift Documents</h3>
-      <p class="text-muted mb-3">Manage forklift-level documents and records.</p>
+      <h3 class="h5 mb-1">Computer Documents</h3>
+      <p class="text-muted mb-3">Manage computer-level documents and records.</p>
       <app-feature-attachments-panel
-        [feature]="FeatureType.FORKLIFT_MANAGEMENT"
+        [feature]="FeatureType.COMPUTER_MANAGEMENT"
         [resourceId]="id"
         [disabled]="isLoading">
       </app-feature-attachments-panel>
