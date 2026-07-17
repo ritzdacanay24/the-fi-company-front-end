@@ -58,6 +58,7 @@ export const FEATURE_CONFIG: Record<FeatureType, { s3Prefix: string; field: stri
     field: 'support_ticket',
     legacyNames: ['support_ticket'],
   },
+  // STATUS: LOCKED - Field service request mapping finalized and aligned.
   [FeatureType.FIELD_SERVICE_REQUEST]: {
     s3Prefix: 'field-service-request/{id}',
     field: 'field_service_request',

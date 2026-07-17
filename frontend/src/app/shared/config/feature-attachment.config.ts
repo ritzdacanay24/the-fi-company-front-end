@@ -43,6 +43,7 @@ export const FEATURE_ATTACHMENT_CONFIG: Record<FeatureType, FeatureAttachmentCon
     legacyNames: ['support_ticket'],
     description: 'Support ticket attachments (3 records)',
   },
+  // STATUS: LOCKED - Field service request mapping finalized and aligned.
   [FeatureType.FIELD_SERVICE_REQUEST]: {
     feature: FeatureType.FIELD_SERVICE_REQUEST,
     s3Path: 'field-service-request',
