@@ -9,6 +9,7 @@ export enum FeatureType {
   QIR = 'qir',
   SUPPORT_TICKETS = 'support-tickets',
   FIELD_SERVICE_REQUEST = 'field-service-request',
+  FIELD_SERVICE_TICKET = 'field-service-ticket',
   FIELD_SERVICE_TRIP_DETAILS = 'field-service-trip-details',
   PARTS_REQUEST = 'parts-request',
   VEHICLE_MANAGEMENT = 'vehicle-management',

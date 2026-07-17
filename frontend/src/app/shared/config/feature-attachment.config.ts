@@ -51,6 +51,14 @@ export const FEATURE_ATTACHMENT_CONFIG: Record<FeatureType, FeatureAttachmentCon
     legacyNames: ['Field Service Request'],
     description: 'Field service request attachments',
   },
+  // STATUS: LOCKED - Field service ticket mapping keeps legacy field naming.
+  [FeatureType.FIELD_SERVICE_TICKET]: {
+    feature: FeatureType.FIELD_SERVICE_TICKET,
+    s3Path: 'field-service-ticket',
+    dbField: 'field_service_ticket',
+    legacyNames: ['Field Service'],
+    description: 'Field service ticket attachments',
+  },
   // STATUS: LOCKED - Field service trip details mapping finalized and aligned.
   [FeatureType.FIELD_SERVICE_TRIP_DETAILS]: {
     feature: FeatureType.FIELD_SERVICE_TRIP_DETAILS,

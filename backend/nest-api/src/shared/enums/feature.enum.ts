@@ -9,6 +9,7 @@ export enum FeatureType {
   QIR = 'qir',
   SUPPORT_TICKETS = 'support-tickets',
   FIELD_SERVICE_REQUEST = 'field-service-request',
+  FIELD_SERVICE_TICKET = 'field-service-ticket',
   FIELD_SERVICE_TRIP_DETAILS = 'field-service-trip-details',
   PARTS_REQUEST = 'parts-request',
   VEHICLE_MANAGEMENT = 'vehicle-management',
@@ -63,6 +64,12 @@ export const FEATURE_CONFIG: Record<FeatureType, { s3Prefix: string; field: stri
     s3Prefix: 'field-service-request/{id}',
     field: 'field_service_request',
     legacyNames: ['Field Service Request'],
+  },
+  // STATUS: LOCKED - Field service ticket mapping keeps legacy field naming.
+  [FeatureType.FIELD_SERVICE_TICKET]: {
+    s3Prefix: 'field-service-ticket/{id}',
+    field: 'field_service_ticket',
+    legacyNames: ['Field Service'],
   },
   // STATUS: LOCKED - Field service trip details mapping finalized and aligned.
   [FeatureType.FIELD_SERVICE_TRIP_DETAILS]: {

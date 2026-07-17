@@ -522,11 +522,9 @@ export class AttachmentsService {
     return undefined;
   }
 
-  private normalizeCreatedDate(value: unknown): string {
-    if (typeof value === 'string' && value.trim()) {
-      return value.trim();
-    }
-
+  private normalizeCreatedDate(_value: unknown): string {
+    // Enforce a single storage standard (UTC) for new rows.
+    // Client-supplied createdDate values can be local-time strings and cause mixed timestamps.
     return new Date().toISOString().slice(0, 19).replace('T', ' ');
   }
 
