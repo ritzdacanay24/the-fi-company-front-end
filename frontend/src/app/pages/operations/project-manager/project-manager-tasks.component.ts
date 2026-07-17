@@ -1744,6 +1744,7 @@ export class ProjectManagerTasksComponent implements OnInit {
 
       this.nextId = state.nextId;
       this.taskRecords = state.taskRecords;
+      this.hydrateTaskCountMaps(state);
       this.projectTaskBoardName = String(state.projectTaskBoardName || '').trim() || 'Project Tasks';
       this.projectTaskBoardNameDraft = this.projectTaskBoardName;
       this.taskBoardNames = Array.from(new Set(
@@ -1785,6 +1786,31 @@ export class ProjectManagerTasksComponent implements OnInit {
 
       this.seedSubgroupCatalog();
       this.rebuildTreeRows();
+    });
+  }
+
+  private hydrateTaskCountMaps(state: { taskAttachmentCounts?: Record<number, number>; taskCommentCounts?: Record<number, number> }): void {
+    this.taskAttachmentCountMap.clear();
+    this.taskCommentCountMap.clear();
+
+    Object.entries(state.taskAttachmentCounts || {}).forEach(([taskIdRaw, countRaw]) => {
+      const taskId = Number(taskIdRaw);
+      if (!Number.isFinite(taskId) || taskId <= 0) {
+        return;
+      }
+
+      const count = Number(countRaw);
+      this.taskAttachmentCountMap.set(taskId, Number.isFinite(count) && count > 0 ? count : 0);
+    });
+
+    Object.entries(state.taskCommentCounts || {}).forEach(([taskIdRaw, countRaw]) => {
+      const taskId = Number(taskIdRaw);
+      if (!Number.isFinite(taskId) || taskId <= 0) {
+        return;
+      }
+
+      const count = Number(countRaw);
+      this.taskCommentCountMap.set(taskId, Number.isFinite(count) && count > 0 ? count : 0);
     });
   }
 
@@ -1986,32 +2012,6 @@ export class ProjectManagerTasksComponent implements OnInit {
     }
 
     return hash > 0 ? hash : null;
-  }
-
-  private ensureTaskAttachmentCounts(taskIds: number[]): void {
-    const uniqueTaskIds = Array.from(new Set(taskIds.filter((id) => Number.isFinite(id) && id > 0)));
-    if (!uniqueTaskIds.length) {
-      return;
-    }
-
-    uniqueTaskIds.forEach((taskId) => {
-      if (!this.taskAttachmentCountMap.has(taskId)) {
-        void this.reloadTaskAttachmentCount(taskId);
-      }
-    });
-  }
-
-  private ensureTaskCommentCounts(taskIds: number[]): void {
-    const uniqueTaskIds = Array.from(new Set(taskIds.filter((id) => Number.isFinite(id) && id > 0)));
-    if (!uniqueTaskIds.length) {
-      return;
-    }
-
-    uniqueTaskIds.forEach((taskId) => {
-      if (!this.taskCommentCountMap.has(taskId)) {
-        void this.reloadTaskCommentCount(taskId);
-      }
-    });
   }
 
   private async reloadTaskAttachmentCount(taskId: number): Promise<void> {
@@ -2264,10 +2264,6 @@ export class ProjectManagerTasksComponent implements OnInit {
         _attachmentCount: this.taskAttachmentCountMap.get(task.id) ?? 0
       } as PmTreeRow & { _commentCount: number });
     });
-
-    const taskIds = rows.filter(row => row.rowType === 'task' && row.taskId !== null).map(row => row.taskId as number);
-    this.ensureTaskAttachmentCounts(taskIds);
-    this.ensureTaskCommentCounts(taskIds);
 
     this.rowData = rows;
     this.gridApi?.setGridOption('rowData', rows);

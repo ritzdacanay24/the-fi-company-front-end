@@ -55,6 +55,8 @@ export interface ProjectManagerTasksState {
   defaultTaskTemplates?: string[];
   projectTaskBoardName?: string;
   taskBoardNames?: string[];
+  taskAttachmentCounts?: Record<number, number>;
+  taskCommentCounts?: Record<number, number>;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -78,6 +80,8 @@ export class ProjectManagerTasksDataService {
         defaultTaskTemplates: this.normalizeTaskTemplates(res.defaultTaskTemplates || []),
         projectTaskBoardName: this.normalizeBoardName(res.projectTaskBoardName),
         taskBoardNames: this.normalizeBoardList(res.taskBoardNames || []),
+        taskAttachmentCounts: this.normalizeCountMap(res.taskAttachmentCounts),
+        taskCommentCounts: this.normalizeCountMap(res.taskCommentCounts),
       })),
       catchError(() => of(this.loadStateFromCache(projectId))),
     );
@@ -95,7 +99,9 @@ export class ProjectManagerTasksDataService {
       subgroupCatalog: this.normalizeSubgroupCatalog(state.subgroupCatalog || {}),
       defaultTaskTemplates: this.normalizeTaskTemplates(state.defaultTaskTemplates || []),
       projectTaskBoardName: this.normalizeBoardName(state.projectTaskBoardName),
-      taskBoardNames: this.normalizeBoardList(state.taskBoardNames || [])
+      taskBoardNames: this.normalizeBoardList(state.taskBoardNames || []),
+      taskAttachmentCounts: this.normalizeCountMap(state.taskAttachmentCounts),
+      taskCommentCounts: this.normalizeCountMap(state.taskCommentCounts),
     };
 
     return this.http.put<void>(`${this.apiUrl}/${projectId}/tasks`, payload).pipe(
@@ -152,7 +158,9 @@ export class ProjectManagerTasksDataService {
       subgroupCatalog: this.normalizeSubgroupCatalog(cached.subgroupCatalog),
       defaultTaskTemplates: this.normalizeTaskTemplates(cached.defaultTaskTemplates || []),
       projectTaskBoardName: this.normalizeBoardName(cached.projectTaskBoardName),
-      taskBoardNames: this.normalizeBoardList(cached.taskBoardNames || [])
+      taskBoardNames: this.normalizeBoardList(cached.taskBoardNames || []),
+      taskAttachmentCounts: this.normalizeCountMap(cached.taskAttachmentCounts),
+      taskCommentCounts: this.normalizeCountMap(cached.taskCommentCounts),
     };
   }
 
@@ -163,7 +171,9 @@ export class ProjectManagerTasksDataService {
       subgroupCatalog: this.normalizeSubgroupCatalog(state.subgroupCatalog),
       defaultTaskTemplates: this.normalizeTaskTemplates(state.defaultTaskTemplates || []),
       projectTaskBoardName: this.normalizeBoardName(state.projectTaskBoardName),
-      taskBoardNames: this.normalizeBoardList(state.taskBoardNames || [])
+      taskBoardNames: this.normalizeBoardList(state.taskBoardNames || []),
+      taskAttachmentCounts: this.normalizeCountMap(state.taskAttachmentCounts),
+      taskCommentCounts: this.normalizeCountMap(state.taskCommentCounts),
     });
   }
 
@@ -174,7 +184,9 @@ export class ProjectManagerTasksDataService {
       subgroupCatalog: {},
       defaultTaskTemplates: [],
       projectTaskBoardName: 'Project Tasks',
-      taskBoardNames: ['Project Tasks']
+      taskBoardNames: ['Project Tasks'],
+      taskAttachmentCounts: {},
+      taskCommentCounts: {}
     };
   }
 
@@ -245,6 +257,25 @@ export class ProjectManagerTasksDataService {
         .slice(0, 100)
     ));
     return normalized.length ? normalized : ['Project Tasks'];
+  }
+
+  private normalizeCountMap(input: unknown): Record<number, number> {
+    if (!input || typeof input !== 'object') {
+      return {};
+    }
+
+    const map: Record<number, number> = {};
+    Object.entries(input as Record<string, unknown>).forEach(([rawKey, rawValue]) => {
+      const key = Number(rawKey);
+      if (!Number.isFinite(key) || key <= 0) {
+        return;
+      }
+
+      const value = Number(rawValue);
+      map[key] = Number.isFinite(value) && value > 0 ? value : 0;
+    });
+
+    return map;
   }
 
 }

@@ -81,6 +81,9 @@ export class PmTasksService {
       })),
     }));
 
+    const taskAttachmentCounts = await this.getTaskAttachmentCounts(projectId, tasks);
+    const taskCommentCounts = await this.getTaskCommentCounts(projectId, tasks);
+
     const maxId = tasks.reduce((m, t) => Math.max(m, t.id), 0);
     const boardNames = Array.from(new Set([
       ...this.parseJson<string[]>(meta?.task_board_names || null, []),
@@ -91,6 +94,8 @@ export class PmTasksService {
     return {
       nextId: maxId + 1,
       taskRecords,
+      taskAttachmentCounts,
+      taskCommentCounts,
       subgroupCatalog: this.buildSubgroupCatalog(tasks),
       defaultTaskTemplates: this.parseJson<string[]>(meta?.default_task_templates || null, []),
       projectTaskBoardName: String(meta?.project_task_board_name || '').trim() || 'Project Tasks',
@@ -183,5 +188,93 @@ export class PmTasksService {
     const out: Record<string, string[]> = {};
     for (const g of Object.keys(map)) out[g] = Array.from(map[g]);
     return out;
+  }
+
+  private async getTaskAttachmentCounts(projectId: string, tasks: PmTaskRow[]): Promise<Record<number, number>> {
+    const out: Record<number, number> = {};
+    if (!tasks.length) {
+      return out;
+    }
+
+    const projectAttachmentBaseId = this.getProjectAttachmentBaseId(projectId);
+    if (!projectAttachmentBaseId) {
+      tasks.forEach((task) => {
+        out[task.id] = 0;
+      });
+      return out;
+    }
+
+    const taskIdByMainId = new Map<number, number>();
+    const mainIds: number[] = [];
+    tasks.forEach((task) => {
+      const mainId = (projectAttachmentBaseId * 100000) + task.id;
+      taskIdByMainId.set(mainId, task.id);
+      mainIds.push(mainId);
+      out[task.id] = 0;
+    });
+
+    const rows = await this.repository.getAttachmentCountsByMainIds(mainIds);
+    rows.forEach((row) => {
+      const mainId = Number((row as any).main_id);
+      const taskId = taskIdByMainId.get(mainId);
+      if (!taskId) {
+        return;
+      }
+
+      out[taskId] = Number((row as any).count || 0);
+    });
+
+    return out;
+  }
+
+  private async getTaskCommentCounts(projectId: string, tasks: PmTaskRow[]): Promise<Record<number, number>> {
+    const out: Record<number, number> = {};
+    if (!tasks.length) {
+      return out;
+    }
+
+    const taskIdByOrderNum = new Map<string, number>();
+    const orderNums: string[] = [];
+    tasks.forEach((task) => {
+      const orderNum = `${projectId}::task::${task.id}`;
+      taskIdByOrderNum.set(orderNum, task.id);
+      orderNums.push(orderNum);
+      out[task.id] = 0;
+    });
+
+    const rows = await this.repository.getCommentCountsByOrderNums(orderNums);
+    rows.forEach((row) => {
+      const orderNum = String((row as any).order_num || '').trim();
+      const taskId = taskIdByOrderNum.get(orderNum);
+      if (!taskId) {
+        return;
+      }
+
+      out[taskId] = Number((row as any).count || 0);
+    });
+
+    return out;
+  }
+
+  private getProjectAttachmentBaseId(projectId: string): number | null {
+    const normalizedProjectId = String(projectId || '').trim();
+    if (!normalizedProjectId) {
+      return null;
+    }
+
+    const digitsOnly = normalizedProjectId.replace(/\D+/g, '');
+    if (digitsOnly) {
+      const parsed = Number.parseInt(digitsOnly.slice(-9), 10);
+      if (Number.isFinite(parsed) && parsed > 0) {
+        return parsed;
+      }
+    }
+
+    let hash = 0;
+    for (let i = 0; i < normalizedProjectId.length; i += 1) {
+      hash = ((hash * 31) + normalizedProjectId.charCodeAt(i)) >>> 0;
+    }
+
+    return hash > 0 ? hash : null;
   }
 }

@@ -57,6 +57,16 @@ export interface PmTaskStateUpsertInput {
   task_board_names: string;
 }
 
+interface CountByMainIdRow extends RowDataPacket {
+  main_id: number;
+  count: number;
+}
+
+interface CountByOrderNumRow extends RowDataPacket {
+  order_num: string;
+  count: number;
+}
+
 @Injectable()
 export class PmTasksRepository {
   constructor(@Inject(MysqlService) private readonly mysqlService: MysqlService) {}
@@ -92,6 +102,46 @@ export class PmTasksRepository {
       [projectId],
     );
     return rows[0] || null;
+  }
+
+  async getAttachmentCountsByMainIds(mainIds: number[]): Promise<CountByMainIdRow[]> {
+    const normalizedIds = Array.from(new Set(mainIds.filter((id) => Number.isFinite(id) && id > 0)));
+    if (!normalizedIds.length) {
+      return [];
+    }
+
+    const placeholders = normalizedIds.map(() => '?').join(',');
+    return this.mysqlService.query<CountByMainIdRow[]>(
+      `SELECT a.mainId AS main_id, COUNT(*) AS count
+       FROM eyefidb.attachments a
+       WHERE a.field = 'project_manager_task'
+         AND a.active = 1
+         AND a.mainId IN (${placeholders})
+       GROUP BY a.mainId`,
+      normalizedIds,
+    );
+  }
+
+  async getCommentCountsByOrderNums(orderNums: string[]): Promise<CountByOrderNumRow[]> {
+    const normalizedOrderNums = Array.from(new Set(
+      orderNums
+        .map((orderNum) => String(orderNum || '').trim())
+        .filter(Boolean),
+    ));
+    if (!normalizedOrderNums.length) {
+      return [];
+    }
+
+    const placeholders = normalizedOrderNums.map(() => '?').join(',');
+    return this.mysqlService.query<CountByOrderNumRow[]>(
+      `SELECT c.orderNum AS order_num, COUNT(*) AS count
+       FROM eyefidb.comments c
+       WHERE c.type = 'Project Manager Task'
+         AND c.active = 1
+         AND c.orderNum IN (${placeholders})
+       GROUP BY c.orderNum`,
+      normalizedOrderNums,
+    );
   }
 
   async insertTask(projectId: string, task: Omit<PmTaskRow, 'id' | 'created_at' | 'updated_at'>): Promise<number> {
