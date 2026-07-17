@@ -248,7 +248,7 @@ export class AttachmentsService {
   /**
    * Get feature-specific configuration for uploads
    * Maps feature identifier to S3 path, new standardized field name, and legacy names
-   * Supports nested paths (e.g., checklist/instance)
+   * Requires canonical feature slugs only
    * 
    * Returns both new field name (for inserts) and legacy names (for backward-compatible queries)
    */

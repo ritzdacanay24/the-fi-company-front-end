@@ -103,7 +103,7 @@ export class AttachmentsController {
 
   /**
    * Slash-safe feature endpoint for environments where encoded slashes are rewritten by proxies.
-   * Example: /attachments/by-feature?feature=inspections/forklift&id=5087
+    * Example: /attachments/by-feature?feature=forklift-inspection&id=5087
    */
   @Get('by-feature')
   async getAttachmentsByFeatureQuery(

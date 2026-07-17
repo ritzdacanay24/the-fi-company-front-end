@@ -16,16 +16,16 @@ export enum FeatureType {
   VEHICLE_MANAGEMENT = 'vehicle-management',
   CHECKLIST = 'checklist',
   PERMIT_CHECKLIST = 'permit-checklist',
-  CHECKLIST_INSTANCE = 'checklist/instance',
-  CHECKLIST_MANAGE = 'checklist/manage',
+  CHECKLIST_INSTANCE = 'checklist-instance',
+  CHECKLIST_MANAGE = 'checklist-manage',
   GRAPHICS_BOM = 'graphics-bom',
-  INSPECTIONS_VEHICLE = 'inspections/vehicle',
-  INSPECTIONS_FORKLIFT = 'inspections/forklift',
+  INSPECTIONS_VEHICLE = 'vehicle-inspection',
+  INSPECTIONS_FORKLIFT = 'forklift-inspection',
   RMA = 'rma',
   RECEIVING = 'receiving',
   RESOURCES = 'resources',
   SAFETY_INCIDENT = 'safety-incident',
-  SHIPPING_CHECKLIST = 'inspections/shipping',
+  SHIPPING_CHECKLIST = 'shipping-checklist',
   SHIPPING_REQUEST = 'shipping-request',
 }
 
@@ -108,12 +108,12 @@ export const FEATURE_CONFIG: Record<FeatureType, { s3Prefix: string; field: stri
     legacyNames: ['permit_checklist'],
   },
   [FeatureType.CHECKLIST_INSTANCE]: {
-    s3Prefix: 'checklist/instance/{id}',
+    s3Prefix: 'checklist-instance/{id}',
     field: 'checklist_instance',
     legacyNames: ['CheckList'],
   },
   [FeatureType.CHECKLIST_MANAGE]: {
-    s3Prefix: 'checklist/manage/{id}',
+    s3Prefix: 'checklist-manage/{id}',
     field: 'checklist_manage',
     legacyNames: ['CheckList'],
   },
@@ -125,13 +125,13 @@ export const FEATURE_CONFIG: Record<FeatureType, { s3Prefix: string; field: stri
   },
   // STATUS: LOCKED - Vehicle inspection mapping finalized and kept separate from vehicle management.
   [FeatureType.INSPECTIONS_VEHICLE]: {
-    s3Prefix: 'inspections/vehicle/{id}',
+    s3Prefix: 'vehicle-inspection/{id}',
     field: 'vehicle_inspection',
     legacyNames: ['Incoming Inspections', 'Vehicle Inspection'],
   },
   // STATUS: LOCKED - Forklift inspection mapping finalized.
   [FeatureType.INSPECTIONS_FORKLIFT]: {
-    s3Prefix: 'inspections/forklift/{id}',
+    s3Prefix: 'forklift-inspection/{id}',
     field: 'forklift_inspection',
     legacyNames: ['forklift_inspection'],
   },
@@ -161,7 +161,7 @@ export const FEATURE_CONFIG: Record<FeatureType, { s3Prefix: string; field: stri
   },
   // STATUS: LOCKED - Shipping checklist mapping finalized and aligned.
   [FeatureType.SHIPPING_CHECKLIST]: {
-    s3Prefix: 'inspections/shipping/{id}',
+    s3Prefix: 'shipping-checklist/{id}',
     field: 'shipping_checklist',
     legacyNames: ['shipping_checklist'],
   },

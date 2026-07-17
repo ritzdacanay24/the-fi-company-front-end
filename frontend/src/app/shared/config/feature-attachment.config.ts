@@ -110,14 +110,14 @@ export const FEATURE_ATTACHMENT_CONFIG: Record<FeatureType, FeatureAttachmentCon
   },
   [FeatureType.CHECKLIST_INSTANCE]: {
     feature: FeatureType.CHECKLIST_INSTANCE,
-    s3Path: 'checklist/instance',
+    s3Path: 'checklist-instance',
     dbField: 'checklist_instance',
     legacyNames: ['CheckList'],
     description: 'Checklist instance attachments (uses CheckList legacy field)',
   },
   [FeatureType.CHECKLIST_MANAGE]: {
     feature: FeatureType.CHECKLIST_MANAGE,
-    s3Path: 'checklist/manage',
+    s3Path: 'checklist-manage',
     dbField: 'checklist_manage',
     legacyNames: ['CheckList'],
     description: 'Checklist management attachments (uses CheckList legacy field)',
@@ -132,14 +132,14 @@ export const FEATURE_ATTACHMENT_CONFIG: Record<FeatureType, FeatureAttachmentCon
   },
   [FeatureType.INSPECTIONS_VEHICLE]: {
     feature: FeatureType.INSPECTIONS_VEHICLE,
-    s3Path: 'inspections/vehicle',
+    s3Path: 'vehicle-inspection',
     dbField: 'vehicle_inspection',
     legacyNames: ['Incoming Inspections', 'Vehicle Inspection'],
     description: 'Vehicle inspection attachments',
   },
   [FeatureType.INSPECTIONS_FORKLIFT]: {
     feature: FeatureType.INSPECTIONS_FORKLIFT,
-    s3Path: 'inspections/forklift',
+    s3Path: 'forklift-inspection',
     dbField: 'forklift_inspection',
     legacyNames: ['forklift_inspection'],
     description: 'Forklift inspection attachments',
@@ -179,7 +179,7 @@ export const FEATURE_ATTACHMENT_CONFIG: Record<FeatureType, FeatureAttachmentCon
   // STATUS: LOCKED - Shipping checklist mapping finalized and aligned.
   [FeatureType.SHIPPING_CHECKLIST]: {
     feature: FeatureType.SHIPPING_CHECKLIST,
-    s3Path: 'inspections/shipping',
+    s3Path: 'shipping-checklist',
     dbField: 'shipping_checklist',
     legacyNames: ['shipping_checklist'],
     description: 'Shipping checklist attachments',
