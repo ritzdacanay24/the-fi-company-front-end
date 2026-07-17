@@ -2,6 +2,7 @@ import { CommonModule } from "@angular/common";
 import { Component, EventEmitter, Input, Output, inject } from "@angular/core";
 import { NgbDropdownModule, NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { FileViewerModalComponent } from "@app/shared/components/file-viewer-modal/file-viewer-modal.component";
+import { AttachmentRecordModalComponent } from "@app/shared/components/attachments/attachment-record-modal/attachment-record-modal.component";
 
 @Component({
   selector: "app-uploaded-attachments-list",
@@ -194,6 +195,7 @@ import { FileViewerModalComponent } from "@app/shared/components/file-viewer-mod
                   Uploaded
                 </span>
               </th>
+              <th scope="col" style="width: 100px;">Status</th>
               <th scope="col" style="width: 130px;">Actions</th>
             </tr>
           </thead>
@@ -245,6 +247,11 @@ import { FileViewerModalComponent } from "@app/shared/components/file-viewer-mod
                   {{ getUploadedDate(row) | date:'MMM d, y h:mm a' }}
                 </small>
               </td>
+              <td style="width: 100px;">
+                <span class="badge" [ngClass]="isAttachmentActive(row) ? 'bg-success-subtle text-success-emphasis border border-success-subtle' : 'bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle'">
+                  {{ isAttachmentActive(row) ? 'Active' : 'Inactive' }}
+                </span>
+              </td>
               <td>
                 <div ngbDropdown container="body" class="d-inline-block">
                   <button
@@ -267,6 +274,22 @@ import { FileViewerModalComponent } from "@app/shared/components/file-viewer-mod
                         Download
                       </button>
                     </li>
+                    <li>
+                      <button ngbDropdownItem type="button" (click)="onEditRecord(row)">
+                        Record Details
+                      </button>
+                    </li>
+                    <li *ngIf="showActivationActions"><hr class="dropdown-divider"></li>
+                    <li *ngIf="showActivationActions">
+                      <button
+                        ngbDropdownItem
+                        type="button"
+                        [disabled]="disableActivationActions"
+                        (click)="onToggleActive(row, i)">
+                        {{ isAttachmentActive(row) ? 'Hide From List' : 'Show In List' }}
+                      </button>
+                    </li>
+                    <li *ngIf="showDelete"><hr class="dropdown-divider"></li>
                     <li *ngIf="showDelete">
                       <button
                         ngbDropdownItem
@@ -306,6 +329,8 @@ export class UploadedAttachmentsListComponent {
   @Input() showThumbnails = true;
   @Input() showImageThumbnails = true;
   @Input() showDelete = true;
+  @Input() showActivationActions = false;
+  @Input() disableActivationActions = false;
   @Input() disableDelete = false;
   @Input() deleteTitle = "Delete attachment";
   @Input() maxHeight = "300px";
@@ -321,6 +346,8 @@ export class UploadedAttachmentsListComponent {
   @Output() openRequested = new EventEmitter<any>();
   @Output() downloadRequested = new EventEmitter<any>();
   @Output() deleteRequested = new EventEmitter<{ id: any; index: number; row: any }>();
+  @Output() activationRequested = new EventEmitter<{ id: any; index: number; row: any; nextActive: 0 | 1 }>();
+  @Output() updateRequested = new EventEmitter<{ id: any; row: any; payload: { title: string; description: string } }>();
 
   private readonly modalService = inject(NgbModal);
 
@@ -409,6 +436,20 @@ export class UploadedAttachmentsListComponent {
     this.deleteRequested.emit({ id: row?.id, index, row });
   }
 
+  onToggleActive(row: any, index: number): void {
+    const nextActive: 0 | 1 = this.isAttachmentActive(row) ? 0 : 1;
+    this.activationRequested.emit({ id: row?.id, index, row, nextActive });
+  }
+
+  isAttachmentActive(row: any): boolean {
+    const active = row?.active;
+    if (active === undefined || active === null || active === '') {
+      return true;
+    }
+
+    return Number(active) !== 0;
+  }
+
   onOpenFromButton(row: any): void {
     if (this.useSharedViewer) {
       void this.openInSharedViewer(row);
@@ -425,6 +466,47 @@ export class UploadedAttachmentsListComponent {
     }
 
     this.downloadRequested.emit(row);
+  }
+
+  onEditRecord(row: any): void {
+    const modalRef = this.modalService.open(AttachmentRecordModalComponent, {
+      centered: true,
+      size: "lg",
+      backdrop: "static",
+    });
+
+    modalRef.componentInstance.attachmentId = row?.id ?? null;
+    modalRef.componentInstance.fileName = this.getFileName(row);
+    modalRef.componentInstance.isActive = this.isAttachmentActive(row);
+    modalRef.componentInstance.initialTitle = String(row?.title || "").trim();
+    modalRef.componentInstance.initialDescription = String(row?.description || "").trim();
+    modalRef.componentInstance.mainId = row?.main_id ?? row?.mainId ?? row?.ticket_id ?? null;
+    modalRef.componentInstance.extension = String(row?.ext || row?.mime_type || "").trim();
+    modalRef.componentInstance.createdBy = this.getUploaderLabel(row);
+    modalRef.componentInstance.fieldName = String(row?.field || "").trim();
+    modalRef.componentInstance.storageBucket = String(row?.storage_bucket || row?.bucket || "").trim();
+    modalRef.componentInstance.storageSource = String(row?.storage_source || "").trim();
+    modalRef.componentInstance.storageKey = String(row?.storage_key || "").trim();
+    modalRef.componentInstance.createdAt = this.getUploadedDate(row);
+
+    modalRef.result
+      .then((result: any) => {
+        if (!result) {
+          return;
+        }
+
+        this.updateRequested.emit({
+          id: row?.id,
+          row,
+          payload: {
+            title: String(result?.title || "").trim(),
+            description: String(result?.description || "").trim(),
+          },
+        });
+      })
+      .catch(() => {
+        // Dismissed.
+      });
   }
 
   private async openInSharedViewer(row: any): Promise<void> {

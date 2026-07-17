@@ -168,6 +168,15 @@ export class AttachmentsRepository extends BaseRepository<RowDataPacket> {
       `
         SELECT 
           a.id,
+          a.active,
+          a.title,
+          a.description,
+          a.mainId as main_id,
+          a.field,
+          a.ext,
+          a.storage_bucket,
+          a.storage_source,
+          a.storage_key,
           a.fileName as file_name,
           a.link,
           a.storage_bucket as bucket,

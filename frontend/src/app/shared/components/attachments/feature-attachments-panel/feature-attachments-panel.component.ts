@@ -24,14 +24,33 @@ import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
       </app-inline-attachment-dropzone>
     </div>
 
+    <div class="mb-3" *ngIf="showActivationControls && !effectiveIsLoadingAttachments && rawAttachments.length > 0">
+      <div class="form-check form-switch">
+        <input
+          class="form-check-input"
+          type="checkbox"
+          id="show-inactive-attachments"
+          [checked]="showInactive"
+          (change)="toggleShowInactive($any($event.target).checked)"
+        >
+        <label class="form-check-label" for="show-inactive-attachments">
+          Show deactivated attachments
+        </label>
+      </div>
+    </div>
+
     <app-uploaded-attachments-list
       [attachments]="attachments"
       [isLoading]="effectiveIsLoadingAttachments"
       [viewMode]="viewMode"
       [showImageThumbnails]="showImageThumbnails"
       [showDelete]="showDelete"
+      [showActivationActions]="showActivationControls"
+      [disableActivationActions]="disabled || isUpdatingAttachmentState"
       [resolveById]="resolveAttachmentUrlWithOverride"
-      (deleteRequested)="onDeleteAttachment($event)">
+      (deleteRequested)="onDeleteAttachment($event)"
+      (activationRequested)="onToggleAttachmentActive($event)"
+      (updateRequested)="onUpdateAttachmentRecord($event)">
     </app-uploaded-attachments-list>
   `,
 })
@@ -45,6 +64,7 @@ export class FeatureAttachmentsPanelComponent implements OnChanges {
   @Input() showDropzone = true;
   @Input() showDelete = true;
   @Input() showImageThumbnails = true;
+  @Input() showActivationControls = true;
 
   // Optional adapter hooks for flows that do not map to feature/resource storage directly.
   @Input() attachmentsOverride: any[] | null = null;
@@ -54,8 +74,12 @@ export class FeatureAttachmentsPanelComponent implements OnChanges {
   @Input() resolveByIdOverride: ((id: number) => Promise<{ url: string; fileName?: string } | null>) | null = null;
 
   attachments: any[] = [];
+  rawAttachments: any[] = [];
   isLoadingAttachments = false;
   isUploadingAttachments = false;
+  isUpdatingAttachmentState = false;
+  showInactive = false;
+  private static readonly SHOW_INACTIVE_STORAGE_KEY = 'attachments:showInactive';
 
   constructor(
     private readonly attachmentsService: AttachmentsService,
@@ -96,8 +120,13 @@ export class FeatureAttachmentsPanelComponent implements OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
+    if (changes['feature'] || changes['resourceId']) {
+      this.restoreShowInactivePreference();
+    }
+
     if (changes['attachmentsOverride'] && this.attachmentsOverride !== null) {
-      this.attachments = this.attachmentsOverride;
+      this.rawAttachments = this.attachmentsOverride;
+      this.applyAttachmentVisibility();
     }
 
     const hasFeatureOrResourceChange = !!changes['feature'] || !!changes['resourceId'];
@@ -110,11 +139,13 @@ export class FeatureAttachmentsPanelComponent implements OnChanges {
 
   async loadAttachments(): Promise<void> {
     if (this.useOverrideMode) {
-      this.attachments = this.attachmentsOverride || [];
+      this.rawAttachments = this.attachmentsOverride || [];
+      this.applyAttachmentVisibility();
       return;
     }
 
     if (!this.feature || !this.hasResourceId) {
+      this.rawAttachments = [];
       this.attachments = [];
       return;
     }
@@ -122,14 +153,41 @@ export class FeatureAttachmentsPanelComponent implements OnChanges {
     this.isLoadingAttachments = true;
 
     try {
-      this.attachments = await this.attachmentsService.getMergedAttachmentsByFeature(
+      this.rawAttachments = await this.attachmentsService.getMergedAttachmentsByFeature(
         this.feature,
         this.resourceId!,
         this.resolvedLegacyFieldNames,
         { legacyIdField: this.legacyIdField },
       );
+      this.applyAttachmentVisibility();
     } finally {
       this.isLoadingAttachments = false;
+    }
+  }
+
+  toggleShowInactive(showInactive: boolean): void {
+    this.showInactive = showInactive;
+    this.persistShowInactivePreference();
+    this.applyAttachmentVisibility();
+  }
+
+  private persistShowInactivePreference(): void {
+    try {
+      localStorage.setItem(
+        FeatureAttachmentsPanelComponent.SHOW_INACTIVE_STORAGE_KEY,
+        this.showInactive ? '1' : '0',
+      );
+    } catch {
+      // Ignore storage write errors.
+    }
+  }
+
+  private restoreShowInactivePreference(): void {
+    try {
+      const value = localStorage.getItem(FeatureAttachmentsPanelComponent.SHOW_INACTIVE_STORAGE_KEY);
+      this.showInactive = value === '1';
+    } catch {
+      this.showInactive = false;
     }
   }
 
@@ -181,6 +239,14 @@ export class FeatureAttachmentsPanelComponent implements OnChanges {
     void this.deleteAttachment(event.id, event.index);
   }
 
+  onToggleAttachmentActive(event: { id: number; index: number; row: any; nextActive: 0 | 1 }): void {
+    void this.toggleAttachmentActive(event.id, event.nextActive);
+  }
+
+  onUpdateAttachmentRecord(event: { id: number; row: any; payload: { title: string; description: string } }): void {
+    void this.updateAttachmentRecord(event.id, event.payload);
+  }
+
   private async uploadAttachmentFilesWithOverride(files: File[]): Promise<void> {
     if (!this.uploadHandlerOverride) {
       return;
@@ -210,8 +276,84 @@ export class FeatureAttachmentsPanelComponent implements OnChanges {
     }
 
     await this.attachmentsService.delete(id);
-    this.attachments.splice(index, 1);
+    this.rawAttachments = this.rawAttachments.filter((row) => Number(row?.id) !== Number(id));
+    this.applyAttachmentVisibility();
     this.toastrService.success('Attachment deleted');
+  }
+
+  private async toggleAttachmentActive(id: number, nextActive: 0 | 1): Promise<void> {
+    const isActivating = nextActive === 1;
+    const title = isActivating ? 'Activate attachment?' : 'Deactivate attachment?';
+    const text = isActivating
+      ? 'This attachment will be visible in the list again.'
+      : 'This attachment will be hidden from the default list view.';
+
+    const { value: shouldContinue } = await SweetAlert.confirm({
+      title,
+      text,
+      icon: 'warning',
+      confirmButtonText: isActivating ? 'Activate' : 'Deactivate',
+      cancelButtonText: 'Cancel',
+    });
+
+    if (!shouldContinue) {
+      return;
+    }
+
+    this.isUpdatingAttachmentState = true;
+
+    try {
+      await this.attachmentsService.setAttachmentActive(id, nextActive);
+
+      this.rawAttachments = this.rawAttachments.map((row) => {
+        if (Number(row?.id) !== Number(id)) {
+          return row;
+        }
+
+        return {
+          ...row,
+          active: nextActive,
+        };
+      });
+
+      this.applyAttachmentVisibility();
+      this.toastrService.success(isActivating ? 'Attachment activated' : 'Attachment deactivated');
+    } finally {
+      this.isUpdatingAttachmentState = false;
+    }
+  }
+
+  private async updateAttachmentRecord(id: number, payload: { title: string; description: string }): Promise<void> {
+    const numericId = Number(id);
+    if (!Number.isFinite(numericId) || numericId <= 0) {
+      return;
+    }
+
+    this.isUpdatingAttachmentState = true;
+
+    try {
+      await this.attachmentsService.update(numericId, {
+        title: payload.title,
+        description: payload.description,
+      });
+
+      this.rawAttachments = this.rawAttachments.map((row) => {
+        if (Number(row?.id) !== numericId) {
+          return row;
+        }
+
+        return {
+          ...row,
+          title: payload.title,
+          description: payload.description,
+        };
+      });
+
+      this.applyAttachmentVisibility();
+      this.toastrService.success('Attachment record updated');
+    } finally {
+      this.isUpdatingAttachmentState = false;
+    }
   }
 
   private async uploadAttachmentFiles(files: File[]): Promise<void> {
@@ -230,5 +372,24 @@ export class FeatureAttachmentsPanelComponent implements OnChanges {
     } finally {
       this.isUploadingAttachments = false;
     }
+  }
+
+  private applyAttachmentVisibility(): void {
+    const source = Array.isArray(this.rawAttachments) ? this.rawAttachments : [];
+    if (this.showInactive) {
+      this.attachments = source;
+      return;
+    }
+
+    this.attachments = source.filter((row: any) => this.isActiveAttachment(row));
+  }
+
+  private isActiveAttachment(row: any): boolean {
+    const active = row?.active;
+    if (active === undefined || active === null || active === '') {
+      return true;
+    }
+
+    return Number(active) !== 0;
   }
 }

@@ -237,6 +237,10 @@ export class AttachmentsService extends DataService<any> {
     return { uploaded, failed };
   };
 
+  setAttachmentActive = async (id: number, active: 0 | 1): Promise<void> => {
+    await firstValueFrom(this.http.put(`${url}/${id}`, { active }));
+  };
+
   private normalizeAttachmentRow(row: any): any {
     return {
       ...row,

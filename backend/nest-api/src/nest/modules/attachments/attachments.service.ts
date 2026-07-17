@@ -231,6 +231,15 @@ export class AttachmentsService {
 
         return {
           id: resolved.id,
+          active: resolved.active,
+          title: resolved.title,
+          description: resolved.description,
+          main_id: resolved.main_id,
+          field: resolved.field,
+          ext: resolved.ext,
+          storage_bucket: resolved.storage_bucket,
+          storage_source: resolved.storage_source,
+          storage_key: resolved.storage_key,
           ticket_id: id,
           comment_id: null,
           file_name: fileName,
@@ -238,7 +247,9 @@ export class AttachmentsService {
           mime_type: resolved.mime_type,
           file_size: resolved.file_size,
           uploaded_by: resolved.uploaded_by,
+          created_by: resolved.uploaded_by,
           user_name: resolved.created_by_name,
+          created_by_name: resolved.created_by_name,
           created_at: resolved.created_at,
         };
       }),
