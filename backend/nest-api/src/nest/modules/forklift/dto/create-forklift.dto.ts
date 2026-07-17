@@ -47,6 +47,11 @@ export class CreateForkliftDto {
   active?: number;
 
   @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  include_in_inspection_report?: number;
+
+  @IsOptional()
   @IsString()
   created_date?: string;
 }

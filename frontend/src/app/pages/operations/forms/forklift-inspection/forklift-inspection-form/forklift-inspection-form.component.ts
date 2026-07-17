@@ -35,10 +35,11 @@ export class ForkliftInspectionFormComponent implements OnInit {
   }
 
   get modelGroups(): Array<{ name: string; details: Array<{ name: string }> }> {
-    if (Array.isArray(this.forkliftModels) && this.forkliftModels.length > 0) {
-      return this.forkliftModels;
-    }
-    return this.formValues?.models || [];
+    return Array.isArray(this.forkliftModels) ? this.forkliftModels : [];
+  }
+
+  get hasModelGroups(): boolean {
+    return this.modelGroups.length > 0;
   }
 
   public clear() {

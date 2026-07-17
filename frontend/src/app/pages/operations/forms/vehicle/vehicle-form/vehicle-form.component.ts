@@ -48,6 +48,7 @@ export class VehicleFormComponent {
     createdBy: new FormControl(null),
     licensePlate: new FormControl("", [Validators.required]),
     active: new FormControl(1),
+    include_in_inspection_report: new FormControl(1),
     createdDate: new FormControl(null),
   });
 

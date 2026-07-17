@@ -5431,6 +5431,7 @@ CREATE TABLE IF NOT EXISTS `vehicleInformation` (
   `fuelType` varchar(25) DEFAULT NULL,
   `createdBy` int(11) NOT NULL,
   `active` int(11) NOT NULL DEFAULT '1',
+  `include_in_inspection_report` int(11) NOT NULL DEFAULT '1',
   `licensePlate` varchar(140) DEFAULT NULL,
   `createdDate` datetime DEFAULT NULL,
   `inMaintenance` int(11) DEFAULT '0',
@@ -5449,6 +5450,7 @@ CREATE TABLE IF NOT EXISTS `forklift_information` (
   `created_by` int(11) NOT NULL DEFAULT '0',
   `created_date` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `active` int(11) NOT NULL DEFAULT '1',
+  `include_in_inspection_report` int(11) NOT NULL DEFAULT '1',
   PRIMARY KEY (`id`),
   KEY `idx_forklift_information_unit_number` (`unit_number`),
   KEY `idx_forklift_information_active` (`active`)

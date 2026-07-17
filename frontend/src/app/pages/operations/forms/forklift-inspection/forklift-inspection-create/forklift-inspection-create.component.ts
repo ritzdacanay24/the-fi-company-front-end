@@ -108,39 +108,8 @@ export class ForkliftInspectionCreateComponent {
 
   private async loadForkliftModelGroups(): Promise<void> {
     try {
-      const rows = await this.forkliftService.getList('Active');
-      const groups = new Map<string, Set<string>>();
-
-      for (const row of rows || []) {
-        const unitNumber = String(row?.unit_number || '').trim();
-        if (!unitNumber) {
-          continue;
-        }
-
-        const normalizedUnit = unitNumber.toUpperCase();
-        let groupName = '';
-
-        if (/^SD[0-9]+$/.test(normalizedUnit)) {
-          groupName = 'Sit Down Forklift';
-        } else if (/^SU[0-9]+$/.test(normalizedUnit)) {
-          groupName = 'Stand Up Forklift';
-        } else if (/^CP[0-9]+$/.test(normalizedUnit)) {
-          groupName = 'Cherry Pickers';
-        } else {
-          // Ignore malformed or legacy non-unit rows in inspection dropdown.
-          continue;
-        }
-
-        if (!groups.has(groupName)) {
-          groups.set(groupName, new Set<string>());
-        }
-        groups.get(groupName)?.add(normalizedUnit);
-      }
-
-      this.forkliftModelGroups = Array.from(groups.entries()).map(([name, details]) => ({
-        name,
-        details: Array.from(details).sort().map((unit) => ({ name: unit })),
-      }));
+      const groups = await this.forkliftService.getInspectionOptions();
+      this.forkliftModelGroups = Array.isArray(groups) ? groups : [];
     } catch {
       this.forkliftModelGroups = [];
     }

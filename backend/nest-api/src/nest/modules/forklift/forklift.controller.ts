@@ -49,6 +49,11 @@ export class ForkliftController {
     return await this.forkliftService.findOne(query);
   }
 
+  @Get('inspectionOptions')
+  async getInspectionOptions() {
+    return await this.forkliftService.getInspectionOptions();
+  }
+
   @Get('maintenance')
   async getMaintenanceByForkliftId(@Query('forklift_id', ParseIntPipe) forkliftId: number) {
     return await this.forkliftService.getMaintenanceByForkliftId(forkliftId);

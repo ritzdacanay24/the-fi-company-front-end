@@ -60,6 +60,11 @@ export class CreateVehicleDto {
   active?: number;
 
   @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  include_in_inspection_report?: number;
+
+  @IsOptional()
   @IsString()
   @MaxLength(140)
   licensePlate?: string;

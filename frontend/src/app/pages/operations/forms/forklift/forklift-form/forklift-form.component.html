@@ -35,5 +35,12 @@
         <option [ngValue]="0">Inactive</option>
       </select>
     </div>
+    <div class="col-md-4">
+      <label class="form-label">Daily Inspection Email</label>
+      <select class="form-select" formControlName="include_in_inspection_report">
+        <option [ngValue]="1">Include in report</option>
+        <option [ngValue]="0">Exclude from report</option>
+      </select>
+    </div>
   </div>
 </form>

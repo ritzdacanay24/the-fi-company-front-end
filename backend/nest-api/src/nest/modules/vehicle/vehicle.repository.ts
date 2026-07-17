@@ -51,6 +51,7 @@ export class VehicleRepository extends BaseRepository<VehicleRow> {
     'fuelType',
     'createdBy',
     'active',
+    'include_in_inspection_report',
     'licensePlate',
     'createdDate',
     'inMaintenance',

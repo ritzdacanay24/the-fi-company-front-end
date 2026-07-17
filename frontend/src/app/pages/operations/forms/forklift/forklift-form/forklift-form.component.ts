@@ -30,6 +30,7 @@ export class ForkliftFormComponent {
       created_by: [null],
       created_date: [''],
       active: [1],
+      include_in_inspection_report: [1],
     }) as MyFormGroup<IForkliftForm>;
 
     this.setFormEmitter.emit(this.form);

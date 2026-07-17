@@ -9,4 +9,5 @@ export interface IForkliftForm {
   created_by: number;
   created_date: string;
   active: number;
+  include_in_inspection_report: number;
 }

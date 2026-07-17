@@ -30,7 +30,6 @@ import { EmailGroupMembersPreviewRendererComponent } from "./email-group-members
   styles: [
     `
       .notification-hero {
-        background: linear-gradient(135deg, #ffffff 0%, #f4f8ff 100%);
       }
 
       .hero-eyebrow {
@@ -58,11 +57,9 @@ import { EmailGroupMembersPreviewRendererComponent } from "./email-group-members
         font-size: 1.6rem;
         line-height: 1;
         font-weight: 700;
-        color: #1f2933;
       }
 
       .toolbar-card {
-        border: 1px solid #e8edf4;
         border-radius: 0.75rem;
       }
 
@@ -86,7 +83,6 @@ import { EmailGroupMembersPreviewRendererComponent } from "./email-group-members
       }
 
       .health-good {
-        background: #e9f9ee;
         color: #167d3f;
       }
 

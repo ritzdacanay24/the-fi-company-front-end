@@ -32,15 +32,20 @@
         <div class="col-lg-4 mb-3">
           <label class="form-label required">Forklift Selection</label>
           <select class="form-select" formControlName="model_number"
+            [disabled]="!hasModelGroups"
             [ngClass]="{ 'is-invalid': submitted && f['model_number'].errors }">
             <option value="" selected disabled>Select forklift to inspect</option>
             <optgroup *ngFor="let row of modelGroups" [label]="row.name">
               <option *ngFor="let row1 of row.details" [value]="row1.name">{{row1.name}}</option>
             </optgroup>
           </select>
-          <div class="form-text">
+          <div class="form-text" *ngIf="hasModelGroups">
             <i class="mdi mdi-information-outline me-1"></i>
             Choose the forklift model for inspection.
+          </div>
+          <div class="form-text text-warning" *ngIf="!hasModelGroups">
+            <i class="mdi mdi-alert-circle-outline me-1"></i>
+            No active forklift units found in the database. Add forklifts in Forklift Management first.
           </div>
         </div>
         <div class="col-lg-4 mb-3">

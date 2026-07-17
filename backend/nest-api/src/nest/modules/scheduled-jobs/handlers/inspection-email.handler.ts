@@ -76,6 +76,7 @@ export class InspectionEmailHandler implements ScheduledJobHandler {
           GROUP BY forklift_checklist_id
         ) stats ON stats.forklift_checklist_id = vh.id
         WHERE COALESCE(vi.active, 1) = 1
+          AND COALESCE(vi.include_in_inspection_report, 1) = 1
           AND COALESCE(vi.licensePlate, '') <> ''
         ORDER BY vi.vehicleNumber ASC
       `);
@@ -84,7 +85,13 @@ export class InspectionEmailHandler implements ScheduledJobHandler {
       const forkLiftInspections = await this.mysqlService.query<InspectionRecord[]>(`
         SELECT 
           COALESCE(fc.id, 0) as id,
-          fo.name as asset_name,
+          CONCAT(
+            fi.unit_number,
+            CASE
+              WHEN COALESCE(fi.forklift_type, '') = '' THEN ''
+              ELSE CONCAT(' / ', fi.forklift_type)
+            END
+          ) as asset_name,
           'forklift' as asset_type,
           CURDATE() as inspection_date,
           COALESCE(fc.operator, 'N/A') as inspector_name,
@@ -98,7 +105,16 @@ export class InspectionEmailHandler implements ScheduledJobHandler {
             WHEN fc.id IS NULL THEN 'No Inspection found.'
             ELSE COALESCE(fc.comments, '-')
           END as notes
-        FROM forms.forklift_options fo
+        FROM (
+          SELECT
+            TRIM(unit_number) as unit_number,
+            COALESCE(NULLIF(TRIM(forklift_type), ''), 'Forklift') as forklift_type
+          FROM forklift_information
+          WHERE COALESCE(active, 1) = 1
+            AND COALESCE(include_in_inspection_report, 1) = 1
+            AND COALESCE(TRIM(unit_number), '') <> ''
+          GROUP BY TRIM(unit_number), COALESCE(NULLIF(TRIM(forklift_type), ''), 'Forklift')
+        ) fi
         LEFT JOIN (
           SELECT c1.*
           FROM forms.forklift_checklist c1
@@ -108,7 +124,7 @@ export class InspectionEmailHandler implements ScheduledJobHandler {
             WHERE DATE(date_created) = CURDATE()
             GROUP BY model_number
           ) latest ON latest.max_id = c1.id
-        ) fc ON fc.model_number = fo.name
+        ) fc ON TRIM(fc.model_number) = fi.unit_number
         LEFT JOIN (
           SELECT
             forklift_checklist_id,
@@ -117,8 +133,7 @@ export class InspectionEmailHandler implements ScheduledJobHandler {
           FROM forms.forklift_checklist_details
           GROUP BY forklift_checklist_id
         ) stats ON stats.forklift_checklist_id = fc.id
-        WHERE COALESCE(fo.name, '') <> ''
-        ORDER BY fo.name ASC
+        ORDER BY fi.unit_number ASC
       `);
 
       const completedVehicleInspections = vehicleInspections.filter((row) => row.id > 0).length;

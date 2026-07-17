@@ -9,6 +9,7 @@ export interface IVehicleForm {
   fuelType: string;
   createdBy: number;
   active: number;
+  include_in_inspection_report: number;
   licensePlate: string;
   createdDate: string;
 }

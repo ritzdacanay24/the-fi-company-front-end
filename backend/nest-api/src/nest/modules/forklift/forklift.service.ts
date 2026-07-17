@@ -47,6 +47,30 @@ export class ForkliftService {
     return (row as Record<string, unknown>) || null;
   }
 
+  async getInspectionOptions(): Promise<Array<{ name: string; details: Array<{ name: string }> }>> {
+    const rows = await this.forkliftRepository.getInspectionOptions();
+    const groups = new Map<string, string[]>();
+
+    for (const row of rows) {
+      const groupName = String(row.group_name || '').trim() || 'Other Forklifts';
+      const unitName = String(row.unit_name || '').trim();
+      if (!unitName) {
+        continue;
+      }
+
+      if (!groups.has(groupName)) {
+        groups.set(groupName, []);
+      }
+
+      groups.get(groupName)?.push(unitName);
+    }
+
+    return Array.from(groups.entries()).map(([name, units]) => ({
+      name,
+      details: units.map((unit) => ({ name: unit })),
+    }));
+  }
+
   async getMaintenanceByForkliftId(forkliftId: number): Promise<Record<string, unknown>[]> {
     const forklift = await this.forkliftRepository.getById(forkliftId);
     if (!forklift) {

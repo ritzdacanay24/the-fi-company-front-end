@@ -35,6 +35,11 @@ export interface ForkliftMaintenanceRow extends RowDataPacket {
   active: number;
 }
 
+export interface ForkliftInspectionOptionRow extends RowDataPacket {
+  group_name: string;
+  unit_name: string;
+}
+
 @Injectable()
 export class ForkliftRepository extends BaseRepository<ForkliftRow> {
   private readonly allowedFilterColumns = new Set([
@@ -49,6 +54,7 @@ export class ForkliftRepository extends BaseRepository<ForkliftRow> {
     'created_by',
     'created_date',
     'active',
+    'include_in_inspection_report',
   ]);
 
   constructor(@Inject(MysqlService) mysqlService: MysqlService) {
@@ -103,6 +109,25 @@ export class ForkliftRepository extends BaseRepository<ForkliftRow> {
 
   async deleteForkliftById(id: number): Promise<number> {
     return await this.deleteById(id);
+  }
+
+  async getInspectionOptions(): Promise<ForkliftInspectionOptionRow[]> {
+    const sql = `
+      SELECT
+        COALESCE(NULLIF(TRIM(forklift_type), ''), 'Other Forklifts') AS group_name,
+        UPPER(TRIM(unit_number)) AS unit_name
+      FROM forklift_information
+      WHERE active = 1
+        AND NULLIF(TRIM(unit_number), '') IS NOT NULL
+      GROUP BY
+        COALESCE(NULLIF(TRIM(forklift_type), ''), 'Other Forklifts'),
+        UPPER(TRIM(unit_number))
+      ORDER BY
+        COALESCE(NULLIF(TRIM(forklift_type), ''), 'Other Forklifts') ASC,
+        UPPER(TRIM(unit_number)) ASC
+    `;
+
+    return await this.rawQuery<ForkliftInspectionOptionRow>(sql);
   }
 
   async getMaintenanceByForkliftId(forkliftId: number): Promise<ForkliftMaintenanceRow[]> {

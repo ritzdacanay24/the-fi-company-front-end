@@ -18,6 +18,10 @@ export class ForkliftService extends DataService<any> {
     return await firstValueFrom(this.http.get<any[]>(`${url}/getList?selectedViewType=${encodeURIComponent(selectedViewType)}`));
   };
 
+  getInspectionOptions = async (): Promise<Array<{ name: string; details: Array<{ name: string }> }>> => {
+    return await firstValueFrom(this.http.get<Array<{ name: string; details: Array<{ name: string }> }>>(`${url}/inspectionOptions`));
+  };
+
   override getAll = async (): Promise<any[]> => {
     return await firstValueFrom(this.http.get<any[]>(`${url}/getAll`));
   };
