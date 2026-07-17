@@ -495,6 +495,7 @@ CREATE TABLE IF NOT EXISTS `forklift_checklist` (
   `operator` varchar(150) NOT NULL,
   `model_number` varchar(50) NOT NULL,
   `shift` varchar(50) NOT NULL,
+  `not_used` int(11) DEFAULT '0',
   `comments` varchar(800) NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=4566 DEFAULT CHARSET=latin1;

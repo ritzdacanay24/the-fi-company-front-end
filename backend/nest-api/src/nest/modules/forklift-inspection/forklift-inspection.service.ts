@@ -70,12 +70,14 @@ export class ForkliftInspectionService {
   }
 
   async create(payload: Record<string, any>) {
+    const notUsed = this.parseNotUsed(payload.not_used);
     const insertId = await this.repository.createHeader({
       date_created: payload.date_created,
       department: payload.department,
       operator: payload.operator,
       model_number: payload.model_number,
       shift: payload.shift,
+      not_used: notUsed,
       comments: payload.comments || '',
     });
 
@@ -83,26 +85,28 @@ export class ForkliftInspectionService {
     const failedItems: FailedForkliftChecklistItem[] = [];
     const detailGroups = Array.isArray(payload.details) ? payload.details : [];
 
-    for (const group of detailGroups) {
-      const groupName = group?.name || '';
-      const details = Array.isArray(group?.details) ? group.details : [];
+    if (!notUsed) {
+      for (const group of detailGroups) {
+        const groupName = group?.name || '';
+        const details = Array.isArray(group?.details) ? group.details : [];
 
-      for (const item of details) {
-        const status = item?.status ?? '';
-        if (String(status) === '0') {
-          failedCount++;
-          failedItems.push({
+        for (const item of details) {
+          const status = item?.status ?? '';
+          if (String(status) === '0') {
+            failedCount++;
+            failedItems.push({
+              group_name: groupName,
+              checklist_name: item?.name || '',
+            });
+          }
+
+          await this.repository.insertDetail({
             group_name: groupName,
             checklist_name: item?.name || '',
+            status,
+            forklift_checklist_id: insertId,
           });
         }
-
-        await this.repository.insertDetail({
-          group_name: groupName,
-          checklist_name: item?.name || '',
-          status,
-          forklift_checklist_id: insertId,
-        });
       }
     }
 
@@ -190,7 +194,22 @@ export class ForkliftInspectionService {
       });
     }
 
-    await this.repository.updateHeaderById(id, payload);
+    const normalizedPayload = { ...payload };
+    const normalizedNotUsed =
+      normalizedPayload.not_used !== undefined
+        ? this.parseNotUsed(normalizedPayload.not_used)
+        : this.parseNotUsed(header.not_used);
+
+    if (normalizedPayload.not_used !== undefined) {
+      normalizedPayload.not_used = normalizedNotUsed;
+    }
+
+    await this.repository.updateHeaderById(id, normalizedPayload);
+
+    if (normalizedNotUsed) {
+      await this.repository.deleteDetailsByChecklistId(id);
+      return { rowCount: 1 };
+    }
 
     if (Array.isArray(payload.details)) {
       await this.repository.deleteDetailsByChecklistId(id);
@@ -320,6 +339,13 @@ export class ForkliftInspectionService {
     }
 
     return Array.from(map.values());
+  }
+
+  private parseNotUsed(value: unknown): number {
+    if (value === true || value === 1 || value === '1' || value === 'true') {
+      return 1;
+    }
+    return 0;
   }
 
   private tryParseJson(value: string): any {

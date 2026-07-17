@@ -99,6 +99,15 @@ export class ForkliftInspectionListComponent implements OnInit {
       filter: false,
       sortable: false,
       cellRenderer: (params: any) => {
+        const notUsed = Number(params?.data?.not_used ?? 0) === 1;
+        if (notUsed) {
+          return `
+            <div class="d-flex align-items-center gap-2 h-100" style="min-width: 180px;">
+              <span class="small text-muted text-nowrap">Forklift Not Used</span>
+            </div>
+          `;
+        }
+
         const passed = Number(params?.data?.passed_count ?? 0);
         const failed = Number(params?.data?.failed_count ?? 0);
         const total = Number(params?.data?.total_count ?? 0);

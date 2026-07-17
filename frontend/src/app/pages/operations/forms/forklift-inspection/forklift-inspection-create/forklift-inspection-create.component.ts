@@ -103,11 +103,12 @@ export class ForkliftInspectionCreateComponent {
 
   async onSubmit() {
     this.submitted = true;
-    this.form.value.details = this.details;
+    const payload = this.form.getRawValue();
+    payload.details = this.details;
 
     try {
       this.isLoading = true;
-      let { insertId } = await this.api._create(this.form.value);
+      let { insertId } = await this.api._create(payload);
       const inspectionId = Number(insertId);
 
       for (const file of this.pendingAttachmentFiles) {

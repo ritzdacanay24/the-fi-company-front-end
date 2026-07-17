@@ -114,6 +114,7 @@ export class ForkliftInspectionFormComponent implements OnInit {
       department: ["", Validators.required],
       operator: ["", Validators.required],
       model_number: ["", Validators.required],
+      not_used: [0],
       shift: ["", Validators.required],
       details: this.fb.array([]),
       comments: [""],
@@ -148,6 +149,14 @@ export class ForkliftInspectionFormComponent implements OnInit {
   ngOnInit() {
     this.setDetailsFormEmitter.emit(this.formValues);
     this.form = this.fb.group(this.getFormValues());
+
+    this.form.get("not_used")?.valueChanges.subscribe((notUsed) => {
+      if (Number(notUsed) === 1 || notUsed === true) {
+        this.restValues();
+        this.setDetailsFormEmitter.emit(this.formValues);
+      }
+    });
+
     this.setFormEmitter.emit(this.form);
   }
 

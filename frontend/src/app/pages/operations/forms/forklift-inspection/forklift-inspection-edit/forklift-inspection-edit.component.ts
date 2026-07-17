@@ -194,11 +194,12 @@ export class ForkliftInspectionEditComponent {
 
   async onSubmit() {
     this.submitted = true;
-    this.form.value.details = this.details;
+    const payload = this.form.getRawValue();
+    payload.details = this.details;
 
     try {
       this.isLoading = true;
-      await this.api._create(this.form.value);
+      await this.api._create(payload);
 
       this.isLoading = false;
       this.toastrService.success("Successfully Created");

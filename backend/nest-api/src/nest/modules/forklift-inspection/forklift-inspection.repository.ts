@@ -9,6 +9,7 @@ export interface ForkliftChecklistRow extends RowDataPacket {
   operator: string;
   model_number: string;
   shift: string;
+  not_used: number;
   comments: string;
 }
 
@@ -94,6 +95,7 @@ export class ForkliftInspectionRepository {
     operator: string;
     model_number: string;
     shift: string;
+    not_used: number;
     comments: string;
   }): Promise<number> {
     const sql = `
@@ -103,8 +105,9 @@ export class ForkliftInspectionRepository {
         operator,
         model_number,
         shift,
+        not_used,
         comments
-      ) VALUES (?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
 
     const result = await this.mysqlService.execute<ResultSetHeader>(sql, [
@@ -113,6 +116,7 @@ export class ForkliftInspectionRepository {
       payload.operator,
       payload.model_number,
       payload.shift,
+      payload.not_used,
       payload.comments,
     ]);
 
@@ -148,7 +152,7 @@ export class ForkliftInspectionRepository {
     const fields: string[] = [];
     const values: unknown[] = [];
 
-    for (const key of ['date_created', 'department', 'operator', 'model_number', 'shift', 'comments']) {
+    for (const key of ['date_created', 'department', 'operator', 'model_number', 'shift', 'not_used', 'comments']) {
       const value = payload[key as keyof ForkliftChecklistRow];
       if (value !== undefined) {
         fields.push(`${key} = ?`);
