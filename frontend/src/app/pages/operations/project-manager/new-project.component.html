@@ -152,6 +152,29 @@
 
       <ng-container *ngIf="activeView === 'checklist'">
 
+      <div *ngIf="saveSuccessful && saveMessageType === 'info'" class="alert alert-info" role="alert">
+        <i class="mdi mdi-information-outline me-2"></i>
+        {{ saveMessage }}
+      </div>
+
+      <ng-container *ngIf="!showChecklistForm">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body py-5 text-center">
+            <h5 class="mb-2">Create New Project</h5>
+            <p class="text-muted mb-4">Create the project record first, then complete the checklist form.</p>
+            <button
+              type="button"
+              class="btn btn-primary"
+              [disabled]="isCreatingChecklistProject"
+              (click)="createChecklistProject()">
+              {{ isCreatingChecklistProject ? 'Creating...' : 'Create Project' }}
+            </button>
+          </div>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="showChecklistForm">
+
       <div class="card border-0 shadow-sm mb-3">
         <div class="card-body py-2">
           <div class="d-flex flex-wrap align-items-center gap-2">
@@ -973,6 +996,7 @@
           </div>
         </div>
       </form>
+      </ng-container>
       </ng-container>
     </div>
   </div>

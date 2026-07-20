@@ -61,6 +61,8 @@ export class NewProjectComponent implements OnDestroy {
   saveMessage = '';
   saveMessageType: 'success' | 'info' = 'success';
   activeView: 'workflow' | 'checklist' = 'checklist';
+  showChecklistForm = false;
+  isCreatingChecklistProject = false;
   activeInputSystem: 'gate1' | 'gate2' | 'gate3' | 'gate4' | 'gate5' | 'gate6' = 'gate1';
   activeGate: 1 | 2 | 3 | 4 | 5 | 6 = 1;
   generatedProjectId = '';
@@ -236,41 +238,58 @@ export class NewProjectComponent implements OnDestroy {
         this.activeView = view;
       }
 
-      const projects = this.projectsService.getProjects();
-      const selected = projects.find(project => project.id === projectId);
-      if (selected) {
-        this.projectsService.setSelectedProjectId(selected.id);
-        this.activeProjectId = selected.id;
-        this.generatedProjectId = selected.id;
-        this.isDraftProject = selected.status === 'Draft';
-        this.loadProjectIntakeState(selected.id, selected);
-        this.refreshTaskBoards(selected.id);
-        this.applyRequestedGateFromQuery(requestedGate);
-        this.loadActiveGateComments();
-        return;
-      }
+      this.projectsService.getProjects$().subscribe((projects) => {
+        const selected = projects.find(project => project.id === projectId);
+        if (selected) {
+          this.showChecklistForm = true;
+          this.saveSuccessful = false;
+          this.projectsService.setSelectedProjectId(selected.id);
+          this.activeProjectId = selected.id;
+          this.generatedProjectId = selected.id;
+          this.isDraftProject = selected.status === 'Draft';
+          this.loadProjectIntakeState(selected.id, selected);
+          this.refreshTaskBoards(selected.id);
+          this.applyRequestedGateFromQuery(requestedGate);
+          this.loadActiveGateComments();
+          return;
+        }
 
-      if (projectId) {
-        this.activeProjectId = projectId;
-        this.generatedProjectId = projectId;
+        if (projectId) {
+          this.activeProjectId = '';
+          this.lastSavedProjectId = '';
+          this.generatedProjectId = '';
+          this.isDraftProject = false;
+          this.showChecklistForm = false;
+          this.taskBoardNames = ['Project Tasks'];
+          this.selectedTaskBoardName = requestedTaskBoard || 'Project Tasks';
+          this.applyStakeholderSignoffConfig(this.getDefaultStakeholderSignoffSnapshot(), true);
+          this.applyRequestedGateFromQuery(requestedGate);
+          this.loadActiveGateComments();
+          this.saveSuccessful = true;
+          this.saveMessageType = 'info';
+          this.saveMessage = `Project ${projectId} no longer exists.`;
+
+          this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: { projectId: null },
+            queryParamsHandling: 'merge',
+            replaceUrl: true
+          });
+          return;
+        }
+
+        // No project in URL: stay in new-intake mode until submit creates one.
+        this.activeProjectId = '';
+        this.lastSavedProjectId = '';
+        this.generatedProjectId = '';
         this.isDraftProject = false;
-        this.loadProjectIntakeState(projectId);
-        this.refreshTaskBoards(projectId);
+        this.showChecklistForm = false;
+        this.taskBoardNames = ['Project Tasks'];
+        this.selectedTaskBoardName = requestedTaskBoard || 'Project Tasks';
+        this.applyStakeholderSignoffConfig(this.getDefaultStakeholderSignoffSnapshot(), true);
         this.applyRequestedGateFromQuery(requestedGate);
         this.loadActiveGateComments();
-        return;
-      }
-
-      // No project in URL: stay in new-intake mode until submit creates one.
-      this.activeProjectId = '';
-      this.lastSavedProjectId = '';
-      this.generatedProjectId = '';
-      this.isDraftProject = false;
-      this.taskBoardNames = ['Project Tasks'];
-      this.selectedTaskBoardName = requestedTaskBoard || 'Project Tasks';
-      this.applyStakeholderSignoffConfig(this.getDefaultStakeholderSignoffSnapshot(), true);
-      this.applyRequestedGateFromQuery(requestedGate);
-      this.loadActiveGateComments();
+      });
     });
   }
 
@@ -477,6 +496,60 @@ export class NewProjectComponent implements OnDestroy {
     }
 
     return date.toLocaleString();
+  }
+
+  createChecklistProject(): void {
+    if (this.isCreatingChecklistProject) {
+      return;
+    }
+
+    const createdProjectId = this.projectsService.generateProjectId();
+    this.generatedProjectId = createdProjectId;
+    this.isCreatingChecklistProject = true;
+
+    this.projectsService.upsertProject$({
+      id: createdProjectId,
+      productName: 'Draft Project',
+      customer: 'TBD',
+      projectCategory: 'New',
+      strategyType: 'Growth',
+      roughRevenuePotential: 'Medium',
+      estimatedRevenue: '',
+      initialRfpDate: String(this.projectForm.get('initialRfpDate')?.value || this.formatDate(new Date())),
+      targetProductionDate: String(this.projectForm.get('targetProductionDate')?.value || ''),
+      readinessScore: this.readinessScore,
+      readinessStatus: this.readinessStatus,
+      activeGate: 1,
+      gateCompletion: {
+        gate1: this.gate1Completion,
+        gate2: this.gate2Completion,
+        gate3: this.gate3Completion,
+        gate4: this.gate4Completion,
+        gate5: this.gate5Completion,
+        gate6: this.gate6Completion,
+      },
+      gateCompletedAt: {
+        gate1: this.gate1CompletedAt,
+        gate2: this.gate2CompletedAt,
+        gate3: this.gate3CompletedAt,
+        gate4: this.gate4CompletedAt,
+        gate5: this.gate5CompletedAt,
+        gate6: this.gate6CompletedAt,
+      },
+      isDraft: true,
+    }).subscribe(() => {
+      this.lastSavedProjectId = createdProjectId;
+      this.activeProjectId = createdProjectId;
+      this.isDraftProject = true;
+      this.showChecklistForm = true;
+      this.persistProjectIntakeState(createdProjectId);
+      this.isCreatingChecklistProject = false;
+
+      this.router.navigate([`${this.baseRoute}/new-project`], {
+        queryParams: { projectId: createdProjectId, view: 'checklist' },
+        replaceUrl: true,
+      });
+    });
   }
 
   submit(): void {

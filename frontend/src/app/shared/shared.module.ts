@@ -25,6 +25,7 @@ import { UploadedAttachmentsListComponent } from "./components/attachments/uploa
 import { FeatureAttachmentsPanelComponent } from "./components/attachments/feature-attachments-panel/feature-attachments-panel.component";
 import { PendingAttachmentsListComponent } from "./components/attachments/pending-attachments-list/pending-attachments-list.component";
 import { PublicRequestAttachmentsPanelComponent } from "./components/attachments/public-request-attachments-panel/public-request-attachments-panel.component";
+import { DateInputPickerDirective } from "./directives/date-input-picker.directive";
 
 // AG Grid
 import { AgGridModule } from "ag-grid-angular";
@@ -49,6 +50,7 @@ import { AgGridModule } from "ag-grid-angular";
     FeatureAttachmentsPanelComponent,
     PendingAttachmentsListComponent,
     PublicRequestAttachmentsPanelComponent,
+    DateInputPickerDirective,
   ],
   imports: [
     CommonModule,
@@ -72,6 +74,7 @@ import { AgGridModule } from "ag-grid-angular";
     FeatureAttachmentsPanelComponent,
     PendingAttachmentsListComponent,
     PublicRequestAttachmentsPanelComponent,
+    DateInputPickerDirective,
   ],
   providers: [provideNgxMask(), provideHttpClient(withInterceptorsFromDi())],
 })
