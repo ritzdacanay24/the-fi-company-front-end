@@ -1283,7 +1283,7 @@ export class NewProjectComponent implements OnDestroy {
       return true;
     }
 
-    if ((fieldName === 'longLeadItemsStartDate' || fieldName === 'longLeadItemsEndDate') && this.projectForm.get('longLeadItemsIdentified')?.value !== true) {
+    if ((fieldName === 'longLeadItemsStartDate' || fieldName === 'longLeadItemsEndDate') && this.projectForm.get('longLeadItemsIdentified')?.value === false) {
       return true;
     }
 
@@ -1316,7 +1316,7 @@ export class NewProjectComponent implements OnDestroy {
       return true;
     }
 
-    if ((fieldName === 'longLeadItemsStartDate' || fieldName === 'longLeadItemsEndDate') && this.projectForm.get('longLeadItemsIdentified')?.value !== true) {
+    if ((fieldName === 'longLeadItemsStartDate' || fieldName === 'longLeadItemsEndDate') && this.projectForm.get('longLeadItemsIdentified')?.value === false) {
       return true;
     }
 
