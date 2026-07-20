@@ -1394,10 +1394,6 @@ export class NewProjectComponent implements OnDestroy {
   }
 
   canAccessGate(inputSystem: 'gate1' | 'gate2' | 'gate3' | 'gate4' | 'gate5' | 'gate6'): boolean {
-    if (this.isDraftProject) {
-      return true;
-    }
-
     if (inputSystem === this.activeInputSystem) {
       return true;
     }
