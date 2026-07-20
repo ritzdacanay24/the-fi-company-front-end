@@ -122,9 +122,9 @@ export class NewProjectComponent implements OnDestroy {
     strategyType: ['', Validators.required],
     initialRfpDate: ['', Validators.required],
     targetProductionDate: ['', Validators.required],
-    volumeEstimate: ['Medium'],
+    volumeEstimate: [''],
     volumeEstimateDefinition: [this.estimateRangeDefinition],
-    roughRevenuePotential: ['Medium'],
+    roughRevenuePotential: [''],
     roughRevenuePotentialDefinition: [this.estimateRangeDefinition],
     estimatedRevenue: [''],
     priceProposalSubmitted: [null],
@@ -215,11 +215,7 @@ export class NewProjectComponent implements OnDestroy {
     this.loadStakeholderSignoffDefaultsFromApi();
     this.loadStakeholderAssignableUsers();
 
-    const today = this.formatDate(new Date());
     this.generatedProjectId = '';
-    this.projectForm.patchValue({
-      initialRfpDate: today
-    });
     this.formSub = this.projectForm.valueChanges.subscribe(() => {
       this.updateGateCompletionTimestamps();
 
@@ -513,9 +509,9 @@ export class NewProjectComponent implements OnDestroy {
       customer: 'TBD',
       projectCategory: 'New',
       strategyType: 'Growth',
-      roughRevenuePotential: 'Medium',
+      roughRevenuePotential: '',
       estimatedRevenue: '',
-      initialRfpDate: String(this.projectForm.get('initialRfpDate')?.value || this.formatDate(new Date())),
+      initialRfpDate: String(this.projectForm.get('initialRfpDate')?.value || ''),
       targetProductionDate: String(this.projectForm.get('targetProductionDate')?.value || ''),
       readinessScore: this.readinessScore,
       readinessStatus: this.readinessStatus,
@@ -620,9 +616,9 @@ export class NewProjectComponent implements OnDestroy {
       customer: String(this.projectForm.get('customer')?.value || '').trim() || 'TBD',
       projectCategory: String(this.projectForm.get('projectCategory')?.value || '').trim() || 'New',
       strategyType: String(this.projectForm.get('strategyType')?.value || '').trim() || 'Growth',
-      roughRevenuePotential: String(this.projectForm.get('roughRevenuePotential')?.value || '').trim() || 'Medium',
+      roughRevenuePotential: String(this.projectForm.get('roughRevenuePotential')?.value || '').trim(),
       estimatedRevenue: String(this.projectForm.get('estimatedRevenue')?.value || '').trim(),
-      initialRfpDate: String(this.projectForm.get('initialRfpDate')?.value || this.formatDate(new Date())),
+      initialRfpDate: String(this.projectForm.get('initialRfpDate')?.value || ''),
       targetProductionDate: String(this.projectForm.get('targetProductionDate')?.value || ''),
       readinessScore: this.readinessScore,
       readinessStatus: this.readinessStatus,
@@ -667,7 +663,6 @@ export class NewProjectComponent implements OnDestroy {
   }
 
   resetForm(): void {
-    const today = this.formatDate(new Date());
     this.projectForm.reset({
       newBusinessOpportunity: null,
       rfpReceived: null,
@@ -677,11 +672,11 @@ export class NewProjectComponent implements OnDestroy {
       productName: '',
       projectCategory: '',
       strategyType: '',
-      initialRfpDate: today,
+      initialRfpDate: '',
       targetProductionDate: '',
-      volumeEstimate: 'Medium',
+      volumeEstimate: '',
       volumeEstimateDefinition: this.estimateRangeDefinition,
-      roughRevenuePotential: 'Medium',
+      roughRevenuePotential: '',
       roughRevenuePotentialDefinition: this.estimateRangeDefinition,
       estimatedRevenue: '',
       priceProposalSubmitted: null,
@@ -2073,8 +2068,6 @@ export class NewProjectComponent implements OnDestroy {
   }
 
   private createBaseProjectFormState(projectSummary?: ProjectDashboardItem): any {
-    const today = this.formatDate(new Date());
-
     return {
       newBusinessOpportunity: null,
       rfpReceived: null,
@@ -2084,11 +2077,11 @@ export class NewProjectComponent implements OnDestroy {
       productName: projectSummary?.name || '',
       projectCategory: projectSummary?.category || '',
       strategyType: projectSummary?.strategy || '',
-      initialRfpDate: projectSummary?.rfpDate || today,
+      initialRfpDate: projectSummary?.rfpDate || '',
       targetProductionDate: projectSummary?.targetProd || '',
-      volumeEstimate: 'Medium',
+      volumeEstimate: '',
       volumeEstimateDefinition: this.estimateRangeDefinition,
-      roughRevenuePotential: 'Medium',
+      roughRevenuePotential: '',
       roughRevenuePotentialDefinition: this.estimateRangeDefinition,
       estimatedRevenue: '',
       priceProposalSubmitted: null,

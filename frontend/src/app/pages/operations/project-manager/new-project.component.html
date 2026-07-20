@@ -246,7 +246,7 @@
 
                 <div class="mb-2">
                   <label class="form-label">Product Name *</label>
-                  <input type="text" class="form-control form-control-sm" formControlName="productName" />
+                  <input type="text" class="form-control form-control-sm" formControlName="productName" placeholder="Enter product name" />
                 </div>
 
                 <div class="mb-2">
@@ -267,12 +267,12 @@
 
                 <div class="mb-2">
                   <label class="form-label">Initial RFP Date *</label>
-                  <input type="date" class="form-control form-control-sm" formControlName="initialRfpDate" />
+                  <input type="date" class="form-control form-control-sm" formControlName="initialRfpDate" placeholder="mm/dd/yyyy" />
                 </div>
 
                 <div class="mb-2">
                   <label class="form-label">Target Production Date *</label>
-                  <input type="date" class="form-control form-control-sm" formControlName="targetProductionDate" />
+                  <input type="date" class="form-control form-control-sm" formControlName="targetProductionDate" placeholder="mm/dd/yyyy" />
                 </div>
 
                 <div class="small text-muted mt-3 mb-2">Editable but structured</div>
@@ -281,6 +281,7 @@
                   <label class="form-label">Volume Estimate</label>
                   <div class="volume-estimate-field-controls">
                     <select class="form-select form-select-sm" formControlName="volumeEstimate">
+                      <option value="" disabled>Select estimate</option>
                       <option *ngFor="let option of volumeEstimateOptions" [value]="option.value">{{ option.label }}</option>
                     </select>
                     <button type="button" class="btn btn-outline-secondary btn-sm" (click)="openVolumeEstimateManagement(volumeEstimateManagementModal)">
@@ -292,6 +293,7 @@
                 <div class="mb-2">
                   <label class="form-label">Rough Revenue Potential</label>
                   <select class="form-select form-select-sm" formControlName="roughRevenuePotential">
+                    <option value="" disabled>Select potential</option>
                     <option *ngFor="let option of rangeOptions" [value]="option">{{ option }}</option>
                   </select>
                 </div>
