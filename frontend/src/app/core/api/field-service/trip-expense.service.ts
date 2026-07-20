@@ -150,6 +150,12 @@ export class TripExpenseService {
     const fileName = typeof row.fileName === 'string' ? row.fileName.trim() : '';
     const currentLink = typeof row.link === 'string' ? row.link.trim() : '';
 
+    // Bucket-stored files: URL contains S3 hostname or storage_source says bucket.
+    // Leave them untouched — the display layer signs them.
+    if (row.storage_source === 'bucket' || currentLink.includes('.amazonaws.com') || currentLink.includes('.s3.')) {
+      return row;
+    }
+
     if (currentLink.startsWith('https://dashboard.eye-fi.com/attachments/')) {
       return row;
     }

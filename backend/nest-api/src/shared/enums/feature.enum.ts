@@ -32,6 +32,7 @@ export enum FeatureType {
   SAFETY_INCIDENT = 'safety-incident',
   SHIPPING_CHECKLIST = 'shipping-checklist',
   SHIPPING_REQUEST = 'shipping-request',
+  TICKET_RECEIPTS = 'ticket-receipts',
 }
 
 /**
@@ -200,5 +201,9 @@ export const FEATURE_CONFIG: Record<FeatureType, { s3Prefix: string; field: stri
     s3Prefix: 'shipping-request/{id}',
     field: 'shipping_request',
     legacyNames: ['Shipping Request'],
+  },
+  [FeatureType.TICKET_RECEIPTS]: {
+    s3Prefix: 'ticket-receipts/{id}',
+    field: 'ticket_receipts',
   },
 };

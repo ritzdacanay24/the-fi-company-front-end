@@ -227,6 +227,13 @@ export const FEATURE_ATTACHMENT_CONFIG: Record<FeatureType, FeatureAttachmentCon
     legacyNames: ['Shipping Request'],
     description: 'Shipping request attachments (18 records)',
   },
+  [FeatureType.TICKET_RECEIPTS]: {
+    feature: FeatureType.TICKET_RECEIPTS,
+    s3Path: 'ticket-receipts',
+    dbField: 'ticket_receipts',
+    legacyNames: [],
+    description: 'Ticket receipts attachments',
+  },
 };
 
 /**

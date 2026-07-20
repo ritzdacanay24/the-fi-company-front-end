@@ -42,6 +42,7 @@ import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link
 import { JobSearchComponent } from '@app/shared/components/job-search/job-search.component';
 import { AuthenticationService } from "@app/core/services/auth.service";
 import { FileViewerModalComponent } from "@app/shared/components/file-viewer-modal/file-viewer-modal.component";
+import { S3MediaService } from "@app/core/api/file-storage/s3-media.service";
 
 
 
@@ -140,7 +141,8 @@ export class UploadedReceiptComponent implements OnInit {
     private workOrderService: WorkOrderService,
     private lightbox: Lightbox,
     private modalService: NgbModal,
-    private authenticationService: AuthenticationService
+    private authenticationService: AuthenticationService,
+    private s3MediaService: S3MediaService,
   ) { }
 
   ngOnInit(): void {
@@ -212,7 +214,14 @@ export class UploadedReceiptComponent implements OnInit {
       this.loading = true;
       let data: any = await this.workOrderService.getById(this.workOrderId);
       this.fsId = data?.fs_scheduler_id;
-      this.data = await this.tripExpenseService.getByFsId(data?.fs_scheduler_id);
+      const rawRows = await this.tripExpenseService.getByFsId(data?.fs_scheduler_id);
+      this.data = await Promise.all(rawRows.map(async (row: any) => {
+        const link = String(row?.link || '').trim();
+        if (link && (link.includes('.amazonaws.com') || link.includes('.s3.'))) {
+          return { ...row, link: await this.s3MediaService.getSignedUrl(link).catch(() => link) };
+        }
+        return row;
+      }));
 
       for (let i = 0; i < this.data.length; i++) {
         let row = this.data[i];

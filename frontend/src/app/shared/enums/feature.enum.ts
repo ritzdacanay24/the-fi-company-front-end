@@ -32,4 +32,5 @@ export enum FeatureType {
   SAFETY_INCIDENT = 'safety-incident',
   SHIPPING_CHECKLIST = 'shipping-checklist',
   SHIPPING_REQUEST = 'shipping-request',
+  TICKET_RECEIPTS = 'ticket-receipts',
 }

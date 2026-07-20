@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { TripExpenseRepository } from './trip-expense.repository';
 import { FileStorageService } from '@/nest/modules/file-storage/file-storage.service';
+import { FeatureType } from '@/shared/enums/feature.enum';
 
 @Injectable()
 export class TripExpenseService {
@@ -60,7 +61,17 @@ export class TripExpenseService {
   ) {
     const normalizedPayload = this.normalizePayload(payload);
     if (file?.buffer && file?.originalname) {
-      normalizedPayload.fileName = await this.fileStorageService.storeUploadedFile(file, 'fieldService');
+      if (this.fileStorageService.isS3Mode()) {
+        const keyPrefix = this.resolveTicketReceiptsKeyPrefix(normalizedPayload);
+        const uploaded = await this.fileStorageService.storeUploadedFileInBucket(
+          file,
+          { keyPrefix },
+        );
+        normalizedPayload.fileName = uploaded.fileName;
+        normalizedPayload.originalFileLink = uploaded.url;
+      } else {
+        normalizedPayload.fileName = await this.fileStorageService.storeUploadedFile(file, 'fieldService');
+      }
     }
 
     const sanitized = this.repository.sanitizePayload(normalizedPayload);
@@ -79,7 +90,21 @@ export class TripExpenseService {
   ) {
     const normalizedPayload = this.normalizePayload(payload);
     if (file?.buffer && file?.originalname) {
-      normalizedPayload.fileName = await this.fileStorageService.storeUploadedFile(file, 'fieldService');
+      if (this.fileStorageService.isS3Mode()) {
+        const existingRow = await this.repository.getById(id);
+        if (!existingRow) {
+          throw new NotFoundException(`Trip expense ${id} not found`);
+        }
+        const keyPrefix = this.resolveTicketReceiptsKeyPrefix(normalizedPayload, existingRow);
+        const uploaded = await this.fileStorageService.storeUploadedFileInBucket(
+          file,
+          { keyPrefix },
+        );
+        normalizedPayload.fileName = uploaded.fileName;
+        normalizedPayload.originalFileLink = uploaded.url;
+      } else {
+        normalizedPayload.fileName = await this.fileStorageService.storeUploadedFile(file, 'fieldService');
+      }
     }
 
     const sanitized = this.repository.sanitizePayload(normalizedPayload);
@@ -142,6 +167,27 @@ export class TripExpenseService {
     }
 
     return normalized;
+  }
+
+  private resolveTicketReceiptsKeyPrefix(
+    payload: Record<string, unknown>,
+    existingRow?: Record<string, unknown> | null,
+  ): string {
+    const rawCandidates = [
+      payload?.workOrderId,
+      payload?.fs_scheduler_id,
+      existingRow?.workOrderId,
+      existingRow?.fs_scheduler_id,
+    ];
+
+    for (const raw of rawCandidates) {
+      const parsed = Number(raw);
+      if (Number.isFinite(parsed) && parsed > 0) {
+        return `${FeatureType.TICKET_RECEIPTS}/${Math.floor(parsed)}`;
+      }
+    }
+
+    return FeatureType.TICKET_RECEIPTS;
   }
 
   private resolveMindeeApiKey(payload: Record<string, unknown>): string {

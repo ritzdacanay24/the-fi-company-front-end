@@ -333,8 +333,9 @@ export class FileStorageService {
 
     const localLink = this.resolveLink(fileName, subFolder);
     const storageSource = String(row?.storage_source ?? row?.storageSource ?? '').trim().toLowerCase();
+    const isBucketLink = existingLink.includes('.amazonaws.com') || existingLink.includes('.s3.');
 
-    if (storageSource === 'bucket') {
+    if (storageSource === 'bucket' || isBucketLink) {
       return {
         ...row,
         link: existingLink || null,
