@@ -14,6 +14,7 @@ import { PmTaskRecord, ProjectManagerTasksDataService, ProjectManagerTasksState,
 import { ProjectDashboardItem, ProjectManagerProjectsService } from './services/project-manager-projects.service';
 import { PmTaskAttachmentModalComponent } from './pm-task-attachment-modal.component';
 import { PmTaskActionsRendererComponent } from './pm-task-actions-renderer.component';
+import { PmDateCellEditorComponent } from './pm-date-cell-editor.component';
 
 type TaskGateFilter = 'All' | TaskGate;
 
@@ -324,8 +325,8 @@ export class ProjectManagerTasksComponent implements OnInit {
     subGroupName: [''],
     project: ['', Validators.required],
     taskName: ['', [Validators.required, Validators.maxLength(140)]],
-    startDate: ['2026-03-12', Validators.required],
-    finishDate: ['2026-03-29', Validators.required],
+    startDate: [''],
+    finishDate: [''],
     bucket: ['Overall'],
     status: ['Open' as TaskStatus],
     completion: [0]
@@ -449,7 +450,8 @@ export class ProjectManagerTasksComponent implements OnInit {
       headerName: 'Start',
       width: 120,
       editable: params => params.data?.rowType === 'task',
-      cellEditor: 'agDateStringCellEditor',
+      cellEditor: PmDateCellEditorComponent,
+      valueParser: (params: any) => this.normalizeDateInput(params?.newValue),
       aggFunc: (params: any) => this.aggregateMinDate(params?.values),
     },
     {
@@ -457,7 +459,8 @@ export class ProjectManagerTasksComponent implements OnInit {
       headerName: 'Finish',
       width: 120,
       editable: params => params.data?.rowType === 'task',
-      cellEditor: 'agDateStringCellEditor',
+      cellEditor: PmDateCellEditorComponent,
+      valueParser: (params: any) => this.normalizeDateInput(params?.newValue),
       aggFunc: (params: any) => this.aggregateMaxDate(params?.values),
     },
     {
@@ -1310,8 +1313,8 @@ export class ProjectManagerTasksComponent implements OnInit {
 
     const value = this.taskForm.getRawValue();
     const baseTaskName = value.taskName?.trim() || 'Engineering task';
-    const startDate = value.startDate || '2026-03-12';
-    const finishDate = value.finishDate || '2026-03-18';
+    const startDate = String(value.startDate || '').trim();
+    const finishDate = String(value.finishDate || '').trim();
     const durationDays = this.calculateDuration(startDate, finishDate);
 
     const bulkTasks: PmTaskRecord[] = Array.from(this.selectedPeople).map(person => ({
@@ -1978,6 +1981,8 @@ export class ProjectManagerTasksComponent implements OnInit {
     }
 
     if (field === 'startDate' || field === 'finishDate') {
+      task.startDate = this.normalizeDateInput(task.startDate);
+      task.finishDate = this.normalizeDateInput(task.finishDate);
       task.durationDays = this.calculateDuration(task.startDate, task.finishDate);
     }
 
@@ -2239,7 +2244,19 @@ export class ProjectManagerTasksComponent implements OnInit {
       }
 
       this.nextId = state.nextId;
-      this.taskRecords = state.taskRecords;
+      const normalizedRecords = this.normalizeTaskDateDurations(state.taskRecords || []);
+      const hasDateCorrections = (state.taskRecords || []).some((task, index) => {
+        const next = normalizedRecords[index];
+        if (!next) {
+          return false;
+        }
+
+        return String(task.startDate || '').trim() !== next.startDate
+          || String(task.finishDate || '').trim() !== next.finishDate
+          || Number(task.durationDays || 0) !== next.durationDays;
+      });
+
+      this.taskRecords = normalizedRecords;
       this.hydrateTaskCountMaps(state);
       this.projectTaskBoardName = String(state.projectTaskBoardName || '').trim() || 'Project Tasks';
       this.projectTaskBoardNameDraft = this.projectTaskBoardName;
@@ -2280,6 +2297,10 @@ export class ProjectManagerTasksComponent implements OnInit {
         this.seedDefaultProjectTasks();
       }
 
+      if (hasDateCorrections) {
+        this.persistTaskState();
+      }
+
       this.seedSubgroupCatalog();
       this.rebuildTreeRows();
     });
@@ -2312,8 +2333,8 @@ export class ProjectManagerTasksComponent implements OnInit {
 
   private seedDefaultProjectTasks(): void {
     const projectLabel = String(this.currentProjectSummary?.code || this.currentProjectSummary?.id || this.activeProjectId || '').trim();
-    const startDate = String(this.taskForm.get('startDate')?.value || '').trim() || new Date().toISOString().slice(0, 10);
-    const finishDate = String(this.taskForm.get('finishDate')?.value || '').trim() || startDate;
+    const startDate = String(this.taskForm.get('startDate')?.value || '').trim();
+    const finishDate = String(this.taskForm.get('finishDate')?.value || '').trim();
     const gate = (this.taskForm.get('gate')?.value || '') as TaskGate | '';
 
     const groupName = 'Project Inputs';
@@ -2356,6 +2377,8 @@ export class ProjectManagerTasksComponent implements OnInit {
   }
 
   private buildTaskStateSnapshot(): ProjectManagerTasksState {
+    this.taskRecords = this.normalizeTaskDateDurations(this.taskRecords);
+
     const subgroupCatalog: Record<string, string[]> = {};
     Object.keys(this.subgroupCatalog).forEach(group => {
       subgroupCatalog[group] = Array.from(this.subgroupCatalog[group]);
@@ -2896,8 +2919,33 @@ export class ProjectManagerTasksComponent implements OnInit {
       return 0;
     }
 
+    if (finish.getTime() < start.getTime()) {
+      return 0;
+    }
+
     const ms = finish.getTime() - start.getTime();
     return Math.max(1, Math.ceil(ms / 86400000));
+  }
+
+  private normalizeDateInput(value: unknown): string {
+    const raw = String(value || '').trim();
+    if (!raw) {
+      return '';
+    }
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+      return raw;
+    }
+
+    const parsed = new Date(raw);
+    if (Number.isNaN(parsed.getTime())) {
+      return '';
+    }
+
+    const year = parsed.getFullYear();
+    const month = String(parsed.getMonth() + 1).padStart(2, '0');
+    const day = String(parsed.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   private normalizeDateMs(value: unknown): number | null {
@@ -2912,6 +2960,20 @@ export class ProjectManagerTasksComponent implements OnInit {
     }
 
     return ms;
+  }
+
+  private normalizeTaskDateDurations(tasks: PmTaskRecord[]): PmTaskRecord[] {
+    return (tasks || []).map((task) => {
+      const startDate = this.normalizeDateInput(task.startDate);
+      const finishDate = this.normalizeDateInput(task.finishDate);
+
+      return {
+        ...task,
+        startDate,
+        finishDate,
+        durationDays: this.calculateDuration(startDate, finishDate),
+      };
+    });
   }
 
   private toIsoDate(valueMs: number): string {
