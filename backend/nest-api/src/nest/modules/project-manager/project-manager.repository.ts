@@ -102,7 +102,6 @@ export class ProjectManagerRepository extends BaseRepository<PmProjectRow> {
         readiness_status       = VALUES(readiness_status),
         active_gate            = VALUES(active_gate),
         is_draft               = VALUES(is_draft),
-        owner                  = VALUES(owner),
         gate1_completion       = VALUES(gate1_completion),
         gate2_completion       = VALUES(gate2_completion),
         gate3_completion       = VALUES(gate3_completion),
@@ -159,6 +158,33 @@ export class ProjectManagerRepository extends BaseRepository<PmProjectRow> {
     `;
 
     await this.rawQuery(sql, [projectId, formValue, activeInputSystem, activeGate, gateCompletedAt]);
+  }
+
+  async updateProjectName(projectId: string, productName: string): Promise<void> {
+    await this.rawQuery(
+      `UPDATE eyefidb.pm_projects
+       SET product_name = ?, updated_at = CURRENT_TIMESTAMP
+       WHERE id = ?`,
+      [productName, projectId],
+    );
+  }
+
+  async updateProjectIdentity(projectId: string, productName: string, customer: string): Promise<void> {
+    await this.rawQuery(
+      `UPDATE eyefidb.pm_projects
+       SET product_name = ?, customer = ?, updated_at = CURRENT_TIMESTAMP
+       WHERE id = ?`,
+      [productName, customer, projectId],
+    );
+  }
+
+  async updateProjectIdentityAndGate(projectId: string, productName: string, customer: string, activeGate: number): Promise<void> {
+    await this.rawQuery(
+      `UPDATE eyefidb.pm_projects
+       SET product_name = ?, customer = ?, active_gate = ?, updated_at = CURRENT_TIMESTAMP
+       WHERE id = ?`,
+      [productName, customer, activeGate, projectId],
+    );
   }
 
   async getIntake(projectId: string): Promise<PmProjectIntakeRow | null> {

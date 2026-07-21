@@ -99,12 +99,15 @@
                 </div>
               </td>
               <td>
-                <div class="task-progress-wrap">
+                <div class="task-progress-wrap" *ngIf="hasProjectTasks(project.id); else noTasksCreatedTpl">
                   <div class="task-progress" role="progressbar" [attr.aria-valuemin]="0" [attr.aria-valuemax]="100" [attr.aria-valuenow]="project.taskCompletion || 0">
                     <div class="task-progress-fill" [style.width.%]="project.taskCompletion || 0"></div>
                   </div>
                   <div class="task-progress-label">{{ project.taskCompletion || 0 }}%</div>
                 </div>
+                <ng-template #noTasksCreatedTpl>
+                  <div class="task-progress-empty">No tasks created</div>
+                </ng-template>
               </td>
               <td>
                 <span [ngClass]="'status-pill ' + getStatusClass(project.status)">{{ project.status }}</span>
@@ -176,7 +179,10 @@
               />
               <button type="button" class="gate-step-link" (click)="openSelectedProjectGate(step.label)">{{ step.label }}</button>
             </div>
-            <span class="muted">Tasks {{ step.taskCompletion }}% . {{ step.days }}d</span>
+            <span class="muted" *ngIf="hasGateTasks(selectedProject.id, step.label); else noGateTasksTpl">Tasks {{ step.taskCompletion }}%</span>
+            <ng-template #noGateTasksTpl>
+              <span class="muted">No tasks created</span>
+            </ng-template>
           </div>
         </div>
       </div>
@@ -210,17 +216,24 @@
 
   <div class="gates-layout" *ngIf="activeTab === 'gates'">
     <div class="gate-cards-grid">
-      <div class="card-shell stage-card" *ngFor="let stage of gateCards" [ngClass]="'stage-' + stage.key">
+      <div class="card-shell stage-card" *ngFor="let stage of gateCards; trackBy: trackByStageKey" [ngClass]="'stage-' + stage.key">
         <div class="stage-kicker">Gate {{ stage.gateNumber }}</div>
         <div class="stage-title">{{ stage.title }}</div>
         <div class="stage-time">{{ stage.timeline }}</div>
         <p class="stage-description">{{ stage.description }}</p>
         <div class="stage-projects-title">Projects in this gate:</div>
         <div *ngIf="stage.projects.length === 0" class="stage-empty">No active projects</div>
-        <div class="stage-project-item" *ngFor="let project of stage.projects | slice:0:2">
+        <a
+          class="stage-project-item"
+          *ngFor="let project of stage.projects | slice:0:2; trackBy: trackByProjectId"
+          tabindex="0"
+          [attr.aria-label]="'Open ' + project.gateLabel + ' for ' + project.name"
+          (click)="openProjectGate(project, $event)"
+          (keydown.enter)="openProjectGate(project, $event)"
+          (keydown.space)="openProjectGate(project, $event); $event.preventDefault()">
           <span class="stage-project-dot"></span>
-          <span>{{ project.name }}</span>
-        </div>
+          <span class="stage-project-link">{{ project.name }}</span>
+        </a>
       </div>
     </div>
 
@@ -229,7 +242,7 @@
         <span>Gate Pipeline Flow</span>
       </div>
       <div class="pipeline-flow-wrap">
-        <ng-container *ngFor="let stage of gateCards; let i = index">
+        <ng-container *ngFor="let stage of gateCards; let i = index; trackBy: trackByStageKey">
           <div class="pipeline-node" [ngClass]="'stage-' + stage.key">
             <div class="stage-kicker">Gate {{ stage.gateNumber }}</div>
             <div class="pipeline-title">{{ stage.title }}</div>
@@ -242,7 +255,16 @@
   </div>
 
   <div class="pipeline-layout" *ngIf="activeTab === 'pipeline'">
-    <div class="pipeline-card card-shell" *ngFor="let project of pipelineProjects" [ngClass]="getPipelineCardClass(project)">
+    <div
+      class="pipeline-card card-shell"
+      *ngFor="let project of pipelineProjects"
+      [ngClass]="getPipelineCardClass(project)"
+      role="button"
+      tabindex="0"
+      [attr.aria-label]="'Open ' + project.gateLabel + ' for ' + project.name"
+      (click)="openProjectGate(project, $event)"
+      (keydown.enter)="openProjectGate(project, $event)"
+      (keydown.space)="openProjectGate(project, $event); $event.preventDefault()">
       <div class="pipeline-card-head">
         <div>
           <div class="project-title">{{ project.name }}</div>

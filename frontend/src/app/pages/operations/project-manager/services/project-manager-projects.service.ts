@@ -977,7 +977,8 @@ export class ProjectManagerProjectsService {
 
     return {
       ...project,
-      name: String(form['productName'] || '').trim() || project.name,
+      // Keep project identity fields sourced from pm_projects.
+      name: project.name,
       customer: String(form['customer'] || '').trim() || project.customer,
       category: String(form['projectCategory'] || '').trim() || project.category,
       strategy: String(form['strategyType'] || '').trim() || project.strategy,

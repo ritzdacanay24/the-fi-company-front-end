@@ -186,7 +186,6 @@
             <button type="button" class="btn btn-sm" [ngClass]="activeInputSystem === 'gate5' ? 'btn-primary' : 'btn-outline-primary'" (click)="setActiveInputSystem('gate5')" [disabled]="!canAccessGate('gate5')">Gate 5</button>
             <button type="button" class="btn btn-sm" [ngClass]="activeInputSystem === 'gate6' ? 'btn-primary' : 'btn-outline-primary'" (click)="setActiveInputSystem('gate6')" [disabled]="!canAccessGate('gate6')">Gate 6</button>
           </div>
-          <div *ngIf="gateNavigationMessage" class="small text-danger mt-2">{{ gateNavigationMessage }}</div>
         </div>
       </div>
 

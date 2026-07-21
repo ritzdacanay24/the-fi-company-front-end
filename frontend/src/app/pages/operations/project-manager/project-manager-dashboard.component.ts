@@ -2,7 +2,7 @@ import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SharedModule } from '@app/shared/shared.module';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
-import { forkJoin, of } from 'rxjs';
+import { forkJoin, map, of } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 import { ProjectManagerTasksDataService, ProjectManagerTasksState } from './services/project-manager-tasks-data.service';
 import { ProjectCreationInput, ProjectDashboardItem, ProjectManagerProjectsService, ProjectStatus } from './services/project-manager-projects.service';
@@ -35,6 +35,7 @@ export class ProjectManagerDashboardComponent implements OnInit {
   private readonly projectManagerBaseRoute = '/project-manager';
   private readonly operationsBaseRoute = '/operations/project-manager';
   private activeModalRef: any = null;
+  private hasInitializedRouteState = false;
 
   private gateStages: GateStageDefinition[] = [
     {
@@ -82,6 +83,8 @@ export class ProjectManagerDashboardComponent implements OnInit {
   ];
 
   projects: ProjectDashboardItem[] = [];
+  private readonly projectTaskCountById = new Map<string, number>();
+  private readonly projectGateTaskCountById = new Map<string, Record<string, number>>();
   selectedProjectId = '';
   private routeProjectId = '';
   pendingCopyProject: ProjectDashboardItem | null = null;
@@ -117,13 +120,41 @@ export class ProjectManagerDashboardComponent implements OnInit {
 
   ngOnInit(): void {
     this.route.queryParamMap.subscribe(params => {
-      this.routeProjectId = (params.get('projectId') || '').trim();
-      this.reloadProjects();
+      const nextProjectId = (params.get('projectId') || '').trim();
+      const nextTab = this.parseDashboardTab(params.get('tab'));
+      this.activeTab = nextTab;
+
+      const shouldReloadProjects = !this.hasInitializedRouteState || nextProjectId !== this.routeProjectId;
+      this.routeProjectId = nextProjectId;
+      this.hasInitializedRouteState = true;
+
+      if (shouldReloadProjects) {
+        this.reloadProjects();
+      }
     });
   }
 
   setTab(tab: DashboardTab): void {
+    if (this.activeTab === tab) {
+      return;
+    }
+
     this.activeTab = tab;
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { tab },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
+
+  private parseDashboardTab(value: string | null): DashboardTab {
+    const normalized = String(value || '').trim().toLowerCase();
+    if (normalized === 'gates' || normalized === 'pipeline') {
+      return normalized;
+    }
+
+    return 'overview';
   }
 
   selectProject(projectId: string): void {
@@ -235,6 +266,19 @@ export class ProjectManagerDashboardComponent implements OnInit {
     this.router.navigate([`${this.baseRoute}/new-project`], {
       queryParams: { projectId: selected.id, view: 'checklist', gate: `gate${safeGate}` }
     });
+  }
+
+  getChecklistRoute(): string {
+    return `${this.baseRoute}/new-project`;
+  }
+
+  getGateRouteQueryParams(project: ProjectDashboardItem): { projectId: string; view: 'checklist'; gate: string } {
+    const gateNumber = this.getGateIndex(project.gateTag) + 1;
+    return {
+      projectId: project.id,
+      view: 'checklist',
+      gate: `gate${gateNumber}`,
+    };
   }
 
   private get baseRoute(): string {
@@ -568,7 +612,23 @@ export class ProjectManagerDashboardComponent implements OnInit {
   }
 
   private reloadProjects(callback?: () => void): void {
-    this.projectsService.getProjects$().subscribe(projects => {
+    this.projectsService.getProjects$().pipe(
+      switchMap((projects) => {
+        if (!projects.length) {
+          this.projectTaskCountById.clear();
+          this.projectGateTaskCountById.clear();
+          return of(projects);
+        }
+
+        return forkJoin(
+          projects.map((project) => this.tasksDataService.loadState$(project.id).pipe(
+            map((state) => ({ projectId: project.id, state }))
+          ))
+        ).pipe(
+          map((projectTaskStates) => this.syncProjectsTaskCompletion(projects, projectTaskStates))
+        );
+      })
+    ).subscribe(projects => {
       this.projects = projects;
 
       const routeMatch = this.routeProjectId
@@ -586,6 +646,126 @@ export class ProjectManagerDashboardComponent implements OnInit {
     });
   }
 
+  private syncProjectsTaskCompletion(
+    projects: ProjectDashboardItem[],
+    projectTaskStates: Array<{ projectId: string; state: ProjectManagerTasksState }>
+  ): ProjectDashboardItem[] {
+    const stateMap = new Map<string, ProjectManagerTasksState>();
+    this.projectTaskCountById.clear();
+    this.projectGateTaskCountById.clear();
+    projectTaskStates.forEach((item) => stateMap.set(String(item.projectId || '').trim(), item.state));
+
+    return projects.map((project) => {
+      const state = stateMap.get(String(project.id || '').trim());
+      const taskRecords = state?.taskRecords || [];
+      this.projectTaskCountById.set(String(project.id || '').trim(), taskRecords.length);
+      if (!taskRecords.length) {
+        this.projectGateTaskCountById.set(String(project.id || '').trim(), {
+          G1: 0,
+          G2: 0,
+          G3: 0,
+          G4: 0,
+          G5: 0,
+          G6: 0,
+        });
+        return project;
+      }
+
+      const projectTaskCompletion = this.computeProjectTaskCompletion(taskRecords);
+      const gateTaskStats = this.computeGateTaskStats(taskRecords);
+      this.projectGateTaskCountById.set(String(project.id || '').trim(), gateTaskStats.counts);
+
+      return {
+        ...project,
+        taskCompletion: projectTaskCompletion,
+        gateProgress: (project.gateProgress || []).map((gate, index) => {
+          const gateKey = `G${index + 1}`;
+          return {
+            ...gate,
+            taskCompletion: gateTaskStats.completion[gateKey] ?? Number(gate.taskCompletion || 0),
+          };
+        }),
+      };
+    });
+  }
+
+  private computeProjectTaskCompletion(taskRecords: ProjectManagerTasksState['taskRecords']): number {
+    if (!taskRecords.length) {
+      return 0;
+    }
+
+    const total = taskRecords.reduce((sum, task) => {
+      const completion = Number(task?.completion || 0);
+      if (!Number.isFinite(completion)) {
+        return sum;
+      }
+
+      return sum + Math.min(100, Math.max(0, completion));
+    }, 0);
+
+    return Math.round(total / taskRecords.length);
+  }
+
+  private computeGateTaskStats(taskRecords: ProjectManagerTasksState['taskRecords']): {
+    completion: Record<string, number>;
+    counts: Record<string, number>;
+  } {
+    const buckets: Record<string, number[]> = {
+      G1: [],
+      G2: [],
+      G3: [],
+      G4: [],
+      G5: [],
+      G6: [],
+    };
+
+    taskRecords.forEach((task) => {
+      const gate = String(task?.gate || '').trim().toUpperCase();
+      if (!gate || !(gate in buckets)) {
+        return;
+      }
+
+      const completion = Number(task?.completion || 0);
+      if (!Number.isFinite(completion)) {
+        return;
+      }
+
+      buckets[gate].push(Math.min(100, Math.max(0, completion)));
+    });
+
+    const completion: Record<string, number> = {};
+    const counts: Record<string, number> = {};
+    Object.entries(buckets).forEach(([gate, values]) => {
+      counts[gate] = values.length;
+      if (!values.length) {
+        completion[gate] = 0;
+        return;
+      }
+
+      const total = values.reduce((sum, value) => sum + value, 0);
+      completion[gate] = Math.round(total / values.length);
+    });
+
+    return { completion, counts };
+  }
+
+  hasGateTasks(projectId: string, gateLabel: string): boolean {
+    const projectKey = String(projectId || '').trim();
+    const gateMatch = String(gateLabel || '').match(/(\d+)/);
+    const gateNumber = gateMatch ? Number(gateMatch[1]) : 0;
+    if (gateNumber < 1 || gateNumber > 6) {
+      return false;
+    }
+
+    const gateKey = `G${gateNumber}`;
+    const gateCounts = this.projectGateTaskCountById.get(projectKey);
+    return Number(gateCounts?.[gateKey] || 0) > 0;
+  }
+
+  hasProjectTasks(projectId: string): boolean {
+    return Number(this.projectTaskCountById.get(String(projectId || '').trim()) || 0) > 0;
+  }
+
   get bottleneckAlerts(): ProjectDashboardItem[] {
     return this.projects.filter(project => project.status !== 'On Track' || project.readiness < 75);
   }
@@ -595,6 +775,14 @@ export class ProjectManagerDashboardComponent implements OnInit {
       ...stage,
       projects: this.projects.filter(project => project.gateTag === stage.key)
     }));
+  }
+
+  trackByStageKey(_: number, stage: GateStageCard): string {
+    return stage.key;
+  }
+
+  trackByProjectId(_: number, project: ProjectDashboardItem): string {
+    return project.id;
   }
 
   get pipelineProjects(): ProjectDashboardItem[] {

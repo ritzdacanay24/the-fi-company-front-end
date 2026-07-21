@@ -1256,12 +1256,39 @@ export class NewProjectComponent implements OnDestroy {
   }
 
   private getGateCompletion(gate: keyof NewProjectComponent['gateFieldMap']): number {
+    if (gate === 'gate6') {
+      const fixedFields = ['qcProcedureDefined', 'productionPoReceived', 'inventoryStrategyAligned'];
+      const fixedCompleteCount = fixedFields.filter(field => this.isFieldComplete(field)).length;
+
+      const totalSignoffUsers = this.stakeholderSignoffConfig.length;
+      const signedSignoffUsers = this.getSignedStakeholderCount();
+
+      const totalUnits = fixedFields.length + totalSignoffUsers;
+      if (!totalUnits) {
+        return 0;
+      }
+
+      const completeUnits = fixedCompleteCount + signedSignoffUsers;
+      return Math.round((completeUnits / totalUnits) * 100);
+    }
+
     const fields = this.gateFieldMap[gate];
     if (!fields.length) {
       return 0;
     }
     const completeCount = fields.filter(field => this.isFieldComplete(field)).length;
     return Math.round((completeCount / fields.length) * 100);
+  }
+
+  private getSignedStakeholderCount(): number {
+    if (!this.stakeholderSignoffConfig.length) {
+      return 0;
+    }
+
+    const statusMap = this.getStakeholderSignoffStatusMap();
+    return this.stakeholderSignoffConfig.reduce((count, stakeholder) => {
+      return count + (String(statusMap[stakeholder.key]?.signedAt || '').trim() ? 1 : 0);
+    }, 0);
   }
 
   private isFieldComplete(fieldName: string): boolean {

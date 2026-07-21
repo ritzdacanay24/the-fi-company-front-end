@@ -61,6 +61,43 @@ export class ProjectManagerService {
 
   async getAll() {
     const rows = await this.repository.find();
+
+    for (const row of rows) {
+      const intake = await this.repository.getIntake(row.id);
+      const intakeActiveGate = this.normalizeActiveGateNumber(intake?.active_gate);
+      const intakeFormValue = this.parseFormValue(intake?.form_value || null);
+      const intakeProductName = this.extractProductNameFromFormObject(intakeFormValue);
+      const intakeCustomer = this.extractCustomerFromFormObject(intakeFormValue);
+
+      const shouldSyncName = String(row.product_name || '').trim() === 'Draft Project' && !!intakeProductName;
+      const shouldSyncCustomer = String(row.customer || '').trim() === 'TBD' && !!intakeCustomer;
+      const shouldSyncGate = !!intakeActiveGate && Number(row.active_gate || 1) !== intakeActiveGate;
+      if (!shouldSyncName && !shouldSyncCustomer && !shouldSyncGate) {
+        continue;
+      }
+
+      const nextProductName = shouldSyncName && intakeProductName ? intakeProductName : String(row.product_name || '').trim();
+      const nextCustomer = shouldSyncCustomer && intakeCustomer ? intakeCustomer : String(row.customer || '').trim();
+      const nextActiveGate = shouldSyncGate && intakeActiveGate ? intakeActiveGate : Number(row.active_gate || 1);
+
+      if (!nextProductName || !nextCustomer) {
+        continue;
+      }
+
+      if (
+        nextProductName === String(row.product_name || '').trim() &&
+        nextCustomer === String(row.customer || '').trim() &&
+        nextActiveGate === Number(row.active_gate || 1)
+      ) {
+        continue;
+      }
+
+      row.product_name = nextProductName;
+      row.customer = nextCustomer;
+      row.active_gate = nextActiveGate;
+      await this.repository.updateProjectIdentityAndGate(row.id, nextProductName, nextCustomer, nextActiveGate);
+    }
+
     return rows.map(row => this.toApiShape(row));
   }
 
@@ -140,6 +177,24 @@ export class ProjectManagerService {
       dto.activeGate,
       JSON.stringify(dto.gateCompletedAt),
     );
+
+    const syncedName = this.extractProductNameFromFormObject(dto.formValue);
+    const syncedCustomer = this.extractCustomerFromFormObject(dto.formValue);
+    const syncedGate = this.normalizeActiveGateNumber(dto.activeGate) || this.normalizeActiveGateNumber(project.active_gate) || 1;
+
+    if (syncedName && syncedCustomer) {
+      await this.repository.updateProjectIdentityAndGate(projectId, syncedName, syncedCustomer, syncedGate);
+    } else if (syncedName) {
+      await this.repository.updateProjectName(projectId, syncedName);
+      if (syncedGate !== Number(project.active_gate || 1)) {
+        await this.repository.updateProjectIdentityAndGate(
+          projectId,
+          String(project.product_name || '').trim() || syncedName,
+          String(project.customer || '').trim(),
+          syncedGate,
+        );
+      }
+    }
 
     return { success: true };
   }
@@ -297,6 +352,41 @@ export class ProjectManagerService {
     if (!Number.isInteger(gateNumber) || gateNumber < 1 || gateNumber > 6) {
       throw new BadRequestException('gate must be an integer from 1 to 6');
     }
+  }
+
+  private extractProductNameFromFormObject(formValue: Record<string, unknown> | null | undefined): string {
+    const normalized = String(formValue?.['productName'] || '').trim();
+    return normalized.slice(0, 255);
+  }
+
+  private extractProductNameFromFormValue(formValue: string | null): string {
+    return this.extractProductNameFromFormObject(this.parseFormValue(formValue));
+  }
+
+  private extractCustomerFromFormObject(formValue: Record<string, unknown> | null | undefined): string {
+    const normalized = String(formValue?.['customer'] || '').trim();
+    return normalized.slice(0, 255);
+  }
+
+  private parseFormValue(formValue: string | null): Record<string, unknown> | null {
+    if (!formValue) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(formValue) as Record<string, unknown>;
+    } catch {
+      return null;
+    }
+  }
+
+  private normalizeActiveGateNumber(value: unknown): number | null {
+    const parsed = Number(value);
+    if (!Number.isInteger(parsed) || parsed < 1 || parsed > 6) {
+      return null;
+    }
+
+    return parsed;
   }
 
   private toApiShape(row: any) {
