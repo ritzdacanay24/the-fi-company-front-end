@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Param, Post, Put, UseGuards } from '@nestjs/common';
 import { Permissions, RolePermissionGuard } from '../access-control';
+import { CurrentUserId } from '@/nest/decorators/current-user-id.decorator';
 import { PmTasksService, TaskStateDto, AddCommentDto, AddAttachmentDto } from './pm-tasks.service';
 
 @Controller('operations/project-manager')
@@ -15,8 +16,12 @@ export class PmTasksController {
   /** PUT /operations/project-manager/:projectId/tasks — replace full task list */
   @Put(':projectId/tasks')
   @Permissions('write')
-  async saveState(@Param('projectId') projectId: string, @Body() dto: TaskStateDto) {
-    await this.pmTasksService.saveState(projectId, dto);
+  async saveState(
+    @Param('projectId') projectId: string,
+    @Body() dto: TaskStateDto,
+    @CurrentUserId() currentUserId: number,
+  ) {
+    await this.pmTasksService.saveState(projectId, dto, currentUserId);
     return { success: true };
   }
 

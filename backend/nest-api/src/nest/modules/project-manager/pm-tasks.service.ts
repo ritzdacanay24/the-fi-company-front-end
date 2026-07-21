@@ -1,4 +1,7 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { EmailService } from '@/shared/email/email.service';
+import { EmailTemplateService } from '@/shared/email/email-template.service';
 import { PmTasksRepository, PmTaskRow } from './pm-tasks.repository';
 
 export interface UpsertTaskDto {
@@ -41,9 +44,22 @@ export interface TaskStateDto {
   taskBoardNames?: string[];
 }
 
+interface TaskAssignmentNotification {
+  projectId: string;
+  taskId: number;
+  taskName: string;
+  gate: string;
+  assigneeNames: string[];
+}
+
 @Injectable()
 export class PmTasksService {
-  constructor(private readonly repository: PmTasksRepository) {}
+  constructor(
+    private readonly repository: PmTasksRepository,
+    private readonly emailService: EmailService,
+    private readonly emailTemplateService: EmailTemplateService,
+    private readonly configService: ConfigService,
+  ) {}
 
   async getState(projectId: string): Promise<object> {
     const [tasks, comments, attachments, meta, globalMaxTaskId] = await Promise.all([
@@ -105,7 +121,10 @@ export class PmTasksService {
   }
 
   /** Replace all tasks for a project with the provided list. */
-  async saveState(projectId: string, dto: TaskStateDto): Promise<void> {
+  async saveState(projectId: string, dto: TaskStateDto, currentUserId?: number): Promise<void> {
+    const existingTasks = await this.repository.getTaskAssigneeSnapshotsByProject(projectId);
+    const assignmentNotifications = this.computeAssignmentNotifications(projectId, existingTasks, dto.taskRecords || []);
+
     const rows: Omit<PmTaskRow, 'created_at' | 'updated_at'>[] = (dto.taskRecords || []).map((t, index) => ({
       id: t.id || 0,
       project_id: projectId,
@@ -114,7 +133,7 @@ export class PmTasksService {
       group_name: t.groupName,
       sub_group_name: t.subGroupName,
       task_name: t.taskName,
-      assigned_to: JSON.stringify(t.assignedTo || []),
+      assigned_to: JSON.stringify(this.normalizeAssigneeList(t.assignedTo)),
       duration_days: t.durationDays,
       start_date: t.startDate || null,
       finish_date: t.finishDate || null,
@@ -146,6 +165,8 @@ export class PmTasksService {
       default_task_templates: JSON.stringify(normalizedTemplates),
       task_board_names: JSON.stringify(normalizedBoards),
     });
+
+    await this.sendAssignmentEmails(assignmentNotifications, currentUserId);
   }
 
   async addComment(taskId: number, dto: AddCommentDto): Promise<number> {
@@ -178,6 +199,147 @@ export class PmTasksService {
   private parseJson<T>(raw: string | null, fallback: T): T {
     if (!raw) return fallback;
     try { return JSON.parse(raw) as T; } catch { return fallback; }
+  }
+
+  private normalizeAssigneeList(value: unknown): string[] {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    return Array.from(new Set(
+      value
+        .map((item) => String(item || '').trim())
+        .filter(Boolean),
+    ));
+  }
+
+  private computeAssignmentNotifications(
+    projectId: string,
+    previous: Array<{ id: number; task_name: string; gate: string; assigned_to: string | null }>,
+    next: UpsertTaskDto[],
+  ): TaskAssignmentNotification[] {
+    const previousMap = new Map<number, Set<string>>();
+    previous.forEach((task) => {
+      const names = this.parseJson<string[]>(task.assigned_to, []);
+      const normalized = new Set(names.map((name) => String(name || '').trim().toLowerCase()).filter(Boolean));
+      previousMap.set(Number(task.id), normalized);
+    });
+
+    const notifications: TaskAssignmentNotification[] = [];
+    for (const task of next) {
+      const taskId = Number(task.id || 0);
+      if (!Number.isFinite(taskId) || taskId <= 0) {
+        continue;
+      }
+
+      const previousAssignees = previousMap.get(taskId) || new Set<string>();
+      const normalizedNext = this.normalizeAssigneeList(task.assignedTo);
+      const newlyAssigned = normalizedNext.filter((name) => !previousAssignees.has(name.toLowerCase()));
+
+      if (!newlyAssigned.length) {
+        continue;
+      }
+
+      notifications.push({
+        projectId,
+        taskId,
+        taskName: String(task.taskName || '').trim() || `Task ${taskId}`,
+        gate: String(task.gate || '').trim(),
+        assigneeNames: normalizedNext,
+      });
+    }
+
+    return notifications;
+  }
+
+  private async sendAssignmentEmails(
+    notifications: TaskAssignmentNotification[],
+    currentUserId?: number,
+  ): Promise<void> {
+    if (!notifications.length) {
+      return;
+    }
+
+    const allAssigneeNames = Array.from(new Set(
+      notifications.flatMap((item) => item.assigneeNames.map((name) => String(name || '').trim()).filter(Boolean)),
+    ));
+
+    if (!allAssigneeNames.length) {
+      return;
+    }
+
+    const userRows = await this.repository.findActiveUsersByDisplayNames(allAssigneeNames);
+    const emailByName = new Map<string, string>();
+    const displayNameByKey = new Map<string, string>();
+    userRows.forEach((row) => {
+      const nameKey = String(row.display_name || '').trim().toLowerCase();
+      const email = String(row.email || '').trim();
+      if (!nameKey || !email || emailByName.has(nameKey)) {
+        return;
+      }
+      emailByName.set(nameKey, email);
+      displayNameByKey.set(nameKey, String(row.display_name || '').trim());
+    });
+
+    if (!emailByName.size) {
+      return;
+    }
+
+    const assignedByName = await this.resolveAssignedByDisplayName(currentUserId);
+    const dashboardBaseUrl = String(this.configService.get<string>('DASHBOARD_WEB_BASE_URL') || '').replace(/\/+$/, '');
+
+    for (const notification of notifications) {
+      const recipients = Array.from(new Set(
+        notification.assigneeNames
+          .map((name) => emailByName.get(name.toLowerCase()))
+          .filter((email): email is string => !!email),
+      ));
+
+      if (!recipients.length) {
+        continue;
+      }
+
+      const taskUrl = dashboardBaseUrl
+        ? `${dashboardBaseUrl}/project-manager/tasks?projectId=${encodeURIComponent(notification.projectId)}&taskId=${encodeURIComponent(String(notification.taskId))}`
+        : '';
+      const gateLabel = notification.gate || 'Project-wide';
+      const subject = `[Project Manager] New Task Assignment: ${notification.taskName}`;
+      const assignedToLabel = notification.assigneeNames
+        .map((name) => {
+          const key = String(name || '').trim().toLowerCase();
+          return displayNameByKey.get(key) || String(name || '').trim();
+        })
+        .filter(Boolean)
+        .join(', ');
+      const html = this.emailTemplateService.render('pm-task-assigned', {
+        projectId: notification.projectId,
+        taskName: notification.taskName,
+        gate: gateLabel,
+        assignedTo: assignedToLabel,
+        assignedBy: assignedByName,
+        link: taskUrl,
+      });
+
+      try {
+        await this.emailService.sendMail({
+          to: recipients,
+          subject,
+          html,
+        });
+      } catch (error) {
+        console.error('Failed to send PM task assignment email', error);
+      }
+    }
+  }
+
+  private async resolveAssignedByDisplayName(currentUserId?: number): Promise<string> {
+    const normalized = Number(currentUserId || 0);
+    if (!Number.isFinite(normalized) || normalized <= 0) {
+      return 'System';
+    }
+
+    const displayName = await this.repository.getUserDisplayNameById(normalized);
+    return displayName || 'System';
   }
 
   private buildSubgroupCatalog(tasks: PmTaskRow[]): Record<string, string[]> {

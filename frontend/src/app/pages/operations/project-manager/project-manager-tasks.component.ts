@@ -45,7 +45,7 @@ interface PmTreeRow {
   gate: TaskGate | '';
   taskName: string;
   project: string;
-  assignedTo: string;
+  assignedTo: string | string[];
   durationDays: number | null;
   startDate: string;
   finishDate: string;
@@ -108,6 +108,7 @@ export class ProjectManagerTasksComponent implements OnInit {
   private readonly singleClickDropdownCols = new Set(['gate', 'status', 'startDate', 'finishDate']);
   private lastInteractedTaskId: number | null = null;
   private requestedTaskBoardFromQuery = '';
+  private deepLinkRevealAttempted = false;
   actionMessage = '';
   actionMessageType: 'success' | 'warning' = 'success';
   currentProjectSummary: ProjectDashboardItem | null = null;
@@ -143,7 +144,6 @@ export class ProjectManagerTasksComponent implements OnInit {
 
   selectedPeople = new Set<string>(['Ankit Batra', 'Aldo Verber']);
   selectedAssignees = new Set<string>();
-  selectedAssignee = '';
   private assigneeDirectory: string[] = [];
   projectTaskBoardName = 'Project Tasks';
   projectTaskBoardNameDraft = 'Project Tasks';
@@ -310,14 +310,6 @@ export class ProjectManagerTasksComponent implements OnInit {
     }
   }
 
-  onAssigneeSelect(person: string): void {
-    this.selectedAssignee = String(person || '').trim();
-    this.selectedAssignees.clear();
-    if (this.selectedAssignee) {
-      this.selectedAssignees.add(this.selectedAssignee);
-    }
-  }
-
   taskForm = this.fb.group({
     projectTaskName: ['Project Tasks'],
     gate: ['' as TaskGate | ''],
@@ -422,6 +414,7 @@ export class ProjectManagerTasksComponent implements OnInit {
       cellEditor: 'agRichSelectCellEditor',
       cellEditorParams: {
         values: () => this.getAssigneeOptions(),
+        multiSelect: true,
         allowTyping: true,
         filterList: true,
         searchType: 'matchAny',
@@ -429,9 +422,7 @@ export class ProjectManagerTasksComponent implements OnInit {
       },
       cellRenderer: (params: any) => {
         if (!params.value) return '';
-        const names: string[] = typeof params.value === 'string'
-          ? params.value.split(',').map((s: string) => s.trim()).filter(Boolean)
-          : params.value;
+        const names = this.normalizeAssigneeList(params.value);
         return names.map(n => {
           const initials = n.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2);
           return `<span title="${n}" style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#0d6efd;color:#fff;font-size:9px;font-weight:600;margin-right:2px">${initials}</span>`;
@@ -732,12 +723,15 @@ export class ProjectManagerTasksComponent implements OnInit {
     this.route.queryParamMap.subscribe(params => {
       const gateContext = (params.get('gateContext') || '').trim();
       const gate = Number(params.get('gate') || 0);
+      const queryTaskId = Number(params.get('taskId') || 0);
       const commentParam = (params.get('comment') || '').trim();
       const commentTypeParam = (params.get('type') || '').trim();
       const commentIdParam = Number(params.get('commentId') || 0);
       this.requestedTaskBoardFromQuery = String(params.get('taskBoard') || '').trim();
 
       const linkedTask = this.parseTaskCommentContext(commentParam);
+      const deepLinkTaskId = linkedTask?.taskId
+        ?? (Number.isFinite(queryTaskId) && queryTaskId > 0 ? queryTaskId : null);
       const projectId = this.resolveProjectIdFromParams(params);
 
       this.applyGateContext(gateContext, gate);
@@ -755,6 +749,10 @@ export class ProjectManagerTasksComponent implements OnInit {
       }
       this.suppressFilterParamSync = false;
 
+      // Queue task highlight before rebuilding rows so the deep-link behaves like comment links.
+      this.pendingDeepLinkTaskId = deepLinkTaskId;
+      this.deepLinkRevealAttempted = false;
+
       this.rebuildTreeRows();
       this.gridApi?.setGridOption('quickFilterText', this.quickFilterText);
 
@@ -763,7 +761,6 @@ export class ProjectManagerTasksComponent implements OnInit {
         this.selectedCommentTaskId = linkedTask.taskId;
         this.selectedCommentOrderNum = commentParam;
         this.focusedCommentId = Number.isFinite(commentIdParam) && commentIdParam > 0 ? commentIdParam : null;
-        this.pendingDeepLinkTaskId = linkedTask.taskId;
         this.isCommentPanelOpen = true;
       }
     });
@@ -915,7 +912,6 @@ export class ProjectManagerTasksComponent implements OnInit {
     if (group) {
       this.taskForm.patchValue({ groupName: group, subGroupName: subgroup });
     }
-    this.selectedAssignee = '';
     this.selectedAssignees.clear();
     this.activeModalRef = this.modalService.open(this.addTaskModalTpl, {
       size: 'lg',
@@ -926,7 +922,6 @@ export class ProjectManagerTasksComponent implements OnInit {
     this.activeModalRef.result.catch(() => {
       // dismissed — clear form
       this.taskForm.patchValue({ taskName: '' });
-      this.selectedAssignee = '';
       this.selectedAssignees.clear();
     });
     setTimeout(() => {
@@ -1114,7 +1109,6 @@ export class ProjectManagerTasksComponent implements OnInit {
     this.rebuildTreeRows();
     this.closeAddTaskPanel();
     this.taskForm.patchValue({ taskName: '' });
-    this.selectedAssignee = '';
     this.selectedAssignees.clear();
   }
 
@@ -1989,7 +1983,7 @@ export class ProjectManagerTasksComponent implements OnInit {
 
     const field = event.colDef.field;
     if (field === 'assignedTo') {
-      task.assignedTo = (row.assignedTo as string).split(',').map(s => s.trim()).filter(Boolean);
+      task.assignedTo = this.normalizeAssigneeList(event.newValue ?? row.assignedTo);
     } else {
       (task as any)[field] = (row as any)[field];
     }
@@ -2021,6 +2015,10 @@ export class ProjectManagerTasksComponent implements OnInit {
       if ((oldStatus === 'Completed' || oldStatus === 'Locked') && newStatus !== 'Completed' && newStatus !== 'Locked') {
         task.completion = this.defaultCompletionByStatus(newStatus);
       }
+    }
+
+    if (field === 'assignedTo') {
+      row.assignedTo = [...task.assignedTo];
     }
 
     this.persistTaskState();
@@ -2523,16 +2521,35 @@ export class ProjectManagerTasksComponent implements OnInit {
     return { projectId, taskId };
   }
 
-  private highlightTaskRow(taskId: number): void {
+  private highlightTaskRow(taskId: number): boolean {
     if (!this.gridApi || !Number.isFinite(taskId) || taskId <= 0) {
-      return;
+      return false;
     }
 
     const rowNode = this.gridApi.getRowNode(this.toTaskRowId(taskId));
     if (!rowNode || rowNode.rowIndex === null || rowNode.rowIndex === undefined) {
-      return;
+      const taskRecord = this.taskRecords.find((task) => task.id === taskId);
+      if (taskRecord && !this.deepLinkRevealAttempted) {
+        this.deepLinkRevealAttempted = true;
+        const boardName = String(taskRecord.projectTaskName || 'Project Tasks').trim() || 'Project Tasks';
+        if (this.projectTaskBoardName.toLowerCase() !== boardName.toLowerCase()) {
+          this.projectTaskBoardName = boardName;
+          this.projectTaskBoardNameDraft = boardName;
+          this.taskForm.patchValue({ projectTaskName: boardName });
+        }
+
+        this.filterPerson = '';
+        this.filterStatus = '';
+        this.hideDone = false;
+        this.quickFilterText = '';
+        this.setGateFilter('All', false, false);
+        this.gridApi.setGridOption('quickFilterText', '');
+        this.rebuildTreeRows();
+      }
+      return false;
     }
 
+    this.deepLinkRevealAttempted = false;
     this.gridApi.ensureNodeVisible(rowNode, 'middle');
     rowNode.setSelected(true, true);
     this.gridApi.flashCells({
@@ -2540,6 +2557,7 @@ export class ProjectManagerTasksComponent implements OnInit {
       flashDuration: 1800,
       fadeDuration: 1000,
     });
+    return true;
   }
 
   private getProjectAttachmentBaseId(): number | null {
@@ -2708,7 +2726,7 @@ export class ProjectManagerTasksComponent implements OnInit {
         gate: task.gate,
         taskName: task.taskName,
         project: projectLabel,
-        assignedTo: task.assignedTo.join(', '),
+        assignedTo: [...task.assignedTo],
         durationDays: task.durationDays,
         startDate: task.startDate,
         finishDate: task.finishDate,
@@ -2800,7 +2818,7 @@ export class ProjectManagerTasksComponent implements OnInit {
         gate: task.gate,
         taskName: task.taskName,
         project: projectLabel,
-        assignedTo: task.assignedTo.join(', '),
+        assignedTo: [...task.assignedTo],
         durationDays: task.durationDays,
         startDate: task.startDate,
         finishDate: task.finishDate,
@@ -2821,8 +2839,10 @@ export class ProjectManagerTasksComponent implements OnInit {
     setTimeout(() => {
       this.restoreExpandedState(expanded);
       if (this.pendingDeepLinkTaskId !== null) {
-        this.highlightTaskRow(this.pendingDeepLinkTaskId);
-        this.pendingDeepLinkTaskId = null;
+        const highlighted = this.highlightTaskRow(this.pendingDeepLinkTaskId);
+        if (highlighted) {
+          this.pendingDeepLinkTaskId = null;
+        }
       }
     }, 0);
   }
@@ -3127,6 +3147,27 @@ export class ProjectManagerTasksComponent implements OnInit {
     });
 
     return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }
+
+  private normalizeAssigneeList(value: unknown): string[] {
+    if (Array.isArray(value)) {
+      return Array.from(new Set(
+        value
+          .map((item) => String(item || '').trim())
+          .filter(Boolean)
+      ));
+    }
+
+    if (value === null || value === undefined) {
+      return [];
+    }
+
+    return Array.from(new Set(
+      String(value)
+        .split(/[\n,;]+/)
+        .map((item) => item.trim())
+        .filter(Boolean)
+    ));
   }
 
   private loadAssigneeDirectory(): void {

@@ -57,6 +57,22 @@ export interface PmTaskStateUpsertInput {
   task_board_names: string;
 }
 
+export interface PmTaskAssigneeSnapshotRow extends RowDataPacket {
+  id: number;
+  task_name: string;
+  gate: string;
+  assigned_to: string | null;
+}
+
+export interface UserEmailLookupRow extends RowDataPacket {
+  display_name: string;
+  email: string;
+}
+
+export interface UserDisplayNameLookupRow extends RowDataPacket {
+  display_name: string;
+}
+
 interface CountByMainIdRow extends RowDataPacket {
   main_id: number;
   count: number;
@@ -102,6 +118,57 @@ export class PmTasksRepository {
       [projectId],
     );
     return rows[0] || null;
+  }
+
+  async getTaskAssigneeSnapshotsByProject(projectId: string): Promise<PmTaskAssigneeSnapshotRow[]> {
+    return this.mysqlService.query<PmTaskAssigneeSnapshotRow[]>(
+      `SELECT id, task_name, gate, assigned_to
+       FROM eyefidb.pm_tasks
+       WHERE project_id = ?`,
+      [projectId],
+    );
+  }
+
+  async findActiveUsersByDisplayNames(displayNames: string[]): Promise<UserEmailLookupRow[]> {
+    const normalized = Array.from(new Set(
+      displayNames
+        .map((name) => String(name || '').trim().toLowerCase())
+        .filter(Boolean),
+    ));
+
+    if (!normalized.length) {
+      return [];
+    }
+
+    const placeholders = normalized.map(() => '?').join(',');
+    return this.mysqlService.query<UserEmailLookupRow[]>(
+      `SELECT
+         TRIM(CONCAT(COALESCE(u.first, ''), ' ', COALESCE(u.last, ''))) AS display_name,
+         TRIM(u.email) AS email
+       FROM db.users u
+       WHERE u.active = 1
+         AND u.email IS NOT NULL
+         AND TRIM(u.email) <> ''
+         AND LOWER(TRIM(CONCAT(COALESCE(u.first, ''), ' ', COALESCE(u.last, '')))) IN (${placeholders})`,
+      normalized,
+    );
+  }
+
+  async getUserDisplayNameById(userId: number): Promise<string | null> {
+    if (!Number.isFinite(userId) || userId <= 0) {
+      return null;
+    }
+
+    const rows = await this.mysqlService.query<UserDisplayNameLookupRow[]>(
+      `SELECT TRIM(CONCAT(COALESCE(first, ''), ' ', COALESCE(last, ''))) AS display_name
+       FROM db.users
+       WHERE id = ?
+       LIMIT 1`,
+      [userId],
+    );
+
+    const displayName = String(rows[0]?.display_name || '').trim();
+    return displayName || null;
   }
 
   async getGlobalMaxTaskId(): Promise<number> {
