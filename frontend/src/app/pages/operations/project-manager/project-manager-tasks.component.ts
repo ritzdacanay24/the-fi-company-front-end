@@ -1,6 +1,6 @@
 import { Component, OnInit, ViewChild, TemplateRef } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, ParamMap, Router } from '@angular/router';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { SharedModule } from '@app/shared/shared.module';
 import { AccessControlApiService } from '@app/core/api/access-control/access-control.service';
@@ -713,11 +713,7 @@ export class ProjectManagerTasksComponent implements OnInit {
     this.loadAssigneeDirectory();
 
     this.allProjects = this.projectsService.getProjects();
-    this.applyProjectContext(
-      (this.route.snapshot.queryParamMap.get('projectId')
-        || this.route.snapshot.queryParamMap.get('project-id')
-        || '').trim()
-    );
+    this.applyProjectContext(this.resolveProjectIdFromParams(this.route.snapshot.queryParamMap));
 
     this.tasksDataService.saveFallback$.subscribe((projectId) => {
       if (projectId !== this.activeProjectId) {
@@ -729,25 +725,20 @@ export class ProjectManagerTasksComponent implements OnInit {
 
     this.projectsService.getProjects$().subscribe(projects => {
       this.allProjects = projects;
-      const projectIdFromQuery = (
-        this.route.snapshot.queryParamMap.get('projectId')
-        || this.route.snapshot.queryParamMap.get('project-id')
-        || ''
-      ).trim();
+      const projectIdFromQuery = this.resolveProjectIdFromParams(this.route.snapshot.queryParamMap);
       this.applyProjectContext(projectIdFromQuery);
     });
 
     this.route.queryParamMap.subscribe(params => {
       const gateContext = (params.get('gateContext') || '').trim();
       const gate = Number(params.get('gate') || 0);
-      const routeProjectId = (params.get('projectId') || params.get('project-id') || '').trim();
       const commentParam = (params.get('comment') || '').trim();
       const commentTypeParam = (params.get('type') || '').trim();
       const commentIdParam = Number(params.get('commentId') || 0);
       this.requestedTaskBoardFromQuery = String(params.get('taskBoard') || '').trim();
 
       const linkedTask = this.parseTaskCommentContext(commentParam);
-      const projectId = routeProjectId || linkedTask?.projectId || '';
+      const projectId = this.resolveProjectIdFromParams(params);
 
       this.applyGateContext(gateContext, gate);
       this.applyProjectContext(projectId);
@@ -776,6 +767,17 @@ export class ProjectManagerTasksComponent implements OnInit {
         this.isCommentPanelOpen = true;
       }
     });
+  }
+
+  private resolveProjectIdFromParams(params: Pick<ParamMap, 'get'>): string {
+    const routeProjectId = String(params.get('projectId') || params.get('project-id') || '').trim();
+    if (routeProjectId) {
+      return routeProjectId;
+    }
+
+    const commentContext = String(params.get('comment') || '').trim();
+    const linkedTask = this.parseTaskCommentContext(commentContext);
+    return String(linkedTask?.projectId || '').trim();
   }
 
   get hasProject(): boolean {
@@ -822,7 +824,16 @@ export class ProjectManagerTasksComponent implements OnInit {
     const normalizedId = String(id || '').trim();
     if (!normalizedId || normalizedId === this.selectedProjectId) return;
     const url = this.router.url.split('?')[0];
-    this.router.navigate([url], { queryParams: { projectId: normalizedId }, queryParamsHandling: 'merge' });
+    this.router.navigate([url], {
+      queryParams: {
+        projectId: normalizedId,
+        comment: null,
+        commentId: null,
+        type: null,
+        commentViewMode: null,
+      },
+      queryParamsHandling: 'merge'
+    });
   }
 
   get executionChecklistQueryParams(): { projectId: string; view: 'checklist' } {
@@ -2430,6 +2441,13 @@ export class ProjectManagerTasksComponent implements OnInit {
     if (resolvedProjectId === this.activeProjectId) {
       return;
     }
+
+    // Switching project should always close any open comment panel context.
+    this.isCommentPanelOpen = false;
+    this.selectedCommentOrderNum = null;
+    this.selectedCommentTaskId = null;
+    this.focusedCommentId = null;
+    this.pendingDeepLinkTaskId = null;
 
     this.activeProjectId = resolvedProjectId;
     this.taskAttachmentCountMap.clear();
