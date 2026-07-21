@@ -1168,6 +1168,8 @@ export class ProjectManagerTasksComponent implements OnInit {
   }
 
   closeCommentPanel(): void {
+    const projectIdToKeep = String(this.activeProjectId || this.currentProjectSummary?.id || '').trim();
+
     this.isCommentPanelOpen = false;
     if (this.selectedCommentTaskId !== null) {
       void this.reloadTaskCommentCount(this.selectedCommentTaskId);
@@ -1179,6 +1181,7 @@ export class ProjectManagerTasksComponent implements OnInit {
     const url = this.router.url.split('?')[0];
     this.router.navigate([url], {
       queryParams: {
+        projectId: projectIdToKeep || null,
         comment: null,
         commentId: null,
         type: null,
