@@ -26,6 +26,18 @@ export class MasterControlController {
     return this.service.getPickDetailsByWorkOrderNumber(workOrderNumber, filteredSections || '');
   }
 
+  @Get('locations')
+  async getLocationsByRange(
+    @Query('locationStart') locationStart?: string,
+    @Query('locationEnd') locationEnd?: string,
+  ) {
+    if (!locationStart || !locationEnd) {
+      throw new BadRequestException('locationStart and locationEnd are required');
+    }
+
+    return this.service.getLocationsByRange(locationStart, locationEnd);
+  }
+
   @Post('print-work-order')
   async savePrintWorkOrder(@Body() payload: Record<string, unknown>) {
     return this.service.savePrintDetails(payload);

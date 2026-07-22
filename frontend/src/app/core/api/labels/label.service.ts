@@ -26,6 +26,8 @@ export class LabelService {
   }
 
   getLocationByRange(locationStart: string, locationEnd: string) {
-    return this.http.get<any>(`/Locations/getLocations?locationStart=${locationStart}&locationEnd=${locationEnd}`).toPromise()
+    const start = encodeURIComponent(String(locationStart || '').trim());
+    const end = encodeURIComponent(String(locationEnd || '').trim());
+    return this.http.get<any>(`apiV2/master-control/locations?locationStart=${start}&locationEnd=${end}`).toPromise();
   }
 }

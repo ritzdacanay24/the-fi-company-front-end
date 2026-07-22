@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { RowDataPacket } from 'mysql2/promise';
 import { MysqlService } from '@/shared/database/mysql.service';
 import { QadOdbcService } from '@/shared/database/qad-odbc.service';
@@ -128,6 +128,58 @@ export class MasterControlService {
     };
 
     return toJsonSafe(payload) as Record<string, unknown>;
+  }
+
+  async getLocationsByRange(locationStartRaw: string, locationEndRaw: string): Promise<Array<{ loc_loc: string }>> {
+    const locationStart = String(locationStartRaw || '').trim().toUpperCase();
+    const locationEnd = String(locationEndRaw || '').trim().toUpperCase();
+
+    if (!locationStart || !locationEnd) {
+      throw new BadRequestException('locationStart and locationEnd are required');
+    }
+
+    const validateSql = `
+      SELECT CAST(loc_loc AS CHAR(25)) loc_loc
+      FROM loc_mstr
+      WHERE loc_domain = 'EYE'
+        AND loc_site = 'EYE01'
+        AND loc_loc <> ''
+        AND loc_loc = ?
+    `;
+
+    const startExists = await this.qadOdbcService.queryWithParams<Array<{ loc_loc: string }>>(
+      validateSql,
+      [locationStart],
+      { keyCase: 'lower' },
+    );
+    if (!startExists.length) {
+      throw new BadRequestException('Start Location Not Found.');
+    }
+
+    const endExists = await this.qadOdbcService.queryWithParams<Array<{ loc_loc: string }>>(
+      validateSql,
+      [locationEnd],
+      { keyCase: 'lower' },
+    );
+    if (!endExists.length) {
+      throw new BadRequestException('End Location Not Found.');
+    }
+
+    const rangeSql = `
+      SELECT CAST(loc_loc AS CHAR(25)) loc_loc
+      FROM loc_mstr
+      WHERE loc_domain = 'EYE'
+        AND loc_site = 'EYE01'
+        AND loc_loc <> ''
+        AND loc_loc BETWEEN ? AND ?
+      ORDER BY loc_loc
+    `;
+
+    return this.qadOdbcService.queryWithParams<Array<{ loc_loc: string }>>(
+      rangeSql,
+      [locationStart, locationEnd],
+      { keyCase: 'lower' },
+    );
   }
 
   private resolveRouting(routingInput: string): { routingOps: number[]; all: boolean } {
