@@ -58,7 +58,7 @@
         </nav>
 
         <ngx-simplebar class="sidebar-menu-scroll sidebar-menu-scroll-with-rail">
-        <ng-template #menuActionsTemplate let-item="item">
+        <ng-template #menuActionsTemplate let-item="item" let-isFav="isFav">
           <div
             ngbDropdown
             class="menu-item-actions"
@@ -82,11 +82,11 @@
                 Remove favorite
               </button>
               <div class="dropdown-divider"></div>
-              <button ngbDropdownItem type="button" [disabled]="!canMoveMenuItemUp(item)" (click)="moveMenuItemFromSidebar(item, 'up')">
+              <button ngbDropdownItem type="button" [disabled]="isFav ? !canMoveFavoriteUp(item) : !canMoveMenuItemUp(item)" (click)="isFav ? moveFavoriteItem(item, 'up') : moveMenuItemFromSidebar(item, 'up')">
                 <i class="las la-arrow-up me-2"></i>
                 Move up
               </button>
-              <button ngbDropdownItem type="button" [disabled]="!canMoveMenuItemDown(item)" (click)="moveMenuItemFromSidebar(item, 'down')">
+              <button ngbDropdownItem type="button" [disabled]="isFav ? !canMoveFavoriteDown(item) : !canMoveMenuItemDown(item)" (click)="isFav ? moveFavoriteItem(item, 'down') : moveMenuItemFromSidebar(item, 'down')">
                 <i class="las la-arrow-down me-2"></i>
                 Move down
               </button>
@@ -119,7 +119,7 @@
             </a>
           </li> -->
 
-          <li class="nav-item" *ngIf="favs?.length" style="word-break: break-all;">
+          <li class="nav-item" *ngIf="favs?.length || favoriteService.loadFailed" style="word-break: break-all;">
             <a [attr.aria-expanded]="!isCollapsed" (click)="collapse.toggle(); toggleFavoritesExpansion()"
               class="nav-item nav-link pointer" data-bs-toggle="collapse">
               <i class="las la-star icon nav-icon"></i>
@@ -130,6 +130,12 @@
               </span>
             </a>
             <div class="collapse menu-dropdown" #collapse="ngbCollapse" [(ngbCollapse)]="isCollapsed">
+              <ul class="nav nav-sm flex-column" *ngIf="favoriteService.loadFailed; else favsList">
+                <li class="nav-item px-3 py-2">
+                  <span class="text-warning small"><i class="bx bx-error-circle me-1"></i>Failed to load favorites</span>
+                </li>
+              </ul>
+              <ng-template #favsList>
               <ul class="nav nav-sm flex-column" [attr.aria-expanded]="!isCollapsed">
 
                 <li (mouseenter)="mouseHovering(subitem)" (mouseleave)="mouseLeft(subitem);t.close()"
@@ -139,7 +145,6 @@
                   <a class="nav-link w-100" style="height:auto;">
                     <div class="ms-2 me-auto" style="white-space:normal;overflow: hidden;">
                       <p class="mb-0 pb-0">{{ subitem.label}}</p>
-                      <!-- <p style="font-size:10px;">{{ subitem.link}}</p> -->
                     </div>
                     <ng-container *ngIf="getMenuBadge(subitem) as badge">
                       <span class="sidebar-count-badge"
@@ -150,9 +155,10 @@
                         [ngClass]="badge.variant">{{ badge.text }}</span>
                     </ng-container>
                   </a>
-                  <ng-container *ngTemplateOutlet="menuActionsTemplate; context: { item: subitem }"></ng-container>
+                  <ng-container *ngTemplateOutlet="menuActionsTemplate; context: { item: subitem, isFav: true }"></ng-container>
                 </li>
               </ul>
+              </ng-template>
             </div>
           </li>
         </ul>
@@ -205,7 +211,7 @@
             <span class="">{{ menu.label }}</span>
             <i class="las la-external-link-alt" style="position:absolute;inset-inline-end:1em;top:50%;transform:translateY(-50%);font-size:0.75em;opacity:0.7"></i>
           </a>
-          <ng-container *ngTemplateOutlet="menuActionsTemplate; context: { item: menu }"></ng-container>
+          <ng-container *ngTemplateOutlet="menuActionsTemplate; context: { item: menu, isFav: false }"></ng-container>
           }@else{
           <a [attr.data-parent]="menu.parent_id" [routerLink]="menu.link" class="nav-link menu-link-with-actions"
             (click)="updateActive($event); handleHiddenItemClick(menu)"
@@ -231,7 +237,7 @@
             </span>
 
           </a>
-          <ng-container *ngTemplateOutlet="menuActionsTemplate; context: { item: menu }"></ng-container>
+          <ng-container *ngTemplateOutlet="menuActionsTemplate; context: { item: menu, isFav: false }"></ng-container>
           }
           }
           <div class="collapse menu-dropdown" #collapse="ngbCollapse" 

@@ -321,7 +321,8 @@ export class ErrorInterceptor implements HttpInterceptor {
           || isDeployInProgress
           || isDeployDowntime
           || isDeployStatusProbe
-          || isPublicInspectionReport;
+          || isPublicInspectionReport
+          || request.headers.get('x-silent-error') === 'true';
 
         // Only show toast if backend did not set showPopup === false AND we haven't suppressed it
         if (

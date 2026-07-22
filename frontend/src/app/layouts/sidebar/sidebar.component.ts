@@ -215,7 +215,7 @@ export class SidebarComponent implements OnInit {
   );
   constructor(
     private router: Router,
-    private favoriteService: FavoriteService,
+    public favoriteService: FavoriteService,
     public pageAccessService: PageAccessService,
     public menuService: MenuService,
     private appSwitcherService: AppSwitcherService,
@@ -1488,6 +1488,33 @@ export class SidebarComponent implements OnInit {
 
   getFavoritesList() {
     return this.favoriteService.getFavorites();
+  }
+
+  canMoveFavoriteUp(item: { path?: string; label?: string } | null | undefined): boolean {
+    if (!item) return false;
+    const favs = this.favoriteService.getFavorites();
+    const index = favs.findIndex((f: any) => f.path === (item as any).path || f.label === item.label);
+    return index > 0;
+  }
+
+  canMoveFavoriteDown(item: { path?: string; label?: string } | null | undefined): boolean {
+    if (!item) return false;
+    const favs = this.favoriteService.getFavorites();
+    const index = favs.findIndex((f: any) => f.path === (item as any).path || f.label === item.label);
+    return index >= 0 && index < favs.length - 1;
+  }
+
+  moveFavoriteItem(item: { path?: string; label?: string } | null | undefined, direction: 'up' | 'down'): void {
+    if (!item) return;
+    const favs = [...this.favoriteService.getFavorites()];
+    const index = favs.findIndex((f: any) => f.path === (item as any).path || f.label === item.label);
+    if (index < 0) return;
+
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= favs.length) return;
+
+    [favs[index], favs[targetIndex]] = [favs[targetIndex], favs[index]];
+    this.favoriteService.reorder(favs.map((f: any) => f.path));
   }
 
   addMenuItemToFavorites(menuItem: MenuItem) {
