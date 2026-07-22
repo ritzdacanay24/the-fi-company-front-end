@@ -1104,6 +1104,10 @@ export class NewProjectComponent implements OnDestroy {
 
     const next = this.stakeholderSignoffConfig.filter((item) => item.key !== key);
     this.applyStakeholderSignoffConfig(next, true);
+
+    if (this.hasPersistableProjectContext) {
+      this.persistProjectIntakeState(this.persistableProjectId);
+    }
   }
 
   getProjectAddableSignoffUsers(): string[] {
@@ -1143,6 +1147,11 @@ export class NewProjectComponent implements OnDestroy {
     ];
 
     this.applyStakeholderSignoffConfig(next, true);
+
+    if (this.hasPersistableProjectContext) {
+      this.persistProjectIntakeState(this.persistableProjectId);
+    }
+
     this.stakeholderProjectUserToAdd = '';
   }
 

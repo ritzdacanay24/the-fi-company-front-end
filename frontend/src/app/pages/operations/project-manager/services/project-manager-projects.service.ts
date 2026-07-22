@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of, catchError, map, tap } from 'rxjs';
+import { Observable, of, catchError, map, tap, forkJoin, switchMap } from 'rxjs';
 import { environment } from 'src/environments/environment';
 import { AuthenticationService } from 'src/app/core/services/auth.service';
 
@@ -146,10 +146,7 @@ export class ProjectManagerProjectsService {
       'qcProcedureDefined',
       'productionPoReceived',
       'inventoryStrategyAligned',
-      'productionSignoffAt',
-      'qcSignoffAt',
-      'npiSignoffAt',
-      'gmSignoffAt'
+      'stakeholderSignoffStatus'
     ]
   };
 
@@ -170,6 +167,20 @@ export class ProjectManagerProjectsService {
 
     return this.http.get<any[]>(environment.pmApiUrl).pipe(
       map(rows => rows.map(row => this.apiRowToDashboardItem(row))),
+      switchMap((projects) => {
+        if (!projects.length) {
+          return of(projects);
+        }
+
+        // Keep dashboard percentages in sync with the checklist screen by
+        // rehydrating each project from its persisted intake form state.
+        return forkJoin(
+          projects.map((project) => this.getIntakeState$(project.id).pipe(
+            map(() => this.syncProjectFromIntake(project)),
+            catchError(() => of(project))
+          ))
+        );
+      }),
       tap(projects => this.saveProjectsToCache(projects)),
       catchError(err => {
         console.error('[PM] getProjects$ failed, falling back to in-memory cache', err);
@@ -1063,7 +1074,21 @@ export class ProjectManagerProjectsService {
   }
 
   private isFormFieldComplete(form: Record<string, any>, fieldName: string): boolean {
-    if ((fieldName === 'longLeadItemsStartDate' || fieldName === 'longLeadItemsEndDate') && form['longLeadItemsIdentified'] !== true) {
+    if (fieldName === 'stakeholderSignoffStatus') {
+      const config = this.normalizeStakeholderSignoffConfig(form['stakeholderSignoffConfig']);
+      if (!config.length) {
+        return true;
+      }
+
+      const statusRaw = form['stakeholderSignoffStatus'];
+      const statusMap = statusRaw && typeof statusRaw === 'object'
+        ? statusRaw as Record<string, { signedBy?: string; signedAt?: string }>
+        : {};
+
+      return config.every((item) => !!String(statusMap[item.key]?.signedAt || '').trim());
+    }
+
+    if ((fieldName === 'longLeadItemsStartDate' || fieldName === 'longLeadItemsEndDate') && form['longLeadItemsIdentified'] === false) {
       return true;
     }
 
@@ -1148,7 +1173,21 @@ export class ProjectManagerProjectsService {
   }
 
   private isFormFieldReady(form: Record<string, any>, fieldName: string): boolean {
-    if ((fieldName === 'longLeadItemsStartDate' || fieldName === 'longLeadItemsEndDate') && form['longLeadItemsIdentified'] !== true) {
+    if (fieldName === 'stakeholderSignoffStatus') {
+      const config = this.normalizeStakeholderSignoffConfig(form['stakeholderSignoffConfig']);
+      if (!config.length) {
+        return true;
+      }
+
+      const statusRaw = form['stakeholderSignoffStatus'];
+      const statusMap = statusRaw && typeof statusRaw === 'object'
+        ? statusRaw as Record<string, { signedBy?: string; signedAt?: string }>
+        : {};
+
+      return config.every((item) => !!String(statusMap[item.key]?.signedAt || '').trim());
+    }
+
+    if ((fieldName === 'longLeadItemsStartDate' || fieldName === 'longLeadItemsEndDate') && form['longLeadItemsIdentified'] === false) {
       return true;
     }
 
