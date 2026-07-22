@@ -5,6 +5,7 @@ import { BehaviorSubject } from 'rxjs';
 import { firstValueFrom } from 'rxjs';
 
 const THE_FI_COMPANY_FAVORITES = 'THE_FI_COMPANY_FAVORITES';
+const THE_FI_COMPANY_FAVORITES_MIGRATED = 'THE_FI_COMPANY_FAVORITES_MIGRATED';
 const BASE_URL = 'apiv2/favorites';
 
 interface FavoriteItem {
@@ -128,11 +129,14 @@ export class FavoriteService {
 
     private async initialize(): Promise<void> {
         const localFavorites = this.readLocalFavorites();
+        const alreadyMigrated = localStorage.getItem(THE_FI_COMPANY_FAVORITES_MIGRATED) === '1';
 
         try {
             let remoteFavorites = await this.fetchRemoteFavorites();
-            if (remoteFavorites.length === 0 && localFavorites.length > 0) {
+
+            if (!alreadyMigrated && localFavorites.length > 0) {
                 remoteFavorites = await this.importRemoteFavorites(localFavorites);
+                localStorage.setItem(THE_FI_COMPANY_FAVORITES_MIGRATED, '1');
             }
 
             this.loadFailed = false;
