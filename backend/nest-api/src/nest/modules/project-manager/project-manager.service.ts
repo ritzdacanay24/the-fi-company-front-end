@@ -1,6 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { ProjectManagerRepository } from './project-manager.repository';
 import { toMysqlDate, toMysqlDatetime } from '@/shared/utils/date.util';
+import { PmActivityLogService } from '../pm-activity-log/pm-activity-log.service';
 
 export interface UpsertProjectDto {
   id: string;
@@ -57,7 +58,10 @@ export interface CreateGateCommentDto {
 
 @Injectable()
 export class ProjectManagerService {
-  constructor(private readonly repository: ProjectManagerRepository) {}
+  constructor(
+    private readonly repository: ProjectManagerRepository,
+    private readonly activityLog: PmActivityLogService,
+  ) {}
 
   async getAll() {
     const rows = await this.repository.find();
@@ -101,10 +105,13 @@ export class ProjectManagerService {
     return rows.map(row => this.toApiShape(row));
   }
 
-  async upsert(dto: UpsertProjectDto) {
+  async upsert(dto: UpsertProjectDto, userId?: number, userName?: string) {
     if (!dto.id || !dto.productName) {
       throw new BadRequestException('id and productName are required');
     }
+
+    const existing = await this.repository.findOne({ id: dto.id });
+    const isNew = !existing;
 
     await this.repository.upsertProject({
       id: dto.id,
@@ -139,6 +146,32 @@ export class ProjectManagerService {
     if (!row) {
       throw new NotFoundException(`Project ${dto.id} not found after upsert`);
     }
+
+    if (isNew) {
+      void this.activityLog.log({
+        projectId: dto.id,
+        entityType: 'project',
+        action: 'created',
+        newValue: dto.productName,
+        userId,
+        userName,
+      });
+    } else {
+      const before: Record<string, unknown> = {
+        productName: existing?.product_name,
+        customer: existing?.customer,
+        projectCategory: existing?.project_category,
+        strategyType: existing?.strategy_type,
+      };
+      const after: Record<string, unknown> = {
+        productName: dto.productName,
+        customer: dto.customer,
+        projectCategory: dto.projectCategory,
+        strategyType: dto.strategyType,
+      };
+      void this.activityLog.logFieldChanges({ projectId: dto.id, entityType: 'project', before, after, userId, userName });
+    }
+
     return this.toApiShape(row);
   }
 
@@ -164,11 +197,14 @@ export class ProjectManagerService {
     };
   }
 
-  async upsertIntake(projectId: string, dto: UpsertIntakeDto) {
+  async upsertIntake(projectId: string, dto: UpsertIntakeDto, userId?: number, userName?: string) {
     const project = await this.repository.findOne({ id: projectId });
     if (!project) {
       throw new NotFoundException(`Project ${projectId} not found`);
     }
+
+    const existingIntake = await this.repository.getIntake(projectId);
+    const existingFormValue = this.parseFormValue(existingIntake?.form_value || null) as Record<string, unknown>;
 
     await this.repository.upsertIntake(
       projectId,
@@ -195,6 +231,17 @@ export class ProjectManagerService {
         );
       }
     }
+
+    void this.activityLog.logFieldChanges({
+      projectId,
+      entityType: 'gate',
+      entityId: dto.activeInputSystem,
+      before: existingFormValue,
+      after: dto.formValue as Record<string, unknown>,
+      userId,
+      userName,
+      skipFields: ['stakeholderSignoffs'],
+    });
 
     return { success: true };
   }

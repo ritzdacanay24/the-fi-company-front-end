@@ -991,6 +991,13 @@
               <div class="d-grid gap-2">
                 <button type="submit" class="btn btn-primary">Complete Project Intake</button>
               </div>
+
+              <hr *ngIf="hasProjectContext" />
+              <app-pm-activity-feed
+                *ngIf="hasProjectContext"
+                [projectId]="generatedProjectId"
+                [autoRefreshSeconds]="60">
+              </app-pm-activity-feed>
             </div>
           </div>
         </div>

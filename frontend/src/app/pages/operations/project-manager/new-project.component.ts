@@ -1,7 +1,7 @@
 import { Component, OnDestroy, TemplateRef } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Subscription, debounceTime } from 'rxjs';
 import { SharedModule } from '@app/shared/shared.module';
 import { ExecutionRole, ProjectWorkflowEngineService } from './services/project-workflow-engine.service';
 import {
@@ -17,6 +17,7 @@ import { AuthenticationService } from '@app/core/services/auth.service';
 import { AccessControlApiService } from '@app/core/api/access-control/access-control.service';
 import { NgbDropdownModule, NgbModal, NgbModalModule } from '@ng-bootstrap/ng-bootstrap';
 import { FeatureType } from '@app/shared/enums/feature.enum';
+import { PmActivityFeedComponent } from './pm-activity-feed.component';
 
 type IntakeStoragePayload = {
   formValue: any;
@@ -35,7 +36,7 @@ type IntakeStoragePayload = {
 @Component({
   standalone: true,
   selector: 'app-new-project',
-  imports: [SharedModule, ReactiveFormsModule, NgbDropdownModule, NgbModalModule],
+  imports: [SharedModule, ReactiveFormsModule, NgbDropdownModule, NgbModalModule, PmActivityFeedComponent],
   templateUrl: './new-project.component.html',
   styleUrls: ['./new-project.component.scss']
 })
@@ -216,7 +217,7 @@ export class NewProjectComponent implements OnDestroy {
     this.loadStakeholderAssignableUsers();
 
     this.generatedProjectId = '';
-    this.formSub = this.projectForm.valueChanges.subscribe(() => {
+    this.formSub = this.projectForm.valueChanges.pipe(debounceTime(1500)).subscribe(() => {
       this.updateGateCompletionTimestamps();
 
       if (!this.isApplyingProjectState && this.hasPersistableProjectContext) {

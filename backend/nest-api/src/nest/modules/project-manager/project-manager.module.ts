@@ -6,9 +6,10 @@ import { ProjectManagerRepository } from './project-manager.repository';
 import { PmTasksController } from './pm-tasks.controller';
 import { PmTasksService } from './pm-tasks.service';
 import { PmTasksRepository } from './pm-tasks.repository';
+import { PmActivityLogModule } from '../pm-activity-log/pm-activity-log.module';
 
 @Module({
-  imports: [MysqlModule],
+  imports: [MysqlModule, PmActivityLogModule],
   controllers: [ProjectManagerController, PmTasksController],
   providers: [ProjectManagerService, ProjectManagerRepository, PmTasksService, PmTasksRepository],
   exports: [ProjectManagerService, PmTasksService],

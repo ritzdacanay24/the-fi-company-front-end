@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { EmailService } from '@/shared/email/email.service';
 import { EmailTemplateService } from '@/shared/email/email-template.service';
 import { PmTasksRepository, PmTaskRow } from './pm-tasks.repository';
+import { PmActivityLogService } from '../pm-activity-log/pm-activity-log.service';
 
 export interface UpsertTaskDto {
   id?: number; // omit for new tasks
@@ -59,6 +60,7 @@ export class PmTasksService {
     private readonly emailService: EmailService,
     private readonly emailTemplateService: EmailTemplateService,
     private readonly configService: ConfigService,
+    private readonly activityLog: PmActivityLogService,
   ) {}
 
   async getState(projectId: string): Promise<object> {
@@ -127,6 +129,8 @@ export class PmTasksService {
     }
 
     const existingTasks = await this.repository.getTaskAssigneeSnapshotsByProject(projectId);
+    const existingFullTasks = await this.repository.getTasksByProject(projectId);
+    const existingFullById = new Map(existingFullTasks.map(t => [t.id, t]));
     const assignmentNotifications = this.computeAssignmentNotifications(projectId, existingTasks, dto.taskRecords || []);
 
     const rows: Omit<PmTaskRow, 'created_at' | 'updated_at'>[] = (dto.taskRecords || []).map((t, index) => ({
@@ -169,6 +173,91 @@ export class PmTasksService {
       default_task_templates: JSON.stringify(normalizedTemplates),
       task_board_names: JSON.stringify(normalizedBoards),
     });
+
+    // Log task changes
+    const incomingById = new Map((dto.taskRecords || []).filter(t => t.id).map(t => [t.id, t]));
+
+    const TASK_FIELD_LABELS: Record<string, string> = {
+      task_name: 'Task Name',
+      status: 'Status',
+      completion: 'Completion %',
+      assigned_to: 'Assigned To',
+      start_date: 'Start Date',
+      finish_date: 'Finish Date',
+      duration_days: 'Duration (days)',
+      gate: 'Gate',
+      group_name: 'Group',
+      sub_group_name: 'Sub Group',
+      bucket: 'Bucket',
+      depends_on: 'Depends On',
+    };
+
+    for (const task of (dto.taskRecords || [])) {
+      if (!task.id) {
+        void this.activityLog.log({
+          projectId,
+          entityType: 'task',
+          entityId: task.taskName,
+          action: 'created',
+          newValue: task.taskName,
+          userId: currentUserId,
+        });
+      } else {
+        const prev = existingFullById.get(task.id);
+        if (prev) {
+          const before: Record<string, unknown> = {
+            task_name: prev.task_name,
+            status: prev.status,
+            completion: prev.completion,
+            assigned_to: prev.assigned_to,
+            start_date: prev.start_date,
+            finish_date: prev.finish_date,
+            duration_days: prev.duration_days,
+            gate: prev.gate,
+            group_name: prev.group_name,
+            sub_group_name: prev.sub_group_name,
+            bucket: prev.bucket,
+            depends_on: prev.depends_on,
+          };
+          const after: Record<string, unknown> = {
+            task_name: task.taskName,
+            status: task.status,
+            completion: task.completion,
+            assigned_to: JSON.stringify(this.normalizeAssigneeList(task.assignedTo)),
+            start_date: task.startDate || null,
+            finish_date: task.finishDate || null,
+            duration_days: task.durationDays,
+            gate: task.gate,
+            group_name: task.groupName,
+            sub_group_name: task.subGroupName,
+            bucket: task.bucket || '',
+            depends_on: task.dependsOn || '',
+          };
+          void this.activityLog.logFieldChanges({
+            projectId,
+            entityType: 'task',
+            entityId: String(task.id),
+            userId: currentUserId,
+            before,
+            after,
+            fieldLabels: TASK_FIELD_LABELS,
+          });
+        }
+      }
+    }
+
+    for (const existing of existingFullTasks) {
+      if (!incomingById.has(existing.id)) {
+        void this.activityLog.log({
+          projectId,
+          entityType: 'task',
+          entityId: String(existing.id),
+          action: 'deleted',
+          oldValue: existing.task_name,
+          userId: currentUserId,
+        });
+      }
+    }
 
     await this.sendAssignmentEmails(assignmentNotifications, currentUserId);
   }

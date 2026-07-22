@@ -350,8 +350,23 @@
       [pagination]="false"></ag-grid-angular>
   </div>  </ng-container></div>
 
+<!-- ── Task Activity Offcanvas ────────────────────────────────────────── -->
+<div class="pm-activity-offcanvas" [class.open]="isActivityPanelOpen" *ngIf="isActivityPanelOpen">
+  <div class="pm-activity-offcanvas-header">
+    <span class="fw-semibold small"><i class="bx bx-history me-2"></i>Task Activity</span>
+    <button type="button" class="btn-close btn-close-sm" aria-label="Close" (click)="closeActivityPanel()"></button>
+  </div>
+  <div class="pm-activity-offcanvas-body">
+    <app-pm-activity-feed
+      [projectId]="currentActiveProjectId"
+      entityType="task"
+      [autoRefreshSeconds]="30">
+    </app-pm-activity-feed>
+  </div>
+</div>
+
 <!-- ── Floating Toolbox ───────────────────────────────────────────────────── -->
-<div *ngIf="hasProject" class="pm-floating-toolbar" [style.right.px]="commentPanelPushWidth">
+<div *ngIf="hasProject" class="pm-floating-toolbar" [style.right.px]="activityOrCommentPushWidth">
   <div class="d-flex align-items-center gap-2 flex-nowrap w-100 pm-scroll-row">
     <div class="d-flex gap-1 flex-nowrap flex-shrink-0">
       <button *ngFor="let s of ['Open','In Process','Review','Completed','Locked']" class="pm-status-pill"
@@ -365,6 +380,9 @@
     <button class="btn btn-sm btn-outline-danger" (click)="deleteSelectedTasks()">Delete Selected</button>
     <button class="btn btn-sm btn-outline-secondary" (click)="toggleManagePanel()">Groups</button>
     <button class="btn btn-sm btn-outline-secondary" (click)="toggleBulkPanel()">Bulk Add</button>
+    <button class="btn btn-sm" [class.btn-primary]="isActivityPanelOpen" [class.btn-outline-secondary]="!isActivityPanelOpen" (click)="toggleActivityPanel()">
+      <i class="bx bx-history me-1"></i>Activity
+    </button>
   </div>
 </div>
 </div>

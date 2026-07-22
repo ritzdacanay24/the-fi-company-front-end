@@ -10,6 +10,8 @@ import {
   UpsertVolumeEstimateOptionsDto
 } from './project-manager.service';
 
+const getUserName = (body: any): string => String(body?.owner || body?.updatedBy || body?.userName || '').trim();
+
 @Controller('operations/project-manager')
 @UseGuards(RolePermissionGuard)
 export class ProjectManagerController {
@@ -22,8 +24,8 @@ export class ProjectManagerController {
 
   @Post()
   @Permissions('write')
-  async upsert(@Body() dto: UpsertProjectDto) {
-    return this.service.upsert(dto);
+  async upsert(@CurrentUserId() userId: number, @Body() dto: UpsertProjectDto) {
+    return this.service.upsert(dto, userId);
   }
 
   @Delete(':id')
@@ -39,8 +41,8 @@ export class ProjectManagerController {
 
   @Put(':id/intake')
   @Permissions('write')
-  async upsertIntake(@Param('id') id: string, @Body() dto: UpsertIntakeDto) {
-    return this.service.upsertIntake(id, dto);
+  async upsertIntake(@CurrentUserId() userId: number, @Param('id') id: string, @Body() dto: UpsertIntakeDto) {
+    return this.service.upsertIntake(id, dto, userId);
   }
 
   @Get('customer-options')

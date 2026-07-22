@@ -116,6 +116,7 @@ import { PhysicalInventoryModule } from './modules/physical-inventory';
 import { ResourcesModule } from './modules/resources';
 import { ReceivingModule } from './modules/receiving/receiving.module';
 import { ProjectManagerModule } from './modules/project-manager/project-manager.module';
+import { PmActivityLogModule } from './modules/pm-activity-log/pm-activity-log.module';
 import { SalesOrderSearchModule } from './modules/sales-order-search';
 import { WorkOrderModule } from './modules/work-order';
 import { ReportsModule } from './modules/reports';
@@ -276,6 +277,7 @@ import { UrlModule } from '../shared/url/url.module';
     FsQirModule,
     WebsocketModule,
     ProjectManagerModule,
+    PmActivityLogModule,
   ],
   providers: [
     {

@@ -16,6 +16,8 @@ import { PmTaskAttachmentModalComponent } from './pm-task-attachment-modal.compo
 import { PmTaskActionsRendererComponent } from './pm-task-actions-renderer.component';
 import { PmDateCellEditorComponent } from './pm-date-cell-editor.component';
 
+import { PmActivityFeedComponent } from './pm-activity-feed.component';
+
 type TaskGateFilter = 'All' | TaskGate;
 
 type RowType = 'group' | 'subgroup' | 'task' | 'add-item';
@@ -62,7 +64,7 @@ interface PmTreeRow {
 @Component({
   standalone: true,
   selector: 'app-project-manager-tasks',
-  imports: [SharedModule, ReactiveFormsModule, AgGridModule, CommentOffcanvasComponent, PmTaskActionsRendererComponent],
+  imports: [SharedModule, ReactiveFormsModule, AgGridModule, CommentOffcanvasComponent, PmTaskActionsRendererComponent, PmActivityFeedComponent],
   templateUrl: './project-manager-tasks.component.html',
   styleUrls: ['./project-manager-tasks.component.scss']
 })
@@ -72,6 +74,7 @@ export class ProjectManagerTasksComponent implements OnInit {
   private gridApi?: GridApi<PmTreeRow>;
   private nextId = 1;
   private activeProjectId = '';
+  isActivityPanelOpen = false;
   gateContextLabel = 'All Gates';
   activeGateFilter: TaskGateFilter = 'All';
   readonly gateOptions: TaskGate[] = ['G1', 'G2', 'G3', 'G4', 'G5', 'G6'];
@@ -130,6 +133,24 @@ export class ProjectManagerTasksComponent implements OnInit {
     }
 
     return this.commentPanelWidth;
+  }
+
+  get activityOrCommentPushWidth(): number {
+    if (this.isCommentPanelOpen && window.innerWidth > 991.98) {
+      return this.commentPanelWidth;
+    }
+    if (this.isActivityPanelOpen && window.innerWidth > 991.98) {
+      return 380;
+    }
+    return 0;
+  }
+
+  toggleActivityPanel(): void {
+    this.isActivityPanelOpen = !this.isActivityPanelOpen;
+  }
+
+  closeActivityPanel(): void {
+    this.isActivityPanelOpen = false;
   }
 
   engineeringPeople = [
@@ -791,6 +812,10 @@ export class ProjectManagerTasksComponent implements OnInit {
 
   get hasProject(): boolean {
     return !!this.activeProjectId;
+  }
+
+  get currentActiveProjectId(): string {
+    return this.activeProjectId;
   }
 
   get selectedProjectId(): string {
