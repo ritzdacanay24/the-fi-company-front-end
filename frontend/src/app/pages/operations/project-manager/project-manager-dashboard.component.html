@@ -184,6 +184,20 @@
               <span class="muted">No tasks created</span>
             </ng-template>
           </div>
+
+          <div class="progress-item" *ngIf="hasProjectLevelTasks(selectedProject.id)">
+            <div class="progress-left">
+              <input
+                class="form-check-input progress-checkbox"
+                type="checkbox"
+                [checked]="false"
+                disabled
+                aria-label="Project-level task completion"
+              />
+              <span class="gate-step-link">Project-level</span>
+            </div>
+            <span class="muted">Tasks {{ getProjectLevelTaskCompletion(selectedProject.id) }}%</span>
+          </div>
         </div>
       </div>
 

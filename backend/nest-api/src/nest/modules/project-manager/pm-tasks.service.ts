@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EmailService } from '@/shared/email/email.service';
 import { EmailTemplateService } from '@/shared/email/email-template.service';
@@ -122,6 +122,10 @@ export class PmTasksService {
 
   /** Replace all tasks for a project with the provided list. */
   async saveState(projectId: string, dto: TaskStateDto, currentUserId?: number): Promise<void> {
+    if (!await this.repository.projectExists(projectId)) {
+      throw new NotFoundException(`Project ${projectId} not found`);
+    }
+
     const existingTasks = await this.repository.getTaskAssigneeSnapshotsByProject(projectId);
     const assignmentNotifications = this.computeAssignmentNotifications(projectId, existingTasks, dto.taskRecords || []);
 

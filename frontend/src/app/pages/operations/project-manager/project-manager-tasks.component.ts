@@ -355,8 +355,14 @@ export class ProjectManagerTasksComponent implements OnInit {
       headerName: 'Gate',
       width: 95,
       editable: params => params.data?.rowType === 'task',
-      cellEditor: 'agSelectCellEditor',
-      cellEditorParams: { values: ['', ...this.gateOptions] },
+      cellEditor: 'agRichSelectCellEditor',
+      cellEditorPopup: true,
+      cellEditorParams: {
+        values: ['', ...this.gateOptions],
+        allowTyping: false,
+        filterList: false,
+        searchType: 'matchAny',
+      },
       valueFormatter: (params: any) => {
         const value = String(params.value || '').trim();
         if (value) {
@@ -459,8 +465,14 @@ export class ProjectManagerTasksComponent implements OnInit {
       headerName: 'Status',
       width: 130,
       editable: params => params.data?.rowType === 'task',
-      cellEditor: 'agSelectCellEditor',
-      cellEditorParams: { values: ['Open', 'In Process', 'Review', 'Completed', 'Locked'] },
+      cellEditor: 'agRichSelectCellEditor',
+      cellEditorPopup: true,
+      cellEditorParams: {
+        values: ['Open', 'In Process', 'Review', 'Completed', 'Locked'],
+        allowTyping: false,
+        filterList: false,
+        searchType: 'matchAny',
+      },
       cellRenderer: (params: any) => {
         if (!params.value) return '';
         const colors: Record<string, string> = {
@@ -2380,11 +2392,11 @@ export class ProjectManagerTasksComponent implements OnInit {
   }
 
   private persistTaskState(): void {
-    this.tasksDataService.saveState(this.buildTaskStateSnapshot(), this.activeProjectId);
+    this.tasksDataService.saveState(this.buildTaskStateSnapshot(), this.getActiveProjectId());
   }
 
   private persistTaskStateWithStatus(onComplete: (savedToApi: boolean) => void): void {
-    this.tasksDataService.saveStateWithStatus$(this.buildTaskStateSnapshot(), this.activeProjectId)
+    this.tasksDataService.saveStateWithStatus$(this.buildTaskStateSnapshot(), this.getActiveProjectId())
       .subscribe((savedToApi) => onComplete(savedToApi));
   }
 
@@ -2431,15 +2443,18 @@ export class ProjectManagerTasksComponent implements OnInit {
   private applyProjectContext(requestedProjectId: string): void {
     const projects = this.projectsService.getProjects();
     const resolvedProjectId = String(requestedProjectId || '').trim();
+    const hasRequestedProject = !!resolvedProjectId && projects.some(project => project.id === resolvedProjectId);
+    const fallbackProjectId = this.projectsService.getSelectedProjectId(projects) || projects[0]?.id || '';
+    const nextProjectId = hasRequestedProject ? resolvedProjectId : fallbackProjectId;
 
-    this.currentProjectSummary = projects.find(project => project.id === resolvedProjectId) || null;
-    this.projectDropdownSelectedId = resolvedProjectId;
+    this.currentProjectSummary = projects.find(project => project.id === nextProjectId) || null;
+    this.projectDropdownSelectedId = nextProjectId || resolvedProjectId;
 
-    if (resolvedProjectId) {
-      this.projectsService.setSelectedProjectId(resolvedProjectId);
+    if (nextProjectId) {
+      this.projectsService.setSelectedProjectId(nextProjectId);
     }
 
-    if (resolvedProjectId === this.activeProjectId) {
+    if (nextProjectId === this.activeProjectId) {
       return;
     }
 
@@ -2450,26 +2465,34 @@ export class ProjectManagerTasksComponent implements OnInit {
     this.focusedCommentId = null;
     this.pendingDeepLinkTaskId = null;
 
-    this.activeProjectId = resolvedProjectId;
+    this.activeProjectId = nextProjectId;
     this.taskAttachmentCountMap.clear();
     this.taskCommentCountMap.clear();
     this.initializeTaskState(this.activeProjectId);
     this.patchDefaultProjectFromSelection();
 
-    if (requestedProjectId) {
-      this.taskForm.patchValue({ project: requestedProjectId });
+    if (hasRequestedProject) {
+      this.taskForm.patchValue({ project: resolvedProjectId });
+    } else if (nextProjectId) {
+      this.taskForm.patchValue({ project: nextProjectId });
     }
 
     this.rebuildTreeRows();
   }
 
   private getActiveProjectId(): string {
-    if (this.activeProjectId) {
-      return this.activeProjectId;
+    const projects = this.projectsService.getProjects();
+    const activeProjectId = String(this.activeProjectId || '').trim();
+    if (activeProjectId && projects.some(project => project.id === activeProjectId)) {
+      return activeProjectId;
     }
 
-    const projects = this.projectsService.getProjects();
-    return this.projectsService.getSelectedProjectId(projects);
+    const currentProjectId = String(this.currentProjectSummary?.id || '').trim();
+    if (currentProjectId && projects.some(project => project.id === currentProjectId)) {
+      return currentProjectId;
+    }
+
+    return this.projectsService.getSelectedProjectId(projects) || projects[0]?.id || '';
   }
 
   private getTaskAttachmentResourceId(taskId: number): number | null {

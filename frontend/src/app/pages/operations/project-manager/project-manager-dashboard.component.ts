@@ -85,6 +85,7 @@ export class ProjectManagerDashboardComponent implements OnInit {
   projects: ProjectDashboardItem[] = [];
   private readonly projectTaskCountById = new Map<string, number>();
   private readonly projectGateTaskCountById = new Map<string, Record<string, number>>();
+  private readonly projectGateTaskCompletionById = new Map<string, Record<string, number>>();
   selectedProjectId = '';
   private routeProjectId = '';
   pendingCopyProject: ProjectDashboardItem | null = null;
@@ -617,6 +618,7 @@ export class ProjectManagerDashboardComponent implements OnInit {
         if (!projects.length) {
           this.projectTaskCountById.clear();
           this.projectGateTaskCountById.clear();
+          this.projectGateTaskCompletionById.clear();
           return of(projects);
         }
 
@@ -653,6 +655,7 @@ export class ProjectManagerDashboardComponent implements OnInit {
     const stateMap = new Map<string, ProjectManagerTasksState>();
     this.projectTaskCountById.clear();
     this.projectGateTaskCountById.clear();
+    this.projectGateTaskCompletionById.clear();
     projectTaskStates.forEach((item) => stateMap.set(String(item.projectId || '').trim(), item.state));
 
     return projects.map((project) => {
@@ -667,6 +670,16 @@ export class ProjectManagerDashboardComponent implements OnInit {
           G4: 0,
           G5: 0,
           G6: 0,
+          PROJECT: 0,
+        });
+        this.projectGateTaskCompletionById.set(String(project.id || '').trim(), {
+          G1: 0,
+          G2: 0,
+          G3: 0,
+          G4: 0,
+          G5: 0,
+          G6: 0,
+          PROJECT: 0,
         });
         return project;
       }
@@ -674,6 +687,7 @@ export class ProjectManagerDashboardComponent implements OnInit {
       const projectTaskCompletion = this.computeProjectTaskCompletion(taskRecords);
       const gateTaskStats = this.computeGateTaskStats(taskRecords);
       this.projectGateTaskCountById.set(String(project.id || '').trim(), gateTaskStats.counts);
+      this.projectGateTaskCompletionById.set(String(project.id || '').trim(), gateTaskStats.completion);
 
       return {
         ...project,
@@ -717,20 +731,23 @@ export class ProjectManagerDashboardComponent implements OnInit {
       G4: [],
       G5: [],
       G6: [],
+      PROJECT: [],
     };
 
     taskRecords.forEach((task) => {
       const gate = String(task?.gate || '').trim().toUpperCase();
-      if (!gate || !(gate in buckets)) {
-        return;
-      }
-
       const completion = Number(task?.completion || 0);
       if (!Number.isFinite(completion)) {
         return;
       }
 
-      buckets[gate].push(Math.min(100, Math.max(0, completion)));
+      const normalizedCompletion = Math.min(100, Math.max(0, completion));
+      if (gate && gate in buckets && gate !== 'PROJECT') {
+        buckets[gate].push(normalizedCompletion);
+        return;
+      }
+
+      buckets['PROJECT'].push(normalizedCompletion);
     });
 
     const completion: Record<string, number> = {};
@@ -764,6 +781,18 @@ export class ProjectManagerDashboardComponent implements OnInit {
 
   hasProjectTasks(projectId: string): boolean {
     return Number(this.projectTaskCountById.get(String(projectId || '').trim()) || 0) > 0;
+  }
+
+  hasProjectLevelTasks(projectId: string): boolean {
+    const projectKey = String(projectId || '').trim();
+    const gateCounts = this.projectGateTaskCountById.get(projectKey);
+    return Number(gateCounts?.['PROJECT'] || 0) > 0;
+  }
+
+  getProjectLevelTaskCompletion(projectId: string): number {
+    const projectKey = String(projectId || '').trim();
+    const completion = this.projectGateTaskCompletionById.get(projectKey);
+    return Number(completion?.['PROJECT'] || 0);
   }
 
   get bottleneckAlerts(): ProjectDashboardItem[] {

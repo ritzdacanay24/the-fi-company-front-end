@@ -120,6 +120,14 @@ export class PmTasksRepository {
     return rows[0] || null;
   }
 
+  async projectExists(projectId: string): Promise<boolean> {
+    const rows = await this.mysqlService.query<RowDataPacket[]>(
+      `SELECT 1 AS found FROM eyefidb.pm_projects WHERE id = ? LIMIT 1`,
+      [projectId],
+    );
+    return rows.length > 0;
+  }
+
   async getTaskAssigneeSnapshotsByProject(projectId: string): Promise<PmTaskAssigneeSnapshotRow[]> {
     return this.mysqlService.query<PmTaskAssigneeSnapshotRow[]>(
       `SELECT id, task_name, gate, assigned_to
