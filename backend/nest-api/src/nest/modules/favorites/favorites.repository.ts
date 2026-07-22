@@ -96,4 +96,11 @@ export class FavoritesRepository {
       params,
     );
   }
+
+  async renameByPath(userId: number, path: string, label: string): Promise<void> {
+    await this.mysqlService.query(
+      `UPDATE ${TABLE} SET label = ? WHERE user_id = ? AND path = ?`,
+      [label, userId, path],
+    );
+  }
 }

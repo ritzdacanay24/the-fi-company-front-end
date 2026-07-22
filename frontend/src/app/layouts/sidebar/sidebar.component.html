@@ -64,6 +64,7 @@
             class="menu-item-actions"
             placement="end-top end-bottom start-top start-bottom"
             container="body"
+            [autoClose]="'outside'"
             (click)="onMenuActionsContainerClick($event)">
             <button
               type="button"
@@ -82,6 +83,26 @@
                 Remove favorite
               </button>
               <div class="dropdown-divider"></div>
+              <button ngbDropdownItem type="button" *ngIf="isItemFavorite(item) || isFav" (click)="startRenameFavorite(item)">
+                <i class="bx bx-pencil me-2"></i>
+                Rename
+              </button>
+              <div class="px-3 py-2 border-top" *ngIf="renamingFavoritePath === (item.path || item.link)">
+                <label class="form-label form-label-sm mb-1">Rename favorite</label>
+                <input
+                  type="text"
+                  class="form-control form-control-sm"
+                  [(ngModel)]="renamingFavoriteLabel"
+                  [ngModelOptions]="{ standalone: true }"
+                  (keydown.enter)="confirmRenameFavorite()"
+                  (keydown.escape)="cancelRenameFavorite()"
+                  autofocus />
+                <div class="d-flex justify-content-end gap-2 mt-2">
+                  <button type="button" class="btn btn-sm btn-outline-secondary" (click)="cancelRenameFavorite()">Cancel</button>
+                  <button type="button" class="btn btn-sm btn-primary" (click)="confirmRenameFavorite()">Save</button>
+                </div>
+              </div>
+              <div class="dropdown-divider" *ngIf="isItemFavorite(item) || isFav"></div>
               <button ngbDropdownItem type="button" [disabled]="isFav ? !canMoveFavoriteUp(item) : !canMoveMenuItemUp(item)" (click)="isFav ? moveFavoriteItem(item, 'up') : moveMenuItemFromSidebar(item, 'up')">
                 <i class="las la-arrow-up me-2"></i>
                 Move up
@@ -140,11 +161,11 @@
 
                 <li (mouseenter)="mouseHovering(subitem)" (mouseleave)="mouseLeft(subitem);t.close()"
                   class="pointer nav-item d-flex justify-content-between align-items-start menu-item-with-actions"
-                  *ngFor="let subitem of favs" [routerLink]="subitem.link" (click)="updateActiveFavorite($event);"
-                  placement="end" [ngbTooltip]="subitem.link" container="body" [autoClose]="true" #t="ngbTooltip">
-                  <a class="nav-link w-100" style="height:auto;">
-                    <div class="ms-2 me-auto" style="white-space:normal;overflow: hidden;">
-                      <p class="mb-0 pb-0">{{ subitem.label}}</p>
+                  *ngFor="let subitem of favs"
+                  placement="end" [ngbTooltip]="subitem.path || subitem.link" container="body" [autoClose]="true" #t="ngbTooltip">
+                  <a class="nav-link w-100" style="height:auto;" [routerLink]="subitem.path || subitem.link" (click)="updateActiveFavorite($event);">
+                    <div class="ms-2 me-auto" style="white-space:normal;overflow:hidden;">
+                      <p class="mb-0 pb-0">{{ subitem.label }}</p>
                     </div>
                     <ng-container *ngIf="getMenuBadge(subitem) as badge">
                       <span class="sidebar-count-badge"

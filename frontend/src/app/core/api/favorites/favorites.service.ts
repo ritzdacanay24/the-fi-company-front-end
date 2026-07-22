@@ -93,6 +93,23 @@ export class FavoriteService {
         void this.removeByPath(url);
     }
 
+    rename(path: string, newLabel: string): void {
+        const trimmed = String(newLabel || '').trim();
+        if (!trimmed || !path) return;
+
+        this.navFavorites = this.navFavorites.map((f) =>
+            f.path === path ? { ...f, label: trimmed } : f
+        );
+        this.persistLocalMirror(this.navFavorites);
+        this.emitChange();
+
+        void firstValueFrom(
+            this.http.patch(`${BASE_URL}/me/rename`, { path, label: trimmed })
+        ).catch(() => {
+            // rename failure is non-critical — label already updated in memory
+        });
+    }
+
     reorder(orderedPaths: string[]): void {
         if (!orderedPaths?.length) return;
 

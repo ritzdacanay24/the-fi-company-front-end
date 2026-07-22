@@ -71,6 +71,14 @@ export class FavoritesService {
     return [];
   }
 
+  async renameMineByPath(userId: number, path: string, label: string): Promise<FavoriteDto[]> {
+    const normalizedPath = this.normalizePath(path);
+    const trimmedLabel = String(label ?? '').trim();
+    if (!trimmedLabel) throw new BadRequestException('label is required');
+    await this.repo.renameByPath(userId, normalizedPath, trimmedLabel);
+    return this.getMine(userId);
+  }
+
   async reorderMine(userId: number, orderedPaths: string[]): Promise<FavoriteDto[]> {
     if (!Array.isArray(orderedPaths) || orderedPaths.length === 0) {
       return this.getMine(userId);

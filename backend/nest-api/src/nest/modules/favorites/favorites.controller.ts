@@ -31,6 +31,14 @@ export class FavoritesController {
     return this.service.removeMineByPath(userId, path);
   }
 
+  @Patch('me/rename')
+  renameMine(
+    @CurrentUserId() userId: number,
+    @Body() payload: { path: string; label: string },
+  ) {
+    return this.service.renameMineByPath(userId, payload?.path, payload?.label);
+  }
+
   @Patch('me/reorder')
   reorderMine(
     @CurrentUserId() userId: number,

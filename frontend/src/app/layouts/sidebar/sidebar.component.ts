@@ -116,6 +116,8 @@ export class SidebarComponent implements OnInit {
   @Output() mobileMenuButtonClicked = new EventEmitter();
   maxFavs = 5;
   favs = [];
+  renamingFavoritePath: string | null = null;
+  renamingFavoriteLabel: string = '';
   isSidebarHoverExpanded = false;
 
   // User preferences with localStorage persistence
@@ -1488,6 +1490,25 @@ export class SidebarComponent implements OnInit {
 
   getFavoritesList() {
     return this.favoriteService.getFavorites();
+  }
+
+  startRenameFavorite(item: { path?: string; label?: string } | null | undefined): void {
+    if (!item) return;
+    this.renamingFavoritePath = (item as any).path || (item as any).link || null;
+    this.renamingFavoriteLabel = item.label || '';
+  }
+
+  confirmRenameFavorite(): void {
+    if (this.renamingFavoritePath && this.renamingFavoriteLabel.trim()) {
+      this.favoriteService.rename(this.renamingFavoritePath, this.renamingFavoriteLabel.trim());
+    }
+    this.renamingFavoritePath = null;
+    this.renamingFavoriteLabel = '';
+  }
+
+  cancelRenameFavorite(): void {
+    this.renamingFavoritePath = null;
+    this.renamingFavoriteLabel = '';
   }
 
   canMoveFavoriteUp(item: { path?: string; label?: string } | null | undefined): boolean {
