@@ -198,6 +198,25 @@
   color: var(--pm-muted);
 }
 
+.project-link-btn {
+  display: inline-block;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.project-link-btn .project-name {
+  color: var(--vz-link-color, var(--vz-primary));
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.project-link-btn:hover .project-name {
+  opacity: 0.85;
+}
+
 .gate-tag {
   font-size: 0.7rem;
   border-radius: 999px;

@@ -254,6 +254,12 @@ export class ProjectManagerDashboardComponent implements OnInit {
     });
   }
 
+  openProjectFromTable(project: ProjectDashboardItem, event?: Event): void {
+    event?.stopPropagation();
+    this.selectProject(project.id);
+    this.openIntakeFor(project.id);
+  }
+
   openSelectedProjectGate(gateLabel: string): void {
     const selected = this.selectedProject;
     if (!selected) {

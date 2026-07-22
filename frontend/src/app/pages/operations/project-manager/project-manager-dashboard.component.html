@@ -71,8 +71,15 @@
               [ngClass]="selectedProjectId === project.id ? 'is-selected' : ''"
             >
               <td>
-                <div class="project-name">{{ project.name }}</div>
-                <div class="project-code">{{ project.code }}</div>
+                <button
+                  type="button"
+                  class="project-link-btn"
+                  (click)="openProjectFromTable(project, $event)"
+                  [attr.aria-label]="'Open project ' + project.name"
+                >
+                  <div class="project-name">{{ project.name }}</div>
+                  <div class="project-code">{{ project.code }}</div>
+                </button>
               </td>
               <td>{{ project.customer }}</td>
               <td>
@@ -85,28 +92,15 @@
                 </button>
               </td>
               <td>
-                <div class="readiness">
-                  <span class="dot"></span>
-                  <span>{{ getChecklistCompletion(project) }}%</span>
-                </div>
+                <span>{{ getChecklistCompletion(project) }}%</span>
               </td>
               <td>
-                <div class="readiness-progress-wrap">
-                  <div class="readiness-progress readiness-progress-table" role="progressbar" [attr.aria-valuemin]="0" [attr.aria-valuemax]="100" [attr.aria-valuenow]="project.readiness">
-                    <div class="readiness-progress-fill" [style.width.%]="project.readiness" [ngClass]="getReadinessBarClass(project.readiness)"></div>
-                  </div>
-                  <div class="readiness-progress-label">{{ project.readiness }}%</div>
-                </div>
+                <span>{{ project.readiness }}%</span>
               </td>
               <td>
-                <div class="task-progress-wrap" *ngIf="hasProjectTasks(project.id); else noTasksCreatedTpl">
-                  <div class="task-progress" role="progressbar" [attr.aria-valuemin]="0" [attr.aria-valuemax]="100" [attr.aria-valuenow]="project.taskCompletion || 0">
-                    <div class="task-progress-fill" [style.width.%]="project.taskCompletion || 0"></div>
-                  </div>
-                  <div class="task-progress-label">{{ project.taskCompletion || 0 }}%</div>
-                </div>
+                <span *ngIf="hasProjectTasks(project.id); else noTasksCreatedTpl">{{ project.taskCompletion || 0 }}%</span>
                 <ng-template #noTasksCreatedTpl>
-                  <div class="task-progress-empty">No tasks created</div>
+                  <span class="task-progress-empty">No tasks</span>
                 </ng-template>
               </td>
               <td>
