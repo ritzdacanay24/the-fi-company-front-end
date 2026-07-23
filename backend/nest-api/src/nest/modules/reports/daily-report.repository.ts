@@ -370,38 +370,43 @@ export class DailyReportRepository extends BaseRepository<RowDataPacket> {
   }
 
   async getDailyReportInventoryTurnsCombined(): Promise<Record<string, unknown>> {
+    // Matches Inventory Valuation report exactly:
+    // - qty_all: all EYE domain locations, ld_status = 'ACT' (no site restriction)
+    // - qty_jx01: ld_site = 'JX' (not ld_loc = 'JX01')
+    // - ld_status = 'ACT' on all qty buckets
+    // - turns ELSE NULL (null turns → OTHER bucket, not counted in < 1 or >= 1)
+    // - no COI filter (IV screen shows all items)
     const sql = `
       SELECT
-        SUM(CASE WHEN is_coi <> 'COI' AND rmlv_turns < 1.0 THEN rmlv_total ELSE 0 END) AS rmlv_lessthanone,
-        SUM(CASE WHEN is_coi <> 'COI' AND rmlv_turns >= 1.0 THEN rmlv_total ELSE 0 END) AS rmlv_greaterthanorequaltoone,
-        SUM(CASE WHEN is_coi <> 'COI' THEN rmlv_total ELSE 0 END) AS rmlv_total,
-        SUM(CASE WHEN is_coi <> 'COI' AND jx01_turns < 1.0 THEN jx01_total ELSE 0 END) AS jx01_lessthanone,
-        SUM(CASE WHEN is_coi <> 'COI' AND jx01_turns >= 1.0 THEN jx01_total ELSE 0 END) AS jx01_greaterthanorequaltoone,
-        SUM(CASE WHEN is_coi <> 'COI' THEN jx01_total ELSE 0 END) AS jx01_total,
-        SUM(CASE WHEN is_coi <> 'COI' AND all_turns < 1.0 THEN all_total ELSE 0 END) AS all_lessthanone,
-        SUM(CASE WHEN is_coi <> 'COI' AND all_turns >= 1.0 THEN all_total ELSE 0 END) AS all_greaterthanorequaltoone,
-        SUM(CASE WHEN is_coi <> 'COI' THEN all_total ELSE 0 END) AS all_total,
-        SUM(CASE WHEN is_coi <> 'COI' AND fglv_turns < 1.0 THEN fglv_total ELSE 0 END) AS fglv_lessthanone,
-        SUM(CASE WHEN is_coi <> 'COI' AND fglv_turns >= 1.0 THEN fglv_total ELSE 0 END) AS fglv_greaterthanorequaltoone,
-        SUM(CASE WHEN is_coi <> 'COI' THEN fglv_total ELSE 0 END) AS fglv_total
+        SUM(CASE WHEN rmlv_turns < 1.0 THEN rmlv_total ELSE 0 END) AS rmlv_lessthanone,
+        SUM(CASE WHEN rmlv_turns >= 1.0 THEN rmlv_total ELSE 0 END) AS rmlv_greaterthanorequaltoone,
+        SUM(rmlv_total) AS rmlv_total,
+        SUM(CASE WHEN jx01_turns < 1.0 THEN jx01_total ELSE 0 END) AS jx01_lessthanone,
+        SUM(CASE WHEN jx01_turns >= 1.0 THEN jx01_total ELSE 0 END) AS jx01_greaterthanorequaltoone,
+        SUM(jx01_total) AS jx01_total,
+        SUM(CASE WHEN all_turns < 1.0 THEN all_total ELSE 0 END) AS all_lessthanone,
+        SUM(CASE WHEN all_turns >= 1.0 THEN all_total ELSE 0 END) AS all_greaterthanorequaltoone,
+        SUM(all_total) AS all_total,
+        SUM(CASE WHEN fglv_turns < 1.0 THEN fglv_total ELSE 0 END) AS fglv_lessthanone,
+        SUM(CASE WHEN fglv_turns >= 1.0 THEN fglv_total ELSE 0 END) AS fglv_greaterthanorequaltoone,
+        SUM(fglv_total) AS fglv_total
       FROM (
         SELECT
-          CASE WHEN RIGHT(pt.pt_part, 1) NOT IN ('U', 'R', 'N') THEN '-' ELSE 'COI' END AS is_coi,
           (inv.qty_rmlv * cst.sct_cst_tot) AS rmlv_total,
-          CASE WHEN (inv.qty_rmlv * cst.sct_cst_tot) > 0
-            THEN ((in_eye.in_avg_iss * cst.sct_cst_tot) / (inv.qty_rmlv * cst.sct_cst_tot)) * 365
+          CASE WHEN COALESCE(inv.qty_rmlv, 0) > 0 AND COALESCE(in_eye.in_avg_iss, 0) != 0
+            THEN (in_eye.in_avg_iss / inv.qty_rmlv) * 365
             ELSE 0 END AS rmlv_turns,
           (inv.qty_jx01 * cst.sct_cst_tot) AS jx01_total,
-          CASE WHEN (inv.qty_jx01 * cst.sct_cst_tot) > 0
-            THEN ((in_jx.in_avg_iss * cst.sct_cst_tot) / (inv.qty_jx01 * cst.sct_cst_tot)) * 365
+          CASE WHEN COALESCE(inv.qty_jx01, 0) > 0 AND COALESCE(in_jx.in_avg_iss, 0) != 0
+            THEN (in_jx.in_avg_iss / inv.qty_jx01) * 365
             ELSE 0 END AS jx01_turns,
           (inv.qty_all * cst.sct_cst_tot) AS all_total,
-          CASE WHEN (inv.qty_all * cst.sct_cst_tot) > 0
-            THEN ((in_eye.in_avg_iss * cst.sct_cst_tot) / (inv.qty_all * cst.sct_cst_tot)) * 365
+          CASE WHEN COALESCE(inv.qty_all, 0) > 0 AND COALESCE(in_eye.in_avg_iss, 0) != 0
+            THEN (in_eye.in_avg_iss / inv.qty_all) * 365
             ELSE 0 END AS all_turns,
           (inv.qty_fglv * cst.sct_cst_tot) AS fglv_total,
-          CASE WHEN (inv.qty_fglv * cst.sct_cst_tot) > 0
-            THEN ((in_eye.in_avg_iss * cst.sct_cst_tot) / (inv.qty_fglv * cst.sct_cst_tot)) * 365
+          CASE WHEN COALESCE(inv.qty_fglv, 0) > 0 AND COALESCE(in_eye.in_avg_iss, 0) != 0
+            THEN (in_eye.in_avg_iss / inv.qty_fglv) * 365
             ELSE 0 END AS fglv_turns
         FROM pt_mstr pt
         LEFT JOIN (
@@ -424,10 +429,14 @@ export class DailyReportRepository extends BaseRepository<RowDataPacket> {
         ) cst ON cst.sct_part = CAST(pt.pt_part AS CHAR(25))
         LEFT JOIN (
           SELECT a.ld_part,
-                 SUM(CASE WHEN a.ld_qty_oh > 0 AND a.ld_site = 'EYE01' THEN a.ld_qty_oh ELSE 0 END) AS qty_all,
-                 SUM(CASE WHEN a.ld_qty_oh > 0 AND a.ld_loc = 'JX01' THEN a.ld_qty_oh ELSE 0 END) AS qty_jx01,
-                 SUM(CASE WHEN a.ld_qty_oh > 0 AND loc.loc_type = 'FG' THEN a.ld_qty_oh ELSE 0 END) AS qty_fglv,
-                 SUM(CASE WHEN a.ld_qty_oh > 0 AND a.ld_site = 'EYE01' AND loc.loc_type NOT IN ('FG', 'SS') THEN a.ld_qty_oh ELSE 0 END) AS qty_rmlv
+                 -- All: entire EYE domain (matches IV "All" - no site restriction)
+                 SUM(CASE WHEN a.ld_qty_oh > 0 AND a.ld_status = 'ACT' THEN a.ld_qty_oh ELSE 0 END) AS qty_all,
+                 -- JX01: ld_site = 'JX' (matches IV "JX01")
+                 SUM(CASE WHEN a.ld_qty_oh > 0 AND a.ld_status = 'ACT' AND a.ld_site = 'JX' THEN a.ld_qty_oh ELSE 0 END) AS qty_jx01,
+                 -- FGLV: loc_type = 'FG' (matches IV "FGLV")
+                 SUM(CASE WHEN a.ld_qty_oh > 0 AND a.ld_status = 'ACT' AND loc.loc_type = 'FG' THEN a.ld_qty_oh ELSE 0 END) AS qty_fglv,
+                 -- RMLV: EYE01 site, loc_type NOT FG/SS (matches IV "RMLV")
+                 SUM(CASE WHEN a.ld_qty_oh > 0 AND a.ld_status = 'ACT' AND a.ld_site = 'EYE01' AND loc.loc_type NOT IN ('FG', 'SS') THEN a.ld_qty_oh ELSE 0 END) AS qty_rmlv
           FROM ld_det a
           LEFT JOIN loc_mstr loc ON loc.loc_loc = a.ld_loc AND loc.loc_domain = 'EYE'
           WHERE a.ld_domain = 'EYE'

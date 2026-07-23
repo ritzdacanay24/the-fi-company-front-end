@@ -1102,19 +1102,14 @@ export class ReportsRepository extends BaseRepository<RowDataPacket> {
         inventoryJoin: `
           JOIN (
             SELECT {fn LTRIM({fn RTRIM(CAST(a.ld_part AS CHAR(25)))})} AS ld_part,
-                   SUM(ld_qty_oh) AS onHandQty
+                   SUM(a.ld_qty_oh) AS onHandQty
             FROM ld_det a
-            JOIN (
-              SELECT loc_loc
-              FROM loc_mstr
-              WHERE loc_domain = 'EYE'
-                AND loc_type NOT IN ('FG', 'SS')
-              GROUP BY loc_loc
-            ) cc ON cc.loc_loc = a.ld_loc
+            JOIN loc_mstr lm ON lm.loc_loc = a.ld_loc AND lm.loc_domain = 'EYE'
             WHERE a.ld_domain = 'EYE'
-              AND ld_site = 'EYE01'
+              AND a.ld_site = 'EYE01'
               AND a.ld_status = 'ACT'
               AND a.ld_qty_oh > 0
+              AND lm.loc_type NOT IN ('FG', 'SS')
             GROUP BY {fn LTRIM({fn RTRIM(CAST(a.ld_part AS CHAR(25)))})}
           ) c ON c.ld_part = {fn LTRIM({fn RTRIM(CAST(a.pt_part AS CHAR(25)))})}
         `,
@@ -1128,18 +1123,13 @@ export class ReportsRepository extends BaseRepository<RowDataPacket> {
         inventoryJoin: `
           JOIN (
             SELECT {fn LTRIM({fn RTRIM(CAST(a.ld_part AS CHAR(25)))})} AS ld_part,
-                   SUM(ld_qty_oh) AS onHandQty
+                   SUM(a.ld_qty_oh) AS onHandQty
             FROM ld_det a
-            JOIN (
-              SELECT loc_loc
-              FROM loc_mstr
-              WHERE loc_domain = 'EYE'
-                AND loc_type = 'FG'
-              GROUP BY loc_loc
-            ) cc ON cc.loc_loc = a.ld_loc
+            JOIN loc_mstr lm ON lm.loc_loc = a.ld_loc AND lm.loc_domain = 'EYE'
             WHERE a.ld_domain = 'EYE'
               AND a.ld_status = 'ACT'
               AND a.ld_qty_oh > 0
+              AND lm.loc_type = 'FG'
             GROUP BY {fn LTRIM({fn RTRIM(CAST(a.ld_part AS CHAR(25)))})}
           ) c ON c.ld_part = {fn LTRIM({fn RTRIM(CAST(a.pt_part AS CHAR(25)))})}
         `,
