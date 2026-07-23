@@ -5,6 +5,7 @@ import { ToastrService } from 'ngx-toastr';
 import { FileViewerModalComponent } from '@app/shared/components/file-viewer-modal/file-viewer-modal.component';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
+import { ActivatedRoute, Router } from '@angular/router';
 
 interface FolderEntry {
   prefix: string;
@@ -118,6 +119,44 @@ interface FileEntry extends BucketBrowserItem {
         width: 130px;
         white-space: nowrap;
       }
+
+      .file-thumb {
+        width: 40px;
+        min-width: 40px;
+        height: 40px;
+        border-radius: 0.35rem;
+        border: 1px solid var(--bs-border-color-translucent);
+        background: var(--bs-light);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      }
+
+      .file-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .file-thumb-image {
+        background: transparent;
+      }
+
+      .file-thumb-button {
+        padding: 0;
+        cursor: pointer;
+      }
+
+      .file-thumb-button:disabled {
+        cursor: default;
+        opacity: 0.85;
+      }
+
+      .file-thumb-button:not(:disabled):hover {
+        border-color: var(--bs-primary);
+      }
     `,
   ],
 })
@@ -125,7 +164,25 @@ export class BucketBrowserComponent implements OnInit {
   private readonly api = inject(BucketBrowserService);
   private readonly toastr = inject(ToastrService);
   private readonly modal = inject(NgbModal);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private searchReloadTimer?: ReturnType<typeof setTimeout>;
+  private lastUrlState = '';
+  private readonly thumbnailUrlCache = new Map<string, string>();
+  private readonly thumbnailLoadingKeys = new Set<string>();
+  private readonly thumbnailExtensions = new Set([
+    'jpg',
+    'jpeg',
+    'png',
+    'gif',
+    'webp',
+    'bmp',
+    'svg',
+    'heic',
+    'heif',
+    'avif',
+  ]);
+  private readonly maxThumbnailsPerPage = 30;
 
   @ViewChild('fileSearchInput') fileSearchInput?: ElementRef<HTMLInputElement>;
 
@@ -175,6 +232,7 @@ export class BucketBrowserComponent implements OnInit {
   }
 
   async ngOnInit(): Promise<void> {
+    this.restoreStateFromUrl();
     await this.loadAvailableBuckets();
     this.rootNode.isExpanded = true;
     await this.loadNodeChildren(this.rootNode);
@@ -214,6 +272,7 @@ export class BucketBrowserComponent implements OnInit {
       this.prefix = fileResponse.prefix || '';
       this.prefixInput = this.prefix;
       this.nextToken = fileResponse.nextContinuationToken || '';
+      this.syncStateToUrl();
 
       const fileRows = (fileResponse.items || [])
         .filter((row) => !!row.key && !row.key.endsWith('/'))
@@ -226,8 +285,10 @@ export class BucketBrowserComponent implements OnInit {
 
       if (append) {
         this.files = [...this.files, ...fileRows];
+        this.loadThumbnailsForFiles(fileRows);
       } else {
         this.files = fileRows;
+        this.loadThumbnailsForFiles(this.files);
       }
 
       if (!append) {
@@ -384,6 +445,8 @@ export class BucketBrowserComponent implements OnInit {
     this.isDeleting = true;
     try {
       await this.api.deleteObject(file.key, this.selectedBucket);
+      this.thumbnailUrlCache.delete(this.toThumbnailCacheKey(file));
+      this.thumbnailLoadingKeys.delete(this.toThumbnailCacheKey(file));
       this.toastr.success('File deleted');
       await this.load();
     } catch {
@@ -409,6 +472,9 @@ export class BucketBrowserComponent implements OnInit {
     this.prefixInput = '';
     this.nextToken = '';
     this.files = [];
+    this.thumbnailUrlCache.clear();
+    this.thumbnailLoadingKeys.clear();
+    this.syncStateToUrl();
 
     this.rootNode.children = [];
     this.rootNode.hasLoadedChildren = false;
@@ -543,6 +609,22 @@ export class BucketBrowserComponent implements OnInit {
     return fileName.includes(term) || fileKey.includes(term);
   }
 
+  isImageFile(file: FileEntry): boolean {
+    return this.thumbnailExtensions.has(this.getFileExtension(file.name || file.key));
+  }
+
+  hasThumbnail(file: FileEntry): boolean {
+    return this.thumbnailUrlCache.has(this.toThumbnailCacheKey(file));
+  }
+
+  getThumbnailUrl(file: FileEntry): string {
+    return this.thumbnailUrlCache.get(this.toThumbnailCacheKey(file)) || '';
+  }
+
+  isThumbnailLoading(file: FileEntry): boolean {
+    return this.thumbnailLoadingKeys.has(this.toThumbnailCacheKey(file));
+  }
+
   private escapeRegExp(value: string): string {
     return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
@@ -650,10 +732,14 @@ export class BucketBrowserComponent implements OnInit {
 
       const preferred = String(response.defaultBucket || '').trim();
       if (preferred) {
-        this.selectedBucket = preferred;
+        if (!this.selectedBucket) {
+          this.selectedBucket = preferred;
+        }
       } else if (!this.selectedBucket && buckets.length) {
         this.selectedBucket = buckets[0];
       }
+
+      this.syncStateToUrl();
     } catch {
       this.availableBuckets = [];
       this.selectedBucket = '';
@@ -677,5 +763,82 @@ export class BucketBrowserComponent implements OnInit {
     }
 
     return `${(value / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+  }
+
+  private restoreStateFromUrl(): void {
+    const bucketFromUrl = String(this.route.snapshot.queryParamMap.get('bucket') || '').trim();
+    const prefixFromUrl = this.normalizePrefix(String(this.route.snapshot.queryParamMap.get('prefix') || ''));
+
+    if (bucketFromUrl) {
+      this.selectedBucket = bucketFromUrl;
+    }
+
+    this.prefix = prefixFromUrl;
+    this.prefixInput = prefixFromUrl;
+  }
+
+  private syncStateToUrl(): void {
+    const queryParams: Record<string, string> = {};
+    if (this.selectedBucket) {
+      queryParams['bucket'] = this.selectedBucket;
+    }
+    if (this.prefix) {
+      queryParams['prefix'] = this.prefix;
+    }
+
+    const nextState = JSON.stringify(queryParams);
+    if (nextState === this.lastUrlState) {
+      return;
+    }
+
+    this.lastUrlState = nextState;
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams,
+      replaceUrl: true,
+    });
+  }
+
+  private loadThumbnailsForFiles(files: FileEntry[]): void {
+    const candidates = files
+      .filter((file) => this.isImageFile(file))
+      .slice(0, this.maxThumbnailsPerPage);
+
+    for (const file of candidates) {
+      void this.ensureThumbnailSignedUrl(file);
+    }
+  }
+
+  private async ensureThumbnailSignedUrl(file: FileEntry): Promise<void> {
+    const cacheKey = this.toThumbnailCacheKey(file);
+    if (this.thumbnailUrlCache.has(cacheKey) || this.thumbnailLoadingKeys.has(cacheKey)) {
+      return;
+    }
+
+    this.thumbnailLoadingKeys.add(cacheKey);
+    try {
+      const signed = await this.api.getSignedUrl(file.key, this.selectedBucket);
+      if (signed?.url) {
+        this.thumbnailUrlCache.set(cacheKey, signed.url);
+      }
+    } catch {
+      // Keep the row usable without thumbnail if signing fails for this file.
+    } finally {
+      this.thumbnailLoadingKeys.delete(cacheKey);
+    }
+  }
+
+  private toThumbnailCacheKey(file: FileEntry): string {
+    return `${this.selectedBucket || this.bucket}::${file.key}`;
+  }
+
+  private getFileExtension(name: string): string {
+    const value = String(name || '');
+    const index = value.lastIndexOf('.');
+    if (index < 0) {
+      return '';
+    }
+
+    return value.slice(index + 1).trim().toLowerCase();
   }
 }

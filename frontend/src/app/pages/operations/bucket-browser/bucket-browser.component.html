@@ -164,7 +164,23 @@
                   <tr *ngFor="let file of filteredFiles">
                     <td class="file-name-cell">
                       <div class="d-flex align-items-start gap-2">
-                        <i class="ri-file-3-line text-secondary mt-1"></i>
+                        <button
+                          type="button"
+                          class="file-thumb file-thumb-button"
+                          [class.file-thumb-image]="hasThumbnail(file)"
+                          [disabled]="!isImageFile(file)"
+                          (click)="previewFile(file)"
+                          [title]="isImageFile(file) ? 'Preview media' : 'Preview file'"
+                        >
+                          <img
+                            *ngIf="hasThumbnail(file)"
+                            [src]="getThumbnailUrl(file)"
+                            [alt]="file.name"
+                            loading="lazy"
+                          />
+                          <span *ngIf="isImageFile(file) && isThumbnailLoading(file)" class="spinner-border spinner-border-sm"></span>
+                          <i *ngIf="!hasThumbnail(file) && !(isImageFile(file) && isThumbnailLoading(file))" class="ri-file-3-line text-secondary"></i>
+                        </button>
                         <div class="min-w-0">
                           <div class="fw-semibold file-name" [title]="file.name" [innerHTML]="highlightMatch(file.name)"></div>
                           <div class="small text-muted file-key" [title]="file.key" [innerHTML]="highlightMatch(file.key)"></div>
